@@ -1,0 +1,29 @@
+import pytest
+
+from factorio_entities import ResourcePatch
+from factorio_instance import FactorioInstance
+from factorio_types import Resource
+
+@pytest.fixture()
+def game(instance):
+    instance.reset()
+    yield instance
+
+def test_get_resource_patch(game: FactorioInstance):
+    """
+    Find the nearest coal resource patch and harvest 5 coal from it.
+    :param game:
+    :return:
+    """
+    resource_patch: ResourcePatch = game.get_resource_patch(Resource.Coal, game.nearest(Resource.Coal))
+
+    assert resource_patch.name == Resource.Coal[0]
+    assert resource_patch.size > 0
+    assert resource_patch.bounding_box.left_top.x
+    assert resource_patch.bounding_box.right_bottom.x
+    assert resource_patch.bounding_box.left_top.y
+    assert resource_patch.bounding_box.right_bottom.y
+    assert resource_patch.bounding_box.left_top.x < resource_patch.bounding_box.right_bottom.x
+    assert resource_patch.bounding_box.left_top.y < resource_patch.bounding_box.right_bottom.y
+    assert resource_patch.bounding_box.left_top.x < resource_patch.bounding_box.right_bottom.x
+    assert resource_patch.bounding_box.left_top.y < resource_patch.bounding_box.right_bottom.y

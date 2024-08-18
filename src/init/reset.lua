@@ -1,0 +1,1 @@
+game.reset_game_state()

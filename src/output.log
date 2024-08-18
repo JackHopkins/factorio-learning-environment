@@ -1,0 +1,1303 @@
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 91x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 74x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 71x patch of coal 10 metres northwest (-17, -14) x (-8, -5)
+[94mnature();
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 91x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 74x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 71x patch of coal 10 metres northwest (-17, -14) x (-8, -5)
+[94mgoto(nearest('coal'));
+[94mharvest((-2, 0), count=10);
+[94mgoto(nearest('iron_ore'));
+[94mharvest((-2, 0), count=15);
+[94mgoto(nearest('copper_ore'));
+[94mharvest((-2, 0), count=10);
+[94mgoto(nearest('stone'));
+[94mharvest((-2, 0), count=5);
+[94minventory();
+[92m- 1 iron-chest
+- 50 transport-belt
+- 1 stone-furnace
+- 1 assembling-machine-1
+- 85 coal
+- 30 stone
+- 90 iron-ore
+- 80 copper-ore
+- 50 iron-plate
+[96m Setting up coal and iron smelting
+[94mcraft('burner-mining-drill', count=2);
+[91mCould not craft a burner-mining-drill. missing 1 stone furnace
+[94mcraft('stone-furnace', count=2);
+[94mplace('burner-mining-drill', 0, (nearest('coal')));
+[91mCould not place burner-mining-drill. No burner mining drill in inventory
+[94mrotate((nearest('coal')), 1);
+[91mCould not rotate.. None
+[96m Gather more iron to craft burner-mining-drills
+[94mgoto(nearest('iron-ore'));
+[94mharvest((-2, 0), count=20);
+[94mcraft('stone-furnace', count=1);
+[94mcraft('burner-mining-drill', count=1);
+[91mCould not craft a burner-mining-drill. missing 3 iron gear wheel
+[94mcraft('iron-gear-wheel', count=3);
+[94mcraft('burner-mining-drill', count=1);
+[94mplace('burner-mining-drill', 0, (0,0));
+[91mCould not place burner-mining-drill. Cant build at position
+[94mgoto((-5, 0));
+[94mplace('burner-mining-drill', 0, (0, 0));
+[91mCould not place burner-mining-drill. Cant build at position
+[94mgoto(nearest('resource'));
+[91mYou can't do that action. Incorrect syntax.
+[94mgoto(nearest('resource'), trailing=None);
+[91mYou can't do that action. Incorrect syntax.
+[94mnature();
+[92mThere are 4.4k tree_01s scattered 22km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 4km west-northwest, 1km east-northeast, 1km west, 30 metres east, 5km west-southwest, 1km east-southeast, 19km southwest, 16km southeast, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (27, 26) x (36, 35)
+- A 86x patch of stone 10 metres southwest (-12, 6) x (-3, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (27, 6) x (36, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (27, -14) x (36, -5)
+- A 65x patch of coal 11 metres northwest (-12, -14) x (-3, -5)
+[94mgoto((27,-5));
+[94mplace('burner-mining-drill', 0, (0, 0));
+[91mCould not place burner-mining-drill. Cant build at position
+[94mplace('stone-furnace', 0, (1, 0));
+[94minsert('coal', (0, 0), count=1);
+[94mharvest((-27,5), count=5);
+[91mCould not harvest.. Nothing to here to harvest
+[94mgoto(nearest('tree'));
+[94mharvest((-2, 0), count=5);
+[94minventory();
+[92m- 1 iron-chest
+- 50 transport-belt
+- 1 burner-mining-drill
+- 2 stone-furnace
+- 1 assembling-machine-1
+- 8 wood
+- 85 coal
+- 15 stone
+- 180 iron-ore
+- 80 copper-ore
+- 41 iron-plate
+[94mgoto(nearest('iron-ore'));
+[94mplace('burner-mining-drill', 0, (1, 0));
+[94minsert('coal', (0, 0), count=1);
+[94mgoto((0, 1));
+[94mplace('stone-furnace', 0, (1, 0));
+[94mextract('iron-ore', (1, 0), count=1);
+[91mCould not extract.. No item to extract
+[94mwait(5);
+[92mWhile you wait, you look around and check your inventory. 
+You see:
+- An empty stone_furnace facing north at (1, 0) 
+- An stone_furnace facing north at (28, -6) containing 1x coal
+- An empty burner_mining_drill facing north, at (36, -14)
+
+Inventory:
+- 1 iron-chest
+- 50 transport-belt
+- 1 stone-furnace
+- 1 assembling-machine-1
+- 8 wood
+- 85 coal
+- 15 stone
+- 180 iron-ore
+- 80 copper-ore
+- 41 iron-plate
+[94mextract('iron-ore', (1, 0), count=1);
+[91mCould not extract.. No item to extract
+[94mwait(10);
+[92mWhile you wait, you look around and check your inventory. 
+You see:
+- An empty stone_furnace facing north at (1, 0) 
+- An stone_furnace facing north at (28, -6) containing 1x coal
+- An empty burner_mining_drill facing north, at (36, -14)
+
+Inventory:
+- 1 iron-chest
+- 50 transport-belt
+- 1 stone-furnace
+- 1 assembling-machine-1
+- 8 wood
+- 85 coal
+- 15 stone
+- 180 iron-ore
+- 80 copper-ore
+- 41 iron-plate
+[94mgoto((36, -14));
+[94minsert('coal', (0, 0), count=5);
+[94mwait(10);
+[92mWhile you wait, you look around and check your inventory. 
+You see:
+- An empty stone_furnace facing north at (-35, 14) 
+- An stone_furnace facing north at (-8, 8) containing 1x coal
+- An burner_mining_drill facing north at (0, 0) containing 5x coal
+
+Inventory:
+- 1 iron-chest
+- 50 transport-belt
+- 1 stone-furnace
+- 1 assembling-machine-1
+- 8 wood
+- 85 coal
+- 15 stone
+- 180 iron-ore
+- 80 copper-ore
+- 41 iron-plate
+[94mgoto((-8, 8));
+[94minsert('coal', (0, 0), count=5);
+[94mgoto((-35, 14));
+[94minsert('coal', (0, 0), count=5);
+[94mplace('assembling-machine-1', 1, (-1, 1));
+[91mCould not place assembling-machine-1. Cant build at position
+[94mgoto((0,0));
+[94mplace('assembling-machine-1', 1, (1, 1));
+[91mCould not place assembling-machine-1. Cant build at position
+[94mgoto((2,2));
+[94mplace('assembling-machine-1', 1, (1, 1));
+[94mset_recipe((4,4), 'iron-chest');
+[94minsert('iron-plate', (4,4), count=8);
+[94mwait(10);
+[92mWhile you wait, you look around and check your inventory. 
+You see:
+- An stone_furnace facing north at (-37, 12) containing 5x coal
+- An burner_mining_drill facing north at (-2, -2) containing 5x coal
+- An stone_furnace facing north at (-10, 6) containing 6x coal
+- An empty assembling_machine_1 facing north at (1.5, 1.5) 
+
+Inventory:
+- 1 iron-chest
+- 50 transport-belt
+- 1 stone-furnace
+- 8 wood
+- 85 coal
+- 15 stone
+- 180 iron-ore
+- 80 copper-ore
+- 49 iron-plate
+[96m Crafting more items to set up a small production line
+[94mcraft('assembling-machine-1', count=1);
+[91mCould not craft a assembling-machine-1. missing 3 electronic circuit
+[94mcraft('burner-mining-drill', count=2);
+[91mCould not craft a burner-mining-drill. missing 1 stone furnace
+[94mcraft('stone-furnace', count=2);
+[94mplace(('burner-mining-drill', 1), (-9, 6));
+[91mYou can't do that action. Incorrect syntax.
+[94minsert('coal', (-9, 6), count=5);
+[94mplace('burner-mining-drill', 1, (-9, 6));
+[91mCould not place burner-mining-drill. No burner mining drill in inventory
+[94mgoto(nearest('stone'));
+[94mharvest((-2, 0), count=5);
+[94mcraft('burner-mining-drill', count=2);
+[91mCould not craft a burner-mining-drill. missing 6 iron gear wheel
+[94mgoto(nearest('iron-ore'));
+[94mharvest((-2, 0), count=10);
+[94mcraft('iron-gear-wheel', count=6);
+[94mcraft('burner-mining-drill', count=2);
+[94mplace('burner-mining-drill', 1, (-9, 6));
+[91mCould not place burner-mining-drill. Cant build at position
+[94minspect();
+[92mYou see:
+- An stone_furnace facing north at (-27, 9) containing 5x coal
+- An burner_mining_drill facing north at (8, -5) containing 5x coal
+- An stone_furnace facing north at (0, 3) containing 11x coal
+- An empty assembling_machine_1 facing north at (11.5, -1.5) 
+[94mgoto((8, -5));
+[94mrotate((0, 0), 1);
+[94mgoto((-9, 6));
+[94mplace('burner-mining-drill', 1, (0, 0));
+[91mCould not place burner-mining-drill. Cant build at position
+[94mgoto(nearest('iron-ore'));
+[94mplace('burner-mining-drill', 1, (0, 0));
+[91mCould not place burner-mining-drill. Cant build at position
+[94minspect();
+[92mYou see:
+- An stone_furnace facing north at (-27, 9) containing 5x coal
+- An burner_mining_drill facing north at (8, -5) containing 5x coal
+- An stone_furnace facing north at (0, 3) containing 11x coal
+- An empty assembling_machine_1 facing north at (11.5, -1.5) 
+[94mgoto((11.5, -1.5));
+[94mrotate((0, 0), 1);
+[94mcraft('iron-chest', count=1);
+[94mplace('iron-chest', 1, (1, 0));
+[91mCould not place iron-chest. Cant build at position
+[94minspect();
+[92mYou see:
+- An stone_furnace facing north at (-38, 11) containing 5x coal
+- An burner_mining_drill facing north at (-3, -3) containing 5x coal
+- An stone_furnace facing north at (-11, 5) containing 11x coal
+- An empty assembling_machine_1 facing north at (0.5, 0.5) 
+[94mgoto((0.5, 0.5));
+[94mrotate((0, 0), 1);
+[94mcraft('iron-chest', count=1);
+[94mplace('iron-chest', 1, (1, 0));
+[91mCould not place iron-chest. Cant build at position
+[94minspect();
+[92mYou see:
+- An stone_furnace facing north at (-38, 11) containing 5x coal
+- An burner_mining_drill facing north at (-3, -3) containing 5x coal
+- An stone_furnace facing north at (-11, 5) containing 11x coal
+- An empty assembling_machine_1 facing north at (0.5, 0.5) 
+[94mpickup((0.5, 0.5));
+[91mCould not pickup.. Nothing to here to pickup with
+[94mplace('assembling-machine-1', 1, (1, 0));
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k tree_01_stumps scattered 53 metres north-northeast 
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k tree_01_stumps scattered 53 metres north-northeast 
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- A 100x patch of uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- A 86x patch of stone 10 metres southwest (-17, 6) x (-8, 15)
+- A 79x patch of copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- A 70x patch of iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- A 65x patch of coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+[96m Starting the game, checking resources and setting up initial infrastructure
+[94mnature();
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 79x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 70x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.2k item_on_grounds scattered 15 metres east-northeast 
+[94minspect();
+[92mNo entities nearby.
+[94minventory();
+[92m- 1 iron-chest
+- 50 transport-belt
+- 1 stone-furnace
+- 1 assembling-machine-1
+- 50 coal
+- 50 iron-plate
+[96m Collecting resources and setting up basic production infrastructure
+[94mgoto(nearest('tree'));
+[94mharvest((-2, 0), count=5);
+[94mgoto(nearest('coal'));
+[94mharvest((-2, 0), count=10);
+[94mgoto(nearest('stone'));
+[94mharvest((-2, 0), count=10);
+[94mgoto(nearest('iron-ore'));
+[94mharvest((-2, 0), count=10);
+[94minventory();
+[92m- 1 iron-chest
+- 50 transport-belt
+- 1 stone-furnace
+- 1 assembling-machine-1
+- 16 wood
+- 140 coal
+- 80 stone
+- 35 iron-ore
+- 50 iron-plate
+[96m Let's craft furnaces, and assemblers to set up a production line.
+[94mcraft('stone-furnace', count=3);
+[94mcraft('assembling-machine-1', count=3);
+[91mCould not craft a assembling-machine-1. missing 9 electronic circuit
+[94mcraft('electronic-circuit', count=9);
+[91mCould not craft a electronic-circuit. missing 27 copper cable
+[94mgoto(nearest('copper-ore'));
+[94mharvest((-2, 0), count=25);
+[94minventory();
+[92m- 1 iron-chest
+- 50 transport-belt
+- 4 stone-furnace
+- 1 assembling-machine-1
+- 16 wood
+- 140 coal
+- 65 stone
+- 35 iron-ore
+- 161 copper-ore
+- 50 iron-plate
+[94mcraft('copper-plate', count=28);
+[94mcraft('copper-cable', count=27);
+[91mCould not craft a copper-cable. missing 27 copper plate
+[94mcraft('electronic-circuit', count=9);
+[91mCould not craft a electronic-circuit. missing 27 copper cable
+[94mcraft('assembling-machine-1', count=3);
+[91mCould not craft a assembling-machine-1. missing 9 electronic circuit
+[96m Let's place down the stone furnaces and start smelting the copper-ore and iron-ore
+[94mplace('stone-furnace', 0, (-3, 0));
+[94mplace('stone-furnace', 0, (-3, -1));
+[91mCould not place stone-furnace. Cant build there due to existing stone furnace at 24,7
+[96m My apologies, let's place the stone furnace in a different location
+[94mplace('stone-furnace', 0, (-4, 0));
+[91mCould not place stone-furnace. Cant build there due to existing stone furnace at 24,7
+[96mI apologize for the confusion. Let's try placing the stone-furnace in a new location.
+[94mplace('stone-furnace', 0, (-3, 1));
+[91mCould not place stone-furnace. Cant build there due to existing stone furnace at 24,7
+###NEW EPISODE###
+[92mThere are 4.1k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 75x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 68x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.1k tree_01_stumps scattered 171 metres north 
+- There are 4.1k item_on_grounds scattered 15 metres east-northeast 
+- There are 4.1k copper_ores scattered 9 metres east-southeast 
+###NEW EPISODE###
+[92mThere are 4.1k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 75x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 68x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.1k tree_01_stumps scattered 171 metres north 
+- There are 4.1k item_on_grounds scattered 15 metres east-northeast 
+- There are 4.1k copper_ores scattered 9 metres east-southeast 
+###NEW EPISODE###
+[92mThere are 4.1k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 75x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 68x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.1k tree_01_stumps scattered 171 metres north 
+- There are 4.1k item_on_grounds scattered 15 metres east-northeast 
+- There are 4.1k copper_ores scattered 9 metres east-southeast 
+###NEW EPISODE###
+[92mThere are 4.1k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 75x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 68x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.1k tree_01_stumps scattered 171 metres north 
+- There are 4.1k item_on_grounds scattered 15 metres east-northeast 
+- There are 4.1k copper_ores scattered 9 metres east-southeast 
+###NEW EPISODE###
+[92mThere are 4.1k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 75x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 68x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.1k tree_01_stumps scattered 171 metres north 
+- There are 4.1k item_on_grounds scattered 15 metres east-northeast 
+- There are 4.1k copper_ores scattered 9 metres east-southeast 
+###NEW EPISODE###
+[92mThere are 4.1k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 75x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 68x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.1k item_on_grounds scattered 15 metres east-northeast 
+- There are 4.1k copper_ores scattered 9 metres east-southeast 
+###NEW EPISODE###
+[92mThere are 4.1k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 75x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 68x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.1k item_on_grounds scattered 15 metres east-northeast 
+- There are 4.1k copper_ores scattered 9 metres east-southeast 
+###NEW EPISODE###
+[92mThere are 4.1k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 75x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 68x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.1k item_on_grounds scattered 15 metres east-northeast 
+- There are 4.1k copper_ores scattered 9 metres east-southeast 
+###NEW EPISODE###
+[92mThere are 4.1k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 75x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 68x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.1k item_on_grounds scattered 15 metres east-northeast 
+- There are 4.1k copper_ores scattered 9 metres east-southeast 
+###NEW EPISODE###
+[92mThere are 4.1k tree_01s scattered 23km northwest, 17km north-northwest, 15km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+- 86x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 75x copper_ore 11 metres east-southeast (22, 6) x (31, 15)
+- 68x iron_ore 11 metres east-northeast (22, -14) x (31, -5)
+- 65x coal 11 metres northwest (-17, -14) x (-8, -5)
+- There are 4.1k item_on_grounds scattered 15 metres east-northeast 
+- There are 4.1k copper_ores scattered 9 metres east-southeast 
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+[96m Start by creating transport belts
+[94minventory();
+[92m- 1 iron-chest
+- 50 transport-belt
+- 1 stone-furnace
+- 1 assembling-machine-1
+- 50 coal
+- 45 iron-plate
+- 50 copper-plate
+- 1 empty-barrel
+[94mcraft('transport-belt', count=40);
+[91mCould not craft a transport-belt. Ingredients cannot be crafted by hand.
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)
+###NEW EPISODE###
+[92mThere are 4.2k tree_01s scattered 23km northwest, 17km north-northwest, 16km north, 16km north-northeast, 21km northeast, 1km east-northeast, 3km west-northwest, 760 metres west, 32 metres east, 4km west-southwest, 720 metres east-southeast, 17km southeast, 17km southwest, 13km south-southwest, 13km south-southeast, and 11km south 
+- 100x coal 10 metres northwest (-17, -14) x (-8, -5)
+- 100x iron_ore 10 metres east-northeast (22, -14) x (31, -5)
+- 100x stone 10 metres southwest (-17, 6) x (-8, 15)
+- 100x copper_ore 10 metres east-southeast (22, 6) x (31, 15)
+- 100x uranium_ore 30 metres southeast (22, 26) x (31, 35)

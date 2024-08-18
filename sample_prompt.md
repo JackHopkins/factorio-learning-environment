@@ -1,0 +1,263 @@
+
+You have access to the following API.
+
+Types:
+```
+import enum
+
+from factorio_entities import *
+
+
+class PrototypeName(enum.Enum):
+    AssemblingMachine = "assembling-machine-1"
+    BurnerInserter = "burner-inserter"
+    BurnerMiningDrill = "burner-mining-drill"
+    ElectricMiningDrill = "electric-mining-drill"
+    StoneFurnace = "stone-furnace"
+    TransportBelt = "transport-belt"
+    OffshorePump = "offshore-pump"
+    Boiler = "boiler"
+    SteamEngine = "steam-engine"
+    Pipe = "pipe"
+    SmallElectricPole = "small-electric-pole"
+    IronChest = "iron-chest"
+
+class ResourceName(enum.Enum):
+    Coal = "coal"
+    IronOre = "iron-ore"
+    CopperOre = "copper-ore"
+    Stone = "stone"
+    Water = "water"
+    CrudeOil = "crude-oil"
+    UraniumOre = "uranium-ore"
+
+
+class Prototype(enum.Enum):
+    AssemblingMachine1 = "assembling-machine-1", AssemblingMachine1
+    BurnerInserter = "burner-inserter", BurnerInserter
+    BurnerMiningDrill = "burner-mining-drill", BurnerMiningDrill
+    ElectricMiningDrill = "electric-mining-drill", MiningDrill
+    StoneFurnace = "stone-furnace", Furnace
+    TransportBelt = "transport-belt", TransportBelt
+    OffshorePump = "offshore-pump", OffshorePump
+    Boiler = "boiler", Boiler
+    #Generator = "generator", Generator
+    SteamEngine = "steam-engine", Generator
+    Pipe = "pipe", Entity
+    IronChest = "iron-chest", Entity
+    WoodenChest = "wooden-chest", Entity
+    IronGearWheel = "iron-gear-wheel", Entity
+    Coal = "coal", None
+    IronPlate = "iron-plate", None
+    CopperPlate = "copper-plate", None
+    SmallElectricPole = "small-electric-pole", Entity
+    IronOre = "iron-ore", None
+    CopperOre = "copper-ore", None
+    Stone = "stone", None
+
+
+class Resource:
+    Coal = "coal", ResourcePatch
+    IronOre = "iron-ore", ResourcePatch
+    CopperOre = "copper-ore", ResourcePatch
+    Stone = "stone", ResourcePatch
+    Water = "water", ResourcePatch
+    CrudeOil = "crude-oil", ResourcePatch
+    UraniumOre = "uranium-ore", ResourcePatch
+    Wood = "tree-01", ResourcePatch
+```
+Methods:
+```
+set_entity_recipe(entity: Entity, prototype: Prototype) -> bool
+"""
+Sets the recipe of an given entity.
+:param entity: Entity to set recipe
+:param recipe: Recipe to set
+:return: True if recipe was set successfully
+"""
+
+place_entity_next_to(entity: Prototype, reference_position: Position = Position(x=0.0, y=0.0), direction: Direction = 1, spacing: int = 0) -> Entity
+"""
+Places an entity next to an existing entity, with a space in-between (0 space means adjacent)
+:param entity: Entity to place
+:param reference_position: Position of existing entity or position to place entity next to
+:param direction: Direction to place entity from reference_position
+:param spacing: Space between entity and reference_position
+:example: place_entity_next_to(Prototype.WoodenChest, Position(x=0, y=0), direction=Direction.UP)
+:return: Entity placed
+"""
+
+pickup_entity(entity: Union[Entity, Position]) -> bool
+"""
+The agent picks up an given entity prototype e at position (x, y) if it exists on the world.
+:param entity: Entity prototype to pickup, e.g Prototype.IronPlate
+:param position: Position to pickup entity
+:example: pickup_entity(Prototype.IronPlate, stone_furnace.position)
+:return:
+"""
+
+craft_item(entity: Prototype, quantity: int = 1) -> bool
+"""
+Craft an item from a Prototype if the ingredients exist in your inventory.
+:param entity: Entity to craft
+:param quantity: Quantity to craft
+:example craft_item(Prototype.Pipe, 1)
+:return: True if crafting was successful
+"""
+
+can_place_entity(entity: Prototype, direction: Direction = <Direction.UP: 0>, position: Position = Position(x=0.0, y=0.0)) -> bool
+"""
+Tests to see if an entity e can be placed at local position (x, y).
+:param entity: Entity to place from inventory
+:param direction: Cardinal direction to place entity
+:param position: Position to place entity
+:param exact: If True, place entity at exact position, else place entity at nearest possible position
+:example stone_furnace = place_entity(Prototype.StoneFurnace, Direction.UP, Position(x=0, y=0))
+:return: Entity object
+"""
+
+get_entity(entity: Prototype, position: Position) -> Entity
+"""
+Get a given entity prototype at position (x, y) if it exists on the world.
+:param entity: Entity prototype to get, e.g Prototype.IronPlate
+:param position: Position to get entity
+:example stone_furnace = get_entity(Prototype.StoneFurnace, nearest(Prototype.StoneFurnace))
+:return: Entity object
+"""
+
+inspect_inventory(entity=None) -> Inventory
+"""
+Inspects the inventory of the given entity. If no entity is given, this inspects your own inventory.
+:param entity: Entity to inspect
+:example: iron_chest_inventory = inspect_inventory(nearest(Prototype.IronChest))
+:return: Inventory of the given entity
+"""
+
+place_entity(entity: Prototype, direction: Direction = <Direction.UP: 0>, position: Position = Position(x=0.0, y=0.0), exact: bool = False) -> Entity
+"""
+Places an entity e at local position (x, y) if the agent has enough resources.
+:param entity: Entity to place from inventory
+:param direction: Cardinal direction to place entity
+:param position: Position to place entity
+:param exact: If True, place entity at exact position, else place entity at nearest possible position
+:example stone_furnace = place_entity(Prototype.StoneFurnace, Direction.UP, Position(x=0, y=0))
+:return: Entity object
+"""
+
+move_to(position: Position = Position(x=0.0, y=0.0), laying=None, leading=None)
+"""
+Move to a position.
+:param position: Position to move to.
+:param laying: Entity to lay down behind you as you move. e.g. 'Prototype.TransportBelt', facing away from you.
+:param leading: Entity to lay down in front of you as you move. e.g. 'Prototype.TransportBelt', facing towards you.
+:example move_to(nearest(Prototype.StoneFurnace), laying=Prototype.TransportBelt)
+:return:
+"""
+
+print(*args) -> bool
+"""
+Recursively print the
+:param args:
+:return:
+"""
+
+connect_entities(source: Union[Position, Entity], target: Union[Position, Entity], connection_type: Prototype = <Prototype.Pipe: ('pipe', <class 'Entity'>)>) -> List[Entity]
+"""
+Connect two entities or positions.
+:param source: First entity or position
+:param target: Second entity or position
+:param connection_type: a Pipe, TransportBelt or ElectricPole
+:example connect_entities(source=boiler, target=generator, connection_type=Prototype.Pipe)
+:example connect_entities(source=miner, target=stone_furnace, connection_type=Prototype.TransportBelt)
+:return: List of entities that were created
+"""
+
+get_resource_patch(resource: Resource, position: Position) -> ResourcePatch
+"""
+Get the resource patch at position (x, y) if it exists on the world.
+:param resource: Resource to get, e.g Resource.Coal
+:param position: Position to get resource patch
+:example coal_patch_at_origin = get_resource_patch(Resource.Coal, Position(x=0, y=0))
+:return: ResourcePatch
+"""
+
+harvest_resource(position: Position, quantity=1) -> None
+"""
+Harvest a resource at position (x, y) if it exists on the world.
+:param position: Position to harvest resource
+:param quantity: Quantity to harvest
+:example harvest_resource(nearest(Resource.Coal), 5)
+:example harvest_resource(nearest(Resource.Stone), 5)
+:return: True if harvest was successful
+"""
+
+insert_item(entity: Prototype, target: Entity, quantity=5) -> int
+"""
+The agent inserts an item into an target entity's inventory
+:param entity: Entity type to insert from inventory
+:param target: Entity to insert into
+:param quantity: Quantity to insert
+:example: insert_item(Prototype.IronPlate, nearest(Prototype.IronChest), 5)
+:return: The entity inserted into
+"""
+
+extract_item(entity: Prototype, position: Position, quantity=5) -> bool
+"""
+Extract an item from an entity's inventory at position (x, y) if it exists on the world.
+:param entity: Entity prototype to extract, e.g Prototype.IronPlate
+:param source_position: Position to extract entity
+:param quantity: Quantity to extract
+:example extract_item(Prototype.IronPlate, stone_furnace.position, 5)
+:example extract_item(Prototype.CopperWire, Position(x=0, y=0), 5)
+:return True if extraction was successful
+"""
+
+get_prototype_recipe(prototype: Union[Prototype, str]) -> Recipe
+"""
+Get the recipe of the given entity prototype.
+:param prototype: Prototype to get recipe from
+:return: Recipe of the given prototype
+"""
+
+inspect_entities(position: Position = None, radius=10) -> List[Dict[str, Any]]
+"""
+Inspect entities in a given radius around your position.
+:param radius: The radius to inspect
+:param position: The position to inspect (if None, use your position)
+:example: entities_around_origin = inspect_entities(10, Position(x=0, y=0))
+:return: A list of entities
+"""
+
+rotate_entity(entity: Entity, direction: Direction = <Direction.UP: 0>) -> bool
+"""
+Rotate an entity at position (x, y) if it exists on the world.
+:param entity: Entity to rotate
+:param direction: Direction to rotate
+:example rotate_entity(iron_chest, Direction.UP)
+:return: True if rotation was successful
+"""
+
+nearest(type: Union[Prototype, Resource]) -> Position
+"""
+Find the nearest typed entity or resource to the player.
+:param type: Entity or resource type to find
+:return: Position of nearest entity or resource
+:example nearest(Prototype.TransportBelt)
+:example nearest(Resource.Coal)
+"""
+
+
+``` 
+
+Instructions:
+
+1. You are the character in a game of Factorio.
+2. Act on all of the warnings about idle parts of your factory, and aim to grow capacity.
+3. Use '#' to think what you are planning step-by-step, before issuing your python command.
+4. Be creative and efficient in your actions to maximize your score.
+
+To interact with your world, you must only use the methods from this python API with basic logical flow, variable assignment and arithmetic.
+
+Regarding coordinates: 
+- a more positive X value goes to the right. 
+- a more positive Y value goes down.

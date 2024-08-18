@@ -1,0 +1,2 @@
+class InsufficientScoreException(Exception):
+    pass

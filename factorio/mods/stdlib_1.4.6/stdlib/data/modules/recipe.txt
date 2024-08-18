@@ -1,0 +1,56 @@
+
+type, name
+localised_name[opt]
+localised_description[opt]
+subgroup, order (needed when no main product)
+
+recipe
+        category
+        icon/icons[opt] (or has main_product)
+        crafting_machine_tint = {
+            primary, secondary, tertiary
+        }
+        normal/expensive = {
+            ingredients
+            results, result, result_count[opt=1] (result ignored if results present) at least 1 result
+            main_product
+            energy_required > 0.001
+            emissions_multiplier
+            requester_paste_multiplier
+            overload_multiplier
+            enabled <boolean>
+            hidden <boolean>
+            hide_from_stats <boolean>
+            allow_decomposition <boolean>
+            allow_as_intermediate <boolean>
+            allow_intermediates <boolean>
+            always_show_made_in <boolean>
+            show_amount_in_title <boolean>
+            always_show_products <boolean>
+        }
+
+    Ingredients
+    {"name", amount} -- Assumes a type of "item"
+    {
+        type :: string: "item" or "fluid".
+        name :: string: Prototype name of the required item or fluid.
+        amount :: uint: Amount of the item or fluid.
+        minimum_temperature :: uint (optional): The minimum fluid temperature required. Has no effect if type is '"item"'.
+        maximum_temperature :: uint (optional): The maximum fluid temperature allowed. Has no effect if type is '"item"'.
+    }
+
+    Results
+    {
+        type :: string: "item" or "fluid".
+        name :: string: Prototype name of the result.
+        amount :: float (optional): If not specified, amount_min, amount_max and probability must all be specified.
+        temperature :: uint (optional): The fluid temperature of this product. Has no effect if type is '"item"'.
+        amount_min :: uint (optional):
+        amount_max :: uint (optional):
+        probability :: double (optional): A value in range [0, 1].
+    }
+    {
+        "name", amount -- assumes a type of item
+    }
+    result -- assumes type of item
+    result_count[opt = 1]

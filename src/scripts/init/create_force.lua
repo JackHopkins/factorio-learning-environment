@@ -1,0 +1,1 @@
+game.create_force("Name")

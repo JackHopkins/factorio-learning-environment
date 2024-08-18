@@ -1,0 +1,9 @@
+README.md
+setup.py
+factorio_rcon/__init__.py
+factorio_rcon/factorio_rcon.py
+factorio_rcon_py.egg-info/PKG-INFO
+factorio_rcon_py.egg-info/SOURCES.txt
+factorio_rcon_py.egg-info/dependency_links.txt
+factorio_rcon_py.egg-info/requires.txt
+factorio_rcon_py.egg-info/top_level.txt

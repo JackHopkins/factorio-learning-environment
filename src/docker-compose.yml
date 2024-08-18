@@ -1,0 +1,19 @@
+volumes:
+  scenarios:
+services:
+  factorio_1:
+    image: 'factoriotools/factorio:1.1.109'
+    volumes:
+      - type: bind
+        source: ./scenarios/default_lab_scenario
+        target: /opt/factorio/scenarios/default_lab_scenario
+    ports:
+      - '34198:34197/udp'
+      - '27016:27015/tcp'
+    restart: always
+    entrypoint: ["sh", "/scenario.sh", "default_lab"]
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512m

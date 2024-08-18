@@ -1,0 +1,12 @@
+factorio-rcon-py
+python-dotenv
+gym==0.21.0
+git+https://github.com/SirAnthony/slpp
+imageio
+anyio
+pygame
+pyastar2d
+slpp
+neptune
+pyopenssl==24.0.0
+rich

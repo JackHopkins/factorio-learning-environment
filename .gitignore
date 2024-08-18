@@ -1,0 +1,28 @@
+/venv/
+cortex
+/dev/
+.idea
+/.idea/
+.DS_Store
+.env
+~/PycharmProjects/PaperclipMaximiser/dev/
+/client/log/
+/client/unscored_log/
+# all pycache folders
+__pycache__/
+# all pycache files
+*.pyc
+*/__pycache__/*.pyc
+client/__pycache__/*.pyc
+client/__pycache__/
+/src/log/*.log
+/src/log/*.trace
+/log/
+/src/actions/
+/src/gpt_events.jsonl
+/src/llama.jsonl
+/src/llama_events.jsonl
+/.git.bak/
+/src/.neptune/
+/src/.neptune/
+/src/.neptune/async/

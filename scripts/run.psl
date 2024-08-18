@@ -1,0 +1,59 @@
+# Check if Docker is running, if not start it
+if (-not (docker info 2>$null)) {
+    Write-Host "Starting Docker..."
+    Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+
+    # Wait until Docker daemon is running
+    while (-not (docker info 2>$null)) {
+        Start-Sleep -Seconds 1
+    }
+}
+Write-Host "Docker is running."
+
+# Check if docker-compose is available
+if (-not (Get-Command docker-compose -ErrorAction SilentlyContinue)) {
+    Write-Host "Error: docker-compose is not installed."
+    Write-Host "Please install docker-compose and try again."
+    exit 1
+}
+
+Set-Location ..\src
+
+# Check for the existence of the docker-compose file
+$DOCKER_COMPOSE_FILE = ".\docker-compose.yml"
+if (-not (Test-Path $DOCKER_COMPOSE_FILE)) {
+    $DOCKER_COMPOSE_FILE = "..\docker-compose.yml"
+    if (-not (Test-Path $DOCKER_COMPOSE_FILE)) {
+        Write-Host "Error: docker-compose.yml not found in the current directory or one level up."
+        exit 1
+    }
+}
+
+# Check if the Factorio game client is running
+$FACTORIO_CLIENT_APP = "factorio.exe"
+if (-not (Get-Process $FACTORIO_CLIENT_APP -ErrorAction SilentlyContinue)) {
+    Write-Host "Starting Factorio game client..."
+    Start-Process "C:\Program Files\Factorio\bin\x64\factorio.exe"
+} else {
+    Write-Host "Factorio game client is already running."
+}
+
+# Extract UDP ports from the docker-compose.yml file
+$UDP_PORTS = Select-String -Path $DOCKER_COMPOSE_FILE -Pattern "^\s*-\s*'(\d+):.*udp'" | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -First 1
+
+# Run the Factorio server docker container using the found docker-compose file
+Write-Host "Starting Factorio server docker container(s)..."
+docker-compose -f $DOCKER_COMPOSE_FILE up -d
+
+Write-Host "Go to 'Multiplayer' > 'Connect to address' and login to the Factorio servers using the following addresses (one at a time):"
+
+# Prompt the user to login to the Factorio server using the extracted ports
+foreach ($port in $UDP_PORTS) {
+    Write-Host "localhost:$port"
+}
+
+Start-Sleep -Seconds 4
+
+# Bring Factorio game client to focus
+$wshell = New-Object -ComObject wscript.shell
+$wshell.AppActivate('Factorio')

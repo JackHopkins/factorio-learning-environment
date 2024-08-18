@@ -1,0 +1,67 @@
+volumes:
+  scenarios:
+services:
+  factorio_1:
+    image: 'factorio:loggedin'
+    volumes:
+      - type: bind
+        source: ./scenarios/lab_scenario
+        target: /opt/factorio/scenarios/lab_scenario
+    ports:
+      - '34198:34197/udp'
+      - '27016:27015/tcp'
+    restart: always
+    entrypoint: ["sh", "/scenario.sh", "lab_scenario"]
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+  factorio_2:
+    image: 'factorio:loggedin'
+    volumes:
+      - type: bind
+        source: ./scenarios/lab_scenario
+        target: /opt/factorio/scenarios/lab_scenario
+    ports:
+      - '34199:34197/udp'
+      - '27017:27015/tcp'
+    restart: always
+    entrypoint: ["sh", "/scenario.sh", "lab_scenario"]
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+  factorio_3:
+    image: 'factorio:loggedin'
+    volumes:
+      - type: bind
+        source: ./scenarios/lab_scenario
+        target: /opt/factorio/scenarios/lab_scenario
+    ports:
+      - '34200:34197/udp'
+      - '27018:27015/tcp'
+    restart: always
+    entrypoint: ["sh", "/scenario.sh", "lab_scenario"]
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+  factorio_4:
+    image: 'factorio:loggedin'
+    volumes:
+      - type: bind
+        source: ./scenarios/lab_scenario
+        target: /opt/factorio/scenarios/lab_scenario
+    ports:
+      - '34201:34197/udp'
+      - '27019:27015/tcp'
+    restart: always
+    entrypoint: ["sh", "/scenario.sh", "lab_scenario"]
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M

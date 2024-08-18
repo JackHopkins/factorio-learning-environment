@@ -1,0 +1,1 @@
+game.player.surface.peaceful_mode=FALSE

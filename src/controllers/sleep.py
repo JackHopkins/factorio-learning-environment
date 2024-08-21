@@ -1,18 +1,7 @@
-import math
-from time import sleep
-from typing import Optional, Tuple, List
 
-from numpy import ndarray
+from time import sleep
 
 from controllers._action import Action
-from controllers.get_path import GetPath
-from controllers.observe_all import ObserveAll
-from controllers.request_path import RequestPath
-from factorio_entities import Position
-from factorio_instance import PLAYER, NONE
-from factorio_types import Prototype
-from utilities.pathfinding import get_path
-
 
 class Sleep(Action):
 

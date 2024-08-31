@@ -13,3 +13,4 @@ pydantic
 openai
 anthropic
 scipy
+scikit-image

@@ -99,7 +99,7 @@ def test_place_and_connect_entities_in_grid(game):
     spent_inserters = (inserters_in_inventory - current_inserters_in_inventory)
 
     assert spent_furnaces == grid_size * grid_size
-    assert spent_inserters == 2 * grid_size * (grid_size - 1)
+    assert spent_inserters == 4 * grid_size * (grid_size - 1)
 
     game.reset()
 

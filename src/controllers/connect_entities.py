@@ -110,7 +110,10 @@ class ConnectEntities(Action):
 
         if source_entity and isinstance(source, Entity):
             if isinstance(source_entity, FluidHandler):
-                if isinstance(source_entity, Boiler):
+                if isinstance(source_entity, OffshorePump):
+                    source_position = Position(x=source_entity.connection_points[0].x+0.5,
+                                               y=source_entity.connection_points[0].y+0.5)
+                elif isinstance(source_entity, Boiler):
                     if target_entity and isinstance(target_entity, Generator):
                         #source_position = self._round_position(source_entity.steam_output_point)
                         x_diff_source_position_target_position = source_entity.position.x - source_entity.steam_output_point.x
@@ -128,7 +131,9 @@ class ConnectEntities(Action):
                             else:
                                 source_position = Position(x=source_entity.position.x - 1.5, y=source_entity.position.y)
                     elif target_entity and isinstance(target_entity, OffshorePump):
-                        target_position = target_entity.connection_points[0]
+                        #target_position = target_entity.connection_points[0]
+                        target_position = Position(x=target_entity.connection_points[0].x + 1,
+                                                   y=target_entity.connection_points[0].y + 1)
 
                         nearest_connection_point = self._get_nearest_connection_point(source_entity, target_position, target_entity)
                         # find the closest connection_point to the target_position
@@ -164,12 +169,19 @@ class ConnectEntities(Action):
 
         if isinstance(target, Entity):
             if isinstance(target_entity, FluidHandler):
-                if isinstance(target_entity, Boiler) and isinstance(source_entity, Generator):
+                if isinstance(target_entity, Boiler):
+                    if isinstance(source_entity, OffshorePump):
+                        target_position = self._get_nearest_connection_point(target_entity, source_position,
+                                                                             source_entity)
+                    else:
+                        target_position = target_entity.steam_input_point
+                elif isinstance(target_entity, Boiler) and isinstance(source_entity, Generator):
                     target_position = target_entity.steam_input_point
                 else:
                     target_position = self._get_nearest_connection_point(target_entity,
                                                                          source_position,
                                                                          existing_connection_entity=source_entity)
+                    target_position = Position(x=target_position.x+0.5, y=target_position.y+0.5)
 
             elif isinstance(target_entity, Inserter):
                 target_position = target_entity.pickup_position

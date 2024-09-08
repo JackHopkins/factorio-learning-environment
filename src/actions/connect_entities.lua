@@ -196,8 +196,10 @@ end
 -- Using the new shortest_path function.
 global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, connection_type)
     local player = game.players[player_index]
-    local start_position = {x = source_x, y = source_y}
-    local end_position = {x = target_x, y = target_y}
+    --local start_position = {x = source_x, y = source_y}
+    --local end_position = {x = target_x, y = target_y}
+    local start_position = {x = math.floor(source_x), y = math.floor(source_y)}
+    local end_position = {x = math.floor(target_x), y = math.floor(target_y)}
 
     local serialized_entities = {}
     local xdiff = math.abs(source_x-target_x)

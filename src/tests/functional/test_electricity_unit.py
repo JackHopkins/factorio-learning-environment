@@ -35,8 +35,8 @@ def test_create_offshore_pump_to_steam_engine(game):
     # Get offshore pump direction
     direction = Direction(offshore_pump.direction)
 
-    # Get opposite direction
-    opposite_direction = Direction((direction.value + 2) % 4)
+    # Get orthogonal direction
+    opposite_direction = Direction.opposite(direction)
 
     # pump connection point
     pump_connection_point = offshore_pump.connection_points[0]
@@ -46,11 +46,9 @@ def test_create_offshore_pump_to_steam_engine(game):
                                        reference_position=offshore_pump.position,
                                        direction=opposite_direction,
                                        spacing=2)
-    # orthogonal direction to the boiler
-    orthogonal_direction = Direction((direction.value + 1) % 4)
 
     # rotate the boiler to face the offshore pump
-    boiler = game.rotate_entity(boiler, orthogonal_direction)
+    boiler = game.rotate_entity(boiler, Direction.next_clockwise(direction))
 
     # boiler connection point
     boiler_connection_point = boiler.connection_points[0]

@@ -100,7 +100,7 @@ class FactorioInstance:
         self.observe_all()
         self._tasks = []
 
-        self._initial_score, goal = self.score()
+        self._initial_score, goal = self.reward()
 
         # Available objects that the agent can interact with
         self.Prototype = Prototype
@@ -268,7 +268,7 @@ class FactorioInstance:
                 results[index] = error_message
                 break
 
-        score, goal = self.score()
+        score, goal = self.reward()
         return score, goal, '\n'.join([f"{i}: {str(r)}" for i, r in results.items()])
 
     def eval_with_error(self, expr, timeout=60):

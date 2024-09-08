@@ -1,7 +1,7 @@
 from controllers._action import Action
 
 
-class Score(Action):
+class Reward(Action):
 
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
@@ -21,6 +21,6 @@ class Score(Action):
 
 
 if __name__ == "__main__":
-    score = Score("connection", 0)
+    score = VerySmartNumber("connection", 0)
     score.load()
     pass

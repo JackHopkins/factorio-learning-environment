@@ -189,8 +189,8 @@ Regarding coordinates:
 - a more positive X value goes to the right. 
 - a more positive Y value goes down.
 
-Enclose your interaction with START``` and END``` tags."""
-
+"""
+# Enclose your interaction with START``` and END``` tags.
 
 class Memory(object):
 
@@ -206,8 +206,8 @@ class Memory(object):
         self.max_size = max_history
         self.brief = brief
         self.size = size
-        self.log_file = "log/" + datetime.now().strftime("%H-%M-%d-%m-%Y") + ".log"
-        self.trace_file = "log/" + datetime.now().strftime("%H-%M-%d-%m-%Y") + ".trace"
+        self.log_file = "../log/" + datetime.now().strftime("%H-%M-%d-%m-%Y") + ".log"
+        self.trace_file = "../log/" + datetime.now().strftime("%H-%M-%d-%m-%Y") + ".trace"
         self.variables = {}
         self._score = []
         self.current_score = 0
@@ -276,7 +276,11 @@ class Memory(object):
             rewritten_last_message = "\n".join(last_command_lines)
             last_command.message = rewritten_last_message
 
-        self._log_to_file(output)
+        try:
+            self._log_to_file(output)
+        except Exception as e:
+            print(e)
+
         print(output)
         self._log_history(message, type=EventType.ERROR)
 
@@ -425,8 +429,11 @@ class Memory(object):
             f.write(message + "\n")
 
     def _log_to_file(self, message):
-        with open(self.log_file, "a") as f:
-            f.write(message + "\n")
+        try:
+            with open(self.log_file, "a") as f:
+                f.write(message + "\n")
+        except Exception as e:
+            print(e)
 
     def _log_history(self, message, type: EventType = EventType.COMMAND, unique=False):
         if isinstance(message, dict):

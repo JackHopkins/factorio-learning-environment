@@ -70,6 +70,9 @@ class PlaceEntity(Action):
 
         cleaned_response = self.clean_response(response)
 
+        # map direction to cardinal direction
+        if 'direction' in cleaned_response.keys():
+            cleaned_response['direction'] = cleaned_response['direction']/2
         try:
             object = metaclass(prototype=entity.name, **cleaned_response)
         except Exception as e:

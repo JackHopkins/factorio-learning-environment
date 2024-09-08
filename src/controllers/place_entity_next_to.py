@@ -49,6 +49,10 @@ class PlaceEntityNextTo(Action):
                         for sub_key, sub_value in value.items():
                             response[key].append(sub_value)
 
+                    # map direction to cardinal direction
+            if 'direction' in response.keys():
+                response['direction'] = response['direction'] / 2
+
             try:
                 object = metaclass(prototype=name, **response)
             except Exception as e:

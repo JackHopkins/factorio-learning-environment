@@ -41,10 +41,10 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     --- Northwest - 7
 
     ---local direction_map = {defines.direction.south, defines.direction.north, defines.direction.east, defines.direction.west}
-    local direction_map = {defines.direction.north, defines.direction.east, defines.direction.south, defines.direction.west}
+    --local direction_map = {defines.direction.north, defines.direction.east, defines.direction.south, defines.direction.west}
 
     -- Inserters have upside down directions, weirdly
-    local inserter_direction_map = {defines.direction.south, defines.direction.west, defines.direction.north, defines.direction.east}
+    --local inserter_direction_map = {defines.direction.south, defines.direction.west, defines.direction.north, defines.direction.east}
     --- For inserters
     ---    Place entity DOWN - 0 => UP
     ---   Place entity LEFT - 2
@@ -52,9 +52,10 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     ---    Place entity UP - 6 => LEFT
     ---
 
-    local valid_directions = {0, 2, 4, 6}
+    --local valid_directions = {0, 2, 4, 6}
+    local valid_directions = {0, 1, 2, 3}  -- Factorio uses 0-7, but we're using 0-3 from Python
 
-    if not table_contains(valid_directions, direction*2) then
+    if not table_contains(valid_directions, direction) then
         error("\"Invalid direction "..(direction).." provided. Please use 0 (north), 2 (east), 4 (south), or 6 (west).\"")
     end
 

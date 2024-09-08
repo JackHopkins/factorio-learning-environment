@@ -31,14 +31,32 @@ def test_create_offshore_pump_to_steam_engine(game):
     game.move_to(water_location)
 
     offshore_pump = game.place_entity(Prototype.OffshorePump,
-                                      position=water_location,
-                                      direction=Direction.RIGHT)
+                                      position=water_location)
+    # Get offshore pump direction
+    direction = Direction(offshore_pump.direction)
+
+    # Get opposite direction
+    opposite_direction = Direction((direction.value + 2) % 4)
+
+    # pump connection point
+    pump_connection_point = offshore_pump.connection_points[0]
 
     # place the boiler next to the offshore pump
     boiler = game.place_entity_next_to(Prototype.Boiler,
                                        reference_position=offshore_pump.position,
-                                       direction=Direction.RIGHT,
+                                       direction=opposite_direction,
                                        spacing=2)
+    # orthogonal direction to the boiler
+    orthogonal_direction = Direction((direction.value + 1) % 4)
+
+    # rotate the boiler to face the offshore pump
+    boiler = game.rotate_entity(boiler, orthogonal_direction)
+
+    # boiler connection point
+    boiler_connection_point = boiler.connection_points[0]
+
+    # connect the boiler and offshore pump with a pipe
+    game.connect_entities(offshore_pump, boiler, connection_type=Prototype.Pipe)
 
     game.move_to(Position(x=0, y=10))
     steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=Position(x=0, y=10))

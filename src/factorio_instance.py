@@ -30,6 +30,28 @@ global var
 var = {}
 
 class Direction(Enum):
+    UP = NORTH = 0
+    RIGHT = EAST = 2
+    DOWN = SOUTH = 4
+    LEFT = WEST = 6
+
+    @classmethod
+    def opposite(cls, direction):
+        return cls((direction.value + 4) % 8)
+
+    @classmethod
+    def next_clockwise(cls, direction):
+        return cls((direction.value + 2) % 8)
+
+    @classmethod
+    def next_counterclockwise(cls, direction):
+        return cls((direction.value - 2) % 8)
+
+    @classmethod
+    def to_factorio_direction(cls, direction):
+        return direction.value // 2
+
+class DirectionOld(Enum):
     """
     Factorio directions (for some reason they are different from the cardinal directions)
     North - 0
@@ -135,8 +157,8 @@ class FactorioInstance:
         except Exception as e:
             print(e)
             pass
-        self.game_state._initial_score = 0
-        #self.game_state.initial_score, goal = self.score()
+        #self.game_state._initial_score = 0
+        self.game_state.initial_score, goal = self.score()
 
     def print(self, arg):
         self.memory.log_observation(str(arg))

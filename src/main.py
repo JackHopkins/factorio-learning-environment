@@ -132,8 +132,8 @@ if __name__ == '__main__':
     factorio_runner = FactorioRunner(
         #LLMFactory("gpt-4o", beam=1),
         #LLMFactory("claude-3-5-sonnet-20240620", beam=0),
-        #LLMFactory("gpt-4", beam=1),
-                                     LLMFactory("deepseek-coder", beam=0), # model="gpt-4o",#gpt-3.5-turbo",
+        LLMFactory("gpt-4", beam=1),
+                                     #LLMFactory("deepseek-coder", beam=0), # model="gpt-4o",#gpt-3.5-turbo",
                                      #LLMFactory("claude", beam=0),
                                      #LLMFactory("gpt-4o-mini", beam=1),
                                      instance,

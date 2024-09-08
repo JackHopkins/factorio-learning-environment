@@ -145,6 +145,9 @@ class FactorioRunner:
                 # Remove START``` and END``` from the message
                 #content = message.content.replace("START```", "").replace("END```", "")
 
+                if not isinstance(buffer, str):
+                    buffer = buffer.content
+
                 if "START```" in buffer:
                     buffer = buffer.split("START```")[1]
 
@@ -153,7 +156,7 @@ class FactorioRunner:
                 for index, value in enumerate(values):
                     if index not in self.buffer:
                         self.buffer[index] = ""
-                    self.buffer[index] += value
+                    self.buffer[index] += value+'\n'
         
         # Anthropic Support
         elif isinstance(chunk_generator, Message):
@@ -167,12 +170,12 @@ class FactorioRunner:
             if "START```" in buffer:
                 buffer = buffer.split("START```")[1]
 
-            values = buffer.split("\n\n")
+            values = buffer.split("\n")
             # set self.buffer to be a dict indexed by the index of the choice
             for index, value in enumerate(values):
                 if index not in self.buffer:
                     self.buffer[index] = ""
-                self.buffer[index] += value
+                self.buffer[index] += value+'\n'
         else:
             # Accumulate the entire content
             for chunk in chunk_generator.choices:
@@ -193,8 +196,8 @@ class FactorioRunner:
                 buffer = buffer.replace('```python', "")
                 if self.is_valid_python(buffer):
                     response = self._execute_buffer(buffer)
-                    #if response:
-                    #    self.memory.log_observation(response)
+                    if response:
+                        self.memory.log_observation(response)
                     self.buffer[index] = ""
                 elif self.is_valid_python("# " + buffer):
                     comment_line = ("\n".join(["# "+line for line in buffer.split('\n')])+"\n")

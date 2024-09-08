@@ -60,6 +60,9 @@ class Position(BaseModel):
     def __add__(self, other):
         return Position(x=self.x + other.x, y=self.y + other.y)
 
+    def is_close(self, a: 'Position', tolerance: float = 0.1):
+        return abs(self.x - a.x) < tolerance and abs(self.y - a.y) < tolerance
+
 
 class BoundingBox(BaseModel):
     left_top: Position

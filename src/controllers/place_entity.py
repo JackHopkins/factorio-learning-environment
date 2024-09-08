@@ -47,8 +47,8 @@ class PlaceEntity(Action):
         except Exception as e:
             raise Exception(f"Passed in {entity} argument is not a valid Prototype", e)
 
-        if direction.value > 3 or direction.value < 0:
-            raise Exception("Directions are between 0-3")
+        #if direction.value > 3 or direction.value < 0:
+        #    raise Exception("Directions are between 0-3")
 
         #if relative:
         #    x -= self.game_state.last_observed_player_location[0]
@@ -57,8 +57,10 @@ class PlaceEntity(Action):
         if exact:
             pass
 
+        factorio_direction = Direction.to_factorio_direction(direction)
+
         try:
-            response, elapsed = self.execute(PLAYER, name, direction.value, x, y, exact)
+            response, elapsed = self.execute(PLAYER, name, factorio_direction, x, y, exact)
         except Exception as e:
             raise Exception(f"Could not place {name} at ({x}, {y})", e)
 

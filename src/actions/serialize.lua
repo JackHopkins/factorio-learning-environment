@@ -538,6 +538,15 @@ global.utils.serialize_entity = function(entity)
     if entity.type == "inserter" then
         serialized.pickup_position = entity.pickup_position
         serialized.drop_position = entity.drop_position
+
+		local api_direction_map = {
+            [defines.direction.south] = 0,  -- North in API
+            [defines.direction.west] = 4,   -- East in API
+            [defines.direction.north] = 8,  -- South in API
+            [defines.direction.east] = 12    -- West in API
+        }
+        serialized.direction = api_direction_map[entity.direction]
+
 		local burner = entity.burner
        	if burner then
             add_burner_inventory(serialized, burner)

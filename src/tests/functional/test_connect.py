@@ -1,3 +1,7 @@
+import sys
+sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\src")
+sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser")
+
 from time import sleep
 from typing import List
 
@@ -24,9 +28,9 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
     steam_engines_in_inventory = game.inspect_inventory()[Prototype.SteamEngine]
     pipes_in_inventory = game.inspect_inventory()[Prototype.Pipe]
 
-    boiler: Entity = game.place_entity(Prototype.Boiler, position=Position(x=0, y=0))
+    boiler: Entity = game.place_object(Prototype.Boiler, position=Position(x=0, y=0))
     game.move_to(Position(x=0, y=10))
-    steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=Position(x=0, y=10))
+    steam_engine: Entity = game.place_object(Prototype.SteamEngine, position=Position(x=0, y=10))
 
     try:
         connection: List[Entity] = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
@@ -40,10 +44,10 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
     offsets = [Position(x=10, y=0), Position(x=0, y=-10), Position(x=-10, y=0)]  # Up, Right, Down, Left  (0, -10),
 
     for offset in offsets:
-        boiler: Entity = game.place_entity(Prototype.Boiler, position=Position(x=0, y=0))
+        boiler: Entity = game.place_object(Prototype.Boiler, position=Position(x=0, y=0))
         game.move_to(offset)
 
-        steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=offset)
+        steam_engine: Entity = game.place_object(Prototype.SteamEngine, position=offset)
 
         try:
             connection: List[Entity] = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
@@ -74,7 +78,7 @@ def test_place_and_connect_entities_in_grid(game):
 
     for i in range(grid_size):
         for j in range(grid_size):
-            furnaces[i][j] = game.place_entity(Prototype.StoneFurnace, position=Position(x=1+(i*3), y=1+(j*3)))
+            furnaces[i][j] = game.place_object(Prototype.StoneFurnace, position=Position(x=1+(i*3), y=1+(j*3)))
 
     for i in range(grid_size):
         for j in range(grid_size - 1):
@@ -115,13 +119,13 @@ def test_basic_connection_between_furnace_and_miner(game):
     coal: Position = game.nearest(Resource.Coal)
     furnace_position = Position(x=coal.x, y=coal.y - 10)
     game.move_to(furnace_position)
-    furnace = game.place_entity(Prototype.StoneFurnace, position=furnace_position)
-    inserter = game.place_entity_next_to(Prototype.BurnerInserter,
+    furnace = game.place_object(Prototype.StoneFurnace, position=furnace_position)
+    inserter = game.place_object_next_to(Prototype.BurnerInserter,
                                          reference_position=furnace.position,
                                          direction=game.RIGHT,
                                          spacing=0.5)
     game.move_to(coal)
-    miner = game.place_entity(Prototype.BurnerMiningDrill, position=coal)
+    miner = game.place_object(Prototype.BurnerMiningDrill, position=coal)
 
     belts_in_inventory = game.inspect_inventory()[Prototype.TransportBelt]
     try:
@@ -157,7 +161,7 @@ def test_burner_inserter_grid_with_coal_movement(game):
             # Place burner inserters with orientation to pass items to the left and up
             # Assuming the orientation is controlled by a parameter in place_entity
             try:
-                inserters[i][j] = game.place_entity(Prototype.BurnerInserter,
+                inserters[i][j] = game.place_object(Prototype.BurnerInserter,
                                                     position=(i, j),
                                                     direction=game.RIGHT)
             except Exception as e:
@@ -168,7 +172,7 @@ def test_burner_inserter_grid_with_coal_movement(game):
             # Place burner inserters with orientation to pass items to the left and up
             # Assuming the orientation is controlled by a parameter in place_entity
             try:
-                inserters[i][j] = game.place_entity(Prototype.BurnerInserter,
+                inserters[i][j] = game.place_object(Prototype.BurnerInserter,
                                                     position=Position(x=i, y=j),
                                                     direction=game.UP)
             except Exception as e:
@@ -176,8 +180,8 @@ def test_burner_inserter_grid_with_coal_movement(game):
 
     try:
         # Place coal at the bottom right inserter
-        source = game.place_entity(Prototype.IronChest, position=inserters[-1][-1].pickup_position)
-        target = game.place_entity(Prototype.IronChest, position=inserters[0][0].drop_position)
+        source = game.place_object(Prototype.IronChest, position=inserters[-1][-1].pickup_position)
+        target = game.place_object(Prototype.IronChest, position=inserters[0][0].drop_position)
         game.insert_item(Prototype.Coal, source, 50)
         # Wait for some time to allow coal to move, assuming there's a method to wait in game
         sleep(60)  # Wait for 200 ticks or adjust as needed based on game speed
@@ -211,8 +215,8 @@ def test_failure_to_connect_adjacent_furnaces(game):
     iron_position = game.nearest(Resource.IronOre)
     game.move_to(iron_position)
 
-    drill = game.place_entity(Prototype.BurnerMiningDrill, position=iron_position, direction=Direction.UP)
-    furnace = game.place_entity_next_to(Prototype.StoneFurnace, reference_position=drill.position, direction=Direction.LEFT, spacing=1)
+    drill = game.place_object(Prototype.BurnerMiningDrill, position=iron_position, direction=Direction.UP)
+    furnace = game.place_object_next_to(Prototype.StoneFurnace, reference_position=drill.position, direction=Direction.LEFT, spacing=1)
     game.connect_entities(source=drill, target=furnace, connection_type=Prototype.TransportBelt)
 
     print()

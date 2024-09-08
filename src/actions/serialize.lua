@@ -382,25 +382,25 @@ global.utils.serialize_fluidbox = function(fluidbox)
 end
 
 local function get_offshore_pump_pipe_position(entity)
-    local x, y = entity.position.x, entity.position.y
-    local orientation = entity.orientation
+	local x, y = entity.position.x, entity.position.y
+	local orientation = entity.orientation
 
-    local dx, dy
-    if orientation == defines.direction.north then
-        dx, dy = 0, -1
-    elseif orientation == defines.direction.south then
-        dx, dy = 0, 1
-    elseif orientation == defines.direction.east then
-        dx, dy = 1, 0
-    elseif orientation == defines.direction.west then
-        dx, dy = -1, 0
-    end
+	local dx, dy
+	if orientation == defines.direction.north then
+		dx, dy = 0, -1
+	elseif orientation == defines.direction.south then
+		dx, dy = 0, 1
+	elseif orientation == defines.direction.east then
+		dx, dy = 1, 0
+	elseif orientation == defines.direction.west then
+		dx, dy = -1, 0
+	end
 
-    local pipe_position = {
-        water_output = {x = x, y = y - 1*dy}
-    }
+	if dy == nil then
+		return { {x = x, y = y - 1} }
+	end
 
-    return { {x = x, y = y - 1*dy} }
+	return { {x = x, y = y - 1*dy} }
 end
 
 local function get_pipe_positions(entity)

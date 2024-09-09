@@ -5,6 +5,7 @@ class Reward(Action):
 
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
+        self.name = "score"
         self.game_state = game_state
 
     def __call__(self, *args, **kwargs):
@@ -21,6 +22,6 @@ class Reward(Action):
 
 
 if __name__ == "__main__":
-    score = VerySmartNumber("connection", 0)
+    score = Score("connection", 0)
     score.load()
     pass

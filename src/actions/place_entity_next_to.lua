@@ -1,4 +1,4 @@
-global.actions.place_object_next_to = function(player_index, entity, ref_x, ref_y, direction, gap)
+global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_y, direction, gap)
     --- Places an entity next to a reference entity:
     --- Find the reference entity at (ref_x, ref_y)
     --- If there is a reference entity, find the edge of the entity in the `direction`, take a step of size `gap` before placing the entity.

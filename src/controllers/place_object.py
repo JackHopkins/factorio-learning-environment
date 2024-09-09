@@ -10,6 +10,7 @@ class PlaceObject(Action):
 
     def __init__(self, *args):
         super().__init__(*args)
+        self.name = "place_entity"
 
     def __call__(self,
                  entity: Prototype,

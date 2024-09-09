@@ -6,7 +6,7 @@ from factorio_instance import PLAYER, Direction
 from factorio_types import Prototype
 
 
-class PlaceObjectNextTo(Action):
+class PlaceEntityNextTo(Action):
 
     def __init__(self, *args):
         super().__init__(*args)

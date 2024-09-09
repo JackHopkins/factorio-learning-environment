@@ -1,4 +1,4 @@
-global.actions.place_object = function(player_index, entity, direction, x, y, exact)
+global.actions.place_entity = function(player_index, entity, direction, x, y, exact)
     local player = game.players[player_index]
     local position = {x=x, y=y}
 

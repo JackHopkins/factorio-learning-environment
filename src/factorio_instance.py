@@ -94,6 +94,8 @@ class FactorioInstance:
         self.actions = _load_actions()
 
         self.script_dict = {**self.actions, **_load_init()}
+        # rename place_object to place_entity
+        self.script_dict['place_entity'] = self.script_dict.pop('place_object')
         self.initial_inventory = inventory
         self.initialise(**inventory)
         self._load_actions(self.rcon_client, self.game_state)
@@ -188,7 +190,8 @@ class FactorioInstance:
                 module_spec.loader.exec_module(module)
 
                 class_name = snake_to_camel(module_name)
-
+                if module_name == "place_entity":
+                    class_name = "PlaceObject"
                 # Get the callable class
                 callable_class = getattr(module, class_name)
 

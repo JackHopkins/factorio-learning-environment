@@ -102,7 +102,7 @@ class FactorioInstance:
         self.observe_all()
         self._tasks = []
 
-        self._initial_score, goal = self.reward()
+        self._initial_score, goal = self.score()
 
         # Available objects that the agent can interact with
         self.Prototype = Prototype
@@ -192,6 +192,8 @@ class FactorioInstance:
                 class_name = snake_to_camel(module_name)
                 if module_name == "place_entity":
                     class_name = "PlaceObject"
+                if module_name == "score":
+                    class_name = "Reward"
                 # Get the callable class
                 callable_class = getattr(module, class_name)
 
@@ -271,7 +273,7 @@ class FactorioInstance:
                 results[index] = error_message
                 break
 
-        score, goal = self.reward()
+        score, goal = self.score()
         return score, goal, '\n'.join([f"{i}: {str(r)}" for i, r in results.items()])
 
     def eval_with_error(self, expr, timeout=60):

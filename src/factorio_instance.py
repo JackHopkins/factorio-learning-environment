@@ -94,8 +94,6 @@ class FactorioInstance:
         self.actions = _load_actions()
 
         self.script_dict = {**self.actions, **_load_init()}
-        # rename place_object to place_entity
-        self.script_dict['place_entity'] = self.script_dict.pop('place_object')
         self.initial_inventory = inventory
         self.initialise(**inventory)
         self._load_actions(self.rcon_client, self.game_state)

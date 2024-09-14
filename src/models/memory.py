@@ -188,8 +188,8 @@ To interact with your world, you must only use the methods from this python API 
 Regarding coordinates: 
 - a more positive X value goes to the right. 
 - a more positive Y value goes down.
-
-Enclose your interaction with START``` and END``` tags."""
+"""
+#Enclose your interaction with START``` and END``` tags."""
 
 
 class Memory(object):

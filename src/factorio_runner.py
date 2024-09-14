@@ -141,7 +141,7 @@ class FactorioRunner:
 
         if isinstance(chunk_generator, ChatCompletion):
             for index, choice in enumerate(chunk_generator.choices):
-                buffer = choice.message
+                buffer = choice.message.content if not isinstance(choice.message, str) else choice.message
                 # Remove START``` and END``` from the message
                 #content = message.content.replace("START```", "").replace("END```", "")
 

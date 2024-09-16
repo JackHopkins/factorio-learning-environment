@@ -10,6 +10,11 @@ from factorio_types import Prototype, Resource
 
 @pytest.fixture()
 def game(instance):
+    instance.initial_inventory = {
+        **instance.initial_inventory,
+        'stone-furnace': 1,
+        'burner-inserter': 5,
+    }
     instance.reset()
     yield instance
 
@@ -216,3 +221,41 @@ def test_failure_to_connect_adjacent_furnaces(game):
     game.connect_entities(source=drill, target=furnace, connection_type=Prototype.TransportBelt)
 
     print()
+
+def test_inserter_pickup_positions(game):
+
+    # Lay belts from intermediate position to iron position (along X-axis)
+    try:
+        iron_position = game.nearest(Resource.IronOre)
+        far_left_of_iron = Position(x=iron_position.x + 10, y=iron_position.y)
+        left_of_iron = Position(x=iron_position.x + 1, y=iron_position.y)
+        coal_belt_part2 = game.connect_entities(far_left_of_iron, left_of_iron,
+                                                connection_type=Prototype.TransportBelt)
+    except Exception as e:
+        print(e)
+
+    # Place the iron mining drill at iron_position, facing down
+    move_to_iron = game.move_to(iron_position)
+    iron_drill = game.place_entity(Prototype.BurnerMiningDrill, position=iron_position, direction=Direction.DOWN)
+
+    # Place an inserter to fuel the iron drill from the coal belt
+    inserter_position = Position(x=iron_drill.position.x + iron_drill.tile_dimensions.tile_width / 2,
+                                 y=iron_drill.position.y - 1)
+
+    iron_drill_fuel_inserter = game.place_entity(Prototype.BurnerInserter, position=inserter_position,
+                                                     direction=Direction.LEFT)
+    # Extend coal belt to pass next to the furnace position
+    furnace_position = Position(x=iron_drill.drop_position.x, y=iron_drill.drop_position.y + 1)
+
+    # Place the furnace at the iron drill's drop position
+    iron_furnace = game.place_entity(Prototype.StoneFurnace, position=furnace_position)
+
+    # Place an inserter to fuel the furnace from the coal belt
+    furnace_fuel_inserter_position = Position(x=iron_furnace.position.x + 1, y=iron_furnace.position.y)
+    furnace_fuel_inserter = game.place_entity(Prototype.BurnerInserter, position=furnace_fuel_inserter_position,
+                                              direction=Direction.LEFT)
+
+    coal_belt_to_furnace = game.connect_entities(iron_drill_fuel_inserter.pickup_position,
+                                                 furnace_fuel_inserter.pickup_position,
+                                                 connection_type=Prototype.TransportBelt)
+    pass

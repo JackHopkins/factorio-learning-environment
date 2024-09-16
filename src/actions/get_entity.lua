@@ -8,15 +8,21 @@ global.actions.get_entity = function(player_index, entity, x, y)
     end
 
     local prototype = game.entity_prototypes[entity]
-    local collision_box = prototype.collision_box
-    local width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
-    local height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y)
+    --local collision_box = prototype.collision_box
+    local width = 0.5--math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
+    local height = 0.5--math.abs(collision_box.right_bottom.y - collision_box.left_top.y)
+
+    game.print("Width: " .. width)
+    game.print("Height: " .. height)
 
     local target_area = {
-        {position.x - width / 2, position.y - height / 2},
-        {position.x + width / 2, position.y + height / 2}
+        {position.x - width , position.y - height },
+        {position.x + width , position.y + height }
     }
-    local entities = player.surface.find_entities_filtered{area = target_area, name = entity}
+    --local entities = player.surface.find_entities_filtered{area = target_area} --, name = entity}
+    local entities = player.surface.find_entities_filtered{area = target_area}
+    game.print("Number of entities found: " .. #entities)
+
     if #entities > 0 then
         local entity = entities[1]  -- get the first entity of the specified type in the area
         local serialized = global.utils.serialize_entity(entity)

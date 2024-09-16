@@ -91,6 +91,7 @@ def test_place_entities_of_different_sizes(game):
                 game.reset()
                 game.move_to(nearby_position)
 
+
 def test_place_pipe_next_to_offshore_pump(game):
     ref_proto = Prototype.OffshorePump
     placed_proto = Prototype.Pipe

@@ -37,6 +37,8 @@ class InspectEntities(Action):
             if isinstance(response, dict):
                 entity_list = list(response.values())
                 for entity in entity_list:
+                    if entity["name"] == "laser_beam":
+                        continue
                     position = tuple(entity["position"].values())
 
                     #if relative:

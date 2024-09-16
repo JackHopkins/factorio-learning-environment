@@ -6,6 +6,8 @@ import numpy as np
 from controllers._action import Action
 from typing import Tuple, List, Union
 
+from controllers.get_path import GetPath
+from controllers.request_path import RequestPath
 from factorio_entities import Entity, Boiler, FluidHandler, Position, Generator, Inserter, MiningDrill, TransportBelt, \
     OffshorePump
 from factorio_instance import PLAYER
@@ -17,6 +19,8 @@ class ConnectEntities(Action):
     def __init__(self, connection, game_state):
         self.game_state = game_state
         super().__init__(connection, game_state)
+        self.request_path = RequestPath(connection, game_state)
+        self.get_path = GetPath(connection, game_state)
 
     def _get_nearest_connection_point(self,
                                       fluid_handler_source: FluidHandler,
@@ -193,22 +197,33 @@ class ConnectEntities(Action):
                 target_position = Position(x=target_entity.position.x + x_sign*source_entity.tile_dimensions.tile_width/2,
                                            y=target_entity.position.y + y_sign*source_entity.tile_dimensions.tile_height/2)
 
+        if target_entity and isinstance(target, Entity):
+            path_handle = self.request_path(start=Position(x=target_entity.position.x-0.5,
+                                                           y=target_entity.position.y-0.5), finish=source_position)
+        else:
+            path_handle = self.request_path(start=Position(x=target_position.x-0.5,
+                                                           y=target_position.y-0.5), finish=source_position)
+
         response, elapsed = self.execute(PLAYER,
                                          source_position.x,
                                          source_position.y,
                                          target_position.x,
                                          target_position.y,
+                                         #path_handle,
                                          connection_prototype)
-        if not isinstance(response, dict):
+        if not isinstance(response, dict) and response != "Passed":
             message = response.split(":")[-1]
             raise Exception(f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}.", message.lstrip())
 
+        entities_list = response.values()#.get('entities', {}).values()
         path = []
-        for key, value in response.items():
+        for value in entities_list:
             if isinstance(value, dict):
                 try:
                     path.append(metaclass(prototype=connection_type, **value))
                 except Exception as e:
+                    if not value:
+                        continue
                     raise Exception(f"Could not create {connection_prototype} object from response: {response}", e)
 
         return path

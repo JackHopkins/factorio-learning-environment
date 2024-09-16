@@ -1,6 +1,6 @@
 global.actions.place_entity = function(player_index, entity, direction, x, y, exact)
     local player = game.players[player_index]
-    local position = {x=x, y=y}
+    local position = {x = x, y = y}
 
     -- If character exists on the map, use its reach distance
     local max_distance
@@ -23,8 +23,12 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
     local function get_entity_direction(entity, direction)
         local prototype = game.entity_prototypes[entity]
-        --local cardinals = {defines.direction.north, defines.direction.south, defines.direction.east, defines.direction.west}
-        local cardinals = {defines.direction.north, defines.direction.east, defines.direction.south, defines.direction.west}
+        local cardinals = {
+            defines.direction.north,
+            defines.direction.east,
+            defines.direction.south,
+            defines.direction.west
+        }
 
         if prototype and prototype.name == "offshore-pump" then
             if direction == 1 then
@@ -37,39 +41,26 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 return defines.direction.west
             end
         end
-        local direction_map = {defines.direction.north, defines.direction.east, defines.direction.south, defines.direction.west}
 
         if prototype and prototype.type == "inserter" then
-            -- For some reason there is weird directionality of inserters
-            if direction == 1 then
-                return cardinals[direction+1 % 4]
-                --return defines.direction.north
+            --return cardinals[(direction % 4)]
+            if direction == 0 then
+                return defines.direction.south
+            elseif direction == 1 then
+                return defines.direction.west
             elseif direction == 2 then
-                return cardinals[direction+1 % 4]
-            elseif direction == 3 then
-                return cardinals[direction+1 % 4]
+                return defines.direction.north
             else
-                return cardinals[direction+1 % 4]
+                return defines.direction.east
             end
-        elseif  prototype.type == "mining-drill" then
-            game.print("Mining drill")
-
-            ---    UP = NORTH = 0 => 1
-            ---    RIGHT = EAST = 4 => 6
-            ---    LEFT = WEST = 3 => 4
-            ---    DOWN = BELOW = BOTTOM = 2 => 2
-
+        elseif prototype.type == "mining-drill" then
             if direction == 1 then
-                game.print("Direction 1")
                 return cardinals[2]
             elseif direction == 2 then
-                game.print("Direction 2")
                 return cardinals[3]
             elseif direction == 3 then
-                game.print("Direction 3")
                 return cardinals[4]
             else
-                game.print("Direction "..direction)
                 return cardinals[1]
             end
         else
@@ -79,14 +70,14 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
     if game.entity_prototypes[entity] == nil then
         local name = entity:gsub(" ", "_"):gsub("-", "_")
-        error(name .. " isnt something that exists. Did you make a typo? ")
+        error(name .. " isn't something that exists. Did you make a typo?")
     end
 
     local count = player.get_item_count(entity)
 
     if count == 0 then
         local name = entity:gsub(" ", "_"):gsub("-", "_")
-        error("No ".. name .." in inventory.")
+        error("No " .. name .. " in inventory.")
     end
 
     local prototype = game.entity_prototypes[entity]
@@ -101,7 +92,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             {player.position.x + character_box.right_bottom.x, player.position.y + character_box.right_bottom.y}
         }
         return (character_area[1][1] < target_area[2][1] and character_area[2][1] > target_area[1][1]) and
-                (character_area[1][2] < target_area[2][2] and character_area[2][2] > target_area[1][2])
+               (character_area[1][2] < target_area[2][2] and character_area[2][2] > target_area[1][2])
     end
 
     local target_area = {
@@ -113,10 +104,40 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         player.teleport({player.position.x + width + 1, player.position.y}, player.surface)
     end
 
-    local can_build = player.can_place_entity{name=entity, force=player.force, position=position, direction=get_entity_direction(entity, direction)}
+    -- **Modified Code Starts Here**
+    -- Check for pre-existing entities and pick them up first
+    --local existing_entities = player.surface.find_entities_filtered{radius = 0.5, position = position}
+    --for _, existing_entity in pairs(existing_entities) do
+    --    if existing_entity ~= player.character and existing_entity.valid then
+    --        if existing_entity.prototype.selectable_in_game then
+    --            local can_reach = player.can_reach_entity(existing_entity)
+    --            if not can_reach then
+    --                error("Cannot reach existing entity " .. existing_entity.name .. " at position (" .. existing_entity.position.x .. ", " .. existing_entity.position.y .. ").")
+    --            end
+    --            --local success = player.mine_entity(existing_entity)
+    --            if not existing_entity.minable then
+    --                local success = global.actions.pickup_entity(player.index, existing_entity.position.x, existing_entity.position.y, existing_entity.name)
+    --                if not success then
+    --                    error("Cannot pick up existing entity " .. existing_entity.name .. " at position (" .. existing_entity.position.x .. ", " .. existing_entity.position.y .. ").")
+    --                else
+    --                    game.print("Picked up existing entity " .. existing_entity.name .. " at position (" .. existing_entity.position.x .. ", " .. existing_entity.position.y .. ").")
+    --                end
+    --            end
+    --        else
+    --            error("Cannot pick up existing entity " .. existing_entity.name .. " at position (" .. existing_entity.position.x .. ", " .. existing_entity.position.y .. "). It is not minable.")
+    --        end
+    --    end
+    --end
+    -- **Modified Code Ends Here**
 
-    if can_build == false or can_build == 0 then
+    local can_build = player.can_place_entity{
+        name = entity,
+        force = player.force,
+        position = position,
+        direction = get_entity_direction(entity, direction)
+    }
 
+    if not can_build then
         if not exact then
             local radius = 1
             local max_radius = 10
@@ -127,9 +148,13 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 for dx = -radius, radius do
                     for dy = -radius, radius do
                         if dx == -radius or dx == radius or dy == -radius or dy == radius then
-
                             new_position = {x = position.x + dx, y = position.y + dy}
-                            can_build = player.can_place_entity{name=entity, force=player.force, position=new_position, direction=get_entity_direction(entity, direction)}
+                            can_build = player.can_place_entity{
+                                name = entity,
+                                force = player.force,
+                                position = new_position,
+                                direction = get_entity_direction(entity, direction)
+                            }
                             if can_build then
                                 found_position = true
                                 break
@@ -142,104 +167,105 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             end
 
             if found_position then
-                local have_built = player.surface.create_entity{name=entity, force="player", position=new_position, direction=get_entity_direction(entity, direction), player=player}
+                local have_built = player.surface.create_entity{
+                    name = entity,
+                    force = "player",
+                    position = new_position,
+                    direction = get_entity_direction(entity, direction),
+                    player = player
+                }
                 if have_built then
-                    player.remove_item{name=entity, count=1}
-
-                    local placed_entity = player.surface.find_entity(entity, new_position)
-
-                    game.print("Placed "..entity.." at "..placed_entity.position.x..","..placed_entity.position.y)
-                    --game.print(dump(entity))
-
-                    local serialized = global.utils.serialize_entity(placed_entity)
-                   -- local entity_json = game.table_to_json(serialized)-- game.table_to_json(entity)
-                    --game.print(entity_json)
-                    return serialized
+                    player.remove_item{name = entity, count = 1}
+                    --local placed_entity = player.surface.find_entity(entity, new_position)
+                    --game.print("Placed " .. entity .. " at " .. placed_entity.position.x .. ", " .. placed_entity.position.y)
+                    --local serialized = global.utils.serialize_entity(placed_entity)
+                    --return serialized
+                    return global.actions.get_entity(player_index, entity, new_position.x, new_position.y)
                 end
             else
                 error("Could not find a suitable position to place " .. entity .. " near the target location.")
             end
         else
-            local entities = player.surface.find_entities_filtered{area = target_area, type = "entity"}
-            local blocking_entities = {}
-
-            for _, blocking_entity in ipairs(entities) do
-                local entity_box = blocking_entity.prototype.collision_box
-                local entity_area = {
-                    {blocking_entity.position.x + entity_box.left_top.x, blocking_entity.position.y + entity_box.left_top.y},
-                    {blocking_entity.position.x + entity_box.right_bottom.x, blocking_entity.position.y + entity_box.right_bottom.y}
-                }
-
-                if (entity_area[1][1] < target_area[2][1] and entity_area[2][1] > target_area[1][1]) and
-                        (entity_area[1][2] < target_area[2][2] and entity_area[2][2] > target_area[1][2]) then
-
-                    local name = blocking_entity.name
-                    local size = " with the size "..width
-                    table.insert(blocking_entities, name..size)
+            --local existing_entity = global.actions.get_entity(player_index, entity, position.x, position.y)
+            local area = {{position.x - 0.25, position.y - 0.25}, {position.x + 0.25, position.y + 0.25}}
+            local entities = player.surface.find_entities_filtered{area = area, force = "player"}
+            for _, existing_entity in pairs(entities) do
+                --if existing_entity.name == entity then
+                --local success = global.actions.pickup_entity(player_index, existing_entity.position.x, existing_entity.position.y, existing_entity.name)
+                if existing_entity.can_be_destroyed() then
+                    game.print("Picked up "..existing_entity.name)
+                    pcall(existing_entity.destroy{raise_destroy=false, do_cliff_correction=false})
                 end
+
+                --end
             end
-            if #blocking_entities > 0 then
-                error("Cant place there due to existing " .. table.concat(blocking_entities, "___") .. ", Need "..width.." space. Maybe inspect your surroundings.")
-            else
-                local resource_present, missing_resource = required_resource_present(entity, position, player.surface)
-
-                local water_tile_present = false
-                local tile = player.surface.get_tile(position)
-                --for _, tile in ipairs(tiles) do
-                if tile.prototype.collision_mask["ground-tile"] then
-                    water_tile_present = true
-                end
-
-                if not resource_present then
-                    error("Cannot place " .. entity .. " due to missing " .. missing_resource .. " on the tile.")
-                elseif entity == "offshore-pump" and not water_tile_present then
-                    error("Cannot place " .. entity .. " as a single water tile is required.")
-                else
-                    -- Check for overlapping entities
-                    local overlapping_entities = player.surface.find_entities_filtered{area = target_area}
-                    local blocking_entities = {}
-
-                    for _, overlapping_entity in ipairs(overlapping_entities) do
-                        if overlapping_entity.prototype.collision_box and not overlapping_entity.prototype.has_flag("not-on-map") then
-                        --if overlapping_entity.prototype.collision_box and not overlapping_entity.prototype.has_flag("placeable_off_grid") then
-                            local name = overlapping_entity.name:gsub(" ", "_"):gsub("-", "_")
-                            table.insert(blocking_entities, name)
-                        end
-                    end
-
-                    if #blocking_entities > 0 then
-                        error("Cannot place " .. entity .. " due to existing " .. table.concat(blocking_entities, ", ") .. " at the target position.")
-                    else
-                        error("Maybe inspect your surroundings before placing")
-                    end
-                end
-
-            end
+           -- local success = global.actions.pickup_entity(player.index, position.x, position.y, entity)
+           -- if not success then
+             --   error("Cannot place " .. entity .. " at the exact position due to obstacles.")
+            --end
+        --    error("Cannot place " .. entity .. " at the exact position due to obstacles.")
+        end
+        can_build = player.can_place_entity{
+            name = entity,
+            force = player.force,
+            position = position,
+            direction = get_entity_direction(entity, direction)
+        }
+        if not can_build then
+            error("Cannot place " .. entity .. " at the target location.")
+        end
+        local have_built = player.surface.create_entity{
+            name = entity,
+            force = "player",
+            position = position,
+            direction = get_entity_direction(entity, direction),
+            player = player
+        }
+        if have_built then
+            --game.print("Placed " .. entity .. " at " .. position.x .. ", " .. position.y)
+            player.remove_item{name = entity, count = 1}
+            return global.actions.get_entity(player_index, entity, position.x, position.y)
+            --local placed_entity = player.surface.find_entity(entity, position)
+            --game.print("Placed " .. entity .. " at " .. placed_entity.position.x .. ", " .. placed_entity.position.y)
+            --local serialized = global.utils.serialize_entity(placed_entity)
+            --return serialized
         end
     else
-        local have_built = player.surface.create_entity{name=entity, force="player", position=position, direction=get_entity_direction(entity, direction), player=player}
+
+        local have_built = player.surface.create_entity{
+            name = entity,
+            force = "player",
+            position = position,
+            direction = get_entity_direction(entity, direction),
+            player = player
+        }
         if have_built then
-            player.remove_item{name=entity, count=1}
+            game.print("Placed " .. entity .. " at " .. position.x .. ", " .. position.y)
+            player.remove_item{name = entity, count = 1}
+            local width = 0.5
+            local height = 0.5
+             local target_area = {
+                {position.x - width , position.y - height },
+                {position.x + width , position.y + height }
+            }
+            --local entities = player.surface.find_entities_filtered{area = target_area} --, name = entity}
+            local entities = player.surface.find_entities_filtered{area = target_area, name = entity}
+            game.print("Number of entities found: " .. #entities)
 
-            local entities = player.surface.find_entities_filtered{name=entity, area = {{position.x - 1, position.y - 1}, {position.x + 1, position.y + 1}}}
-            local placed_entity = nil
+             if #entities > 0 then
+                local entity = entities[1]  -- get the first entity of the specified type in the area
+                local serialized = global.utils.serialize_entity(entity)
+                local entity_json = game.table_to_json(serialized)-- game.table_to_json(entity
+                return serialized
+             end
 
-            for _, ent in ipairs(entities) do
-                game.print(ent.name)
-                game.print(entity)
-                if ent.name == entity then
-                    placed_entity = ent
-                    break
-                end
-            end
-            game.print("Placed "..entity.." at "..placed_entity.position.x..","..placed_entity.position.y)
-            -- game.print(dump(entity))
-
-            local serialized = global.utils.serialize_entity(placed_entity)
-            -- local entity_json = game.table_to_json(serialized)-- game.table_to_json(entity)
-            -- game.print(entity_json)
-            return serialized
-
+            error("Could not find entity")
+            -- local placed_entity = player.surface.find_entity(entity, position)
+            -- game.print("Placed " .. entity .. " at " .. placed_entity.position.x .. ", " .. placed_entity.position.y)
+            -- local serialized = global.utils.serialize_entity(placed_entity)
+            -- return serialized
+            --return global.actions.get_entity(player_index, entity, position.x, position.y)
+            --return global.actions.get_entity(player_index, entity, position.x, position.y)
         end
     end
 end

@@ -122,7 +122,7 @@ class TransportBelt(Entity):
 
 
 class Inserter(Entity):
-    pickup_position: Position
+    pickup_position: Optional[Position] = None
     drop_position: Position
 
 

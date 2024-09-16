@@ -3,7 +3,7 @@ import sys
 import time
 from typing import List, Tuple, Dict, Any, Union
 
-from slpp import slpp as lua
+from slpp import slpp as lua, ParseError
 from timeit import default_timer as timer
 
 from factorio_entities import Position, Entity
@@ -93,8 +93,17 @@ class Action:
                 parsed['b'] = parsed['b'].replace("!!", "\"")
             if not 'b' in parsed:
                 return {}, elapsed
+        except ParseError as e:
+            # If a non-string gets passed back from the Lua script, it will raise a ParseError
+            # Split by `["b"] = ` and take the second part, which is the returned value
+            try:
+                parts = lua_response.split('["b"] = ')
+                return parts[1][:-2], -1
+            except IndexError:
+                return e.args[0], -1
+            return e.args[0], -1
         except Exception as e:
-            return None, -1
+            return e, -1
         return parsed['b'], elapsed
 
     def send(self, command, *parameters, trace=False) -> List[str]:

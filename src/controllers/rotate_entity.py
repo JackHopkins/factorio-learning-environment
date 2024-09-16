@@ -57,6 +57,13 @@ class RotateEntity(Action):
         if 'prototype' not in response.keys():
             response['prototype'] = entity
 
+        # Ensure the position is properly aligned to the grid
+        if 'position' in response:
+            response['position'] = {
+                'x': round(response['position']['x'] * 2) / 2,
+                'y': round(response['position']['y'] * 2) / 2
+            }
+
         if 'direction' in response.keys():
             response['direction'] = response['direction']
 

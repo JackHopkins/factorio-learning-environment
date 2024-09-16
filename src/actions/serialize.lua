@@ -407,15 +407,32 @@ local function get_pipe_positions(entity)
     local x, y = entity.position.x, entity.position.y
     local orientation = entity.orientation
 
-    local dx, dy
-    if orientation == defines.direction.north then
+    local dx, dy = 0, 0
+    if orientation == 0 or orientation == defines.direction.north then
         dx, dy = 0, -1
-    elseif orientation == defines.direction.south then
-        dx, dy = 0, 1
-    elseif orientation == defines.direction.east then
+    elseif orientation == 0.25 or orientation == defines.direction.east then
         dx, dy = 1, 0
-    elseif orientation == defines.direction.west then
+    elseif orientation == 0.5 or orientation == defines.direction.south then
+        dx, dy = 0, 1
+    elseif orientation == 0.75 or orientation == defines.direction.west then
         dx, dy = -1, 0
+    else
+        -- Log detailed information about the unexpected orientation
+        local orientation_info = string.format(
+            "Numeric value: %s, Type: %s, Defines values: N=%s, E=%s, S=%s, W=%s",
+            tostring(orientation),
+            type(orientation),
+            tostring(defines.direction.north),
+            tostring(defines.direction.east),
+            tostring(defines.direction.south),
+            tostring(defines.direction.west)
+        )
+        error(string.format(
+            "Unexpected orientation for entity: %s at position: %s. Orientation info: %s",
+            entity.name,
+            serpent.line(entity.position),
+            orientation_info
+        ))
     end
 
     local pipe_positions = {
@@ -538,6 +555,56 @@ global.utils.serialize_entity = function(entity)
     if entity.type == "inserter" then
         serialized.pickup_position = entity.pickup_position
         serialized.drop_position = entity.drop_position
+
+		-- if pickup_position is nil, compute it from the entity's position and direction
+		if not serialized.pickup_position then
+			local direction = entity.direction
+			local x, y = entity.position.x, entity.position.y
+			if direction == defines.direction.north then
+				serialized.pickup_position = {x = x, y = y - 1}
+			elseif direction == defines.direction.south then
+				serialized.pickup_position = {x = x, y = y + 1}
+			elseif direction == defines.direction.east then
+				serialized.pickup_position = {x = x + 1, y = y}
+			elseif direction == defines.direction.west then
+				serialized.pickup_position = {x = x - 1, y = y}
+			end
+		end
+
+		local burner = entity.burner
+       	if burner then
+            add_burner_inventory(serialized, burner)
+        end
+	end
+
+	-- Add input and output locations if the entity is a splitter
+	if entity.type == "splitter" then
+		serialized.input_position = entity.input_position
+		serialized.output_position = entity.output_position
+	end
+
+	-- Add input and output locations if the entity is a pipe
+	if entity.type == "pipe" then
+		serialized.connections = {}
+		for _, connection in pairs(entity.fluidbox.get_connections(1)) do
+			table.insert(serialized.connections, connection.position)
+		end
+	end
+
+	-- Add input and output locations if the entity is a pipe-to-ground
+	if entity.type == "pipe-to-ground" then
+		serialized.input_position = entity.fluidbox.get_connections(1)[1].position
+		serialized.output_position = entity.fluidbox.get_connections(2)[1].position
+	end
+
+	-- Add input and output locations if the entity is a pump
+	if entity.type == "pump" then
+		serialized.input_position = entity.fluidbox.get_connections(1)[1].position
+		serialized.output_position = entity.fluidbox.get_connections(2)[1].position
+	end
+
+	-- Add input and output locations if the entity is a offshore pump
+	if entity.type == "offshore-pump" then
 
 		local api_direction_map = {
             [defines.direction.south] = 0,  -- North in API

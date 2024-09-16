@@ -57,7 +57,13 @@ def test_create_offshore_pump_to_steam_engine(game):
     game.connect_entities(offshore_pump, boiler, connection_type=Prototype.Pipe)
 
     game.move_to(Position(x=0, y=10))
-    steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=Position(x=0, y=10))
+    steam_engine: Entity = game.place_entity_next_to(Prototype.SteamEngine,
+                                                     reference_position=boiler.position,
+                                                     direction=Direction.RIGHT,
+                                                     spacing=2)
+
+    # connect the boiler and steam engine with a pipe
+    game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
 
 
 

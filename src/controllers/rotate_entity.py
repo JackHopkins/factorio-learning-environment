@@ -32,7 +32,9 @@ class RotateEntity(Action):
             # get metaclass from pydantic model
             metaclass = entity.__class__
 
-            response, elapsed = self.execute(PLAYER, x, y, direction.value)
+            factorio_direction = Direction.to_factorio_direction(direction)
+
+            response, elapsed = self.execute(PLAYER, x, y, factorio_direction)
 
             if not response:
                 raise Exception("Could not rotate.", response)
@@ -75,6 +77,7 @@ class RotateEntity(Action):
             object = metaclass(**response)
         except Exception as e:
             raise Exception(f"Could not create {entity.name} object from response: {response}", e)
+
 
         return object
 

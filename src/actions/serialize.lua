@@ -484,15 +484,143 @@ function add_burner_inventory(serialized, burner)
 	end
 end
 
+function get_entity_direction(entity, direction)
+	--game.print("Getting direction: " .. entity .. " with direction: " .. direction)
+	game.print(direction)
+
+	-- If direction is nil then return north
+	if direction == nil then
+		return defines.direction.north
+	end
+
+    local prototype = game.entity_prototypes[entity]
+    game.print(prototype)
+    local cardinals = {
+        defines.direction.north,
+        defines.direction.east,
+        defines.direction.south,
+        defines.direction.west
+    }
+
+    if prototype and prototype.name == "offshore-pump" then
+        if direction == 1 then
+            return defines.direction.north
+        elseif direction == 4 then
+            return defines.direction.east
+        elseif direction == 3 then
+            return defines.direction.south
+        else
+            return defines.direction.west
+        end
+	elseif prototype and prototype.type == "transport-belt" then
+		game.print("Transport belt direction: " .. direction)
+		if direction == 2 then
+			return defines.direction.north
+		elseif direction == 1 then
+			return defines.direction.west
+		elseif direction == 0 then
+			return defines.direction.south
+		else
+			return defines.direction.east
+		end
+    elseif prototype and prototype.type == "inserter" then
+        --return cardinals[(direction % 4)]
+        if direction == 0 then
+            return defines.direction.south
+        elseif direction == 1 then
+            return defines.direction.west
+        elseif direction == 2 then
+            return defines.direction.north
+        else
+            return defines.direction.east
+        end
+    elseif prototype.type == "mining-drill" then
+        if direction == 1 then
+            return cardinals[2]
+        elseif direction == 2 then
+            return cardinals[3]
+        elseif direction == 3 then
+            return cardinals[4]
+        else
+            return cardinals[1]
+        end
+    else
+        return cardinals[direction]
+    end
+
+    return direction
+end
+
+function get_inverse_entity_direction(entity, factorio_direction)
+    local prototype = game.entity_prototypes[entity]
+
+    if not factorio_direction then
+        return 0  -- Assuming 0 is the default direction in your system
+    end
+
+    if prototype and prototype.name == "offshore-pump" then
+        if factorio_direction == defines.direction.north then
+            return 1
+        elseif factorio_direction == defines.direction.east then
+            return 4
+        elseif factorio_direction == defines.direction.south then
+            return 3
+        else  -- west
+            return 2
+        end
+    end
+
+    if prototype and prototype.type == "inserter" then
+        if factorio_direction == defines.direction.south then
+            return 0
+        elseif factorio_direction == defines.direction.west then
+            return 1
+        elseif factorio_direction == defines.direction.north then
+            return 2
+        else  -- east
+            return 3
+        end
+    elseif prototype and prototype.type == "mining-drill" then
+        if factorio_direction == defines.direction.east then
+            return 1
+        elseif factorio_direction == defines.direction.south then
+            return 2
+        elseif factorio_direction == defines.direction.west then
+            return 3
+        else  -- north
+            return 0
+        end
+    else
+        -- For other entity types, convert Factorio's direction to 0-3 range
+        return math.floor(factorio_direction / 2)
+    end
+end
+
+global.utils.get_entity_direction = get_entity_direction
+
 global.utils.serialize_entity = function(entity)
 
 	if entity == nil then
 		return {}
 	end
+	game.print("Serializing entity: " .. entity.name .. " with direction: " .. entity.direction)
+	local direction = 0
+
+	-- This is needed because the entity.direction on the map is not always the actual direction
+	-- (e.g inserters and offshore pumps have opposite directions on the map to the actual cardinal)
+	if entity.direction ~= nil then
+		direction = get_inverse_entity_direction(entity.name, entity.direction)*2
+	end
+
+	if direction == nil then
+		direction = 0
+	end
+	game.print(direction)
+	game.print("Serializing entity: " .. entity.name .. " with direction: " .. direction)
     local serialized = {
         name = "\""..entity.name.."\"",
         position = entity.position,
-        direction = entity.direction,
+        direction = direction,
         health = entity.health,
         energy = entity.energy,
         type = "\""..entity.type.."\""
@@ -522,15 +650,15 @@ global.utils.serialize_entity = function(entity)
     -- Add input and output locations if the entity is a transport belt
     if entity.type == "transport-belt" then
 		-- input_position is the position upstream of the belt
-		local direction = entity.direction
+		--local direction = entity.direction
 		local x, y = entity.position.x, entity.position.y
-		if direction == defines.direction.north then
+		if entity.direction == defines.direction.north then
 			y = y - 1
-		elseif direction == defines.direction.south then
+		elseif entity.direction == defines.direction.south then
 			y = y + 1
-		elseif direction == defines.direction.east then
+		elseif entity.direction == defines.direction.east then
 			x = x + 1
-		elseif direction == defines.direction.west then
+		elseif entity.direction == defines.direction.west then
 			x = x - 1
 		end
 
@@ -538,13 +666,13 @@ global.utils.serialize_entity = function(entity)
 
 		-- output_position is the position downstream of the belt
 		local x, y = entity.position.x, entity.position.y
-		if direction == defines.direction.north then
+		if entity.direction == defines.direction.north then
 			y = y + 1
-		elseif direction == defines.direction.south then
+		elseif entity.direction == defines.direction.south then
 			y = y - 1
-		elseif direction == defines.direction.east then
+		elseif entity.direction == defines.direction.east then
 			x = x - 1
-		elseif direction == defines.direction.west then
+		elseif entity.direction == defines.direction.west then
 			x = x + 1
 		end
 
@@ -558,15 +686,15 @@ global.utils.serialize_entity = function(entity)
 
 		-- if pickup_position is nil, compute it from the entity's position and direction
 		if not serialized.pickup_position then
-			local direction = entity.direction
+			--local direction = entity.direction
 			local x, y = entity.position.x, entity.position.y
-			if direction == defines.direction.north then
+			if entity.direction == defines.direction.north then
 				serialized.pickup_position = {x = x, y = y - 1}
-			elseif direction == defines.direction.south then
+			elseif entity.direction == defines.direction.south then
 				serialized.pickup_position = {x = x, y = y + 1}
-			elseif direction == defines.direction.east then
+			elseif entity.direction == defines.direction.east then
 				serialized.pickup_position = {x = x + 1, y = y}
-			elseif direction == defines.direction.west then
+			elseif entity.direction == defines.direction.west then
 				serialized.pickup_position = {x = x - 1, y = y}
 			end
 		end
@@ -586,7 +714,7 @@ global.utils.serialize_entity = function(entity)
 	-- Add input and output locations if the entity is a pipe
 	if entity.type == "pipe" then
 		serialized.connections = {}
-		for _, connection in pairs(entity.fluidbox.get_connections(1)) do
+		for _, connection in pairs(entity.fluidbox.get_pipe_connections(1)) do
 			table.insert(serialized.connections, connection.position)
 		end
 	end
@@ -653,7 +781,7 @@ global.utils.serialize_entity = function(entity)
             add_burner_inventory(serialized, burner)
         end
 
-		local direction = entity.direction
+		--local direction = entity.direction
 		local x, y = entity.position.x, entity.position.y
 
 		if direction == defines.direction.north then

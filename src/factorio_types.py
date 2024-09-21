@@ -1,5 +1,4 @@
 import enum
-
 from factorio_entities import *
 
 

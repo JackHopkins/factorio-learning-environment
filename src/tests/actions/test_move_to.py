@@ -22,7 +22,7 @@ def test_move_to(game):
     size = 5
 
     # north
-    game.move_to(Position(x=0, y=-size*3), leading=Prototype.TransportBelt)
+    game.move_to(Position(x=0, y=-size*3), laying=Prototype.TransportBelt)
     # northeast
     game.move_to(Position(x=size, y=-size*2), leading=Prototype.TransportBelt)
     # east

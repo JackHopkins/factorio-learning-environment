@@ -22,6 +22,7 @@ class ConnectEntities(Action):
         self.request_path = RequestPath(connection, game_state)
         self.get_path = GetPath(connection, game_state)
 
+
     def _get_nearest_connection_point(self,
                                       fluid_handler_source: FluidHandler,
                                       existing_connection_position: Position,
@@ -134,6 +135,8 @@ class ConnectEntities(Action):
                                 source_position = Position(x=source_entity.position.x + 1.5, y=source_entity.position.y)
                             else:
                                 source_position = Position(x=source_entity.position.x - 1.5, y=source_entity.position.y)
+
+                        #source_position = Position(x=source_entity.steam_output_point.x, y=source_entity.steam_output_point.y)
                     elif target_entity and isinstance(target_entity, OffshorePump):
                         #target_position = target_entity.connection_points[0]
                         target_position = Position(x=target_entity.connection_points[0].x + 1,
@@ -185,7 +188,8 @@ class ConnectEntities(Action):
                     target_position = self._get_nearest_connection_point(target_entity,
                                                                          source_position,
                                                                          existing_connection_entity=source_entity)
-                    target_position = Position(x=target_position.x+0.5, y=target_position.y+0.5)
+                    #target_position = Position(x=target_position.x+0.5, y=target_position.y+0.5)
+                    target_position = Position(x=target_position.x, y=target_position.y)
 
             elif isinstance(target_entity, Inserter):
                 target_position = target_entity.pickup_position
@@ -197,25 +201,31 @@ class ConnectEntities(Action):
                 target_position = Position(x=target_entity.position.x + x_sign*source_entity.tile_dimensions.tile_width/2,
                                            y=target_entity.position.y + y_sign*source_entity.tile_dimensions.tile_height/2)
 
-        if target_entity and isinstance(target, Entity):
-            path_handle = self.request_path(start=Position(x=target_entity.position.x-0.5,
-                                                           y=target_entity.position.y-0.5), finish=source_position)
-        else:
-            path_handle = self.request_path(start=Position(x=target_position.x-0.5,
-                                                           y=target_position.y-0.5), finish=source_position)
+        # if target_entity and isinstance(target, Entity):
+        #     path_handle = self.request_path(start=Position(x=target_entity.position.x-0.5,
+        #                                                    y=target_entity.position.y-0.5), finish=source_position)
+        # else:
+        #     path_handle = self.request_path(start=Position(x=target_position.x-0.5,
+        #                                                    y=target_position.y-0.5), finish=source_position)
+
+        # Move the source and target positions to the center of the tile
+        #target_position = Position(x=target_position.x+0.5, y=target_position.y+0.5)
+        #source_position = Position(x=source_position.x+0.5, y=source_position.y+0.5)
+        path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y), start=source_position)
 
         response, elapsed = self.execute(PLAYER,
                                          source_position.x,
                                          source_position.y,
                                          target_position.x,
                                          target_position.y,
-                                         #path_handle,
+                                         path_handle,
                                          connection_prototype)
         if not isinstance(response, dict) and response != "Passed":
             message = response.split(":")[-1]
             raise Exception(f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}.", message.lstrip())
 
-        entities_list = response.values()#.get('entities', {}).values()
+        success = response.get('connected', False)
+        entities_list = response.get('entities', {}).values()
         path = []
         for value in entities_list:
             if isinstance(value, dict):

@@ -18,4 +18,4 @@ def test_inspect_entities(game):
 
     inspected = game.inspect_entities(radius=1, position=Position(x=chest.position.x, y=chest.position.y))
 
-    assert len(inspected) == 2
+    assert len(inspected.entities) == 2

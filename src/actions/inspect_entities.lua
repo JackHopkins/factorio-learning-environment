@@ -103,6 +103,9 @@ global.actions.inspect_entities = function(player_index, radius_, position_x, po
             entity_info.crafted_items = data.crafted_items
         end
 
+        --local serialized = global.utils.serialize_entity(data)
+        --table.insert(result, serialized)
+
         table.insert(result, entity_info)
     end
 

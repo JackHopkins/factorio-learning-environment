@@ -21,52 +21,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         error("The target position is too far away to place the entity. Move closer.")
     end
 
-    local function get_entity_direction(entity, direction)
-        local prototype = game.entity_prototypes[entity]
-        local cardinals = {
-            defines.direction.north,
-            defines.direction.east,
-            defines.direction.south,
-            defines.direction.west
-        }
-
-        if prototype and prototype.name == "offshore-pump" then
-            if direction == 1 then
-                return defines.direction.north
-            elseif direction == 4 then
-                return defines.direction.east
-            elseif direction == 3 then
-                return defines.direction.south
-            else
-                return defines.direction.west
-            end
-        end
-
-        if prototype and prototype.type == "inserter" then
-            --return cardinals[(direction % 4)]
-            if direction == 0 then
-                return defines.direction.south
-            elseif direction == 1 then
-                return defines.direction.west
-            elseif direction == 2 then
-                return defines.direction.north
-            else
-                return defines.direction.east
-            end
-        elseif prototype.type == "mining-drill" then
-            if direction == 1 then
-                return cardinals[2]
-            elseif direction == 2 then
-                return cardinals[3]
-            elseif direction == 3 then
-                return cardinals[4]
-            else
-                return cardinals[1]
-            end
-        else
-            return cardinals[direction]
-        end
-    end
 
     if game.entity_prototypes[entity] == nil then
         local name = entity:gsub(" ", "_"):gsub("-", "_")
@@ -80,29 +34,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         error("No " .. name .. " in inventory.")
     end
 
-    local prototype = game.entity_prototypes[entity]
-    local collision_box = prototype.collision_box
-    local width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
-    local height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y)
-
-    local function player_collision(player, target_area)
-        local character_box = player.character.prototype.collision_box
-        local character_area = {
-            {player.position.x + character_box.left_top.x, player.position.y + character_box.left_top.y},
-            {player.position.x + character_box.right_bottom.x, player.position.y + character_box.right_bottom.y}
-        }
-        return (character_area[1][1] < target_area[2][1] and character_area[2][1] > target_area[1][1]) and
-               (character_area[1][2] < target_area[2][2] and character_area[2][2] > target_area[1][2])
-    end
-
-    local target_area = {
-        {position.x - width / 2, position.y - height / 2},
-        {position.x + width / 2, position.y + height / 2}
-    }
-
-    while player_collision(player, target_area) do
-        player.teleport({player.position.x + width + 1, player.position.y}, player.surface)
-    end
+    global.actions.avoid_entity(player_index, entity, position)
 
     -- **Modified Code Starts Here**
     -- Check for pre-existing entities and pick them up first
@@ -129,12 +61,12 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
     --    end
     --end
     -- **Modified Code Ends Here**
-
+    game.print(direction)
     local can_build = player.can_place_entity{
         name = entity,
         force = player.force,
         position = position,
-        direction = get_entity_direction(entity, direction)
+        direction = global.utils.get_entity_direction(entity, direction)
     }
 
     if not can_build then
@@ -153,7 +85,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                                 name = entity,
                                 force = player.force,
                                 position = new_position,
-                                direction = get_entity_direction(entity, direction)
+                                direction = global.utils.get_entity_direction(entity, direction)
                             }
                             if can_build then
                                 found_position = true
@@ -171,7 +103,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                     name = entity,
                     force = "player",
                     position = new_position,
-                    direction = get_entity_direction(entity, direction),
+                    direction = global.utils.get_entity_direction(entity, direction),
                     player = player
                 }
                 if have_built then
@@ -209,7 +141,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             name = entity,
             force = player.force,
             position = position,
-            direction = get_entity_direction(entity, direction)
+            direction = global.utils.get_entity_direction(entity, direction)
         }
         if not can_build then
             error("Cannot place " .. entity .. " at the target location.")
@@ -218,7 +150,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             name = entity,
             force = "player",
             position = position,
-            direction = get_entity_direction(entity, direction),
+            direction = global.utils.get_entity_direction(entity, direction),
             player = player
         }
         if have_built then
@@ -236,7 +168,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             name = entity,
             force = "player",
             position = position,
-            direction = get_entity_direction(entity, direction),
+            direction = global.utils.get_entity_direction(entity, direction),
             player = player
         }
         if have_built then
@@ -255,7 +187,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
              if #entities > 0 then
                 local entity = entities[1]  -- get the first entity of the specified type in the area
                 local serialized = global.utils.serialize_entity(entity)
-                local entity_json = game.table_to_json(serialized)-- game.table_to_json(entity
+                --local entity_json = game.table_to_json(serialized)-- game.table_to_json(entity
                 return serialized
              end
 

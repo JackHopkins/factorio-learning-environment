@@ -1,8 +1,61 @@
 from typing import Tuple, Any, Union, Dict
 from typing import List, Optional
-
+from enum import Enum
 from pydantic import BaseModel, PrivateAttr
 
+
+class EntityStatus(Enum):
+    WORKING = "working"
+    NORMAL = "normal"
+    NO_POWER = "no_power"
+    LOW_POWER = "low_power"
+    NO_FUEL = "no_fuel"
+    DISABLED_BY_CONTROL_BEHAVIOR = "disabled_by_control_behavior"
+    OPENED_BY_CIRCUIT_NETWORK = "opened_by_circuit_network"
+    CLOSED_BY_CIRCUIT_NETWORK = "closed_by_circuit_network"
+    DISABLED_BY_SCRIPT = "disabled_by_script"
+    MARKED_FOR_DECONSTRUCTION = "marked_for_deconstruction"
+    NOT_PLUGGED_IN_ELECTRIC_NETWORK = "not_plugged_in_electric_network"
+    NETWORKS_CONNECTED = "networks_connected"
+    NETWORKS_DISCONNECTED = "networks_disconnected"
+    CHARGING = "charging"
+    DISCHARGING = "discharging"
+    FULLY_CHARGED = "fully_charged"
+    OUT_OF_LOGISTIC_NETWORK = "out_of_logistic_network"
+    NO_RECIPE = "no_recipe"
+    NO_INGREDIENTS = "no_ingredients"
+    NO_INPUT_FLUID = "no_input_fluid"
+    NO_RESEARCH_IN_PROGRESS = "no_research_in_progress"
+    NO_MINABLE_RESOURCES = "no_minable_resources"
+    LOW_INPUT_FLUID = "low_input_fluid"
+    FLUID_INGREDIENT_SHORTAGE = "fluid_ingredient_shortage"
+    FULL_OUTPUT = "full_output"
+    FULL_BURNT_RESULT_OUTPUT = "full_burnt_result_output"
+    ITEM_INGREDIENT_SHORTAGE = "item_ingredient_shortage"
+    MISSING_REQUIRED_FLUID = "missing_required_fluid"
+    MISSING_SCIENCE_PACKS = "missing_science_packs"
+    WAITING_FOR_SOURCE_ITEMS = "waiting_for_source_items"
+    WAITING_FOR_SPACE_IN_DESTINATION = "waiting_for_space_in_destination"
+    PREPARING_ROCKET_FOR_LAUNCH = "preparing_rocket_for_launch"
+    WAITING_TO_LAUNCH_ROCKET = "waiting_to_launch_rocket"
+    LAUNCHING_ROCKET = "launching_rocket"
+    NO_MODULES_TO_TRANSMIT = "no_modules_to_transmit"
+    RECHARGING_AFTER_POWER_OUTAGE = "recharging_after_power_outage"
+    WAITING_FOR_TARGET_TO_BE_BUILT = "waiting_for_target_to_be_built"
+    WAITING_FOR_TRAIN = "waiting_for_train"
+    NO_AMMO = "no_ammo"
+    LOW_TEMPERATURE = "low_temperature"
+    DISABLED = "disabled"
+    TURNED_OFF_DURING_DAYTIME = "turned_off_during_daytime"
+    NOT_CONNECTED_TO_RAIL = "not_connected_to_rail"
+    CANT_DIVIDE_SEGMENTS = "cant_divide_segments"
+
+    @classmethod
+    def from_string(cls, status_string):
+        for status in cls:
+            if status.value == status_string:
+                return status
+        return None
 
 
 class Inventory(BaseModel):
@@ -53,6 +106,12 @@ class Inventory(BaseModel):
     #def get(self, key):
     #    return self.__getitem__(key) #getattr(self, key, default)
 
+class Direction(Enum):
+    UP = NORTH = 0
+    RIGHT = EAST = 2
+    DOWN = SOUTH = 4
+    LEFT = WEST = 6
+
 class Position(BaseModel):
     x: float
     y: float
@@ -62,6 +121,25 @@ class Position(BaseModel):
 
     def is_close(self, a: 'Position', tolerance: float = 0.1):
         return abs(self.x - a.x) < tolerance and abs(self.y - a.y) < tolerance
+
+
+class EntityInfo(BaseModel):
+    name: str
+    direction: int
+    position: Tuple[float, float]
+    start_position: Optional[Tuple[float, float]] = None
+    end_position: Optional[Tuple[float, float]] = None
+    quantity: Optional[int] = None
+    warning: Optional[str] = None
+    contents: Dict[str, int] = {}
+    status: EntityStatus = EntityStatus.NORMAL
+
+
+class InspectionResults(BaseModel):
+    entities: List[EntityInfo]
+    player_position: Tuple[float, float] = (0, 0)
+    radius: float = 10
+    time_elapsed: float = 0
 
 
 class BoundingBox(BaseModel):
@@ -107,7 +185,7 @@ class BurnerType(BaseModel):
 class Entity(BaseModel):
     name: str
     position: Position
-    direction: int
+    direction: Direction
     energy: float
     type: str
     dimensions: Dimensions

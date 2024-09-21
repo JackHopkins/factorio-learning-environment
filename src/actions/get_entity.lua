@@ -26,7 +26,7 @@ global.actions.get_entity = function(player_index, entity, x, y)
     if #entities > 0 then
         local entity = entities[1]  -- get the first entity of the specified type in the area
         local serialized = global.utils.serialize_entity(entity)
-        local entity_json = game.table_to_json(serialized)-- game.table_to_json(entity
+        --local entity_json = game.table_to_json(serialized)-- game.table_to_json(entity
         return serialized
     else
         error("No entity of type " .. entity .. " found at the specified position.")

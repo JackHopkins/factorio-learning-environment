@@ -59,18 +59,6 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
         end
     end
 
-    -- Add one more position to the path in the final direction
-    --local last_pos = path[#path].position
-    --local second_last_pos = #path > 1 and path[#path - 1].position or player.position
-    --local final_direction = get_direction(second_last_pos, last_pos)
-    --
-    --if final_direction then
-    --    local extra_position = {
-    --        x = last_pos.x + (final_direction == defines.direction.east and 1 or (final_direction == defines.direction.west and -1 or 0)),
-    --        y = last_pos.y + (final_direction == defines.direction.south and 1 or (final_direction == defines.direction.north and -1 or 0))
-    --    }
-    --    table.insert(path, {position = extra_position})
-    --end
 
     local function place_diagonal(from_pos, to_pos, is_leading)
         local dx = to_pos.x - from_pos.x

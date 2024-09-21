@@ -39,6 +39,34 @@ local function check_player_inventory_empty(player)
     return inventory.is_empty()
 end
 
+
+global.actions.avoid_entity = function(player_index, entity, position)
+    local player = game.players[player_index]
+    local prototype = game.entity_prototypes[entity]
+    local collision_box = prototype.collision_box
+    local width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
+    local height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y)
+
+    local function player_collision(player, target_area)
+        local character_box = player.character.prototype.collision_box
+        local character_area = {
+            {player.position.x + character_box.left_top.x, player.position.y + character_box.left_top.y},
+            {player.position.x + character_box.right_bottom.x, player.position.y + character_box.right_bottom.y}
+        }
+        return (character_area[1][1] < target_area[2][1] and character_area[2][1] > target_area[1][1]) and
+               (character_area[1][2] < target_area[2][2] and character_area[2][2] > target_area[1][2])
+    end
+
+    local target_area = {
+        {position.x - width / 2, position.y - height / 2},
+        {position.x + width / 2, position.y + height / 2}
+    }
+
+    while player_collision(player, target_area) do
+        player.teleport({player.position.x + width + 1, player.position.y}, player.surface)
+    end
+end
+
 -- Define a function to be called every tick
 local function on_tick(event)
     -- Run the check every 60 ticks (1 second)
@@ -117,6 +145,80 @@ function create_beam_bounding_box (player, surface, direction, top_left, bottom_
     surface.create_entity{name='laser-beam', position=player.position, source_position=bottom_right, target_position=bottom_left, duration=beam_duration,  direction=direction, force='player', player=player}
     surface.create_entity{name='laser-beam', position=player.position, source_position=bottom_left, target_position=top_left, duration=beam_duration,  direction=direction, force='player', player=player}
     surface.create_entity{name='laser-beam', position=player.position, source_position=player.position, duration=beam_duration, target_position={x=player.position.x, y=player.position.y+0.1}, direction=direction, force='player', player=player}
+end
+
+function create_arrow_with_direction(player, direction, position)
+    local beam_length = 0.75
+    local arrow_width = 0.5
+
+    -- Calculate the end position of the main beam
+    local end_position = {x = position.x, y = position.y}
+    local dx, dy = 0, 0
+
+    if direction == 0 then  -- North
+        dy = -beam_length
+    elseif direction == 2 then  -- East
+        dx = beam_length
+    elseif direction == 4 then  -- South
+        dy = beam_length
+    elseif direction == 6 then  -- West
+        dx = -beam_length
+    elseif direction == 1 then  -- Northeast
+        dx, dy = beam_length * 0.7071, -beam_length * 0.7071
+    elseif direction == 3 then  -- Southeast
+        dx, dy = beam_length * 0.7071, beam_length * 0.7071
+    elseif direction == 5 then  -- Southwest
+        dx, dy = -beam_length * 0.7071, beam_length * 0.7071
+    elseif direction == 7 then  -- Northwest
+        dx, dy = -beam_length * 0.7071, -beam_length * 0.7071
+    end
+
+    end_position.x = position.x + dx
+    end_position.y = position.y + dy
+
+    -- Create the main beam
+    player.surface.create_entity{
+        name = 'laser-beam',
+        position = position,
+        source_position = position,
+        target_position = end_position,
+        duration = 100000,
+        force = 'player',
+        player = player
+    }
+
+    -- Calculate and create the two side beams for the arrowhead
+    local perpendicular_dx = -dy * arrow_width
+    local perpendicular_dy = dx * arrow_width
+
+    local arrow_left = {
+        x = end_position.x + perpendicular_dx - dx * 0.3,
+        y = end_position.y + perpendicular_dy - dy * 0.3
+    }
+    local arrow_right = {
+        x = end_position.x - perpendicular_dx - dx * 0.3,
+        y = end_position.y - perpendicular_dy - dy * 0.3
+    }
+
+    player.surface.create_entity{
+        name = 'laser-beam',
+        position = end_position,
+        source_position = end_position,
+        target_position = arrow_left,
+        duration = 100000,
+        force = 'player',
+        player = player
+    }
+
+    player.surface.create_entity{
+        name = 'laser-beam',
+        position = end_position,
+        source_position = end_position,
+        target_position = arrow_right,
+        duration = 100000,
+        force = 'player',
+        player = player
+    }
 end
 
 function create_beam_point_with_direction (player, direction, position)

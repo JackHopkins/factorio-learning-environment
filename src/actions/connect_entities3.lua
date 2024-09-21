@@ -1,8 +1,9 @@
-global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, connection_type)
+global.actions.connect_entities3 = function(player_index, source_x, source_y, target_x, target_y, connection_type)
     local player = game.players[player_index]
     local source_position = {x = source_x, y = source_y}
     local target_position = {x = target_x, y = target_y}
 
+    game.print("Connecting entities")
     local source_entities = player.surface.find_entities_filtered{area = {{source_position.x - 0.25, source_position.y - 0.25}, {source_position.x + 0.25, source_position.y + 0.25}}}
     local target_entities = player.surface.find_entities_filtered{area = {{target_position.x - 0.25, target_position.y - 0.25}, {target_position.x + 0.25, target_position.y + 0.25}}}
 
@@ -376,6 +377,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
 
         if can_build then
             local placed_connector = player.surface.create_entity{name=connection_type, force=player.force, position=next_position, direction=direction}
+            game.print(serpent.block(placed_connector.position))
             if placed_connector then
                 player.remove_item{name=connection_type, count=1}
             else

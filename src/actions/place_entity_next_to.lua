@@ -156,13 +156,15 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             error("A " .. colliding_entity_name .. " already exists at the new position " .. serpent.line(new_position) .. ".")
         end
     end
-
-    local orientation = factorio_direction
-    if entity == "fast-inserter" or entity == "burner-inserter" or entity == "inserter" or entity == "long-handed-inserter" then
-        -- Adjust orientation for inserters if necessary
-        local inserter_direction_map = {defines.direction.south, defines.direction.west, defines.direction.north, defines.direction.east}
-        orientation = inserter_direction_map[direction + 1 % 4]
-    end
+    --
+    --local orientation = factorio_direction
+    --if entity == "fast-inserter" or entity == "burner-inserter" or entity == "inserter" or entity == "long-handed-inserter" then
+    --    -- Adjust orientation for inserters if necessary
+    --    local inserter_direction_map = {defines.direction.south, defines.direction.west, defines.direction.north, defines.direction.east}
+    --    orientation = inserter_direction_map[direction + 1 % 4]
+    --end
+    local orientation = global.utils.get_entity_direction(entity, direction)
+    game.print("orientation: " .. orientation)
 
     if ref_entity then
         local prototype = game.entity_prototypes[ref_entity.name]

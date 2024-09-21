@@ -61,7 +61,7 @@ local function move_and_place(player, serialized_entities, connection_type, curr
     end
 end
 
-global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, connection_type)
+global.actions.connect_entities2 = function(player_index, source_x, source_y, target_x, target_y, connection_type)
     local player = game.players[player_index]
 
     --local distance = math.sqrt(direction.x ^ 2 + direction.y ^ 2)

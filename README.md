@@ -1,5 +1,36 @@
 # Factorio Gym
 
+### Setup
+
+#### Install Factorio
+
+- Buy Factorio from the [official website](https://www.factorio.com/).
+- Downgrade to version 1.1.107 (the latest version supported by the mod) by following the following instructions:
+    - Right-click Factorio in your Steam library and select Properties.
+    - Go to the Betas tab.
+    - Select 1.1.107 from the dropdown menu.
+
+#### Install Docker
+
+- Install Docker by following the instructions [here](https://docs.docker.com/get-docker/).
+- Start the Docker daemon by running the following command:
+    ```
+    sudo systemctl start docker
+    ```
+
+#### Build the Docker image
+- Navigate to the `factorio` directory and run the following command:
+    ```
+    docker build -t factorio .
+    ```
+
+#### Run the Factorio Server
+
+- Navigate to `src/docker-compose-1.1.107.yml` and run the following command:
+    ```
+    docker-compose -f docker-compose-1.1.107.yml up -d
+    ```
+
 ### Introduction
 
 Factorio is a sandbox game in which you build and maintain factories.

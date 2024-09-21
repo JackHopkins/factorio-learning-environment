@@ -18,7 +18,6 @@ client/__pycache__/
 /src/log/*.log
 /src/log/*.trace
 /log/
-/src/actions/
 /src/gpt_events.jsonl
 /src/llama.jsonl
 /src/llama_events.jsonl

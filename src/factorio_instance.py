@@ -102,13 +102,10 @@ class FactorioInstance:
         # Available actions that the agent can perform
         self._static_members = [attr for attr in dir(self)
                                 if not callable(getattr(self, attr))
-                                and not attr.startswith("__")
-                                ]
+                                and not attr.startswith("__")]
 
 
     def reset(self):
-        #self.script_dict = {**self.actions, **_load_init()}
-        #self.initialise(**inventory)
         for attr in dir(self):
             if not callable(getattr(self, attr)) and attr[0] != "_" and attr not in self._static_members:
                 self[attr] = None
@@ -305,7 +302,7 @@ class FactorioInstance:
         self.add_command('/c game.reset_game_state()', raw=True)
         self.add_command('clear_inventory', PLAYER)
         self.add_command('reset_position', PLAYER, 0, 0)
-        self.add_command('clear_entities', PLAYER, 0, 0)
+        self.add_command(f'/c global.actions.clear_entities({PLAYER})', raw=True)
         self.execute_transaction()
 
         self.begin_transaction()
@@ -348,23 +345,27 @@ class FactorioInstance:
         return self._execute_transaction()
 
     def initialise(self, **kwargs):
-        self.begin_transaction()
-        self.add_command('initialise', PLAYER)
-        self.add_command('clear_inventory', PLAYER)
-        self.execute_transaction()
+        self.lua_script_manager.load_init_into_game('initialise')
+        self.lua_script_manager.load_init_into_game('clear_entities')
+        self.lua_script_manager.load_init_into_game('alerts')
+        self.lua_script_manager.load_init_into_game('util')
+        self.lua_script_manager.load_init_into_game('serialize')
+        self.lua_script_manager.load_init_into_game('production_score')
 
-        self.begin_transaction()
-        self.add_command('clear_entities', PLAYER, 0, 0)
-        self.add_command('alerts')
-        self.add_command('util')
-        self.add_command('serialize')
-        self.add_command('production_score', PLAYER)
-        self.add_command('reset_position', PLAYER, 0, 0)
-
-        for entity, count in kwargs.items():
-            self.add_command('give_item', PLAYER, entity, count)
-
-        self.execute_transaction()
+        self._reset(**kwargs)
+        # self.begin_transaction()
+        # self.add_command('clear_inventory', PLAYER)
+        # self.add_command('clear_entities', PLAYER, 0, 0)
+        # self.add_command('alerts')
+        # self.add_command('util')
+        # self.add_command('serialize')
+        # self.add_command('production_score', PLAYER)
+        # self.add_command('reset_position', PLAYER, 0, 0)
+        #
+        # for entity, count in kwargs.items():
+        #     self.add_command('give_item', PLAYER, entity, count)
+        #
+        # self.execute_transaction()
 
     def initialise2(self, **kwargs):
         self._send('initialise', PLAYER)

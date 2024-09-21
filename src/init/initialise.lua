@@ -1,5 +1,15 @@
 --local player = game.players[arg1]
 player.surface.always_day=true
+--game.players[1].character_collision_mask = "not-colliding-with-itself"
+player.force.character_build_distance_bonus = 100
+player.force.research_all_technologies()
+
+local beam_duration = 9
+local surface=player.surface
+local pp = player.position
+local cnt = 0
+local directions = {'north', 'northeast', 'east', 'southeast', 'south', 'southwest', 'west', 'northwest'}
+
 --Initialise.lua
 --local position = player.position
 
@@ -29,11 +39,6 @@ global.interesting_entities = {
     ['coal']=true
 }
 global.initial_score = {}
-
-
-local surface=player.surface
-local pp = player.position
-local cnt = 0
 
 -- Define a function to check if a player's inventory is empty
 local function check_player_inventory_empty(player)
@@ -98,9 +103,6 @@ script.on_event(defines.events.on_tick, on_tick)
 --    }
 --end)
 
---game.players[1].character_collision_mask = "not-colliding-with-itself"
-game.players[1].force.character_build_distance_bonus = 100
-game.players[1].force.research_all_technologies()
 
 for _, ent in pairs(surface.find_entities_filtered({force="player", position=pp, radius=50})) do
     if ent.name ~= "character" then
@@ -112,8 +114,6 @@ for key, entity in pairs(surface.find_entities_filtered({force="enemy", radius=2
 	cnt = cnt+1
 	entity.destroy()
  end
-
-local beam_duration = 9
 
 global.crafting_queue = {}
 
@@ -633,7 +633,6 @@ function get_productivity(player)
         consumption=consumption_rates
     }
 end
-local directions = {'north', 'northeast', 'east', 'southeast', 'south', 'southwest', 'west', 'northwest'}
 
 function craft_entity(player, entity_name, count)
       -- Ensure the player and entity_name are valid

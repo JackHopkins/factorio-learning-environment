@@ -16,8 +16,8 @@ class FactorioLuaScriptManager:
             self._clear_game_checksums(rcon_client)
         self.action_directory = _get_action_dir()
         self.init_directory = _get_init_dir()
-        self.init_action_checksums()
         if cache_scripts:
+            self.init_action_checksums()
             self.game_checksums = self._get_game_checksums(rcon_client)
         self.action_scripts = self.get_actions_to_load()
         self.init_scripts = self.get_inits_to_load()

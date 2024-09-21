@@ -71,6 +71,20 @@ class ConnectEntities(Action):
     def _round_position(self, position: Position):
         return Position(x=math.floor(position.x), y=math.floor(position.y))
 
+    def _deduplicate_entities(self, entities: List[Entity]) -> List[Entity]:
+        """
+        Remove duplicate entities while maintaining the original order.
+        Later entities with the same position override earlier ones.
+        """
+        unique_entities = []
+        seen = set()
+        for entity in reversed(entities):
+            position = (entity.position.x, entity.position.y)
+            if position not in seen:
+                unique_entities.append(entity)
+                seen.add(position)
+        return list(reversed(unique_entities))
+
     def __call__(self,
                  source: Union[Position, Entity],
                  target: Union[Position, Entity],
@@ -230,10 +244,12 @@ class ConnectEntities(Action):
         for value in entities_list:
             if isinstance(value, dict):
                 try:
-                    path.append(metaclass(prototype=connection_type, **value))
+                    entity = metaclass(prototype=connection_type, **value)
+                    path.append(entity)
                 except Exception as e:
                     if not value:
                         continue
                     raise Exception(f"Could not create {connection_prototype} object from response: {response}", e)
 
-        return path
+        # Use the new deduplication function
+        return self._deduplicate_entities(path)

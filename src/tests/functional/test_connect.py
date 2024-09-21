@@ -12,10 +12,10 @@ from factorio_types import Prototype, Resource
 def game(instance):
     instance.initial_inventory = {
         **instance.initial_inventory,
-        'stone-furnace': 1,
-        'burner-inserter': 5,
+        'stone-furnace': 10,
+        'burner-inserter': 50,
     }
-    #instance.reset()
+    instance.reset()
     yield instance
 
 
@@ -116,8 +116,6 @@ def test_place_and_connect_entities_in_grid(game):
     assert spent_furnaces == grid_size * grid_size
     assert spent_inserters == 2 * grid_size * (grid_size - 1)
 
-    game.reset()
-
 def test_basic_connection_between_furnace_and_miner(game):
     """
     Place a furnace with a burner inserter pointing towards it.
@@ -197,7 +195,7 @@ def test_burner_inserter_grid_with_coal_movement(game):
         target = game.place_entity(Prototype.IronChest, position=inserters[0][0].drop_position)
         game.insert_item(Prototype.Coal, source, 50)
         # Wait for some time to allow coal to move, assuming there's a method to wait in game
-        sleep(60)  # Wait for 200 ticks or adjust as needed based on game speed
+        game.sleep(60)  # Wait for 200 ticks or adjust as needed based on game speed
 
         # Now check if the coal has reached the top left point (i.e., the first inserter in the grid)
         # Assuming there's a method to inspect the contents of an inserter

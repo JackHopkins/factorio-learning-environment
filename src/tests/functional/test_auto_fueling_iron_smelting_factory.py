@@ -39,21 +39,21 @@ def test_auto_fueling_iron_smelting_factory(game):
     # Find the nearest iron ore resource
     iron_position = game.nearest(Resource.IronOre)
     # Define an intermediate position to route the belt along X-axis to the iron ore
-    intermediate_pos = Position(x=coal_drill.drop_position.x, y=iron_position.y)
-
-    # Lay belts from coal belt start to the intermediate position (along Y-axis)
-    try:
-        coal_belt_part1 = game.connect_entities(coal_drill, intermediate_pos, connection_type=Prototype.TransportBelt)
-    except Exception as e:
-        print(e)
-
-    # Lay belts from intermediate position to iron position (along X-axis)
-    try:
-        left_of_iron = Position(x=iron_position.x + 1, y=iron_position.y)
-        coal_belt_part2 = game.connect_entities(coal_belt_part1[-1], left_of_iron, connection_type=Prototype.TransportBelt)
-    except Exception as e:
-        print(e)
-    coal_belt = coal_belt_part1 + coal_belt_part2
+    # intermediate_pos = Position(x=coal_drill.drop_position.x, y=iron_position.y)
+    #
+    # # Lay belts from coal belt start to the intermediate position (along Y-axis)
+    # try:
+    #     coal_belt_part1 = game.connect_entities(coal_drill, intermediate_pos, connection_type=Prototype.TransportBelt)
+    # except Exception as e:
+    #     print(e)
+    #
+    # # Lay belts from intermediate position to iron position (along X-axis)
+    # try:
+    #     left_of_iron = Position(x=iron_position.x + 1, y=iron_position.y)
+    #     coal_belt_part2 = game.connect_entities(coal_belt_part1[-1], left_of_iron, connection_type=Prototype.TransportBelt)
+    # except Exception as e:
+    #     print(e)
+    # coal_belt = coal_belt_part1 + coal_belt_part2
 
     # Place the iron mining drill at iron_position, facing down
     move_to_iron = game.move_to(iron_position)
@@ -65,6 +65,11 @@ def test_auto_fueling_iron_smelting_factory(game):
         iron_drill_fuel_inserter = game.place_entity(Prototype.BurnerInserter, position=inserter_position, direction=Direction.LEFT, exact=True)
     except Exception as e:
         print(e)
+
+
+    coal_belt = game.connect_entities(source=coal_drill, target=iron_drill_fuel_inserter, connection_type=Prototype.TransportBelt)
+
+
     # Extend coal belt to pass next to the furnace position
     furnace_position = Position(x=iron_drill.drop_position.x, y=iron_drill.drop_position.y + 1)
 
@@ -75,7 +80,7 @@ def test_auto_fueling_iron_smelting_factory(game):
     furnace_fuel_inserter_position = Position(x=iron_furnace.position.x + 1, y=iron_furnace.position.y)
     furnace_fuel_inserter = game.place_entity(Prototype.BurnerInserter, position=furnace_fuel_inserter_position, direction=Direction.LEFT)
 
-    coal_belt_to_furnace = game.connect_entities(iron_drill_fuel_inserter.pickup_position, furnace_fuel_inserter.pickup_position, connection_type=Prototype.TransportBelt)
+    coal_belt_to_furnace = game.connect_entities(coal_belt[-1], furnace_fuel_inserter.pickup_position, connection_type=Prototype.TransportBelt)
     coal_belt.extend(coal_belt_to_furnace)
 
     # Place an inserter to transfer iron ore from the iron drill to the furnace

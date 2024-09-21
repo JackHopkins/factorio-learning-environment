@@ -12,7 +12,6 @@ from factorio_types import Prototype
 class MoveTo(Action):
 
     def __init__(self, connection, game_state):
-        self.game_state = game_state
         super().__init__(connection, game_state)
         self.observe = ObserveAll(connection, game_state)
         self.request_path = RequestPath(connection, game_state)

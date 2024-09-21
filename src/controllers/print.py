@@ -8,8 +8,6 @@ class Print(Action):
 
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
-        self.connection = connection
-        self.game_state = game_state
 
     def load(self):
         pass

@@ -1,3 +1,5 @@
+player = game.players[arg1]
+
 local function get_total_production_counts(production_statistics)
   local produced = production_statistics.input_counts
   local consumed = production_statistics.output_counts

@@ -17,7 +17,6 @@ class ObserveAll(Action):
         super().__init__(connection, game_state)
         mu, sigma = 0, CHUNK_SIZE * 20
         self.minimap_normal = np.random.normal(mu, sigma, MAX_SAMPLES)
-        self.game_state = game_state
         self.chunk_cursor = 0
 
     def __call__(self, trace=False, **kwargs) -> dict:

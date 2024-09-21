@@ -10,7 +10,9 @@ from typing import List
 from dotenv import load_dotenv
 from slpp import slpp as lua
 
-from src.factorio_rcon_utils import _load_actions, _load_init, _lua2python
+from factorio_lua_script_manager import FactorioLuaScriptManager
+from factorio_transaction import FactorioTransaction
+from src.factorio_rcon_utils import _load_initialisation_scripts, _lua2python, _get_action_dir
 from src.rcon.factorio_rcon import RCONClient
 from factorio_types import Prototype, Resource
 from models.game_state import GameState
@@ -51,74 +53,35 @@ class Direction(Enum):
     def to_factorio_direction(cls, direction):
         return direction.value // 2
 
-class DirectionOld(Enum):
-    """
-    Factorio directions (for some reason they are different from the cardinal directions)
-    North - 0
-    Northeast - 1
-    East - 2
-    Southeast - 3
-    South - 4
-    Southwest - 5
-    West - 6
-    Northwest - 7
-
-    -- self.UP, self.ABOVE, self.TOP = 1
-        -- self.RIGHT, self.EAST = 4
-        -- self.LEFT, self.WEST = 3
-        -- self.DOWN, self.BELOW, self.BOTTOM = 2
-    """
-    UP = NORTH = 0
-    RIGHT = EAST = 1
-    LEFT = WEST = 3
-    DOWN = BELOW = BOTTOM = 2
-
-    # SOUTH = 2
-    # NORTH = 0
-    # EAST = 1
-    # WEST = 3
-
-    # UP = 0
-    # RIGHT = 1
-    # LEFT = 3
-    # DOWN = 2
-    #
-    # SOUTH = 2
-    # NORTH = 0
-    # EAST = 1
-    # WEST = 3
-
-    # UP = 0
-    # RIGHT = 3
-    # LEFT = 2
-    # DOWN = 1
-    # SOUTH = 1
-    # NORTH = 0
-    # EAST = 2
-    # WEST = 3
-
-
 class FactorioInstance:
 
     def __init__(self, address=None,
                  vocabulary: Vocabulary = Vocabulary(),
                  bounding_box=20,
                  fast=False,
-                 tcp_port=27015, inventory={}):
+                 tcp_port=27015,
+                 inventory={},
+                 cache_scripts=True
+                 ):
         self.tcp_port = tcp_port
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
 
         self.game_state = GameState().with_default(vocabulary)
         self.game_state.fast = fast
 
+        self.lua_script_manager = FactorioLuaScriptManager(self.rcon_client, cache_scripts)
+
         self.max_sequential_exception_count = 2
         self._sequential_exception_count = 0
-        self.actions = _load_actions()
 
-        self.script_dict = {**self.actions, **_load_init()}
+        self.script_dict = {**self.lua_script_manager.action_scripts, **self.lua_script_manager.init_scripts}
         self.initial_inventory = inventory
+
+        # Load the python controllers that correspond to the Lua scripts
+        self.setup_controllers(self.lua_script_manager, self.game_state)
+
         self.initialise(**inventory)
-        self._load_actions(self.rcon_client, self.game_state)
+
         self.observe_all()
         self._tasks = []
 
@@ -143,7 +106,6 @@ class FactorioInstance:
                                 ]
 
 
-
     def reset(self):
         #self.script_dict = {**self.actions, **_load_init()}
         #self.initialise(**inventory)
@@ -161,6 +123,9 @@ class FactorioInstance:
         self.game_state.initial_score, goal = self.score()
 
     def print(self, arg):
+        """
+        Shadows the builtin print function,and ensures that whatever is printed is logged in agent memory
+        """
         self.memory.log_observation(str(arg))
         print(arg)
 
@@ -180,7 +145,7 @@ class FactorioInstance:
                 raise Exception(
                     "Player hasn't been initialised into the game. Please log in once to make this node operational.")
             #rcon_client.send_command('/c global = {}')
-            rcon_client.send_command('/c global.actions = {}')
+            #rcon_client.send_command('/c global.actions = {}')
 
         except Exception as e:
             raise ConnectionError(f"Could not connect to {address} at tcp/{tcp_port}: \n{e.args[0]}")
@@ -188,7 +153,7 @@ class FactorioInstance:
         print(f"Connected to {address} client at tcp/{tcp_port}.")
         return rcon_client, address
 
-    def _load_actions(self, connection, game_state):
+    def setup_controllers(self, lua_script_manager, game_state):
         # Define the directory containing the callable class files
         callable_classes_directory = "controllers"
 
@@ -216,7 +181,7 @@ class FactorioInstance:
 
                 # Create an instance of the callable class
                 try:
-                    callable_instance = callable_class(connection, game_state)
+                    callable_instance = callable_class(lua_script_manager, game_state)
                 except Exception as e:
                     raise Exception(f"Could not instantiate {class_name}. {e}")
                 # Add the instance as a member method
@@ -309,13 +274,6 @@ class FactorioInstance:
             trace = e.__traceback__
             return -1, "", f"Error: {str(e)}"
 
-    def run_tasks(self):
-        for task in self._tasks:
-            try:
-                next(task)()
-            except StopIteration:
-                self.observe()
-
     def _get_command(self, command, parameters=[], measured=True):
         prefix = "/c " if not measured else '/command '
         if command in self.script_dict:
@@ -330,6 +288,8 @@ class FactorioInstance:
         start = timer()
         script = self._get_command(command, parameters=list(parameters), measured=False)
         lua_response = self.rcon_client.send_command(script)
+        #self.add_command(command, *parameters)
+        #response = self._execute_transaction()
         # print(lua_response)
         return _lua2python(command, lua_response, start=start)
 
@@ -339,21 +299,74 @@ class FactorioInstance:
         self.rcon_client.send_command(f"[img=entity/character] " + str(comment) + ", ".join(args))
 
     def _reset(self, **kwargs):
-        self._send("/c global.alerts = {}")
-        #self._send("/c game.reload_script()")
-        self._send('/c game.reset_game_state()')
-        self._send('clear_inventory', PLAYER)
-        self._send('reset_position', PLAYER, 0, 0)
-        #self._send('regenerate_resources', PLAYER)
-        self.clear_entities()
-        #self.regenerate_resources()
-        #self._send('clear_entities', PLAYER)
 
+        self.begin_transaction()
+        self.add_command('/c global.alerts = {}', raw=True)
+        self.add_command('/c game.reset_game_state()', raw=True)
+        self.add_command('clear_inventory', PLAYER)
+        self.add_command('reset_position', PLAYER, 0, 0)
+        self.add_command('clear_entities', PLAYER, 0, 0)
+        self.execute_transaction()
+
+        self.begin_transaction()
         for entity, count in kwargs.items():
-            self._send('give_item', PLAYER, entity, count)
+            self.add_command('give_item', PLAYER, entity, count)
+        self.execute_transaction()
+        #self.clear_entities()
+
+    def _execute_transaction(self) -> Dict[str, Any]:
+        start = timer()
+        rcon_commands = {}
+        for idx, (command, parameters, is_raw) in enumerate(self.current_transaction.get_commands()):
+            if is_raw:
+                rcon_commands[f"{idx}_{command}"] = command
+            else:
+                script = self._get_command(command, parameters=parameters, measured=False)
+                rcon_commands[f"{idx}_{command}"] = script
+
+        lua_responses = self.rcon_client.send_commands(rcon_commands)
+
+        results = {}
+        for command, response in lua_responses.items():
+            results[command] = _lua2python(command, response, start=start)
+
+        self.current_transaction.clear()
+        return results
+
+    def begin_transaction(self):
+        if not hasattr(self, 'current_transaction'):
+            self.current_transaction = FactorioTransaction()
+        else:
+            self.current_transaction.clear()
+
+    def add_command(self, command: str, *parameters, raw=False):
+        if not hasattr(self, 'current_transaction'):
+            self.begin_transaction()
+        self.current_transaction.add_command(command, *parameters, raw=raw)
+
+    def execute_transaction(self) -> Dict[str, Any]:
+        return self._execute_transaction()
 
     def initialise(self, **kwargs):
+        self.begin_transaction()
+        self.add_command('initialise', PLAYER)
+        self.add_command('clear_inventory', PLAYER)
+        self.execute_transaction()
 
+        self.begin_transaction()
+        self.add_command('clear_entities', PLAYER, 0, 0)
+        self.add_command('alerts')
+        self.add_command('util')
+        self.add_command('serialize')
+        self.add_command('production_score', PLAYER)
+        self.add_command('reset_position', PLAYER, 0, 0)
+
+        for entity, count in kwargs.items():
+            self.add_command('give_item', PLAYER, entity, count)
+
+        self.execute_transaction()
+
+    def initialise2(self, **kwargs):
         self._send('initialise', PLAYER)
         self._send('alerts')
         self._send('util')

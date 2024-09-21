@@ -1,6 +1,6 @@
---Initialise.lua
-local player = game.players[arg1]
+--local player = game.players[arg1]
 player.surface.always_day=true
+--Initialise.lua
 --local position = player.position
 
 --player.game_view_settings.show_controller_gui = false
@@ -10,8 +10,10 @@ player.surface.always_day=true
 --player.game_view_settings.show_shortcut_bar = false
 --player.game_view_settings.show_map_view_options = false
 --player.game_view_settings.show_shortcut_bar = false
-
-global.actions = {}
+-- If the global actions table doesn't exist, create it
+if not global.actions then
+    global.actions = {}
+end
 global.points_of_interest = {}
 global.distances_to_nearest = {}
 global.relative_points_of_interest = {}

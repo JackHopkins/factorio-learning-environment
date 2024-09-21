@@ -6,10 +6,10 @@ from controllers._action import Action
 class Sleep(Action):
 
     def __init__(self, connection, game_state):
-        self.game_state = game_state
         super().__init__(connection, game_state)
 
     def load(self):
+        # We don't want to send anything to the game for this action, this is purely client side.
         pass
 
     def __call__(self, seconds: int) -> bool:

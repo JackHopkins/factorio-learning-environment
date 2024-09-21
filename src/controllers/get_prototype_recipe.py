@@ -11,8 +11,6 @@ class GetPrototypeRecipe(Action):
 
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
-        self.connection = connection
-        self.game_state = game_state
 
     def __call__(self, prototype: Union[Prototype, str]) -> Recipe:
         """

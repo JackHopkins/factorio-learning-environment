@@ -59,15 +59,22 @@ def test_auto_fueling_iron_smelting_factory(game):
     coal_belt_to_furnace = game.connect_entities(coal_belt[-1], furnace_fuel_inserter.pickup_position, connection_type=Prototype.TransportBelt)
     coal_belt.extend(coal_belt_to_furnace)
 
+    furnace_to_chest_inserter = game.place_entity_next_to(Prototype.BurnerInserter,
+                                                          reference_position=iron_furnace.position,
+                                                          direction=Direction.DOWN,
+                                                          spacing=0)
     # Place an iron chest to store iron plates
-    iron_chest = game.place_entity_next_to(Prototype.IronChest, reference_position=iron_furnace.position, direction=Direction.DOWN, spacing=1)
+    iron_chest = game.place_entity_next_to(Prototype.IronChest,
+                                           reference_position=iron_furnace.position,
+                                           direction=Direction.DOWN,
+                                           spacing=1)
 
     # Start the system by fueling the coal drill
     game.move_to(coal_position)
     game.insert_item(Prototype.Coal, coal_drill, quantity=10)
 
     # Wait for some time to let the system produce iron plates
-    game.sleep(60)  # Wait for 60 seconds
+    sleep(60)  # Wait for 60 seconds
 
     # Check the iron chest to see if iron plates have been produced
     chest_inventory = game.inspect_inventory(iron_chest)

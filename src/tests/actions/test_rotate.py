@@ -22,17 +22,19 @@ def test_rotate_boiler(game):
     boiler = game.rotate_entity(boiler, orthogonal_direction)
 
     # assert that the boiler is facing the offshore pump
-    assert boiler.direction == orthogonal_direction.value
+    assert boiler.direction.value == orthogonal_direction.value
 
 def test_rotate_transport_belt(game):
     # Place a transport belt
     transport_belt = game.place_entity(Prototype.TransportBelt, position=(0, 0), direction=Direction.UP)
+    assert transport_belt.direction.value == Direction.UP.value
     rotate_entity(game, transport_belt)
 
 
 def test_rotate_inserter(game):
     # Place a burner inserter
     inserter = game.place_entity(Prototype.BurnerInserter, position=(0, 0), direction=Direction.UP)
+    assert inserter.direction.value == Direction.UP.value
     rotate_entity(game, inserter)
 
 def rotate_entity(game, entity):
@@ -40,18 +42,18 @@ def rotate_entity(game, entity):
     entity = game.rotate_entity(entity, direction=Direction.RIGHT)
 
     # Assert that the direction of the transport belt has been updated
-    assert entity.direction == Direction.RIGHT.value
+    assert entity.direction.value == Direction.RIGHT.value
 
     entity = game.rotate_entity(entity, direction=Direction.LEFT)
 
-    assert entity.direction == Direction.LEFT.value
+    assert entity.direction.value == Direction.LEFT.value
 
     entity = game.rotate_entity(entity, direction=Direction.DOWN)
 
-    assert entity.direction == Direction.DOWN.value
+    assert entity.direction.value == Direction.DOWN.value
 
     entity = game.rotate_entity(entity, direction=Direction.UP)
 
-    assert entity.direction == Direction.UP.value
+    assert entity.direction.value == Direction.UP.value
 
     game.reset()

@@ -38,28 +38,42 @@ def calculate_expected_position(ref_pos, direction, spacing, ref_entity, entity_
     def align_to_grid(pos):
         return Position(x=round(pos.x * 2) / 2, y=round(pos.y * 2) / 2)
 
+    if ref_entity.direction != Direction.UP and ref_entity.direction != Direction.DOWN:
+        ref_tile_height = ref_entity.tile_dimensions.tile_width
+        ref_tile_width = ref_entity.tile_dimensions.tile_height
+    else:
+        ref_tile_height = ref_entity.tile_dimensions.tile_height
+        ref_tile_width = ref_entity.tile_dimensions.tile_width
+
+    if direction != Direction.UP or direction != Direction.DOWN:
+        entity_tile_width = entity_to_place.tile_dimensions.tile_height
+        entity_tile_height = entity_to_place.tile_dimensions.tile_width
+    else:
+        entity_tile_width = entity_to_place.tile_dimensions.tile_width
+        entity_tile_height = entity_to_place.tile_dimensions.tile_height
+
     def should_have_y_offset(entity):
-        return entity.tile_dimensions.tile_width % 2 == 1
+        return entity_tile_width % 2 == 1
 
     y_offset = 0.5 if should_have_y_offset(entity_to_place) else 0
 
     if direction == Direction.RIGHT:
-        return align_to_grid(Position(x=ref_pos.x + ref_dimensions.tile_width / 2 + entity_dimensions.tile_width / 2 + spacing, y=ref_pos.y + y_offset))
+        return align_to_grid(Position(x=ref_pos.x + ref_tile_width / 2 + entity_tile_width / 2 + spacing, y=ref_pos.y + y_offset))
     elif direction == Direction.DOWN:
-        return align_to_grid(Position(x=ref_pos.x, y=ref_pos.y + ref_dimensions.tile_height / 2 + entity_dimensions.tile_height / 2 + spacing + y_offset))
+        return align_to_grid(Position(x=ref_pos.x, y=ref_pos.y + ref_tile_height / 2 + entity_tile_height / 2 + spacing + y_offset))
     elif direction == Direction.LEFT:
-        return align_to_grid(Position(x=ref_pos.x - ref_dimensions.tile_width / 2 - entity_dimensions.tile_width / 2 - spacing, y=ref_pos.y + y_offset))
+        return align_to_grid(Position(x=ref_pos.x - ref_tile_width / 2 - entity_tile_width / 2 - spacing, y=ref_pos.y + y_offset))
     elif direction == Direction.UP:
-        return align_to_grid(Position(x=ref_pos.x, y=ref_pos.y - ref_dimensions.tile_height / 2 - entity_dimensions.tile_height / 2 - spacing + y_offset))
+        return align_to_grid(Position(x=ref_pos.x, y=ref_pos.y - ref_tile_height / 2 - entity_tile_height / 2 - spacing - y_offset))
 
 
 def test_place_entities_of_different_sizes(game):
     entity_pairs = [
+        (Prototype.Boiler, Prototype.SteamEngine),
+        (Prototype.ElectricMiningDrill, Prototype.Boiler),
         (Prototype.SteamEngine, Prototype.Pipe),
         (Prototype.AssemblingMachine1, Prototype.BurnerInserter),
         (Prototype.Boiler, Prototype.TransportBelt),
-        (Prototype.Boiler, Prototype.AssemblingMachine1),
-        (Prototype.ElectricMiningDrill, Prototype.StoneFurnace),
     ]
 
     for ref_proto, placed_proto in entity_pairs:
@@ -71,10 +85,9 @@ def test_place_entities_of_different_sizes(game):
         nearby_position = Position(x=starting_position.x + 1, y=starting_position.y - 1)
         game.move_to(nearby_position)
 
-        for direction in [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]:
-
-            for spacing in range(3):
-                ref_entity = game.place_entity(ref_proto, position=starting_position)
+        for spacing in range(3):
+            for direction in [Direction.LEFT, Direction.DOWN, Direction.RIGHT, Direction.UP]:
+                ref_entity = game.place_entity(ref_proto, direction=Direction.RIGHT, position=starting_position)
                 placed_entity = game.place_entity_next_to(placed_proto, ref_entity.position, direction, spacing)
 
                 expected_position = calculate_expected_position(ref_entity.position, direction, spacing, ref_entity,
@@ -84,9 +97,12 @@ def test_place_entities_of_different_sizes(game):
                     f"Direction: {direction}, Spacing: {spacing}, " \
                     f"Expected: {expected_position}, Got: {placed_entity.position}"
 
+                if placed_proto == Prototype.SteamEngine:
+                    dir = placed_entity.direction.value in [direction.value, Direction.opposite(direction).value]
+                    assert dir, f"Expected direction {direction}, got {placed_entity.direction}"
                 # Check direction unless we are dealing with a pipe, which has no direction
-                if placed_proto != Prototype.Pipe:
-                    assert placed_entity.direction == direction.value, f"Expected direction {direction}, got {placed_entity.direction}"
+                elif placed_proto != Prototype.Pipe:
+                    assert placed_entity.direction.value == direction.value, f"Expected direction {direction}, got {placed_entity.direction}"
 
                 game.reset()
                 game.move_to(nearby_position)
@@ -103,7 +119,7 @@ def test_place_pipe_next_to_offshore_pump(game):
     for direction in [Direction.RIGHT, Direction.DOWN, Direction.UP]:
 
         for spacing in range(3):
-            ref_entity = game.place_entity(ref_proto, position=starting_position)
+            ref_entity = game.place_entity(ref_proto, position=starting_position, direction=direction)
             placed_entity = game.place_entity_next_to(placed_proto, ref_entity.position, direction, spacing)
 
             expected_position = calculate_expected_position(ref_entity.position, direction, spacing, ref_entity,

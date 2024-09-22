@@ -51,6 +51,11 @@ class ObserveAll(Action):
                                               omit
                                               )
 
+        if isinstance(response, str):
+            # check that response endswith "attempt to index field 'actions' (a nil value)"
+            if response.endswith("attempt to index field 'actions' (a nil value)"):
+                raise Exception("No actions available")
+
         if response['local_environment']:
             pass
 

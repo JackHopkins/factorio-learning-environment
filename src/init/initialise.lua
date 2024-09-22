@@ -1,3 +1,8 @@
+-- If the global actions table doesn't exist, create it
+if not global.actions then
+    global.actions = {}
+end
+game.print("Initialising")
 --local player = game.players[arg1]
 player.surface.always_day=true
 --game.players[1].character_collision_mask = "not-colliding-with-itself"
@@ -20,10 +25,7 @@ local directions = {'north', 'northeast', 'east', 'southeast', 'south', 'southwe
 --player.game_view_settings.show_shortcut_bar = false
 --player.game_view_settings.show_map_view_options = false
 --player.game_view_settings.show_shortcut_bar = false
--- If the global actions table doesn't exist, create it
-if not global.actions then
-    global.actions = {}
-end
+
 global.points_of_interest = {}
 global.distances_to_nearest = {}
 global.relative_points_of_interest = {}

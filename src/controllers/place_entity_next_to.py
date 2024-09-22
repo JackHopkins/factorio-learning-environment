@@ -14,7 +14,7 @@ class PlaceEntityNextTo(Action):
     def __call__(self,
                  entity: Prototype,
                  reference_position: Position = Position(x=0, y=0),
-                 direction: Direction = 1,
+                 direction: Direction = Direction.RIGHT,
                  spacing: int = 0,
                  ) -> Entity:
         """

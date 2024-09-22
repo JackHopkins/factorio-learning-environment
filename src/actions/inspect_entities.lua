@@ -1,9 +1,9 @@
 
-global.actions.inspect_entities = function(player_index, radius_, position_x, position_y)
+global.actions.inspect_entities = function(player_index, radius, position_x, position_y)
     local player = game.players[player_index]
     local position = {x = tonumber(position_x), y = tonumber(position_y)} or player.position
 
-    local radius = tonumber(radius_) or 5
+    radius = tonumber(radius) or 5
     function find_connected_entities(entity)
         local entities_to_search = {
             {entity = entity, dx = 0, dy = -1, dir = defines.direction.north},

@@ -84,9 +84,11 @@ class Controller:
                 return parts[1][:-2], -1
             except IndexError:
                 return e.args[0], -1
-            return e.args[0], -1
+            return lua_response, -1
+        except TypeError as e:
+            return lua_response, -1
         except Exception as e:
-            return e, -1
+            return lua_response, -1
         return parsed['b'], elapsed
 
     def send(self, command, *parameters, trace=False) -> List[str]:

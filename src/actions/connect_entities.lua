@@ -222,9 +222,9 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     local player = game.players[player_index]
 
 
-     if source_x == target_x and source_y == target_y then
-        error("Source and target positions are the same.")
-    end
+    -- if source_x == target_x and source_y == target_y then
+    --    error("Source and target positions are the same.")
+    --end
 
     local start_position = {x = math.floor(source_x*2)/2, y = math.floor(source_y*2)/2}
     local end_position = {x = math.floor(target_x*2)/2, y = math.floor(target_y*2)/2}
@@ -273,11 +273,11 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
 
     for i = 1, #path-1, step_size do
         --local distance = ((path[i].position.x - path[i + 1].position.x) ^ 2 + (path[i].position.y - path[i + 1].position.y) ^ 2) ^ 0.5
-        if connection_type == 'transport-belt' then
-            original_dir = (path[i + step_size] and get_direction(path[i + step_size].position, path[i].position)) or 0
-        else
-            original_dir = (path[i + step_size] and get_direction(path[i].position, path[i + step_size].position)) or 0
-        end
+        --if connection_type == 'transport-belt' then
+        --    original_dir = (path[i + step_size] and get_direction(path[i + step_size].position, path[i].position)) or 0
+        --else
+        original_dir = (path[i + step_size] and get_direction(path[i].position, path[i + step_size].position)) or 0
+        --end
         --game.print("Placing entity at position " .. path[i].position.x .. ", " .. path[i].position.y .. " connection type: " .. connection_type .. " direction: " .. original_dir .. "ndir: ".. global.utils.get_entity_direction(connection_type, original_dir/2))
         dir = global.utils.get_entity_direction(connection_type, original_dir/2)
 

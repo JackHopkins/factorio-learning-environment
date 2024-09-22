@@ -53,6 +53,10 @@ class Direction(Enum):
     def to_factorio_direction(cls, direction):
         return direction.value // 2
 
+    @classmethod
+    def from_factorio_direction(cls, direction):
+        return direction.value * 2
+
 class FactorioInstance:
 
     def __init__(self, address=None,
@@ -69,20 +73,27 @@ class FactorioInstance:
         self.game_state = GameState().with_default(vocabulary)
         self.game_state.fast = fast
 
-        self.lua_script_manager = FactorioLuaScriptManager(self.rcon_client, cache_scripts)
-
         self.max_sequential_exception_count = 2
         self._sequential_exception_count = 0
 
+        self.lua_script_manager = FactorioLuaScriptManager(self.rcon_client, cache_scripts)
         self.script_dict = {**self.lua_script_manager.action_scripts, **self.lua_script_manager.init_scripts}
-        self.initial_inventory = inventory
 
         # Load the python controllers that correspond to the Lua scripts
         self.setup_controllers(self.lua_script_manager, self.game_state)
 
+        self.initial_inventory = inventory
         self.initialise(**inventory)
+        try:
+            self.observe_all()
+        except Exception as e:
+            # Invalidate cache if there is an error
+            self.lua_script_manager = FactorioLuaScriptManager(self.rcon_client, False)
+            self.script_dict = {**self.lua_script_manager.action_scripts, **self.lua_script_manager.init_scripts}
+            self.setup_controllers(self.lua_script_manager, self.game_state)
+            self.initialise(**inventory)
+            self.observe_all()
 
-        self.observe_all()
         self._tasks = []
 
         self._initial_score, goal = self.score()
@@ -302,12 +313,21 @@ class FactorioInstance:
         self.add_command('/c game.reset_game_state()', raw=True)
         self.add_command('clear_inventory', PLAYER)
         self.add_command('reset_position', PLAYER, 0, 0)
+        self.execute_transaction()
+
+        self.begin_transaction()
         self.add_command(f'/c global.actions.clear_entities({PLAYER})', raw=True)
         self.execute_transaction()
 
         self.begin_transaction()
+        count = 0
         for entity, count in kwargs.items():
             self.add_command('give_item', PLAYER, entity, count)
+            count += 1
+            if count > 5:
+                self.execute_transaction()
+                self.begin_transaction()
+                count = 0
         self.execute_transaction()
         #self.clear_entities()
 
@@ -333,8 +353,10 @@ class FactorioInstance:
     def begin_transaction(self):
         if not hasattr(self, 'current_transaction'):
             self.current_transaction = FactorioTransaction()
-        else:
+        elif self.current_transaction:
             self.current_transaction.clear()
+        else:
+            self.current_transaction = FactorioTransaction()
 
     def add_command(self, command: str, *parameters, raw=False):
         if not hasattr(self, 'current_transaction'):
@@ -345,6 +367,12 @@ class FactorioInstance:
         return self._execute_transaction()
 
     def initialise(self, **kwargs):
+
+        self.begin_transaction()
+        self.add_command('/c global.alerts = {}', raw=True)
+        self.add_command(f'/c player = game.players[{PLAYER}]', raw=True)
+        self.execute_transaction()
+
         self.lua_script_manager.load_init_into_game('initialise')
         self.lua_script_manager.load_init_into_game('clear_entities')
         self.lua_script_manager.load_init_into_game('alerts')
@@ -368,6 +396,8 @@ class FactorioInstance:
         # self.execute_transaction()
 
     def initialise2(self, **kwargs):
+        self._send('/c global.alerts = {}')
+        self._send(f'/c player = game.players[{PLAYER}]')
         self._send('initialise', PLAYER)
         self._send('alerts')
         self._send('util')
@@ -380,6 +410,7 @@ class FactorioInstance:
 
         for entity, count in kwargs.items():
             self._send('give_item', PLAYER, entity, count)
+
 
     def get_warnings(self, seconds=10):
         start = timer()

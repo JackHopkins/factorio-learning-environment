@@ -7,6 +7,9 @@ from factorio_types import Prototype, Resource
 
 @pytest.fixture()
 def game(instance):
+    instance.initial_inventory = {'stone-furnace': 1, 'boiler': 1, 'steam-engine': 1, 'offshore-pump': 4, 'pipe': 100,
+                                  'iron-plate': 50, 'copper-plate': 20, 'coal': 50, 'burner-inserter': 50, 'burner-mining-drill': 50}
+
     instance.reset()
     yield instance
 
@@ -31,10 +34,10 @@ def test_place_in_all_directions(game):
     up = game.place_entity(Prototype.BurnerInserter, position=(0, -1), direction=Direction.UP)
     down = game.place_entity(Prototype.BurnerInserter, position=(0, 1), direction=Direction.DOWN)
 
-    assert up.direction == Direction.UP
-    assert down.direction == Direction.DOWN
-    assert left.direction == Direction.LEFT
-    assert right.direction == Direction.RIGHT
+    assert up.direction.value == Direction.UP.value
+    assert down.direction.value == Direction.DOWN.value
+    assert left.direction.value == Direction.LEFT.value
+    assert right.direction.value == Direction.RIGHT.value
 
 def test_place_pickup(game):
     """
@@ -43,10 +46,10 @@ def test_place_pickup(game):
     :return:
     """
     boilers_in_inventory = game.inspect_inventory()[Prototype.Boiler]
-    game.place_entity(Prototype.Boiler, position=(0, 0))
+    game.place_entity(Prototype.Boiler, position=Position(x=0, y=0))
     assert boilers_in_inventory == game.inspect_inventory()[Prototype.Boiler] + 1
 
-    game.pickup_entity(Prototype.Boiler, position=(0, 0))
+    game.pickup_entity(Prototype.Boiler, position=Position(x=0, y=0))
     assert boilers_in_inventory == game.inspect_inventory()[Prototype.Boiler] - 1
 
 def test_place_overide(game):
@@ -78,3 +81,93 @@ def test_place_overide(game):
         if entity["name"] == Prototype.TransportBelt.name:
             assert entity["quantity"] == 9
     pass
+
+def test_place_offshore_pumps(game):
+    """
+    Place offshore pumps at each cardinal direction
+    :param game:
+    :return:
+    """
+    # move to the nearest water source
+    entity = Prototype.OffshorePump
+    water_location = game.nearest(Resource.Water)
+    game.move_to(Position(x=water_location.x - 10, y=water_location.y))
+    offshore_pump = game.place_entity(entity,
+                                      position=water_location,
+                                      direction=Direction.LEFT)
+    assert offshore_pump.direction.value == Direction.LEFT.value
+    game.move_to(Position(x=water_location.x, y=water_location.y))
+    offshore_pump = game.place_entity(entity,
+                                        position=water_location,
+                                        direction=Direction.RIGHT)
+    assert offshore_pump.direction.value == Direction.RIGHT.value
+    game.move_to(Position(x=water_location.x, y=water_location.y))
+    offshore_pump = game.place_entity(entity,
+                                        position=water_location,
+                                        direction=Direction.UP)
+    assert offshore_pump.direction.value == Direction.UP.value
+    game.move_to(Position(x=water_location.x, y=water_location.y))
+    offshore_pump = game.place_entity(entity,
+                                        position=water_location,
+                                        direction=Direction.DOWN)
+    assert offshore_pump.direction.value == Direction.DOWN.value
+
+def test_place_burner_inserters(game):
+    """
+    Place inserters at each cardinal direction
+    :param game:
+    :return:
+    """
+    # move to the nearest water source
+    entity = Prototype.BurnerInserter
+    location = game.nearest(Resource.Coal)
+    game.move_to(Position(x=location.x - 10, y=location.y))
+    offshore_pump = game.place_entity(entity,
+                                      position=location,
+                                      direction=Direction.LEFT)
+    assert offshore_pump.direction.value == Direction.LEFT.value
+    game.move_to(Position(x=location.x, y=location.y))
+    offshore_pump = game.place_entity(entity,
+                                      position=location,
+                                      direction=Direction.RIGHT)
+    assert offshore_pump.direction.value == Direction.RIGHT.value
+    game.move_to(Position(x=location.x, y=location.y))
+    offshore_pump = game.place_entity(entity,
+                                      position=location,
+                                      direction=Direction.UP)
+    assert offshore_pump.direction.value == Direction.UP.value
+    game.move_to(Position(x=location.x, y=location.y))
+    offshore_pump = game.place_entity(entity,
+                                      position=location,
+                                      direction=Direction.DOWN)
+    assert offshore_pump.direction.value == Direction.DOWN.value
+
+def test_place_burner_mining_drills(game):
+    """
+    Place mining drills at each cardinal direction
+    :param game:
+    :return:
+    """
+    # move to the nearest water source
+    entity = Prototype.BurnerMiningDrill
+    location = game.nearest(Resource.IronOre)
+    game.move_to(Position(x=location.x - 10, y=location.y))
+    offshore_pump = game.place_entity(entity,
+                                      position=location,
+                                      direction=Direction.LEFT)
+    assert offshore_pump.direction.value == Direction.LEFT.value
+    game.move_to(Position(x=location.x, y=location.y))
+    offshore_pump = game.place_entity(entity,
+                                      position=location,
+                                      direction=Direction.RIGHT)
+    assert offshore_pump.direction.value == Direction.RIGHT.value
+    game.move_to(Position(x=location.x, y=location.y))
+    offshore_pump = game.place_entity(entity,
+                                      position=location,
+                                      direction=Direction.UP)
+    assert offshore_pump.direction.value == Direction.UP.value
+    game.move_to(Position(x=location.x, y=location.y))
+    offshore_pump = game.place_entity(entity,
+                                      position=location,
+                                      direction=Direction.DOWN)
+    assert offshore_pump.direction.value == Direction.DOWN.value

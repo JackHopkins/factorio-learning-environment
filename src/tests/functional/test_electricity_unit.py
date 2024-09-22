@@ -10,7 +10,7 @@ from factorio_types import Prototype, Resource
 
 @pytest.fixture()
 def game(instance):
-    instance.initial_inventory = {'stone-furnace': 1, 'boiler': 1, 'steam-engine': 1, 'offshore-pump': 1}
+    instance.initial_inventory = {'stone-furnace': 1, 'boiler': 1, 'steam-engine': 1, 'offshore-pump': 1, 'pipe': 100, 'iron-plate': 50, 'copper-plate': 20, 'coal': 50}
     #instance.rcon_client.send_command('game.reset_game_state()')
     #instance.rcon_client.send_command('game.reload_script()')
     instance.reset()
@@ -26,17 +26,17 @@ def test_create_offshore_pump_to_steam_engine(game):
     steam_engines_in_inventory = game.inspect_inventory()[Prototype.SteamEngine]
     pipes_in_inventory = game.inspect_inventory()[Prototype.Pipe]
 
+    DIR = Direction.UP
     # move to the nearest water source
     water_location = game.nearest(Resource.Water)
     game.move_to(water_location)
 
     offshore_pump = game.place_entity(Prototype.OffshorePump,
-                                      position=water_location)
+                                      position=water_location,
+                                      direction=DIR)
+    assert offshore_pump.direction.value == DIR.value
     # Get offshore pump direction
-    direction = Direction(offshore_pump.direction)
-
-    # Get orthogonal direction
-    opposite_direction = Direction.opposite(direction)
+    direction = offshore_pump.direction
 
     # pump connection point
     pump_connection_point = offshore_pump.connection_points[0]
@@ -44,26 +44,38 @@ def test_create_offshore_pump_to_steam_engine(game):
     # place the boiler next to the offshore pump
     boiler = game.place_entity_next_to(Prototype.Boiler,
                                        reference_position=offshore_pump.position,
-                                       direction=opposite_direction,
+                                       direction=direction,
                                        spacing=2)
+    assert boiler.direction.value == direction.value
 
     # rotate the boiler to face the offshore pump
     boiler = game.rotate_entity(boiler, Direction.next_clockwise(direction))
 
-    # boiler connection point
-    boiler_connection_point = boiler.connection_points[0]
+    # insert coal into the boiler
+    game.insert_item(Prototype.Coal, boiler, quantity=5)
 
     # connect the boiler and offshore pump with a pipe
-    game.connect_entities(offshore_pump, boiler, connection_type=Prototype.Pipe)
+    offshore_pump_to_boiler_pipes = game.connect_entities(offshore_pump, boiler, connection_type=Prototype.Pipe)
 
     game.move_to(Position(x=0, y=10))
     steam_engine: Entity = game.place_entity_next_to(Prototype.SteamEngine,
                                                      reference_position=boiler.position,
-                                                     direction=Direction.RIGHT,
+                                                     direction=DIR,
                                                      spacing=2)
 
     # connect the boiler and steam engine with a pipe
-    game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
+    boiler_to_steam_engine_pipes = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
+
+    # inspect the environment to check if all the entities are connected
+    connected_entities = game.inspect_entities(position=steam_engine.position, radius=1)
+
+    for entity in connected_entities:
+        if entity.name == Prototype.SteamEngine:
+            assert entity.warning == 'not receiving electricity'
+
+    assert steam_engine.direction.value == Direction.RIGHT.value
+
+
 
 
 

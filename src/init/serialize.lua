@@ -493,107 +493,119 @@ function get_entity_direction(entity, direction)
 		return defines.direction.north
 	end
 
-    local prototype = game.entity_prototypes[entity]
-    game.print(prototype)
-    local cardinals = {
-        defines.direction.north,
-        defines.direction.east,
-        defines.direction.south,
-        defines.direction.west
-    }
-
-    if prototype and prototype.name == "offshore-pump" then
-        if direction == 1 then
-            return defines.direction.north
-        elseif direction == 4 then
-            return defines.direction.east
-        elseif direction == 3 then
-            return defines.direction.south
-        else
-            return defines.direction.west
-        end
-	elseif prototype and prototype.type == "transport-belt" then
-		game.print("Transport belt direction: " .. direction)
-		if direction == 2 then
+	local prototype = game.entity_prototypes[entity]
+	game.print(prototype)
+	local cardinals = {
+		defines.direction.north,
+		defines.direction.east,
+		defines.direction.south,
+		defines.direction.west
+	}
+	if prototype and (prototype.name == "boiler" or prototype.type == "generator") then
+		if direction == 0 then
 			return defines.direction.north
 		elseif direction == 1 then
+			return defines.direction.east
+		elseif direction == 2 then
+			return defines.direction.south
+		else
 			return defines.direction.west
+		end
+	elseif prototype and prototype.name == "offshore-pump" then
+		if direction == 2 then
+			return defines.direction.north
+		elseif direction == 3 then
+			return defines.direction.east
 		elseif direction == 0 then
 			return defines.direction.south
 		else
-			return defines.direction.east
+			return defines.direction.west
 		end
-    elseif prototype and prototype.type == "inserter" then
-        --return cardinals[(direction % 4)]
-        if direction == 0 then
-            return defines.direction.south
-        elseif direction == 1 then
-            return defines.direction.west
-        elseif direction == 2 then
-            return defines.direction.north
-        else
-            return defines.direction.east
-        end
-    elseif prototype.type == "mining-drill" then
-        if direction == 1 then
-            return cardinals[2]
-        elseif direction == 2 then
-            return cardinals[3]
-        elseif direction == 3 then
-            return cardinals[4]
-        else
-            return cardinals[1]
-        end
-    else
-        return cardinals[direction]
-    end
+	elseif prototype and prototype.type == "transport-belt" then
+			game.print("Transport belt direction: " .. direction)
+			if direction == 0 then
+				return defines.direction.north
+			elseif direction == 3 then
+				return defines.direction.west
+			elseif direction == 2 then
+				return defines.direction.south
+			else
+				return defines.direction.east
+			end
+		elseif prototype and prototype.type == "inserter" then
+			--return cardinals[(direction % 4)]
+			if direction == 0 then
+				return defines.direction.south
+			elseif direction == 1 then
+				return defines.direction.west
+			elseif direction == 2 then
+				return defines.direction.north
+			else
+				return defines.direction.east
+			end
+		elseif prototype.type == "mining-drill" then
+			if direction == 1 then
+				return cardinals[2]
+			elseif direction == 2 then
+				return cardinals[3]
+			elseif direction == 3 then
+				return cardinals[4]
+			else
+				return cardinals[1]
+			end
+		else
+			return direction
+		end
 
-    return direction
-end
+		game.print("Returning direction: ")
+		return direction
+	end
 
 function get_inverse_entity_direction(entity, factorio_direction)
-    local prototype = game.entity_prototypes[entity]
+	local prototype = game.entity_prototypes[entity]
 
-    if not factorio_direction then
-        return 0  -- Assuming 0 is the default direction in your system
-    end
+	if not factorio_direction then
+		return 0  -- Assuming 0 is the default direction in your system
+	end
 
-    if prototype and prototype.name == "offshore-pump" then
-        if factorio_direction == defines.direction.north then
-            return 1
-        elseif factorio_direction == defines.direction.east then
-            return 4
-        elseif factorio_direction == defines.direction.south then
-            return 3
-        else  -- west
-            return 2
-        end
-    end
+	if prototype and prototype.name == "offshore-pump" then
+		if factorio_direction == defines.direction.west then
+			return defines.direction.east
+		elseif factorio_direction == defines.direction.east then
+			return defines.direction.west
+		elseif factorio_direction == defines.direction.south then
+			return defines.direction.north
+		else
+			return defines.direction.south
+		end
+	end
 
-    if prototype and prototype.type == "inserter" then
-        if factorio_direction == defines.direction.south then
-            return 0
-        elseif factorio_direction == defines.direction.west then
-            return 1
-        elseif factorio_direction == defines.direction.north then
-            return 2
-        else  -- east
-            return 3
-        end
-    elseif prototype and prototype.type == "mining-drill" then
-        if factorio_direction == defines.direction.east then
-            return 1
-        elseif factorio_direction == defines.direction.south then
-            return 2
-        elseif factorio_direction == defines.direction.west then
-            return 3
-        else  -- north
-            return 0
-        end
-    else
-        -- For other entity types, convert Factorio's direction to 0-3 range
-        return math.floor(factorio_direction / 2)
-    end
+	if prototype and prototype.type == "inserter" then
+		if factorio_direction == defines.direction.south then
+			return defines.direction.north
+		elseif factorio_direction == defines.direction.west then
+			return  defines.direction.east
+		elseif factorio_direction == defines.direction.north then
+			return defines.direction.south
+		else  -- east
+			return defines.direction.west
+		end
+	--elseif prototype and prototype.type == "mining-drill" then
+	--	if factorio_direction == defines.direction.east then
+	--		return defines.direction.east
+	--	elseif factorio_direction == defines.direction.south then
+	--		return defines.direction.south
+	--	elseif factorio_direction == defines.direction.west then
+	--		return defines.direction.west
+	--	else  -- north
+	--		return defines.direction.north
+	--	end
+	else
+		game.print("Returning direction: " .. math.floor(factorio_direction / 2) .. ', '.. factorio_direction)
+		-- For other entity types, convert Factorio's direction to 0-3 range
+		return factorio_direction
+		--return factorio_direction
+	end
 end
 
 global.utils.get_entity_direction = get_entity_direction
@@ -604,51 +616,51 @@ global.utils.serialize_entity = function(entity)
 		return {}
 	end
 	game.print("Serializing entity: " .. entity.name .. " with direction: " .. entity.direction)
-	local direction = 0
+	local direction = entity.direction
 
 	-- This is needed because the entity.direction on the map is not always the actual direction
 	-- (e.g inserters and offshore pumps have opposite directions on the map to the actual cardinal)
-	if entity.direction ~= nil then
-		direction = get_inverse_entity_direction(entity.name, entity.direction)*2
-	end
+	--if entity.direction ~= nil then
+	--	direction = get_inverse_entity_direction(entity.name, entity.direction/2)*2--get_inverse_entity_direction(entity.name, entity.direction)
+	--end
 
-	if direction == nil then
-		direction = 0
-	end
+	--if direction == nil then
+	direction = get_entity_direction(entity.name, entity.direction)
+	--end
 	game.print(direction)
 	game.print("Serializing entity: " .. entity.name .. " with direction: " .. direction)
-    local serialized = {
-        name = "\""..entity.name.."\"",
-        position = entity.position,
-        direction = direction,
-        health = entity.health,
-        energy = entity.energy,
-        type = "\""..entity.type.."\""
-    }
+	local serialized = {
+		name = "\""..entity.name.."\"",
+		position = entity.position,
+		direction = direction,
+		health = entity.health,
+		energy = entity.energy,
+		type = "\""..entity.type.."\""
+	}
 
-    if entity.grid then
-        serialized.grid = global.utils.serialize_equipment_grid(entity.grid)
-    end
+	if entity.grid then
+		serialized.grid = global.utils.serialize_equipment_grid(entity.grid)
+	end
 
-    if entity.get_inventory then
-        for i = 1, #defines.inventory do
-            local inventory = entity.get_inventory(i)
-            if inventory and #inventory > 0 then
-                serialized["inventory_" .. i] = global.utils.serialize_inventory(inventory)
-            end
-        end
-    end
+	if entity.get_inventory then
+		for i = 1, #defines.inventory do
+			local inventory = entity.get_inventory(i)
+			if inventory and #inventory > 0 then
+				serialized["inventory_" .. i] = global.utils.serialize_inventory(inventory)
+			end
+		end
+	end
 
-    -- Add dimensions of the entity
-    local prototype = game.entity_prototypes[entity.name]
-    local collision_box = prototype.collision_box
-    serialized.dimensions = {
-        width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x),
-        height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y),
-    }
+	-- Add dimensions of the entity
+	local prototype = game.entity_prototypes[entity.name]
+	local collision_box = prototype.collision_box
+	serialized.dimensions = {
+		width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x),
+		height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y),
+	}
 
-    -- Add input and output locations if the entity is a transport belt
-    if entity.type == "transport-belt" then
+	-- Add input and output locations if the entity is a transport belt
+	if entity.type == "transport-belt" then
 		-- input_position is the position upstream of the belt
 		--local direction = entity.direction
 		local x, y = entity.position.x, entity.position.y
@@ -677,12 +689,12 @@ global.utils.serialize_entity = function(entity)
 		end
 
 		serialized.output_position = {x = x, y = y}
-    end
+	end
 
-    -- Add input and output locations if the entity is an inserter
-    if entity.type == "inserter" then
-        serialized.pickup_position = entity.pickup_position
-        serialized.drop_position = entity.drop_position
+	-- Add input and output locations if the entity is an inserter
+	if entity.type == "inserter" then
+		serialized.pickup_position = entity.pickup_position
+		serialized.drop_position = entity.drop_position
 
 		-- if pickup_position is nil, compute it from the entity's position and direction
 		if not serialized.pickup_position then
@@ -700,9 +712,9 @@ global.utils.serialize_entity = function(entity)
 		end
 
 		local burner = entity.burner
-       	if burner then
-            add_burner_inventory(serialized, burner)
-        end
+		if burner then
+			add_burner_inventory(serialized, burner)
+		end
 	end
 
 	-- Add input and output locations if the entity is a splitter
@@ -733,95 +745,90 @@ global.utils.serialize_entity = function(entity)
 
 	-- Add input and output locations if the entity is a offshore pump
 	if entity.type == "offshore-pump" then
-
-		local api_direction_map = {
-            [defines.direction.south] = 0,  -- North in API
-            [defines.direction.west] = 4,   -- East in API
-            [defines.direction.north] = 8,  -- South in API
-            [defines.direction.east] = 12    -- West in API
-        }
-        serialized.direction = api_direction_map[entity.direction]
-
 		local burner = entity.burner
-       	if burner then
-            add_burner_inventory(serialized, burner)
-        end
-    end
+		if burner then
+			add_burner_inventory(serialized, burner)
+		end
+	end
 
-    -- Add tile dimensions of the entity
-    serialized.tile_dimensions = {
-        tile_width = prototype.tile_width,
-        tile_height = prototype.tile_height,
-    }
+	-- Add tile dimensions of the entity
+	serialized.tile_dimensions = {
+		tile_width = prototype.tile_width,
+		tile_height = prototype.tile_height,
+	}
 
-    -- Add drop position if the entity is a mining drill
+	-- Add drop position if the entity is a mining drill
 	--game.print("Entity type: " .. entity.type)
 	--game.print("Entity has burner: " .. tostring(entity.burner ~= nil))
 	--game.print("Burner is burning: " .. tostring(entity.burner and entity.burner.currently_burning ~= nil))
 
-    if entity.type == "mining-drill" then
-        serialized.drop_position = entity.drop_position
+	if entity.type == "mining-drill" then
+		serialized.drop_position = entity.drop_position
 		local burner = entity.burner
-        if burner then
-            add_burner_inventory(serialized, burner)
-        end
-    end
+		if burner then
+			add_burner_inventory(serialized, burner)
+		end
+	end
 
-    -- Add recipes if the entity is a crafting machine
-    if entity.type == "assembling-machine" or entity.type == "furnace" then
-        if entity.get_recipe() then
-            serialized.recipe = global.utils.serialize_recipe(entity.get_recipe())
-        end
-    end
+	-- Add recipes if the entity is a crafting machine
+	if entity.type == "assembling-machine" or entity.type == "furnace" then
+		if entity.get_recipe() then
+			serialized.recipe = global.utils.serialize_recipe(entity.get_recipe())
+		end
+	end
 
-    -- Add fluid input point if the entity is a boiler
-    if entity.type == "boiler" then
+	-- Add fluid input point if the entity is a boiler
+	if entity.type == "boiler" then
 		local burner = entity.burner
-        if burner then
-            add_burner_inventory(serialized, burner)
-        end
+		if burner then
+			add_burner_inventory(serialized, burner)
+		end
 
 		--local direction = entity.direction
 		local x, y = entity.position.x, entity.position.y
 
 		if direction == defines.direction.north then
-			serialized.connection_points = {{x = x - 1, y = y}, {x = x + 1, y = y}}
-			serialized.steam_output_point = {x = x, y = y - 1}
+			game.print("Boiler direction is north")
+			serialized.connection_points = {{x = x - 2, y = y + 1}, {x = x + 2, y = y + 1}}
+			serialized.steam_output_point = {x = x, y = y - 2}
 		elseif direction == defines.direction.south then
-			serialized.connection_points = {{x = x - 1, y = y}, {x = x + 1, y = y}}
-			serialized.steam_output_point = {x = x, y = y + 1}
+			game.print("Boiler direction is south")
+			serialized.connection_points = {{x = x - 2, y = y - 1}, {x = x + 2, y = y - 1}}
+			serialized.steam_output_point = {x = x, y = y + 2}
 		elseif direction == defines.direction.east then
-			serialized.connection_points = {{x = x, y = y - 1}, {x = x, y = y + 1}}
-			serialized.steam_output_point = {x = x + 1, y = y}
+			game.print("Boiler direction is east")
+			serialized.connection_points = {{x = x - 1, y = y - 2}, {x = x - 1, y = y + 2}}
+			serialized.steam_output_point = {x = x + 2, y = y}
 		elseif direction == defines.direction.west then
-			serialized.connection_points = {{x = x, y = y - 1}, {x = x, y = y + 1}}
-			serialized.steam_output_point = {x = x - 1, y = y}
+			game.print("Boiler direction is west")
+			serialized.connection_points = {{x = x + 1, y = y - 2}, {x = x + 1, y = y + 2}}
+			serialized.steam_output_point = {x = x - 2, y = y}
 		end
 
-        --serialized.fluid_input_point = entity.fluidbox.get_connections(1)[1].position
-    end
+		--serialized.fluid_input_point = entity.fluidbox.get_connections(1)[1].position
+	end
 
-    if entity.type == "generator" then
+	if entity.type == "generator" then
 		serialized.connection_points = get_pipe_positions(entity)
 	end
 
-    -- Add fuel and input ingredients if the entity is a furnace or burner
-    if entity.type == "furnace" or entity.type == "burner" then
-        local burner = entity.burner
-        if burner then
-            add_burner_inventory(serialized, burner)
-        end
-        local input_inventory = entity.get_inventory(defines.inventory.furnace_source)
-        if input_inventory and #input_inventory > 0 then
-            serialized.input_inventory = {}
-            for i = 1, #input_inventory do
-                local item = input_inventory[i]
-                if item and item.valid_for_read then
-                    table.insert(serialized.input_inventory, {name = item.name, count = item.count})
-                end
-            end
-        end
-    end
+	-- Add fuel and input ingredients if the entity is a furnace or burner
+	if entity.type == "furnace" or entity.type == "burner" then
+		local burner = entity.burner
+		if burner then
+			add_burner_inventory(serialized, burner)
+		end
+		local input_inventory = entity.get_inventory(defines.inventory.furnace_source)
+		if input_inventory and #input_inventory > 0 then
+			serialized.input_inventory = {}
+			for i = 1, #input_inventory do
+				local item = input_inventory[i]
+				if item and item.valid_for_read then
+					table.insert(serialized.input_inventory, {name = item.name, count = item.count})
+				end
+			end
+		end
+	end
 
 	-- Add fluid box if the entity is an offshore pump
 	if entity.type == "offshore-pump" then
@@ -838,6 +845,8 @@ global.utils.serialize_entity = function(entity)
 		serialized.connection_points = get_offshore_pump_pipe_position(entity)
 	end
 
+	serialized.direction = get_inverse_entity_direction(entity.name, entity.direction) --api_direction_map[entity.direction]
 
-    return serialized
+
+	return serialized
 end

@@ -1,3 +1,13 @@
+local function player_collision(player, target_area)
+        local character_box = player.character.prototype.collision_box
+        local character_area = {
+            {player.position.x + character_box.left_top.x, player.position.y + character_box.left_top.y},
+            {player.position.x + character_box.right_bottom.x, player.position.y + character_box.right_bottom.y}
+        }
+        return (character_area[1][1] < target_area[2][1] and character_area[2][1] > target_area[1][1]) and
+               (character_area[1][2] < target_area[2][2] and character_area[2][2] > target_area[1][2])
+    end
+
 global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_y, direction, gap)
     local player = game.players[player_index]
     local ref_position = {x = ref_x, y = ref_y}
@@ -37,10 +47,12 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
 
         local ref_size = {x = 1, y = 1}
         if ref_entity then
-            local ref_bounding_box = ref_entity.prototype.collision_box
+            local ref_orientation = ref_entity.direction  -- Convert to 0-7 system
+            game.print("ref_orientation: " .. ref_orientation)
+            local is_rotated = (ref_orientation == 2 or ref_orientation == 6)  -- East or West
             ref_size = {
-                x = ref_bounding_box.right_bottom.x - ref_bounding_box.left_top.x,
-                y = ref_bounding_box.right_bottom.y - ref_bounding_box.left_top.y
+                x = is_rotated and ref_entity.prototype.tile_height or ref_entity.prototype.tile_width,
+                y = is_rotated and ref_entity.prototype.tile_width or ref_entity.prototype.tile_height
             }
         end
 
@@ -48,11 +60,22 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         local entity_prototype = game.entity_prototypes[entity_to_place]
         if entity_prototype then
             local entity_bounding_box = entity_prototype.collision_box
+            --entity_size = {
+            --    x = entity_bounding_box.right_bottom.x - entity_bounding_box.left_top.x,
+            --    y = entity_bounding_box.right_bottom.y - entity_bounding_box.left_top.y
+            --}
+            --entity_size = {
+            --    x = entity_prototype.tile_width,
+            --    y = entity_prototype.tile_height
+            --}
+            local is_rotated = (direction == 1 or direction == 3)  -- East or West
             entity_size = {
-                x = entity_bounding_box.right_bottom.x - entity_bounding_box.left_top.x,
-                y = entity_bounding_box.right_bottom.y - entity_bounding_box.left_top.y
+                x = is_rotated and entity_prototype.tile_height or entity_prototype.tile_width,
+                y = is_rotated and entity_prototype.tile_width or entity_prototype.tile_height
             }
         end
+        game.print("ref_size: " .. serpent.line(ref_size))
+        game.print("entity_size: " .. serpent.line(entity_size))
 
         -- Ensure we have valid sizes
         ref_size.x = math.max(ref_size.x, 1)
@@ -61,18 +84,21 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         entity_size.y = math.max(entity_size.y, 1)
 
         if direction == 0 then     -- North
-            new_pos.y = new_pos.y - ref_size.y / 2 - entity_size.y / 2 - effective_gap - 0.5
+            new_pos.y = new_pos.y - ref_size.y / 2 - entity_size.y / 2 - effective_gap
+            --new_pos.x = new_pos.x - 0.5
         elseif direction == 1 then -- East
             new_pos.x = new_pos.x + ref_size.x / 2 + entity_size.x / 2 + effective_gap
+            --new_pos.y = new_pos.y - 0.5
         elseif direction == 2 then -- South
             new_pos.y = new_pos.y + ref_size.y / 2 + entity_size.y / 2 + effective_gap
-        else                       -- West
-            new_pos.x = new_pos.x - ref_size.x / 2 - entity_size.x / 2 - effective_gap - 0.5
+            --new_pos.x = new_pos.x - 0.5
+        else  -- West
+            new_pos.x = new_pos.x - ref_size.x / 2 - entity_size.x / 2 - effective_gap
         end
 
         -- Round the position to the nearest 0.5 to align with Factorio's grid
-        new_pos.x = math.floor(new_pos.x * 2 + 0.5) / 2
-        new_pos.y = math.floor(new_pos.y * 2 + 0.5) / 2
+        new_pos.x = math.ceil(new_pos.x * 2) / 2
+        new_pos.y = math.ceil(new_pos.y * 2) / 2
 
         return new_pos
     end
@@ -120,6 +146,8 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     local is_belt = is_transport_belt(entity)
 
     local new_position = calculate_position(direction, ref_position, ref_entity, gap, is_belt, entity)
+    game.print("new_position: " .. serpent.line(new_position))
+    create_beam_point_with_direction(player, direction, new_position)
 
     local function player_collision(player, target_area)
         local character_box = player.character.prototype.collision_box
@@ -140,7 +168,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     if #nearby_entities > 0 then
         local colliding_entity_names = {}
         for _, nearby_entity in pairs(nearby_entities) do
-            if nearby_entity.name ~= "character" and nearby_entity.name ~= 'laser-beam' then
+            if nearby_entity.name ~= 'laser-beam' and nearby_entity.name ~= "character" then
                 table.insert(colliding_entity_names, nearby_entity.name)
             end
         end
@@ -181,6 +209,35 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         end
     end
 
+    -- Check for player collision and move player if necessary
+    local entity_prototype = game.entity_prototypes[entity]
+    local entity_box = entity_prototype.collision_box
+    local entity_width = math.abs(entity_box.right_bottom.x - entity_box.left_top.x)
+    local entity_height = math.abs(entity_box.right_bottom.y - entity_box.left_top.y)
+
+    local target_area = {
+        {new_position.x - entity_width / 2, new_position.y - entity_height / 2},
+        {new_position.x + entity_width / 2, new_position.y + entity_height / 2}
+    }
+
+    if player_collision(player, target_area) then
+        game.print("Player is colliding with the target area. Moving player.")
+        local move_distance = math.max(entity_width, entity_height) + 1
+        local move_direction = {x = 0, y = 0}
+
+        if direction == 0 or direction == 2 then -- North or South
+            move_direction.x = 1 -- Move East
+        else -- East or West
+            move_direction.y = 1 -- Move South
+        end
+
+        local new_player_position = {
+            x = player.position.x + move_direction.x * move_distance,
+            y = player.position.y + move_direction.y * move_distance
+        }
+        player.teleport(new_player_position, player.surface)
+    end
+
     local can_build = player.surface.can_place_entity({
         name = entity,
         position = new_position,
@@ -191,13 +248,14 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     -- Modify the error message in the can_build check
     if not can_build then
         local area = {{new_position.x - 1, new_position.y - 1}, {new_position.x + 1, new_position.y + 1}}
-        local entities = player.surface.find_entities_filtered{area = area}
+        local entities = player.surface.find_entities_filtered{area = area, type = {"beam", "resource"}, invert=true}
         local entity_names = {}
         for _, e in ipairs(entities) do
+            game.print(e.type)
             table.insert(entity_names, e.name)
         end
-        error("Cannot place entity at the position " .. serpent.line(new_position) .. " with direction " ..
-              serpent.line(orientation) .. ". Nearby entities: " .. serpent.line(entity_names))
+       -- error("Cannot place entity at the position " .. serpent.line(new_position) .. " with direction " ..
+        --      serpent.line(orientation) .. ". Nearby entities: " .. serpent.line(entity_names))
     end
 
     local new_entity = player.surface.create_entity({

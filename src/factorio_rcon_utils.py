@@ -72,7 +72,9 @@ def _lua2python(command, response, *parameters, trace=False, start=0):
 
         if "[string" in splitted:
             a, b = splitted.split("[string")
-            splitted = a + '[\"' + b.replace('"', '!!').strip(',} ') + "\"]}"
+            splitted = a + '[\"' + b.replace('"', '!!')
+            # remove trailing ',} '
+            splitted = re.sub(r',\s*}\s*$', '', splitted) + "\"]}"
 
         output = lua.decode(splitted)
 
@@ -82,8 +84,17 @@ def _lua2python(command, response, *parameters, trace=False, start=0):
             print("{hbar}\nCOMMAND: {command}\nPARAMETERS: {parameters}\n\n{response}\n\nOUTPUT:{output}"
                   .format(hbar="-" * 100, command=command, parameters=parameters, response=response, output=output))
 
+        # remove numerical keys
+        pruned = {}
+        if isinstance(output, dict):
+            for key, value in output.items():
+                if not isinstance(key, int):
+                    if isinstance(value, str):
+                        pruned[key] = value.replace("!!", "\"").strip()
+                    else:
+                        pruned[key] = value
             # Only the last transmission is considered the output - the rest are just messages
-        return output, (end - start)
+        return pruned, (end - start)
     else:
         if trace:
             print(f"failure: {command} \t")

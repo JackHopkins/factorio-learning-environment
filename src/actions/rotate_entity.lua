@@ -48,14 +48,16 @@ global.actions.rotate_entity = function(player_index, x, y, direction)
     --    orientation = direction_map[direction + 1]
     --end
 
+    game.print("Direction "..direction.. ", "..closest_entity.name..", "..closest_entity.direction)
+    game.print(global.utils.get_entity_direction(closest_entity.name, closest_entity.direction))
     -- Rotate the entity
     closest_entity.direction = global.utils.get_entity_direction(closest_entity.name, direction)
 
     -- Ensure the entity is properly aligned to the grid
     local entity_position = closest_entity.position
     local aligned_position = {
-        x = math.floor(entity_position.x * 2) / 2,
-        y = math.floor(entity_position.y * 2) / 2
+        x = math.floor(entity_position.x),
+        y = math.floor(entity_position.y)
     }
     game.print("Entity position: " .. entity_position.x .. ", " .. entity_position.y)
     game.print("Aligned position: " .. aligned_position.x .. ", " .. aligned_position.y)

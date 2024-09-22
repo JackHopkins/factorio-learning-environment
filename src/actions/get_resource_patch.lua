@@ -27,6 +27,28 @@ global.actions.get_resource_patch = function(player_index, resource, x, y, radiu
         end
 
         return {bounding_box = bounding_box, size = total_water_tiles}
+    elseif resource == "tree-01" then
+        local trees = surface.find_entities_filtered{
+            position = position,
+            type = "tree",
+            radius = radius
+        }
+        if #trees == 0 then
+            error("No trees at the specified location.")
+        end
+        local total_wood = 0
+        for _, tree in pairs(trees) do
+            expand_bounding_box(bounding_box, tree.position)
+            -- Estimate wood amount based on tree prototype
+            local tree_product = tree.prototype.mineable_properties.products[1]
+            if tree_product and tree_product.name == "wood" then
+                total_wood = total_wood + tree_product.amount
+            else
+                -- If wood amount is not specified, assume 1 wood per tree
+                total_wood = total_wood + 1
+            end
+        end
+        return {bounding_box = bounding_box, size = total_wood}
     else
         local resource_entities = surface.find_entities_filtered{position = position, name = resource, radius = radius}
         if #resource_entities == 0 then

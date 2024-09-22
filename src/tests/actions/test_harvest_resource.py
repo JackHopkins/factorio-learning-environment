@@ -26,3 +26,24 @@ def test_harvest_resource(game):
     final_coal = game.inspect_inventory()[Resource.Coal]
     # Assert that the coal has been added to the inventory
     assert 5 == final_coal - initial_coal
+
+def test_harvest_trees(game):
+    """
+    Find the nearest tree resource patch and harvest 5 wood from it.
+    :param game:
+    :return:
+    """
+    inventory = game.inspect_inventory()
+    # Check initial inventory
+    initial_wood = inventory[Resource.Wood]
+    # Find nearest wood resource
+    nearest_wood = game.nearest(Resource.Wood)
+    # Move to the wood resource
+    game.move_to(nearest_wood)
+    # Harvest coal
+    game.harvest_resource(nearest_wood, quantity=5, radius=50)  # Assuming there is a coal resource at (10, 10)
+
+    # Check the inventory after harvesting
+    final_wood = game.inspect_inventory()[Resource.Wood]
+    # Assert that the coal has been added to the inventory
+    assert 5 < final_wood - initial_wood

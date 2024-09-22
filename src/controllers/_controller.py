@@ -73,7 +73,9 @@ class Controller:
             lua_response = self.connection.send_command(wrapped)
             parsed, elapsed = _lua2python(invocation, lua_response, start=start)
             if not parsed['a'] and 'b' in parsed and isinstance(parsed['b'], str):
-                parsed['b'] = parsed['b'].replace("!!", "\"")
+                parts = lua_response.split("[\"b\"] = ")
+                parts[1] = f"{parts[1][:-2]}" if parts[1][-1] == "}" else parts[1]
+                parsed['b'] = parts[1].replace("!!", "\"")
             if not 'b' in parsed:
                 return {}, elapsed
         except ParseError as e:

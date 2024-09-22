@@ -22,7 +22,7 @@ global.actions.nearest = function(player_index, resource)
         local closest = nil
         local entities
 
-        if resource == "tree" then
+        if resource == "wood" then
             entities = surface.find_entities_filtered{
                 area = {{position.x - 500, position.y - 500}, {position.x + 500, position.y + 500}},
                 type = "tree"

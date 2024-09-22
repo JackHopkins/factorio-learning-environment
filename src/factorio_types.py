@@ -59,4 +59,4 @@ class Resource:
     Water = "water", ResourcePatch
     CrudeOil = "crude-oil", ResourcePatch
     UraniumOre = "uranium-ore", ResourcePatch
-    Wood = "tree-01", ResourcePatch
+    Wood = "wood", ResourcePatch

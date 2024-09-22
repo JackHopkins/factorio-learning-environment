@@ -20,7 +20,7 @@ global.actions.get_entity = function(player_index, entity, x, y)
         {position.x + width , position.y + height }
     }
     --local entities = player.surface.find_entities_filtered{area = target_area} --, name = entity}
-    local entities = player.surface.find_entities_filtered{area = target_area}
+    local entities = player.surface.find_entities_filtered{area = target_area, name = entity}
     game.print("Number of entities found: " .. #entities)
 
     if #entities > 0 then

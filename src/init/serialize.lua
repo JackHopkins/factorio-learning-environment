@@ -407,16 +407,22 @@ end
 local function get_pipe_positions(entity)
     local x, y = entity.position.x, entity.position.y
     local orientation = entity.orientation
-
+	local entity_prototype = game.entity_prototypes[entity.name]
+	game.print("Getting pipe position for entity: " .. entity.name .. " with orientation: " .. orientation)
     local dx, dy = 0, 0
+	local offsetx, offsety = 0, 0
     if orientation == 0 or orientation == defines.direction.north then
         dx, dy = 0, -1
+		--offsetx, offsety = 0, 0
     elseif orientation == 0.25 or orientation == defines.direction.east then
         dx, dy = 1, 0
+		--offsetx, offsety = -0.5, 0
     elseif orientation == 0.5 or orientation == defines.direction.south then
-        dx, dy = 0, 1
+        dx, dy = 0, -1
+		--offsetx, offsety = 0, -0.5
     elseif orientation == 0.75 or orientation == defines.direction.west then
-        dx, dy = -1, 0
+        dx, dy = 1, 0
+		--offsetx, offsety = 0, 0
     else
         -- Log detailed information about the unexpected orientation
         local orientation_info = string.format(
@@ -435,10 +441,11 @@ local function get_pipe_positions(entity)
             orientation_info
         ))
     end
-
+	local height = entity_prototype.tile_height/2
+	game.print("Height: " .. height)
     local pipe_positions = {
-        {x = x + 3*dx, y = y + 3*dy},
-        {x = x - 3*dx, y = y - 3*dy}
+        {x = x + (height*dx) + offsetx, y = y + (height*dy) + offsety},
+        {x = x - (height*dx) + offsetx, y = y - (height*dy) + offsety}
     }
 
     return pipe_positions
@@ -450,17 +457,17 @@ function get_boiler_pipe_positions(entity)
 
     local dx, dy
     if orientation == defines.direction.north then
-        dx, dy = 0, -1
-    elseif orientation == defines.direction.south then
-        dx, dy = 0, 1
-    elseif orientation == defines.direction.east then
         dx, dy = 1, 0
-    elseif orientation == defines.direction.west then
+    elseif orientation == defines.direction.south then
         dx, dy = -1, 0
+    elseif orientation == defines.direction.east then
+        dx, dy = 0, 1
+    elseif orientation == defines.direction.west then
+        dx, dy = 0, -1
     end
 	local water_inputs = {}
-	water_inputs[1] = {x = x - 1*dy, y = y - 1*dx}
-	water_inputs[2] = {x = x + 1*dy, y = y + 1*dx}
+	water_inputs[1] = {x = x + 1*dx, y = y + 1*dy}
+	water_inputs[2] = {x = x - 1*dx, y = y - 1*dy}
 
     local pipe_positions = {
         water_inputs = water_inputs,
@@ -766,7 +773,11 @@ global.utils.serialize_entity = function(entity)
 	--game.print("Burner is burning: " .. tostring(entity.burner and entity.burner.currently_burning ~= nil))
 
 	if entity.type == "mining-drill" then
-		serialized.drop_position = entity.drop_position
+		serialized.drop_position = {
+			x = entity.drop_position.x,
+			y = entity.drop_position.y
+		}
+		game.print("Mining drill drop position: " .. serpent.line(serialized.drop_position))
 		local burner = entity.burner
 		if burner then
 			add_burner_inventory(serialized, burner)
@@ -800,11 +811,11 @@ global.utils.serialize_entity = function(entity)
 			serialized.steam_output_point = {x = x, y = y + 2}
 		elseif entity.direction == defines.direction.east then
 			game.print("Boiler direction is east")
-			serialized.connection_points = {{x = x - 1, y = y - 2}, {x = x - 1, y = y + 2}}
+			serialized.connection_points = {{x = x - 0.5, y = y - 2}, {x = x - 0.5, y = y + 2}}
 			serialized.steam_output_point = {x = x + 2, y = y}
 		elseif entity.direction == defines.direction.west then
 			game.print("Boiler direction is west")
-			serialized.connection_points = {{x = x, y = y - 2}, {x = x, y = y + 2}}
+			serialized.connection_points = {{x = x + 0.5, y = y - 2}, {x = x + 0.5, y = y + 2}}
 			serialized.steam_output_point = {x = x - 2, y = y}
 		end
 
@@ -813,6 +824,9 @@ global.utils.serialize_entity = function(entity)
 
 	if entity.type == "generator" then
 		serialized.connection_points = get_pipe_positions(entity)
+
+		--create_beam_point(game.players[1], serialized.connection_points[1])
+		--create_beam_point(game.players[1], serialized.connection_points[2])
 	end
 
 	-- Add fuel and input ingredients if the entity is a furnace or burner

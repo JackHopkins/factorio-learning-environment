@@ -141,6 +141,13 @@ class InspectionResults(BaseModel):
     radius: float = 10
     time_elapsed: float = 0
 
+    def get_entity(self, prototype: 'Prototype') -> Optional[EntityInfo]:
+        name = prototype.value[0]
+        for entity in self.entities:
+            if entity.name == name:
+                return entity
+        return None
+
 
 class BoundingBox(BaseModel):
     left_top: Position

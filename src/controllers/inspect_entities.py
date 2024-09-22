@@ -54,7 +54,7 @@ class InspectEntities(Action):
                         entity["direction"] = Direction.DOWN.value
 
                     entity_info = EntityInfo(
-                        name=entity["name"],
+                        name=entity["name"].replace("_", "-"),
                         direction=entity["direction"],
                         position=position
                     )

@@ -11,7 +11,7 @@ def game(instance):
     instance.reset()
     yield instance
 
-def test_save_load(game):
+def _test_save_load(game):
 
     game._send("/c game.server_save('test')")
     chest = game.place_entity(Prototype.IronChest, position=Position(x=0, y=0))

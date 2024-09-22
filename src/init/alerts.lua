@@ -199,7 +199,7 @@ end
 -- Define a function to check if the entity requires electricity and has any
 function has_electricity(entity)
     if entity.prototype.electric_energy_source_prototype then
-        if entity.energy <= 0 then
+        if entity.electric_drain <= 0 then
             return false
         end
     end

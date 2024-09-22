@@ -43,6 +43,17 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
             return source
         end
 
+        -- If the closest entity is an assembling machine, return the inventory of the furnace
+        if closest_entity.type == "assembling-machine" then
+            local source = closest_entity.get_inventory(defines.inventory.assembling_machine_input).get_contents()
+            local output = closest_entity.get_inventory(defines.inventory.assembling_machine_output).get_contents()
+            -- Merge the two tables
+            for k, v in pairs(output) do
+                source[k] = (source[k] or 0) + v
+            end
+            return source
+        end
+
         return closest_entity.get_inventory(defines.inventory.chest).get_contents()
     end
 

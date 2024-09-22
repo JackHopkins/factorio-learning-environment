@@ -66,17 +66,10 @@ def test_create_offshore_pump_to_steam_engine(game):
     # connect the boiler and steam engine with a pipe
     boiler_to_steam_engine_pipes = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
 
-    # inspect the environment to check if all the entities are connected
-    connected_entities = game.inspect_entities(position=steam_engine.position, radius=1)
+    inspected_steam_engine = game.inspect_entities(position=steam_engine.position, radius=1).get_entity(Prototype.SteamEngine)
+    assert inspected_steam_engine.warning == 'not receiving electricity'
 
-    for entity in connected_entities:
-        if entity.name == Prototype.SteamEngine:
-            assert entity.warning == 'not receiving electricity'
-
-    assert steam_engine.direction.value == Direction.RIGHT.value
-
-
-
+    assert steam_engine.direction.value == DIR.value
 
 
 def test_build_iron_gear_factory(game):
@@ -266,5 +259,18 @@ def test_build_iron_gear_factory(game):
     # place connect the steam engine and assembly machine with power poles
     game.connect_entities(steam_engine, assembly_machine, connection_type=Prototype.SmallElectricPole)
 
-    #game.place_entity(Prototype.OffshorePump, position=water_patch.bounding_box.left_top)
+    # place connective pipes between the boiler and steam engine
+    game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
 
+    # place connective pipes between the boiler and offshore pump
+    game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
+
+    game.insert_item(Prototype.Coal, boiler, quantity=15)
+    game.insert_item(Prototype.Coal, burner_inserter, quantity=15)
+    game.insert_item(Prototype.Coal, stone_furnace, quantity=15)
+
+    game.sleep(5)
+
+    inventory = game.inspect_inventory(entity=assembly_machine)
+
+    assert inventory.get(Prototype.IronGearWheel) >= 0

@@ -142,7 +142,7 @@ class ConnectEntities(Action):
             y_sign = numpy.sign(source_position.y - target_position.y)
 
         if source_entity and isinstance(source, Entity):
-            if isinstance(source_entity, FluidHandler):
+            if isinstance(source_entity, FluidHandler) and connection_type.name==Prototype.Pipe.name:
                 if isinstance(source_entity, OffshorePump):
                     source_position = Position(x=source_entity.connection_points[0].x,
                                                y=source_entity.connection_points[0].y)
@@ -206,7 +206,7 @@ class ConnectEntities(Action):
                                            y=source_entity.position.y-y_sign*source_entity.tile_dimensions.tile_height/2)
 
         if isinstance(target, Entity):
-            if isinstance(target_entity, FluidHandler):
+            if isinstance(target_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
                 if isinstance(target_entity, Boiler):
                     if isinstance(source_entity, OffshorePump):
                         target_position = self._get_nearest_connection_point(target_entity,
@@ -216,6 +216,7 @@ class ConnectEntities(Action):
                         target_position = target_entity.steam_input_point
                 elif isinstance(target_entity, Boiler) and isinstance(source_entity, Generator):
                     target_position = target_entity.steam_input_point
+                    pass
                 else:
                     target_position = self._get_nearest_connection_point(target_entity,
                                                                          source_position,
@@ -243,7 +244,10 @@ class ConnectEntities(Action):
         # Move the source and target positions to the center of the tile
         target_position = Position(x=target_position.x, y=target_position.y)
         source_position = Position(x=source_position.x, y=source_position.y)
-        path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y), start=source_position)
+        if connection_type == Prototype.Pipe or connection_type == Prototype.TransportBelt:
+            path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y), start=source_position)
+        else:
+            path_handle = self.request_path(finish=target_position, start=source_position, allow_paths_through_own_entities=True)
 
         response, elapsed = self.execute(PLAYER,
                                          source_position.x,

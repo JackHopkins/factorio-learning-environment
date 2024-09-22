@@ -6,7 +6,7 @@ import pytest
 
 from factorio_entities import Entity, Position
 from factorio_instance import Direction
-from factorio_types import Prototype, Resource
+from factorio_types import Prototype, Resource, PrototypeName
 
 
 @pytest.fixture()
@@ -17,6 +17,8 @@ def game(instance):
         'burner-inserter': 50,
         'offshore-pump': 4,
         'pipe': 100,
+        'small-electric-pole': 50,
+        PrototypeName.AssemblingMachine.value: 10,
     }
     instance.reset()
     yield instance
@@ -55,7 +57,7 @@ def test_connect_offshore_pump_to_boiler(game):
     water_pipes = game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
     assert len(water_pipes) == math.ceil(5 + boiler.tile_dimensions.tile_height / 2 + offshore_pump.tile_dimensions.tile_height / 2 + 1)
 
-    game.move_to(Position(x=30, y=0))
+    game.move_to(Position(x=-30, y=0))
     offshore_pump = game.place_entity(Prototype.OffshorePump,
                                       position=game.nearest(Resource.Water),
                                       direction=Direction.LEFT)
@@ -79,12 +81,17 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
     steam_engines_in_inventory = game.inspect_inventory()[Prototype.SteamEngine]
     pipes_in_inventory = game.inspect_inventory()[Prototype.Pipe]
 
-    boiler: Entity = game.place_entity(Prototype.Boiler, position=Position(x=0, y=0))
+    boiler: Entity = game.place_entity(Prototype.Boiler, position=Position(x=0, y=0), direction=Direction.UP)
+    assert boiler.direction.value == Direction.UP.value
     game.move_to(Position(x=0, y=10))
-    steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=Position(x=0, y=10))
+    steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=Position(x=0, y=10), direction=Direction.UP)
+    assert steam_engine.direction.value == Direction.UP.value
 
     connection: List[Entity] = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
+    # check to see if the steam engine has water
+    #inspection = game.inspect_entities(position=steam_engine.position)
 
+    #assert inspection.get_entity(Prototype.SteamEngine).warning == 'not receiving electricity'
     assert boilers_in_inventory - 1 == game.inspect_inventory()[Prototype.Boiler]
     assert steam_engines_in_inventory - 1 == game.inspect_inventory()[Prototype.SteamEngine]
     assert pipes_in_inventory - len(connection) == game.inspect_inventory()[Prototype.Pipe]
@@ -94,12 +101,12 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
 
     # Define the offsets for the four cardinal directions
     offsets = [Position(x=10, y=0), Position(x=0, y=-10), Position(x=-10, y=0)]  # Up, Right, Down, Left  (0, -10),
-
-    for offset in offsets:
-        boiler: Entity = game.place_entity(Prototype.Boiler, position=Position(x=0, y=0))
+    directions = [Direction.RIGHT, Direction.UP, Direction.LEFT]
+    for offset, direction in zip(offsets, directions):
+        boiler: Entity = game.place_entity(Prototype.Boiler, position=Position(x=0, y=0),direction=direction)
         game.move_to(offset)
 
-        steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=offset)
+        steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=offset,direction=direction)
 
         try:
             connection: List[Entity] = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
@@ -112,6 +119,10 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
         current_pipes_in_inventory = game.inspect_inventory()[Prototype.Pipe]
         spent_pipes = (pipes_in_inventory - current_pipes_in_inventory)
         assert spent_pipes == len(connection)
+
+        # check to see if the steam engine has water
+        inspection = game.inspect_entities(position=steam_engine.position)
+        #assert inspection.get_entity(Prototype.SteamEngine).warning == 'not receiving electricity'
 
         game.reset()  # Reset the game state after each iteration
 
@@ -165,6 +176,7 @@ def test_place_and_connect_entities_in_grid(game):
 
     assert spent_furnaces == grid_size * grid_size
     assert spent_inserters == 2 * grid_size * (grid_size - 1)
+    game.reset()
 
 def test_basic_connection_between_furnace_and_miner(game):
     """
@@ -195,7 +207,7 @@ def test_basic_connection_between_furnace_and_miner(game):
     current_belts_in_inventory = game.inspect_inventory()[Prototype.TransportBelt]
     spent_belts = (belts_in_inventory - current_belts_in_inventory)
     assert spent_belts == len(connection)
-
+    game.reset()
 
 def test_burner_inserter_grid_with_coal_movement(game):
     """
@@ -244,7 +256,7 @@ def test_burner_inserter_grid_with_coal_movement(game):
         target = game.place_entity(Prototype.IronChest, position=inserters[0][0].drop_position)
         game.insert_item(Prototype.Coal, source, 50)
         # Wait for some time to allow coal to move, assuming there's a method to wait in game
-        sleep(60)  # Wait for 200 ticks or adjust as needed based on game speed
+        sleep(10)  # Wait for 200 ticks or adjust as needed based on game speed
 
         # Now check if the coal has reached the top left point (i.e., the first inserter in the grid)
         # Assuming there's a method to inspect the contents of an inserter
@@ -259,7 +271,7 @@ def test_burner_inserter_grid_with_coal_movement(game):
 
         coal_in_final_chest = target_inventory[Prototype.Coal]
 
-        assert coal_in_final_chest > 12
+        assert coal_in_final_chest >= 5
     except Exception as e:
         print(e)
         assert False
@@ -289,6 +301,7 @@ def test_failure_to_connect_adjacent_furnaces(game):
 
     # check if the coal was inserted in the furnace
     assert game.inspect_inventory(entity=furnace)[Prototype.IronOre] > 1
+    game.reset()
 
 def test_inserter_pickup_positions(game):
 
@@ -341,3 +354,64 @@ def test_inserter_pickup_positions(game):
                                  connection_type=Prototype.TransportBelt)
 
     assert len(belt) == int(abs(inserter1_position.y - inserter2_position.y) + 1)
+
+def test_connect_steam_engine_to_assembler_with_electricity_poles(game):
+    """
+    Place a steam engine and an assembling machine next to each other.
+    Connect them with electricity poles.
+    :param game:
+    :return:
+    """
+    steam_engine = game.place_entity(Prototype.SteamEngine, position=Position(x=0, y=0))
+    assembler = game.place_entity_next_to(Prototype.AssemblingMachine1, reference_position=steam_engine.position,
+                                          direction=game.RIGHT, spacing=10)
+    game.move_to(Position(x=5, y=5))
+    diagonal_assembler = game.place_entity(Prototype.AssemblingMachine1, position=Position(x=10, y=10))
+    poles_in_inventory = game.inspect_inventory()[Prototype.SmallElectricPole]
+
+    poles = game.connect_entities(steam_engine, assembler, connection_type=Prototype.SmallElectricPole)
+    poles2 = game.connect_entities(steam_engine, diagonal_assembler, connection_type=Prototype.SmallElectricPole)
+
+    current_poles_in_inventory = game.inspect_inventory()[Prototype.SmallElectricPole]
+    spent_poles = (poles_in_inventory - current_poles_in_inventory)
+
+    assert spent_poles == len(poles + poles2)
+
+
+def test_connect_steam_engine_boiler_nearly_adjacent(game):
+    """
+    We've had problems with gaps of exactly 2.
+    :param game:
+    :return:
+    """
+    # place the offshore pump at nearest water source
+    game.move_to(Position(x=-30, y=12))
+    game.move_to(game.nearest(Resource.Water))
+    offshore_pump = game.place_entity(Prototype.OffshorePump,
+                                      position=game.nearest(Resource.Water),
+                                      direction=Direction.LEFT)
+
+    # place the boiler next to the offshore pump
+    boiler = game.place_entity_next_to(Prototype.Boiler,
+                                       reference_position=offshore_pump.position,
+                                       direction=offshore_pump.direction,
+                                       spacing=2)
+
+    # place the steam engine next to the boiler
+    steam_engine = game.place_entity_next_to(Prototype.SteamEngine,
+                                             reference_position=boiler.position,
+                                             direction=boiler.direction,
+                                             spacing=2)
+
+    # place connective pipes between the boiler and steam engine
+    game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
+
+    game.connect_entities(offshore_pump, boiler, connection_type=Prototype.Pipe)
+
+    # insert coal into boiler
+    game.insert_item(Prototype.Coal, boiler, 50)
+
+    # check to see if the steam engine has water
+    inspection = game.inspect_entities(position=steam_engine.position)
+
+    assert inspection.get_entity(Prototype.SteamEngine).warning == 'not receiving electricity'

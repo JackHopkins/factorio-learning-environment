@@ -1,7 +1,7 @@
 -- connect_entities.lua
 
 local wire_reach = {
-    ['small-electric-pole'] = 7.5,
+    ['small-electric-pole'] = 7,
     ['medium-electric-pole'] = 9,
     ['big-electric-pole'] = 30,
     ['substation'] = 18
@@ -119,18 +119,29 @@ local function get_direction(from_position, to_position)
 end
 
 local function place_at_position(player, connection_type, current_position, dir, serialized_entities)
-    local entities = game.surfaces[1].find_entities_filtered{
-        position = current_position,
-        force = "player"
-    }
 
+    -- Check if the connection_type is an electricity pole
+    local is_electric_pole = wire_reach[connection_type] ~= nil
+    local placement_position = current_position
     local existing_entity = nil
-    for _, entity in pairs(entities) do
-        if entity.name == connection_type then
-            existing_entity = entity
-            break
-        elseif entity.name ~= 'laser-beam' and entity.name ~= 'character' then
-            error("Cannot place entity at position (" .. current_position.x .. ", " .. current_position.y .. ") due to overlapping " .. entity.name .. ".")
+    if is_electric_pole then
+        -- For electric poles, find a non-colliding position nearby
+        placement_position = game.surfaces[1].find_non_colliding_position(connection_type, current_position, 3, 0.1)
+        if not placement_position then
+            error("Cannot find a suitable position to place " .. connection_type .. " near (" .. current_position.x .. ", " .. current_position.y .. ").")
+        end
+    else
+        local entities = game.surfaces[1].find_entities_filtered{
+            position = current_position,
+            force = "player"
+        }
+        for _, entity in pairs(entities) do
+            if entity.name == connection_type then
+                existing_entity = entity
+                break
+            elseif entity.name ~= 'laser-beam' and entity.name ~= 'character' then
+                error("Cannot place entity at position (" .. current_position.x .. ", " .. current_position.y .. ") due to overlapping " .. entity.name .. ".")
+            end
         end
     end
 
@@ -168,24 +179,31 @@ local function place_at_position(player, connection_type, current_position, dir,
     -- Check if the entity can be placed at the given position
     if not game.surfaces[1].can_place_entity{
         name = connection_type,
-        position = current_position,
+        position = placement_position,
         direction = dir,
         force = player.force
     } then
-        global.actions.avoid_entity(player.index, connection_type, current_position)
+        global.actions.avoid_entity(player.index, connection_type, placement_position)
     end
 
-    local placed_entity = game.surfaces[1].create_entity({
+    if game.surfaces[1].can_place_entity{
         name = connection_type,
-        position = current_position,
+        position = placement_position,
         direction = dir,
         force = player.force
-    })
+    } then
+        local placed_entity = game.surfaces[1].create_entity({
+            name = connection_type,
+            position = placement_position,
+            direction = dir,
+            force = player.force
+        })
 
-    if placed_entity ~= nil then
-        local serialized = global.utils.serialize_entity(placed_entity)
-        player.remove_item({name = connection_type, count = 1})
-        table.insert(serialized_entities, serialized)
+        if placed_entity ~= nil then
+            player.remove_item({name = connection_type, count = 1})
+            local serialized = global.utils.serialize_entity(placed_entity)
+            table.insert(serialized_entities, serialized)
+        end
     end
 end
 
@@ -194,10 +212,11 @@ local function get_closest_entity(player, position)
     local closest_distance = math.huge
     local closest_entity = nil
     local surface = player.surface
-   -- local position = {x = math.floor(position.x), y = math.floor(position.y)}
-    local area = {{position.x - 1, position.y - 1}, {position.x + 1, position.y + 1}}
+    -- local distance = 0
+    -- local position = {x = math.floor(position.x), y = math.floor(position.y)}
+    -- local area = {{position.x - 1, position.y - 1}, {position.x + 1, position.y + 1}}
 
-    local entities = surface.find_entities_filtered{area = area, force = "player"}
+    local entities = surface.find_entities_filtered{position = position, force = "player", radius = 3}
 
     -- Find the closest entities
     for _, entity in ipairs(entities) do
@@ -244,11 +263,8 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     -- For each position in the path, place a laser
     -- surface.create_entity{name='laser-beam', position=player.position, source_position=top_left, target_position=top_right, duration=beam_duration, direction=direction, force='player', player=player}
 
+
     for i = 1, #path - 1 do
-        --get_direction(path[i].position, path[i + 1].position)
-        --local dir = global.utils.get_entity_direction(connection_type, get_direction(path[i].position, path[i + 1].position))
-        --create_beam_point_with_direction(player, dir, start_position)
-        --game.surfaces[1].create_entity{name='laser-beam', position=path[i].position, source_position=path[i].position, target_position=path[i + 1].position, duration=6000, direction=dir, force='player', player=player}
         create_arrow_with_direction(player, get_direction(path[i].position, path[i + 1].position), path[i].position)
     end
 
@@ -261,30 +277,34 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
 
     if xdiff + ydiff <= 1 then
         local dir = get_direction(start_position, end_position)
-        game.print(dir)
         local entity_dir = global.utils.get_entity_direction(connection_type, dir/2)
-        --game.print("Placing entity at position " .. start_position.x .. ", " .. start_position.y .. " with direction " .. entity_dir)
         place_at_position(player, connection_type, start_position, entity_dir, serialized_entities)
         return {entities = serialized_entities, connected = true}
     end
 
+    game.print("Diff: " .. xdiff + ydiff)
     local step_size = get_step_size(connection_type)
     local dir
 
-    for i = 1, #path-1, step_size do
-        --local distance = ((path[i].position.x - path[i + 1].position.x) ^ 2 + (path[i].position.y - path[i + 1].position.y) ^ 2) ^ 0.5
-        --if connection_type == 'transport-belt' then
-        --    original_dir = (path[i + step_size] and get_direction(path[i + step_size].position, path[i].position)) or 0
-        --else
-        original_dir = (path[i + step_size] and get_direction(path[i].position, path[i + step_size].position)) or 0
-        --end
-        --game.print("Placing entity at position " .. path[i].position.x .. ", " .. path[i].position.y .. " connection type: " .. connection_type .. " direction: " .. original_dir .. "ndir: ".. global.utils.get_entity_direction(connection_type, original_dir/2))
-        dir = global.utils.get_entity_direction(connection_type, original_dir/2)
+    game.print("Connection type: " .. connection_type)
+    if connection_type == 'pipe' then
+        place_at_position(player, connection_type, start_position, dir, serialized_entities)
+    end
 
+    for i = 1, #path-1, step_size do
+        original_dir = (path[i + step_size] and get_direction(path[i].position, path[i + step_size].position)) or 0
+        dir = global.utils.get_entity_direction(connection_type, original_dir/2)
         place_at_position(player, connection_type, path[i].position, dir, serialized_entities)
     end
-    place_at_position(player, connection_type, path[#path].position, dir, serialized_entities)
 
+    local preemptive_target = {x = (target_x + path[#path].position.x)/2, y = (target_y + path[#path].position.y)/2}
+
+    place_at_position(player, connection_type, path[#path].position, dir, serialized_entities)
+    place_at_position(player, connection_type, { x = target_x, y = target_y }, dir, serialized_entities)
+    place_at_position(player, connection_type, preemptive_target, dir, serialized_entities)
+
+    create_beam_point(game.players[1], path[#path].position)
+    create_beam_point(game.players[1], { x = target_x, y = target_y })
 
     --if connection_type ~= 'transport-belt' then
     --original_dir = path[1] and get_direction(end_position, path[1].position) or 0
@@ -293,7 +313,6 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     --end
     --dir = global.utils.get_entity_direction(connection_type, original_dir/2)
 
-    place_at_position(player, connection_type, end_position, dir, serialized_entities)
 
     game.print("Source entity: " .. source_entity.name)
     game.print("Target entity: " .. target_entity.name)

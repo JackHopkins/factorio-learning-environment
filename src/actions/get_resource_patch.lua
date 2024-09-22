@@ -27,7 +27,7 @@ global.actions.get_resource_patch = function(player_index, resource, x, y, radiu
         end
 
         return {bounding_box = bounding_box, size = total_water_tiles}
-    elseif resource == "tree-01" then
+    elseif resource == "wood" then
         local trees = surface.find_entities_filtered{
             position = position,
             type = "tree",

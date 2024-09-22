@@ -211,7 +211,7 @@ def test_build_iron_gear_factory(game):
 
     # place the assembly machine
     assembly_machine = game.place_entity_next_to(Prototype.AssemblingMachine1,
-                                                 reference_position=burner_inserter.drop_position,
+                                                 reference_position=burner_inserter.position,
                                                  direction=Direction.UP,
                                                  spacing=0)
     # set the recipe for the assembly machine to produce iron gears
@@ -225,7 +225,8 @@ def test_build_iron_gear_factory(game):
     # place the offshore pump at nearest water source
     game.move_to(game.nearest(Resource.Water))
     offshore_pump = game.place_entity(Prototype.OffshorePump,
-                                      position=game.nearest(Resource.Water))
+                                      position=game.nearest(Resource.Water),
+                                      direction=Direction.LEFT)
 
     # craft a boiler
     recipe = game.get_prototype_recipe(Prototype.Boiler)
@@ -235,8 +236,9 @@ def test_build_iron_gear_factory(game):
     # place the boiler next to the offshore pump
     boiler = game.place_entity_next_to(Prototype.Boiler,
                                        reference_position=offshore_pump.position,
-                                       direction=Direction.RIGHT,
+                                       direction=Direction.LEFT,
                                        spacing=2)
+
 
     # craft a steam engine
     recipe = game.get_prototype_recipe(Prototype.SteamEngine)
@@ -246,7 +248,7 @@ def test_build_iron_gear_factory(game):
     # place the steam engine next to the boiler
     steam_engine = game.place_entity_next_to(Prototype.SteamEngine,
                                              reference_position=boiler.position,
-                                             direction=Direction.RIGHT,
+                                             direction=Direction.LEFT,
                                              spacing=2)
 
     # connect the steam engine and assembly machine with power poles

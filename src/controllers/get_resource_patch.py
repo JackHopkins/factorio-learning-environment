@@ -18,16 +18,21 @@ class GetResourcePatch(Action):
     def __call__(self,
                  resource: Resource,
                  position: Position,
+                 radius: int = 10,
                  #relative=False
                  ) -> ResourcePatch:
         """
         Get the resource patch at position (x, y) if it exists on the world.
         :param resource: Resource to get, e.g Resource.Coal
         :param position: Position to get resource patch
+        :param radius: Radius to search for resource patch
         :example coal_patch_at_origin = get_resource_patch(Resource.Coal, Position(x=0, y=0))
         :return: ResourcePatch
         """
-        response, time_elapsed = self.execute(PLAYER, resource[0], position.x, position.y)
+        response, time_elapsed = self.execute(PLAYER, resource[0], position.x, position.y, radius)
+
+        if not isinstance(response, dict) or response == {}:
+            raise Exception(f"Could not get {resource[0]} at {position}.", response)
 
         left_top = Position(x=response['bounding_box']['left_top']['x'], y=response['bounding_box']['left_top']['y'])
         right_bottom = Position(x=response['bounding_box']['right_bottom']['x'], y=response['bounding_box']['right_bottom']['y'])

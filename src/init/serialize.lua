@@ -579,16 +579,18 @@ function get_inverse_entity_direction(entity, factorio_direction)
 			return defines.direction.south
 		end
 	end
-
+	game.print("Getting inverse direction: " .. entity .. " with direction: " .. factorio_direction)
 	if prototype and prototype.type == "inserter" then
 		if factorio_direction == defines.direction.south then
 			return defines.direction.north
 		elseif factorio_direction == defines.direction.west then
-			return  defines.direction.east
+			return defines.direction.east
 		elseif factorio_direction == defines.direction.north then
 			return defines.direction.south
-		else  -- east
+		elseif factorio_direction == defines.direction.east then
 			return defines.direction.west
+		else
+			return -1
 		end
 	--elseif prototype and prototype.type == "mining-drill" then
 	--	if factorio_direction == defines.direction.east then
@@ -615,7 +617,7 @@ global.utils.serialize_entity = function(entity)
 	if entity == nil then
 		return {}
 	end
-	game.print("Serializing entity: " .. entity.name .. " with direction: " .. entity.direction)
+	--game.print("Serializing entity: " .. entity.name .. " with direction: " .. entity.direction)
 	local direction = entity.direction
 
 	-- This is needed because the entity.direction on the map is not always the actual direction

@@ -29,15 +29,16 @@ def test_place_in_all_directions(game):
     :param game:
     :return:
     """
+    down = game.place_entity(Prototype.BurnerInserter, position=(0, 1), direction=Direction.DOWN)
     left = game.place_entity(Prototype.BurnerInserter, position=(-1, 0), direction=Direction.LEFT)
     right = game.place_entity(Prototype.BurnerInserter, position=(1, 0), direction=Direction.RIGHT)
     up = game.place_entity(Prototype.BurnerInserter, position=(0, -1), direction=Direction.UP)
-    down = game.place_entity(Prototype.BurnerInserter, position=(0, 1), direction=Direction.DOWN)
+
 
     assert up.direction.value == Direction.UP.value
-    assert down.direction.value == Direction.DOWN.value
     assert left.direction.value == Direction.LEFT.value
     assert right.direction.value == Direction.RIGHT.value
+    assert down.direction.value == Direction.DOWN.value
 
 def test_place_pickup(game):
     """

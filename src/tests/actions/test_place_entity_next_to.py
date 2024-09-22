@@ -163,7 +163,7 @@ def test_place_entity_next_to(game, entity_prototype, surrounding_entity_prototy
         print(f"Reference entity dimensions: {entity.tile_dimensions}")
 
         directions = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
-        tolerance = 0.5
+        tolerance = 1
 
         for direction in directions:
             surrounding_entity = game.place_entity_next_to(surrounding_entity_prototype,

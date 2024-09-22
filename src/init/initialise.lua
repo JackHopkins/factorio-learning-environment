@@ -788,8 +788,6 @@ function inspect(player, radius, position)
                 --crafted_items = entity.crafted_items or nil
             }
 
-
-
             -- Get entity contents if it has an inventory
             if entity.get_inventory(defines.inventory.chest) then
                 local inventory = entity.get_inventory(defines.inventory.chest).get_contents()
@@ -802,8 +800,6 @@ function inspect(player, radius, position)
             if entity.type == "train-stop" or entity.type == "car" or entity.type == "locomotive" then
                 data.orientation = entity.orientation
             end
-
-
 
             -- Get connected entities for pipes and transport belts
             if entity.type == "pipe" or entity.type == "transport-belt" then

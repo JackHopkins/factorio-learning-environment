@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 from controllers._action import Action
 from factorio_entities import Position
 from factorio_instance import PLAYER, Direction
@@ -32,12 +32,12 @@ class InspectEntities(Action):
 
         return self.from_inspect_entities_response(response, time_elapsed, radius)
 
-    def from_inspect_entities_response(self, response: Dict[str, Any], time_elapsed: float,
+    def from_inspect_entities_response(self, response: List[Any], time_elapsed: float,
                                        radius: float) -> InspectionResults:
         entities = []
         try:
-            if isinstance(response, dict):
-                for entity in response.values():
+            if isinstance(response, list):
+                for entity in response:
                     if entity["name"] == "laser_beam":
                         continue
 

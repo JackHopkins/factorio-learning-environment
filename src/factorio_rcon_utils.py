@@ -61,6 +61,25 @@ def _load_init(filename):
 def _load_initialisation_scripts():
     return _load_scripts(_get_init_names())
 
+def _remove_numerical_keys(dictionary):
+    pruned = {}
+    if not isinstance(dictionary, dict):
+        return dictionary
+    parts = []
+    for key, value in dictionary.items():
+        if isinstance(key, int):
+            if isinstance(value, dict):
+                parts.append(_remove_numerical_keys(value))
+            elif isinstance(value, str):
+                parts.append(value.replace("!!", "\"").strip())
+            else:
+                parts.append(value)
+        else:
+            pruned[key] = value
+
+    if parts:
+        pruned = parts
+    return pruned
 def _lua2python(command, response, *parameters, trace=False, start=0):
     if trace:
         print(command, parameters, response)
@@ -85,16 +104,11 @@ def _lua2python(command, response, *parameters, trace=False, start=0):
                   .format(hbar="-" * 100, command=command, parameters=parameters, response=response, output=output))
 
         # remove numerical keys
-        pruned = {}
-        if isinstance(output, dict):
-            for key, value in output.items():
-                if not isinstance(key, int):
-                    if isinstance(value, str):
-                        pruned[key] = value.replace("!!", "\"").strip()
-                    else:
-                        pruned[key] = value
+        if isinstance(output, dict) and 'b' in output:
+            pruned = _remove_numerical_keys(output['b'])
+            output['b'] = pruned
             # Only the last transmission is considered the output - the rest are just messages
-        return pruned, (end - start)
+        return output, (end - start)
     else:
         if trace:
             print(f"failure: {command} \t")

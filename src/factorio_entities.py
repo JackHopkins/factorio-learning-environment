@@ -178,7 +178,11 @@ class Ingredient(BaseModel):
 
 class Recipe(BaseModel):
     name: str
-    ingredients: List[Ingredient]
+    ingredients: Union[List[Ingredient], Dict[str, Any]]
+    products: Optional[Union[List[Ingredient], Dict[str, Any]]] = []
+    energy: Optional[float] = 0
+    category: Optional[str] = None
+    enabled: bool = False
 
 
 class BurnerType(BaseModel):

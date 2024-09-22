@@ -7,8 +7,11 @@ from factorio_types import Prototype, Resource
 
 @pytest.fixture()
 def game(instance):
-    instance.initial_inventory = {'stone-furnace': 1, 'boiler': 1, 'steam-engine': 1, 'offshore-pump': 4, 'pipe': 100,
-                                  'iron-plate': 50, 'copper-plate': 20, 'coal': 50, 'burner-inserter': 50, 'burner-mining-drill': 50}
+    instance.initial_inventory = {
+        'stone-furnace': 1, 'boiler': 1, 'steam-engine': 1, 'offshore-pump': 4, 'pipe': 100,
+        'iron-plate': 50, 'copper-plate': 20, 'coal': 50, 'burner-inserter': 50, 'burner-mining-drill': 50,
+        'transport-belt': 50
+    }
 
     instance.reset()
     yield instance
@@ -53,7 +56,7 @@ def test_place_pickup(game):
     game.pickup_entity(Prototype.Boiler, position=Position(x=0, y=0))
     assert boilers_in_inventory == game.inspect_inventory()[Prototype.Boiler] - 1
 
-def test_place_overide(game):
+def test_place_override(game):
     """
     Place an inserter over a transport belt and verify that the transport belt is removed
     :param game:
@@ -75,13 +78,9 @@ def test_place_overide(game):
                                  y=final_belt.position.y)
     inserter = game.place_entity(Prototype.BurnerInserter, position=left_of_iron, direction=Direction.LEFT, exact=True)
 
-    #assert inserter_position == Position(x=iron_position.x + 0.5, y=iron_position.y - 1)
-    inspect_entities = game.inspect_entities(inserter.position, radius=10)
+    belt = game.inspect_entities(inserter.position, radius=10).get_entity(Prototype.TransportBelt)
 
-    for entity in inspect_entities:
-        if entity["name"] == Prototype.TransportBelt.name:
-            assert entity["quantity"] == 9
-    pass
+    assert belt.quantity == 9
 
 def test_place_offshore_pumps(game):
     """

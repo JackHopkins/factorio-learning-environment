@@ -148,7 +148,8 @@ class ObserveAll(Action):
         start = timer()
         one_hot_x = zeros(256)
         one_hot_y = zeros(256)
-
+        if not local_counts:
+            local_counts = {}
         for key, value in local_counts.items():
             lua_key = key.replace('_', '-')
             index = self.game_state.vocabulary._update_vocabulary(lua_key)

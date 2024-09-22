@@ -229,9 +229,9 @@ local function get_closest_entity(player, position)
         end
     end
 
-    if closest_entity == nil then
-        error("No entity at the given coordinates." .. position.x .. ", " .. position.y)
-    end
+    --if closest_entity == nil then
+    --    error("No entity at the given coordinates." .. position.x .. ", " .. position.y)
+    --end
 
     return closest_entity
 end
@@ -272,8 +272,6 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     local xdiff = math.abs(source_x-target_x)
     local ydiff = math.abs(source_y-target_y)
 
-    local source_entity = get_closest_entity(player, {x = source_x, y = source_y})
-    local target_entity = get_closest_entity(player, {x = target_x, y = target_y})
 
     if xdiff + ydiff <= 1 then
         local dir = get_direction(start_position, end_position)
@@ -313,14 +311,17 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     --end
     --dir = global.utils.get_entity_direction(connection_type, original_dir/2)
 
-
-    game.print("Source entity: " .. source_entity.name)
-    game.print("Target entity: " .. target_entity.name)
     --game.print("Source entity: " .. source_entity.fluidbox[1].get_fluid_system_id())
     --game.print("Target entity: " .. target_entity.fluidbox[1].get_fluid_system_id())
 
     -- Check if entities are connected
-    local is_connected = are_fluidboxes_connected(source_entity, target_entity)
+    local source_entity = get_closest_entity(player, {x = source_x, y = source_y})
+    local target_entity = get_closest_entity(player, {x = target_x, y = target_y})
+    local is_connected = false
+
+    if source_entity and target_entity then
+        is_connected = are_fluidboxes_connected(source_entity, target_entity)
+    end
 
     if not is_connected then
         is_connected = (#serialized_entities > 0)

@@ -9,7 +9,8 @@ def game(instance):
     instance.initial_inventory ={
         **instance.initial_inventory,
         'coal': 50,
-        'iron-chest': 1
+        'iron-chest': 1,
+        'iron-plate': 5,
     }
     instance.reset()
     yield instance
@@ -29,10 +30,11 @@ def test_inspect_inventory(game):
 
 def test_inspect_assembling_machine_inventory(game):
     machine = game.place_entity(Prototype.AssemblingMachine1, position=Position(x=0, y=0))
-
+    game.set_entity_recipe(machine, Prototype.IronGearWheel)
+    game.insert_item(Prototype.IronPlate, machine, quantity=5)
     chest_inventory = game.inspect_inventory(entity=machine)
-    chest_coal_count = chest_inventory[Prototype.Coal]
-    assert chest_coal_count == 5
+    iron_count = chest_inventory[Prototype.IronPlate]
+    assert iron_count == 5
     game.reset()
 
 

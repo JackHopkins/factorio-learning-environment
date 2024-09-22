@@ -383,24 +383,25 @@ end
 
 local function get_offshore_pump_pipe_position(entity)
 	local x, y = entity.position.x, entity.position.y
-	local orientation = entity.orientation
+	local orientation = entity.orientation * 8
 
+	game.print("Getting pipe position for offshore pump with orientation: " .. orientation)
 	local dx, dy
 	if orientation == defines.direction.north then
-		dx, dy = 0, -1
-	elseif orientation == defines.direction.south then
 		dx, dy = 0, 1
+	elseif orientation == defines.direction.south then
+		dx, dy = 0, -1
 	elseif orientation == defines.direction.east then
-		dx, dy = 1, 0
-	elseif orientation == defines.direction.west then
 		dx, dy = -1, 0
+	elseif orientation == defines.direction.west then
+		dx, dy = 1, 0
 	end
 
 	if dy == nil then
 		return { {x = x, y = y - 1} }
 	end
 
-	return { {x = x, y = y - 1*dy} }
+	return { {x = x + dx, y = y + dy} }
 end
 
 local function get_pipe_positions(entity)
@@ -789,21 +790,21 @@ global.utils.serialize_entity = function(entity)
 		--local direction = entity.direction
 		local x, y = entity.position.x, entity.position.y
 
-		if direction == defines.direction.north then
+		if entity.direction == defines.direction.north then
 			game.print("Boiler direction is north")
-			serialized.connection_points = {{x = x - 2, y = y + 1}, {x = x + 2, y = y + 1}}
+			serialized.connection_points = {{x = x - 2, y = y + 0.5}, {x = x + 2, y = y + 0.5}}
 			serialized.steam_output_point = {x = x, y = y - 2}
-		elseif direction == defines.direction.south then
+		elseif entity.direction == defines.direction.south then
 			game.print("Boiler direction is south")
-			serialized.connection_points = {{x = x - 2, y = y - 1}, {x = x + 2, y = y - 1}}
+			serialized.connection_points = {{x = x - 2, y = y - 0.5}, {x = x + 2, y = y - 0.5}}
 			serialized.steam_output_point = {x = x, y = y + 2}
-		elseif direction == defines.direction.east then
+		elseif entity.direction == defines.direction.east then
 			game.print("Boiler direction is east")
 			serialized.connection_points = {{x = x - 1, y = y - 2}, {x = x - 1, y = y + 2}}
 			serialized.steam_output_point = {x = x + 2, y = y}
-		elseif direction == defines.direction.west then
+		elseif entity.direction == defines.direction.west then
 			game.print("Boiler direction is west")
-			serialized.connection_points = {{x = x + 1, y = y - 2}, {x = x + 1, y = y + 2}}
+			serialized.connection_points = {{x = x, y = y - 2}, {x = x, y = y + 2}}
 			serialized.steam_output_point = {x = x - 2, y = y}
 		end
 

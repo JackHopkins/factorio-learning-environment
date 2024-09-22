@@ -144,8 +144,8 @@ class ConnectEntities(Action):
         if source_entity and isinstance(source, Entity):
             if isinstance(source_entity, FluidHandler):
                 if isinstance(source_entity, OffshorePump):
-                    source_position = Position(x=source_entity.connection_points[0].x+1,
-                                               y=source_entity.connection_points[0].y+1)
+                    source_position = Position(x=source_entity.connection_points[0].x,
+                                               y=source_entity.connection_points[0].y)
                 elif isinstance(source_entity, Boiler):
                     if target_entity and isinstance(target_entity, Generator):
                         #source_position = self._round_position(source_entity.steam_output_point)
@@ -166,26 +166,29 @@ class ConnectEntities(Action):
 
                         #source_position = Position(x=source_entity.steam_output_point.x, y=source_entity.steam_output_point.y)
                     elif target_entity and isinstance(target_entity, OffshorePump):
-                        #target_position = target_entity.connection_points[0]
-                        target_position = Position(x=target_entity.connection_points[0].x + 1,
-                                                   y=target_entity.connection_points[0].y + 1)
-
-                        nearest_connection_point = self._get_nearest_connection_point(source_entity, target_position, target_entity)
-                        # find the closest connection_point to the target_position
-
-                        x_diff_source_position_target_position = source_entity.position.x - nearest_connection_point.x
-                        y_diff_source_position_target_position = source_entity.position.y - nearest_connection_point.y
-
-                        if x_diff_source_position_target_position == 0:
-                            if y_diff_source_position_target_position < 0:
-                                source_position = Position(x=source_entity.position.x - 0.5, y=source_entity.position.y + 2)
-                            else:
-                                source_position = Position(x=source_entity.position.x + 0.5, y=source_entity.position.y - 2)
-                        elif y_diff_source_position_target_position == 0:
-                            if x_diff_source_position_target_position < 0:
-                                source_position = Position(x=source_entity.position.x + 2, y=source_entity.position.y + 0.5)
-                            else:
-                                source_position = Position(x=source_entity.position.x - 2, y=source_entity.position.y - 0.5)
+                        # #target_position = target_entity.connection_points[0]
+                        # target_position = Position(x=target_entity.connection_points[0].x + 1,
+                        #                            y=target_entity.connection_points[0].y + 1)
+                        #
+                        # nearest_connection_point = self._get_nearest_connection_point(source_entity, target_position, target_entity)
+                        # # find the closest connection_point to the target_position
+                        #
+                        # x_diff_source_position_target_position = source_entity.position.x - nearest_connection_point.x
+                        # y_diff_source_position_target_position = source_entity.position.y - nearest_connection_point.y
+                        #
+                        # if x_diff_source_position_target_position == 0:
+                        #     if y_diff_source_position_target_position < 0:
+                        #         source_position = Position(x=source_entity.position.x - 0.5, y=source_entity.position.y + 2)
+                        #     else:
+                        #         source_position = Position(x=source_entity.position.x + 0.5, y=source_entity.position.y - 2)
+                        # elif y_diff_source_position_target_position == 0:
+                        #     if x_diff_source_position_target_position < 0:
+                        #         source_position = Position(x=source_entity.position.x + 2, y=source_entity.position.y + 0.5)
+                        #     else:
+                        #         source_position = Position(x=source_entity.position.x - 2, y=source_entity.position.y - 0.5)
+                        source_position = self._get_nearest_connection_point(source_entity,
+                                                                             source_position,
+                                                                             existing_connection_entity=target_entity)
 
                 else:
                     source_position = self._get_nearest_connection_point(source_entity,

@@ -1,3 +1,4 @@
+import math
 from time import sleep
 from typing import List
 
@@ -14,9 +15,58 @@ def game(instance):
         **instance.initial_inventory,
         'stone-furnace': 10,
         'burner-inserter': 50,
+        'offshore-pump': 4,
+        'pipe': 100,
     }
     instance.reset()
     yield instance
+
+def test_connect_offshore_pump_to_boiler(game):
+    #game.craft_item(Prototype.OffshorePump)
+    game.move_to(game.nearest(Resource.Water))
+    offshore_pump = game.place_entity(Prototype.OffshorePump,
+                                      position=game.nearest(Resource.Water))
+    boiler = game.place_entity_next_to(Prototype.Boiler,
+                                       reference_position=offshore_pump.position,
+                                       direction=offshore_pump.direction,
+                                       spacing=5)
+    water_pipes = game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
+    assert len(water_pipes) == 5 + boiler.tile_dimensions.tile_width/2 + offshore_pump.tile_dimensions.tile_width/2 + 1
+
+    offshore_pump = game.place_entity(Prototype.OffshorePump,
+                                      position=game.nearest(Resource.Water),
+                                        direction=Direction.RIGHT)
+    boiler = game.place_entity_next_to(Prototype.Boiler,
+                                        reference_position=offshore_pump.position,
+                                        direction=offshore_pump.direction,
+                                        spacing=5)
+    assert boiler.direction.value == Direction.RIGHT.value
+    water_pipes = game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
+    assert len(water_pipes) == math.ceil(5 + boiler.tile_dimensions.tile_height/2 + offshore_pump.tile_dimensions.tile_height/2 + 1)
+
+    offshore_pump = game.place_entity(Prototype.OffshorePump,
+                                      position=game.nearest(Resource.Water),
+                                      direction=Direction.DOWN)
+    boiler = game.place_entity_next_to(Prototype.Boiler,
+                                       reference_position=offshore_pump.position,
+                                       direction=offshore_pump.direction,
+                                       spacing=5)
+    assert boiler.direction.value == Direction.DOWN.value
+    water_pipes = game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
+    assert len(water_pipes) == math.ceil(5 + boiler.tile_dimensions.tile_height / 2 + offshore_pump.tile_dimensions.tile_height / 2 + 1)
+
+    game.move_to(Position(x=30, y=0))
+    offshore_pump = game.place_entity(Prototype.OffshorePump,
+                                      position=game.nearest(Resource.Water),
+                                      direction=Direction.LEFT)
+    boiler = game.place_entity_next_to(Prototype.Boiler,
+                                       reference_position=offshore_pump.position,
+                                       direction=offshore_pump.direction,
+                                       spacing=5)
+    assert boiler.direction.value == Direction.LEFT.value
+    water_pipes = game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
+    assert len(water_pipes) == math.ceil(
+        5 + boiler.tile_dimensions.tile_width / 2 + offshore_pump.tile_dimensions.tile_width / 2 + 1)
 
 
 def test_connect_steam_engines_to_boilers_using_pipes(game):
@@ -227,10 +277,18 @@ def test_failure_to_connect_adjacent_furnaces(game):
 
     drill = game.place_entity(Prototype.BurnerMiningDrill, position=iron_position, direction=Direction.UP, exact=True)
     furnace = game.place_entity_next_to(Prototype.StoneFurnace, reference_position=drill.position, direction=Direction.LEFT, spacing=2)
-    inserter = game.place_entity_next_to(Prototype.BurnerInserter, reference_position=furnace.position, direction=Direction.RIGHT, spacing=0.5)
+    inserter = game.place_entity_next_to(Prototype.BurnerInserter, reference_position=furnace.position, direction=Direction.RIGHT, spacing=0)
     inserter = game.rotate_entity(inserter, Direction.LEFT)
     result = game.connect_entities(target=inserter, source=drill, connection_type=Prototype.TransportBelt)
-    print()
+
+    # insert coal in the drill
+    game.insert_item(Prototype.Coal, drill, 50)
+
+    # wait for the iron to be mined
+    sleep(5)
+
+    # check if the coal was inserted in the furnace
+    assert game.inspect_inventory(entity=furnace)[Prototype.IronOre] > 1
 
 def test_inserter_pickup_positions(game):
 

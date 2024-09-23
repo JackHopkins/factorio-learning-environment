@@ -37,6 +37,26 @@ def test_rotate_inserter(game):
     assert inserter.direction.value == Direction.UP.value
     rotate_entity(game, inserter)
 
+def test_rotate_transport_belt_output_and_input_position(game):
+    belt = game.place_entity(Prototype.TransportBelt, position=(0, 0), direction=Direction.UP)
+    assert belt.direction.value == Direction.UP.value
+
+    rotated_belt = game.rotate_entity(belt, direction=Direction.DOWN)
+
+    assert belt.output_position == rotated_belt.input_position
+    assert belt.input_position == rotated_belt.output_position
+
+def test_rotate_inserters_drop_and_pickup_position(game):
+    inserter = game.place_entity(Prototype.BurnerInserter, position=(0, 0), direction=Direction.UP)
+    assert inserter.direction.value == Direction.UP.value
+
+    rotated_inserter = game.rotate_entity(inserter, direction=Direction.DOWN)
+
+    assert inserter.pickup_position == rotated_inserter.drop_position
+    assert inserter.drop_position == rotated_inserter.pickup_position
+
+
+
 def rotate_entity(game, entity):
     # Rotate the transport belt right
     entity = game.rotate_entity(entity, direction=Direction.RIGHT)

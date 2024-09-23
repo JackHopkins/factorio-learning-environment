@@ -297,12 +297,12 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
 
     local preemptive_target = {x = (target_x + path[#path].position.x)/2, y = (target_y + path[#path].position.y)/2}
 
-    place_at_position(player, connection_type, path[#path].position, dir, serialized_entities)
-    place_at_position(player, connection_type, { x = target_x, y = target_y }, dir, serialized_entities)
-    place_at_position(player, connection_type, preemptive_target, dir, serialized_entities)
+    place_at_position(player, connection_type, path[#path].position, get_direction(path[#path].position, preemptive_target), serialized_entities)
+    place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities)
+    place_at_position(player, connection_type, preemptive_target, get_direction(path[#path].position, preemptive_target), serialized_entities)
 
-    create_beam_point(game.players[1], path[#path].position)
-    create_beam_point(game.players[1], { x = target_x, y = target_y })
+    --create_beam_point(game.players[1], path[#path].position)
+    create_beam_point(game.players[1], end_position)
 
     --if connection_type ~= 'transport-belt' then
     --original_dir = path[1] and get_direction(end_position, path[1].position) or 0

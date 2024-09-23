@@ -18,6 +18,7 @@ def game(instance):
         'offshore-pump': 4,
         'pipe': 100,
         'small-electric-pole': 50,
+        'transport-belt': 100,
         PrototypeName.AssemblingMachine.value: 10,
     }
     instance.reset()
@@ -415,3 +416,40 @@ def test_connect_steam_engine_boiler_nearly_adjacent(game):
     inspection = game.inspect_entities(position=steam_engine.position)
 
     assert inspection.get_entity(Prototype.SteamEngine).warning == 'not receiving electricity'
+
+def test_connect_transport_belts_to_inserter_row(game):
+    # Find the nearest iron ore patch
+    iron_ore_patch = game.get_resource_patch(Resource.IronOre, game.nearest(Resource.IronOre))
+
+    # Move to the center of the iron ore patch
+    game.move_to(iron_ore_patch.bounding_box.left_top)
+
+    # Place burner mining drill
+    miner = game.place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, iron_ore_patch.bounding_box.left_top)
+
+    # Place a transport belt from the miner's output
+    iron_belt_start = game.place_entity_next_to(Prototype.TransportBelt, miner.position, Direction.DOWN, spacing=0)
+    assert iron_belt_start.position.is_close(miner.drop_position, 1)
+    # Place 5 stone furnaces along the belt with burner inserters facing down from above
+    furnace_line_start = game.place_entity_next_to(Prototype.StoneFurnace, miner.drop_position, Direction.DOWN,
+                                                   spacing=2)
+    # Create a row of burner inserters to fuel the furnaces from the belt
+    inserter_line_start = game.place_entity_next_to(Prototype.BurnerInserter, furnace_line_start.position, Direction.UP,
+                                                    spacing=0)
+    inserter_line_start = game.rotate_entity(inserter_line_start, Direction.DOWN)
+
+    current_furnace = furnace_line_start
+    current_inserter = inserter_line_start
+
+    for _ in range(3):
+        current_furnace = game.place_entity_next_to(Prototype.StoneFurnace, current_furnace.position, Direction.RIGHT,
+                                                    spacing=1)
+        current_inserter = game.place_entity_next_to(Prototype.BurnerInserter, current_furnace.position,
+                                                     Direction.UP, spacing=0)
+        current_inserter = game.rotate_entity(current_inserter, Direction.DOWN)
+
+    # Connect furnaces with transport belt
+    above_current_furnace = Position(x=current_furnace.position.x, y=current_furnace.position.y - 2.5)
+    game.connect_entities(iron_belt_start.output_position, above_current_furnace, Prototype.TransportBelt)
+
+    pass

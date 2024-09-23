@@ -76,6 +76,8 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         end
         game.print("ref_size: " .. serpent.line(ref_size))
         game.print("entity_size: " .. serpent.line(entity_size))
+        game.print("effective_gap: " .. effective_gap)
+        game.print("direction: " .. direction)
 
         -- Ensure we have valid sizes
         ref_size.x = math.max(ref_size.x, 1)

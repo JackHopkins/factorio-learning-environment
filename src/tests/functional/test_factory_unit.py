@@ -67,7 +67,7 @@ def test_steam_engines(game: FactorioInstance):
 
     except Exception as e:
         print(e)
-        assert False
+        assert False, str(e)
 
 
 def test_iron_smelting(game: FactorioInstance):

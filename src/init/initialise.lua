@@ -144,11 +144,11 @@ function create_beam_bounding_box (player, surface, direction, top_left, bottom_
     local bottom_left = {x=top_left.x, y=bottom_right.y}
     local top_right = {x=bottom_right.x, y=top_left.y}
     local direction = 0
-    surface.create_entity{name='laser-beam', position=player.position, source_position=top_left, target_position=top_right, duration=beam_duration, direction=direction, force='player', player=player}
-    surface.create_entity{name='laser-beam', position=player.position, source_position=top_right, target_position=bottom_right, duration=beam_duration, direction=direction, force='player', player=player}
-    surface.create_entity{name='laser-beam', position=player.position, source_position=bottom_right, target_position=bottom_left, duration=beam_duration,  direction=direction, force='player', player=player}
-    surface.create_entity{name='laser-beam', position=player.position, source_position=bottom_left, target_position=top_left, duration=beam_duration,  direction=direction, force='player', player=player}
-    surface.create_entity{name='laser-beam', position=player.position, source_position=player.position, duration=beam_duration, target_position={x=player.position.x, y=player.position.y+0.1}, direction=direction, force='player', player=player}
+    surface.create_entity{name='laser-beam', position=player.position, source_position=top_left, target_position=top_right, duration=beam_duration, direction=direction, force='neutral', player=player}
+    surface.create_entity{name='laser-beam', position=player.position, source_position=top_right, target_position=bottom_right, duration=beam_duration, direction=direction, force='neutral', player=player}
+    surface.create_entity{name='laser-beam', position=player.position, source_position=bottom_right, target_position=bottom_left, duration=beam_duration,  direction=direction, force='neutral', player=player}
+    surface.create_entity{name='laser-beam', position=player.position, source_position=bottom_left, target_position=top_left, duration=beam_duration,  direction=direction, force='neutral', player=player}
+    surface.create_entity{name='laser-beam', position=player.position, source_position=player.position, duration=beam_duration, target_position={x=player.position.x, y=player.position.y+0.1}, direction=direction, force='neutral', player=player}
 end
 
 function create_arrow_with_direction(player, direction, position)
@@ -187,7 +187,7 @@ function create_arrow_with_direction(player, direction, position)
         source_position = position,
         target_position = end_position,
         duration = 100000,
-        force = 'player',
+        force = 'neutral',
         player = player
     }
 
@@ -210,7 +210,7 @@ function create_arrow_with_direction(player, direction, position)
         source_position = end_position,
         target_position = arrow_left,
         duration = 100000,
-        force = 'player',
+        force = 'neutral',
         player = player
     }
 
@@ -220,7 +220,7 @@ function create_arrow_with_direction(player, direction, position)
         source_position = end_position,
         target_position = arrow_right,
         duration = 100000,
-        force = 'player',
+        force = 'neutral',
         player = player
     }
 end
@@ -246,7 +246,7 @@ function create_beam_point_with_direction (player, direction, position)
         target_position=end_position,
         duration=100000,
         direction=direction,
-        force='player',
+        force='neutral',
         player=player
     }
 end

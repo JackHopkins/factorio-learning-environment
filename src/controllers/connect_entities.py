@@ -242,10 +242,10 @@ class ConnectEntities(Action):
         #                                                    y=target_position.y-0.5), finish=source_position)
 
         # Move the source and target positions to the center of the tile
-        target_position = Position(x=target_position.x, y=target_position.y)
-        source_position = Position(x=source_position.x, y=source_position.y)
+        target_position = Position(x=round(target_position.x*2)/2, y=round(target_position.y*2)/2)
+        source_position = Position(x=round(source_position.x*2)/2, y=round(source_position.y*2)/2)
         if connection_type == Prototype.Pipe or connection_type == Prototype.TransportBelt:
-            path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y), start=source_position)
+            path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y), start=source_position, allow_paths_through_own_entities=True)
         else:
             path_handle = self.request_path(finish=target_position, start=source_position, allow_paths_through_own_entities=True)
 
@@ -257,8 +257,7 @@ class ConnectEntities(Action):
                                          path_handle,
                                          connection_prototype)
         if not isinstance(response, dict) and response != "Passed":
-            message = response.split(":")[-1]
-            raise Exception(f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}.", message.lstrip())
+            raise Exception(f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}.", response.lstrip())
 
         success = response.get('connected', False)
         entities_list = response.get('entities', {}).values()

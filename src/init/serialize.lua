@@ -675,13 +675,13 @@ global.utils.serialize_entity = function(entity)
 		--local direction = entity.direction
 		local x, y = entity.position.x, entity.position.y
 		if entity.direction == defines.direction.north then
-			y = y - 1
-		elseif entity.direction == defines.direction.south then
 			y = y + 1
+		elseif entity.direction == defines.direction.south then
+			y = y - 1
 		elseif entity.direction == defines.direction.east then
-			x = x + 1
-		elseif entity.direction == defines.direction.west then
 			x = x - 1
+		elseif entity.direction == defines.direction.west then
+			x = x + 1
 		end
 
 		serialized.input_position = {x = x, y = y}
@@ -689,13 +689,13 @@ global.utils.serialize_entity = function(entity)
 		-- output_position is the position downstream of the belt
 		local x, y = entity.position.x, entity.position.y
 		if entity.direction == defines.direction.north then
-			y = y + 1
-		elseif entity.direction == defines.direction.south then
 			y = y - 1
+		elseif entity.direction == defines.direction.south then
+			y = y + 1
 		elseif entity.direction == defines.direction.east then
-			x = x - 1
-		elseif entity.direction == defines.direction.west then
 			x = x + 1
+		elseif entity.direction == defines.direction.west then
+			x = x - 1
 		end
 
 		serialized.output_position = {x = x, y = y}
@@ -705,6 +705,12 @@ global.utils.serialize_entity = function(entity)
 	if entity.type == "inserter" then
 		serialized.pickup_position = entity.pickup_position
 		serialized.drop_position = entity.drop_position
+
+		---- round to the nearest 0.5
+		serialized.pickup_position.x = math.round(serialized.pickup_position.x * 2 ) / 2
+		serialized.pickup_position.y = math.round(serialized.pickup_position.y * 2 ) / 2
+		serialized.drop_position.x = math.round(serialized.drop_position.x * 2 ) / 2
+		serialized.drop_position.y = math.round(serialized.drop_position.y * 2 ) / 2
 
 		-- if pickup_position is nil, compute it from the entity's position and direction
 		if not serialized.pickup_position then

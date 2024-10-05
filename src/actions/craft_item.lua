@@ -1,5 +1,5 @@
 global.actions.craft_item = function(player_index, entity, count)
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
 
     local function get_missing_ingredients(player, recipe, count)
         local missing_ingredients = {}

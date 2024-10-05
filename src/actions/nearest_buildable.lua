@@ -1,5 +1,5 @@
 global.actions.nearest_buildable = function(player_index, entity_name)
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
 
     local function is_buildable_position(surface, position, entity_name, force)
         local can_place = surface.can_place_entity{

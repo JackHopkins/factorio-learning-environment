@@ -139,7 +139,7 @@
 --end
 
 global.actions.harvest_resource = function(player_index, x, y, count, radius)
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
 
     local position = {x=x, y=y}
     local surface = player.surface

@@ -1,5 +1,5 @@
 global.actions.get_resource_patch = function(player_index, resource, x, y, radius)
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
     local position = {x = x, y = y}
     local surface = player.surface
 

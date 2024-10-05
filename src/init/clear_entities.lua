@@ -47,7 +47,7 @@ global.actions.clear_entities = function(player_index)
     end
 
     -- Usage example
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
     local character = player.character
     local area = {
         {character.position.x - 500, character.position.y - 500},

@@ -1,6 +1,6 @@
 global.actions.inspect_inventory = function(player_index, is_character_inventory, x, y)
     local position = {x=x, y=y}
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
     local surface = player.surface
     local function get_player_inventory_items(player)
         local inventory = player.get_main_inventory()
@@ -58,7 +58,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
     end
 
 
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
     if not player then
         error("Player not found")
     end

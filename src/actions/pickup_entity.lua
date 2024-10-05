@@ -1,5 +1,5 @@
 global.actions.pickup_entity = function(player_index, x, y, entity)
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
 
     local position = {x=x, y=y}--{x=player.position.x+x, y=player.position.y+y}
     local surface = player.surface

@@ -1,5 +1,5 @@
 global.actions.nearest = function(player_index, resource)
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
 
     local function normalize_resource_name(resource)
         if resource == "copper" then

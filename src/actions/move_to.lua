@@ -1,6 +1,6 @@
 -- move_to
 global.actions.move_to = function(player_index, path_handle, trailing_entity, is_trailing)
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
     local path = global.paths[path_handle]
     local surface = player.surface
 

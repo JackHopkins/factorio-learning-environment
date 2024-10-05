@@ -8,7 +8,7 @@ global.actions.observe_all = function(player_index,
                                       search_radius,
                                       debug,
                                       include)
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
     player.walking_state = {walking = false, direction = defines.direction.north}
     local inventory = player.get_main_inventory().get_contents()
     local surface = player.surface

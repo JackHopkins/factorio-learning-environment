@@ -24,8 +24,8 @@ class InsertItem(Action):
         assert isinstance(entity, Prototype)
         assert isinstance(target, Entity)
 
-        if quantity > 50:
-            raise Exception("Cannot insert more than 50 items at a time")
+        #if quantity > 50:
+        #    raise Exception("Cannot insert more than 50 items at a time")
 
         x, y = self.get_position(target.position)
         name, _ = entity.value

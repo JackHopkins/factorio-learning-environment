@@ -1,6 +1,6 @@
 
 global.actions.inspect_entities = function(player_index, radius, position_x, position_y)
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
     local position = {x = tonumber(position_x), y = tonumber(position_y)} or player.position
 
     radius = tonumber(radius) or 5

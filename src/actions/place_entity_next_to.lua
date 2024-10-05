@@ -9,7 +9,7 @@ local function player_collision(player, target_area)
     end
 
 global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_y, direction, gap)
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
     local ref_position = {x = ref_x, y = ref_y}
 
     local function table_contains(tbl, element)
@@ -298,7 +298,7 @@ global.actions.place_entity_next_to_9 = function(player_index, entity, ref_x, re
     --- @param gap number
     --- @return boolean
     ---
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
     local ref_position = {x = ref_x, y = ref_y}
     --game.print("Direction " .. direction)
     --local direction_map = {defines.direction.north, defines.direction.south, defines.direction.west, defines.direction.east}
@@ -520,7 +520,7 @@ global.actions.place_entity_next_to_8 = function(player_index, entity, ref_x, re
     --- @param gap number
     --- @return boolean
     ---
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
     local ref_position = {x = ref_x, y = ref_y}
     local cardinals = {defines.direction.north, defines.direction.south, defines.direction.east, defines.direction.west}
     local entity_prototype = game.entity_prototypes[entity]
@@ -632,7 +632,7 @@ global.actions.place_entity_next_to_6 = function(player_index, entity, ref_x, re
         end
     end
 
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
     local ref_position = {x = ref_x, y = ref_y}
     local cardinals = {defines.direction.north, defines.direction.south, defines.direction.east, defines.direction.west}
     local entity_prototype = game.entity_prototypes[entity]

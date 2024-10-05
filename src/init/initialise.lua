@@ -50,7 +50,7 @@ end
 
 
 global.actions.avoid_entity = function(player_index, entity, position)
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
     local prototype = game.entity_prototypes[entity]
     local collision_box = prototype.collision_box
     local width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x)

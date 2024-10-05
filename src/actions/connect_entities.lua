@@ -238,7 +238,7 @@ end
 
 -- Using the new shortest_path function.
 global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type)
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
 
 
     -- if source_x == target_x and source_y == target_y then

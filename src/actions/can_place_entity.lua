@@ -1,5 +1,5 @@
 global.actions.can_place_entity = function(player_index, entity, direction, x, y)
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
     local position = {x = x, y = y}
 
     -- Check player's reach distance
@@ -8,7 +8,7 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
     local distance = math.sqrt(dx * dx + dy * dy)
 
     if distance > player.character.reach_distance then
-        error("The target position is too far away to place the entity. Move closer.")
+        error("The distance to the target position is too far away to place the entity (" ..distance.."). Move closer.")
     end
 
     -- Check entity prototype exists

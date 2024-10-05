@@ -1,5 +1,5 @@
 global.actions.rotate_entity = function(player_index, x, y, direction)
-    local player = game.players[player_index]
+    local player = game.get_player(player_index)
     local position = {x=math.floor(x + 0.5), y=math.floor(y + 0.5)}  -- Round to nearest tile
     local surface = player.surface
 

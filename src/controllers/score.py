@@ -16,6 +16,9 @@ class Score(Action):
         else:
             goal = ""
 
+        if isinstance(response, str):
+           raise Exception(f"Could not get player score", response)
+
         return response['player'], goal
 
 

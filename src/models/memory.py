@@ -205,6 +205,11 @@ class Memory(object):
         self.history: List[Event] = []
         self.max_size = max_history
         self.brief = brief
+
+        # Write the brief to a file called `current_brief.txt`
+        with open('./current_brief.txt', 'w') as f:
+            f.write(brief)
+
         self.size = size
         self.log_file = "../log/" + datetime.now().strftime("%H-%M-%d-%m-%Y") + ".log"
         self.trace_file = "../log/" + datetime.now().strftime("%H-%M-%d-%m-%Y") + ".trace"

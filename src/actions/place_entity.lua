@@ -4,10 +4,10 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
     -- If character exists on the map, use its reach distance
     local max_distance
-    if player.character == nil then
-        max_distance = player.build_distance
+    if player['character'] then
+        max_distance = player.reach_distance -- Using character's reach distance
     else
-        max_distance = player.character.reach_distance  -- Using character's reach distance
+        max_distance = player.build_distance
     end
 
     local dx = player.position.x - x
@@ -36,30 +36,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
     global.actions.avoid_entity(player_index, entity, position)
 
-    -- **Modified Code Starts Here**
-    -- Check for pre-existing entities and pick them up first
-    --local existing_entities = player.surface.find_entities_filtered{radius = 0.5, position = position}
-    --for _, existing_entity in pairs(existing_entities) do
-    --    if existing_entity ~= player.character and existing_entity.valid then
-    --        if existing_entity.prototype.selectable_in_game then
-    --            local can_reach = player.can_reach_entity(existing_entity)
-    --            if not can_reach then
-    --                error("Cannot reach existing entity " .. existing_entity.name .. " at position (" .. existing_entity.position.x .. ", " .. existing_entity.position.y .. ").")
-    --            end
-    --            --local success = player.mine_entity(existing_entity)
-    --            if not existing_entity.minable then
-    --                local success = global.actions.pickup_entity(player.index, existing_entity.position.x, existing_entity.position.y, existing_entity.name)
-    --                if not success then
-    --                    error("Cannot pick up existing entity " .. existing_entity.name .. " at position (" .. existing_entity.position.x .. ", " .. existing_entity.position.y .. ").")
-    --                else
-    --                    game.print("Picked up existing entity " .. existing_entity.name .. " at position (" .. existing_entity.position.x .. ", " .. existing_entity.position.y .. ").")
-    --                end
-    --            end
-    --        else
-    --            error("Cannot pick up existing entity " .. existing_entity.name .. " at position (" .. existing_entity.position.x .. ", " .. existing_entity.position.y .. "). It is not minable.")
-    --        end
-    --    end
-    --end
     -- **Modified Code Ends Here**
     game.print(direction)
     local can_build = player.can_place_entity{

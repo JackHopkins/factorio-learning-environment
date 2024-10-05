@@ -11,8 +11,20 @@ def game(instance):
     instance.reset()
     yield instance
 
-
 def test_move_to(game):
+    """
+    Move to the nearest coal patch
+    Move to the nearest iron patch
+    :param game:
+    :return:
+    """
+    resources = [Resource.Coal, Resource.IronOre, Resource.CopperOre, Resource.Stone]
+
+    for i in range(10):
+        for resource in resources:
+            game.move_to(game.nearest(resource))
+
+def test_move_to_laying_leading(game):
     """
     Move to the nearest coal patch
     Move to the nearest iron patch

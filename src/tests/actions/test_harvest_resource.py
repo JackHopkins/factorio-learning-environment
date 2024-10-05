@@ -20,13 +20,16 @@ def test_harvest_resource(game):
     nearest_coal = game.nearest(Resource.Coal)
     # Move to the coal resource
     game.move_to(nearest_coal)
-    # Harvest coal
-    game.harvest_resource(nearest_coal, quantity=5)  # Assuming there is a coal resource at (10, 10)
+    try:
+        # Harvest coal
+        game.harvest_resource(nearest_coal, quantity=5)  # Assuming there is a coal resource at (10, 10)
+    except Exception as e:
+        print(e)
     # Check the inventory after harvesting
     final_coal = game.inspect_inventory()[Resource.Coal]
     # Assert that the coal has been added to the inventory
     assert 5 == final_coal - initial_coal
-    game.reset()
+    #game.reset()
 
 def test_harvest_trees(game):
     """

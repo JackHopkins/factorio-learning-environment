@@ -1,8 +1,9 @@
+-- Initialise.lua
+
 -- If the global actions table doesn't exist, create it
 if not global.actions then
     global.actions = {}
 end
-game.print("Initialising")
 --local player = game.players[arg1]
 player.surface.always_day=true
 --game.players[1].character_collision_mask = "not-colliding-with-itself"
@@ -42,22 +43,33 @@ global.interesting_entities = {
 }
 global.initial_score = {}
 
--- Define a function to check if a player's inventory is empty
+-- Check if a player's inventory is empty
 local function check_player_inventory_empty(player)
     local inventory = player.get_main_inventory()
     return inventory.is_empty()
 end
 
+global.actions.can_reach = function(player, x, y)
+    local dx = player.position.x - x
+    local dy = player.position.y - y
+    local distance = math.sqrt(dx * dx + dy * dy)
+
+    if distance > player.reach_distance then
+        return false
+    end
+    return true
+end
 
 global.actions.avoid_entity = function(player_index, entity, position)
     local player = game.get_player(player_index)
     local prototype = game.entity_prototypes[entity]
+    local character_prototype = game.entity_prototypes["character"]
     local collision_box = prototype.collision_box
     local width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
     local height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y)
 
     local function player_collision(player, target_area)
-        local character_box = player.character.prototype.collision_box
+        local character_box = character_prototype.collision_box
         local character_area = {
             {player.position.x + character_box.left_top.x, player.position.y + character_box.left_top.y},
             {player.position.x + character_box.right_bottom.x, player.position.y + character_box.right_bottom.y}
@@ -76,21 +88,21 @@ global.actions.avoid_entity = function(player_index, entity, position)
     end
 end
 
--- Define a function to be called every tick
-local function on_tick(event)
-    -- Run the check every 60 ticks (1 second)
-    if event.tick % 60 == 0 then
-        for _, player in pairs(game.connected_players) do
-            if check_player_inventory_empty(player) then
-                -- Perform an action or notify the player when their inventory is empty
-                player.print("Your inventory is empty!")
-            end
-        end
-    end
-end
-
--- Register the on_tick function to the on_tick event
-script.on_event(defines.events.on_tick, on_tick)
+---- Define a function to be called every tick
+--local function on_tick(event)
+--    -- Run the check every 60 ticks (1 second)
+--    if event.tick % 60 == 0 then
+--        for _, player in pairs(game.connected_players) do
+--            if check_player_inventory_empty(player) then
+--                -- Perform an action or notify the player when their inventory is empty
+--                player.print("Your inventory is empty!")
+--            end
+--        end
+--    end
+--end
+--
+---- Register the on_tick function to the on_tick event
+--script.on_event(defines.events.on_tick, on_tick)
 
 --script.on_nth_tick(3600, function(event)
 --    game.take_screenshot{

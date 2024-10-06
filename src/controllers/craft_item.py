@@ -10,13 +10,13 @@ class CraftItem(Action):
         #self.connection = connection
         #self.game_state = game_state
 
-    def __call__(self, entity: Prototype, quantity: int = 1) -> bool:
+    def __call__(self, entity: Prototype, quantity: int = 1) -> int:
         """
         Craft an item from a Prototype if the ingredients exist in your inventory.
         :param entity: Entity to craft
         :param quantity: Quantity to craft
         :example craft_item(Prototype.Pipe, 1)
-        :return: True if crafting was successful
+        :return: Number of items crafted
         """
 
         if hasattr(entity, 'value'):
@@ -25,9 +25,9 @@ class CraftItem(Action):
             name = entity
 
         success, elapsed = self.execute(PLAYER, name, quantity)
-        if success != {} and success != 1:
+        if success != {} and isinstance(success, str):
             if success is None:
                 raise Exception(f"Could not craft a {name} - Ingredients cannot be crafted by hand.")
             else:
                 raise Exception(f"Could not craft a {name} - {success}")
-        return True
+        return success

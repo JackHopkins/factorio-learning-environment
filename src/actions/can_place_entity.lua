@@ -12,7 +12,7 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
     --end
 
     if not global.actions.can_reach_entity(player, x, y) then
-        error("The distance to the target position is too far away to place the entity. Move closer.")
+        error("The target position is too far away to place the entity. The player position is " .. player.position.x .. ", " .. player.position.y .. " and the target position is " .. x .. ", " .. y .. ". Move closer.")
     end
 
     -- Check entity prototype exists

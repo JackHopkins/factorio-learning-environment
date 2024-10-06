@@ -792,7 +792,7 @@ function inspect(player, radius, position)
             local data = {
                 name = entity.name:gsub("-", "_"),
                 position = entity.position,
-                direction = directions[entity.direction+1],
+                direction = entity.direction,--directions[entity.direction+1],
                 health = entity.health,
                 force = entity.force.name,
                 energy = entity.energy,

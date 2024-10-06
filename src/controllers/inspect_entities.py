@@ -16,6 +16,7 @@ class InspectEntities(Action):
                  ) -> InspectionResults:
         """
         Inspect entities in a given radius around your position.
+        Connected transport belts and pipes are considered as one entity.
         :param radius: The radius to inspect
         :param position: The position to inspect (if None, use your position)
         :example: entities_around_origin = inspect_entities(10, Position(x=0, y=0))
@@ -29,6 +30,9 @@ class InspectEntities(Action):
             response, time_elapsed = self.execute(PLAYER, radius)
         else:
             response, time_elapsed = self.execute(PLAYER, radius, position.x, position.y)
+
+        if isinstance(response, str):
+            raise Exception(response)
 
         return self.from_inspect_entities_response(response, time_elapsed, radius)
 
@@ -56,7 +60,7 @@ class InspectEntities(Action):
                     entity_info = EntityInfo(
                         name=entity["name"].replace("_", "-"),
                         direction=entity["direction"],
-                        position=position
+                        position=position if isinstance(position, Position) else Position(x=position[0], y=position[1])
                     )
 
                     if "path_ends" in entity and len(entity["path_ends"]) > 1:

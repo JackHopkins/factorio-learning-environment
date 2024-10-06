@@ -51,6 +51,6 @@ class Nearest(Action):
 
             return position
         except TypeError as e:
-            raise Exception(f"Could not find nearest {type[0]}")
+            raise Exception(f"Could not find nearest {type[0]} on the surface")
         except Exception as e:
             raise Exception(f"Could not find nearest {type[0]}", e)

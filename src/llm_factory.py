@@ -87,12 +87,26 @@ class LLMFactory:
                                                   frequency_penalty=0.8,
                                                   stream=False)
             return response
+
+        elif "o1-mini" in self.model:
+            client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+            # replace `max_tokens` with `max_completion_tokens` for OpenAI API
+            if "max_tokens" in kwargs:
+                kwargs.pop("max_tokens")
+
+            return client.chat.completions.create(*args, n=self.beam,
+                                                  **kwargs,
+                                                  #temperature=0.9,
+                                                  #stop=["\n\n"],  # , "\n#"],
+                                                  #presence_penalty=1,
+                                                  #frequency_penalty=0.6,
+                                                  stream=False)
         else:
             client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             return client.chat.completions.create(*args, n=self.beam,
                                                   **kwargs,
                                                   temperature=0.9,
-                                                  stop=["\n\n"],#, "\n#"],
+                                                  #stop=["\n\n"],#, "\n#"],
                                                   presence_penalty=1,
                                                   frequency_penalty=0.6,
                                                   stream=False)

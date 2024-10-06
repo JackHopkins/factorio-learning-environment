@@ -15,6 +15,8 @@ class PrototypeName(enum.Enum):
     Pipe = "pipe"
     SmallElectricPole = "small-electric-pole"
     IronChest = "iron-chest"
+    ElectronicCircuit = "electronic-circuit"
+    Lab = "lab"
 
 class ResourceName(enum.Enum):
     Coal = "coal"
@@ -49,6 +51,8 @@ class Prototype(enum.Enum):
     CopperOre = "copper-ore", None
     Stone = "stone", None
     CopperCable = "copper-cable", None
+    ElectronicCircuit = "electronic-circuit", None
+    Lab = "lab", Entity
 
 
 class Resource:

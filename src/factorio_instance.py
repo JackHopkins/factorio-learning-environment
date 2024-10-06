@@ -1,7 +1,9 @@
 import ast
+import builtins
 import concurrent
 import importlib
 import os
+import types
 from enum import Enum
 from pathlib import Path
 from timeit import default_timer as timer
@@ -103,6 +105,7 @@ class FactorioInstance:
         self.Resource = Resource
         self.Direction = Direction
         self.Position = Position
+        self.EntityStatus = EntityStatus
 
         # Statically named directions
         self.UP, self.ABOVE, self.TOP = [Direction.UP]*3
@@ -134,7 +137,8 @@ class FactorioInstance:
         """
         Shadows the builtin print function,and ensures that whatever is printed is logged in agent memory
         """
-        self.memory.log_observation(str(arg))
+        if self.memory:
+            self.memory.log_observation(str(arg))
         print(arg)
 
     def connect_to_server(self, address, tcp_port):
@@ -212,18 +216,51 @@ class FactorioInstance:
 
         tree = ast.parse(expr)
         results = {}
+
+        # Create a custom dictionary that includes both instance methods and allows attribute access
+        class CustomDict(dict):
+            def __init__(self, instance, *args, **kwargs):
+                self.instance = instance
+                super().__init__(*args, **kwargs)
+
+            def __getitem__(self, key):
+                if key in self:
+                    return super().__getitem__(key)
+                if hasattr(builtins, key):
+                    return getattr(builtins, key)
+                return getattr(self.instance, key)
+
+        # Create the custom dictionary
+        eval_dict = CustomDict(self)
+
+        # Add bound methods to the dictionary
+        for name, method in self.__class__.__dict__.items():
+            if callable(method) and not name.startswith('_'):
+                eval_dict[name] = types.MethodType(method, self)
+
+        # Add built-in functions to the dictionary
+        for name in dir(builtins):
+            if not name.startswith('_'):
+                eval_dict[name] = getattr(builtins, name)
+
         for index, node in enumerate(tree.body):
             try:
-                if isinstance(node, ast.Expr):
+                if isinstance(node, ast.FunctionDef):
+                    # For function definitions, we need to compile and exec
+                    compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
+                    exec(compiled, eval_dict)
+                elif isinstance(node, ast.Expr):
+                    # For expressions (including function calls), we can use eval
                     compiled = compile(ast.Expression(node.value), 'file', 'eval')
-                    response = eval(compiled, {}, self)
+                    response = eval(compiled, eval_dict)
                     if response is not True and response:
                         results[index] = response
                         self._sequential_exception_count = 0
                 else:
+                    # For other statements, use exec
                     compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
-                    exec(compiled, {}, self)
-                    #results.append("Executed successfully")
+                    exec(compiled, eval_dict)
+
             except Exception as e:
                 self._sequential_exception_count += 1
 

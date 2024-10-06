@@ -393,7 +393,7 @@ class Memory(object):
             self.run['final/warnings'] = len(self.get_last_events(filters=[EventType.WARNING]))
             self.run['final/variables'] = len(self.get_last_events(filters=[EventType.VARIABLE]))
 
-            #self.history = []
+            self.history = []
             raise InsufficientScoreException("Insufficient score. Resetting.")
 
     def log_observation(self, message):

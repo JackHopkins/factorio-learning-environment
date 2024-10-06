@@ -53,7 +53,7 @@ class MoveTo(Action):
             if response and isinstance(response, dict):
                 self.game_state.player_location = (response['x'], response['y'])
 
-            return response, execution_time
+            return response#, execution_time
         except Exception as e:
             raise Exception(f"Cannot move. {e}")
     #

@@ -18,7 +18,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
     local distance = math.sqrt(dx * dx + dy * dy)
 
     if distance > max_distance then
-        error("The target position is too far away to place the entity. Move closer.")
+        error("The target position is too far away to place the entity. The player position is " .. player.position.x .. ", " .. player.position.y .. " and the target position is " .. x .. ", " .. y .. ". The distance is " .. distance .. " and the max distance is " .. max_distance .. ". Move closer.")
     end
 
 

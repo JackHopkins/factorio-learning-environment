@@ -1,6 +1,7 @@
 import pytest
 
 from factorio_entities import Position
+from factorio_instance import Direction
 from factorio_types import Prototype
 
 
@@ -26,3 +27,14 @@ def test_inspect_entities(game):
 
     assert len(inspected.entities) == 2
     game.reset()
+
+def test_inspect_inserters(game):
+    """Test to ensure that inspected inserters are facing in the correct direction"""
+
+    inserter = game.place_entity(Prototype.BurnerInserter, Direction.RIGHT, position=Position(x=0, y=0))
+
+    entities = game.inspect_entities(radius=5)
+
+    for entity in entities.entities:
+        if entity.name == 'burner-inserter':
+            assert entity.direction == Direction.RIGHT.value

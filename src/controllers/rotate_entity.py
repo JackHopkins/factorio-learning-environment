@@ -67,15 +67,10 @@ class RotateEntity(Action):
         if 'direction' in response.keys():
             response['direction'] = response['direction']
 
-            # If we are dealing with an inserter, we need to adjust the direction from left to right, top to bottom, etc.
-            #if 'inserter' in response['name']:
-            #    response['direction'] = (((response['direction'] + 1) % 4) + 1 ) % 4
-
         try:
             object = metaclass(**response)
         except Exception as e:
             raise Exception(f"Could not create {entity.name} object from response: {response}", e)
-
 
         return object
 

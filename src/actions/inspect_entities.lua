@@ -1,7 +1,13 @@
 
 global.actions.inspect_entities = function(player_index, radius, position_x, position_y)
     local player = game.get_player(player_index)
-    local position = {x = tonumber(position_x), y = tonumber(position_y)} or player.position
+    local position
+
+    if position_x and position_y then
+        position = {x = tonumber(position_x), y = tonumber(position_y)}
+    else
+        position = player.position
+    end
 
     radius = tonumber(radius) or 5
     function find_connected_entities(entity)
@@ -85,10 +91,11 @@ global.actions.inspect_entities = function(player_index, radius, position_x, pos
 
         local position = {x=data.position.x, y=data.position.y}
 
+        game.print(data.name .. ": " .. data.direction .. " - ".. global.utils.get_entity_direction(data.name:gsub("_", "-"), data.direction))
         local entity_info = {
             name = data.name:gsub("-", "_"),
             position = position,
-            direction = data.direction,
+            direction = global.utils.get_entity_direction(data.name:gsub("_", "-"), data.direction),
             health = data.health,
             force = data.force,
             energy = data.energy,

@@ -493,8 +493,7 @@ function add_burner_inventory(serialized, burner)
 end
 
 function get_entity_direction(entity, direction)
-	--game.print("Getting direction: " .. entity .. " with direction: " .. direction)
-	game.print(direction)
+	game.print("Getting direction: " .. entity .. " with direction: " .. direction)
 
 	-- If direction is nil then return north
 	if direction == nil then
@@ -502,7 +501,12 @@ function get_entity_direction(entity, direction)
 	end
 
 	local prototype = game.entity_prototypes[entity]
-	game.print(prototype)
+	-- if prototype is nil (e.g because the entity is a ghost or player character) then return the direction as is
+	if prototype == nil then
+		return direction
+	end
+	game.print(game.entity_prototypes[entity].name, {skip=defines.print_skip.never})
+
 	local cardinals = {
 		defines.direction.north,
 		defines.direction.east,

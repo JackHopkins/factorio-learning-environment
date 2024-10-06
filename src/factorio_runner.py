@@ -199,7 +199,7 @@ class FactorioRunner:
                     if response:
                         self.memory.log_observation(response)
                     self.buffer[index] = ""
-                elif self.is_valid_python("# " + buffer):
+                elif self.is_valid_python("# " + buffer) and buffer[0] != "#":
                     comment_line = ("\n".join(["# "+line for line in buffer.split('\n')])+"\n")
                     self.buffer[index] = comment_line
                     #self.buffer[index] = "\n"

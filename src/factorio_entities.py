@@ -126,9 +126,9 @@ class Position(BaseModel):
 class EntityInfo(BaseModel):
     name: str
     direction: int
-    position: Tuple[float, float]
-    start_position: Optional[Tuple[float, float]] = None
-    end_position: Optional[Tuple[float, float]] = None
+    position: Position
+    start_position: Optional[Position] = None
+    end_position: Optional[Position] = None
     quantity: Optional[int] = None
     warning: Optional[str] = None
     contents: Dict[str, int] = {}

@@ -7,7 +7,7 @@ global.actions.clear_entities = function(player_index)
         }
 
         for _, entity in ipairs(entities) do
-            if entity and entity.valid and entity.name ~= "character" and entity.type ~= "resource" then
+            if entity and entity.valid and entity.name ~= "character" and entity.type ~= "resource" and entity.type ~= "tree" then
                 entity.destroy()
             end
         end
@@ -26,7 +26,7 @@ global.actions.clear_entities = function(player_index)
         }
 
         for _, entity in ipairs(entities) do
-            if entity and entity.valid and entity.name ~= "character" and entity.type ~= "resource" then
+            if entity and entity.valid and entity.name ~= "character" and entity.type ~= "resource" and entity.type ~= "tree" then
                 entity.destroy()
             end
         end

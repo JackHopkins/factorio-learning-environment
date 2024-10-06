@@ -72,7 +72,7 @@ class SplitMemory(Memory):
         # remove alternating duplicates
 
         # remove historical warnings from the past
-        events = unfiltered_events
+        #events = unfiltered_events
 
         for event in events:
             self.table.add_row(

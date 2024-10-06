@@ -12,20 +12,17 @@ class InsertItem(Action):
 
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
-    def __call__(self, entity: Prototype, target: Entity, quantity=5) -> int:
+    def __call__(self, entity: Prototype, target: Entity, quantity=5) -> Entity:
         """
         The agent inserts an item into an target entity's inventory
         :param entity: Entity type to insert from inventory
         :param target: Entity to insert into
         :param quantity: Quantity to insert
         :example: insert_item(Prototype.IronPlate, nearest(Prototype.IronChest), 5)
-        :return: The entity inserted into
+        :return: The target entity inserted into
         """
         assert isinstance(entity, Prototype)
         assert isinstance(target, Entity)
-
-        #if quantity > 50:
-        #    raise Exception("Cannot insert more than 50 items at a time")
 
         x, y = self.get_position(target.position)
         name, _ = entity.value

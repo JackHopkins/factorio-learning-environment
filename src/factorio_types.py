@@ -45,6 +45,7 @@ class Prototype(enum.Enum):
     IronGearWheel = "iron-gear-wheel", Entity
     Coal = "coal", None
     IronPlate = "iron-plate", None
+    SteelPlate = "steel-plate", None
     CopperPlate = "copper-plate", None
     SmallElectricPole = "small-electric-pole", Entity
     IronOre = "iron-ore", None

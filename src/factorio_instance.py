@@ -350,6 +350,7 @@ class FactorioInstance:
         self.add_command('/c game.reset_game_state()', raw=True)
         self.add_command('clear_inventory', PLAYER)
         self.add_command('reset_position', PLAYER, 0, 0)
+
         self.execute_transaction()
 
         self.begin_transaction()
@@ -365,6 +366,8 @@ class FactorioInstance:
                 self.execute_transaction()
                 self.begin_transaction()
                 count = 0
+
+        self.add_command("/c game.players[1].force.research_all_technologies()", raw=True)
         self.execute_transaction()
         #self.clear_entities()
 

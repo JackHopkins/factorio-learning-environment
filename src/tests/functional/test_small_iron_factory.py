@@ -15,7 +15,109 @@ def game(instance):
         'burner-mining-drill': 10
     }
     instance.reset()
+    instance.execute_transaction()
     yield instance
+
+def test_basic_iron_smelting_chain(game):
+    # Place iron ore patch
+    iron_ore_patch = game.get_resource_patch(Resource.IronOre, game.nearest(Resource.IronOre))
+    assert iron_ore_patch, "No iron ore patch found"
+    print(f"Iron ore patch found at {iron_ore_patch.bounding_box.center}")
+
+    # Place burner mining drill on iron ore patch
+    game.move_to(iron_ore_patch.bounding_box.center)
+    drill = game.place_entity(Prototype.BurnerMiningDrill, direction=Direction.RIGHT,
+                         position=iron_ore_patch.bounding_box.center)
+    assert drill, "Failed to place burner mining drill"
+    print(f"Burner mining drill placed at {drill.position}")
+
+    # Fuel the burner mining drill
+    drill_with_coal = game.insert_item(Prototype.Coal, drill, quantity=5)
+    assert drill_with_coal.fuel_inventory.get(Prototype.Coal, 0) > 0, "Failed to fuel burner mining drill"
+    print(f"Inserted {drill_with_coal.fuel_inventory.get(Prototype.Coal, 0)} coal into burner mining drill")
+
+    # Place stone furnace next to drill
+    furnace = game.place_entity_next_to(Prototype.StoneFurnace, reference_position=drill.position, direction=Direction.RIGHT)
+    assert furnace, "Failed to place stone furnace"
+    print(f"Stone furnace placed at {furnace.position}")
+
+    # Fuel the stone furnace
+    furnace_with_coal = game.insert_item(Prototype.Coal, furnace, quantity=5)
+    assert furnace_with_coal.fuel_inventory.get(Prototype.Coal, 0) > 0, "Failed to fuel stone furnace"
+    print(f"Inserted {furnace_with_coal.fuel_inventory.get(Prototype.Coal, 0)} coal into stone furnace")
+
+    # Place inserter next to furnace
+    inserter = game.place_entity_next_to(Prototype.BurnerInserter, reference_position=furnace.position,
+                                    direction=Direction.RIGHT)
+    assert inserter, "Failed to place inserter"
+    print(f"Inserter placed at {inserter.position}")
+
+    # Fuel the inserter
+    inserter_with_coal = game.insert_item(Prototype.Coal, inserter, quantity=2)
+    assert inserter_with_coal.fuel_inventory.get(Prototype.Coal, 0) > 0, "Failed to fuel inserter"
+    print(f"Inserted {inserter_with_coal.fuel_inventory.get(Prototype.Coal, 0)} coal into inserter")
+
+    # Place chest next to inserter
+    chest = game.place_entity_next_to(Prototype.WoodenChest, reference_position=inserter.position, direction=Direction.RIGHT)
+    assert chest, "Failed to place chest"
+    print(f"Chest placed at {chest.position}")
+
+    # Verify setup
+    game.sleep(60)  # Wait for the system to produce some iron plates
+
+    chest_inventory = game.inspect_inventory(chest)
+    iron_plates = chest_inventory.get(Prototype.IronPlate, 0)
+    assert iron_plates > 0, f"No iron plates produced after 60 seconds. Check fuel levels and connections."
+    print(f"Success! {iron_plates} iron plates produced and stored in the chest.")
+
+def test_steel_smelting_chain(game):
+    # Find the nearest iron ore patch
+    iron_ore_position = game.nearest(Resource.IronOre)
+    game.move_to(iron_ore_position)
+    assert iron_ore_position, "No iron ore patch found"
+
+    # Place burner mining drill on iron ore patch
+    burner_drill = game.place_entity(Prototype.BurnerMiningDrill, Direction.RIGHT, iron_ore_position)
+    assert burner_drill, "Failed to place burner mining drill"
+    print(f"Burner mining drill placed at {burner_drill.position}")
+
+    # Place two stone furnaces near the burner mining drill
+    furnace1 = game.place_entity_next_to(Prototype.StoneFurnace, burner_drill.position, Direction.RIGHT, spacing=0)
+    assert furnace1, "Failed to place first stone furnace"
+    print(f"First stone furnace placed at {furnace1.position}")
+
+    furnace2 = game.place_entity_next_to(Prototype.StoneFurnace, furnace1.position, Direction.RIGHT, spacing=1)
+    assert furnace2, "Failed to place second stone furnace"
+    print(f"Second stone furnace placed at {furnace2.position}")
+
+    # Place inserters between entities
+    inserter1 = game.place_entity_next_to(Prototype.BurnerInserter, furnace1.position, Direction.RIGHT)
+    assert inserter1, "Failed to place second inserter"
+    game.rotate_entity(inserter1, Direction.RIGHT)
+    print(f"Second inserter placed at {inserter1.position}")
+
+    # Add fuel to entities (assuming coal is in inventory)
+    game.insert_item(Prototype.Coal, burner_drill, 5)
+    game.insert_item(Prototype.Coal, furnace1, 5)
+    game.insert_item(Prototype.Coal, furnace2, 5)
+    game.insert_item(Prototype.Coal, inserter1, 1)
+
+    # Verify setup
+    entities = game.inspect_entities(burner_drill.position, radius=10)
+    assert any(
+        e.name == "burner-mining-drill" for e in entities.entities), "Burner mining drill not found in inspection"
+    assert sum(
+        1 for e in entities.entities if e.name == "stone-furnace") == 2, "Two stone furnaces not found in inspection"
+    assert sum(1 for e in entities.entities if
+               e.name == "burner-inserter") == 1, "A burner inserter not found in inspection"
+
+    # Test that the stone furnace has steel after 60 seconds
+    game.sleep(60)
+    furnace_inventory = game.inspect_inventory(furnace2)
+    steel = furnace_inventory.get(Prototype.SteelPlate, 0)
+    assert steel > 0, f"No steel produced after 60 seconds. Check fuel levels and connections."
+
+    print("Steel smelting chain setup complete and verified")
 
 
 def test_build_iron_plate_factory(game):

@@ -82,16 +82,14 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                     direction = global.utils.get_entity_direction(entity, direction),
                     player = player
                 }
+                game.print("Placed " .. entity .. " at " .. new_position.x .. ", " .. new_position.y)
                 if have_built then
                     player.remove_item{name = entity, count = 1}
                     --local placed_entity = player.surface.find_entity(entity, new_position)
                     --game.print("Placed " .. entity .. " at " .. placed_entity.position.x .. ", " .. placed_entity.position.y)
                     --local serialized = global.utils.serialize_entity(placed_entity)
                     --return serialized
-                    game.print("Getting " .. entity .. " at " .. new_position.x .. ", " .. new_position.y)
-                    local resp = global.actions.get_entity(player_index, entity, new_position.x, new_position.y)
-                    game.print(resp)
-                    return resp
+                    return global.actions.get_entity(player_index, entity, new_position.x, new_position.y)
                 end
             else
                 error("Could not find a suitable position to place " .. entity .. " near the target location.")
@@ -101,20 +99,11 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             local area = {{position.x - 0.25, position.y - 0.25}, {position.x + 0.25, position.y + 0.25}}
             local entities = player.surface.find_entities_filtered{area = area, force = "player"}
             for _, existing_entity in pairs(entities) do
-                --if existing_entity.name == entity then
-                --local success = global.actions.pickup_entity(player_index, existing_entity.position.x, existing_entity.position.y, existing_entity.name)
                 if existing_entity.can_be_destroyed() then
                     game.print("Picked up "..existing_entity.name)
                     pcall(existing_entity.destroy{raise_destroy=false, do_cliff_correction=false})
                 end
-
-                --end
             end
-           -- local success = global.actions.pickup_entity(player.index, position.x, position.y, entity)
-           -- if not success then
-             --   error("Cannot place " .. entity .. " at the exact position due to obstacles.")
-            --end
-        --    error("Cannot place " .. entity .. " at the exact position due to obstacles.")
         end
         can_build = player.can_place_entity{
             name = entity,
@@ -134,13 +123,8 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         }
         game.print("Placed " .. entity .. " at " .. position.x .. ", " .. position.y)
         if have_built then
-            --game.print("Placed " .. entity .. " at " .. position.x .. ", " .. position.y)
             player.remove_item{name = entity, count = 1}
             return global.actions.get_entity(player_index, entity, position.x, position.y)
-            --local placed_entity = player.surface.find_entity(entity, position)
-            --game.print("Placed " .. entity .. " at " .. placed_entity.position.x .. ", " .. placed_entity.position.y)
-            --local serialized = global.utils.serialize_entity(placed_entity)
-            --return serialized
         end
     else
 

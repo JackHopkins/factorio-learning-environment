@@ -91,24 +91,33 @@ def test_place_offshore_pumps(game):
     # move to the nearest water source
     entity = Prototype.OffshorePump
     water_location = game.nearest(Resource.Water)
-    game.move_to(Position(x=water_location.x - 10, y=water_location.y))
+    water_patch = game.get_resource_patch(Resource.Water, water_location)
+
+    left_of_water_patch = Position(x=water_patch.bounding_box.left_top.x, y=water_patch.bounding_box.center.y)
+    game.move_to(left_of_water_patch)
     offshore_pump = game.place_entity(entity,
-                                      position=water_location,
+                                      position=left_of_water_patch,
                                       direction=Direction.LEFT)
     assert offshore_pump.direction.value == Direction.LEFT.value
-    game.move_to(Position(x=water_location.x, y=water_location.y))
+
+    right_of_water_patch = Position(x=water_patch.bounding_box.right_bottom.x, y=water_patch.bounding_box.center.y)
+    game.move_to(right_of_water_patch)
     offshore_pump = game.place_entity(entity,
-                                        position=water_location,
+                                        position=right_of_water_patch,
                                         direction=Direction.RIGHT)
     assert offshore_pump.direction.value == Direction.RIGHT.value
-    game.move_to(Position(x=water_location.x, y=water_location.y))
+
+    above_water_patch = Position(x=water_patch.bounding_box.center.x, y=water_patch.bounding_box.left_top.y)
+    game.move_to(above_water_patch)
     offshore_pump = game.place_entity(entity,
-                                        position=water_location,
+                                        position=above_water_patch,
                                         direction=Direction.UP)
     assert offshore_pump.direction.value == Direction.UP.value
-    game.move_to(Position(x=water_location.x, y=water_location.y))
+
+    below_water_patch = Position(x=water_patch.bounding_box.center.x, y=water_patch.bounding_box.right_bottom.y)
+    game.move_to(below_water_patch)
     offshore_pump = game.place_entity(entity,
-                                        position=water_location,
+                                        position=below_water_patch,
                                         direction=Direction.DOWN)
     assert offshore_pump.direction.value == Direction.DOWN.value
 

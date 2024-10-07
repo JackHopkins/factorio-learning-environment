@@ -16,6 +16,7 @@ def game(instance):
     instance.reset()
     yield instance
 
+
 def test_place(game):
     """
     Place a boiler at (0, 0)
@@ -25,6 +26,7 @@ def test_place(game):
     boilers_in_inventory = game.inspect_inventory()[Prototype.Boiler]
     game.place_entity(Prototype.Boiler, position=(0, 0))
     assert boilers_in_inventory - 1 == game.inspect_inventory()[Prototype.Boiler]
+
 
 def test_place_in_all_directions(game):
     """
@@ -37,11 +39,11 @@ def test_place_in_all_directions(game):
     right = game.place_entity(Prototype.BurnerInserter, position=(1, 0), direction=Direction.RIGHT)
     up = game.place_entity(Prototype.BurnerInserter, position=(0, -1), direction=Direction.UP)
 
-
     assert up.direction.value == Direction.UP.value
     assert left.direction.value == Direction.LEFT.value
     assert right.direction.value == Direction.RIGHT.value
     assert down.direction.value == Direction.DOWN.value
+
 
 def test_place_pickup(game):
     """
@@ -55,6 +57,7 @@ def test_place_pickup(game):
 
     game.pickup_entity(Prototype.Boiler, position=Position(x=0, y=0))
     assert boilers_in_inventory == game.inspect_inventory()[Prototype.Boiler] - 1
+
 
 def test_place_override(game):
     """
@@ -82,6 +85,7 @@ def test_place_override(game):
 
     assert belt.quantity == 9
 
+
 def test_place_offshore_pumps(game):
     """
     Place offshore pumps at each cardinal direction
@@ -103,23 +107,24 @@ def test_place_offshore_pumps(game):
     right_of_water_patch = Position(x=water_patch.bounding_box.right_bottom.x, y=water_patch.bounding_box.center.y)
     game.move_to(right_of_water_patch)
     offshore_pump = game.place_entity(entity,
-                                        position=right_of_water_patch,
-                                        direction=Direction.RIGHT)
+                                      position=right_of_water_patch,
+                                      direction=Direction.RIGHT)
     assert offshore_pump.direction.value == Direction.RIGHT.value
 
     above_water_patch = Position(x=water_patch.bounding_box.center.x, y=water_patch.bounding_box.left_top.y)
     game.move_to(above_water_patch)
     offshore_pump = game.place_entity(entity,
-                                        position=above_water_patch,
-                                        direction=Direction.UP)
+                                      position=above_water_patch,
+                                      direction=Direction.UP)
     assert offshore_pump.direction.value == Direction.UP.value
 
     below_water_patch = Position(x=water_patch.bounding_box.center.x, y=water_patch.bounding_box.right_bottom.y)
     game.move_to(below_water_patch)
     offshore_pump = game.place_entity(entity,
-                                        position=below_water_patch,
-                                        direction=Direction.DOWN)
+                                      position=below_water_patch,
+                                      direction=Direction.DOWN)
     assert offshore_pump.direction.value == Direction.DOWN.value
+
 
 def test_place_burner_inserters(game):
     """
@@ -151,6 +156,7 @@ def test_place_burner_inserters(game):
                                       direction=Direction.DOWN)
     assert offshore_pump.direction.value == Direction.DOWN.value
 
+
 def test_place_burner_mining_drills(game):
     """
     Place mining drills at each cardinal direction
@@ -161,22 +167,22 @@ def test_place_burner_mining_drills(game):
     entity = Prototype.BurnerMiningDrill
     location = game.nearest(Resource.IronOre)
     game.move_to(Position(x=location.x - 10, y=location.y))
-    offshore_pump = game.place_entity(entity,
-                                      position=location,
-                                      direction=Direction.LEFT)
-    assert offshore_pump.direction.value == Direction.LEFT.value
+    drill = game.place_entity(entity,
+                              position=location,
+                              direction=Direction.LEFT)
+    assert drill.direction.value == Direction.LEFT.value
     game.move_to(Position(x=location.x, y=location.y))
-    offshore_pump = game.place_entity(entity,
-                                      position=location,
-                                      direction=Direction.RIGHT)
-    assert offshore_pump.direction.value == Direction.RIGHT.value
+    drill = game.place_entity(entity,
+                              position=location,
+                              direction=Direction.RIGHT)
+    assert drill.direction.value == Direction.RIGHT.value
     game.move_to(Position(x=location.x, y=location.y))
-    offshore_pump = game.place_entity(entity,
-                                      position=location,
-                                      direction=Direction.UP)
-    assert offshore_pump.direction.value == Direction.UP.value
+    drill = game.place_entity(entity,
+                              position=location,
+                              direction=Direction.UP)
+    assert drill.direction.value == Direction.UP.value
     game.move_to(Position(x=location.x, y=location.y))
-    offshore_pump = game.place_entity(entity,
-                                      position=location,
-                                      direction=Direction.DOWN)
-    assert offshore_pump.direction.value == Direction.DOWN.value
+    drill = game.place_entity(entity,
+                              position=location,
+                              direction=Direction.DOWN)
+    assert drill.direction.value == Direction.DOWN.value

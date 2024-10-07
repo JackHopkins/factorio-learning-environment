@@ -36,6 +36,24 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
     global.actions.avoid_entity(player_index, entity, position)
 
+    local entity_prototype = game.entity_prototypes[entity]
+    local target_position = {x = x, y = y}
+
+    -- Check if there's already an entity at the target position
+    local existing_entity = player.surface.find_entity(entity, target_position)
+
+    if existing_entity then
+        -- If the existing entity is the same type, just update its direction
+        if existing_entity.name == entity then
+            existing_entity.direction = global.utils.get_entity_direction(entity, direction)
+            game.print("Updated direction of existing " .. entity .. " at " .. x .. ", " .. y)
+            return global.utils.serialize_entity(existing_entity)
+        else
+            -- If it's a different entity, remove it
+            existing_entity.destroy({raise_destroy=true})
+        end
+    end
+
     -- **Modified Code Ends Here**
     game.print(direction)
     local can_build = player.can_place_entity{
@@ -85,10 +103,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 game.print("Placed " .. entity .. " at " .. new_position.x .. ", " .. new_position.y)
                 if have_built then
                     player.remove_item{name = entity, count = 1}
-                    --local placed_entity = player.surface.find_entity(entity, new_position)
-                    --game.print("Placed " .. entity .. " at " .. placed_entity.position.x .. ", " .. placed_entity.position.y)
-                    --local serialized = global.utils.serialize_entity(placed_entity)
-                    --return serialized
                     return global.actions.get_entity(player_index, entity, new_position.x, new_position.y)
                 end
             else
@@ -144,7 +158,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 {position.x - width , position.y - height },
                 {position.x + width , position.y + height }
             }
-            --local entities = player.surface.find_entities_filtered{area = target_area} --, name = entity}
             local entities = player.surface.find_entities_filtered{area = target_area, name = entity}
             game.print("Number of entities found: " .. #entities)
 
@@ -156,12 +169,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
              end
 
             error("Could not find entity")
-            -- local placed_entity = player.surface.find_entity(entity, position)
-            -- game.print("Placed " .. entity .. " at " .. placed_entity.position.x .. ", " .. placed_entity.position.y)
-            -- local serialized = global.utils.serialize_entity(placed_entity)
-            -- return serialized
-            --return global.actions.get_entity(player_index, entity, position.x, position.y)
-            --return global.actions.get_entity(player_index, entity, position.x, position.y)
         end
     end
 end

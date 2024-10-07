@@ -485,7 +485,7 @@ function add_burner_inventory(serialized, burner)
 		for i = 1, #fuel_inventory do
 			local item = fuel_inventory[i]
 			if item and item.valid_for_read then
-				table.insert(serialized.fuel_inventory, {name = item.name, count = item.count})
+				table.insert(serialized.fuel_inventory, {name = "\""..item.name.."\"", count = item.count})
 				serialized.remaining_fuel = serialized.remaining_fuel + item.count
 			end
 		end
@@ -638,11 +638,13 @@ global.utils.serialize_entity = function(entity)
 	--	direction = get_inverse_entity_direction(entity.name, entity.direction/2)*2--get_inverse_entity_direction(entity.name, entity.direction)
 	--end
 
-	--if direction == nil then
-	direction = get_entity_direction(entity.name, entity.direction)
-	--end
-	game.print(direction)
-	game.print("Serializing entity: " .. entity.name .. " with direction: " .. direction)
+	if direction ~= nil then
+		direction = get_entity_direction(entity.name, entity.direction)
+	else
+		direction = 0
+	end
+
+	game.print("Serialized direction: ", {skip=defines.print_skip.never})
 	local serialized = {
 		name = "\""..entity.name.."\"",
 		position = entity.position,
@@ -851,7 +853,7 @@ global.utils.serialize_entity = function(entity)
 			for i = 1, #input_inventory do
 				local item = input_inventory[i]
 				if item and item.valid_for_read then
-					table.insert(serialized.input_inventory, {name = item.name, count = item.count})
+					table.insert(serialized.input_inventory, {name = "\""..item.name.."\"", count = item.count})
 				end
 			end
 		end

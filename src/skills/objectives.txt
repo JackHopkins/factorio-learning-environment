@@ -1,1 +1,1 @@
-create a steel smelting chain, with a burner mining drill and 2 stone furnaces.
+craft 10 automated science packs

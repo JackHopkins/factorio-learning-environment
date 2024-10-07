@@ -88,7 +88,10 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                     --game.print("Placed " .. entity .. " at " .. placed_entity.position.x .. ", " .. placed_entity.position.y)
                     --local serialized = global.utils.serialize_entity(placed_entity)
                     --return serialized
-                    return global.actions.get_entity(player_index, entity, new_position.x, new_position.y)
+                    game.print("Getting " .. entity .. " at " .. new_position.x .. ", " .. new_position.y)
+                    local resp = global.actions.get_entity(player_index, entity, new_position.x, new_position.y)
+                    game.print(resp)
+                    return resp
                 end
             else
                 error("Could not find a suitable position to place " .. entity .. " near the target location.")
@@ -129,6 +132,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             direction = global.utils.get_entity_direction(entity, direction),
             player = player
         }
+        game.print("Placed " .. entity .. " at " .. position.x .. ", " .. position.y)
         if have_built then
             --game.print("Placed " .. entity .. " at " .. position.x .. ", " .. position.y)
             player.remove_item{name = entity, count = 1}

@@ -68,7 +68,7 @@ class PlaceEntity(Action):
             pass
         if not isinstance(response, dict):
             message = response.split(":")[-1]
-            raise Exception(f"Could not place {name} at ({x}, {y})", message.lstrip())
+            raise Exception(f"Could not place {name} at ({x}, {y})", response.lstrip())
 
         cleaned_response = self.clean_response(response)
 

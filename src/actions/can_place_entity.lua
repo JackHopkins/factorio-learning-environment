@@ -64,6 +64,9 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
 end
 
 function get_entity_direction(entity, direction)
+    if direction == nil then
+        return defines.direction.north
+    end
     local prototype = game.entity_prototypes[entity]
     local cardinals = {defines.direction.north, defines.direction.east, defines.direction.south, defines.direction.west}
     if prototype and prototype.type == "inserter" then

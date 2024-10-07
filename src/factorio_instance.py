@@ -187,7 +187,10 @@ class FactorioInstance:
                 module_spec.loader.exec_module(module)
 
                 class_name = snake_to_camel(module_name)
-
+                if module_name == "place_entity":
+                    class_name = "PlaceObject"
+                if module_name == "score":
+                    class_name = "Reward"
                 # Get the callable class
                 callable_class = getattr(module, class_name)
 

@@ -6,10 +6,11 @@ from factorio_instance import PLAYER, Direction
 from factorio_types import Prototype
 
 
-class PlaceEntity(Action):
+class PlaceObject(Action):
 
     def __init__(self, *args):
         super().__init__(*args)
+        self.name = "place_entity"
 
     def __call__(self,
                  entity: Prototype,

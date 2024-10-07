@@ -1,10 +1,12 @@
 from controllers._action import Action
 
 
-class Score(Action):
+class Reward(Action):
 
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
+        self.name = "score"
+        self.game_state = game_state
 
     def __call__(self, *args, **kwargs):
         response, execution_time = self.execute(*args, **kwargs)
@@ -23,6 +25,6 @@ class Score(Action):
 
 
 if __name__ == "__main__":
-    score = Score("connection", 0)
+    score = Reward("connection", 0)
     score.load()
     pass

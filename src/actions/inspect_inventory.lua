@@ -2,6 +2,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
     local position = {x=x, y=y}
     local player = game.get_player(player_index)
     local surface = player.surface
+
     local function get_player_inventory_items(player)
         local inventory = player.get_main_inventory()
         if not inventory or not inventory.valid then
@@ -32,6 +33,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
         if closest_entity == nil then
             error("No entity at given coordinates.")
         end
+
         -- If the closest entity is a furnace, return the inventory of the furnace
         if closest_entity.type == "furnace" then
             local source = closest_entity.get_inventory(defines.inventory.furnace_source).get_contents()
@@ -43,7 +45,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
             return source
         end
 
-        -- If the closest entity is an assembling machine, return the inventory of the furnace
+        -- If the closest entity is an assembling machine, return the inventory of the assembling machine
         if closest_entity.type == "assembling-machine" then
             local source = closest_entity.get_inventory(defines.inventory.assembling_machine_input).get_contents()
             local output = closest_entity.get_inventory(defines.inventory.assembling_machine_output).get_contents()
@@ -54,9 +56,14 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
             return source
         end
 
+        -- If the closest entity is a lab, return the inventory of the lab
+        if closest_entity.type == "lab" then
+            return closest_entity.get_inventory(defines.inventory.lab_input).get_contents()
+        end
+
+        -- For other entities (like chests), return the chest inventory
         return closest_entity.get_inventory(defines.inventory.chest).get_contents()
     end
-
 
     local player = game.get_player(player_index)
     if not player then
@@ -77,7 +84,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
         if inventory_items then
             return dump(inventory_items)
         else
-            error("\"Could not get inventory of entity at "..x..", "..y.."\"")
+            error("Could not get inventory of entity at "..x..", "..y)
         end
     end
 end

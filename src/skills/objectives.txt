@@ -1,1 +1,1 @@
-craft 10 automated science packs
+place a self-fueling belt of 5 burner mining drills on coal with transport belts and inserters

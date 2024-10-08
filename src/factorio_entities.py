@@ -103,8 +103,6 @@ class Inventory(BaseModel):
     def __len__(self):
         return len(self.__dict__)
 
-    #def get(self, key):
-    #    return self.__getitem__(key) #getattr(self, key, default)
 
 class Direction(Enum):
     UP = NORTH = 0
@@ -208,7 +206,16 @@ class Entity(BaseModel):
 class TransportBelt(Entity):
     input_position: Position
     output_position: Position
+    inventory: Inventory
 
+class EnergySource(BaseModel):
+    buffer_capacity: str
+    input_flow_limit: str
+    output_flow_limit: str
+    drain: str
+
+class Accumulator(Entity):
+    energy_source: Optional[EnergySource] = None
 
 class Inserter(Entity):
     pickup_position: Optional[Position] = None

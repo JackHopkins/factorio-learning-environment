@@ -16,7 +16,17 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
 
     -- Function to check if an item can be inserted into an entity
     local function can_insert_item(entity, item_name)
-        if entity.type == "assembling-machine" then
+        if entity.type == "transport-belt" then
+            -- All items that can be on ground can be on belts
+            local item_prototype = game.item_prototypes[item_name]
+            return item_prototype and not item_prototype.has_flag("only-in-cursor")
+
+        elseif entity.type == "lab" then
+            -- Check if the item is a science pack
+            local item_prototype = game.item_prototypes[item_name]
+            return item_prototype and item_prototype.type == "tool"
+
+        elseif entity.type == "assembling-machine" then
             local recipe = entity.get_recipe()
             if recipe then
                 for _, ingredient in pairs(recipe.ingredients) do
@@ -69,12 +79,58 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
         error('Entity too far away. Move closer.')
     end
 
+    -- Function to insert items onto a transport belt
+    local function insert_on_belt(belt, item_name, count)
+        local inserted = 0
+        local transport_line = belt.get_transport_line(1)
+
+        local function try_insert()
+            if transport_line.can_insert_at_back() then
+                local inserted_on_belt = transport_line.insert_at_back({name = item_name, count = 1})
+                if inserted_on_belt then
+                    inserted = inserted + 1
+                    player.remove_item{name=item_name, count=1}
+                    return true
+                end
+            end
+            return false
+        end
+
+        -- Initial insertion attempt
+        try_insert()
+
+        -- Schedule repeated insertion attempts
+        for i = 2, count do
+            local ticks_to_wait = 20
+            script.on_nth_tick(ticks_to_wait, function(event)
+                if try_insert() then
+                    if inserted == count then
+                        script.on_nth_tick(ticks_to_wait, nil)  -- Stop the scheduled insertions
+                    end
+                else
+                    script.on_nth_tick(ticks_to_wait, nil)  -- Stop if insertion fails
+                end
+            end)
+        end
+
+        return inserted
+    end
+
     -- Determine how many items can be inserted
     local insertable_count = math.min(count, item_count)
 
-    -- Attempt to insert items without removing them from player first
-    local inserted = closest_entity.insert{name=insert_item, count=insertable_count}
+   -- Attempt to insert items
+    local inserted = 0
+    if closest_entity.type == "transport-belt" then
+        -- For transport belts, we need to use a different method
+        game.print("Inserting ".. insertable_count.. " items onto transport belt...")
+        inserted = insert_on_belt(closest_entity, insert_item, insertable_count)
+    else
+        -- For other entities, use the normal insert method
+        inserted = closest_entity.insert{name=insert_item, count=insertable_count}
+    end
 
+    game.print("Inserted " .. inserted .. " items.")
     if inserted > 0 then
         -- Only remove successfully inserted items from player
         player.remove_item{name=insert_item, count=inserted}

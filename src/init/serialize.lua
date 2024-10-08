@@ -705,6 +705,7 @@ global.utils.serialize_entity = function(entity)
 		end
 
 		serialized.output_position = {x = x, y = y}
+		serialized.inventory = entity.get_transport_line(1).get_contents()
 	end
 
 	-- Add input and output locations if the entity is an inserter

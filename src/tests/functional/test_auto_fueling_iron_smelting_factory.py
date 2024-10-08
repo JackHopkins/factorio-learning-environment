@@ -61,7 +61,7 @@ def test_auto_fueling_iron_smelting_factory(game):
     furnace_fuel_inserter_position = Position(x=iron_furnace.position.x + 1, y=iron_furnace.position.y)
     furnace_fuel_inserter = game.place_entity(Prototype.BurnerInserter, position=furnace_fuel_inserter_position, direction=Direction.LEFT)
 
-    coal_belt_to_furnace = game.connect_entities(coal_belt[-1], furnace_fuel_inserter.pickup_position, connection_type=Prototype.TransportBelt)
+    coal_belt_to_furnace = game.connect_entities(iron_drill_fuel_inserter.pickup_position, furnace_fuel_inserter.pickup_position, connection_type=Prototype.TransportBelt)
     coal_belt.extend(coal_belt_to_furnace)
 
     furnace_to_chest_inserter = game.place_entity_next_to(Prototype.BurnerInserter,

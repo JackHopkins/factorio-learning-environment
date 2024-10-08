@@ -240,16 +240,11 @@ end
 global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type)
     local player = game.get_player(player_index)
 
-
-    -- if source_x == target_x and source_y == target_y then
-    --    error("Source and target positions are the same.")
-    --end
-
     local start_position = {x = math.floor(source_x*2)/2, y = math.floor(source_y*2)/2}
     local end_position = {x = math.floor(target_x*2)/2, y = math.floor(target_y*2)/2}
 
-    create_beam_point_with_direction(player, 0, start_position)
-    create_beam_point_with_direction(player, 2, end_position)
+    --create_beam_point_with_direction(player, 0, start_position)
+    --create_beam_point_with_direction(player, 2, end_position)
 
     local raw_path = global.paths[path_handle]
 
@@ -260,12 +255,10 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
 
 
     local path = global.actions.normalise_path(raw_path, start_position) --{x = source_x, y = source_y})
-    -- For each position in the path, place a laser
-    -- surface.create_entity{name='laser-beam', position=player.position, source_position=top_left, target_position=top_right, duration=beam_duration, direction=direction, force='player', player=player}
 
 
     for i = 1, #path - 1 do
-        create_arrow_with_direction(player, get_direction(path[i].position, path[i + 1].position), path[i].position)
+        --create_arrow_with_direction(player, get_direction(path[i].position, path[i + 1].position), path[i].position)
     end
 
     local serialized_entities = {}
@@ -284,7 +277,6 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     local step_size = get_step_size(connection_type)
     local dir
 
-    game.print("Connection type: " .. connection_type)
     if connection_type == 'pipe' then
         place_at_position(player, connection_type, start_position, dir, serialized_entities)
     end

@@ -261,7 +261,7 @@ if __name__ == "__main__":
 
             snippet = curriculum_item['snippet']
 
-            max_attempts = 4
+            max_attempts = 6
             snippet_passed = False
 
             for attempt in range(max_attempts):
@@ -278,7 +278,7 @@ if __name__ == "__main__":
                 except Exception as e:
                     correction_history.append({"snippet": snippet, "error": str(e)})
                     if attempt < max_attempts - 1:
-                        print(f"Snippet failed on attempt {attempt + 1}. `{str(result)}` Attempting to correct...")
+                        print(f"{snippet_name} - Snippet failed on attempt {attempt + 1}. `{str(result)}` Attempting to correct...")
                         corrected_snippet = sampler.correct_policy_snippet(
                             curriculum_item['objective'],
                             snippet,
@@ -288,7 +288,7 @@ if __name__ == "__main__":
                         corrected_snippet = corrected_snippet.split("```")[1].lstrip('python\n')
                         snippet = textwrap.dedent(corrected_snippet)
                     else:
-                        print(f"Snippet failed after {max_attempts} attempts. Moving to next objective.")
+                        print(f"{snippet_name} - Snippet failed after {max_attempts} attempts. Moving to next objective.")
 
             # Save results and update files
             folder_name = snippet_name if snippet_passed else f"_{snippet_name}"
@@ -296,7 +296,7 @@ if __name__ == "__main__":
             os.makedirs(folder_path, exist_ok=True)
 
             with open(f"{folder_path}/snippet.py", "w") as f:
-                f.write(curriculum_item['snippet'])
+                f.write(snippet)
 
             details = {
                 "instruction": objective,

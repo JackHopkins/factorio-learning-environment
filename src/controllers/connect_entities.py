@@ -229,7 +229,7 @@ class ConnectEntities(Action):
             elif isinstance(target_entity, MiningDrill):
                 target_position = target_entity.drop_position
             elif isinstance(target_entity, TransportBelt):
-                target_position = target_entity.position
+                target_position = target_entity.input_position
             else:
                 target_position = Position(x=target_entity.position.x + x_sign*source_entity.tile_dimensions.tile_width/2,
                                            y=target_entity.position.y + y_sign*source_entity.tile_dimensions.tile_height/2)

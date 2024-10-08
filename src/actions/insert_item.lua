@@ -11,7 +11,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
 
     local closest_distance = math.huge
     local closest_entity = nil
-    local area = {{position.x - 1, position.y - 1}, {position.x + 1, position.y + 1}}
+    local area = {{position.x - 2, position.y - 2}, {position.x + 2, position.y + 2}}
     local buildings = surface.find_entities_filtered{area = area}
 
     -- Function to check if an item can be inserted into an entity
@@ -36,9 +36,6 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
                 end
                 return false
             end
-        elseif entity.burner then
-            -- Check if it's a fuel
-            return game.item_prototypes[item_name].fuel_value > 0
         elseif entity.type == "furnace" then
             -- Check if it's a fuel
             if game.item_prototypes[item_name].fuel_value > 0 then
@@ -55,6 +52,9 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
                 end
             end
             return false
+        elseif entity.burner then
+            -- Check if it's a fuel
+            return game.item_prototypes[item_name].fuel_value > 0
         elseif entity.type == "container" or entity.type == "logistic-container" then
             return true  -- Containers can accept any item
         end
@@ -104,7 +104,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
 
         -- Schedule repeated insertion attempts
         for i = 2, count do
-            local ticks_to_wait = 20
+            local ticks_to_wait = 5
             script.on_nth_tick(ticks_to_wait, function(event)
                 if try_insert() then
                     if inserted == count then

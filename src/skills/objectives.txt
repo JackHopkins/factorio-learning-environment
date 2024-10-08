@@ -1,1 +1,10 @@
-place a self-fueling belt of 5 burner mining drills on coal with transport belts and inserters
+Craft 50 iron plates using a stone furnace
+Create a small electric network by connecting 3 steam engines to 2 electric mining drills
+Set up an automated stone brick production line using burner mining drills and stone furnaces
+Craft 30 transport belts and use them to create a simple ore transportation system
+Build a defensive line of 5 gun turrets and manually supply them with ammunition
+Create an automated coal transportation system from a mining drill to 3 stone furnaces
+Set up a small copper wire production facility using an assembling machine
+Craft 25 science pack 1 (red science packs) and feed them into a lab
+Build a radar and power it to start revealing the surrounding area
+Create a simple iron gear wheel production line using an assembling machine and inserters

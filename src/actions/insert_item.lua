@@ -1,66 +1,86 @@
 global.actions.insert_item = function(player_index, insert_item, count, x, y)
     local player = game.get_player(player_index)
-
     local position = {x=x, y=y}
     local surface = player.surface
 
-
-    -- If the player has enough items
+    -- Check if player has enough items
     local item_count = player.get_item_count(insert_item)
-
     if item_count == 0 then
         error('No '..insert_item..' to place')
     end
 
     local closest_distance = math.huge
     local closest_entity = nil
-    local area = {{position.x - 10, position.y - 10}, {position.x + 10, position.y + 10}}
+    local area = {{position.x - 1, position.y - 1}, {position.x + 1, position.y + 1}}
     local buildings = surface.find_entities_filtered{area = area}
 
-    -- Find the closest building
-    for _, building in ipairs(buildings) do
-        if building.name ~= 'character' then
-            if building.get_inventory(defines.inventory.chest) ~= nil or
-                    building.get_inventory(defines.inventory.furnace_source) ~= nil then
-                local distance = ((position.x - building.position.x) ^ 2 + (position.y - building.position.y) ^ 2) ^ 0.5
-                if distance < closest_distance then
-                    closest_distance = distance
-                    closest_entity = building
+    -- Function to check if an item can be inserted into an entity
+    local function can_insert_item(entity, item_name)
+        if entity.type == "assembling-machine" then
+            local recipe = entity.get_recipe()
+            if recipe then
+                for _, ingredient in pairs(recipe.ingredients) do
+                    if ingredient.name == item_name then
+                        return true
+                    end
                 end
+                return false
+            end
+        elseif entity.type == "furnace" then
+            -- Check if it's a fuel
+            if game.item_prototypes[item_name].fuel_value > 0 then
+                return true
+            end
+            -- Check if it's a valid ingredient for any furnace recipe
+            for _, recipe in pairs(game.recipe_prototypes) do
+                if recipe.category == "smelting" then
+                    for _, ingredient in pairs(recipe.ingredients) do
+                        if ingredient.name == item_name then
+                            return true
+                        end
+                    end
+                end
+            end
+            return false
+        elseif entity.type == "container" or entity.type == "logistic-container" then
+            return true  -- Containers can accept any item
+        end
+        -- Add more entity types as needed
+        return false
+    end
+
+    -- Find the closest suitable building
+    for _, building in ipairs(buildings) do
+        if building.name ~= 'character' and can_insert_item(building, insert_item) then
+            local distance = ((position.x - building.position.x) ^ 2 + (position.y - building.position.y) ^ 2) ^ 0.5
+            if distance < closest_distance then
+                closest_distance = distance
+                closest_entity = building
             end
         end
     end
 
     if closest_entity == nil then
-        error("Could not find a nearby entity to insert into.")
-    else
-
-        -- Check if the entity can accept the item
-        local closest_entity_count = closest_entity.get_item_count(insert_item)
-
-        if closest_entity_count == nil then
-            error('No possible entity to fuel')
-        end
-
-        -- Throw an error if the entity is too far away from the player
-        if closest_distance > 10 then
-            error('Entity too far away. Move closer.')
-        end
-
-        -- Make transaction
-        local number_removed = player.remove_item{name=insert_item, count=count}
-
-        local number_inserted = closest_entity.insert{name=insert_item, count=number_removed}
-
-        if number_inserted ~= number_removed then
-            closest_entity.remove_item{name=insert_item, count=number_inserted}
-            player.insert{name=insert_item, count=number_removed}
-            error('Transaction not executed')
-        else
-            game.print("Inserted "..number_removed)
-            return global.utils.serialize_entity(closest_entity)
-        end
-
+        error("Could not find a nearby entity that can accept " .. insert_item)
     end
 
+    -- Throw an error if the entity is too far away from the player
+    if closest_distance > 10 then
+        error('Entity too far away. Move closer.')
+    end
+
+    -- Determine how many items can be inserted
+    local insertable_count = math.min(count, item_count)
+
+    -- Attempt to insert items without removing them from player first
+    local inserted = closest_entity.insert{name=insert_item, count=insertable_count}
+
+    if inserted > 0 then
+        -- Only remove successfully inserted items from player
+        player.remove_item{name=insert_item, count=inserted}
+        game.print("Successfully inserted " .. inserted .. " items.")
+        return global.utils.serialize_entity(closest_entity)
+    else
+        error("Failed to insert any items into the target entity.")
+    end
 end

@@ -15,6 +15,7 @@ def game(instance):
                                   'burner-mining-drill': 3}
     instance.reset()
     yield instance
+    instance.reset()
 
 def test_build_auto_refilling_coal_system(game):
     num_drills = 3

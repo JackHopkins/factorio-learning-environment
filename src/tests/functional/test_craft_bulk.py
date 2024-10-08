@@ -54,7 +54,7 @@ def test_craft_automation_packs(game):
     assert assembler, "Failed to place assembly machine"
 
     # Set up automated science pack production
-    recipe_set = game.set_entity_recipe(assembler, Prototype.ElectronicCircuit)
+    recipe_set = game.set_entity_recipe(assembler, Prototype.AutomationSciencePack)
     assert recipe_set, "Failed to set recipe for automated science pack"
 
     # Feed materials into the assembly machine
@@ -65,7 +65,7 @@ def test_craft_automation_packs(game):
     game.sleep(50)  # Wait for 10 science packs to be produced (5 seconds each)
 
     # Collect the science packs
-    science_packs = game.extract_item(Prototype.ElectronicCircuit, assembler.position, 10)
+    science_packs = game.extract_item(Prototype.AutomationSciencePack, assembler.position, 10)
     assert science_packs, "Failed to extract science packs from assembler"
 
     # Verify the result

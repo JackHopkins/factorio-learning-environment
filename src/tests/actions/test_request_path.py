@@ -7,6 +7,7 @@ from factorio_types import Prototype
 def game(instance):
     instance.reset()
     yield instance
+    instance.reset()
 
 def test_path(game):
     """

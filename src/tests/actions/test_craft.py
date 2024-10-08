@@ -6,6 +6,7 @@ from factorio_types import Prototype
 def game(instance):
     instance.reset()
     yield instance
+    instance.reset()
 
 def test_craft_item(game):
     """
@@ -29,8 +30,6 @@ def test_craft_item(game):
     assert initial_iron_plate - 8 == final_iron_plate
     assert initial_iron_chest + 1 == final_iron_chest
 
-    game.reset()
-
 def test_craft_copper_coil(game):
     """
     Craft 20 copper cable and verify that only 10 copper plates have been deducted.
@@ -51,8 +50,6 @@ def test_craft_copper_coil(game):
     # Assert that only 10 copper plates have been deducted
     assert initial_copper_plate - 10 == final_copper_plate
     assert initial_copper_coil + 20 == final_copper_coil
-
-    game.reset()
 
 def test_craft_entity_with_missing_intermediate_resources(game):
     """

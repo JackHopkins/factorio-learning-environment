@@ -15,6 +15,7 @@ def game(instance):
     }
     instance.reset()
     yield instance
+    instance.reset()
 
 def test_inspect_entities(game):
     inventory = game.inspect_inventory()
@@ -26,7 +27,6 @@ def test_inspect_entities(game):
     inspected = game.inspect_entities(radius=5, position=Position(x=chest.position.x, y=chest.position.y))
 
     assert len(inspected.entities) == 2
-    game.reset()
 
 def test_inspect_inserters(game):
     """Test to ensure that inspected inserters are facing in the correct direction"""

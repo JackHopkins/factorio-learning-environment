@@ -6,6 +6,7 @@ from factorio_types import Resource
 def game(instance):
     instance.reset()
     yield instance
+    instance.reset()
 
 def test_harvest_resource(game):
     """
@@ -30,7 +31,6 @@ def test_harvest_resource(game):
     final_coal = game.inspect_inventory()[Resource.Coal]
     # Assert that the coal has been added to the inventory
     assert quantity == final_coal - initial_coal
-    game.reset()
 
 def test_harvest_trees(game):
     """
@@ -53,4 +53,3 @@ def test_harvest_trees(game):
     final_wood = game.inspect_inventory()[Resource.Wood]
     # Assert that the coal has been added to the inventory
     assert quantity == final_wood - initial_wood
-    game.reset()

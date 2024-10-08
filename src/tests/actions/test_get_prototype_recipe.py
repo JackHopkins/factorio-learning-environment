@@ -7,6 +7,7 @@ def game(instance):
     instance.initial_inventory = {'assembling-machine-1': 1}
     instance.reset()
     yield instance
+    instance.reset()
 
 def test_get_recipe(game):
 
@@ -14,4 +15,3 @@ def test_get_recipe(game):
 
     assert recipe.ingredients[0].name == 'iron-plate'
     assert recipe.ingredients[0].count == 2
-    game.reset()

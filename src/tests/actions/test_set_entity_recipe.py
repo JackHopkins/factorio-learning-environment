@@ -7,6 +7,7 @@ def game(instance):
     game.initial_inventory = {'assembling-machine-1': 1}
     instance.reset()
     yield instance
+    instance.reset()
 
 def test_set_entity_recipe(game):
     # Place an assembling machine
@@ -19,5 +20,3 @@ def test_set_entity_recipe(game):
     prototype_name, _ = Prototype.IronGearWheel.value
 
     assert assembling_machine.recipe == prototype_name
-
-    game.reset()

@@ -21,6 +21,7 @@ def game(instance):
     }
     instance.reset()
     yield instance
+    instance.reset()
 
 @pytest.fixture
 def entity_prototype():
@@ -151,7 +152,6 @@ def test_place_drill_and_furnace_next_to_iron_ore(game):
     print(f"Expected position: {expected_position}")
 
     assert furnace.position == expected_position, f"Expected {expected_position}, got {furnace.position}"
-    game.reset()
 
 
 def test_place_entity_next_to(game, entity_prototype, surrounding_entity_prototype):
@@ -195,7 +195,6 @@ def test_place_entity_next_to(game, entity_prototype, surrounding_entity_prototy
                 print(f"  Spacing: {spacing}")
                 raise
 
-        game.reset()
 
     # Specific test for boiler and transport belt
     boiler = game.place_entity(Prototype.Boiler, position=Position(x=0, y=0))

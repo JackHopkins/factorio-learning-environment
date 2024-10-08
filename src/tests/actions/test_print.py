@@ -9,6 +9,7 @@ from factorio_types import Prototype, Resource
 def game(instance):
     instance.reset()
     yield instance
+    instance.reset()
 
 def test_print_tuple(game):
     """

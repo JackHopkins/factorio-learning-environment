@@ -14,6 +14,7 @@ def game(instance):
     }
     instance.reset()
     yield instance
+    instance.reset()
 
 def test_inspect_inventory(game):
     assert game.inspect_inventory().get(Prototype.Coal, 0) == 50
@@ -26,7 +27,7 @@ def test_inspect_inventory(game):
     chest_inventory = game.inspect_inventory(entity=chest)
     chest_coal_count = chest_inventory[Prototype.Coal]
     assert chest_coal_count == 5
-    game.reset()
+
 
 def test_inspect_assembling_machine_inventory(game):
     machine = game.place_entity(Prototype.AssemblingMachine1, position=Position(x=0, y=0))
@@ -35,7 +36,6 @@ def test_inspect_assembling_machine_inventory(game):
     chest_inventory = game.inspect_inventory(entity=machine)
     iron_count = chest_inventory[Prototype.IronPlate]
     assert iron_count == 5
-    game.reset()
 
 
 def test_print_inventory(game):

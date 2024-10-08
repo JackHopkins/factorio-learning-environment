@@ -7,6 +7,7 @@ from factorio_types import Prototype
 def game(instance):
     instance.reset()
     yield instance
+    instance.reset()
 
 def test_rotate_boiler(game):
     # place the boiler next to the offshore pump
@@ -75,5 +76,3 @@ def rotate_entity(game, entity):
     entity = game.rotate_entity(entity, direction=Direction.UP)
 
     assert entity.direction.value == Direction.UP.value
-
-    game.reset()

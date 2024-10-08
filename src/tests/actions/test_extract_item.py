@@ -8,6 +8,7 @@ def game(instance):
     instance.initial_inventory = {'iron-chest': 1, 'iron-plate': 10}
     instance.reset()
     yield instance
+    instance.reset()
 
 def test_extract(game):
     chest = game.place_entity(Prototype.IronChest, position=Position(x=0, y=0))

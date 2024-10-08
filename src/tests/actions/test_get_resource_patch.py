@@ -8,6 +8,7 @@ from factorio_types import Resource
 def game(instance):
     instance.reset()
     yield instance
+    instance.reset()
 
 def test_get_resource_patch(game: FactorioInstance):
     """

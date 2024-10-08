@@ -26,7 +26,9 @@ def game(instance):
 
 def test_connect_offshore_pump_to_boiler(game):
     #game.craft_item(Prototype.OffshorePump)
-    game.move_to(game.nearest(Resource.Water))
+
+    water_patch = game.get_resource_patch(Resource.Water, game.nearest(Resource.Water))
+    game.move_to(water_patch.bounding_box.left_top)
     offshore_pump = game.place_entity(Prototype.OffshorePump,
                                       position=game.nearest(Resource.Water))
     boiler = game.place_entity_next_to(Prototype.Boiler,
@@ -36,9 +38,10 @@ def test_connect_offshore_pump_to_boiler(game):
     water_pipes = game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
     assert len(water_pipes) == 5 + boiler.tile_dimensions.tile_width/2 + offshore_pump.tile_dimensions.tile_width/2 + 1
 
+    game.move_to(water_patch.bounding_box.right_bottom)
     offshore_pump = game.place_entity(Prototype.OffshorePump,
                                       position=game.nearest(Resource.Water),
-                                        direction=Direction.RIGHT)
+                                      direction=Direction.RIGHT)
     boiler = game.place_entity_next_to(Prototype.Boiler,
                                         reference_position=offshore_pump.position,
                                         direction=offshore_pump.direction,

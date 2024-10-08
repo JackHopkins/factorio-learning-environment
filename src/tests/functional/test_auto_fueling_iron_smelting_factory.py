@@ -43,7 +43,11 @@ def test_auto_fueling_iron_smelting_factory(game):
 
     # Place an inserter to fuel the iron drill from the coal belt
     inserter_position = Position(x=iron_drill.position.x + iron_drill.tile_dimensions.tile_width/2, y=iron_drill.position.y-1)
-    iron_drill_fuel_inserter = game.place_entity(Prototype.BurnerInserter, position=inserter_position, direction=Direction.LEFT, exact=True)
+    iron_drill_fuel_inserter = game.place_entity_next_to(Prototype.BurnerInserter,
+                                                           reference_position=iron_drill.position,
+                                                           direction=Direction.RIGHT,
+                                                           spacing=0)
+    iron_drill_fuel_inserter = game.rotate_entity(iron_drill_fuel_inserter, Direction.LEFT)
 
     coal_belt = game.connect_entities(source=coal_drill, target=iron_drill_fuel_inserter, connection_type=Prototype.TransportBelt)
 

@@ -36,6 +36,9 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
                 end
                 return false
             end
+        elseif entity.burner then
+            -- Check if it's a fuel
+            return game.item_prototypes[item_name].fuel_value > 0
         elseif entity.type == "furnace" then
             -- Check if it's a fuel
             if game.item_prototypes[item_name].fuel_value > 0 then
@@ -56,7 +59,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
             return true  -- Containers can accept any item
         end
         -- Add more entity types as needed
-        return false
+        return true
     end
 
     -- Find the closest suitable building

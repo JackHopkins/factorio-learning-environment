@@ -18,11 +18,14 @@ def game(instance):
         'offshore-pump': 4,
         'pipe': 100,
         'small-electric-pole': 50,
-        'transport-belt': 100,
+        'transport-belt': 200,
+        'coal': 100,
+        'wooden-chest': 1,
         PrototypeName.AssemblingMachine.value: 10,
     }
     instance.reset()
     yield instance
+    instance.reset()
 
 def test_connect_offshore_pump_to_boiler(game):
     #game.craft_item(Prototype.OffshorePump)
@@ -456,3 +459,44 @@ def test_connect_transport_belts_to_inserter_row(game):
     game.connect_entities(iron_belt_start.output_position, above_current_furnace, Prototype.TransportBelt)
 
     pass
+
+def test_ensure_final_belt_is_the_correct_orientation(game):
+    # move to 0,0 and Place chest there
+    game.move_to(Position(x=0, y=0))
+
+    # place another inserter next to the chest
+    chest_inserter2 = game.place_entity_next_to(Prototype.BurnerInserter, reference_position=Position(x=0, y=0),
+                                           direction=Direction.LEFT)
+    assert chest_inserter2, "Failed to place inserter"
+    print(f"Second Inserter placed at {chest_inserter2.position}")
+
+    # Place a drill to copper ore patch
+    copper_ore_patch = game.get_resource_patch(Resource.CopperOre, game.nearest(Resource.CopperOre))
+    assert copper_ore_patch, "No copper ore patch found"
+    print(f"copper ore patch found at {copper_ore_patch.bounding_box.center}")
+
+    # Place burner mining drill on copper ore patch
+    game.move_to(copper_ore_patch.bounding_box.center)
+    copper_drill = game.place_entity(Prototype.BurnerMiningDrill, direction=Direction.RIGHT,
+                                position=copper_ore_patch.bounding_box.center)
+    assert copper_drill, "Failed to place burner mining drill"
+    print(f"Burner mining drill placed at {copper_drill.position}")
+
+    # place a burner inserter next to the copper drill
+    copper_drill_inserter = game.place_entity_next_to(Prototype.BurnerInserter,
+                                                      reference_position=copper_drill.position,
+                                                      direction=Direction.LEFT)
+    assert copper_drill_inserter, "Failed to place inserter"
+    print(f"Inserter placed at {copper_drill_inserter.position}")
+
+    # rotate the inserter to face the drill
+    copper_drill_inserter = game.rotate_entity(copper_drill_inserter, Direction.RIGHT)
+    assert copper_drill_inserter.direction.value == Direction.RIGHT.value, "Failed to rotate inserter"
+
+    # add coal to the inserter
+    inserter_with_coal = game.insert_item(Prototype.Coal, copper_drill_inserter, quantity=5)
+    assert inserter_with_coal.fuel_inventory.get(Prototype.Coal, 0) > 0, "Failed to fuel inserter"
+
+    # connect drill_inserter to chest_inserter with transport belts
+    belts = game.connect_entities(chest_inserter2, copper_drill_inserter, connection_type=Prototype.TransportBelt)
+    assert belts, "Failed to connect entities with transport belts"

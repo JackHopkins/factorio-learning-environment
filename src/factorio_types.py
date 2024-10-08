@@ -17,6 +17,7 @@ class PrototypeName(enum.Enum):
     IronChest = "iron-chest"
     ElectronicCircuit = "electronic-circuit"
     Lab = "lab"
+    GunTurret = "gun-turret"
 
 class ResourceName(enum.Enum):
     Coal = "coal"
@@ -56,6 +57,10 @@ class Prototype(enum.Enum):
     Lab = "lab", Entity
     AutomationSciencePack = "automation-science-pack", None
     Accumulator = "accumulator", Accumulator
+    GunTurret = "gun-turret", GunTurret
+    FirearmMagazine = "firearm-magazine", Ammo
+    StoneBrick = "stone-brick", None
+    Radar = "radar", Entity
 
 
 class Resource:

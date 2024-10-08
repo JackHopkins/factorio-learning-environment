@@ -1,0 +1,14 @@
+{
+  "instruction": "Set up a small steel production line using iron plates and a stone furnace",
+  "objective": "Set up a small steel production line using iron plates and a stone furnace",
+  "steps": "To set up a small steel production line using iron plates and a stone furnace in Factorio, follow these steps:\n\n1. Gather resources:\n   - Iron plates (you should already have these from your iron smelting setup)\n   - Stone furnace (craft one if you don't have it already)\n   - Coal for fuel (unless you're using electric furnaces, which isn't specified here)\n\n2. Place the stone furnace:\n   - Find a suitable location near your iron plate production or storage\n   - Place the stone furnace on the ground\n\n3. Set up input for iron plates:\n   - Use a transport belt to bring iron plates to the furnace\n   - Place an inserter next to the furnace to feed iron plates into it\n\n4. Ensure fuel supply:\n   - If using coal, set up a separate transport belt for coal\n   - Place another inserter to feed coal into the furnace\n\n5. Configure the furnace:\n   - Select the steel recipe in the furnace interface\n   - Note that it takes 5 iron plates to produce 1 steel plate\n\n6. Set up output collection:\n   - Place an output inserter on the opposite side of the input inserter\n   - Have this inserter remove the produced steel plates from the furnace\n\n7. Storage or transportation:\n   - Place a chest near the output inserter to collect steel plates, or\n   - Set up a transport belt to move the steel plates to where they're needed\n\n8. Scaling (optional):\n   - To increase production, simply repeat these steps to add more furnaces in parallel\n\nRemember that this is a basic setup and can be optimized or expanded later as your factory grows and you unlock new technologies.",
+  "corrections": [
+    {
+      "diff": "",
+      "error": "16: Error at lines 27-27: \"Furnace\" object has no field \"recipe\""
+    }
+  ],
+  "token_count": 13361,
+  "cost": 0.0060435,
+  "snippet_passed": true
+}

@@ -233,6 +233,14 @@ class BurnerInserter(Inserter, BurnerType):
 class BurnerMiningDrill(MiningDrill, BurnerType):
     pass
 
+class Ammo(BaseModel):
+    name: str
+    magazine_size: Optional[int] = 0
+    reload_time: Optional[float] = 0
+
+class GunTurret(Entity):
+    inventory: Inventory
+    ammo_inventory: Inventory
 
 class AssemblingMachine1(Entity):
     recipe: Optional[Recipe] = None  # Prototype

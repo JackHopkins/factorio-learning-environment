@@ -31,10 +31,11 @@ def game(instance):
     }
     instance.reset()
     yield instance
+
 def test_variables(game):
 
-    score, goal, result = game.eval_with_error("fizz=1")
+    score, goal, result = game.eval_with_error("fizz='mart'")
 
     score, goal, result = game.eval_with_error("fizz")
 
-    assert result
+    assert result == '0: mart'

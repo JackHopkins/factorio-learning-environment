@@ -2,7 +2,9 @@ import ast
 import builtins
 import concurrent
 import importlib
+import io
 import os
+import sys
 import types
 from enum import Enum
 from pathlib import Path
@@ -217,7 +219,7 @@ class FactorioInstance:
 
     def _eval_with_timeout(self, expr):
         """
-        Executes a Python expression with a timeout
+        Executes a Python expression with a timeout and returns the result
         :param expr:
         :return:
         """
@@ -260,62 +262,79 @@ class FactorioInstance:
             if not name.startswith('_'):
                 eval_dict[name] = getattr(builtins, name)
 
-        for index, node in enumerate(tree.body):
-            try:
-                if isinstance(node, ast.FunctionDef):
-                    # For function definitions, we need to compile and exec
-                    compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
-                    exec(compiled, eval_dict)
-                elif isinstance(node, ast.Expr):
-                    # For expressions (including function calls), we can use eval
-                    compiled = compile(ast.Expression(node.value), 'file', 'eval')
-                    response = eval(compiled, eval_dict)
-                    if response is not True and response:
-                        results[index] = response
-                        self._sequential_exception_count = 0
-                else:
-                    # For other statements, use exec
-                    compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
-                    exec(compiled, eval_dict)
+        # Redirect stdout to a StringIO buffer
+        old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            for index, node in enumerate(tree.body):
+                try:
+                    if isinstance(node, ast.FunctionDef):
+                        # For function definitions, we need to compile and exec
+                        compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
+                        exec(compiled, eval_dict)
+                    elif isinstance(node, ast.Expr):
+                        # For expressions (including function calls), we can use eval
+                        compiled = compile(ast.Expression(node.value), 'file', 'eval')
+                        response = eval(compiled, eval_dict)
+                        if response is not True and response is not None:
+                            results[index] = response
+                            self._sequential_exception_count = 0
+                        # Capture any printed output
+                        printed_output = sys.stdout.getvalue()
+                        if printed_output:
+                            results[index] = printed_output.strip()
+                        sys.stdout = io.StringIO()  # Reset the buffer
+                    else:
+                        # For other statements, use exec
+                        compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
+                        exec(compiled, eval_dict)
+                        # Capture any printed output
+                        printed_output = sys.stdout.getvalue()
+                        if printed_output:
+                            results[index] = printed_output.strip()
+                        sys.stdout = io.StringIO()  # Reset the buffer
 
-            except Exception as e:
-                self._sequential_exception_count += 1
+                except Exception as e:
+                    self._sequential_exception_count += 1
 
-                if self._sequential_exception_count == self.max_sequential_exception_count:
-                    pass
-                    #break
+                    if self._sequential_exception_count == self.max_sequential_exception_count:
+                        pass
+                        #break
 
-                # parts = list(e.args)
-                # sentences = ". ".join([str(part).replace("_", " ") for part in parts])
-                # results[index] = f"Error at line {node.end_lineno}: {sentences}"
-                # break
+                    # parts = list(e.args)
+                    # sentences = ". ".join([str(part).replace("_", " ") for part in parts])
+                    # results[index] = f"Error at line {node.end_lineno}: {sentences}"
+                    # break
 
-                # Get detailed error information
-                error_info = {
-                    "line_number": node.lineno,
-                    "end_line_number": node.end_lineno,
-                    "function_name": None,
-                    "inputs": None,
-                }
+                    # Get detailed error information
+                    error_info = {
+                        "line_number": node.lineno,
+                        "end_line_number": node.end_lineno,
+                        "function_name": None,
+                        "inputs": None,
+                    }
 
-                # Extract function name and inputs if available
-                if isinstance(node, ast.FunctionDef):
-                    error_info["function_name"] = node.name
-                    error_info["inputs"] = [arg.arg for arg in node.args.args]
-                elif isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-                    error_info["function_name"] = node.func.id
-                    error_info["inputs"] = [ast.unparse(arg) for arg in node.args]
+                    # Extract function name and inputs if available
+                    if isinstance(node, ast.FunctionDef):
+                        error_info["function_name"] = node.name
+                        error_info["inputs"] = [arg.arg for arg in node.args.args]
+                    elif isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                        error_info["function_name"] = node.func.id
+                        error_info["inputs"] = [ast.unparse(arg) for arg in node.args]
 
-                # Format the error message
-                error_message = f"Error at lines {error_info['line_number']}-{error_info['end_line_number']}"
-                if error_info["function_name"]:
-                    error_message += f" in function '{error_info['function_name']}'"
-                if error_info["inputs"]:
-                    error_message += f" with inputs: {', '.join(error_info['inputs'])}"
-                error_message += f": {str(e)}"
+                    # Format the error message
+                    error_message = f"Error at lines {error_info['line_number']}-{error_info['end_line_number']}"
+                    if error_info["function_name"]:
+                        error_message += f" in function '{error_info['function_name']}'"
+                    if error_info["inputs"]:
+                        error_message += f" with inputs: {', '.join(error_info['inputs'])}"
+                    error_message += f": {str(e)}"
 
-                results[index] = error_message
-                break
+                    results[index] = error_message
+                    break
+
+        finally:
+            sys.stdout = old_stdout
 
         score, goal = self.score()
         return score, goal, '\n'.join([f"{i}: {str(r)}" for i, r in results.items()])

@@ -34,8 +34,12 @@ def game(instance):
 
 def test_variables(game):
 
-    score, goal, result = game.eval_with_error("fizz='mart'")
-
-    score, goal, result = game.eval_with_error("fizz")
+    game.eval_with_error("fizz='mart'")
+    _, _, result = game.eval_with_error("fizz")
 
     assert result == '0: mart'
+
+def test_print(game):
+    _, _, result = game.eval_with_error("print('hello')")
+
+    assert result == '0: hello'

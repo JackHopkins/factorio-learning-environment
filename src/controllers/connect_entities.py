@@ -200,7 +200,7 @@ class ConnectEntities(Action):
             elif isinstance(source_entity, MiningDrill):
                 source_position = source_entity.drop_position
             elif isinstance(source_entity, TransportBelt):
-                source_position = source_entity.output_position
+                source_position = source_entity.position
             else:
                 source_position = Position(x=source_entity.position.x-x_sign*source_entity.tile_dimensions.tile_width/2,
                                            y=source_entity.position.y-y_sign*source_entity.tile_dimensions.tile_height/2)
@@ -229,7 +229,7 @@ class ConnectEntities(Action):
             elif isinstance(target_entity, MiningDrill):
                 target_position = target_entity.drop_position
             elif isinstance(target_entity, TransportBelt):
-                target_position = target_entity.input_position
+                target_position = target_entity.position
             else:
                 target_position = Position(x=target_entity.position.x + x_sign*source_entity.tile_dimensions.tile_width/2,
                                            y=target_entity.position.y + y_sign*source_entity.tile_dimensions.tile_height/2)

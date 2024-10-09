@@ -505,7 +505,7 @@ function get_entity_direction(entity, direction)
 	if prototype == nil then
 		return direction
 	end
-	game.print(game.entity_prototypes[entity].name, {skip=defines.print_skip.never})
+	--game.print(game.entity_prototypes[entity].name, {skip=defines.print_skip.never})
 
 	local cardinals = {
 		defines.direction.north,
@@ -644,7 +644,7 @@ global.utils.serialize_entity = function(entity)
 		direction = 0
 	end
 
-	game.print("Serialized direction: ", {skip=defines.print_skip.never})
+	--game.print("Serialized direction: ", {skip=defines.print_skip.never})
 	local serialized = {
 		name = "\""..entity.name.."\"",
 		position = entity.position,

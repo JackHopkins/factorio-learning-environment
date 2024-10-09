@@ -91,7 +91,7 @@ global.actions.inspect_entities = function(player_index, radius, position_x, pos
 
         local position = {x=data.position.x, y=data.position.y}
 
-        game.print(data.name .. ": " .. data.direction .. " - ".. global.utils.get_entity_direction(data.name:gsub("_", "-"), data.direction))
+        --game.print(data.name .. ": " .. data.direction .. " - ".. global.utils.get_entity_direction(data.name:gsub("_", "-"), data.direction))
         local entity_info = {
             name = data.name:gsub("-", "_"),
             position = position,

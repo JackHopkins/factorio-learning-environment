@@ -133,6 +133,9 @@ class FactorioInstance:
         #self.game_state._initial_score = 0
         self.game_state.initial_score, goal = self.score()
 
+    def speed(self, speed):
+        self.rcon_client.send_command(f'/c game.speed = {speed}')
+
     def print(self, arg):
         """
         Shadows the builtin print function,and ensures that whatever is printed is logged in agent memory

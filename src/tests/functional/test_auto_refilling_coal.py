@@ -14,8 +14,10 @@ def game(instance):
                                   'transport-belt': 50,
                                   'burner-mining-drill': 5}
     instance.reset()
+    instance.speed(10)
     yield instance
     instance.reset()
+    instance.speed(1)
 
 def test_build_auto_refilling_coal_system(game):
     num_drills = 3
@@ -49,6 +51,7 @@ def test_build_auto_refilling_coal_system(game):
     game.move_to(inserter.drop_position)
 
     drills = []
+    belts = []
 
     # Place additional drills and connect them to the belt
     for i in range(1, num_drills):
@@ -72,7 +75,7 @@ def test_build_auto_refilling_coal_system(game):
         drill_inserter = game.rotate_entity(drill_inserter, Direction.UP)
 
         # Extend the transport belt to the next drill
-        game.connect_entities(inserter.drop_position, next_inserter.drop_position, Prototype.TransportBelt)
+        belts.extend(game.connect_entities(inserter.drop_position, next_inserter.drop_position, Prototype.TransportBelt))
 
         # Update the drill reference for the next iteration
         drill = next_drill
@@ -80,14 +83,15 @@ def test_build_auto_refilling_coal_system(game):
         next_drill_inserter = drill_inserter
 
     # Connect the drop position of the final drill block to the inserter that is loading it with coal
-    game.connect_entities(next_inserter.drop_position, next_drill_inserter.pickup_position, Prototype.TransportBelt)
+    belts.extend(game.connect_entities(next_inserter.drop_position, next_drill_inserter.pickup_position, Prototype.TransportBelt))
 
     # Connect that inserter to the inserter that is loading the first drill with coal
-    game.connect_entities(next_drill_inserter.pickup_position, first_drill_inserter.pickup_position, Prototype.TransportBelt)
+    belts.extend(game.connect_entities(next_drill_inserter.pickup_position, first_drill_inserter.pickup_position, Prototype.TransportBelt))
 
     # Connect the first drill inserter to the drop point of the first inserter
-    game.connect_entities(first_drill_inserter.pickup_position, first_inserter.drop_position, Prototype.TransportBelt)
+    belts.extend(game.connect_entities(belts[-1].output_position, belts[0].input_position, Prototype.TransportBelt))
 
+    game.rotate_entity(belts[-1], Direction.RIGHT)
     # Initialize the system by adding some coal to each drill and inserter
     for drill in drills:
         game.insert_item(Prototype.Coal, drill, 5)
@@ -188,6 +192,7 @@ def test_another_self_fueling_coal_belt(game):
     print("All components verified")
 
     # Kickstart the system by placing coal on the belt
+    game.move_to(belt_entities[0].input_position)
     coal_placed = game.insert_item(Prototype.Coal, belt_entities[-1], quantity=10)
     assert coal_placed is not None, "Failed to place coal on the belt"
 

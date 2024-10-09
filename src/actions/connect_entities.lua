@@ -7,6 +7,15 @@ local wire_reach = {
     ['substation'] = 18
 }
 
+local function get_last_belt_direction(serialized_entities)
+    for i = #serialized_entities, 1, -1 do
+        if serialized_entities[i].name == connection_type then
+            return serialized_entities[i].direction
+        end
+    end
+    return nil  -- Return nil if no belt was found
+end
+
 function get_step_size(connection_type)
     -- Adjust the step size based on the connection type's wire reach
     return wire_reach[connection_type] or 1
@@ -281,48 +290,73 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
         place_at_position(player, connection_type, start_position, dir, serialized_entities)
     end
 
+    local last_position = path[1].position
+    local last_dir
     for i = 1, #path-1, step_size do
-        original_dir = (path[i + step_size] and get_direction(path[i].position, path[i + step_size].position)) or 0
+        original_dir = (path[i + step_size] and get_direction(path[i].position, path[i + step_size].position)) or get_direction(path[i].position, end_position)
         dir = global.utils.get_entity_direction(connection_type, original_dir/2)
         place_at_position(player, connection_type, path[i].position, dir, serialized_entities)
+        last_position = path[i].position
+        last_dir = dir
     end
 
-    local preemptive_target = {x = (target_x + path[#path].position.x)/2, y = (target_y + path[#path].position.y)/2}
+    local preemptive_target = {x = (target_x + last_position.x)/2, y = (target_y + last_position.y)/2}
 
-    place_at_position(player, connection_type, path[#path].position, get_direction(path[#path].position, preemptive_target), serialized_entities)
-    place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities)
-    place_at_position(player, connection_type, preemptive_target, get_direction(path[#path].position, preemptive_target), serialized_entities)
+    -- If the connection_type is a belt
+    if connection_type == 'transport-belt' then
 
-    --create_beam_point(game.players[1], path[#path].position)
-    create_beam_point(game.players[1], end_position)
+        -- if the last path position is the same as the target, then we don't need to place a new entity
+        if path[#path].position.x == target_x and path[#path].position.y == target_y then
+            place_at_position(player, connection_type, path[#path].position, last_dir, serialized_entities) -- original_dir/2, serialized_entities)
+        else
+            local dir = get_direction(path[#path].position, {x = target_x, y = target_y})
+            local ndir = global.utils.get_entity_direction(connection_type, dir/2)
+            place_at_position(player, connection_type, path[#path].position, ndir, serialized_entities)
+        end
+        place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities)
 
-    --if connection_type ~= 'transport-belt' then
-    --original_dir = path[1] and get_direction(end_position, path[1].position) or 0
-    --else
-    --    original_dir = path[1] and get_direction(path[1].position, end_position) or 0
-    --end
-    --dir = global.utils.get_entity_direction(connection_type, original_dir/2)
-
-    --game.print("Source entity: " .. source_entity.fluidbox[1].get_fluid_system_id())
-    --game.print("Target entity: " .. target_entity.fluidbox[1].get_fluid_system_id())
-
-    -- Check if entities are connected
-    local source_entity = get_closest_entity(player, {x = source_x, y = source_y})
-    local target_entity = get_closest_entity(player, {x = target_x, y = target_y})
-    local is_connected = false
-
-    if source_entity and target_entity then
-        is_connected = are_fluidboxes_connected(source_entity, target_entity)
+    elseif connection_type == 'pipe' then
+        -- If the connection_type is a pipe, we have to do some extra work to ensure no missing pipes
+        place_at_position(player, connection_type, path[#path].position, get_direction(path[#path].position, preemptive_target), serialized_entities)
+        place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities)
+        place_at_position(player, connection_type, preemptive_target, get_direction(path[#path].position, preemptive_target), serialized_entities)
+    else
+        -- If the connection_type is an electricity pole, we need to place the last entity at the target position to ensure connection
+        place_at_position(player, connection_type, path[#path].position, get_direction(path[#path].position, preemptive_target), serialized_entities)
+        place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities)
     end
 
-    if not is_connected then
-        is_connected = (#serialized_entities > 0)
+
+        --create_beam_point(game.players[1], path[#path].position)
+        create_beam_point(game.players[1], end_position)
+
+        --if connection_type ~= 'transport-belt' then
+        --original_dir = path[1] and get_direction(end_position, path[1].position) or 0
+        --else
+        --    original_dir = path[1] and get_direction(path[1].position, end_position) or 0
+        --end
+        --dir = global.utils.get_entity_direction(connection_type, original_dir/2)
+
+        --game.print("Source entity: " .. source_entity.fluidbox[1].get_fluid_system_id())
+        --game.print("Target entity: " .. target_entity.fluidbox[1].get_fluid_system_id())
+
+        -- Check if entities are connected
+        local source_entity = get_closest_entity(player, {x = source_x, y = source_y})
+        local target_entity = get_closest_entity(player, {x = target_x, y = target_y})
+        local is_connected = false
+
+        if source_entity and target_entity then
+            is_connected = are_fluidboxes_connected(source_entity, target_entity)
+        end
+
+        if not is_connected then
+            is_connected = (#serialized_entities > 0)
+        end
+
+        game.print("Connection status: " .. tostring(is_connected))
+
+        return {
+            entities = serialized_entities,
+            connected = is_connected
+        }
     end
-
-    game.print("Connection status: " .. tostring(is_connected))
-
-    return {
-        entities = serialized_entities,
-        connected = is_connected
-    }
-end

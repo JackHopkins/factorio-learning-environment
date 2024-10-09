@@ -196,13 +196,28 @@ function has_output_space(entity)
     return true
 end
 
--- Define a function to check if the entity requires electricity and has any
+--function has_electricity(entity)
+--    if entity.prototype.electric_energy_source_prototype then
+--        if entity.electric_drain <= 0 then
+--            return false
+--        end
+--    end
+--    return true
+--end
+
 function has_electricity(entity)
     if entity.prototype.electric_energy_source_prototype then
-        if entity.electric_drain <= 0 then
+        -- Check if the entity is connected to an electric network
+        if entity.electric_network_id then
+            -- Check if the entity is receiving power
+            local energy_usage = entity.energy / entity.electric_buffer_size
+            return energy_usage > 0
+        else
+            -- Entity is not connected to an electric network
             return false
         end
     end
+    -- Entity doesn't require electricity
     return true
 end
 
@@ -294,8 +309,13 @@ function get_issues(entity)
     end
 
     if not has_electricity(entity) then
-        table.insert(issues, "not_receiving_electricity")
+        if entity.electric_network_id then
+            table.insert(issues, "\"not receiving electricity\"")
+        else
+            table.insert(issues, "\"not connected to power network\"")
+        end
     end
+
     local assembler_issue = lacks_assembler_resources(entity)
     if assembler_issue then
         table.insert(issues, assembler_issue)

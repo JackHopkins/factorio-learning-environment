@@ -129,8 +129,8 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
             -- Skip if there's no movement
             goto continue
         end
-        game.print(direction)
-        game.print(defines.direction[direction])
+        --game.print(direction)
+        --game.print(defines.direction[direction])
         local new_belt
         if is_trailing == 1 then
              if math.abs(current_position.x - target_position.x) == 1 and math.abs(current_position.y - target_position.y) == 1 then

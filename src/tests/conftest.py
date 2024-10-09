@@ -1,6 +1,4 @@
 import pytest
-from functional.test_connect import test_place_and_connect_entities_in_grid
-
 @pytest.fixture(scope="session")
 def instance():
     from src.factorio_instance import FactorioInstance

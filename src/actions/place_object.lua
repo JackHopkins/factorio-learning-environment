@@ -119,6 +119,9 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 end
             end
         end
+
+        global.actions.avoid_entity(player_index, entity, position)
+
         can_build = player.can_place_entity{
             name = entity,
             force = player.force,

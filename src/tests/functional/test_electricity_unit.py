@@ -67,7 +67,7 @@ def test_create_offshore_pump_to_steam_engine(game):
     boiler_to_steam_engine_pipes = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
 
     inspected_steam_engine = game.inspect_entities(position=steam_engine.position, radius=1).get_entity(Prototype.SteamEngine)
-    assert inspected_steam_engine.warning == 'not receiving electricity'
+    assert inspected_steam_engine.warning == 'not connected to power network'
 
     assert steam_engine.direction.value == DIR.value
 

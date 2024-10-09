@@ -1,47 +1,78 @@
-# Create an automated inserter production facility
+# Constants
+PLACEMENT_RADIUS = 10
 
-# Start by placing essential buildings near the player
-assembler = place_entity(Prototype.AssemblingMachine1, direction=Direction.UP, position=Position(x=0, y=-3))
-assert assembler, "Failed to place assembling machine"
+# Helper function to place entity within radius
+def place_entity_nearby(prototype, direction, reference_position):
+    for dx in range(-PLACEMENT_RADIUS, PLACEMENT_RADIUS + 1):
+        for dy in range(-PLACEMENT_RADIUS, PLACEMENT_RADIUS + 1):
+            pos = Position(x=reference_position.x + dx, y=reference_position.y + dy)
+            entity = place_entity(prototype, direction, pos)
+            if entity:
+                return entity
+    return None
 
-iron_chest_input = place_entity(Prototype.IronChest, direction=Direction.UP, position=Position(x=-2, y=-3))
-assert iron_chest_input, "Failed to place input iron chest"
+# 1. Set up raw material production
+player_pos = Position(x=0, y=0)
+iron_miner = place_entity_nearby(Prototype.BurnerMiningDrill, Direction.UP, nearest(Resource.IronOre))
+assert iron_miner, "Failed to place iron ore miner"
 
-iron_chest_output = place_entity(Prototype.IronChest, direction=Direction.UP, position=Position(x=2, y=-3))
-assert iron_chest_output, "Failed to place output iron chest"
+coal_miner = place_entity_nearby(Prototype.BurnerMiningDrill, Direction.UP, nearest(Resource.Coal))
+assert coal_miner, "Failed to place coal miner"
 
-# Place inserters to move items
-input_inserter = place_entity(Prototype.BurnerInserter, direction=Direction.RIGHT, position=Position(x=-1, y=-3))
-assert input_inserter, "Failed to place input inserter"
+copper_miner = place_entity_nearby(Prototype.BurnerMiningDrill, Direction.UP, nearest(Resource.CopperOre))
+assert copper_miner, "Failed to place copper ore miner"
 
-output_inserter = place_entity(Prototype.BurnerInserter, direction=Direction.LEFT, position=Position(x=1, y=-3))
+# 2. Establish smelting operations
+iron_furnace = place_entity_nearby(Prototype.StoneFurnace, Direction.UP, iron_miner.position)
+assert iron_furnace, "Failed to place iron smelting furnace"
+
+copper_furnace = place_entity_nearby(Prototype.StoneFurnace, Direction.UP, copper_miner.position)
+assert copper_furnace, "Failed to place copper smelting furnace"
+
+# Connect miners to furnaces
+connect_entities(iron_miner, iron_furnace, Prototype.TransportBelt)
+connect_entities(copper_miner, copper_furnace, Prototype.TransportBelt)
+connect_entities(coal_miner, iron_furnace, Prototype.TransportBelt)
+connect_entities(coal_miner, copper_furnace, Prototype.TransportBelt)
+
+# 3. Create component production lines
+gear_assembler = place_entity_nearby(Prototype.AssemblingMachine1, Direction.UP, iron_furnace.position)
+assert gear_assembler, "Failed to place gear wheel assembler"
+set_entity_recipe(gear_assembler, Prototype.IronGearWheel)
+
+circuit_assembler = place_entity_nearby(Prototype.AssemblingMachine1, Direction.UP, copper_furnace.position)
+assert circuit_assembler, "Failed to place electronic circuit assembler"
+set_entity_recipe(circuit_assembler, Prototype.ElectronicCircuit)
+
+# Connect smelters to component assemblers
+connect_entities(iron_furnace, gear_assembler, Prototype.TransportBelt)
+connect_entities(iron_furnace, circuit_assembler, Prototype.TransportBelt)
+connect_entities(copper_furnace, circuit_assembler, Prototype.TransportBelt)
+
+# 4. Set up inserter assembly
+inserter_assembler = place_entity_nearby(Prototype.AssemblingMachine1, Direction.UP, gear_assembler.position)
+assert inserter_assembler, "Failed to place inserter assembler"
+set_entity_recipe(inserter_assembler, Prototype.BurnerInserter)
+
+# Connect component assemblers to inserter assembler
+connect_entities(gear_assembler, inserter_assembler, Prototype.TransportBelt)
+connect_entities(circuit_assembler, inserter_assembler, Prototype.TransportBelt)
+connect_entities(iron_furnace, inserter_assembler, Prototype.TransportBelt)
+
+# 5. Create output storage
+output_chest = place_entity_nearby(Prototype.IronChest, Direction.UP, inserter_assembler.position)
+assert output_chest, "Failed to place output chest"
+
+output_inserter = place_entity_nearby(Prototype.BurnerInserter, Direction.LEFT, output_chest.position)
 assert output_inserter, "Failed to place output inserter"
 
-# Set the recipe for the assembling machine
-recipe_set = set_entity_recipe(assembler, Prototype.BurnerInserter)
-assert recipe_set, "Failed to set recipe for assembling machine"
+# Connect inserter assembler to output chest
+connect_entities(inserter_assembler, output_chest, Prototype.TransportBelt)
 
-# Craft initial materials
-craft_item(Prototype.IronPlate, quantity=10)
-craft_item(Prototype.IronGearWheel, quantity=10)
+# 6. Verify production
+sleep(120)  # Wait for production to start
 
-# Insert initial materials into the input chest
-player_inventory = inspect_inventory()
-iron_plates = min(player_inventory.get(Prototype.IronPlate, 0), 10)
-iron_gears = min(player_inventory.get(Prototype.IronGearWheel, 0), 10)
+inspection = inspect_inventory(output_chest)
+assert inspection.get(Prototype.BurnerInserter, 0) > 0, "No inserters produced"
 
-insert_item(Prototype.IronPlate, iron_chest_input, quantity=iron_plates)
-insert_item(Prototype.IronGearWheel, iron_chest_input, quantity=iron_gears)
-
-# Place a small electric pole to power the assembling machine
-electric_pole = place_entity(Prototype.SmallElectricPole, direction=Direction.UP, position=Position(x=0, y=-5))
-assert electric_pole, "Failed to place small electric pole"
-
-# Wait for production to start
-sleep(30)
-
-# Verify that burner inserters are being produced
-output_inventory = inspect_inventory(iron_chest_output)
-assert output_inventory.get(Prototype.BurnerInserter) > 0, "No burner inserters produced"
-
-print("Automated inserter production facility created successfully")
+print("Automated inserter production facility created successfully!")

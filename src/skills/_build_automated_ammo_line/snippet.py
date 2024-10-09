@@ -1,67 +1,62 @@
-# Start by finding the nearest water source
-water_position = nearest(Resource.Water)
+# Helper function to place entities near the player
+def place_near_player(prototype, offset_x, offset_y):
+    player_pos = Position(x=0, y=0)
+    for dx in range(5):  # Try different x offsets
+        for dy in range(5):  # Try different y offsets
+            entity = place_entity(prototype, position=Position(x=player_pos.x + offset_x + dx, y=player_pos.y + offset_y + dy))
+            if entity:
+                return entity
+    assert False, f"Failed to place {prototype.value[0]}"
 
-# Move closer to the water source, ensuring we're within placement range
-move_to(Position(x=water_position.x + 3, y=water_position.y))
+# 1. Set up basic resource gathering
+iron_drill = place_near_player(Prototype.BurnerMiningDrill, 1, 1)
+coal_chest = place_near_player(Prototype.WoodenChest, 3, 1)
+stone_furnace = place_near_player(Prototype.StoneFurnace, 5, 1)
 
-# Craft necessary components
-craft_item(Prototype.OffshorePump, 1)
-craft_item(Prototype.Boiler, 1)
-craft_item(Prototype.SteamEngine, 1)
-craft_item(Prototype.SmallElectricPole, 1)
-craft_item(Prototype.AssemblingMachine1, 2)
-craft_item(Prototype.BurnerInserter, 2)
-craft_item(Prototype.WoodenChest, 1)
-craft_item(Prototype.TransportBelt, 10)
+# 2. Create a steam power unit
+offshore_pump = place_near_player(Prototype.OffshorePump, 1, 3)
+boiler = place_near_player(Prototype.Boiler, 3, 3)
+steam_engine = place_near_player(Prototype.SteamEngine, 5, 3)
+electric_pole = place_near_player(Prototype.SmallElectricPole, 7, 3)
 
-# Place the steam power unit components
-offshore_pump = place_entity(Prototype.OffshorePump, Direction.RIGHT, Position(x=water_position.x, y=water_position.y))
-assert offshore_pump, "Failed to place offshore pump"
-
-boiler = place_entity(Prototype.Boiler, Direction.RIGHT, Position(x=offshore_pump.position.x + 1, y=offshore_pump.position.y))
-assert boiler, "Failed to place boiler"
-
-steam_engine = place_entity(Prototype.SteamEngine, Direction.RIGHT, Position(x=boiler.position.x + 1, y=boiler.position.y))
-assert steam_engine, "Failed to place steam engine"
-
-# Connect the offshore pump to the boiler, and the boiler to the steam engine
+# Connect water pump to boiler and boiler to steam engine
 connect_entities(offshore_pump, boiler, Prototype.Pipe)
 connect_entities(boiler, steam_engine, Prototype.Pipe)
 
-# Place a small electric pole to distribute power
-electric_pole = place_entity(Prototype.SmallElectricPole, Direction.UP, Position(x=steam_engine.position.x, y=steam_engine.position.y - 2))
-assert electric_pole, "Failed to place small electric pole"
+# 3. Set up copper plate production
+copper_drill = place_near_player(Prototype.BurnerMiningDrill, 1, 5)
+copper_furnace = place_near_player(Prototype.StoneFurnace, 5, 5)
 
-# Place assembling machines for iron gear wheels and firearm magazines
-gear_assembler = place_entity(Prototype.AssemblingMachine1, Direction.UP, Position(x=electric_pole.position.x + 2, y=electric_pole.position.y))
-assert gear_assembler, "Failed to place gear assembling machine"
-
-magazine_assembler = place_entity(Prototype.AssemblingMachine1, Direction.UP, Position(x=gear_assembler.position.x + 3, y=gear_assembler.position.y))
-assert magazine_assembler, "Failed to place magazine assembling machine"
-
-# Set recipes for assembling machines
+# 4. Create an iron gear wheel production line
+gear_assembler = place_near_player(Prototype.AssemblingMachine1, 1, 7)
 set_entity_recipe(gear_assembler, Prototype.IronGearWheel)
+assert gear_assembler.recipe and gear_assembler.recipe.name == "iron-gear-wheel", "Failed to set iron gear wheel recipe"
+
+# 5. Set up firearm magazine production
+magazine_assembler = place_near_player(Prototype.AssemblingMachine1, 5, 7)
 set_entity_recipe(magazine_assembler, Prototype.FirearmMagazine)
+assert magazine_assembler.recipe and magazine_assembler.recipe.name == "firearm-magazine", "Failed to set firearm magazine recipe"
 
-# Place inserters to move items between assemblers
-inserter1 = place_entity(Prototype.BurnerInserter, Direction.RIGHT, Position(x=gear_assembler.position.x + 1.5, y=gear_assembler.position.y))
-assert inserter1, "Failed to place inserter between assemblers"
+# 6. Create a small logistics network
+connect_entities(stone_furnace, magazine_assembler, Prototype.TransportBelt)
+connect_entities(copper_furnace, magazine_assembler, Prototype.TransportBelt)
+connect_entities(gear_assembler, magazine_assembler, Prototype.TransportBelt)
 
-# Place a chest for output
-output_chest = place_entity(Prototype.WoodenChest, Direction.UP, Position(x=magazine_assembler.position.x + 2, y=magazine_assembler.position.y))
-assert output_chest, "Failed to place output chest"
+# 7. Set up storage
+storage_chest = place_near_player(Prototype.IronChest, 7, 7)
+inserter = place_near_player(Prototype.BurnerInserter, 6, 7)
 
-inserter2 = place_entity(Prototype.BurnerInserter, Direction.LEFT, Position(x=output_chest.position.x - 0.5, y=output_chest.position.y))
-assert inserter2, "Failed to place inserter for output"
+# 8. Supply coal to burner entities
+for entity in [iron_drill, copper_drill, stone_furnace, copper_furnace, boiler, inserter]:
+    insert_item(Prototype.Coal, entity, 5)
 
-# Place transport belts to feed iron plates to both assemblers
-start_x = min(gear_assembler.position.x, magazine_assembler.position.x) - 1
-for i in range(7):
-    belt = place_entity(Prototype.TransportBelt, Direction.UP, Position(x=start_x, y=gear_assembler.position.y - i))
-    assert belt, f"Failed to place transport belt at y={gear_assembler.position.y - i}"
+# 9. Verify production line
+sleep(60)  # Wait for production to start
 
-# Verify that all components are in place
-inspection = inspect_entities(Position(x=steam_engine.position.x, y=steam_engine.position.y), radius=15)
-assert len(inspection.entities) >= 10, "Not all components were placed successfully"
+inspection = inspect_entities(position=magazine_assembler.position, radius=20)
+assert any(entity.name == "firearm-magazine" for entity in inspection.entities), "No firearm magazines found in production line"
 
-print("Automated firearm magazine production line has been set up successfully.")
+chest_inventory = inspect_inventory(storage_chest)
+assert chest_inventory.get(Prototype.FirearmMagazine, 0) > 0, "No firearm magazines found in storage chest"
+
+print("Automated firearm magazine production line successfully set up!")

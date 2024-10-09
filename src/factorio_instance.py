@@ -69,6 +69,9 @@ class FactorioInstance:
                  inventory={},
                  cache_scripts=True
                  ):
+
+        self.persistent_vars = {}
+
         self.tcp_port = tcp_port
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
 
@@ -117,7 +120,6 @@ class FactorioInstance:
         self._static_members = [attr for attr in dir(self)
                                 if not callable(getattr(self, attr))
                                 and not attr.startswith("__")]
-
 
     def reset(self):
         for attr in dir(self):
@@ -223,21 +225,30 @@ class FactorioInstance:
         tree = ast.parse(expr)
         results = {}
 
-        # Create a custom dictionary that includes both instance methods and allows attribute access
-        class CustomDict(dict):
+        # Create a persistent environment dictionary that includes both instance methods and allows attribute access
+        class PersistentEnvironment(dict):
             def __init__(self, instance, *args, **kwargs):
                 self.instance = instance
+                if not hasattr(self.instance, 'persistent_vars') or self.instance.persistent_vars is None:
+                    self.instance.persistent_vars = {}
                 super().__init__(*args, **kwargs)
 
             def __getitem__(self, key):
+                if key in self.instance.persistent_vars:
+                    return self.instance.persistent_vars[key]
                 if key in self:
                     return super().__getitem__(key)
                 if hasattr(builtins, key):
                     return getattr(builtins, key)
                 return getattr(self.instance, key)
 
+            def __setitem__(self, key, value):
+                if not hasattr(self.instance, 'persistent_vars') or self.instance.persistent_vars is None:
+                    self.instance.persistent_vars = {}
+                self.instance.persistent_vars[key] = value
+
         # Create the custom dictionary
-        eval_dict = CustomDict(self)
+        eval_dict = PersistentEnvironment(self)
 
         # Add bound methods to the dictionary
         for name, method in self.__class__.__dict__.items():

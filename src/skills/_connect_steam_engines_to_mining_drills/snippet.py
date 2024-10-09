@@ -1,86 +1,91 @@
-# Find the nearest water and move to it
+# Start by moving to the nearest water source
 water_position = nearest(Resource.Water)
 move_to(water_position)
 
-# Place offshore pump near water
+# Craft necessary items if not in inventory
+items_to_craft = [
+    (Prototype.OffshorePump, 1),
+    (Prototype.Boiler, 1),
+    (Prototype.SteamEngine, 3),
+    (Prototype.SmallElectricPole, 10),
+    (Prototype.ElectricMiningDrill, 2)
+]
+
+# First, craft iron plates if needed
+if inspect_inventory().get(Prototype.IronPlate.value[0], 0) < 50:
+    iron_ore_position = nearest(Resource.IronOre)
+    move_to(iron_ore_position)
+    harvest_resource(iron_ore_position, 50)
+    craft_item(Prototype.IronPlate, 50)
+
+# Now craft the other items
+for item, quantity in items_to_craft:
+    current_quantity = inspect_inventory().get(item.value[0], 0)
+    if current_quantity < quantity:
+        craft_item(item, quantity - current_quantity)
+
+# Move back to water
+move_to(water_position)
+
+# Place offshore pump
 offshore_pump = place_entity(Prototype.OffshorePump, Direction.UP, water_position)
 assert offshore_pump, "Failed to place offshore pump"
 print(f"Offshore pump placed at {offshore_pump.position}")
 
-# Place 3 boilers in a line
-boilers = []
-for i in range(3):
-    boiler_position = Position(x=offshore_pump.position.x + i*3, y=offshore_pump.position.y)
-    move_to(boiler_position)
-    boiler = place_entity(Prototype.Boiler, Direction.RIGHT, boiler_position)
-    assert boiler, f"Failed to place boiler {i+1}"
-    boilers.append(boiler)
-    print(f"Boiler {i+1} placed at {boiler.position}")
+# Place boiler next to the offshore pump
+boiler = place_entity_next_to(Prototype.Boiler, offshore_pump.position, Direction.RIGHT)
+assert boiler, "Failed to place boiler"
+print(f"Boiler placed at {boiler.position}")
 
-# Connect boilers with pipes
-for i in range(2):
-    pipes = connect_entities(boilers[i], boilers[i+1], Prototype.Pipe)
-    assert pipes, f"Failed to connect boiler {i+1} to boiler {i+2}"
+# Connect offshore pump to boiler
+pipes = connect_entities(offshore_pump, boiler, Prototype.Pipe)
+assert pipes, "Failed to connect offshore pump to boiler"
 
 # Place 3 steam engines
 steam_engines = []
+prev_entity = boiler
 for i in range(3):
-    engine_position = Position(x=boilers[i].position.x, y=boilers[i].position.y + 3)
-    move_to(engine_position)
-    steam_engine = place_entity(Prototype.SteamEngine, Direction.RIGHT, engine_position)
-    assert steam_engine, f"Failed to place steam engine {i+1}"
-    steam_engines.append(steam_engine)
-    print(f"Steam engine {i+1} placed at {steam_engine.position}")
-
-# Connect boilers to steam engines
-for i in range(3):
-    pipes = connect_entities(boilers[i], steam_engines[i], Prototype.Pipe)
-    assert pipes, f"Failed to connect boiler {i+1} to steam engine {i+1}"
-
-# Find coal and move to it
-coal_position = nearest(Resource.Coal)
-move_to(coal_position)
-
-# Place burner mining drill on coal patch
-coal_miner = place_entity(Prototype.BurnerMiningDrill, Direction.UP, coal_position)
-assert coal_miner, "Failed to place burner mining drill for coal"
-print(f"Coal miner placed at {coal_miner.position}")
-
-# Place inserter to feed coal into first boiler
-inserter_position = Position(x=coal_miner.position.x + 1, y=coal_miner.position.y)
-move_to(inserter_position)
-coal_inserter = place_entity(Prototype.BurnerInserter, Direction.LEFT, inserter_position)
-assert coal_inserter, "Failed to place inserter for coal"
-print(f"Coal inserter placed at {coal_inserter.position}")
+    engine = place_entity_next_to(Prototype.SteamEngine, prev_entity.position, Direction.RIGHT, spacing=1)
+    assert engine, f"Failed to place steam engine {i+1}"
+    steam_engines.append(engine)
+    print(f"Steam engine {i+1} placed at {engine.position}")
+    pipes = connect_entities(prev_entity, engine, Prototype.Pipe)
+    assert pipes, f"Failed to connect {prev_entity.name} to steam engine at {engine.position}"
+    prev_entity = engine
 
 # Place electric poles to connect steam engines
-poles = []
-for i in range(3):
-    pole_position = Position(x=steam_engines[i].position.x + 1, y=steam_engines[i].position.y)
-    move_to(pole_position)
-    pole = place_entity(Prototype.SmallElectricPole, Direction.UP, pole_position)
-    assert pole, f"Failed to place electric pole {i+1}"
-    poles.append(pole)
-    print(f"Electric pole {i+1} placed at {pole.position}")
+prev_pole = None
+for engine in steam_engines:
+    pole = place_entity_next_to(Prototype.SmallElectricPole, engine.position, Direction.UP)
+    assert pole, f"Failed to place electric pole for steam engine at {engine.position}"
+    if prev_pole:
+        connect_entities(prev_pole, pole, Prototype.SmallElectricPole)
+    prev_pole = pole
 
-# Find iron ore and move to it
-ore_position = nearest(Resource.IronOre)
-move_to(ore_position)
+# Find iron ore and move there
+iron_ore_position = nearest(Resource.IronOre)
+move_to(iron_ore_position)
 
-# Place 2 electric mining drills on ore patch
-ore_miners = []
+# Place 2 electric mining drills
+mining_drills = []
 for i in range(2):
-    miner_position = Position(x=ore_position.x + i*5, y=ore_position.y)
-    move_to(miner_position)
-    miner = place_entity(Prototype.ElectricMiningDrill, Direction.UP, miner_position)
-    assert miner, f"Failed to place electric mining drill {i+1}"
-    ore_miners.append(miner)
-    print(f"Electric mining drill {i+1} placed at {miner.position}")
+    drill = place_entity(Prototype.ElectricMiningDrill, Direction.UP, iron_ore_position)
+    assert drill, f"Failed to place electric mining drill {i+1}"
+    mining_drills.append(drill)
+    print(f"Electric mining drill {i+1} placed at {drill.position}")
 
-# Connect electric mining drills to power network
-for miner in ore_miners:
-    pole_position = Position(x=miner.position.x + 2, y=miner.position.y + 2)
-    move_to(pole_position)
-    pole = place_entity(Prototype.SmallElectricPole, Direction.UP, pole_position)
-    assert pole, f"Failed to place electric pole for miner at {miner.position}"
-    print(
+    # Place electric pole near the drill
+    pole = place_entity_next_to(Prototype.SmallElectricPole, drill.position, Direction.UP)
+    assert pole, f"Failed to place electric pole for mining drill at {drill.position}"
+    connect_entities(prev_pole, pole, Prototype.SmallElectricPole)
+    prev_pole = pole
+
+    # Find next iron ore patch
+    iron_ore_position = nearest(Resource.IronOre)
+    move_to(iron_ore_position)
+
+# Verify the setup
+inspection = inspect_entities(radius=30)
+assert len([e for e in inspection.entities if e.name == Prototype.SteamEngine.value[0]]) == 3, "Expected 3 steam engines"
+assert len([e for e in inspection.entities if e.name == Prototype.ElectricMiningDrill.value[0]]) == 2, "Expected 2 electric mining drills"
+assert len([e for e in inspection.entities if e.name == Prototype.SmallElectricPole.value[0]]) >= 5, "Expected at least 5 small electric poles

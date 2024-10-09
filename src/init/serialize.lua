@@ -657,6 +657,7 @@ global.utils.serialize_entity = function(entity)
 	if entity.grid then
 		serialized.grid = global.utils.serialize_equipment_grid(entity.grid)
 	end
+	--game.print(serpent.line(entity.get_inventory(defines.inventory.turret_ammo)))
 
 	if entity.get_inventory then
 		for i = 1, #defines.inventory do
@@ -674,6 +675,13 @@ global.utils.serialize_entity = function(entity)
 		width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x),
 		height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y),
 	}
+	-- Add specific check for gun turrets
+    if entity.type == "ammo-turret" then
+        local ammo_inventory = entity.get_inventory(defines.inventory.turret_ammo)
+        if ammo_inventory and #ammo_inventory > 0 then
+            serialized.ammo_inventory = global.utils.serialize_inventory(ammo_inventory)
+        end
+    end
 
 	-- Add input and output locations if the entity is a transport belt
 	if entity.type == "transport-belt" then

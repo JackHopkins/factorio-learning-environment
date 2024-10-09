@@ -243,7 +243,7 @@ class Ammo(BaseModel):
     reload_time: Optional[float] = 0
 
 class GunTurret(Entity):
-    inventory: Inventory
+    # inventory: Inventory
     ammo_inventory: Inventory
 
 class AssemblingMachine1(Entity):

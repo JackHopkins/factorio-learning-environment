@@ -70,7 +70,6 @@ def test_defence(game):
         turret_position = Position(x=defensive_position.x + i * 2, y=defensive_position.y)
         game.move_to(turret_position)
         turret = game.place_entity(Prototype.GunTurret, direction=Direction.SOUTH, position=turret_position)
-        turret = game.insert_item(Prototype.FirearmMagazine, turret, 10)
         if turret:
             turrets.append(turret)
 

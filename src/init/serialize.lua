@@ -216,6 +216,22 @@ global.utils.deserialize_item_stack = function(slot, entry)
 	end
 end
 
+global.utils.serialize_inventory = function(inventory)
+    local serialized = {}
+    serialized.items = {}
+    for i = 1, #inventory do
+        local slot = inventory[i]
+        if slot.valid_for_read then
+            table.insert(serialized.items, {
+                name = "\""..slot.name.."\"",
+                count = slot.count,
+                ammo = slot.type == "ammo" and slot.ammo or nil
+            })
+        end
+    end
+    return serialized.items
+end
+
 -- Inventories are serialized into a table with the following fields:
 --	 i: array of item stack or exportable item entries
 --	 b: bar position (optional)
@@ -225,7 +241,7 @@ end
 --	 f: slot filter (optional)
 -- Pluss all the fields for item stacks (see deserialize_item_stack)
 -- It's also possible that the slot is empty but has a slot filter.
-global.utils.serialize_inventory = function(inventory)
+global.utils.serialize_inventory_old = function(inventory)
 	local serialized = {}
 	if inventory[supports_bar]() and inventory[get_bar]() <= #inventory then
 		serialized.b = inventory[get_bar]()

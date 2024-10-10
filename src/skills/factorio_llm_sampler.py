@@ -52,7 +52,7 @@ Methods:
         return dedented
 
     def _call_api(self, system_prompt: str, user_message: str, **kwargs) -> str:
-        max_tokens = kwargs.get('max_tokens', 1200)
+        max_tokens = kwargs.get('max_tokens', 2000)
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}

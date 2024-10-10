@@ -12,12 +12,13 @@ def game(instance):
         'transport-belt': 1,
         'stone-furnace': 1,
         'burner-mining-drill': 1,
-        'burner-inserter': 2,
+        'burner-inserter': 5,
         'electric-mining-drill': 1,
         'assembling-machine-1': 1,
         'steam-engine': 1,
         'pipe': 1,
         'offshore-pump': 1,
+        'wooden-chest': 3,
     }
     instance.reset()
     yield instance
@@ -215,3 +216,12 @@ def test_place_entity_next_to(game, entity_prototype, surrounding_entity_prototy
     assert abs(x_diff) <= tolerance and abs(y_diff) <= tolerance, \
         f"Transport belt not in expected position. Expected {expected_belt_position}, got {belt.position}. " \
         f"Difference: x={x_diff}, y={y_diff}"
+
+def test_inserters_above_chest(game):
+    game.move_to(Position(x=0, y=0))
+    for i in range(3):
+        chest = game.place_entity(Prototype.WoodenChest, Direction.UP, Position(x=i, y=0))
+        assert chest, "Failed to place chest"
+        inserter = game.place_entity_next_to(Prototype.BurnerInserter, reference_position=Position(x=i, y=0),
+                                        direction=Direction.UP, spacing=2)
+        assert inserter, "Failed to place inserter"

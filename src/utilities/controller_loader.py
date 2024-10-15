@@ -25,6 +25,17 @@ def extract_call_info(cls: Any) -> Tuple[str, str, str]:
     docstring = inspect.getdoc(cls.__call__)
     return input_types, output_type, docstring, call_signature_string
 
+def load_controller_names(folder_path: str) -> List[str]:
+    names = []
+    for root, _, files in os.walk(folder_path):
+        for file in files:
+            if file.endswith(".py") and file[0] != "_":
+                full_path = os.path.join(root, file)
+                module = load_module_from_path(full_path)
+                if not module:
+                    continue
+                names.append(file[:-3])
+    return names
 def load_schema(folder_path: str) -> str:
 
     schema = ""

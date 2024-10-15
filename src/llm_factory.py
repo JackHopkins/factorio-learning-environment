@@ -60,7 +60,7 @@ class LLMFactory:
 
 
             #model = "claude-3-5-sonnet-20240620" #kwargs.get('model', "claude-3-5-sonnet-20240620")
-            max_tokens = kwargs.get('max_tokens', 500)
+            max_tokens = kwargs.get('max_tokens', 1000)
 
             try:
                 response = anthropic.Anthropic().messages.create(

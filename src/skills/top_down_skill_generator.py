@@ -17,6 +17,7 @@ from utilities.controller_loader import load_schema, load_definitions, load_cont
 
 load_dotenv()
 client = OpenAI()
+DB_PASSWORD = os.getenv("DB_PASSWORD")
 
 
 class FunctionVisitor(ast.NodeVisitor):
@@ -64,7 +65,7 @@ class FactorioSkillGenerator:
             port="5432",
             dbname="factorio",
             user="postgres",
-            password="factorio"
+            password=DB_PASSWORD
         )
         self.api_schema = self._get_base_api_schema_prompt()
         self.controller_names = load_controller_names(f'{os.path.dirname(os.path.realpath(__file__))}/../controllers')

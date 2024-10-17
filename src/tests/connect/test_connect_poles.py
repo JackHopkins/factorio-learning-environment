@@ -1,7 +1,3 @@
-import math
-from time import sleep
-from typing import List
-
 import pytest
 
 from factorio_entities import Entity, Position

@@ -721,10 +721,6 @@ global.utils.serialize_entity = function(entity)
 		end
 	end
 
-
-
-
-
 	-- Add dimensions of the entity
 	local prototype = game.entity_prototypes[entity.name]
 	local collision_box = prototype.collision_box

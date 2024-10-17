@@ -9,10 +9,13 @@ def game(instance):
     instance.initial_inventory = {
         'iron-chest': 1,
         'iron-ore': 10,
+        'iron-plate': 10,
+        'iron-gear-wheel': 10,
         'coal': 10,
         'stone-furnace': 1,
         'transport-belt': 10,
         'burner-inserter': 1,
+        'assembling-machine-1': 1,
     }
     instance.reset()
     yield instance
@@ -37,6 +40,17 @@ def test_insert_coal_into_burner_inserter(game):
     inserter = game.insert_item(Prototype.Coal, inserter, quantity=10)
 
     assert inserter.fuel_inventory[Prototype.Coal] == 10
+
+def test_insert_into_assembler(game):
+    assembler = game.place_entity(Prototype.AssemblingMachine1, direction=Direction.UP, position=Position(x=0, y=0))
+    assembler = game.set_entity_recipe(assembler, Prototype.IronGearWheel)
+    assembler = game.insert_item(Prototype.IronGearWheel, assembler, quantity=10)
+    assembler = game.insert_item(Prototype.IronPlate, assembler, quantity=10)
+
+    assert assembler.assembling_machine_output[Prototype.IronGearWheel] == 10
+    assert assembler.assembling_machine_input[Prototype.IronPlate] == 10
+
+
 def test_insert_coal_onto_belt(game):
     #belt = game.place_entity(Prototype.TransportBelt, direction=Direction.UP, position=Position(x=0, y=0))
     belt = game.connect_entities(Position(x=0.5, y=0.5), Position(x=0.5, y=8.5), Prototype.TransportBelt)

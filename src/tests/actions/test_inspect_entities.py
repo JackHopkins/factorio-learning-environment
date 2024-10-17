@@ -2,7 +2,7 @@ import pytest
 
 from factorio_entities import Position
 from factorio_instance import Direction
-from factorio_types import Prototype
+from factorio_types import Prototype, Resource
 
 
 @pytest.fixture()
@@ -12,6 +12,7 @@ def game(instance):
         'coal': 5,
         'iron-chest': 1,
         'iron-plate': 5,
+        'iron-ore': 10
     }
     instance.reset()
     yield instance
@@ -38,3 +39,28 @@ def test_inspect_inserters(game):
     for entity in entities.entities:
         if entity.name == 'burner-inserter':
             assert entity.direction == Direction.RIGHT.value
+
+def test_inspect_burner_inventory(game):
+    # Check initial inventory
+    iron_position = game.nearest(Resource.Stone)
+    game.move_to(iron_position)
+    print(f"Moved to iron patch at {iron_position}")
+    game.harvest_resource(iron_position, 20)
+
+    game.craft_item(Prototype.StoneFurnace, 3)
+
+    # 1. Place a stone furnace
+    stone_furnace = game.place_entity(Prototype.StoneFurnace, Direction.UP, iron_position)
+    assert stone_furnace is not None, "Failed to place stone furnace"
+
+    game.insert_item(Prototype.Coal, stone_furnace, 5)
+    game.insert_item(Prototype.IronOre, stone_furnace, 5)
+
+    inspection_result = game.inspect_entities()
+
+    furnace = inspection_result.get_entities(Prototype.StoneFurnace)
+
+    furnace_position = furnace[0].position
+
+    retrieved_furnace = game.get_entity(Prototype.StoneFurnace, furnace_position)
+    print(furnace)

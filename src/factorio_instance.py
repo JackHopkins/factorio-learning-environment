@@ -1,10 +1,18 @@
 import ast
+import atexit
 import builtins
 import concurrent
+import contextlib
+import enum
+import functools
 import importlib
+import inspect
 import io
 import os
+import signal
 import sys
+import threading
+import traceback
 import types
 from enum import Enum
 from pathlib import Path
@@ -123,6 +131,9 @@ class FactorioInstance:
                                 if not callable(getattr(self, attr))
                                 and not attr.startswith("__")]
 
+        # Register the cleanup method to be called on exit
+        atexit.register(self.cleanup)
+
     def reset(self):
         for attr in dir(self):
             if not callable(getattr(self, attr)) and attr[0] != "_" and attr not in self._static_members:
@@ -182,6 +193,9 @@ class FactorioInstance:
         def snake_to_camel(snake_str):
             return "".join(word.capitalize() for word in snake_str.split("_"))
 
+        # Store the callable instances in a dictionary
+        self.controllers = {}
+
         # Loop through the files in the directory
         for file in os.listdir(os.path.join(local_directory, callable_classes_directory)):
             # Check if the file is a Python file and does not start with '_'
@@ -194,6 +208,8 @@ class FactorioInstance:
                 module_spec.loader.exec_module(module)
 
                 class_name = snake_to_camel(module_name)
+
+                # We have to rename these because on windows environments it fails silently (for some reason)
                 if module_name == "place_entity":
                     class_name = "PlaceObject"
                 if module_name == "score":
@@ -204,6 +220,7 @@ class FactorioInstance:
                 # Create an instance of the callable class
                 try:
                     callable_instance = callable_class(lua_script_manager, game_state)
+                    self.controllers[module_name.lower()] = callable_instance
                 except Exception as e:
                     raise Exception(f"Could not instantiate {class_name}. {e}")
                 # Add the instance as a member method
@@ -217,6 +234,16 @@ class FactorioInstance:
     def __setitem__(self, key, value):
         setattr(self, key, value)
 
+    def _extract_error_lines(self, expr, traceback_str):
+        lines = expr.splitlines()
+        error_lines = []
+        for line in traceback_str.splitlines():
+            if 'File "file", line' in line:
+                line_num = int(line.split(", line")[1].split(",")[0])
+                if 1 <= line_num <= len(lines):
+                    error_lines.append((line_num, lines[line_num - 1].strip()))
+        return error_lines
+
     def _eval_with_timeout(self, expr):
         """
         Executes a Python expression with a timeout and returns the result
@@ -228,6 +255,7 @@ class FactorioInstance:
         results = {}
 
         # Create a persistent environment dictionary that includes both instance methods and allows attribute access
+        # This is for creating and retrieving session variables that persist between eval calls.
         class PersistentEnvironment(dict):
             def __init__(self, instance, *args, **kwargs):
                 self.instance = instance
@@ -296,7 +324,19 @@ class FactorioInstance:
 
                 except Exception as e:
                     self._sequential_exception_count += 1
+                    error_traceback = traceback.format_exc()
+                    error_lines = self._extract_error_lines(expr, error_traceback)
+                    # #error_message = f"Error at lines {node.lineno}-{node.end_lineno}: {str(e)}\n\nStack trace:\n{error_traceback}"
+                    # error_trace = e.__traceback__
+                    error_message = f""
+                    if error_lines:
+                        error_message += "Error occurred in the following lines:\n"
+                        for line_num, line_content in error_lines:
+                            error_message += f"  Line {line_num}: {line_content}\n"
+                    error_type = error_traceback.strip().split('\n')[-1]
+                    error_message += f"\n{error_type}"
 
+                    results[index] = error_message#"\n".join(error_traceback.split("\n")[3:])
                     if self._sequential_exception_count == self.max_sequential_exception_count:
                         pass
                         #break
@@ -307,31 +347,31 @@ class FactorioInstance:
                     # break
 
                     # Get detailed error information
-                    error_info = {
-                        "line_number": node.lineno,
-                        "end_line_number": node.end_lineno,
-                        "function_name": None,
-                        "inputs": None,
-                    }
-
-                    # Extract function name and inputs if available
-                    if isinstance(node, ast.FunctionDef):
-                        error_info["function_name"] = node.name
-                        error_info["inputs"] = [arg.arg for arg in node.args.args]
-                    elif isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-                        error_info["function_name"] = node.func.id
-                        error_info["inputs"] = [ast.unparse(arg) for arg in node.args]
-
-                    # Format the error message
-                    error_message = f"Error at lines {error_info['line_number']}-{error_info['end_line_number']}"
-                    if error_info["function_name"]:
-                        error_message += f" in function '{error_info['function_name']}'"
-                    if error_info["inputs"]:
-                        error_message += f" with inputs: {', '.join(error_info['inputs'])}"
-                    error_message += f": {str(e)}"
-
-                    results[index] = error_message
-                    break
+                    # error_info = {
+                    #     "line_number": node.lineno,
+                    #     "end_line_number": node.end_lineno,
+                    #     "function_name": None,
+                    #     "inputs": None,
+                    # }
+                    #
+                    # # Extract function name and inputs if available
+                    # if isinstance(node, ast.FunctionDef):
+                    #     error_info["function_name"] = node.name
+                    #     error_info["inputs"] = [arg.arg for arg in node.args.args]
+                    # elif isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                    #     error_info["function_name"] = node.func.id
+                    #     error_info["inputs"] = [ast.unparse(arg) for arg in node.args]
+                    #
+                    # # Format the error message
+                    # error_message = f"Error at lines {error_info['line_number']}-{error_info['end_line_number']}"
+                    # if error_info["function_name"]:
+                    #     error_message += f" in function '{error_info['function_name']}'"
+                    # if error_info["inputs"]:
+                    #     error_message += f" with inputs: {', '.join(error_info['inputs'])}"
+                    # error_message += f": {str(e)}"
+                    #
+                    # results[index] = error_message
+                    # break
 
         finally:
             sys.stdout = old_stdout
@@ -340,6 +380,7 @@ class FactorioInstance:
         return score, goal, '\n'.join([f"{i}: {str(r)}" for i, r in results.items()])
 
     def eval_with_error(self, expr, timeout=60):
+        """ Evaluate an expression with a timeout, and return the result without error handling"""
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(self._eval_with_timeout, expr)
             score, goal, result = future.result(timeout)
@@ -353,7 +394,7 @@ class FactorioInstance:
             return -1, "", "Error: Evaluation timed out"
         except Exception as e:
             trace = e.__traceback__
-            return -1, "", f"Error: {str(e)}"
+            return -1, "", f"Error: {str(e)}: {e.text}".strip()
 
     def _get_command(self, command, parameters=[], measured=True):
         prefix = "/c " if not measured else '/command '
@@ -375,6 +416,12 @@ class FactorioInstance:
         return _lua2python(command, lua_response, start=start)
 
     def comment(self, comment: str, *args):
+        """
+        Send a comment to the Factorio game console
+        :param comment:
+        :param args:
+        :return:
+        """
         # game.players[1].print({"","[img=entity/character][color=orange]",{"engineer-title"},": [/color]",{"think-"..thought}})
         #self.rcon_client.send_command(f'/c game.players[1].print("[img=entity/character][color=orange]" {{"{comment}"}},": ",{args}}})')
         self.rcon_client.send_command(f"[img=entity/character] " + str(comment) + ", ".join(args))
@@ -489,6 +536,11 @@ class FactorioInstance:
 
 
     def get_warnings(self, seconds=10):
+        """
+        Get all alerts that have been raised before the last n seconds
+        :param seconds: The number of seconds to look back
+        :return:
+        """
         start = timer()
         command = f'/silent-command rcon.print(dump(global.get_alerts({seconds})))'
         lua_response = self.rcon_client.send_command(command)
@@ -504,6 +556,123 @@ class FactorioInstance:
             return alert_strings
         else:
             return []
+
+    def _prepare_callable(self, value):
+        if callable(value):
+            if inspect.ismethod(value) or inspect.isfunction(value):
+                # For methods and functions, bind them to the instance
+                return value.__get__(self, self.__class__)
+            elif hasattr(value, '__call__'):
+                # For objects with a __call__ method (like your controllers)
+                return lambda *args, **kwargs: value(*args, **kwargs)
+            else:
+                # For other callables, return as is
+                return value
+        else:
+            # For non-callable attributes, return as is
+            return value
+
+    def create_factorio_namespace(self):
+        namespace = {}
+
+        def add_to_namespace(name, value):
+            if isinstance(value, enum.EnumMeta):
+                # For enums, add the enum itself and all its members
+                namespace[name] = value
+                for member_name, member_value in value.__members__.items():
+                    namespace[f"{name}.{member_name}"] = member_value
+            elif inspect.ismodule(value) and value.__name__.startswith('factorio_'):
+                # For Factorio-related modules, add the module and its attributes
+                namespace[name] = value
+                for attr_name, attr_value in inspect.getmembers(value):
+                    if not attr_name.startswith('_'):
+                        namespace[f"{name}.{attr_name}"] = attr_value
+            elif isinstance(value, type):
+                # For classes, add the class itself
+                namespace[name] = value
+            else:
+                # For other values, add them directly
+                namespace[name] = value
+
+        # Add all public instance attributes and methods
+        for name, value in vars(self).items():
+            if not name.startswith('_'):
+                add_to_namespace(name, value)
+
+        # Add dynamically loaded controllers
+        for name, controller in self.controllers.items():
+            namespace[name] = self._prepare_callable(controller)
+
+        # Add all class-level attributes
+        for name, value in vars(self.__class__).items():
+            if not name.startswith('_') and name not in namespace:
+                add_to_namespace(name, value)
+
+        # Add all global variables from the module where FactorioInstance is defined
+        module_globals = inspect.getmodule(self.__class__).__dict__
+        for name, value in module_globals.items():
+            if not name.startswith('_') and name not in namespace:
+                add_to_namespace(name, value)
+
+        return types.SimpleNamespace(**namespace)
+
+    def run_func_in_factorio_env(self, func):
+        """
+        This decorator allows a function to be run in the Factorio environment, with access to all Factorio objects
+        :param func:
+        :return:
+        """
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            factorio_ns = self.create_factorio_namespace()
+
+            # Create a new function with the Factorio namespace as its globals
+            new_globals = {**func.__globals__, **vars(factorio_ns)}
+            new_func = types.FunctionType(func.__code__, new_globals, func.__name__, func.__defaults__,
+                                          func.__closure__)
+
+            return new_func(*args, **kwargs)
+
+        return wrapper
+
+    def run_snippet_file_in_factorio_env(self, file_path):
+        """
+        Execute a Python file in the Factorio environment, with access to all Factorio objects and support for
+        debugging and breakpoints
+        :param file_path:
+        :return:
+        """
+        factorio_ns = self.create_factorio_namespace()
+
+        # Prepare the globals for the snippet execution
+        snippet_globals = {
+            '__name__': '__main__',
+            '__file__': file_path,
+            **vars(factorio_ns)
+        }
+        try:
+            # Execute the file directly
+            with open(file_path, 'r') as file:
+                code = compile(file.read(), file_path, 'exec')
+                exec(code, snippet_globals)
+        finally:
+            # Ensure cleanup is performed
+            self.cleanup()
+
+    def cleanup(self):
+        # Close the RCON connection
+        if hasattr(self, 'rcon_client') and self.rcon_client:
+            self.rcon_client.close()
+
+        # Join all non-daemon threads
+        for thread in threading.enumerate():
+            if thread != threading.current_thread() and thread.is_alive() and not thread.daemon:
+                try:
+                    thread.join(timeout=5)  # Wait up to 5 seconds for each thread
+                except Exception as e:
+                    print(f"Error joining thread {thread.name}: {e}")
+
+        sys.exit(0)
 
     def _set_walking(self, walking: bool):
         if walking:

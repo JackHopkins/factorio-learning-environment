@@ -40,15 +40,18 @@ class SetEntityRecipe(Action):
 
         #obj = get_attr(factorio_entities, entity.prototype) (**response)
         for key, value in response.items():
-            value_class = entity.__getattribute__(key).__class__
-            # if value_class is a pydantic model, construct it
-            if hasattr(value_class, "construct"):
-                response[key] = value_class.construct(**value)
-            elif isinstance(value, dict):
-                if 1 in value.keys():
-                    response[key] = []
-                    for sub_key, sub_value in value.items():
-                        response[key].append(sub_value)
+            try:
+                value_class = entity.__getattribute__(key).__class__
+                # if value_class is a pydantic model, construct it
+                if hasattr(value_class, "construct"):
+                    response[key] = value_class.construct(**value)
+                elif isinstance(value, dict):
+                    if 1 in value.keys():
+                        response[key] = []
+                        for sub_key, sub_value in value.items():
+                            response[key].append(sub_value)
+            except AttributeError as e:
+                pass
 
         entity = entity.__class__.construct(**response)
         entity.recipe = name

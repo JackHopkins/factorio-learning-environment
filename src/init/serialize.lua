@@ -216,31 +216,24 @@ global.utils.deserialize_item_stack = function(slot, entry)
 	end
 end
 
+--- DEPRECATED
 global.utils.serialize_inventory = function(inventory)
     local serialized = {}
-    serialized.items = {}
     for i = 1, #inventory do
         local slot = inventory[i]
         if slot.valid_for_read then
-            table.insert(serialized.items, {
-                name = "\""..slot.name.."\"",
-                count = slot.count,
-                ammo = slot.type == "ammo" and slot.ammo or nil
-            })
+            local item_name = "\"" .. slot.name .. "\""
+            if serialized[item_name] then
+                serialized[item_name] = serialized[item_name] + slot.count
+            else
+                serialized[item_name] = slot.count
+            end
         end
     end
-    return serialized.items
+    return serialized
 end
 
--- Inventories are serialized into a table with the following fields:
---	 i: array of item stack or exportable item entries
---	 b: bar position (optional)
--- Each item entry has the following fields
---	 s: index (optional, equals to previous plus one if not present)
---	 r: repeat count (optional)
---	 f: slot filter (optional)
--- Pluss all the fields for item stacks (see deserialize_item_stack)
--- It's also possible that the slot is empty but has a slot filter.
+--- DEPRECATED
 global.utils.serialize_inventory_old = function(inventory)
 	local serialized = {}
 	if inventory[supports_bar]() and inventory[get_bar]() <= #inventory then
@@ -493,6 +486,26 @@ function get_boiler_pipe_positions(entity)
     return pipe_positions
 end
 
+function add_burner_inventory2(burner)
+    local fuel_inventory = burner.inventory
+    if fuel_inventory and #fuel_inventory > 0 then
+        local serialized = {}
+        for i = 1, #fuel_inventory do
+            local item = fuel_inventory[i]
+            if item and item.valid_for_read then
+                local item_name = "\"" .. item.name .. "\""
+                if serialized[item_name] then
+                    serialized[item_name] = serialized[item_name] + item.count
+                else
+                    serialized[item_name] = item.count
+                end
+            end
+        end
+        return serialized
+    end
+    return {}
+end
+
 function add_burner_inventory(serialized, burner)
 	local fuel_inventory = burner.inventory
 	if fuel_inventory and #fuel_inventory > 0 then
@@ -501,6 +514,7 @@ function add_burner_inventory(serialized, burner)
 		for i = 1, #fuel_inventory do
 			local item = fuel_inventory[i]
 			if item and item.valid_for_read then
+
 				table.insert(serialized.fuel_inventory, {name = "\""..item.name.."\"", count = item.count})
 				serialized.remaining_fuel = serialized.remaining_fuel + item.count
 			end
@@ -674,15 +688,42 @@ global.utils.serialize_entity = function(entity)
 		serialized.grid = global.utils.serialize_equipment_grid(entity.grid)
 	end
 	--game.print(serpent.line(entity.get_inventory(defines.inventory.turret_ammo)))
+	serialized.warnings = get_issues(entity)
+	--if entity.get_inventory then
+	--	for i = 1, #defines.inventory do
+	--		local inventory = entity.get_inventory(i)
+	--		if inventory and #inventory > 0 then
+	--			serialized["inventory_" .. i] = global.utils.serialize_inventory(inventory)
+	--		end
+	--	end
+	--end
 
-	if entity.get_inventory then
-		for i = 1, #defines.inventory do
-			local inventory = entity.get_inventory(i)
-			if inventory and #inventory > 0 then
-				serialized["inventory_" .. i] = global.utils.serialize_inventory(inventory)
-			end
+
+	local inventory_types = {
+		{name = "fuel", define = defines.inventory.fuel},
+		{name = "burnt_result", define = defines.inventory.burnt_result},
+		{name = "inventory", define = defines.inventory.chest},
+		{name = "furnace_source", define = defines.inventory.furnace_source},
+		{name = "furnace_result", define = defines.inventory.furnace_result},
+		{name = "furnace_modules", define = defines.inventory.furnace_modules},
+		{name = "assembling_machine_input", define = defines.inventory.assembling_machine_input},
+		{name = "assembling_machine_output", define = defines.inventory.assembling_machine_output},
+		{name = "assembling_machine_modules", define = defines.inventory.assembling_machine_modules},
+		{name = "lab_input", define = defines.inventory.lab_input},
+		{name = "lab_modules", define = defines.inventory.lab_modules},
+		{name = "turret_ammo", define = defines.inventory.turret_ammo}
+	}
+
+	for _, inv_type in ipairs(inventory_types) do
+		local inventory = entity.get_inventory(inv_type.define)
+		if inventory then
+			serialized[inv_type.name] = inventory.get_contents()
 		end
 	end
+
+
+
+
 
 	-- Add dimensions of the entity
 	local prototype = game.entity_prototypes[entity.name]
@@ -691,13 +732,13 @@ global.utils.serialize_entity = function(entity)
 		width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x),
 		height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y),
 	}
-	-- Add specific check for gun turrets
-    if entity.type == "ammo-turret" then
-        local ammo_inventory = entity.get_inventory(defines.inventory.turret_ammo)
-        if ammo_inventory and #ammo_inventory > 0 then
-            serialized.ammo_inventory = global.utils.serialize_inventory(ammo_inventory)
-        end
-    end
+	--- Add specific check for gun turrets
+    --if entity.type == "ammo-turret" then
+    --    local ammo_inventory = entity.get_inventory(defines.inventory.turret_ammo)
+    --    if ammo_inventory and #ammo_inventory > 0 then
+    --        serialized.ammo_inventory = global.utils.serialize_inventory(ammo_inventory)
+    --    end
+    --end
 
 	-- Add input and output locations if the entity is a transport belt
 	if entity.type == "transport-belt" then

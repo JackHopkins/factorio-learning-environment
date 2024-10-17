@@ -264,6 +264,9 @@ class ConnectEntities(Action):
         for value in entities_list:
             if isinstance(value, dict):
                 try:
+                    if not value['warnings']:
+                        del value['warnings']
+                        value['warnings'] = []
                     entity = metaclass(prototype=connection_type, **value)
                     path.append(entity)
                 except Exception as e:

@@ -216,6 +216,7 @@ global.utils.deserialize_item_stack = function(slot, entry)
 	end
 end
 
+--- DEPRECATED
 global.utils.serialize_inventory = function(inventory)
     local serialized = {}
     serialized.items = {}
@@ -232,15 +233,7 @@ global.utils.serialize_inventory = function(inventory)
     return serialized.items
 end
 
--- Inventories are serialized into a table with the following fields:
---	 i: array of item stack or exportable item entries
---	 b: bar position (optional)
--- Each item entry has the following fields
---	 s: index (optional, equals to previous plus one if not present)
---	 r: repeat count (optional)
---	 f: slot filter (optional)
--- Pluss all the fields for item stacks (see deserialize_item_stack)
--- It's also possible that the slot is empty but has a slot filter.
+--- DEPRECATED
 global.utils.serialize_inventory_old = function(inventory)
 	local serialized = {}
 	if inventory[supports_bar]() and inventory[get_bar]() <= #inventory then
@@ -674,15 +667,15 @@ global.utils.serialize_entity = function(entity)
 		serialized.grid = global.utils.serialize_equipment_grid(entity.grid)
 	end
 	--game.print(serpent.line(entity.get_inventory(defines.inventory.turret_ammo)))
-
-	if entity.get_inventory then
-		for i = 1, #defines.inventory do
-			local inventory = entity.get_inventory(i)
-			if inventory and #inventory > 0 then
-				serialized["inventory_" .. i] = global.utils.serialize_inventory(inventory)
-			end
-		end
-	end
+	serialized.warnings = get_issues(entity)
+	--if entity.get_inventory then
+	--	for i = 1, #defines.inventory do
+	--		local inventory = entity.get_inventory(i)
+	--		if inventory and #inventory > 0 then
+	--			serialized["inventory_" .. i] = global.utils.serialize_inventory(inventory)
+	--		end
+	--	end
+	--end
 
 
 	local inventory_types = {

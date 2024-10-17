@@ -35,6 +35,7 @@ def test_get_stone_furnace(game):
     # 1. Place a stone furnace
     stone_furnace = game.place_entity(Prototype.StoneFurnace, Direction.UP, position)
     assert stone_furnace is not None, "Failed to place stone furnace"
+    assert stone_furnace.warnings == ['out of fuel', 'no ingredients to smelt'], "Failed to place stone furnace"
 
     game.insert_item(Prototype.Coal, stone_furnace, 5)
     game.insert_item(Prototype.IronOre, stone_furnace, 5)

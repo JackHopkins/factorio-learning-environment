@@ -204,7 +204,7 @@ class Entity(BaseModel):
     tile_dimensions: TileDimensions
     prototype: Any  # Prototype
     health: float
-
+    warnings: List[str] = []
 
 class TransportBelt(Entity):
     input_position: Position

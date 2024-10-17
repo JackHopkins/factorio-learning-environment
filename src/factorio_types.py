@@ -38,7 +38,6 @@ class Prototype(enum.Enum):
     TransportBelt = "transport-belt", TransportBelt
     OffshorePump = "offshore-pump", OffshorePump
     Boiler = "boiler", Boiler
-    #Generator = "generator", Generator
     SteamEngine = "steam-engine", Generator
     Pipe = "pipe", Entity
     IronChest = "iron-chest", Chest
@@ -61,6 +60,7 @@ class Prototype(enum.Enum):
     FirearmMagazine = "firearm-magazine", Ammo
     StoneBrick = "stone-brick", None
     Radar = "radar", Entity
+    StoneWall = "stone-wall", Entity
 
 prototype_by_name = {prototype.value[0]: prototype for prototype in Prototype}
 

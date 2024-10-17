@@ -191,8 +191,7 @@ class BurnerType(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    fuel_inventory: Union[Inventory, List[Dict[str, Any]]]
-    remaining_fuel: Optional[float] = 0
+    fuel: Inventory
 
 
 class Entity(BaseModel):
@@ -248,7 +247,9 @@ class GunTurret(Entity):
 
 class AssemblingMachine1(Entity):
     recipe: Optional[Recipe] = None  # Prototype
-
+    assembling_machine_input: Inventory
+    assembling_machine_output: Inventory
+    assembling_machine_modules: Inventory
 
 class FluidHandler(Entity):
     connection_points: List[Position]
@@ -267,4 +268,8 @@ class OffshorePump(FluidHandler):
 
 
 class Furnace(Entity, BurnerType):
-    input_inventory: Union[Inventory, List[Dict[str, Any]]]
+    furnace_source: Inventory
+    furnace_result: Inventory
+
+class Chest(Entity):
+    inventory: Inventory

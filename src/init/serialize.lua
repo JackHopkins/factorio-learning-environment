@@ -684,6 +684,54 @@ global.utils.serialize_entity = function(entity)
 		end
 	end
 
+	if entity.get_inventory(defines.inventory.fuel) then
+		local inventory = entity.get_inventory(defines.inventory.fuel).get_contents()
+		serialized.fuel = inventory
+	end
+	if entity.get_inventory(defines.inventory.burnt_result) then
+		local inventory = entity.get_inventory(defines.inventory.burnt_result).get_contents()
+		serialized.burnt_result = inventory
+	end
+	if entity.get_inventory(defines.inventory.chest) then
+		local inventory = entity.get_inventory(defines.inventory.chest).get_contents()
+		serialized.inventory = inventory
+	end
+	if entity.get_inventory(defines.inventory.furnace_source) then
+		local inventory = entity.get_inventory(defines.inventory.furnace_source).get_contents()
+		serialized.furnace_source = inventory
+	end
+	if entity.get_inventory(defines.inventory.furnace_result) then
+		local inventory = entity.get_inventory(defines.inventory.furnace_result).get_contents()
+		serialized.furnace_result = inventory
+	end
+	if entity.get_inventory(defines.inventory.furnace_modules) then
+		local inventory = entity.get_inventory(defines.inventory.furnace_modules).get_contents()
+		serialized.furnace_modules = inventory
+	end
+	if entity.get_inventory(defines.inventory.assembling_machine_input) then
+		local inventory = entity.get_inventory(defines.inventory.assembling_machine_input).get_contents()
+		serialized.assembling_machine_input = inventory
+	end
+	if entity.get_inventory(defines.inventory.assembling_machine_output) then
+		local inventory = entity.get_inventory(defines.inventory.assembling_machine_output).get_contents()
+		serialized.assembling_machine_output = inventory
+	end
+	if entity.get_inventory(defines.inventory.assembling_machine_modules) then
+		local inventory = entity.get_inventory(defines.inventory.assembling_machine_modules).get_contents()
+		serialized.assembling_machine_modules = inventory
+	end
+	if entity.get_inventory(defines.inventory.lab_input) then
+		local inventory = entity.get_inventory(defines.inventory.lab_input).get_contents()
+		serialized.lab_input = inventory
+	end
+	if entity.get_inventory(defines.inventory.lab_modules) then
+		local inventory = entity.get_inventory(defines.inventory.lab_modules).get_contents()
+		serialized.lab_modules = inventory
+	end
+
+
+
+
 	-- Add dimensions of the entity
 	local prototype = game.entity_prototypes[entity.name]
 	local collision_box = prototype.collision_box

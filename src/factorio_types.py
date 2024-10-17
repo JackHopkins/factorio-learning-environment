@@ -41,8 +41,8 @@ class Prototype(enum.Enum):
     #Generator = "generator", Generator
     SteamEngine = "steam-engine", Generator
     Pipe = "pipe", Entity
-    IronChest = "iron-chest", Entity
-    WoodenChest = "wooden-chest", Entity
+    IronChest = "iron-chest", Chest
+    WoodenChest = "wooden-chest", Chest
     IronGearWheel = "iron-gear-wheel", Entity
     Coal = "coal", None
     IronPlate = "iron-plate", None

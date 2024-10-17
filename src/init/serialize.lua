@@ -219,18 +219,18 @@ end
 --- DEPRECATED
 global.utils.serialize_inventory = function(inventory)
     local serialized = {}
-    serialized.items = {}
     for i = 1, #inventory do
         local slot = inventory[i]
         if slot.valid_for_read then
-            table.insert(serialized.items, {
-                name = "\""..slot.name.."\"",
-                count = slot.count,
-                ammo = slot.type == "ammo" and slot.ammo or nil
-            })
+            local item_name = "\"" .. slot.name .. "\""
+            if serialized[item_name] then
+                serialized[item_name] = serialized[item_name] + slot.count
+            else
+                serialized[item_name] = slot.count
+            end
         end
     end
-    return serialized.items
+    return serialized
 end
 
 --- DEPRECATED
@@ -486,6 +486,26 @@ function get_boiler_pipe_positions(entity)
     return pipe_positions
 end
 
+function add_burner_inventory2(burner)
+    local fuel_inventory = burner.inventory
+    if fuel_inventory and #fuel_inventory > 0 then
+        local serialized = {}
+        for i = 1, #fuel_inventory do
+            local item = fuel_inventory[i]
+            if item and item.valid_for_read then
+                local item_name = "\"" .. item.name .. "\""
+                if serialized[item_name] then
+                    serialized[item_name] = serialized[item_name] + item.count
+                else
+                    serialized[item_name] = item.count
+                end
+            end
+        end
+        return serialized
+    end
+    return {}
+end
+
 function add_burner_inventory(serialized, burner)
 	local fuel_inventory = burner.inventory
 	if fuel_inventory and #fuel_inventory > 0 then
@@ -494,6 +514,7 @@ function add_burner_inventory(serialized, burner)
 		for i = 1, #fuel_inventory do
 			local item = fuel_inventory[i]
 			if item and item.valid_for_read then
+
 				table.insert(serialized.fuel_inventory, {name = "\""..item.name.."\"", count = item.count})
 				serialized.remaining_fuel = serialized.remaining_fuel + item.count
 			end

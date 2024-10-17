@@ -191,8 +191,7 @@ class BurnerType(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    fuel_inventory: Union[Inventory, List[Dict[str, Any]]]
-    remaining_fuel: Optional[float] = 0
+    fuel: Inventory
 
 
 class Entity(BaseModel):
@@ -205,7 +204,7 @@ class Entity(BaseModel):
     tile_dimensions: TileDimensions
     prototype: Any  # Prototype
     health: float
-
+    warnings: List[str] = []
 
 class TransportBelt(Entity):
     input_position: Position
@@ -243,18 +242,19 @@ class Ammo(BaseModel):
     reload_time: Optional[float] = 0
 
 class GunTurret(Entity):
-    # inventory: Inventory
-    ammo_inventory: Inventory
+    turret_ammo: Inventory
 
 class AssemblingMachine1(Entity):
     recipe: Optional[Recipe] = None  # Prototype
-
+    assembling_machine_input: Inventory
+    assembling_machine_output: Inventory
+    assembling_machine_modules: Inventory
 
 class FluidHandler(Entity):
     connection_points: List[Position]
 
 
-class Boiler(FluidHandler):
+class Boiler(FluidHandler, BurnerType):
     steam_output_point: Position
 
 
@@ -267,4 +267,12 @@ class OffshorePump(FluidHandler):
 
 
 class Furnace(Entity, BurnerType):
-    input_inventory: Union[Inventory, List[Dict[str, Any]]]
+    furnace_source: Inventory
+    furnace_result: Inventory
+
+class Chest(Entity):
+    inventory: Inventory
+
+class Lab(Entity):
+    lab_input: Inventory
+    lab_modules: Inventory

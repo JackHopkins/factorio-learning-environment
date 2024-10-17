@@ -29,8 +29,15 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
         elseif entity.type == "assembling-machine" then
             local recipe = entity.get_recipe()
             if recipe then
+               -- Check if the item is an ingredient or the result of the recipe
                 for _, ingredient in pairs(recipe.ingredients) do
                     if ingredient.name == item_name then
+                        return true
+                    end
+                end
+                -- Check if the item is the result of the recipe
+                for _, product in pairs(recipe.products) do
+                    if product.name == item_name then
                         return true
                     end
                 end
@@ -128,6 +135,27 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
         -- For transport belts, we need to use a different method
         game.print("Inserting ".. insertable_count.. " items onto transport belt...")
         inserted = insert_on_belt(closest_entity, insert_item, insertable_count)
+    elseif closest_entity.type == "assembling-machine" then
+        local recipe = closest_entity.get_recipe()
+        if recipe then
+            local is_product = false
+            for _, product in pairs(recipe.products) do
+                if product.name == insert_item then
+                    is_product = true
+                    break
+                end
+            end
+
+            if is_product then
+                -- Insert into output inventory
+                inserted = closest_entity.get_output_inventory().insert({name=insert_item, count=insertable_count})
+            else
+                -- Insert into input inventory
+                inserted = closest_entity.get_inventory(defines.inventory.assembling_machine_input).insert({name=insert_item, count=insertable_count})
+            end
+        else
+            error("No recipe set for the assembling machine.")
+        end
     else
         -- For other entities, use the normal insert method
         inserted = closest_entity.insert{name=insert_item, count=insertable_count}

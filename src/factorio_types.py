@@ -41,8 +41,8 @@ class Prototype(enum.Enum):
     #Generator = "generator", Generator
     SteamEngine = "steam-engine", Generator
     Pipe = "pipe", Entity
-    IronChest = "iron-chest", Entity
-    WoodenChest = "wooden-chest", Entity
+    IronChest = "iron-chest", Chest
+    WoodenChest = "wooden-chest", Chest
     IronGearWheel = "iron-gear-wheel", Entity
     Coal = "coal", None
     IronPlate = "iron-plate", None
@@ -54,7 +54,7 @@ class Prototype(enum.Enum):
     Stone = "stone", None
     CopperCable = "copper-cable", None
     ElectronicCircuit = "electronic-circuit", None
-    Lab = "lab", Entity
+    Lab = "lab", Lab
     AutomationSciencePack = "automation-science-pack", None
     Accumulator = "accumulator", Accumulator
     GunTurret = "gun-turret", GunTurret
@@ -62,6 +62,7 @@ class Prototype(enum.Enum):
     StoneBrick = "stone-brick", None
     Radar = "radar", Entity
 
+prototype_by_name = {prototype.value[0]: prototype for prototype in Prototype}
 
 class Resource:
     Coal = "coal", ResourcePatch

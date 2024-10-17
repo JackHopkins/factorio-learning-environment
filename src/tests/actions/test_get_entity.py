@@ -15,6 +15,11 @@ def game(instance):
         'iron-ore': 10,
         'stone-furnace': 1,
         'assembly-machine-1': 1,
+        'burner-mining-drill': 1,
+        'lab': 1,
+        'automation-science-pack': 1,
+        'gun-turret': 1,
+        'firearm-magazine': 5,
     }
     instance.reset()
     yield instance
@@ -40,6 +45,24 @@ def test_get_stone_furnace(game):
     assert retrieved_furnace.furnace_result.get(Prototype.IronPlate, 0) > 0, "Failed to smelt iron plate"
     assert retrieved_furnace.furnace_source.get(Prototype.IronOre, 0) < 5, "Failed to smelt iron ore"
     assert retrieved_furnace.fuel.get(Prototype.Coal, 0) < 5, "Failed to consume coal"
+
+def test_get_mining_drill(game):
+    """
+    Test to ensure that the inventory of a mining drill is correctly updated after mining iron ore
+    :param game:
+    :return:
+    """
+    # Check initial inventory
+    position = game.nearest(Resource.IronOre)
+    mining_drill = game.place_entity(Prototype.BurnerMiningDrill, Direction.UP, position)
+    game.insert_item(Prototype.Coal, mining_drill, 5)
+    assert mining_drill is not None, "Failed to place mining drill"
+
+    game.sleep(5)
+    retrieved_drill = game.get_entity(Prototype.BurnerMiningDrill, mining_drill.position)
+
+    assert retrieved_drill is not None, "Failed to retrieve mining drill"
+    assert retrieved_drill.fuel.get(Prototype.Coal, 0) < 5, "Failed to burn fuel"
 
 def test_get_iron_chest(game):
     """
@@ -84,3 +107,39 @@ def test_get_assembling_machine(game):
     assert retrieved_machine is not None, "Failed to retrieve assembling machine"
     assert retrieved_machine.assembling_machine_output.get(Prototype.IronGearWheel, 0) == 5, "Failed to get output inventory"
     assert retrieved_machine.assembling_machine_input.get(Prototype.IronPlate, 0) == 5, "Failed to consume input inventory"
+
+def test_get_lab(game):
+    """
+    Test to ensure that the inventory of a lab is correctly updated after researching a science pack
+    :param game:
+    :return:
+    """
+    # Check initial inventory
+    inventory = game.inspect_inventory()
+    lab_count = inventory.get(Prototype.Lab, 0)
+    assert lab_count != 0, "Failed to get lab count"
+
+    lab = game.place_entity(Prototype.Lab, position=Position(x=0, y=0))
+    game.insert_item(Prototype.AutomationSciencePack, lab, quantity=1)
+    retrieved_lab = game.get_entity(Prototype.Lab, lab.position)
+
+    assert retrieved_lab is not None, "Failed to retrieve lab"
+    assert retrieved_lab.lab_input.get(Prototype.AutomationSciencePack, 0) == 1, "Failed to consume science pack"
+
+def test_get_turret(game):
+    """
+    Test to ensure that the inventory of a turret is correctly updated after shooting a target
+    :param game:
+    :return:
+    """
+    # Check initial inventory
+    inventory = game.inspect_inventory()
+    turret_count = inventory.get(Prototype.GunTurret, 0)
+    assert turret_count != 0, "Failed to get turret count"
+
+    turret = game.place_entity(Prototype.GunTurret, position=Position(x=0, y=0))
+    game.insert_item(Prototype.FirearmMagazine, turret, quantity=5)
+    retrieved_turret = game.get_entity(Prototype.GunTurret, turret.position)
+
+    assert retrieved_turret is not None, "Failed to retrieve turret"
+    assert retrieved_turret.turret_ammo.get(Prototype.FirearmMagazine, 0) == 5, "Failed to consume ammo"

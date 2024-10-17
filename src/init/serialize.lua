@@ -684,50 +684,29 @@ global.utils.serialize_entity = function(entity)
 		end
 	end
 
-	if entity.get_inventory(defines.inventory.fuel) then
-		local inventory = entity.get_inventory(defines.inventory.fuel).get_contents()
-		serialized.fuel = inventory
+
+	local inventory_types = {
+		{name = "fuel", define = defines.inventory.fuel},
+		{name = "burnt_result", define = defines.inventory.burnt_result},
+		{name = "inventory", define = defines.inventory.chest},
+		{name = "furnace_source", define = defines.inventory.furnace_source},
+		{name = "furnace_result", define = defines.inventory.furnace_result},
+		{name = "furnace_modules", define = defines.inventory.furnace_modules},
+		{name = "assembling_machine_input", define = defines.inventory.assembling_machine_input},
+		{name = "assembling_machine_output", define = defines.inventory.assembling_machine_output},
+		{name = "assembling_machine_modules", define = defines.inventory.assembling_machine_modules},
+		{name = "lab_input", define = defines.inventory.lab_input},
+		{name = "lab_modules", define = defines.inventory.lab_modules},
+		{name = "turret_ammo", define = defines.inventory.turret_ammo}
+	}
+
+	for _, inv_type in ipairs(inventory_types) do
+		local inventory = entity.get_inventory(inv_type.define)
+		if inventory then
+			serialized[inv_type.name] = inventory.get_contents()
+		end
 	end
-	if entity.get_inventory(defines.inventory.burnt_result) then
-		local inventory = entity.get_inventory(defines.inventory.burnt_result).get_contents()
-		serialized.burnt_result = inventory
-	end
-	if entity.get_inventory(defines.inventory.chest) then
-		local inventory = entity.get_inventory(defines.inventory.chest).get_contents()
-		serialized.inventory = inventory
-	end
-	if entity.get_inventory(defines.inventory.furnace_source) then
-		local inventory = entity.get_inventory(defines.inventory.furnace_source).get_contents()
-		serialized.furnace_source = inventory
-	end
-	if entity.get_inventory(defines.inventory.furnace_result) then
-		local inventory = entity.get_inventory(defines.inventory.furnace_result).get_contents()
-		serialized.furnace_result = inventory
-	end
-	if entity.get_inventory(defines.inventory.furnace_modules) then
-		local inventory = entity.get_inventory(defines.inventory.furnace_modules).get_contents()
-		serialized.furnace_modules = inventory
-	end
-	if entity.get_inventory(defines.inventory.assembling_machine_input) then
-		local inventory = entity.get_inventory(defines.inventory.assembling_machine_input).get_contents()
-		serialized.assembling_machine_input = inventory
-	end
-	if entity.get_inventory(defines.inventory.assembling_machine_output) then
-		local inventory = entity.get_inventory(defines.inventory.assembling_machine_output).get_contents()
-		serialized.assembling_machine_output = inventory
-	end
-	if entity.get_inventory(defines.inventory.assembling_machine_modules) then
-		local inventory = entity.get_inventory(defines.inventory.assembling_machine_modules).get_contents()
-		serialized.assembling_machine_modules = inventory
-	end
-	if entity.get_inventory(defines.inventory.lab_input) then
-		local inventory = entity.get_inventory(defines.inventory.lab_input).get_contents()
-		serialized.lab_input = inventory
-	end
-	if entity.get_inventory(defines.inventory.lab_modules) then
-		local inventory = entity.get_inventory(defines.inventory.lab_modules).get_contents()
-		serialized.lab_modules = inventory
-	end
+
 
 
 
@@ -739,13 +718,13 @@ global.utils.serialize_entity = function(entity)
 		width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x),
 		height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y),
 	}
-	-- Add specific check for gun turrets
-    if entity.type == "ammo-turret" then
-        local ammo_inventory = entity.get_inventory(defines.inventory.turret_ammo)
-        if ammo_inventory and #ammo_inventory > 0 then
-            serialized.ammo_inventory = global.utils.serialize_inventory(ammo_inventory)
-        end
-    end
+	--- Add specific check for gun turrets
+    --if entity.type == "ammo-turret" then
+    --    local ammo_inventory = entity.get_inventory(defines.inventory.turret_ammo)
+    --    if ammo_inventory and #ammo_inventory > 0 then
+    --        serialized.ammo_inventory = global.utils.serialize_inventory(ammo_inventory)
+    --    end
+    --end
 
 	-- Add input and output locations if the entity is a transport belt
 	if entity.type == "transport-belt" then

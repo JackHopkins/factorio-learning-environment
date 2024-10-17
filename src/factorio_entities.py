@@ -242,8 +242,7 @@ class Ammo(BaseModel):
     reload_time: Optional[float] = 0
 
 class GunTurret(Entity):
-    # inventory: Inventory
-    ammo_inventory: Inventory
+    turret_ammo: Inventory
 
 class AssemblingMachine1(Entity):
     recipe: Optional[Recipe] = None  # Prototype
@@ -273,3 +272,7 @@ class Furnace(Entity, BurnerType):
 
 class Chest(Entity):
     inventory: Inventory
+
+class Lab(Entity):
+    lab_input: Inventory
+    lab_modules: Inventory

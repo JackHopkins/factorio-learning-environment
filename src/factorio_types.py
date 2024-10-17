@@ -54,7 +54,7 @@ class Prototype(enum.Enum):
     Stone = "stone", None
     CopperCable = "copper-cable", None
     ElectronicCircuit = "electronic-circuit", None
-    Lab = "lab", Entity
+    Lab = "lab", Lab
     AutomationSciencePack = "automation-science-pack", None
     Accumulator = "accumulator", Accumulator
     GunTurret = "gun-turret", GunTurret

@@ -212,3 +212,58 @@ def test_ensure_final_belt_is_the_correct_orientation(game):
     # connect drill_inserter to chest_inserter with transport belts
     belts = game.connect_entities(chest_inserter2, copper_drill_inserter, connection_type=Prototype.TransportBelt)
     assert belts[-1].direction.value == Direction.DOWN.value, "Final belt is not facing down"
+
+def test_no_broken_edges(game):
+    """
+    There is a weird issue where the full path is missing a point in the middle, and so the belt is broken.
+    :param game:
+    :return:
+    """
+    # For this we need to first put 2 drills at copper and iron ore patches
+    # then we need to put a chest at a central location with burner inserters
+    # Finally we need to connect the drills to the burner inserters with transport belts.
+    # Find a copper ore patch
+    copper_ore_patch = game.get_resource_patch(Resource.CopperOre, game.nearest(Resource.CopperOre))
+    assert copper_ore_patch, "No copper ore patch found"
+    print(f"copper ore patch found at {copper_ore_patch.bounding_box.center}")
+
+    # Place burner mining drill on copper ore patch
+    game.move_to(copper_ore_patch.bounding_box.center)
+    drill = game.place_entity(Prototype.BurnerMiningDrill, direction=Direction.RIGHT,
+                         position=copper_ore_patch.bounding_box.center)
+    assert drill, "Failed to place burner mining drill"
+    print(f"Burner mining drill placed at {drill.position}")
+
+    # Fuel the burner mining drill
+    copper_ore_drill_with_coal = game.insert_item(Prototype.Coal, drill, quantity=5)
+    assert copper_ore_drill_with_coal.fuel_inventory.get(Prototype.Coal, 0) > 0, "Failed to fuel burner mining drill"
+    print(f"Inserted {copper_ore_drill_with_coal.fuel_inventory.get(Prototype.Coal, 0)} coal into burner mining drill")
+
+    # move to 0,0 and Place chest there
+    game.move_to(Position(x=0, y=0))
+    chest = game.place_entity(Prototype.WoodenChest, position=Position(x=0, y=0))
+    assert chest, "Failed to place chest"
+
+    # place a burner inserter next to the chest for copper plates
+    chest_copper_inserter = game.place_entity_next_to(Prototype.BurnerInserter, reference_position=chest.position,
+                                                 direction=Direction.RIGHT)
+    assert chest_copper_inserter, "Failed to place inserter"
+    print(f"Inserter placed at {chest_copper_inserter.position}")
+
+    # We need to rotate the inserter to face the chest as by default it takes from the chest not puts to it
+    chest_copper_inserter = game.rotate_entity(chest_copper_inserter, Direction.LEFT)
+    assert chest_copper_inserter.direction.value == Direction.LEFT.value, "Failed to rotate inserter"
+
+    # add coal to the copper inserter
+    inserter_with_coal = game.insert_item(Prototype.Coal, chest_copper_inserter, quantity=5)
+    assert inserter_with_coal.fuel_inventory.get(Prototype.Coal, 0) > 0, "Failed to fuel inserter"
+
+    # connect copper_furnace_inserter to chest_copper_inserter with transport belts
+    # use the drop and pickup positions of the drills and inserters
+    belts = game.connect_entities(copper_ore_drill_with_coal.drop_position, chest_copper_inserter.pickup_position,
+                             connection_type=Prototype.TransportBelt)
+    assert belts, "Failed to connect entities with transport belts"
+
+    # Verify all belts are facing either UP or LEFT
+    for belt in belts:
+        assert belt.direction.value in [Direction.UP.value, Direction.LEFT.value], f"Found belt with direction {belt.direction}"

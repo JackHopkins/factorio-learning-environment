@@ -21,11 +21,13 @@ class Controller:
     def clean_response(self, response):
         cleaned_response = {}
         for key, value in response.items():
+            # We handle warnings separately, as they are not always present and should be an empty list rather than
+            # an empty dict
+            if not value and key == 'warnings':
+                cleaned_response[key] = []
+                continue
             if isinstance(value, dict):
-                # if not value:
-                #    continue
                 if 1 in value.keys():
-
                     if 'inventory' in key:
                         cleaned_response[key] = {}
                         values = list(value.values())

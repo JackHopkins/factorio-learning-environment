@@ -62,6 +62,7 @@ class Prototype(enum.Enum):
     StoneBrick = "stone-brick", None
     Radar = "radar", Entity
 
+prototype_by_name = {prototype.value[0]: prototype for prototype in Prototype}
 
 class Resource:
     Coal = "coal", ResourcePatch

@@ -254,7 +254,7 @@ class FluidHandler(Entity):
     connection_points: List[Position]
 
 
-class Boiler(FluidHandler):
+class Boiler(FluidHandler, BurnerType):
     steam_output_point: Position
 
 

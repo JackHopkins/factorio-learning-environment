@@ -20,6 +20,7 @@ def game(instance):
         'automation-science-pack': 1,
         'gun-turret': 1,
         'firearm-magazine': 5,
+        'boiler': 1
     }
     instance.reset()
     yield instance
@@ -144,3 +145,21 @@ def test_get_turret(game):
 
     assert retrieved_turret is not None, "Failed to retrieve turret"
     assert retrieved_turret.turret_ammo.get(Prototype.FirearmMagazine, 0) == 5, "Failed to consume ammo"
+
+def test_get_boiler(game):
+    """
+    Test to ensure that the inventory of a boiler is correctly updated after burning fuel
+    :param game:
+    :return:
+    """
+    # Check initial inventory
+    inventory = game.inspect_inventory()
+    boiler_count = inventory.get(Prototype.Boiler, 0)
+    assert boiler_count != 0, "Failed to get boiler count"
+
+    boiler = game.place_entity(Prototype.Boiler, position=Position(x=0, y=0))
+    game.insert_item(Prototype.Coal, boiler, quantity=5)
+    retrieved_boiler = game.get_entity(Prototype.Boiler, boiler.position)
+
+    assert retrieved_boiler is not None, "Failed to retrieve boiler"
+    assert retrieved_boiler.fuel.get(Prototype.Coal, 0) == 5, "Failed to consume fuel"

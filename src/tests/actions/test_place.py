@@ -10,7 +10,7 @@ def game(instance):
     instance.initial_inventory = {
         'stone-furnace': 1, 'boiler': 1, 'steam-engine': 1, 'offshore-pump': 4, 'pipe': 100,
         'iron-plate': 50, 'copper-plate': 20, 'coal': 50, 'burner-inserter': 50, 'burner-mining-drill': 50,
-        'transport-belt': 50
+        'transport-belt': 50, 'stone-wall': 100
     }
 
     instance.reset()
@@ -28,7 +28,15 @@ def test_place(game):
     game.place_entity(Prototype.Boiler, position=(0, 0))
     assert boilers_in_inventory - 1 == game.inspect_inventory()[Prototype.Boiler]
 
-
+def test_place_wall(game):
+    """
+    Place a wall at (0, 0)
+    :param game:
+    :return:
+    """
+    walls_in_inventory = game.inspect_inventory()[Prototype.StoneWall]
+    game.place_entity(Prototype.StoneWall, position=(0, 0))
+    assert walls_in_inventory - 1 == game.inspect_inventory()[Prototype.StoneWall]
 def test_place_in_all_directions(game):
     """
     Place a burner inserters in each direction

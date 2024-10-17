@@ -103,7 +103,6 @@ class ConnectEntities(Action):
                  source: Union[Position, Entity],
                  target: Union[Position, Entity],
                  connection_type: Prototype = Prototype.Pipe,
-                 #relative=False
                  ) -> List[Entity]:
         """
         Connect two entities or positions.
@@ -141,8 +140,8 @@ class ConnectEntities(Action):
             x_sign = numpy.sign(source_position.x - target_position.x)
             y_sign = numpy.sign(source_position.y - target_position.y)
 
-        if source_entity and isinstance(source, Entity):
-            if isinstance(source_entity, FluidHandler) and connection_type.name==Prototype.Pipe.name:
+        if source_entity and isinstance(source, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
+            if isinstance(source_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
                 if isinstance(source_entity, OffshorePump):
                     source_position = Position(x=source_entity.connection_points[0].x,
                                                y=source_entity.connection_points[0].y)
@@ -205,7 +204,7 @@ class ConnectEntities(Action):
                 source_position = Position(x=source_entity.position.x-x_sign*source_entity.tile_dimensions.tile_width/2,
                                            y=source_entity.position.y-y_sign*source_entity.tile_dimensions.tile_height/2)
 
-        if isinstance(target, Entity):
+        if isinstance(target, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
             if isinstance(target_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
                 if isinstance(target_entity, Boiler):
                     if isinstance(source_entity, OffshorePump):

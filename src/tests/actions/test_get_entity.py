@@ -82,4 +82,5 @@ def test_get_assembling_machine(game):
     retrieved_machine = game.get_entity(Prototype.AssemblingMachine1, assembling_machine.position)
 
     assert retrieved_machine is not None, "Failed to retrieve assembling machine"
-    assert retrieved_machine.inventory.get(Prototype.IronGearWheel, 0) == 5, "Failed to craft iron gear wheel"
+    assert retrieved_machine.assembling_machine_output.get(Prototype.IronGearWheel, 0) == 5, "Failed to get output inventory"
+    assert retrieved_machine.assembling_machine_input.get(Prototype.IronPlate, 0) == 5, "Failed to consume input inventory"

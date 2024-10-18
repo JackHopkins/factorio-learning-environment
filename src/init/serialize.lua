@@ -652,6 +652,53 @@ function get_inverse_entity_direction(entity, factorio_direction)
 	end
 end
 
+local entity_status_names = {
+    [defines.entity_status.working] = "working",
+    [defines.entity_status.normal] = "normal",
+    [defines.entity_status.no_power] = "no_power",
+    [defines.entity_status.low_power] = "low_power",
+    [defines.entity_status.no_fuel] = "no_fuel",
+    [defines.entity_status.disabled_by_control_behavior] = "disabled_by_control_behavior",
+    [defines.entity_status.opened_by_circuit_network] = "opened_by_circuit_network",
+    [defines.entity_status.closed_by_circuit_network] = "closed_by_circuit_network",
+    [defines.entity_status.disabled_by_script] = "disabled_by_script",
+    [defines.entity_status.marked_for_deconstruction] = "marked_for_deconstruction",
+    [defines.entity_status.not_plugged_in_electric_network] = "not_plugged_in_electric_network",
+    [defines.entity_status.networks_connected] = "networks_connected",
+    [defines.entity_status.networks_disconnected] = "networks_disconnected",
+    [defines.entity_status.charging] = "charging",
+    [defines.entity_status.discharging] = "discharging",
+    [defines.entity_status.fully_charged] = "fully_charged",
+    [defines.entity_status.out_of_logistic_network] = "out_of_logistic_network",
+    [defines.entity_status.no_recipe] = "no_recipe",
+    [defines.entity_status.no_ingredients] = "no_ingredients",
+    [defines.entity_status.no_input_fluid] = "no_input_fluid",
+    [defines.entity_status.no_research_in_progress] = "no_research_in_progress",
+    [defines.entity_status.no_minable_resources] = "no_minable_resources",
+    [defines.entity_status.low_input_fluid] = "low_input_fluid",
+    [defines.entity_status.fluid_ingredient_shortage] = "fluid_ingredient_shortage",
+    [defines.entity_status.full_output] = "full_output",
+    [defines.entity_status.full_burnt_result_output] = "full_burnt_result_output",
+    [defines.entity_status.item_ingredient_shortage] = "item_ingredient_shortage",
+    [defines.entity_status.missing_required_fluid] = "missing_required_fluid",
+    [defines.entity_status.missing_science_packs] = "missing_science_packs",
+    [defines.entity_status.waiting_for_source_items] = "waiting_for_source_items",
+    [defines.entity_status.waiting_for_space_in_destination] = "waiting_for_space_in_destination",
+    [defines.entity_status.preparing_rocket_for_launch] = "preparing_rocket_for_launch",
+    [defines.entity_status.waiting_to_launch_rocket] = "waiting_to_launch_rocket",
+    [defines.entity_status.launching_rocket] = "launching_rocket",
+    [defines.entity_status.no_modules_to_transmit] = "no_modules_to_transmit",
+    [defines.entity_status.recharging_after_power_outage] = "recharging_after_power_outage",
+    [defines.entity_status.waiting_for_target_to_be_built] = "waiting_for_target_to_be_built",
+    [defines.entity_status.waiting_for_train] = "waiting_for_train",
+    [defines.entity_status.no_ammo] = "no_ammo",
+    [defines.entity_status.low_temperature] = "low_temperature",
+    [defines.entity_status.disabled] = "disabled",
+    [defines.entity_status.turned_off_during_daytime] = "turned_off_during_daytime",
+    [defines.entity_status.not_connected_to_rail] = "not_connected_to_rail",
+    [defines.entity_status.cant_divide_segments] = "cant_divide_segments",
+}
+
 global.utils.get_entity_direction = get_entity_direction
 
 global.utils.serialize_entity = function(entity)
@@ -681,7 +728,8 @@ global.utils.serialize_entity = function(entity)
 		direction = direction,
 		health = entity.health,
 		energy = entity.energy,
-		type = "\""..entity.type.."\""
+		type = "\""..entity.type.."\"",
+		status = entity_status_names[entity.status] or "normal",
 	}
 
 	if entity.grid then

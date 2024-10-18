@@ -1,6 +1,6 @@
 import pytest
 
-from factorio_entities import Position
+from factorio_entities import Position, EntityStatus
 from factorio_instance import Direction
 from factorio_types import Prototype
 
@@ -19,13 +19,14 @@ def game(instance):
     }
     instance.reset()
     yield instance
-    #instance.reset()
+    instance.reset()
 
 def test_insert_and_fuel_furnace(game):
     furnace = game.place_entity(Prototype.StoneFurnace, direction=Direction.UP, position=Position(x=0, y=0))
     furnace = game.insert_item(Prototype.IronOre, furnace, quantity=10)
     furnace = game.insert_item(Prototype.Coal, furnace, quantity=10)
 
+    assert furnace.status == EntityStatus.WORKING
     assert furnace.fuel_inventory[Prototype.Coal] == 10
     assert furnace.input_inventory[Prototype.IronOre] == 10
 
@@ -33,6 +34,7 @@ def test_insert_iron_ore_into_stone_furnace(game):
     furnace = game.place_entity(Prototype.StoneFurnace, direction=Direction.UP, position=Position(x=0, y=0))
     furnace = game.insert_item(Prototype.IronOre, furnace, quantity=10)
 
+    assert furnace.status == EntityStatus.NO_FUEL
     assert furnace.input_inventory[Prototype.IronOre] == 10
 
 def test_insert_coal_into_burner_inserter(game):
@@ -47,6 +49,7 @@ def test_insert_into_assembler(game):
     assembler = game.insert_item(Prototype.IronGearWheel, assembler, quantity=10)
     assembler = game.insert_item(Prototype.IronPlate, assembler, quantity=10)
 
+    assert assembler.status == EntityStatus.NO_POWER
     assert assembler.assembling_machine_output[Prototype.IronGearWheel] == 10
     assert assembler.assembling_machine_input[Prototype.IronPlate] == 10
 

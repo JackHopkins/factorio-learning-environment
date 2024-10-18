@@ -6,6 +6,7 @@ from factorio_types import Prototype, Resource
 
 def run_benchmark(game: FactorioInstance, num_iterations: int = 100):
     benchmarks = {
+        "place_entity_next_to": benchmark_place_entity_next_to,
         "place_entity": benchmark_place_entity,
         "move_to": benchmark_move_to,
         "harvest_resource": benchmark_harvest_resource,
@@ -20,11 +21,12 @@ def run_benchmark(game: FactorioInstance, num_iterations: int = 100):
 
     results = {}
 
+    game.speed(10)
     for name, func in benchmarks.items():
         start_time = time.time()
         count = func(game, num_iterations)
         end_time = time.time()
-
+        game.reset()
         duration = end_time - start_time
         ops_per_second = count / duration
         ops_per_minute = ops_per_second * 60
@@ -44,6 +46,22 @@ def benchmark_place_entity(game: FactorioInstance, iterations: int):
     for i in range(iterations):
         try:
             game.place_entity(Prototype.TransportBelt, position=Position(x=0, y=0))
+            count += 1
+        except Exception as e:
+            pass
+    return count
+
+
+def benchmark_place_entity_next_to(game: FactorioInstance, iterations: int):
+    count = 0
+    reference_position = Position(x=0, y=0)
+    for i in range(iterations):
+        try:
+            entity = game.place_entity_next_to(Prototype.TransportBelt,
+                                               reference_position=reference_position,
+                                               direction=Direction.RIGHT,
+                                               spacing=0)
+            reference_position = entity.position
             count += 1
         except Exception as e:
             pass
@@ -200,5 +218,10 @@ if __name__ == "__main__":
         'assembling-machine-1': 20,
         'iron-chest': 10,
     }
-    game = FactorioInstance(address='localhost', bounding_box=200, tcp_port=27015, fast=True, cache_scripts=False, inventory=inventory)
+    game = FactorioInstance(address='localhost',
+                            bounding_box=200,
+                            tcp_port=27015,
+                            fast=True,
+                            cache_scripts=False,
+                            inventory=inventory)
     run_and_print_results(game)

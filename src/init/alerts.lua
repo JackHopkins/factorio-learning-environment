@@ -159,6 +159,9 @@ end
 --end
 
 function has_output_space(entity)
+    if entity.status == defines.entity_status.waiting_for_space_in_destination then
+        return false
+    end
     if entity.type == "mining-drill" and entity.mining_target then
         local output_inventory = entity.get_output_inventory()
         if output_inventory and output_inventory.is_full() then

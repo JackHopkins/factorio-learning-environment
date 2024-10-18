@@ -6,7 +6,7 @@ from typing import List, Tuple, Dict, Any, Union
 from slpp import slpp as lua, ParseError
 from timeit import default_timer as timer
 
-from factorio_entities import Position, Entity
+from factorio_entities import Position, Entity, EntityStatus
 from factorio_rcon_utils import _lua2python, _load_action
 
 COMMAND = "/silent-command"
@@ -21,6 +21,9 @@ class Controller:
     def clean_response(self, response):
         cleaned_response = {}
         for key, value in response.items():
+            if key == 'status' and isinstance(value, str):
+                cleaned_response[key] = EntityStatus.from_string(value)
+                continue
             # We handle warnings separately, as they are not always present and should be an empty list rather than
             # an empty dict
             if not value and key == 'warnings':

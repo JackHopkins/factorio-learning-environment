@@ -37,9 +37,9 @@ global.actions.clear_entities = function(player_index)
 
     end
 
-    local function reset_character_inventory(character)
+    local function reset_character_inventory(player)
         for inventory_id, inventory in pairs(defines.inventory) do
-            local character_inventory = character.get_inventory(inventory)
+            local character_inventory = player.get_inventory(inventory)
             if character_inventory then
                 character_inventory.clear()
             end
@@ -48,15 +48,15 @@ global.actions.clear_entities = function(player_index)
 
     -- Usage example
     local player = game.get_player(player_index)
-    local character = player.character
+    --local character = player.character
     local area = {
-        {character.position.x - 500, character.position.y - 500},
-        {character.position.x + 500, character.position.y + 500}
+        {player.position.x - 1000, player.position.y - 1000},
+        {player.position.x + 1000, player.position.y + 1000}
     }
 
     clear_area_of_player_placed_entities(player, area)
     clear_area_of_neutral_entities(player, area)
-    reset_character_inventory(character)
+    reset_character_inventory(player)
     player.force.reset()
     return 1
 end

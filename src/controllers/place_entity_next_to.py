@@ -41,15 +41,16 @@ class PlaceEntityNextTo(Action):
             if not isinstance(response, dict) or response == {}:
                 raise Exception(f"Could not place {name} at {reference_position}.", response)
 
-            for key, value in response.items():
-                if isinstance(value, dict):
-                    if 1 in value.keys():
-                        response[key] = []
-                        for sub_key, sub_value in value.items():
-                            response[key].append(sub_value)
+            # for key, value in response.items():
+            #     if isinstance(value, dict):
+            #         if 1 in value.keys():
+            #             response[key] = []
+            #             for sub_key, sub_value in value.items():
+            #                 response[key].append(sub_value)
+            cleaned_response = self.clean_response(response)
 
             try:
-                object = metaclass(prototype=name, **response)
+                object = metaclass(prototype=name, **cleaned_response)
             except Exception as e:
                 raise Exception(f"Could not create {name} object from response: {response}", e)
 

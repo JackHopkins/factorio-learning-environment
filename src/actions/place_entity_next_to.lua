@@ -152,7 +152,11 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     create_beam_point_with_direction(player, direction, new_position)
 
     local function player_collision(player, target_area)
-        local character_box = player.character.prototype.collision_box
+        --local character_box = player.character.prototype.collision_box
+        local character_box = {
+            left_top = {x = -0.2, y = -0.2},
+            right_bottom = {x = 0.2, y = 0.2}
+        }
         local character_area = {
             {player.position.x + character_box.left_top.x, player.position.y + character_box.left_top.y},
             {player.position.x + character_box.right_bottom.x, player.position.y + character_box.right_bottom.y}

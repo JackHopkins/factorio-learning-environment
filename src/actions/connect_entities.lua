@@ -1,7 +1,7 @@
 -- connect_entities.lua
 
 local wire_reach = {
-    ['small-electric-pole'] = 7,
+    ['small-electric-pole'] = 5,
     ['medium-electric-pole'] = 9,
     ['big-electric-pole'] = 30,
     ['substation'] = 18

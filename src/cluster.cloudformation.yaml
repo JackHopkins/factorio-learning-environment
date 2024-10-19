@@ -3,8 +3,8 @@
 #  aws ecs execute-command --task <your-task-id>  --cluster FactorioCluster --interactive --command /bin/bash
 
 AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
 Description: CloudFormation template for Factorio server infrastructure
-
 Parameters:
   VpcCIDR:
     Type: String
@@ -22,10 +22,14 @@ Parameters:
     Type: Number
     Default: '8'
     Description: Number of Factorio servers to run
-  FactorioDomainName:
+  FactorioHostedZoneName:
     Type: String
-    Default: factorio-cluster.com
-    Description: Domain name for Factorio servers
+    Default: paperclipmaximiser.com
+    Description: Hosted zone name for Factorio servers
+  FactorioHostedZoneID:
+    Type: String
+    Default: Z0016048OGLKTD0CDDJM
+    Description: Hosted Zone ID
 
 Resources:
   # ECS Cluster
@@ -164,6 +168,12 @@ Resources:
             - !Ref PublicSubnet2
           SecurityGroups:
             - !Ref FactorioSecurityGroup
+      Tags:
+        - Key: PUBLICHOSTEDZONE
+          Value: !Ref FactorioHostedZoneName
+        - Key : HOSTEDZONEID
+          Value: !Ref FactorioHostedZoneID
+      PropagateTags: SERVICE
 
   EFSFileSystem:
     Type: AWS::EFS::FileSystem
@@ -301,6 +311,180 @@ Resources:
           FromPort: 2049
           ToPort: 2049
           SourceSecurityGroupId: !Ref FactorioSecurityGroup
+
+  ecstaskstopped:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.ecs
+        detail-type:
+          - ECS Task State Change
+        detail:
+          lastStatus:
+            - RUNNING
+          desiredStatus:
+            - STOPPED
+      Targets:
+        - Id: !GetAtt ecstaskroute53update.Name
+          Arn: !Ref ecstaskroute53update
+          RoleArn: !GetAtt ecstaskstoppedToecstaskroute53update.Arn
+  ecstaskrunning:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.ecs
+        detail-type:
+          - ECS Task State Change
+        detail:
+          lastStatus:
+            - RUNNING
+          desiredStatus:
+            - RUNNING
+      Targets:
+        - Id: !GetAtt ecstaskroute53update.Name
+          Arn: !Ref ecstaskroute53update
+          RoleArn: !GetAtt ecstaskrunningToecstaskroute53update.Arn
+  ecstaskroute53update:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Definition:
+        Comment: State machine to create/update a Route53 record
+        StartAt: DescribeNetworkInterfaces
+        States:
+          DescribeNetworkInterfaces:
+            Type: Task
+            Parameters:
+              NetworkInterfaceIds.$: $.detail.attachments[0].details[?(@.name==networkInterfaceId)].value
+            Resource: arn:aws:states:::aws-sdk:ec2:describeNetworkInterfaces
+            Next: ListResourceRecordSets
+            ResultPath: $.NetworkInterfaceDescription
+          ListResourceRecordSets:
+            Type: Task
+            Parameters:
+              HostedZoneId.$: States.ArrayGetItem($.NetworkInterfaceDescription.NetworkInterfaces[0].TagSet[?(@.Key==HOSTEDZONEID)].Value, 0)
+            Resource: arn:aws:states:::aws-sdk:route53:listResourceRecordSets
+            ResultPath: $.ResourceRecordSetsOutput
+            Next: RunningOrStopped
+          RunningOrStopped:
+            Type: Choice
+            Choices:
+              - Variable: $.detail.desiredStatus
+                StringMatches: RUNNING
+                Next: UpsertAction
+              - Variable: $.detail.desiredStatus
+                StringMatches: STOPPED
+                Next: DeleteAction
+            Default: DeleteAction
+          DeleteAction:
+            Type: Pass
+            Next: ChangeResourceRecordSets
+            Result:
+              recordAction: DELETE
+            ResultPath: $.recordActionOutput
+          UpsertAction:
+            Type: Pass
+            Next: ChangeResourceRecordSets
+            Result:
+              recordAction: UPSERT
+            ResultPath: $.recordActionOutput
+          ChangeResourceRecordSets:
+            Type: Task
+            Parameters:
+              ChangeBatch:
+                Changes:
+                  - Action.$: $.recordActionOutput.recordAction
+                    ResourceRecordSet:
+                      Name.$: States.Format('factorio-service.{}',States.ArrayGetItem($.NetworkInterfaceDescription.NetworkInterfaces[0].TagSet[?(@.Key==PUBLICHOSTEDZONE)].Value, 0))
+                      MultiValueAnswer: true
+                      SetIdentifier.$: $.detail.taskArn
+                      Type: A
+                      Ttl: 60
+                      ResourceRecords:
+                        - Value.$: $.NetworkInterfaceDescription.NetworkInterfaces[0].Association.PublicIp
+              HostedZoneId.$: States.ArrayGetItem($.NetworkInterfaceDescription.NetworkInterfaces[0].TagSet[?(@.Key==HOSTEDZONEID)].Value, 0)
+            Resource: arn:aws:states:::aws-sdk:route53:changeResourceRecordSets
+            End: true
+      Logging:
+        Level: ALL
+        IncludeExecutionData: true
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt ecstaskroute53updateLogGroup.Arn
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ec2:DescribeNetworkInterfaces
+                - route53:ListResourceRecordSets
+                - route53:ChangeResourceRecordSets
+                - logs:CreateLogDelivery
+                - logs:GetLogDelivery
+                - logs:UpdateLogDelivery
+                - logs:DeleteLogDelivery
+                - logs:ListLogDeliveries
+                - logs:PutResourcePolicy
+                - logs:DescribeResourcePolicies
+                - logs:DescribeLogGroups
+              Resource: '*'
+      Tracing:
+        Enabled: true
+      Type: STANDARD
+  ecstaskroute53updateLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub
+        - /aws/vendedlogs/states/${AWS::StackName}-${ResourceId}-Logs
+        - ResourceId: ecstaskroute53update
+  ecstaskstoppedToecstaskroute53update:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: !Sub events.${AWS::URLSuffix}
+          Action: sts:AssumeRole
+          Condition:
+            ArnLike:
+              aws:SourceArn: !Sub
+                - arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${AWS::StackName}-${ResourceId}-*
+                - ResourceId: ecstaskstopped
+      Policies:
+        - PolicyName: StartExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource: !Ref ecstaskroute53update
+  ecstaskrunningToecstaskroute53update:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: !Sub events.${AWS::URLSuffix}
+          Action: sts:AssumeRole
+          Condition:
+            ArnLike:
+              aws:SourceArn: !Sub
+                - arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${AWS::StackName}-${ResourceId}-*
+                - ResourceId: ecstaskrunning
+      Policies:
+        - PolicyName: StartExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource: !Ref ecstaskroute53update
+
 
 Outputs:
 

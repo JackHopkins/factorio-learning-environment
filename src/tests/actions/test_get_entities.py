@@ -74,7 +74,7 @@ def test_get_entities_bug(game):
     game.craft_item(Prototype.StoneFurnace, 3)
 
     # 1. Place a stone furnace
-    stone_furnace = game.place_entity(Prototype.StoneFurnace, Direction.UP, iron_position)
+    stone_furnace = game.place_entity(Prototype.WoodenChest, Direction.UP, iron_position)
     assert stone_furnace is not None, "Failed to place stone furnace"
 
     game.insert_item(Prototype.Coal, stone_furnace, 5)

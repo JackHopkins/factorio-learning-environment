@@ -65,6 +65,101 @@ class TestEval(unittest.TestCase):
         assert result[3:] == '5'
 
 
+def test_exceptions():
+    inventory = {
+        'iron-plate': 50,
+        'coal': 100,
+        'copper-plate': 50,
+        'iron-chest': 2,
+        'burner-mining-drill': 3,
+        'electric-mining-drill': 1,
+        'assembling-machine-1': 1,
+        'stone-furnace': 9,
+        'transport-belt': 500,
+        'boiler': 1,
+        'burner-inserter': 32,
+        'pipe': 15,
+        'steam-engine': 1,
+        'small-electric-pole': 10,
+        'iron-ore': 10
+    }
+
+    instance = FactorioInstance(address='localhost',
+                                bounding_box=200,
+                                tcp_port=27015,
+                                fast=True,
+                                # cache_scripts=False,
+                                inventory=inventory)
+
+    test_string = \
+"""
+# Check initial inventory
+iron_position = nearest(Resource.Stone)
+move_to(iron_position)
+print(f"Moved to iron patch at {iron_position}")
+harvest_resource(iron_position, 20)
+
+craft_item(Prototype.StoneFurnace, 3)
+
+# 1. Place a stone furnace
+stone_furnace = place_entity(Prototype.WoodenChest, Direction.UP, iron_position)
+assert stone_furnace is not None, "Failed to place stone furnace"
+
+insert_item(Prototype.Coal, stone_furnace, 5)
+insert_item(Prototype.IronOre, stone_furnace, 5)
+sleep(1)
+# print("Inserted coal and iron ore into the furnace")
+
+furnaces = get_entities({Prototype.StoneFurnace})
+print(furnaces)
+"""
+
+    score, goal, result = instance.eval(test_string, timeout=60)
+
+    pass
+
+def test_chest_inventory():
+    inventory = {
+        'iron-plate': 50,
+        'coal': 100,
+        'copper-plate': 50,
+        'iron-chest': 2,
+        'burner-mining-drill': 3,
+        'electric-mining-drill': 1,
+        'assembling-machine-1': 1,
+        'stone-furnace': 9,
+        'transport-belt': 500,
+        'boiler': 1,
+        'burner-inserter': 32,
+        'pipe': 15,
+        'steam-engine': 1,
+        'small-electric-pole': 10,
+        'iron-ore': 10
+    }
+
+    instance = FactorioInstance(address='localhost',
+                                bounding_box=200,
+                                tcp_port=27015,
+                                fast=True,
+                                # cache_scripts=False,
+                                inventory=inventory)
+    test_string = \
+"""
+# Check initial inventory
+iron_position = nearest(Resource.Stone)
+move_to(iron_position)
+print(f"Moved to iron patch at {iron_position}")
+harvest_resource(iron_position, 20)
+
+
+chest= place_entity(Prototype.IronChest, Direction.UP, iron_position)
+insert_item(Prototype.Coal, chest, 5)
+chests = get_entities()
+print(chests)
+"""
+    score, goal, result = instance.eval_with_error(test_string, timeout=60)
+
+    pass
 
 if __name__ == '__main__':
     unittest.main()

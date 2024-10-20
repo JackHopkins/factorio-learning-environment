@@ -63,3 +63,24 @@ def test_get_connected_transport_belts(game):
     transport_belts = game.get_entities({Prototype.TransportBelt}, start_position)
 
     assert len(transport_belts) == 1, "Failed to retrieve transport belts"
+
+def test_get_entities_bug(game):
+    # Check initial inventory
+    iron_position = game.nearest(Resource.Stone)
+    game.move_to(iron_position)
+    print(f"Moved to iron patch at {iron_position}")
+    game.harvest_resource(iron_position, 20)
+
+    game.craft_item(Prototype.StoneFurnace, 3)
+
+    # 1. Place a stone furnace
+    stone_furnace = game.place_entity(Prototype.StoneFurnace, Direction.UP, iron_position)
+    assert stone_furnace is not None, "Failed to place stone furnace"
+
+    game.insert_item(Prototype.Coal, stone_furnace, 5)
+    game.insert_item(Prototype.IronOre, stone_furnace, 5)
+    game.sleep(1)
+    # print("Inserted coal and iron ore into the furnace")
+
+    furnaces = game.get_entities({Prototype.StoneFurnace})
+    print(furnaces)

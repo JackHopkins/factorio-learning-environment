@@ -57,6 +57,13 @@ class EntityStatus(Enum):
                 return status
         return None
 
+    @classmethod
+    def from_int(cls, status_int):
+        for index, status in enumerate(cls):
+            if index == status_int:
+                return status
+        return None
+
 
 class Inventory(BaseModel):
     class Config:
@@ -205,6 +212,7 @@ class Entity(BaseModel):
     prototype: Any  # Prototype
     health: float
     warnings: List[str] = []
+    status: EntityStatus = EntityStatus.NORMAL
 
 class TransportBelt(Entity):
     input_position: Position

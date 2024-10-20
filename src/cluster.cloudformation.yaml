@@ -1,0 +1,510 @@
+# You can use the Datasync task in the AWS console to move s3://factorio-scenarios files to EFS
+# To SSH into a task:
+#  aws ecs execute-command --task <your-task-id>  --cluster FactorioCluster --interactive --command /bin/bash
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: CloudFormation template for Factorio server infrastructure
+Parameters:
+  VpcCIDR:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: CIDR block for the VPC
+  PublicSubnet1CIDR:
+    Type: String
+    Default: 10.0.1.0/24
+    Description: CIDR block for Public Subnet 1
+  PublicSubnet2CIDR:
+    Type: String
+    Default: 10.0.2.0/24
+    Description: CIDR block for Public Subnet 2
+  FactorioServerCount:
+    Type: Number
+    Default: '8'
+    Description: Number of Factorio servers to run
+  FactorioHostedZoneName:
+    Type: String
+    Default: paperclipmaximiser.com
+    Description: Hosted zone name for Factorio servers
+  FactorioHostedZoneID:
+    Type: String
+    Default: Z0016048OGLKTD0CDDJM
+    Description: Hosted Zone ID
+
+Resources:
+  # ECS Cluster
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: FactorioCluster
+      CapacityProviders:
+        - FARGATE
+
+  # ECS Task Definition
+  FactorioTaskDefinition2:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: factorio
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      Cpu: '1024'
+      Memory: '2048'
+      ExecutionRoleArn: !Ref ECSTaskExecutionRole
+      TaskRoleArn: !Ref ECSTaskRole
+      ContainerDefinitions:
+        - Name: factorio
+          Image: public.ecr.aws/j0c1a2v4/paperclipmaximiser/factorio:1.1.107
+          PortMappings:
+            - ContainerPort: 34197
+              HostPort: 34197
+              Protocol: udp
+            - ContainerPort: 27015
+              HostPort: 27015
+              Protocol: tcp
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-create-group: 'true'
+              awslogs-group: factorio-ecs
+              awslogs-region: us-east-1
+              awslogs-stream-prefix: factorio-ecs
+          Essential: true
+          LinuxParameters:
+            InitProcessEnabled: true
+          EntryPoint:
+            - bash
+            - /scenario.sh
+            - default_lab_scenario
+          MountPoints:
+            - SourceVolume: scenario
+              ContainerPath: /opt/factorio/scenarios
+              ReadOnly: true
+      Volumes:
+        - Name: scenario
+          EFSVolumeConfiguration:
+            FilesystemId: !Ref EFSFileSystem
+            TransitEncryption: ENABLED
+            AuthorizationConfig:
+              AccessPointId: !Ref EFSAccessPoint
+              IAM: ENABLED
+            RootDirectory: /
+
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+      Policies:
+        - PolicyName: EFSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - elasticfilesystem:ClientMount
+                  - elasticfilesystem:ClientWrite
+                  - elasticfilesystem:ClientRead
+                Resource: !GetAtt EFSFileSystem.Arn
+        - PolicyName: Exec
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssmmessages:CreateControlChannel
+                  - ssmmessages:CreateDataChannel
+                  - ssmmessages:OpenControlChannel
+                  - ssmmessages:OpenDataChannel
+                Resource: "*"
+
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CreateLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:CreateLogGroup
+                Resource: "*"
+
+  # ECS Service
+  FactorioService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: factorio-service
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref FactorioTaskDefinition2
+      EnableExecuteCommand: true
+      DesiredCount: !Ref FactorioServerCount
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+          SecurityGroups:
+            - !Ref FactorioSecurityGroup
+      Tags:
+        - Key: PUBLICHOSTEDZONE
+          Value: !Ref FactorioHostedZoneName
+        - Key : HOSTEDZONEID
+          Value: !Ref FactorioHostedZoneID
+      PropagateTags: SERVICE
+
+  EFSFileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      PerformanceMode: generalPurpose
+      Encrypted: false
+
+  EFSAccessPoint:
+    Type: AWS::EFS::AccessPoint
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      PosixUser:
+        Uid: '1000'
+        Gid: '1000'
+      RootDirectory:
+        Path: /
+        CreationInfo:
+          OwnerUid: '1000'
+          OwnerGid: '1000'
+          Permissions: '0755'
+
+  # Security Groups
+  FactorioSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Factorio servers
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: udp
+          FromPort: 34197
+          ToPort: 34197
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 27015
+          ToPort: 27015
+          CidrIp: 0.0.0.0/0
+
+  # Routing Tables
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: Public Routes
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: Factorio VPC
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Public Subnet 1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Public Subnet 2
+
+  MountTarget1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      SecurityGroups:
+        - !Ref EFSSecurityGroup
+      FileSystemId: !Ref EFSFileSystem
+      SubnetId: !Ref PublicSubnet1
+
+  MountTarget2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      SecurityGroups:
+        - !Ref EFSSecurityGroup
+      FileSystemId: !Ref EFSFileSystem
+      SubnetId: !Ref PublicSubnet2
+
+  EFSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for EFS
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref FactorioSecurityGroup
+
+  ecstaskstopped:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.ecs
+        detail-type:
+          - ECS Task State Change
+        detail:
+          lastStatus:
+            - RUNNING
+          desiredStatus:
+            - STOPPED
+      Targets:
+        - Id: !GetAtt ecstaskroute53update.Name
+          Arn: !Ref ecstaskroute53update
+          RoleArn: !GetAtt ecstaskstoppedToecstaskroute53update.Arn
+  ecstaskrunning:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.ecs
+        detail-type:
+          - ECS Task State Change
+        detail:
+          lastStatus:
+            - RUNNING
+          desiredStatus:
+            - RUNNING
+      Targets:
+        - Id: !GetAtt ecstaskroute53update.Name
+          Arn: !Ref ecstaskroute53update
+          RoleArn: !GetAtt ecstaskrunningToecstaskroute53update.Arn
+  ecstaskroute53update:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Definition:
+        Comment: State machine to create/update a Route53 record
+        StartAt: DescribeNetworkInterfaces
+        States:
+          DescribeNetworkInterfaces:
+            Type: Task
+            Parameters:
+              NetworkInterfaceIds.$: $.detail.attachments[0].details[?(@.name==networkInterfaceId)].value
+            Resource: arn:aws:states:::aws-sdk:ec2:describeNetworkInterfaces
+            Next: ListResourceRecordSets
+            ResultPath: $.NetworkInterfaceDescription
+          ListResourceRecordSets:
+            Type: Task
+            Parameters:
+              HostedZoneId.$: States.ArrayGetItem($.NetworkInterfaceDescription.NetworkInterfaces[0].TagSet[?(@.Key==HOSTEDZONEID)].Value, 0)
+            Resource: arn:aws:states:::aws-sdk:route53:listResourceRecordSets
+            ResultPath: $.ResourceRecordSetsOutput
+            Next: RunningOrStopped
+          RunningOrStopped:
+            Type: Choice
+            Choices:
+              - Variable: $.detail.desiredStatus
+                StringMatches: RUNNING
+                Next: UpsertAction
+              - Variable: $.detail.desiredStatus
+                StringMatches: STOPPED
+                Next: DeleteAction
+            Default: DeleteAction
+          DeleteAction:
+            Type: Pass
+            Next: ChangeResourceRecordSets
+            Result:
+              recordAction: DELETE
+            ResultPath: $.recordActionOutput
+          UpsertAction:
+            Type: Pass
+            Next: ChangeResourceRecordSets
+            Result:
+              recordAction: UPSERT
+            ResultPath: $.recordActionOutput
+          ChangeResourceRecordSets:
+            Type: Task
+            Parameters:
+              ChangeBatch:
+                Changes:
+                  - Action.$: $.recordActionOutput.recordAction
+                    ResourceRecordSet:
+                      Name.$: States.Format('factorio-service.{}',States.ArrayGetItem($.NetworkInterfaceDescription.NetworkInterfaces[0].TagSet[?(@.Key==PUBLICHOSTEDZONE)].Value, 0))
+                      MultiValueAnswer: true
+                      SetIdentifier.$: $.detail.taskArn
+                      Type: A
+                      Ttl: 60
+                      ResourceRecords:
+                        - Value.$: $.NetworkInterfaceDescription.NetworkInterfaces[0].Association.PublicIp
+              HostedZoneId.$: States.ArrayGetItem($.NetworkInterfaceDescription.NetworkInterfaces[0].TagSet[?(@.Key==HOSTEDZONEID)].Value, 0)
+            Resource: arn:aws:states:::aws-sdk:route53:changeResourceRecordSets
+            End: true
+      Logging:
+        Level: ALL
+        IncludeExecutionData: true
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt ecstaskroute53updateLogGroup.Arn
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ec2:DescribeNetworkInterfaces
+                - route53:ListResourceRecordSets
+                - route53:ChangeResourceRecordSets
+                - logs:CreateLogDelivery
+                - logs:GetLogDelivery
+                - logs:UpdateLogDelivery
+                - logs:DeleteLogDelivery
+                - logs:ListLogDeliveries
+                - logs:PutResourcePolicy
+                - logs:DescribeResourcePolicies
+                - logs:DescribeLogGroups
+              Resource: '*'
+      Tracing:
+        Enabled: true
+      Type: STANDARD
+  ecstaskroute53updateLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub
+        - /aws/vendedlogs/states/${AWS::StackName}-${ResourceId}-Logs
+        - ResourceId: ecstaskroute53update
+  ecstaskstoppedToecstaskroute53update:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: !Sub events.${AWS::URLSuffix}
+          Action: sts:AssumeRole
+          Condition:
+            ArnLike:
+              aws:SourceArn: !Sub
+                - arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${AWS::StackName}-${ResourceId}-*
+                - ResourceId: ecstaskstopped
+      Policies:
+        - PolicyName: StartExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource: !Ref ecstaskroute53update
+  ecstaskrunningToecstaskroute53update:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: !Sub events.${AWS::URLSuffix}
+          Action: sts:AssumeRole
+          Condition:
+            ArnLike:
+              aws:SourceArn: !Sub
+                - arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${AWS::StackName}-${ResourceId}-*
+                - ResourceId: ecstaskrunning
+      Policies:
+        - PolicyName: StartExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource: !Ref ecstaskroute53update
+
+
+Outputs:
+
+  VPC:
+    Description: A reference to the created VPC
+    Value: !Ref VPC
+    Export:
+      Name: !Sub ${AWS::StackName}-VPC
+
+  PublicSubnets:
+    Description: A list of the public subnets
+    Value: !Join
+      - ','
+      - - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+    Export:
+      Name: !Sub ${AWS::StackName}-PublicSubnets
+
+  ECSCluster:
+    Description: A reference to the ECS cluster
+    Value: !Ref ECSCluster
+    Export:
+      Name: !Sub ${AWS::StackName}-ECSCluster

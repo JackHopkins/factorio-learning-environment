@@ -30,7 +30,9 @@ class ResourceName(enum.Enum):
 
 
 class Prototype(enum.Enum):
-    AssemblingMachine1 = "assembling-machine-1", AssemblingMachine1
+    AssemblingMachine1 = "assembling-machine-1", AssemblingMachine
+    AssemblingMachine2 = "assembling-machine-2", AssemblingMachine
+    AssemblingMachine3 = "assembling-machine-3", AssemblingMachine
     BurnerInserter = "burner-inserter", BurnerInserter
     BurnerMiningDrill = "burner-mining-drill", BurnerMiningDrill
     ElectricMiningDrill = "electric-mining-drill", MiningDrill

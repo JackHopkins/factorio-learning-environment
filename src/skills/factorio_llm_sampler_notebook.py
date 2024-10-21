@@ -17,7 +17,7 @@ import numpy as np
 import io
 load_dotenv()
 
-#from skills_db import SkillsDB
+from skills_db import SkillsDB
 def is_valid_python(code_string: str) -> bool:
     try:
         ast.parse(code_string)
@@ -35,7 +35,7 @@ class FactorioLLMSampler:
         self.cost = 0
         self.prompt_path = prompt_path
         self.examples_path = examples_path
-        #self.skills_db = SkillsDB()
+        self.skills_db = SkillsDB()
 
     def _get_base_api_schema_prompt(self):
         execution_path = os.path.dirname(os.path.realpath(__file__))
@@ -169,7 +169,7 @@ Entities:
 
         user_message_planning = user_message_planning.format(user_input=user_input, examples=examples_string)
         full_output = self._call_api(system_prompt_planning,
-                                      user_message_planning, max_tokens = 1024,
+                                      user_message_planning, max_tokens = 2048,
                                       model = "claude-3-5-sonnet-20240620")
         #full_output = "To achieve the objective of crafting an OffshorePump, we need to gather resources and craft the necessary components. Since there are no entities on the map and our inventory is empty, we'll start from scratch by gathering resources.\n\n[PLANNING]\n[STEP] 1: Print recipes. We need to print the recipe for crafting an OffshorePump to understand what materials are required.\n[STEP] 2: Gather resources. Based on the recipe, we need to gather enough copper ore and iron ore to produce at least 3 copper plates and 5 iron plates. Additionally, we must gather coal for smelting these ores into plates. Output check: Ensure that after this step, we have all specified raw materials in our inventory.\n[STEP] 3: Smelt ores into plates. Use a stone furnace (which needs to be crafted if not available) to smelt copper ore into copper plates and iron ore into iron plates. Output check: Verify that after this step, we have at least 3 copper plates and 5 iron plates in our inventory.\n[STEP] 4: Craft the OffshorePump. Use the gathered materials and crafted intermediates to craft one OffshorePump according to its recipe. Output check: Verify that an OffshorePump is now present in our inventory.\n[PLANNING]"
         # get everything between the [PLANNING] tags
@@ -216,9 +216,10 @@ Entities:
             examples_string += f"\nSTEP OUTPUT:\nPLANNING\n{example_plan}\nCode snippet ```python{example_code}```\n\n"
         return examples_string
     
-    def get_example_string_rag(self, step_description: str) -> str:
-
-        examples = self.skills_db.find_similar_functions(step_description)
+    def get_example_string_rag(self, step_description: str, mining_setup) -> str:
+        mining_rag_string = "There are no entities on the map" if "[" not in mining_setup else "There are useable entities on the map"
+        rag_str = f"Objective: {step_description}\nMining setup: {mining_rag_string}\n"
+        examples = self.skills_db.find_similar_functions(rag_str)
 
         examples_string = ""
         for example in examples:
@@ -352,6 +353,11 @@ Entities:
         objective_str = objective["objective"]
         starting_inventory = objective["starting_inventory"]
         action_trace = ""
+        mining_setup = instance.get_entities()
+        if len(mining_setup) == 0:
+            mining_setup = "There are no entities on the map"
+        else:
+            mining_setup = f"The following entities are on the map and can be used: {mining_setup}"
         #policy = self.generate_policy_function(objective, inventory = inventory)
         plan_output = self.generate_plan_notebook(objective_str, inventory = starting_inventory, 
                                                                mining_setup = mining_setup)
@@ -468,7 +474,8 @@ def save_gold_skills_into_db():
             continue
         implementation = f"Planning\n{details['plan']}\n\nCode snippet\n```python{snippet}```"
         # get the signature, that is the step description
-        signature = details["step"]
+        mining_setup_string = "There are no entities on the map" if "[" not in details["mining_setup"] else "There are useable entities on the map"
+        signature = f"Objective: {details['step']}\nMining setup: {mining_setup_string}"
         description = f'Step description: {signature}\nInventory: {details["inventory"]}\nMining setup: {details["mining_setup"]}'
         dependencies = []
         implementation_model = "gold_standard"
@@ -526,6 +533,7 @@ if __name__ == "__main__":
         'steam-engine': 1,
         'small-electric-pole': 10,
         "wooden-chest": 1,
+        "iron-ore": 20
     }
 
     #inventory = {
@@ -550,13 +558,19 @@ iron_position = nearest(Resource.Stone)
 move_to(iron_position)
 print(f"Moved to iron patch at {iron_position}")
 harvest_resource(iron_position, 20)
-
+craft_item(Prototype.SteamEngine, 3)
 craft_item(Prototype.StoneFurnace, 3)
 
-stone_furnace = place_entity(Prototype.IronChest, Direction.UP, iron_position)
+stone_furnace = place_entity(Prototype.StoneFurnace, Direction.UP, iron_position)
 insert_item(Prototype.Coal, stone_furnace, 5)
-furnaces = get_entities()
+insert_item(Prototype.IronOre, stone_furnace, 5)
+sleep(8)
+furnaces = get_entities({Prototype.StoneFurnace})
 print(furnaces)
+
+furnace = furnaces[0]
+iron_plates_in_furnace = furnace.furnace_result.get(Prototype.IronPlate, 0)
+print(iron_plates_in_furnace)
 
 ## 1. Place a stone furnace
 #stone_furnace = place_entity(Prototype.StoneFurnace, Direction.UP, iron_position)

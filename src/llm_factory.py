@@ -34,8 +34,8 @@ class LLMFactory:
         ]
 
     def call(self, *args, **kwargs):
-
-        if "claude" in self.model:
+        model = kwargs.get('model', self.model)
+        if "claude" in model:
             # Set up and call the Anthropic API
             api_key = os.getenv('ANTHROPIC_API_KEY')
 
@@ -66,7 +66,7 @@ class LLMFactory:
                 response = anthropic.Anthropic().messages.create(
                     temperature=kwargs.get('temperature', 0.7),
                     max_tokens=max_tokens,
-                    model=self.model,
+                    model=model,
                     messages=messages,
                     stop_sequences=["```END"],
                 )
@@ -75,7 +75,7 @@ class LLMFactory:
                 raise
 
             return response
-        elif "deepseek" in self.model:
+        elif "deepseek" in model:
             client = OpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
             response = client.chat.completions.create(*args,
                                                   **kwargs,
@@ -88,7 +88,7 @@ class LLMFactory:
                                                   stream=False)
             return response
 
-        elif "o1-mini" in self.model:
+        elif "o1-mini" in model:
             client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             # replace `max_tokens` with `max_completion_tokens` for OpenAI API
             if "max_tokens" in kwargs:
@@ -103,9 +103,11 @@ class LLMFactory:
                                                   stream=False)
         else:
             client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-            return client.chat.completions.create(*args, n=self.beam,
-                                                  **kwargs,
-                                                  temperature=0.9,
+            assert "messages" in kwargs, "messages are required for OpenAI API"
+            return client.chat.completions.create(model = model,
+                                                  max_tokens = kwargs.get('max_tokens', 2048),
+                                                  temperature=kwargs.get('temperature', 0.3),
+                                                  messages=kwargs.get('messages', None),
                                                   #stop=["\n\n"],#, "\n#"],
                                                   presence_penalty=1,
                                                   frequency_penalty=0.6,

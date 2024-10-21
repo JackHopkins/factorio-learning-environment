@@ -1,0 +1,22 @@
+{
+  "objectives": [
+                {"objective": "We need create an automated copper plate electric mine that mines copper ore to a fueled furnace placed at the drop position of the drill that will smelt plates. The final setup should be checked by looking if the furnace has any copper plates in it",
+                "name": "create_electric_copper_plate_mine"},
+
+                {"objective": "We need create an automated iron plate electric mine that mines iron ore to a fueled furnace placed at the drop position of the drill that will smelt plates. The final setup should be checked by looking if the furnace has any iron plates in it",
+                "name": "create_electric_iron_plate_mine"},
+
+                {"objective": "We need create an automated copper ore electric mine that mines copper ore to a chest that is placed a but further away. The final setup should be checked by looking if the chest has any copper ore in it",
+                "name": "create_electric_copper_ore_mine"},
+
+                {"objective": "We need create an automated iron ore electric mine that mines iron ore to a chest that is placed further away from it. The final setup should be checked by looking if the chest has any iron ore in it",
+                "name": "create_electric_iron_ore_mine"},
+
+                {"objective": "We need create an automated coal electric mine that mines coal to a chest that is placed further away from it. The final setup should be checked by looking if the chest has any coal in it",
+                "name": "create_electric_coal_mine"},
+
+                {"objective": "We need create an automated stone electric mine that mines stone to a chest that is placed further away from it. The final setup should be checked by looking if the chest has any stone in it",
+                "name": "create_electric_stone_mine"}
+                
+  ]
+}

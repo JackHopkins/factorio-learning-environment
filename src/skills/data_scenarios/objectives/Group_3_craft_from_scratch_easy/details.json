@@ -1,0 +1,8 @@
+{
+  "mining_setup": "There are no entities on the map",
+  "objectives": [
+                {"objective": "Craft 20 stone bricks. The final success should be checked by looking if 20 stone bricks are in inventory",
+                "inventory": {},
+                "name": "craft_20_stone_bricks"}
+  ]
+}

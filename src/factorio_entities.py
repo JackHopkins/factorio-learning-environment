@@ -237,6 +237,9 @@ class MiningDrill(Entity):
     drop_position: Position
 
 
+class PumpJack(MiningDrill):
+    pass
+
 class BurnerInserter(Inserter, BurnerType):
     pass
 

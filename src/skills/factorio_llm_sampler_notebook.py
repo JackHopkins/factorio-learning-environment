@@ -171,6 +171,7 @@ Entities:
         full_output = self._call_api(system_prompt_planning,
                                       user_message_planning, max_tokens = 2048,
                                       model = "claude-3-5-sonnet-20240620")
+        #full_output = "Plan Analysis:\nTo achieve the objective of having one stone furnace in the inventory, we need to consider the following:\n\n1. There is already a stone furnace on the map, which we can use.\n2. Our inventory is currently empty.\n3. We don't need to craft a new stone furnace; we just need to pick up the existing one.\n\nGiven these conditions, our plan will be straightforward. We need to locate the existing stone furnace on the map, move to its position, and then pick it up. After that, we'll verify that the stone furnace is in our inventory.\n\n###START OF PLAN\nSTEP 1: Locate the stone furnace\n- Identify the position of the stone furnace on the map (x=-12.0, y=-12.0)\n\nSTEP 2: Move to the stone furnace\n- Move to the position of the stone furnace (x=-12.0, y=-12.0)\n\nSTEP 3: Pick up the stone furnace\n- Pick up the stone furnace at the current position\n\nSTEP 4: Verify inventory\nOUTPUT CHECK: Check if the stone furnace is now in the inventory\n###END OF PLAN"
         #full_output = "To achieve the objective of crafting an OffshorePump, we need to gather resources and craft the necessary components. Since there are no entities on the map and our inventory is empty, we'll start from scratch by gathering resources.\n\n[PLANNING]\n[STEP] 1: Print recipes. We need to print the recipe for crafting an OffshorePump to understand what materials are required.\n[STEP] 2: Gather resources. Based on the recipe, we need to gather enough copper ore and iron ore to produce at least 3 copper plates and 5 iron plates. Additionally, we must gather coal for smelting these ores into plates. Output check: Ensure that after this step, we have all specified raw materials in our inventory.\n[STEP] 3: Smelt ores into plates. Use a stone furnace (which needs to be crafted if not available) to smelt copper ore into copper plates and iron ore into iron plates. Output check: Verify that after this step, we have at least 3 copper plates and 5 iron plates in our inventory.\n[STEP] 4: Craft the OffshorePump. Use the gathered materials and crafted intermediates to craft one OffshorePump according to its recipe. Output check: Verify that an OffshorePump is now present in our inventory.\n[PLANNING]"
         # get everything between the [PLANNING] tags
         #planning_tag_locations = [m.start() for m in re.finditer("\[PLANNING\]", full_output)]
@@ -219,7 +220,7 @@ Entities:
     def get_example_string_rag(self, step_description: str, mining_setup) -> str:
         mining_rag_string = "There are no entities on the map" if "[" not in mining_setup else "There are useable entities on the map"
         rag_str = f"Objective: {step_description}\nMining setup: {mining_rag_string}\n"
-        examples = self.skills_db.find_similar_functions(rag_str)
+        examples = self.skills_db.find_similar_functions(rag_str, n = 3)
 
         examples_string = ""
         for example in examples:
@@ -251,14 +252,15 @@ Entities:
             system_prompt_steps = f.read()
 
         step_examples_folder = r"skills\notebook_scripts"
-        examples_string = self.get_example_string_from_folder(step_examples_folder)
+        examples_string = self.get_example_string_rag(objective, mining_setup)
 
         system_prompt_steps = system_prompt_steps.format(entity_definitions=self.entities, schema = self.schema)
         user_message_steps = user_message_steps.format(objective=objective, 
                                                              examples=examples_string,
                                                              print_trace=print_trace,
                                                              full_script=full_plan,
-                                                             inventory=inventory)
+                                                             inventory=inventory,
+                                                             mining_setup=mining_setup)
         
         output = self._call_api(system_prompt_steps, user_message_steps,
                                 max_tokens = 1024)
@@ -272,7 +274,8 @@ Entities:
     
     def correct_policy_snippet(self, objective: str, last_executed_policy: str,
                                 error_message: str, action_trace: List[Dict[str, str]],
-                                inventory: Dict[str, int], game_logs : list, error_logs: list) -> str:
+                                inventory: Dict[str, int], game_logs : list, error_logs: list,
+                                mining_setup: str) -> str:
         
         #user_input = f"Objective: {objective}\n"
         #if mining_setup:
@@ -287,30 +290,7 @@ Entities:
             system_prompt = f.read()
         system_prompt = system_prompt.format(entity_definitions=self.entities, schema = self.schema)
 
-        step_examples_folder = r"skills\notebook_scripts"
-        # get all folders in examples_path
-        examples = os.listdir(step_examples_folder)
-        examples_string = ""
-        for example in examples:
-            # read in the snippet.py
-            with open(f"{step_examples_folder}/{example}/snippet.py", "r") as f:
-                example_output = f.read()
-            
-            # read in the details.json
-            with open(f"{step_examples_folder}/{example}/details.json", "r") as f:
-                details = json.load(f)
-        
-            example_objective = details["step"]
-            example_inventory = details["inventory"]
-            example_input = f"Objective: {example_objective}\nInventory: {example_inventory}\n"
-            examples_string += "USER INPUT\n" + example_input + "\n"
-            # split everything by '[PLANNING]\n"""'
-            example_outputs_split = example_output.split('[PLANNING]\n"""')
-            example_code = example_outputs_split[1] 
-            example_plan = example_outputs_split[0].replace("[PLANNING]", "").replace('"""', "").strip()
-            examples_string += f"\nSTEP OUTPUT:\nPLANNING\n{example_plan}\nCode snippet ```python{example_code}```\n\n"
-
-
+        examples_string = self.get_example_string_rag(objective, mining_setup)
         game_log_string = "\n".join(game_logs)
         error_log_string = "\n".join(error_logs)
         game_log_string = f"Game logs:\n{game_log_string}\n\nError logs:\n{error_log_string}"
@@ -324,7 +304,8 @@ Entities:
             last_executed_policy=action_trace,
             script_with_error =  last_executed_policy,
             error_message=error_message,
-            game_log = game_log_string)
+            game_log = game_log_string,
+            mining_setup = mining_setup)
         return self._call_api(system_prompt, user_message, max_tokens = 2048,
                               model = "claude-3-5-sonnet-20240620"
                               )
@@ -348,16 +329,40 @@ Entities:
         sys.stdout = sys_stdout
         return output_list, result
 
-    def stream_curriculum(self, objective: Dict, mining_setup, instance):          
-        max_attempts = 4
-        objective_str = objective["objective"]
-        starting_inventory = objective["starting_inventory"]
-        action_trace = ""
+
+    def eval_program_with_result_trace(self, instance, program):
+        # evaluate the step
+        try:
+            score, goal, result = instance.eval_with_error(program, timeout=60)
+        except Exception as e:
+            result = f"error: {str(e)}"
+        # split result by newlines
+        output_list = result.splitlines()
+        return output_list, result
+    
+    def get_mining_setup(self, instance):
         mining_setup = instance.get_entities()
         if len(mining_setup) == 0:
             mining_setup = "There are no entities on the map"
         else:
             mining_setup = f"The following entities are on the map and can be used: {mining_setup}"
+        return mining_setup
+
+    def stream_curriculum(self, objective: Dict,  instance):    
+        starting_inventory = objective["starting_inventory"]      
+        max_attempts = 4
+        # First set up the game
+
+        instance.reset()
+        instance.initial_inventory = starting_inventory
+        instance.reset()
+        # run the objective starting snippet
+        _ = instance.eval_with_error(objective["starting_snippet"], timeout=60)
+
+        objective_str = objective["objective"]
+        starting_inventory = instance.inspect_inventory()
+        action_trace = ""
+        mining_setup = self.get_mining_setup(instance)
         #policy = self.generate_policy_function(objective, inventory = inventory)
         plan_output = self.generate_plan_notebook(objective_str, inventory = starting_inventory, 
                                                                mining_setup = mining_setup)
@@ -372,18 +377,13 @@ Entities:
             full_script += f'# Placeholder {idx + 1}'
                 
 
-        instance.reset()
-        instance.initial_inventory = starting_inventory
-        instance.reset()
-        # run the objective starting snippet
-        _ = instance.eval_with_error(objective["starting_snippet"], timeout=60)
-
         full_plan = plan_output["full_plan"]
         print_trace = []
         for plan_idx, plan in enumerate(plan_output["steps"]):
                 
             step_description = plan["step_description"]
             current_inventory = instance.inspect_inventory()
+            mining_setup = self.get_mining_setup(instance)
             plan["full_script_tries"] = []
             step_description = f"Placeholder {step_description}"
             step_script = self.generate_step_notebook(objective = step_description, 
@@ -400,7 +400,7 @@ Entities:
                 program = step_script
                 
 
-            output_list, result = self.eval_program_with_print_capture(instance, program)
+            output_list, result = self.eval_program_with_result_trace(instance, program)
             errored = False
             if "error" in result.lower():
                 errored = True
@@ -412,7 +412,8 @@ Entities:
                                                               action_trace=full_script, 
                                                               inventory=current_inventory, 
                                                               game_logs = print_trace, 
-                                                              error_logs=output_list)
+                                                              error_logs=output_list,
+                                                              mining_setup=mining_setup)
                     plan["full_script_tries"].append(step_script)
                     try:
                         program = step_script.replace('```python', '```')
@@ -425,7 +426,7 @@ Entities:
                     instance.reset()
                     _ = instance.eval_with_error(objective["starting_snippet"], timeout=60)
                     _ = instance.eval_with_error(action_trace, timeout=60)
-                    output_list, result = self.eval_program_with_print_capture(instance, program)
+                    output_list, result = self.eval_program_with_result_trace(instance, program)
                     if "error" not in result.lower():
                         errored = False
                         break
@@ -469,14 +470,14 @@ def save_gold_skills_into_db():
         with open(f"{folder_path}/snippet.py", "r") as f:
             snippet = f.read()
         
-        name = details["name"]
+        name = "N/A"
         if name in names:
             continue
-        implementation = f"Planning\n{details['plan']}\n\nCode snippet\n```python{snippet}```"
+        implementation = f"Planning\n{details['planning']}\n\nCode snippet\n```python{snippet}```"
         # get the signature, that is the step description
         mining_setup_string = "There are no entities on the map" if "[" not in details["mining_setup"] else "There are useable entities on the map"
         signature = f"Objective: {details['step']}\nMining setup: {mining_setup_string}"
-        description = f'Step description: {signature}\nInventory: {details["inventory"]}\nMining setup: {details["mining_setup"]}'
+        description = f'Step description: {details["step"]}\nInventory: {details["inventory"]}\nMining setup: {details["mining_setup"]}'
         dependencies = []
         implementation_model = "gold_standard"
         db.save_function(name = name, 
@@ -557,20 +558,33 @@ if __name__ == "__main__":
 iron_position = nearest(Resource.Stone)
 move_to(iron_position)
 print(f"Moved to iron patch at {iron_position}")
-harvest_resource(iron_position, 20)
-craft_item(Prototype.SteamEngine, 3)
-craft_item(Prototype.StoneFurnace, 3)
 
 stone_furnace = place_entity(Prototype.StoneFurnace, Direction.UP, iron_position)
-insert_item(Prototype.Coal, stone_furnace, 5)
-insert_item(Prototype.IronOre, stone_furnace, 5)
-sleep(8)
-furnaces = get_entities({Prototype.StoneFurnace})
+furnaces = get_entities()
 print(furnaces)
 
-furnace = furnaces[0]
-iron_plates_in_furnace = furnace.furnace_result.get(Prototype.IronPlate, 0)
-print(iron_plates_in_furnace)
+furnaces = get_entities()
+print(furnaces)
+
+#iron_position = nearest(Resource.Coal)
+#move_to(iron_position)
+#print(f"Moved to iron patch at {iron_position}")
+#harvest_resource(iron_position, 10)
+#
+#iron_position = nearest(Resource.CopperOre)
+#move_to(iron_position)
+#print(f"Moved to iron patch at {iron_position}")
+#harvest_resource(iron_position, 10)
+#
+#furnaces = get_entities()
+#print(furnaces)
+#sleep(8)
+#furnaces = get_entities({Prototype.StoneFurnace})
+#print(furnaces)
+#
+#furnace = furnaces[0]
+#iron_plates_in_furnace = furnace.furnace_result.get(Prototype.IronPlate, 0)
+#print(iron_plates_in_furnace)
 
 ## 1. Place a stone furnace
 #stone_furnace = place_entity(Prototype.StoneFurnace, Direction.UP, iron_position)
@@ -586,8 +600,10 @@ print(iron_plates_in_furnace)
 
 """
 
-
-    score, goal, result = instance.eval_with_error(test_string, timeout=60)
+    try:
+        score, goal, result = instance.eval_with_error(test_string, timeout=60)
+    except Exception as e:
+        print(f"Error: {e}")
     # Load objectives from file
     #objectives_file = "skills\objectives_rag.txt"
     #if os.path.exists(objectives_file):
@@ -596,9 +612,10 @@ print(iron_plates_in_furnace)
     #    print(f"Objectives file '{objectives_file}' not found. Please create it and add objectives.")
     #    exit(1)    
 
-
-    starting_scenarios_folder = r"skills\data_scenarios\starting_scenarios\part_of_electricity_generator"
-    objectives_folder = "skills\data_scenarios\objectives\Group_6_create_automatic_electric_mines"
+    starting_scenario_name = "one_furnace_on_map"
+    objective_group = "Group_3_craft_easy"
+    starting_scenarios_folder = f"skills\data_scenarios\starting_scenarios\{starting_scenario_name}"
+    objectives_folder = f"skills\data_scenarios\objectives\{objective_group}"
     #read in details.json
     with open(f"{objectives_folder}/details.json", "r") as f:
         details = json.load(f)
@@ -610,7 +627,6 @@ print(iron_plates_in_furnace)
     # read in details from details.json from starting_scenarios_folder
     with open(f"{starting_scenarios_folder}/details.json", "r") as f:
         starting_details = json.load(f)
-    mining_setup = starting_details["mining_setup"]
     objectives = details["objectives"]
 
     for obj_idx, objective in enumerate(objectives):
@@ -620,11 +636,18 @@ print(iron_plates_in_furnace)
                 # get a 0 or a 1 to add this item to the inventory
                 if np.random.randint(0, 2) == 1:
                     starting_inventory[key] = np.random.randint(value[0], value[1]+1)
+
+            additional_inv = starting_details["additional_inventory_for_starting_scenario"]
+            for key, value in additional_inv.items():
+                if key in starting_inventory:
+                    starting_inventory[key] += value
+                else:
+                    starting_inventory[key] = value
             # remove all items that have a value of 0
             starting_inventory = {k: v for k, v in starting_inventory.items() if v != 0}
             objective["starting_inventory"] = starting_inventory
             objective["starting_snippet"] = starting_snippet
-            curriculum_item = next(sampler.stream_curriculum(objective, mining_setup, instance))
+            curriculum_item = next(sampler.stream_curriculum(objective, instance))
             
             snippet_name = curriculum_item["name"]
             snippet_passed = not curriculum_item["errored"]
@@ -632,7 +655,7 @@ print(iron_plates_in_furnace)
             
             # Save results and update files
             folder_name = snippet_name if snippet_passed else f"_{snippet_name}"
-            folder_path = f"skills/notebook_skills/{folder_name.strip()}"
+            folder_path = f"skills/notebook_skills/{objective_group}/{starting_scenario_name}/{folder_name.strip()}"
             # check if the folder existss
             if os.path.exists(folder_path):
                 # start adding numbers to the folder name
@@ -647,7 +670,8 @@ print(iron_plates_in_furnace)
             with open(f"{folder_path}/full_snippet.py", "w") as f:
                 f.write(snippet)
 
-            curriculum_item["starting_scenario"] = starting_scenarios_folder
+            curriculum_item["starting_scenario"] = starting_scenario_name
+            curriculum_item["objective_group"] = objective_group
             with open(f"{folder_path}/curriculum_item.json", "w") as f:
                 json.dump(curriculum_item, f, indent=2)
 

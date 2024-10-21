@@ -37,6 +37,7 @@ class Prototype(enum.Enum):
     StoneFurnace = "stone-furnace", Furnace
     TransportBelt = "transport-belt", TransportBelt
     OffshorePump = "offshore-pump", OffshorePump
+    PumpJack = "pumpjack", PumpJack
     Boiler = "boiler", Boiler
     SteamEngine = "steam-engine", Generator
     Pipe = "pipe", Entity

@@ -10,8 +10,6 @@ STEP 2: Build electric system. We need to place the boiler and steam engine next
 - Put a boiler next to the offshore pump with a spacing of 2 to leave room for pipe connections and fuel the boiler with coal
 - Put a steam engine next to the boiler with a spacing of 2 to leave room for pipe connections
 - Connect the boiler with offshore pump with the pipes and the boiler with steam engine with the pipes
-OUTPUT CHECK: We need to check if after this step the steam engine is generating energy
 STEP 3: Place electric mining drill. We need to move to the closest coal patch and put down the electric mining drill
 STEP 4: Power electric mining drill. We need to power the electric mining drill by connecting it with power poles to the steam engine
-OUTPUT CHECK: We need to check if after this step the electric mining drill is working and powered
 ###END OF PLAN

@@ -11,5 +11,4 @@ STEP 2: Put down a inserter next to the furnace. We need to carry out the follow
 - Get the furnace entity from the map and move to it
 - Place down a inserter next to it and fuel the inserter
 STEP 3: Connect inserters. We need to connect the pickup position of the chest insterter with the drop position of the furnace inserter with transport belts.
-OUTPUT CHECK: We need to wait for 30 seconds and see if the iron plates have been transferred from the furnace to the chest
 ###END OF PLAN

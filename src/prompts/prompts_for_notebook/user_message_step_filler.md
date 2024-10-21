@@ -15,5 +15,8 @@ Here are the logs thus far in the game up until the current step you need to fil
 Here is the inventory at the current step
 {inventory}
 
+Here is the current mining setup
+{mining_setup}
+
 The current step you need to output the code for
 {objective}

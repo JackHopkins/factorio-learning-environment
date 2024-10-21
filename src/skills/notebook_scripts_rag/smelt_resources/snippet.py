@@ -14,8 +14,9 @@ print(f"Coal in inventory: {coal_in_inventory}")
 print(f"Iron ore in inventory: {iron_in_inventory}")
 
 # add coal and iron to the furnace
-insert_item(Prototype.Coal, furnace, coal_in_inventory)
-insert_item(Prototype.IronOre, furnace, iron_in_inventory)
+# Need to update the furnace var as well after every insert
+furnace = insert_item(Prototype.Coal, furnace, coal_in_inventory)
+furnace = insert_item(Prototype.IronOre, furnace, iron_in_inventory)
 print(f"Inserted {coal_in_inventory} coal and {iron_in_inventory} iron ore into the furnace")
 print(f"Inventory after inserting: {inspect_inventory()}")
 

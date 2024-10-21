@@ -12,6 +12,9 @@ GAME_LOG
 INVENTORY
 {inventory}
 
+Mining setup
+{mining_setup}
+
 STEP YOU NEED TO FILL OUT
 {objective}
 

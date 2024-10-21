@@ -16,7 +16,8 @@ print(f"Boiler placed at {boiler.position}")
 print(f"Current inventory: {inspect_inventory()}")
 
 # add coal to the boiler
-boiler_with_coal = insert_item(Prototype.Coal, boiler, quantity=5)
+# need to update the boiler var after insert
+boiler = insert_item(Prototype.Coal, boiler, quantity=5)
 print(f"Inventory after adding coal: {inspect_inventory()}")
 
 # Connect offshore pump to boiler with pipes

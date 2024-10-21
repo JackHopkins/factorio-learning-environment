@@ -24,3 +24,4 @@ move_to(chest_pos)). This will not be a problem if you use place_entity_next_to 
 - For recipes, always just use the get_recipe as it will recursively get all the required recipes
 - IMPORTANT: DO NOT ASSERT MOVING OR PLACING. THE API WILL ERROR SO YOU DO NOT NEED TO ASSERT TEST THEM. When you place or connect things, you do not need assert tests. If placing is unsuccessful, the api will throw an error. Same goes for moving, there is no way to use assert tests for moving. Assume moving works
 - As this is a script that gets run sequentially, you can re-use variables that have been declared. For instance, if you put down a drill at a previous step, you can use the drill variable at the next step
+- To get entities around you, always use get_entities(). The other methods have bugs

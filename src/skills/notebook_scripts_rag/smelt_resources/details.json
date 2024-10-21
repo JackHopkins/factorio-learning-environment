@@ -1,6 +1,6 @@
 {
   "step": "Smelt plates. We need to smelt the plates using a stone furnace. Output check: We need to check if after this step we have the required plates in our inventory",
-  "inventory": {"stone": 10, "iron-ore": 15, "coal": 5},
-  "planning": "We have harvested resources. We now need to craft the furnace as there is none on the map or in inventory and smelt the iron ore into iron plates\nFirst we need to craft a stone furnace for smelting the plates and fuel it with coal\nThen we will insert the iron ore we have previously mined into the furnace",
+  "inventory": {"stone": 10, "iron-ore": 15, "coal": 5, "copper-ore": 10},
+  "planning": "We have harvested resources. We now need to craft the furnace as there is none on the map or in inventory and smelt the iron and copper ore into plates\nFirst we need to craft a stone furnace for smelting the plates and fuel it with coal\nThen we will insert the iron ore we have previously mined into the furnace and smelt into plates. Finally we will insert copper ore into the furnace and smelt to plates",
   "mining_setup": "There are no entities on the map"
 }

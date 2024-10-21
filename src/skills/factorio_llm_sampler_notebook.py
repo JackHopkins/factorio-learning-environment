@@ -16,8 +16,9 @@ from utilities.controller_loader import load_schema, load_definitions
 import numpy as np
 import io
 load_dotenv()
-
+import time
 from skills_db import SkillsDB
+import copy
 def is_valid_python(code_string: str) -> bool:
     try:
         ast.parse(code_string)
@@ -71,13 +72,22 @@ Entities:
             {"role": "user", "content": user_message}
         ]
         try:
-            response = self.llm_factory.call(
-                model=model_to_use,
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                **kwargs
-            )
+            max_tries = 5
+            for i in range(max_tries):
+                try:
+                    response = self.llm_factory.call(
+                        model=model_to_use,
+                        messages=messages,
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                        **kwargs
+                    )
+                    break
+                except Exception as e:
+                    if i == max_tries - 1:
+                        raise e
+                    print(f"API call failed: {e}")
+                    time.sleep(2**i)
 
             try:
                 self.token_count += response.usage.input_tokens + response.usage.output_tokens
@@ -170,7 +180,8 @@ Entities:
         user_message_planning = user_message_planning.format(user_input=user_input, examples=examples_string)
         full_output = self._call_api(system_prompt_planning,
                                       user_message_planning, max_tokens = 2048,
-                                      model = "claude-3-5-sonnet-20240620")
+                                      model = "claude-3-5-sonnet-20240620",
+                                      temperature = 0.7)
         #full_output = "Plan Analysis:\nTo achieve the objective of having one stone furnace in the inventory, we need to consider the following:\n\n1. There is already a stone furnace on the map, which we can use.\n2. Our inventory is currently empty.\n3. We don't need to craft a new stone furnace; we just need to pick up the existing one.\n\nGiven these conditions, our plan will be straightforward. We need to locate the existing stone furnace on the map, move to its position, and then pick it up. After that, we'll verify that the stone furnace is in our inventory.\n\n###START OF PLAN\nSTEP 1: Locate the stone furnace\n- Identify the position of the stone furnace on the map (x=-12.0, y=-12.0)\n\nSTEP 2: Move to the stone furnace\n- Move to the position of the stone furnace (x=-12.0, y=-12.0)\n\nSTEP 3: Pick up the stone furnace\n- Pick up the stone furnace at the current position\n\nSTEP 4: Verify inventory\nOUTPUT CHECK: Check if the stone furnace is now in the inventory\n###END OF PLAN"
         #full_output = "To achieve the objective of crafting an OffshorePump, we need to gather resources and craft the necessary components. Since there are no entities on the map and our inventory is empty, we'll start from scratch by gathering resources.\n\n[PLANNING]\n[STEP] 1: Print recipes. We need to print the recipe for crafting an OffshorePump to understand what materials are required.\n[STEP] 2: Gather resources. Based on the recipe, we need to gather enough copper ore and iron ore to produce at least 3 copper plates and 5 iron plates. Additionally, we must gather coal for smelting these ores into plates. Output check: Ensure that after this step, we have all specified raw materials in our inventory.\n[STEP] 3: Smelt ores into plates. Use a stone furnace (which needs to be crafted if not available) to smelt copper ore into copper plates and iron ore into iron plates. Output check: Verify that after this step, we have at least 3 copper plates and 5 iron plates in our inventory.\n[STEP] 4: Craft the OffshorePump. Use the gathered materials and crafted intermediates to craft one OffshorePump according to its recipe. Output check: Verify that an OffshorePump is now present in our inventory.\n[PLANNING]"
         # get everything between the [PLANNING] tags
@@ -263,7 +274,8 @@ Entities:
                                                              mining_setup=mining_setup)
         
         output = self._call_api(system_prompt_steps, user_message_steps,
-                                max_tokens = 1024)
+                                max_tokens = 1024, temperature = 0.5,
+                                model = "claude-3-5-sonnet-20240620")
         return output
         #try:
         #    program = response.replace('```python', '```')
@@ -348,13 +360,13 @@ Entities:
             mining_setup = f"The following entities are on the map and can be used: {mining_setup}"
         return mining_setup
 
-    def stream_curriculum(self, objective: Dict,  instance):    
-        starting_inventory = objective["starting_inventory"]      
-        max_attempts = 4
+    def stream_curriculum(self, objective: Dict,  instance):   
+        scenario_starting_inv = copy.deepcopy(objective["starting_inventory"])
+        max_attempts = 3
         # First set up the game
 
         instance.reset()
-        instance.initial_inventory = starting_inventory
+        instance.initial_inventory = objective["starting_inventory"]
         instance.reset()
         # run the objective starting snippet
         _ = instance.eval_with_error(objective["starting_snippet"], timeout=60)
@@ -394,8 +406,9 @@ Entities:
                                                       full_plan=full_script)
             plan["full_script_tries"].append(step_script)
             try:
-                program = step_script.replace('```python', '```')
-                program = program.split('```')[1]
+                program = step_script.split('```python')[1]
+                program = program.split('```')[0]
+                program.replace('```', '')
             except:
                 program = step_script
                 
@@ -416,13 +429,14 @@ Entities:
                                                               mining_setup=mining_setup)
                     plan["full_script_tries"].append(step_script)
                     try:
-                        program = step_script.replace('```python', '```')
-                        program = program.split('```')[1]
+                        program = step_script.split('```python')[1]
+                        program = program.split('```')[0]
+                        program.replace('```', '')
                     except:
                         program = step_script
 
                     instance.reset()
-                    instance.initial_inventory = starting_inventory        
+                    instance.initial_inventory = objective["starting_inventory"]        
                     instance.reset()
                     _ = instance.eval_with_error(objective["starting_snippet"], timeout=60)
                     _ = instance.eval_with_error(action_trace, timeout=60)
@@ -434,7 +448,7 @@ Entities:
             if errored:
                 print(f"Failed to repair step {step_description}")
                 break
-            full_script = full_script.replace(f"# Placeholder {plan_idx + 1}",f"# Inventory at the start of step{current_inventory}\n#Step Execution\n{program}")
+            full_script = full_script.replace(f"# Placeholder {plan_idx + 1}",f"# Inventory at the start of step {current_inventory}\n#Step Execution\n{program}")
             print_trace += output_list
             action_trace += f"\n#[STEP SEPARATOR]\n\n{program}"
             plan["final_step_program"] = program
@@ -443,12 +457,13 @@ Entities:
             "plan_output": plan_output["steps"],
             "objective": objective_str,
             "mining_setup": mining_setup,
-            "starting_inventory": starting_inventory,
+            "starting_inventory": {item: starting_inventory[item] for item in starting_inventory},
             "full_plan": full_plan,
             "full_script": full_script,
             "full_snippet": action_trace,
             "errored": errored,
-            "name": objective["name"]
+            "name": objective["name"],
+            "scenario_starting_inv": scenario_starting_inv
         }
 
 def save_gold_skills_into_db():
@@ -563,21 +578,19 @@ stone_furnace = place_entity(Prototype.StoneFurnace, Direction.UP, iron_position
 furnaces = get_entities()
 print(furnaces)
 
+
+iron_position = nearest(Resource.Coal)
+move_to(iron_position)
+print(f"Moved to iron patch at {iron_position}")
+harvest_resource(iron_position, 10)
+
+iron_position = nearest(Resource.CopperOre)
+move_to(iron_position)
+print(f"Moved to iron patch at {iron_position}")
+harvest_resource(iron_position, 10)
+
 furnaces = get_entities()
 print(furnaces)
-
-#iron_position = nearest(Resource.Coal)
-#move_to(iron_position)
-#print(f"Moved to iron patch at {iron_position}")
-#harvest_resource(iron_position, 10)
-#
-#iron_position = nearest(Resource.CopperOre)
-#move_to(iron_position)
-#print(f"Moved to iron patch at {iron_position}")
-#harvest_resource(iron_position, 10)
-#
-#furnaces = get_entities()
-#print(furnaces)
 #sleep(8)
 #furnaces = get_entities({Prototype.StoneFurnace})
 #print(furnaces)
@@ -600,10 +613,10 @@ print(furnaces)
 
 """
 
-    try:
-        score, goal, result = instance.eval_with_error(test_string, timeout=60)
-    except Exception as e:
-        print(f"Error: {e}")
+    #try:
+    #    score, goal, result = instance.eval_with_error(test_string, timeout=60)
+    #except Exception as e:
+    #    print(f"Error: {e}")
     # Load objectives from file
     #objectives_file = "skills\objectives_rag.txt"
     #if os.path.exists(objectives_file):
@@ -612,8 +625,8 @@ print(furnaces)
     #    print(f"Objectives file '{objectives_file}' not found. Please create it and add objectives.")
     #    exit(1)    
 
-    starting_scenario_name = "one_furnace_on_map"
-    objective_group = "Group_3_craft_easy"
+    starting_scenario_name = "one_chest_with_random_inv_on_map"
+    objective_group = "Group_4_craft_hard"
     starting_scenarios_folder = f"skills\data_scenarios\starting_scenarios\{starting_scenario_name}"
     objectives_folder = f"skills\data_scenarios\objectives\{objective_group}"
     #read in details.json
@@ -630,7 +643,12 @@ print(furnaces)
     objectives = details["objectives"]
 
     for obj_idx, objective in enumerate(objectives):
-            starting_inventory = starting_details["fixed_inventory"]
+            snippet_name = objective["name"]
+            save_folder_path =  f"skills/notebook_skills/{objective_group}/{starting_scenario_name}/{snippet_name.strip()}"
+            if os.path.exists(save_folder_path):
+                print(f"Objective {snippet_name} has already been completed. Skipping.")
+                continue
+            starting_inventory = copy.deepcopy(starting_details["fixed_inventory"])
             random_inventory = starting_details["random_inventory"]
             for key, value in random_inventory.items():
                 # get a 0 or a 1 to add this item to the inventory

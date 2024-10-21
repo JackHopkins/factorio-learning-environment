@@ -1,6 +1,6 @@
 
 # get the resources required
-ore_required = [(Resource.IronOre, 15), (Resource.Stone, 10), (Resource.Coal, 5)]
+ore_required = [(Resource.IronOre, 25), (Resource.Stone, 5), (Resource.Coal, 10), (Resource.CopperOre, 7)]
 
 # loop through the resources required
 for resource, amount in ore_required:

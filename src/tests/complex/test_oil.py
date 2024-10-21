@@ -39,8 +39,13 @@ def game(instance):
 def test_place_pump_jack(game):
     """Test placement of pump jack on oil patch."""
     oil_location = game.nearest(Resource.CrudeOil)
-    pump_jack = game.place_entity(Prototype.PumpJack, position=oil_location)
-    assembler = game.place_entity_next_to(Prototype.AssemblingMachine1, reference_position=pump_jack.position, direction=Direction.UP, spacing=1)
-
+    pump_jack = game.place_entity(Prototype.PumpJack,
+                                  position=oil_location,
+                                  direction=Direction.LEFT)
+    assembler = game.place_entity_next_to(Prototype.AssemblingMachine2,
+                                          reference_position=pump_jack.position,
+                                          direction=Direction.UP,
+                                          spacing=1)
+    #game.set_entity_recipe(assembler, Prototype.)
     game.connect_entities(pump_jack, assembler, Prototype.Pipe)
     pass

@@ -30,7 +30,7 @@ class GetEntities(Action):
             else:
                 response, time_elapsed = self.execute(PLAYER, radius, entity_names, position.x, position.y)
 
-            if not response or isinstance(response, str) or (isinstance(response, dict) and not response):
+            if (not isinstance(response, dict) and not response) or isinstance(response, str):# or (isinstance(response, dict) and not response):
                 raise Exception("Could not get entities", response)
 
             entities_list = []

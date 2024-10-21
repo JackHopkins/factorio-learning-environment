@@ -84,3 +84,7 @@ def test_get_entities_bug(game):
 
     furnaces = game.get_entities({Prototype.StoneFurnace})
     print(furnaces)
+
+def test_get_no_entities(game):
+    furnaces = game.get_entities()
+    assert not furnaces

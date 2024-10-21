@@ -9,7 +9,7 @@ from typing import Tuple, List, Union
 from controllers.get_path import GetPath
 from controllers.request_path import RequestPath
 from factorio_entities import Entity, Boiler, FluidHandler, Position, Generator, Inserter, MiningDrill, TransportBelt, \
-    OffshorePump
+    OffshorePump, PumpJack
 from factorio_instance import PLAYER
 from factorio_types import Prototype
 
@@ -141,7 +141,9 @@ class ConnectEntities(Action):
             y_sign = numpy.sign(source_position.y - target_position.y)
 
         if source_entity and isinstance(source, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
-            if isinstance(source_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
+            if isinstance(source_entity, PumpJack) and connection_type.name == Prototype.Pipe.name:
+                source_position = source_entity.drop_position
+            elif isinstance(source_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
                 if isinstance(source_entity, OffshorePump):
                     source_position = Position(x=source_entity.connection_points[0].x,
                                                y=source_entity.connection_points[0].y)

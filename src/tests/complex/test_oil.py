@@ -39,8 +39,9 @@ def game(instance):
 def test_place_pump_jack(game):
     """Test placement of pump jack on oil patch."""
     oil_location = game.nearest(Resource.CrudeOil)
+    nearest_buildable = game.nearest_buildable(Prototype.PumpJack)
     pump_jack = game.place_entity(Prototype.PumpJack,
-                                  position=oil_location,
+                                  position=nearest_buildable,
                                   direction=Direction.LEFT)
     assembler = game.place_entity_next_to(Prototype.AssemblingMachine2,
                                           reference_position=pump_jack.position,

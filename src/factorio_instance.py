@@ -339,6 +339,8 @@ class FactorioInstance:
                     results[index] = error_message#"\n".join(error_traceback.split("\n")[3:])
                     if self._sequential_exception_count == self.max_sequential_exception_count:
                         pass
+
+                    raise Exception(error_message)
                         #break
 
                     # parts = list(e.args)
@@ -394,7 +396,7 @@ class FactorioInstance:
             return -1, "", "Error: Evaluation timed out"
         except Exception as e:
             trace = e.__traceback__
-            return -1, "", f"Error: {str(e)}: {e.text}".strip()
+            return -1, "", f"Error: {str(e)}: {e.args}".strip()
 
     def _get_command(self, command, parameters=[], measured=True):
         prefix = "/c " if not measured else '/command '

@@ -1,0 +1,6 @@
+{
+  "step": "Gather resources. We need to gather the resources needed to craft the burner mining drill and burner inserter required. As the recipes involve smelting ore into plates, we also need to gather coal and stone to craft a furnace. We also need to gather coal to fuel the burner drill on the copper ore and the chest inserter.",
+  "inventory": {},
+  "planning": "We need to gather resources to craft the burner mining drill and the burner inserter\nBurner mining drill requires 9 iron plates and one stone furnace in total\nBurner inserter requires 3 iron plates in total\nWe also need to craft one additional stone furnace for smelting and coal for fuel\nWe will mine a bit more than needed to be sure we have enough\nTherefore we need to mine atleast 15 iron ore, 10 stone and 5 coal",
+  "mining_setup": "There are no entities on the map"
+}

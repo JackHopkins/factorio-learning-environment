@@ -114,7 +114,7 @@ furnaces = get_entities({Prototype.StoneFurnace})
 print(furnaces)
 """
 
-    score, goal, result = instance.eval(test_string, timeout=60)
+    score, goal, result = instance.eval_with_error(test_string, timeout=60)
 
     pass
 

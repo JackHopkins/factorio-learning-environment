@@ -1,44 +1,47 @@
 {
   "mining_setup": "There are no entities on the map",
   "objectives": [
-                {"objective": "We need create an automated copper plate burner mine that mines copper ore to a fueled furnace placed at the drop position of the drill that will smelt plates. The final setup should be checked by looking if the furnace has any copper plates in it",
-                "inventory": {
-                            "iron-plate": 50,
-                            "coal": 100,
-                            "copper-plate": 50,
-                            "iron-chest": 2,
-                            "burner-mining-drill": 3,
-                            "electric-mining-drill": 1,
-                            "assembling-machine-1": 1,
-                            "stone-furnace": 9,
-                            "transport-belt": 500,
-                            "boiler": 1,
-                            "burner-inserter": 32,
-                            "pipe": 15,
-                            "steam-engine": 1,
-                            "small-electric-pole": 10,
-                            "wooden-chest": 1
-                        },
-                "name": "create_copper_plate_mine"},
+    {"objective": "We need create an automated copper plate burner mine that mines copper ore to a fueled furnace placed at the drill's drop position that will smelt plates. First place down the drill and then place a furnace at drill's drop position with fuel. The final setup should be checked by looking if the furnace has any copper PLATES in it",
+    "inventory": {
+                "burner-mining-drill": 3,
+                "stone-furnace": 9,
+                "transport-belt": 100,
+                "burner-inserter": 5,
+                "wooden-chest": 1,
+                "coal": 10
+            },
+    "name": "create_copper_plate_mine"},
 
-                {"objective": "We need create an automated iron plate burner mine that mines iron ore to a fueled furnace placed at the drop position of the drill that will smelt plates. The final setup should be checked by looking if the furnace has any iron plates in it",
-                "inventory": {
-                            "iron-plate": 50,
-                            "coal": 100,
-                            "copper-plate": 50,
-                            "iron-chest": 2,
-                            "burner-mining-drill": 3,
-                            "electric-mining-drill": 1,
-                            "assembling-machine-1": 1,
-                            "stone-furnace": 9,
-                            "transport-belt": 500,
-                            "boiler": 1,
-                            "burner-inserter": 32,
-                            "pipe": 15,
-                            "steam-engine": 1,
-                            "small-electric-pole": 10,
-                            "wooden-chest": 1
-                        },
-                "name": "create_iron_plate_mine"}
+    {"objective": "We need create an automated iron plate burner mine that mines iron ore to a fueled furnace placed at the drill's drop position that will smelt plates. First place down the drill and then place a furnace at drill's drop position with fuel. The final setup should be checked by looking if the furnace has any iron PLATES in it",
+    "inventory": {
+                "burner-mining-drill": 3,
+                "stone-furnace": 9,
+                "transport-belt": 100,
+                "burner-inserter": 5,
+                "wooden-chest": 1,
+                "coal": 10
+            },
+    "name": "create_iron_plate_mine"},
+    {"objective": "We need create an automated copper plate burner mine that mines copper ore to a fueled furnace placed at the drill's drop position that will smelt plates and send them to a chest placed further away. First place down the drill, then place the furnace with a inserter next to it, then a chest with a rotated inserter next to it and then connect the pickup pos of chest inserter with the drop pos of furnace inserter. The final setup should be checked by looking if the chest has any copper plates in it",
+    "inventory": {
+                "burner-mining-drill": 3,
+                "stone-furnace": 9,
+                "transport-belt": 100,
+                "burner-inserter": 5,
+                "wooden-chest": 1,
+                "coal": 10
+            },
+    "name": "create_copper_plate_mine_to_chest"},
+
+    {"objective": "We need create an automated iron plate burner mine that mines iron ore to a fueled furnace placed at the drill's drop position that will smelt plates and send them to a chest placed further away. First place down the drill, then place the furnace with a inserter next to it, then a chest with a rotated inserter next to it and then connect the pickup pos of chest inserter with the drop pos of furnace inserter. The final setup should be checked by looking if the chest has any iron plates in it",
+    "inventory": {
+                "burner-mining-drill": 3,
+                "stone-furnace": 9,
+                "transport-belt": 100,
+                "burner-inserter": 5,
+                "wooden-chest": 1,
+                "coal": 10
+            },
+    "name": "create_iron_plate_mine_to_chest"}
   ]
 }

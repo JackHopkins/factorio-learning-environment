@@ -157,7 +157,7 @@ class FactorioInstance:
         """
         #if self.memory:
         #    self.memory.log_observation(str(arg))
-        print(arg)
+        print(f"{self.address} log: {arg}")
         return arg
 
     def connect_to_server(self, address, tcp_port):

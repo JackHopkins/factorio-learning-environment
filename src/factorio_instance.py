@@ -151,13 +151,14 @@ class FactorioInstance:
     def speed(self, speed):
         self.rcon_client.send_command(f'/c game.speed = {speed}')
 
-    def print(self, arg):
+    def log(self, arg):
         """
         Shadows the builtin print function,and ensures that whatever is printed is logged in agent memory
         """
-        if self.memory:
-            self.memory.log_observation(str(arg))
-        print(arg)
+        #if self.memory:
+        #    self.memory.log_observation(str(arg))
+        print(f"{self.address} log: {arg}")
+        return arg
 
     def connect_to_server(self, address, tcp_port):
         try:
@@ -290,37 +291,30 @@ class FactorioInstance:
             if not name.startswith('_'):
                 eval_dict[name] = getattr(builtins, name)
 
-        # Redirect stdout to a StringIO buffer
-        old_stdout = sys.stdout
-        sys.stdout = io.StringIO()
-        try:
-            for index, node in enumerate(tree.body):
+        # Execute the expression
+        for index, node in enumerate(tree.body):
                 try:
+                    
                     if isinstance(node, ast.FunctionDef):
                         # For function definitions, we need to compile and exec
                         compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
                         exec(compiled, eval_dict)
                     elif isinstance(node, ast.Expr):
+                        # check if its print, if it is, then we route to log
+                        if isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) and node.value.func.id == 'print':
+                            # change print to log
+                            node.value.func.id = 'log'
                         # For expressions (including function calls), we can use eval
                         compiled = compile(ast.Expression(node.value), 'file', 'eval')
                         response = eval(compiled, eval_dict)
                         if response is not True and response is not None:
                             results[index] = response
                             self._sequential_exception_count = 0
-                        # Capture any printed output
-                        printed_output = sys.stdout.getvalue()
-                        if printed_output:
-                            results[index] = printed_output.strip()
-                        sys.stdout = io.StringIO()  # Reset the buffer
                     else:
                         # For other statements, use exec
                         compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
                         exec(compiled, eval_dict)
-                        # Capture any printed output
-                        printed_output = sys.stdout.getvalue()
-                        if printed_output:
-                            results[index] = printed_output.strip()
-                        sys.stdout = io.StringIO()  # Reset the buffer
+                    
 
                 except Exception as e:
                     self._sequential_exception_count += 1
@@ -374,9 +368,6 @@ class FactorioInstance:
                     #
                     # results[index] = error_message
                     # break
-
-        finally:
-            sys.stdout = old_stdout
 
         score, goal = self.score()
         return score, goal, '\n'.join([f"{i}: {str(r)}" for i, r in results.items()])

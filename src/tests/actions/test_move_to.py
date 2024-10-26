@@ -54,6 +54,19 @@ def test_move_to(game):
         for resource in resources:
             game.move_to(game.nearest(resource))
 
+def test_move_to_check_position(game):
+    target_pos = Position(x=-9.5, y=-11.5)
+
+    # Move to target position
+    game.move_to(target_pos)
+
+    # Verify we're within range by inspecting entities
+    inspection = game.inspect_entities(target_pos, radius=10)
+    player_pos = Position(x=inspection.player_position[0], y=inspection.player_position[1])
+    distance = ((player_pos.x - target_pos.x) ** 2 + (player_pos.y - target_pos.y) ** 2) ** 0.5
+
+    assert distance <= 10, f"Failed to move within range. Distance: {distance} units"
+
 def test_move_to_laying_leading(game):
     """
     Move to the nearest coal patch

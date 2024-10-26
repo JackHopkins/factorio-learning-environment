@@ -1,3 +1,13 @@
+Use transport belts to move copper ore from a mining drill to a chest
+Create a straight belt line that moves coal from a mining drill to three stone furnaces
+Connect two stone furnaces with belts so they both output iron plates into the same chest
+Use transport belts to feed coal to a line of four steam engines
+Build a short belt system that moves stone from a mining drill to a furnace making stone bricks
+Connect three mining drills to three furnaces using a single straight belt
+Use two parallel belts - one for iron ore and one for coal - to supply a row of furnaces
+Build a belt line that carries ammunition from an assembling machine to two gun turrets
+Create a self-fueling burner mining drill and furnace that extracts iron ore and smelts it into iron plates in a chest
+Create a small electric network by connecting a steam engine to an electric mining drill
 Build a small automated firearm magazine production line using assembling machines and a steam power unit
 Create a small electric network by connecting 3 steam engines to 2 electric mining drills
 Set up an automated stone brick production line using burner mining drills and stone furnaces

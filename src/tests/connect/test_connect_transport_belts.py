@@ -207,7 +207,7 @@ def test_ensure_final_belt_is_the_correct_orientation(game):
 
     # add coal to the inserter
     inserter_with_coal = game.insert_item(Prototype.Coal, copper_drill_inserter, quantity=5)
-    assert inserter_with_coal.fuel_inventory.get(Prototype.Coal, 0) > 0, "Failed to fuel inserter"
+    assert inserter_with_coal.fuel.get(Prototype.Coal, 0) > 0, "Failed to fuel inserter"
 
     # connect drill_inserter to chest_inserter with transport belts
     belts = game.connect_entities(chest_inserter2, copper_drill_inserter, connection_type=Prototype.TransportBelt)
@@ -236,8 +236,8 @@ def test_no_broken_edges(game):
 
     # Fuel the burner mining drill
     copper_ore_drill_with_coal = game.insert_item(Prototype.Coal, drill, quantity=5)
-    assert copper_ore_drill_with_coal.fuel_inventory.get(Prototype.Coal, 0) > 0, "Failed to fuel burner mining drill"
-    print(f"Inserted {copper_ore_drill_with_coal.fuel_inventory.get(Prototype.Coal, 0)} coal into burner mining drill")
+    assert copper_ore_drill_with_coal.fuel.get(Prototype.Coal, 0) > 0, "Failed to fuel burner mining drill"
+    print(f"Inserted {copper_ore_drill_with_coal.fuel.get(Prototype.Coal, 0)} coal into burner mining drill")
 
     # move to 0,0 and Place chest there
     game.move_to(Position(x=0, y=0))
@@ -256,7 +256,7 @@ def test_no_broken_edges(game):
 
     # add coal to the copper inserter
     inserter_with_coal = game.insert_item(Prototype.Coal, chest_copper_inserter, quantity=5)
-    assert inserter_with_coal.fuel_inventory.get(Prototype.Coal, 0) > 0, "Failed to fuel inserter"
+    assert inserter_with_coal.fuel.get(Prototype.Coal, 0) > 0, "Failed to fuel inserter"
 
     # connect copper_furnace_inserter to chest_copper_inserter with transport belts
     # use the drop and pickup positions of the drills and inserters

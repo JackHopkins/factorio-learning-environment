@@ -1,0 +1,29 @@
+- objective: "Create a straight belt line that moves coal from a mining drill to three stone furnaces"
+  starting_inventory:
+    transport-belt: 50
+    burner-mining-drill: 1
+    stone-furnace: 3
+    coal: 50
+
+- objective: "Connect two stone furnaces with belts so they both output iron plates into the same chest"
+  starting_inventory:
+    transport-belt: 30
+    stone-furnace: 2
+    iron-chest: 1
+    iron-ore: 100
+
+- objective: "Use transport belts to feed coal to a line of four steam engines"
+  starting_inventory:
+    transport-belt: 50
+    steam-engine: 4
+    coal: 100
+    pipe: 20
+    offshore-pump: 1
+    boiler: 2
+
+- objective: "Build a short belt system that moves stone from a mining drill to a furnace making stone bricks"
+  starting_inventory:
+    transport-belt: 20
+    burner-mining-drill: 1
+    stone-furnace: 1
+    stone: 50

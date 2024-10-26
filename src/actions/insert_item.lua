@@ -48,6 +48,21 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
             if game.item_prototypes[item_name].fuel_value > 0 then
                 return true
             end
+            -- Check furnace inventory for incompatible items
+            local inventory = entity.get_inventory(defines.inventory.furnace_source)
+            if inventory and not inventory.is_empty() then
+                local existing_item = nil
+                for i = 1, #inventory do
+                    local stack = inventory[i]
+                    if stack.valid_for_read then
+                        existing_item = stack.name
+                        break
+                    end
+                end
+                if existing_item and existing_item ~= item_name then
+                    error("Cannot insert " .. item_name .. " - furnace already contains " .. existing_item)
+                end
+            end
             -- Check if it's a valid ingredient for any furnace recipe
             for _, recipe in pairs(game.recipe_prototypes) do
                 if recipe.category == "smelting" then
@@ -59,6 +74,21 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
                 end
             end
             return false
+            ---- Check if it's a fuel
+            --if game.item_prototypes[item_name].fuel_value > 0 then
+            --    return true
+            --end
+            ---- Check if it's a valid ingredient for any furnace recipe
+            --for _, recipe in pairs(game.recipe_prototypes) do
+            --    if recipe.category == "smelting" then
+            --        for _, ingredient in pairs(recipe.ingredients) do
+            --            if ingredient.name == item_name then
+            --                return true
+            --            end
+            --        end
+            --    end
+            --end
+            --return false
         elseif entity.burner then
             -- Check if it's a fuel
             return game.item_prototypes[item_name].fuel_value > 0

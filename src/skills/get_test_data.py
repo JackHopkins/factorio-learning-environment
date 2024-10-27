@@ -23,17 +23,21 @@ def extract_skills_from_test(test_file):
     skills = []
     skill_defs = test_files[1:]
     for skill_def in skill_defs:
+        # first get the name of func
         function_parts = skill_def.split("\n")
         function_name = function_parts[0]
         function_name = function_name.split("(")[0]
         function_parts = function_parts[1:]
         for part_idx, function_part in enumerate(function_parts):
+            # now needto untab all lines where relevant
             if "    " not in function_part:
                 continue
+            # also remove game.
             function_part.replace("game.", "")
             function_part = function_part[4:]
             function_parts[part_idx] = function_part
         function_parts = "\n".join(function_parts)
+        # get description between """
         if '"""' in function_parts:
             description_start = function_parts.index('"""')
             description_end = function_parts.index('"""', description_start + 3)
@@ -65,3 +69,4 @@ def get_skills_from_func_tests(func_test_folder):
 if __name__ == "__main__":
     folder_path = r"tests\functional"
     skills = get_skills_from_func_tests(folder_path)
+    # now can save or update where needed

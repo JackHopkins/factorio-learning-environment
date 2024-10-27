@@ -12,6 +12,7 @@ from factorio_entities import Entity, Boiler, FluidHandler, Position, Generator,
     OffshorePump, PumpJack
 from factorio_instance import PLAYER
 from factorio_types import Prototype
+from utilities.merge_transport_belts import agglomerate_transport_belts
 
 
 class ConnectEntities(Action):
@@ -263,6 +264,7 @@ class ConnectEntities(Action):
         success = response.get('connected', False)
         entities_list = response.get('entities', {}).values()
         path = []
+        belts = []
         for value in entities_list:
             if isinstance(value, dict):
                 try:
@@ -270,11 +272,18 @@ class ConnectEntities(Action):
                         del value['warnings']
                         value['warnings'] = []
                     entity = metaclass(prototype=connection_type, **value)
-                    path.append(entity)
+
+                    if entity.prototype == Prototype.TransportBelt:
+                        belts.append(entity)
+                    else:
+                        path.append(entity)
                 except Exception as e:
                     if not value:
                         continue
                     raise Exception(f"Could not create {connection_prototype} object from response: {response}", e)
+        deduplicated_path = self._deduplicate_entities(path)
+
+        belt_groups = agglomerate_transport_belts(belts)
 
         # Use the new deduplication function
-        return self._deduplicate_entities(path)
+        return deduplicated_path + belt_groups

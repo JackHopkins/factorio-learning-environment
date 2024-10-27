@@ -797,6 +797,18 @@ global.utils.serialize_entity = function(entity)
 			x = x - 1
 		elseif entity.direction == defines.direction.west then
 			x = x + 1
+		elseif entity.direction == defines.direction.northeast then
+			x = x - 1
+			y = y + 1
+		elseif entity.direction == defines.direction.southeast then
+			x = x - 1
+			y = y - 1
+		elseif entity.direction == defines.direction.northwest then
+			x = x + 1
+			y = y + 1
+		elseif entity.direction == defines.direction.southwest then
+			x = x + 1
+			y = y - 1
 		end
 
 		serialized.input_position = {x = x, y = y}
@@ -811,8 +823,20 @@ global.utils.serialize_entity = function(entity)
 			x = x + 1
 		elseif entity.direction == defines.direction.west then
 			x = x - 1
+		elseif entity.direction == defines.direction.northeast then
+			x = x + 1
+			y = y - 1
+		elseif entity.direction == defines.direction.southeast then
+			x = x + 1
+			y = y + 1
+		elseif entity.direction == defines.direction.northwest then
+			x = x - 1
+			y = y - 1
+		elseif entity.direction == defines.direction.southwest then
+			x = x - 1
+			y = y + 1
 		end
-
+		create_beam_point_with_direction(game.players[1], entity.direction , {x = x, y = y})
 		serialized.output_position = {x = x, y = y}
 		serialized.inventory = entity.get_transport_line(1).get_contents()
 	end

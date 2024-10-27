@@ -1,4 +1,4 @@
-from typing import Tuple, Any, Union, Dict
+from typing import Tuple, Any, Union, Dict, Set
 from typing import List, Optional
 from enum import Enum
 from pydantic import BaseModel, PrivateAttr
@@ -65,6 +65,8 @@ class EntityStatus(Enum):
         return None
 
 
+
+
 class Inventory(BaseModel):
     class Config:
         allow_population_by_field_name = True
@@ -124,7 +126,7 @@ class Position(BaseModel):
     def __add__(self, other):
         return Position(x=self.x + other.x, y=self.y + other.y)
 
-    def is_close(self, a: 'Position', tolerance: float = 0.1):
+    def is_close(self, a: 'Position', tolerance: float = 0.5):
         return abs(self.x - a.x) < tolerance and abs(self.y - a.y) < tolerance
 
 
@@ -289,3 +291,9 @@ class Chest(Entity):
 class Lab(Entity):
     lab_input: Inventory
     lab_modules: Inventory
+
+class BeltGroup(BaseModel):
+    belts: List[TransportBelt]
+    input_positions: List[Position]
+    output_positions: List[Position]
+    position: Position

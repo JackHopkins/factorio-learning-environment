@@ -22,7 +22,12 @@ global.actions.get_entities = function(player_index, radius, entity_names_json, 
         filter = {name = entity_names}
     end
 
-    local entities = player.surface.find_entities_filtered{area = area, force = player.force, filter=filter}
+    local entities
+    if #entity_names > 0 then
+        entities = player.surface.find_entities_filtered{area = area, force = player.force, filter=filter}
+    else
+        entities = player.surface.find_entities_filtered{area = area, force = player.force}
+    end
 
     local result = {}
     for _, entity in ipairs(entities) do

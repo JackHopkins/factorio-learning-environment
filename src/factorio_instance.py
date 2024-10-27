@@ -8,6 +8,7 @@ import functools
 import importlib
 import inspect
 import io
+import json
 import os
 import signal
 import sys
@@ -154,16 +155,12 @@ class FactorioInstance:
         self.execute_transaction()
 
         self.begin_transaction()
-        count = 0
-        for entity, count in kwargs.items():
-            self.add_command('give_item', PLAYER, entity, count)
-            count += 1
-            if count > 5:
-                self.execute_transaction()
-                self.begin_transaction()
+        # kwargs dict to json
+        inventory_items = {k: v for k, v in kwargs.items()}
+        inventory_items_json = json.dumps(inventory_items)
+        self.add_command(f"/c global.actions.initialise_inventory({PLAYER}, '{inventory_items_json}')", raw=True)
 
         self.execute_transaction()
-        # self.clear_entities()
 
     def speed(self, speed):
         self.rcon_client.send_command(f'/c game.speed = {speed}')
@@ -457,17 +454,22 @@ class FactorioInstance:
 
         self.begin_transaction()
         self.add_command(f'/c global.actions.clear_entities({PLAYER})', raw=True)
-        self.execute_transaction()
+        # self.execute_transaction()
+        #
+        # self.begin_transaction()
+        # count = 0
+        # for entity, count in kwargs.items():
+        #     self.add_command('give_item', PLAYER, entity, count)
+        #     count += 1
+        #     if count > 5:
+        #         self.execute_transaction()
+        #         self.begin_transaction()
+        #         count = 0
 
-        self.begin_transaction()
-        count = 0
-        for entity, count in kwargs.items():
-            self.add_command('give_item', PLAYER, entity, count)
-            count += 1
-            if count > 5:
-                self.execute_transaction()
-                self.begin_transaction()
-                count = 0
+        # kwargs dict to json
+        inventory_items = {k: v for k, v in kwargs.items()}
+        inventory_items_json = json.dumps(inventory_items)
+        self.add_command(f"/c global.actions.initialise_inventory({PLAYER}, '{inventory_items_json}')", raw=True)
 
         self.add_command("/c game.players[1].force.research_all_technologies()", raw=True)
         self.execute_transaction()
@@ -521,6 +523,7 @@ class FactorioInstance:
         self.lua_script_manager.load_init_into_game('util')
         self.lua_script_manager.load_init_into_game('serialize')
         self.lua_script_manager.load_init_into_game('production_score')
+        self.lua_script_manager.load_init_into_game('initialise_inventory')
 
         self._reset(**kwargs)
         # self.begin_transaction()

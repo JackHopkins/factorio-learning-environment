@@ -44,7 +44,7 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
         pathfind_flags = {
             cache = true,
             no_break = true,
-            prefer_straight_paths = false,
+            prefer_straight_paths = true,
             allow_paths_through_own_entities = allow_paths_through_own_entities
         }
     }

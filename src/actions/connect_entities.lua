@@ -7,14 +7,6 @@ local wire_reach = {
     ['substation'] = 18
 }
 
-local function get_last_belt_direction(serialized_entities)
-    for i = #serialized_entities, 1, -1 do
-        if serialized_entities[i].name == connection_type then
-            return serialized_entities[i].direction
-        end
-    end
-    return nil  -- Return nil if no belt was found
-end
 
 function get_step_size(connection_type)
     -- Adjust the step size based on the connection type's wire reach
@@ -314,6 +306,9 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
             place_at_position(player, connection_type, path[#path].position, ndir, serialized_entities)
         end
         place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities)
+
+        -- We might want to remove this last one
+        --place_at_position(player, connection_type, preemptive_target, get_direction(path[#path-2].position, preemptive_target), serialized_entities)
 
     elseif connection_type == 'pipe' then
         -- If the connection_type is a pipe, we have to do some extra work to ensure no missing pipes

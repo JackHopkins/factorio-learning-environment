@@ -971,6 +971,11 @@ global.utils.serialize_entity = function(entity)
 
 	-- Add fluid box if the entity is an offshore pump
 	if entity.type == "offshore-pump" then
+		serialized.connection_points = get_offshore_pump_pipe_position(entity)
+	end
+
+	-- If entity has a fluidbox
+	if entity.fluidbox then
 		local fluid_box = entity.fluidbox
 		if fluid_box and #fluid_box > 0 then
 			serialized.fluid_box = {}
@@ -981,7 +986,6 @@ global.utils.serialize_entity = function(entity)
 				end
 			end
 		end
-		serialized.connection_points = get_offshore_pump_pipe_position(entity)
 	end
 
 	serialized.direction = get_inverse_entity_direction(entity.name, entity.direction) --api_direction_map[entity.direction]

@@ -46,6 +46,8 @@ class GetEntities(Action):
                     print(f"Warning: No matching Prototype found for {entity_data['name']}")
                     continue
 
+                if matching_prototype not in entities:
+                    continue
                 metaclass = matching_prototype.value[1]
 
                 # Process nested dictionaries (like inventories)

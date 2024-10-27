@@ -42,9 +42,9 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
         can_open_gates = true,
         path_resolution_modifier = 0,
         pathfind_flags = {
-            cache = false,
+            cache = true,
             no_break = true,
-            prefer_straight_paths = true,
+            prefer_straight_paths = false,
             allow_paths_through_own_entities = allow_paths_through_own_entities
         }
     }

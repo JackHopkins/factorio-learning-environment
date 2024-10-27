@@ -148,6 +148,23 @@ class FactorioInstance:
         #self.game_state._initial_score = 0
         self.game_state.initial_score, goal = self.score()
 
+    def set_inventory(self, **kwargs):
+        self.begin_transaction()
+        self.add_command('clear_inventory', PLAYER)
+        self.execute_transaction()
+
+        self.begin_transaction()
+        count = 0
+        for entity, count in kwargs.items():
+            self.add_command('give_item', PLAYER, entity, count)
+            count += 1
+            if count > 5:
+                self.execute_transaction()
+                self.begin_transaction()
+
+        self.execute_transaction()
+        # self.clear_entities()
+
     def speed(self, speed):
         self.rcon_client.send_command(f'/c game.speed = {speed}')
 

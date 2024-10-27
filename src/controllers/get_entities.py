@@ -1,8 +1,10 @@
+from collections import defaultdict
 from typing import List, Set, Union
 from controllers._action import Action
-from factorio_entities import Position, Entity
+from factorio_entities import Position, Entity, BeltGroup, TransportBelt
 from factorio_instance import PLAYER
 from factorio_types import Prototype
+from utilities.merge_transport_belts import agglomerate_transport_belts
 
 
 class GetEntities(Action):
@@ -34,6 +36,7 @@ class GetEntities(Action):
                 raise Exception("Could not get entities", response)
 
             entities_list = []
+            belt_list = []
             for entity_data in response:
                 # Find the matching Prototype
                 matching_prototype = None
@@ -46,7 +49,7 @@ class GetEntities(Action):
                     print(f"Warning: No matching Prototype found for {entity_data['name']}")
                     continue
 
-                if matching_prototype not in entities:
+                if matching_prototype not in entities and entities:
                     continue
                 metaclass = matching_prototype.value[1]
 
@@ -58,9 +61,15 @@ class GetEntities(Action):
                 entity_data['prototype'] = prototype
                 try:
                     entity = metaclass(**entity_data)
-                    entities_list.append(entity)
+                    if entity.prototype == Prototype.TransportBelt:
+                        belt_list.append(entity)
+                    else:
+                        entities_list.append(entity)
                 except Exception as e:
                     print(f"Could not create {entity_data['name']} object: {e}")
+
+            belt_groups = agglomerate_transport_belts(belt_list)
+            entities_list.extend(belt_groups)
 
             return entities_list
 

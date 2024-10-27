@@ -74,7 +74,7 @@ def test_get_entities_bug(game):
     game.craft_item(Prototype.StoneFurnace, 3)
 
     # 1. Place a stone furnace
-    stone_furnace = game.place_entity(Prototype.WoodenChest, Direction.UP, iron_position)
+    stone_furnace = game.place_entity(Prototype.StoneFurnace, Direction.UP, iron_position)
     assert stone_furnace is not None, "Failed to place stone furnace"
 
     game.insert_item(Prototype.Coal, stone_furnace, 5)
@@ -88,3 +88,13 @@ def test_get_entities_bug(game):
 def test_get_no_entities(game):
     furnaces = game.get_entities()
     assert not furnaces
+
+def test_get_contiguous_transport_belts(game):
+    start_position = game.nearest(Resource.Stone)
+    end_position = game.nearest(Resource.IronOre)
+
+    game.connect_entities(start_position, end_position, connection_type=Prototype.TransportBelt)
+
+    transport_belts = game.get_entities({Prototype.TransportBelt}, start_position)
+
+    assert len(transport_belts) == 1, "Failed to retrieve transport belts"

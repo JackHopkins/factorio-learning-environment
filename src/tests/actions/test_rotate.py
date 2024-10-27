@@ -1,5 +1,6 @@
 import pytest
 
+from factorio_entities import Position
 from factorio_instance import Direction
 from factorio_types import Prototype
 
@@ -56,6 +57,11 @@ def test_rotate_inserters_drop_and_pickup_position(game):
     assert inserter.pickup_position == rotated_inserter.drop_position
     assert inserter.drop_position == rotated_inserter.pickup_position
 
+def test_rotate_inserters(game):
+    insert1 = game.place_entity_next_to(Prototype.BurnerInserter, Position(x=0, y=0), Direction.DOWN, spacing=0)
+    insert1 = game.rotate_entity(insert1, Direction.UP)
+    assert insert1 is not None, "Failed to place input inserter"
+    assert insert1.direction == Direction.UP
 
 
 def rotate_entity(game, entity):

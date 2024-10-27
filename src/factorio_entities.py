@@ -263,6 +263,7 @@ class AssemblingMachine1(Entity):
 
 class FluidHandler(Entity):
     connection_points: List[Position]
+    fluid_box: Optional[Union[dict, list]] = []
 
 
 class Boiler(FluidHandler, BurnerType):
@@ -274,7 +275,8 @@ class Generator(FluidHandler):
 
 
 class OffshorePump(FluidHandler):
-    fluid_box: Optional[dict] = {}
+    pass
+    #fluid_box: Optional[Union[dict,list]] = []
 
 
 class Furnace(Entity, BurnerType):

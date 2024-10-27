@@ -34,7 +34,16 @@ def extract_skills_from_test(test_file):
             function_part = function_part[4:]
             function_parts[part_idx] = function_part
         function_parts = "\n".join(function_parts)
-        skills.append(function_parts)
+        if '"""' in function_parts:
+            description_start = function_parts.index('"""')
+            description_end = function_parts.index('"""', description_start + 3)
+            description = function_parts[description_start+3:description_end].strip()
+        else:
+            description = ""
+        skills.append({"implementation": function_parts,
+                       "name": function_name,
+                       "dependencies": [(key, value) for key, value in initial_inv.items()],
+                       "description": description,})
     return skills
 
 

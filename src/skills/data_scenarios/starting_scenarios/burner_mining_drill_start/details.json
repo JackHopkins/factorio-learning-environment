@@ -1,0 +1,11 @@
+{
+  "fixed_inventory": {"burner-mining-drill": 3,
+                            "stone-furnace": 9,
+                            "transport-belt": 100,
+                            "burner-inserter": 5,
+                            "wooden-chest": 1,
+                            "coal": 10},
+  "random_inventory": {
+},
+  "additional_inventory_for_starting_scenario": {}
+}

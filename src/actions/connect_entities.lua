@@ -1,7 +1,7 @@
 -- connect_entities.lua
 
 local wire_reach = {
-    ['small-electric-pole'] = 5,
+    ['small-electric-pole'] = 4,
     ['medium-electric-pole'] = 9,
     ['big-electric-pole'] = 30,
     ['substation'] = 18
@@ -308,7 +308,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
         place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities)
 
         -- We might want to remove this last one
-        --place_at_position(player, connection_type, preemptive_target, get_direction(path[#path-2].position, preemptive_target), serialized_entities)
+        -- place_at_position(player, connection_type, preemptive_target, get_direction(path[#path-2].position, preemptive_target), serialized_entities)
 
     elseif connection_type == 'pipe' then
         -- If the connection_type is a pipe, we have to do some extra work to ensure no missing pipes

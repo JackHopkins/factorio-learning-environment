@@ -9,7 +9,7 @@ from factorio_types import Prototype, Resource
 
 @pytest.fixture()
 def game(instance):
-    instance.initial_inventory = {'stone-furnace': 1, 'burner-mining-drill': 1, 'transport-belt': 100, 'small-electric-pole': 50,
+    instance.initial_inventory = {'stone-furnace': 1, 'burner-mining-drill': 3, 'transport-belt': 100, 'small-electric-pole': 50,
                                   'boiler': 1, 'steam-engine': 1, 'offshore-pump': 4, 'pipe': 100, 'burner-inserter': 50, 'coal': 50}
     instance.reset()
     yield instance
@@ -51,7 +51,7 @@ def test_steam_engines(game: FactorioInstance):
 
     assert belts
 
-    coal_to_boiler_belts = game.connect_entities(belts[-1], coal_inserter, connection_type=Prototype.TransportBelt)
+    coal_to_boiler_belts = game.connect_entities(belts[0].belts[-1], coal_inserter, connection_type=Prototype.TransportBelt)
 
     assert coal_to_boiler_belts
 
@@ -87,8 +87,9 @@ def test_iron_smelting(game: FactorioInstance):
     burner_mining_drill = game.place_entity(Prototype.BurnerMiningDrill, position=game.nearest(Resource.Coal))
     burner_inserter = game.place_entity_next_to(Prototype.BurnerInserter,
                                                 reference_position=burner_mining_drill.position,
-                                                direction_from=game.DOWN,
-                                                spacing=1)
+                                                direction=game.DOWN,
+                                                spacing=0)
+    burner_inserter = game.rotate_entity(burner_inserter, Direction.UP)
     assert burner_inserter
 
     belts = game.connect_entities(burner_mining_drill, burner_inserter, connection_type=Prototype.TransportBelt)
@@ -96,7 +97,7 @@ def test_iron_smelting(game: FactorioInstance):
 
     burner_mining_drill: BurnerMiningDrill = game.insert_item(Prototype.Coal, burner_mining_drill, 5)
 
-    assert burner_mining_drill.remaining_fuel == 5
+    assert burner_mining_drill.fuel[Prototype.Coal] == 5
     nearest_iron_ore = game.nearest(Resource.IronOre)
 
     game.move_to(nearest_iron_ore)
@@ -106,17 +107,22 @@ def test_iron_smelting(game: FactorioInstance):
 
         coal_to_iron_drill_inserter = game.place_entity_next_to(Prototype.BurnerInserter,
                                                                 reference_position=iron_mining_drill.position,
-                                                                direction_from=game.DOWN,
-                                                                spacing=1)
+                                                                direction=game.DOWN,
+                                                                spacing=0)
+        coal_to_iron_drill_inserter = game.rotate_entity(coal_to_iron_drill_inserter, Direction.UP)
         coal_to_smelter_inserter = game.place_entity_next_to(Prototype.BurnerInserter,
                                                              reference_position=stone_furnace.position,
-                                                             direction_from=game.RIGHT,
-                                                             spacing=1)
+                                                             direction=game.RIGHT,
+                                                             spacing=0)
+        coal_to_smelter_inserter = game.rotate_entity(coal_to_smelter_inserter, Direction.LEFT)
 
-        coal_to_drill_belt = game.connect_entities(belts[-1], coal_to_iron_drill_inserter.pickup_position,
+        coal_to_drill_belt = game.connect_entities(coal_to_smelter_inserter.pickup_position,
+                                                   coal_to_iron_drill_inserter.pickup_position,
                                                    connection_type=Prototype.TransportBelt)
-        coal_to_smelter_belt = game.connect_entities(coal_to_drill_belt[-1], coal_to_smelter_inserter.pickup_position,
+
+        coal_to_smelter_belt = game.connect_entities(belts[-1], coal_to_drill_belt[-1],
                                                      connection_type=Prototype.TransportBelt)
+        pass
     except Exception as e:
         print(e)
         assert False

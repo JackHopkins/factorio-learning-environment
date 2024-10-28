@@ -63,6 +63,22 @@ def test_rotate_inserters(game):
     assert insert1 is not None, "Failed to place input inserter"
     assert insert1.direction == Direction.UP
 
+def test_rotate_transport_belts(game):
+    belt = game.place_entity(Prototype.TransportBelt, position=(0, 0), direction=Direction.UP)
+    assert belt.direction.value == Direction.UP.value
+
+    belt = game.rotate_entity(belt, direction=Direction.DOWN)
+    assert belt.direction.value == Direction.DOWN.value
+
+    belt = game.rotate_entity(belt, direction=Direction.LEFT)
+    assert belt.direction.value == Direction.LEFT.value
+
+    belt = game.rotate_entity(belt, direction=Direction.RIGHT)
+    assert belt.direction.value == Direction.RIGHT.value
+
+    belt = game.rotate_entity(belt, direction=Direction.UP)
+    assert belt.direction.value == Direction.UP.value
+
 
 def rotate_entity(game, entity):
     # Rotate the transport belt right

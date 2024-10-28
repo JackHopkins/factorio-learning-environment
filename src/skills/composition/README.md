@@ -9,14 +9,13 @@ Would become:
 ```mermaid
 flowchart TD
     %% Mining Setup
-    DRILL[Burner Mining Drill] -->|belt| BELT1[Transport Belt]
+    DRILL[Burner Mining Drill] --> BELT[Transport Belt]
 
     %% Smelting Line
-    BELT1 -->|pickup| INSERT1[Burner Inserter]
-    INSERT1 -->|insert| FURNACE[Stone Furnace]
+    BELT -->|insert| FURNACE[Stone Furnace]
 
     %% Output Storage
-    INSERT2[Burner Inserter] -->|insert| CHEST[Iron Chest]
+    FURNACE[Stone Furnace] -->|insert| CHEST[Iron Chest]
 
     %% Resource Input Note
     %% The burner mining drill needs coal for fuel

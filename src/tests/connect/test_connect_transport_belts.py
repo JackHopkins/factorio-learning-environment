@@ -29,6 +29,7 @@ def game(instance):
     instance.speed(1)
     instance.reset()
 
+
 def test_inserter_pickup_positions(game):
 
     # Lay belts from intermediate position to iron position (along X-axis)
@@ -267,3 +268,74 @@ def test_no_broken_edges(game):
     # Verify all belts are facing either UP or LEFT
     for belt in belt_group[0].belts:
         assert belt.direction.value in [Direction.UP.value, Direction.LEFT.value], f"Found belt with direction {belt.direction}"
+
+def test_connect_belt_groups_horizontally(game):
+
+    # Create a horizontal belt group
+    belt_group_right = game.connect_entities(Position(x=0, y=0), Position(x=5, y=0), Prototype.TransportBelt)
+
+    # Loop the belt back around
+    belt_group_right = game.connect_entities(belt_group_right[0], belt_group_right[0], Prototype.TransportBelt)
+
+    # This should result in a single contiguous group
+    assert len(belt_group_right) == 1
+
+    belt_group_left = game.connect_entities(Position(x=0, y=-10), Position(x=-5, y=-10), Prototype.TransportBelt)
+
+    # Loop the belt back around
+    belt_group_left = game.connect_entities(belt_group_left[0], belt_group_left[0], Prototype.TransportBelt)
+
+    # This should result in a single contiguous group
+    assert len(belt_group_left) == 1
+
+def test_connect_belt_groups_vertically(game):
+
+    # Create a vertical belt group
+    belt_group_down = game.connect_entities(Position(x=0, y=0), Position(x=0, y=5), Prototype.TransportBelt)
+
+    # Loop the belt back around
+    belt_group_down = game.connect_entities(belt_group_down[0], belt_group_down[0], Prototype.TransportBelt)
+
+    # This should result in a single contiguous group
+    assert len(belt_group_down) == 1
+
+    belt_group_up = game.connect_entities(Position(x=-2, y=0), Position(x=-2, y=-5), Prototype.TransportBelt)
+
+    # Loop the belt back around
+    belt_group_up = game.connect_entities(belt_group_up[0], belt_group_up[0], Prototype.TransportBelt)
+
+    # This should result in a single contiguous group
+    assert len(belt_group_up) == 1
+
+def test_connect_belt_groups_diagonally(game):
+        belt_group_up_left = game.connect_entities(Position(x=0, y=0), Position(x=-5, y=-5), Prototype.TransportBelt)
+
+        # Loop the belt back around
+        belt_group_up_left = game.connect_entities(belt_group_up_left[0], belt_group_up_left[0], Prototype.TransportBelt)
+
+        # This should result in a single contiguous group
+        assert len(belt_group_up_left) == 1
+
+def test_connect_belt_groups_into_a_square(game):
+    # Create a square belt group
+    belt_group = game.connect_entities(Position(x=0, y=0), Position(x=5, y=0), Prototype.TransportBelt)
+    belt_group = game.connect_entities(belt_group[0], Position(x=5, y=5), Prototype.TransportBelt)
+    belt_group = game.connect_entities(belt_group[0], Position(x=0, y=5), Prototype.TransportBelt)
+    belt_group = game.connect_entities(belt_group[0], belt_group[0], Prototype.TransportBelt)
+
+    # This should result in a single contiguous group
+    assert len(belt_group) == 1
+
+def test_connect_betl_groups_into_an_octagon(game):
+    # Create an octagon belt group
+    belt_group = game.connect_entities(Position(x=0, y=0), Position(x=5, y=0), Prototype.TransportBelt)
+    belt_group = game.connect_entities(belt_group[0], Position(x=7, y=2), Prototype.TransportBelt)
+    belt_group = game.connect_entities(belt_group[0], Position(x=7, y=5), Prototype.TransportBelt)
+    belt_group = game.connect_entities(belt_group[0], Position(x=5, y=7), Prototype.TransportBelt)
+    belt_group = game.connect_entities(belt_group[0], Position(x=0, y=7), Prototype.TransportBelt)
+    belt_group = game.connect_entities(belt_group[0], Position(x=-2, y=5), Prototype.TransportBelt)
+    belt_group = game.connect_entities(belt_group[0], Position(x=-2, y=2), Prototype.TransportBelt)
+    belt_group = game.connect_entities(belt_group[0], belt_group[0], Prototype.TransportBelt)
+
+    # This should result in a single contiguous group
+    assert len(belt_group) == 1

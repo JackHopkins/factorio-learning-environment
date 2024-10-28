@@ -292,8 +292,10 @@ class Lab(Entity):
     lab_input: Inventory
     lab_modules: Inventory
 
-class BeltGroup(BaseModel):
-    belts: List[TransportBelt]
+class EntityGroup(BaseModel):
     input_positions: List[Position]
     output_positions: List[Position]
     position: Position
+
+class BeltGroup(EntityGroup):
+    belts: List[TransportBelt]

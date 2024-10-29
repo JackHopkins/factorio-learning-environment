@@ -30,20 +30,22 @@ class ResourceName(enum.Enum):
 
 
 class Prototype(enum.Enum):
-    AssemblingMachine1 = "assembling-machine-1", AssemblingMachine1 # Crafting requires 3 electronic circuits, 5 iron gear wheels, 9 iron plates
-    BurnerInserter = "burner-inserter", BurnerInserter # Crafting requires 1 iron gear wheel, 1 iron plate,
-    BurnerMiningDrill = "burner-mining-drill", BurnerMiningDrill # Crafting requires 3 iron gear wheels, 3 iron plates AND 1 stone furnace AS INGEREDIENG
-    ElectricMiningDrill = "electric-mining-drill", MiningDrill # Crafting requires 3 electronic circuits, 5 iron gear wheels, 10 iron plates
-    StoneFurnace = "stone-furnace", Furnace # Crafting requires 5 stone
-    TransportBelt = "transport-belt", TransportBelt # Crafting 2 transport belts requires 1 iron gear wheel, 1 iron plate
-    OffshorePump = "offshore-pump", OffshorePump # Crafting requires 2 electronic circuits, 1 iron gear wheels, 1 pipe
-    Boiler = "boiler", Boiler # Crafting requires 4 pipes AND 1 stone furnace AS CRAFTING INGREDIENT
-    #Generator = "generator", Generator
-    SteamEngine = "steam-engine", Generator # Crafting requires 8 iron gear wheels, 10 iron plates, 5 pipes
-    Pipe = "pipe", Pipe # Crafting requires 1 iron plate
-    IronChest = "iron-chest", Chest # Crafting requires 8 iron plates
-    WoodenChest = "wooden-chest", Chest # Crafting requires 2 wood
-    IronGearWheel = "iron-gear-wheel", Entity # Crafting requires 2 iron plate
+    AssemblingMachine1 = "assembling-machine-1", AssemblingMachine
+    AssemblingMachine2 = "assembling-machine-2", AssemblingMachine
+    AssemblingMachine3 = "assembling-machine-3", AssemblingMachine
+    BurnerInserter = "burner-inserter", BurnerInserter
+    BurnerMiningDrill = "burner-mining-drill", BurnerMiningDrill
+    ElectricMiningDrill = "electric-mining-drill", MiningDrill
+    StoneFurnace = "stone-furnace", Furnace
+    TransportBelt = "transport-belt", TransportBelt
+    OffshorePump = "offshore-pump", OffshorePump
+    PumpJack = "pumpjack", PumpJack
+    Boiler = "boiler", Boiler
+    SteamEngine = "steam-engine", Generator
+    Pipe = "pipe", Entity
+    IronChest = "iron-chest", Chest
+    WoodenChest = "wooden-chest", Chest
+    IronGearWheel = "iron-gear-wheel", Entity
     Coal = "coal", None
     IronPlate = "iron-plate", None # Crafting requires smelting 1 iron ore, smelts for 0.5 seconds per ore
     SteelPlate = "steel-plate", None # Crafting requires smelting 5 iron plates, smelts for 4 seconds per ore

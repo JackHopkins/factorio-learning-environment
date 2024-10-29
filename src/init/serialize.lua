@@ -460,6 +460,26 @@ local function get_pipe_positions(entity)
     return pipe_positions
 end
 
+function get_pumpjack_pipe_position(entity)
+	local x, y = entity.position.x, entity.position.y
+	local orientation = entity.orientation
+
+	local dx, dy
+	if orientation == 0 or orientation == defines.direction.north then
+		dx, dy = 1, -2
+	elseif orientation == 0.25 or orientation == defines.direction.east then
+		dx, dy = 2, -1
+	elseif orientation == 0.5 or orientation == defines.direction.south then
+		dx, dy = -1, 2
+	elseif orientation == 0.75 or orientation == defines.direction.west then
+		dx, dy = -2, 1
+	end
+
+	local pipe_position = {{x = x + dx, y = y + dy}}
+
+	return pipe_position
+end
+
 function get_boiler_pipe_positions(entity)
     local x, y = entity.position.x, entity.position.y
     local orientation = entity.orientation
@@ -975,6 +995,10 @@ global.utils.serialize_entity = function(entity)
 
 		--create_beam_point(game.players[1], serialized.connection_points[1])
 		--create_beam_point(game.players[1], serialized.connection_points[2])
+	end
+
+	if entity.name == "pumpjack" then
+		serialized.connection_points = get_pumpjack_pipe_position(entity)
 	end
 
 	-- Add fuel and input ingredients if the entity is a furnace or burner

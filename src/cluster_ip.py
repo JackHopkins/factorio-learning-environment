@@ -3,6 +3,8 @@ import os
 import boto3
 import sys
 
+from dotenv import load_dotenv
+
 
 def get_public_ips(cluster_name):
     ecs_client = boto3.client('ecs')
@@ -54,20 +56,22 @@ def get_public_ips(cluster_name):
 
 
 if __name__ == "__main__":
-    from dotenv import load_dotenv
+    # Load environment variables from .env file
     load_dotenv()
-    profile = os.getenv("AWS_PROFILE")
-    region = os.getenv("AWS_REGION")
-    access_key = os.getenv("AWS_ACCESS_KEY_ID")
-    secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 
-    if len(sys.argv) != 2:
-        print("Usage: python cluster_ip.py <cluster_name>")
+    # Get cluster name from .env file or command line argument
+    default_cluster_name = os.getenv('CLUSTER_NAME')
+
+    if len(sys.argv) == 2:
+        cluster_name = sys.argv[1]
+    elif default_cluster_name:
+        cluster_name = default_cluster_name
+    else:
+        print("Error: CLUSTER_NAME not set in .env file and not provided as argument")
+        print("Usage: python cluster_ip.py [cluster_name]")
         sys.exit(1)
 
-    cluster_name = sys.argv[1]
     public_ips = get_public_ips(cluster_name)
-
     if public_ips:
         print("Public IP addresses of running containers:")
         for ip in public_ips:

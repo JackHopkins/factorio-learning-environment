@@ -1,7 +1,3 @@
-import sys
-sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\src")
-sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser")
-
 import ast
 import json
 import os
@@ -127,25 +123,6 @@ Entities:
             for obj in objectives:
                 if obj.strip() != objective:
                     f.write(obj)
-
-
-    def generate_verification_function(self, objective: str) -> str:
-        specific_prompt_path = f"{self.prompt_path}/outcome_test"
-        # read in user_message.md and system_message.md
-        with open(f"{specific_prompt_path}/user_message.md", "r") as f:
-            user_message = f.read()
-        with open(f"{specific_prompt_path}/system_message.md", "r") as f:
-            system_prompt = f.read()
-        system_prompt = system_prompt.format(api_schema=self.api_schema)
-        user_message = user_message.format(objective=objective)
-        response = self._call_api(system_prompt, user_message)
-        try:
-            program = response.replace('```python', '```')
-            program = program.split('```')[1]
-
-            return program
-        except:
-            return response
 
     def generate_objectives(self, curriculum: str, 
                                            mining_setup: str) -> str:
@@ -472,84 +449,6 @@ Entities:
                 starting_inv_dict[item] = scenario_starting_inv[item]
         
         return objectives_output
-    
-    def curriculum_bottom_up(self, curriculum: Dict,  instance):   
-        scenario_starting_inv = copy.deepcopy(curriculum["starting_inventory"])
-        max_attempts = 1
-        # First set up the game
-
-        instance.reset()
-        instance.initial_inventory = curriculum["starting_inventory"]
-        instance.reset()
-        ## run the objective starting snippet
-        _ = instance.eval_with_error(curriculum["starting_snippet"], timeout=60)
-
-        starting_inventory = instance.inspect_inventory()
-        mining_setup = self.get_mining_setup(instance)
-        objective_output, prompt_inputs = self.synthesise_objective_and_implementation(curriculum, 
-                                                               mining_setup = mining_setup)
-
-        
-        #objective["implementation_tries"].append({"prompt_inputs": prompt_inputs, "output": objective_output})
-        try:
-            program = objective_output.split('```python')[1]
-            program = program.split('```')[0]
-            program.replace('```', '')
-        except:
-            program = objective_output
-                
-
-        output_list, result = self.eval_program_with_result_trace(instance, program)
-        errored = False
-        if "error" in result.lower():
-                errored = True
-                for i in range(max_attempts):
-                    print(f"Error in step {objective}. Attempt {i+1}. Error: {result}")
-                    mining_setup_during_error = self.get_mining_setup(instance)
-                    step_script = self.correct_implementation_snippet(input_objective= objective["objective"], 
-                                                              curriculum= curriculum, 
-                                                              mining_setup=mining_setup, 
-                                                              last_executed_policy=program, 
-                                                              error_message = result, 
-                                                              logs = output_list,
-                                                              mining_setup_during_error = mining_setup_during_error)
-                                                              
-                    objective["implementation_tries"].append({"error_message": result, "output": step_script})
-                    try:
-                        program = step_script.split("ERROR CORRECTION")[-1]
-                        program = program.split('```python')[1]
-                        program = program.split('```')[0]
-                        program.replace('```', '')
-                    except:
-                        program = step_script
-
-                    instance.reset()
-                    instance.initial_inventory = curriculum["starting_inventory"]        
-                    instance.reset()
-                    _ = instance.eval_with_error(curriculum["starting_snippet"], timeout=60)
-                    output_list, result = self.eval_program_with_result_trace(instance, program)
-                    if "error" not in result.lower():
-                        errored = False
-                        break
-            
-        objective["final_implementation"] = program
-        if errored:
-            print(f"Failed to repair step {objective['objective']}")
-            objective["success"] = False
-        else: 
-            objective["success"] = True
-        
-        
-        starting_inv_dict = {}
-        for item in scenario_starting_inv:
-            if isinstance(item, tuple):
-                item = item[0]
-                starting_inv_dict[item[0]] = scenario_starting_inv[item]
-            else:
-                starting_inv_dict[item] = scenario_starting_inv[item]
-        
-        return objectives_output
-
 def save_synth_skills_into_db():
     db = SkillsDB()
     
@@ -622,13 +521,8 @@ def evaluate_a_skill(folder_path):
 
 
 if __name__ == "__main__":
-    #evaluate_a_skill(folder_path)
-    #main()
-    #save_synth_skills_into_db()
 
     sampler = BottomsUpSkillSampler(model = "gpt-4o")
-    #sampler = FactorioLLMSampler()
-
     inventory = {
         'iron-plate': 50,
         'coal': 100,
@@ -665,45 +559,6 @@ if __name__ == "__main__":
                                 inventory=inventory)
 
 
-    test_string = """
-
-
-from factorio_instance import *
-
-# Find the nearest copper ore patch
-copper_ore_position = get_resource_patch(Resource.CopperOre, nearest(Resource.CopperOre))
-print(f"Nearest copper ore found at: {copper_ore_position}")
-
-# Move to the copper ore patch to place the burner mining drills
-# move to the center of the patch, the place where the drills will be placed
-move_to(copper_ore_position.bounding_box.center)
-print(f"Moved to copper ore patch at: {copper_ore_position}")
-
-# Place the first burner mining drill on the copper ore patch
-# place it at the center of the patch
-drill = place_entity(Prototype.BurnerMiningDrill, direction=Direction.UP, position=copper_ore_position.bounding_box.center)
-print(f"Placed burner mining drill at: {drill.position}")
-
-# Add coal to fuel the first burner mining drill
-# Also get a updated fueled_drill variable to refresh the drill variable with the updated fuel level
-fueled_drill = insert_item(Prototype.Coal, drill, quantity=20)
-coal_inserted = fueled_drill.fuel.get(Prototype.Coal, 0)
-print(f"Inserted {coal_inserted} coal into the burner mining drill")
-
-
-"""
-
-    #try:
-    #    score, goal, result = instance.eval_with_error(test_string, timeout=60)
-    #except Exception as e:
-    #    print(f"Error: {e}")
-    # Load objectives from file
-    #objectives_file = "skills\objectives_rag.txt"
-    #if os.path.exists(objectives_file):
-    #    objectives = sampler.load_objectives(objectives_file)
-    #else:
-    #    print(f"Objectives file '{objectives_file}' not found. Please create it and add objectives.")
-    #    exit(1)    
     
     starting_objective_folder = r"skills\ground_truth_skills\put_down_electricity_gen"
     #read in curriculum_item.jsom
@@ -783,3 +638,4 @@ print(f"Inserted {coal_inserted} coal into the burner mining drill")
 
         
     print("All objectives have been completed. The program will now exit.")
+    #save_synth_skills_into_db()

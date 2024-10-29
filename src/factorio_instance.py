@@ -657,7 +657,7 @@ class FactorioInstance:
 
         return wrapper
 
-    def run_snippet_file_in_factorio_env(self, file_path):
+    def run_snippet_file_in_factorio_env(self, file_path, clean=True):
         """
         Execute a Python file in the Factorio environment, with access to all Factorio objects and support for
         debugging and breakpoints
@@ -679,7 +679,8 @@ class FactorioInstance:
                 exec(code, snippet_globals)
         finally:
             # Ensure cleanup is performed
-            self.cleanup()
+            if clean:
+                self.cleanup()
 
     def cleanup(self):
         # Close the RCON connection

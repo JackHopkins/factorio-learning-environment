@@ -21,7 +21,7 @@ def game(instance):
         'transport-belt': 200,
         'coal': 100,
         'wooden-chest': 1,
-        PrototypeName.AssemblingMachine.value: 10,
+        'assembling-machine': 10,
     }
     instance.speed(10)
     instance.reset()

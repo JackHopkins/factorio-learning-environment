@@ -40,7 +40,7 @@ class Prototype(enum.Enum):
     Boiler = "boiler", Boiler # Crafting requires 4 pipes AND 1 stone furnace AS CRAFTING INGREDIENT
     #Generator = "generator", Generator
     SteamEngine = "steam-engine", Generator # Crafting requires 8 iron gear wheels, 10 iron plates, 5 pipes
-    Pipe = "pipe", Entity # Crafting requires 1 iron plate
+    Pipe = "pipe", Pipe # Crafting requires 1 iron plate
     IronChest = "iron-chest", Chest # Crafting requires 8 iron plates
     WoodenChest = "wooden-chest", Chest # Crafting requires 2 wood
     IronGearWheel = "iron-gear-wheel", Entity # Crafting requires 2 iron plate

@@ -141,7 +141,7 @@ local function place_at_position(player, connection_type, current_position, dir,
                 existing_entity = entity
                 break
             elseif entity.name ~= 'laser-beam' and entity.name ~= 'character' then
-                error("Cannot place entity at position (" .. current_position.x .. ", " .. current_position.y .. ") due to overlapping " .. entity.name .. ".")
+                --error("Cannot place entity at position (" .. current_position.x .. ", " .. current_position.y .. ") due to overlapping " .. entity.name .. ".")
             end
         end
     end
@@ -267,7 +267,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     local ydiff = math.abs(source_y-target_y)
 
 
-    if xdiff + ydiff <= 1 then
+    if xdiff + ydiff < 1 then
         local dir = get_direction(start_position, end_position)
         local entity_dir = global.utils.get_entity_direction(connection_type, dir/2)
         place_at_position(player, connection_type, start_position, entity_dir, serialized_entities)
@@ -315,6 +315,8 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
         place_at_position(player, connection_type, path[#path].position, get_direction(path[#path].position, preemptive_target), serialized_entities)
         place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities)
         place_at_position(player, connection_type, preemptive_target, get_direction(path[#path].position, preemptive_target), serialized_entities)
+        --place_at_position(player, connection_type, path[#path-1].position, get_direction(path[#path].position, preemptive_target), serialized_entities)
+
     else
         -- If the connection_type is an electricity pole, we need to place the last entity at the target position to ensure connection
         place_at_position(player, connection_type, path[#path].position, get_direction(path[#path].position, preemptive_target), serialized_entities)

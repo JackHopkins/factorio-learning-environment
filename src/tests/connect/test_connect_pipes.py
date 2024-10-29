@@ -20,7 +20,7 @@ def game(instance):
         'transport-belt': 200,
         'coal': 100,
         'wooden-chest': 1,
-        PrototypeName.AssemblingMachine.value: 10,
+        'assembling-machine': 10,
     }
     instance.reset()
     yield instance
@@ -175,3 +175,22 @@ def test_connect_steam_engine_boiler_nearly_adjacent(game):
     inspection = game.inspect_entities(position=steam_engine.position)
 
     assert inspection.get_entity(Prototype.SteamEngine).warning == 'not connected to power network'
+
+def test_connect_pipe_groups_horizontally(game):
+
+    # Create a horizontal pipe group
+    pipe_group_right = game.connect_entities(Position(x=0, y=0), Position(x=5, y=0), Prototype.Pipe)
+
+    # Loop the pipes back around
+    pipe_group_right = game.connect_entities(pipe_group_right[0], pipe_group_right[0], Prototype.Pipe)
+
+    # This should result in a single contiguous group
+    assert len(pipe_group_right) == 1
+
+    pipe_group_left = game.connect_entities(Position(x=0, y=-10), Position(x=-5, y=-10), Prototype.Pipe)
+
+    # Loop the pipes back around
+    pipe_group_left = game.connect_entities(pipe_group_left[0], pipe_group_left[0], Prototype.Pipe)
+
+    # This should result in a single contiguous group
+    assert len(pipe_group_left) == 1

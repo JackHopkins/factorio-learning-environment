@@ -148,7 +148,8 @@ class ConnectEntities(Action):
             source_position = source_entity.output_positions[0]
         elif source_entity and isinstance(source, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
             if isinstance(source_entity, PumpJack) and connection_type.name == Prototype.Pipe.name:
-                source_position = source_entity.drop_position
+                source_position = source_entity.connection_points[0]
+                pass
             elif isinstance(source_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
                 if isinstance(source_entity, OffshorePump):
                     source_position = Position(x=source_entity.connection_points[0].x,

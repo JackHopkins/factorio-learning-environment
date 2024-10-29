@@ -247,10 +247,6 @@ class Inserter(Entity):
 class MiningDrill(Entity):
     drop_position: Position
 
-
-class PumpJack(MiningDrill):
-    pass
-
 class BurnerInserter(Inserter, BurnerType):
     pass
 
@@ -266,7 +262,7 @@ class Ammo(BaseModel):
 class GunTurret(Entity):
     turret_ammo: Inventory
 
-class AssemblingMachine1(Entity):
+class AssemblingMachine(Entity):
     recipe: Optional[Recipe] = None  # Prototype
     assembling_machine_input: Inventory
     assembling_machine_output: Inventory
@@ -276,6 +272,8 @@ class FluidHandler(Entity):
     connection_points: List[Position]
     fluid_box: Optional[Union[dict, list]] = []
 
+class PumpJack(MiningDrill, FluidHandler):
+    pass
 
 class Boiler(FluidHandler, BurnerType):
     steam_output_point: Position

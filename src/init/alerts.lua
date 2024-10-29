@@ -343,10 +343,14 @@ function lacks_assembler_resources(entity)
             local missing_resources = {}
 
             for _, ingredient in pairs(ingredients) do
-                local available_amount = input_inventory.get_item_count(ingredient.name)
-                local missing_amount = ingredient.amount - available_amount
-                if missing_amount > 0 then
-                    table.insert(missing_resources, ingredient.name .. " (" .. tostring(missing_amount) .. ")")
+                -- don't perform a check in the case of liquids like crude-oil, water etc.
+                if game.item_prototypes[ingredient.name].type ~= "fluid" then
+                    local available_amount = input_inventory.get_item_count(ingredient.name)
+                    local missing_amount = ingredient.amount - available_amount
+                    if missing_amount > 0 then
+                        table.insert(missing_resources, ingredient.name .. " (" .. tostring(missing_amount) .. ")")
+                    end
+
                 end
             end
 

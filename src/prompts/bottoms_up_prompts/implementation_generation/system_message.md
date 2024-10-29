@@ -53,3 +53,4 @@ Notes on the api
 - If you input coal to a furnace, the way to check it is furnace.fuel.get('Prototype.Coal') as the coal is fuel in the furnace. In a chest coal can be checked directly from the normal inspect_inventory()
 - You do not need inserters for drills as you can directly use the drill.drop_position as the start of the transport belts. This only works with drills
 - When you check the inventory of something you need to refresh the entity with inspect_entity
+- Be very verbose with the comments and planning in the code. Write out your thoughts and requirements as comments

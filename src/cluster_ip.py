@@ -1,3 +1,5 @@
+import os
+
 import boto3
 import sys
 
@@ -52,6 +54,13 @@ def get_public_ips(cluster_name):
 
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
+    profile = os.getenv("AWS_PROFILE")
+    region = os.getenv("AWS_REGION")
+    access_key = os.getenv("AWS_ACCESS_KEY_ID")
+    secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+
     if len(sys.argv) != 2:
         print("Usage: python cluster_ip.py <cluster_name>")
         sys.exit(1)
@@ -64,4 +73,4 @@ if __name__ == "__main__":
         for ip in public_ips:
             print(ip)
     else:
-        print("No public IP addresses found for running containers.")
+        print("No public IP addaresses found for running containers.")

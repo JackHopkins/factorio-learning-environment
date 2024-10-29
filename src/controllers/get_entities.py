@@ -65,8 +65,8 @@ class GetEntities(Action):
                         belt_list.append(entity)
                     else:
                         entities_list.append(entity)
-                except Exception as e:
-                    print(f"Could not create {entity_data['name']} object: {e}")
+                except Exception as e1:
+                    print(f"Could not create {entity_data['name']} object: {e1}")
 
             belt_groups = agglomerate_transport_belts(belt_list)
             entities_list.extend(belt_groups)

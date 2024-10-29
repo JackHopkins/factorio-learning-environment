@@ -1,5 +1,7 @@
 import os
 import ast
+import re
+from textwrap import dedent
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 import inspect
@@ -13,6 +15,7 @@ class TestInfo:
     source: str
     docstring: Optional[str] = None
     generated_summary: Optional[str] = None
+    dependencies: Optional[str] = None
 
 
 class TestAnalyzer:
@@ -28,11 +31,24 @@ class TestAnalyzer:
                     test_files.append(os.path.join(root, file))
         return test_files
 
+    def _extract_dict_content(self, text):
+        pattern = r'instance.initial_inventory = ({[^}]*})'
+        match = re.search(pattern, text)
+        if match:
+            string_dict = match.group(0).replace("instance.initial_inventory = ", "")
+            try:
+                dict_obj = ast.literal_eval(string_dict)
+                return repr(dict_obj)
+            except Exception as e:
+                return None
+        return None
+
     def extract_test_functions(self, file_path: str) -> List[TestInfo]:
         """Extract all test functions from a given file."""
         with open(file_path, 'r') as f:
             content = f.read()
 
+        inventory = self._extract_dict_content(content)
         tree = ast.parse(content)
         test_functions = []
 
@@ -46,10 +62,13 @@ class TestAnalyzer:
                 docstring = ast.get_docstring(node)
 
                 source = source.replace("game.", "")  # Remove game. prefix from function calls
+                source = "\n".join(source.split("\n")[1:])
+                source = dedent(source)
                 test_functions.append(TestInfo(
                     name=node.name,
                     source=source,
-                    docstring=docstring
+                    docstring=docstring,
+                    dependencies=inventory
                 ))
 
         return test_functions
@@ -57,8 +76,8 @@ class TestAnalyzer:
     def generate_summary(self, test_info: TestInfo) -> str:
         """Generate a summary of what the test does using the LLM."""
         prompt = f"""
-        Please analyze this test function and provide a clear, concise docstring summary of what it does.
-        Focus on the high-level purpose and key functionality being tested.
+        Please analyze this test function and provide a clear, concise docstring summary of what it aims to achieve.
+        Focus on the high-level purpose and what is ultimately being tested.
 
         ```python
         {test_info.source}
@@ -78,16 +97,14 @@ class TestAnalyzer:
 
     def save_to_db(self, test_info: TestInfo):
         """Save the test information and embeddings to the database."""
-        # Create a combined text for embedding that includes both the summary and the test name
-        embedding_text = f"{test_info.name}\n{test_info.generated_summary}"
 
         self.skill_generator.save_function(
             name=test_info.name,
             implementation=test_info.source,
             description=test_info.generated_summary,
-            dependencies=[],  # Dependencies could be extracted if needed
+            dependencies=test_info.dependencies,  # Dependencies could be extracted if needed
             signature=f"{test_info.name}(game) -> None:\n    \"\"\"{test_info.generated_summary}\"\"\"",
-            version="v1.1"
+            version="v1.3"
         )
 
     def process_directory(self, directory: str):
@@ -102,10 +119,10 @@ class TestAnalyzer:
                 print(f"\nAnalyzing test: {test_info.name}")
 
                 # Generate summary if there isn't an existing docstring
-                if not test_info.docstring:
-                    test_info.generated_summary = self.generate_summary(test_info)
-                else:
-                    test_info.generated_summary = test_info.docstring
+                #if not test_info.docstring:
+                test_info.generated_summary = self.generate_summary(test_info)
+                #else:
+                #    test_info.generated_summary = test_info.docstring
 
                 print(f"Generated summary: {test_info.generated_summary}")
 

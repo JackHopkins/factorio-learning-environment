@@ -885,6 +885,8 @@ global.utils.serialize_entity = function(entity)
 		for _, connection in pairs(entity.fluidbox.get_pipe_connections(1)) do
 			table.insert(serialized.connections, connection.position)
 		end
+
+		--serialized.fluidbox = global.utils.serialize_fluidbox(entity.fluidbox)
 	end
 
 	-- Add input and output locations if the entity is a pipe-to-ground

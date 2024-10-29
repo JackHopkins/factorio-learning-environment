@@ -129,6 +129,15 @@ class Position(BaseModel):
     def is_close(self, a: 'Position', tolerance: float = 0.5):
         return abs(self.x - a.x) < tolerance and abs(self.y - a.y) < tolerance
 
+    def above(self):
+        return Position(x=self.x, y=self.y - 1)
+    def below(self):
+        return Position(x=self.x, y=self.y + 1)
+    def left(self):
+        return Position(x=self.x - 1, y=self.y)
+    def right(self):
+        return Position(x=self.x + 1, y=self.y)
+
 
 class EntityInfo(BaseModel):
     name: str
@@ -294,8 +303,15 @@ class Lab(Entity):
 
 class EntityGroup(BaseModel):
     input_positions: List[Position]
-    output_positions: List[Position]
     position: Position
+    status: EntityStatus = EntityStatus.NORMAL
 
 class BeltGroup(EntityGroup):
     belts: List[TransportBelt]
+    output_positions: List[Position]
+
+class Pipe(Entity):
+    #connections: List[Position] = []
+    pass
+class PipeGroup(EntityGroup):
+    pipes: List[Pipe]

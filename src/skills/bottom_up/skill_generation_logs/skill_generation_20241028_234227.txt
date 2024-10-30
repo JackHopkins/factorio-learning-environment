@@ -1,0 +1,1 @@
+[2024-10-28 23:42:27] Current skill directory is not empty. Skipping skill generation.

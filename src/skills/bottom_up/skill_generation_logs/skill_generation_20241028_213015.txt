@@ -1,0 +1,64 @@
+[2024-10-28 21:30:15] Base skills selected:
+[2024-10-28 21:30:15]   - test_basic_iron_smelting_chain: Tests automated construction and operation of a basic iron smelting setup in Factorio. Verifies placement and fueling of mining drill, furnace, inserter, and chest components, then confirms the complete system successfully produces iron plates over time. Ensures both correct assembly and functional operation of early-game iron production line.
+[2024-10-28 21:30:15]   - test_create_offshore_pump_to_steam_engine: Tests the placement and connection of a basic power generation system by placing and configuring an offshore pump, boiler, and steam engine. Verifies correct entity positioning, rotation, pipe connections, and initial power network status. The test ensures the components are properly aligned and connected but intentionally leaves the steam engine disconnected from a power network.
+[2024-10-28 21:30:15] Combined inventory requirements: {'stone-furnace': 10, 'iron-chest': 4, 'burner-inserter': 40, 'coal': 200, 'transport-belt': 400, 'burner-mining-drill': 20, 'boiler': 2, 'steam-engine': 2, 'offshore-pump': 2, 'pipe': 200, 'iron-plate': 100, 'copper-plate': 40}
+[2024-10-28 21:30:17] Generated objective: Implement a snippet that tests the automated construction and operation of a complete iron plate manufacturing line with integrated power supply, verifying the placement and connection of power generation components (offshore pump, boiler, steam engine) alongside the production setup (mining drill, furnace, inserter, chest), then confirms the entire system maintains power and successfully produces iron plates over an extended period.
+[2024-10-28 21:30:30] # Place power generation system first
+DIR = Direction.UP
+water_location = nearest(Resource.Water)
+move_to(water_location)
+
+# Place and verify power components
+offshore_pump = place_entity(Prototype.OffshorePump, position=water_location, direction=DIR)
+assert offshore_pump, "Failed to place offshore pump"
+
+boiler = place_entity_next_to(Prototype.Boiler, reference_position=offshore_pump.position, 
+                             direction=DIR, spacing=2)
+assert boiler, "Failed to place boiler"
+boiler = rotate_entity(boiler, Direction.next_clockwise(DIR))
+
+steam_engine = place_entity_next_to(Prototype.SteamEngine, reference_position=boiler.position,
+                                   direction=DIR, spacing=2)
+assert steam_engine, "Failed to place steam engine"
+
+# Connect power components with pipes
+connect_entities(offshore_pump, boiler, connection_type=Prototype.Pipe)
+connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
+
+# Fuel boiler
+insert_item(Prototype.Coal, boiler, quantity=5)
+
+# Place iron production line
+iron_ore_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
+move_to(iron_ore_patch.bounding_box.center)
+
+# Place and fuel mining drill
+drill = place_entity(Prototype.BurnerMiningDrill, direction=Direction.RIGHT,
+                    position=iron_ore_patch.bounding_box.center)
+insert_item(Prototype.Coal, drill, quantity=5)
+
+# Place and fuel furnace
+furnace = place_entity_next_to(Prototype.StoneFurnace, reference_position=drill.position, 
+                              direction=Direction.RIGHT)
+insert_item(Prototype.Coal, furnace, quantity=5)
+
+# Place and fuel inserter
+inserter = place_entity_next_to(Prototype.BurnerInserter, reference_position=furnace.position,
+                               direction=Direction.RIGHT)
+insert_item(Prototype.Coal, inserter, quantity=2)
+
+# Place output chest
+chest = place_entity_next_to(Prototype.IronChest, reference_position=inserter.position, 
+                            direction=Direction.RIGHT)
+
+# Wait and verify production
+sleep(30)
+
+# Verify power system
+inspected_steam_engine = inspect_entities(position=steam_engine.position, radius=1).get_entity(Prototype.SteamEngine)
+assert not inspected_steam_engine.warning, "Steam engine not properly connected to power network"
+
+# Verify iron plate production
+chest_inventory = inspect_inventory(chest)
+iron_plates = chest_inventory.get(Prototype.IronPlate, 0)
+assert iron_plates > 0, "No iron plates produced. Production line may not be working correctly."

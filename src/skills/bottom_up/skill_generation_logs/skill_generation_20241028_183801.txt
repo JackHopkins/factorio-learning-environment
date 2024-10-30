@@ -1,0 +1,1330 @@
+[2024-10-28 18:38:01] Base skills selected:
+[2024-10-28 18:38:01]   - test_build_iron_plate_factory: Tests construction of an automated iron smelting factory by placing mining drills, transport belts, inserters and furnaces in the correct configuration. Places burner drills to mine iron ore, connects them via belts and inserters to stone furnaces, adds coal mining and delivery infrastructure, and routes finished iron plates to an output chest. Validates that all components are properly positioned and connected to create a working production line.
+[2024-10-28 18:38:01]   - test_build_iron_gear_factory: Tests the construction of an automated iron gear production facility in a game environment. The test simulates gathering raw materials (iron ore, coal, copper, stone), crafting necessary buildings (furnace, mining drill, assembly machine, power generation), and setting up an automated production line with power infrastructure. The final goal is to establish a working factory that can produce iron gears from iron plates using electrical power.
+[2024-10-28 18:38:01]   - test_build_auto_refilling_coal_system: Tests construction of an automated coal mining system in Factorio. Verifies placement of burner mining drills, inserters, chests, and transport belts to create a self-sustaining coal extraction setup. The system includes multiple drills connected by a belt network that automatically distributes coal to power the drills and inserters, creating a closed-loop mining operation.
+[2024-10-28 18:38:01] Combined inventory requirements: {'stone-furnace': 5, 'iron-chest': 3, 'burner-inserter': 20, 'coal': 100, 'transport-belt': 200, 'burner-mining-drill': 10}
+[2024-10-28 18:38:05] Generated objective: Implement a snippet that constructs an automated science pack production line by combining iron gear and iron plate manufacturing with additional copper plate smelting. The system should include mining drills for iron and copper ore, coal supply infrastructure, smelting arrays for both metals, and assembly machines to craft red science packs. Transport belts and inserters should connect all components into an integrated production chain that outputs completed science packs into storage chests for research.
+[2024-10-28 18:38:30] # Find patches
+iron_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
+copper_patch = get_resource_patch(Resource.CopperOre, nearest(Resource.CopperOre))
+coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal)) 
+
+# Build iron mining/smelting line
+move_to(iron_patch.bounding_box.left_top)
+
+# Iron miners
+iron_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, iron_patch.bounding_box.left_top)
+iron_chest = place_entity_next_to(Prototype.IronChest, iron_miner.position, Direction.UP, spacing=iron_miner.dimensions.height)
+insert_item(Prototype.Coal, iron_chest, 50)
+
+# Coal supply for iron
+coal_inserter = place_entity_next_to(Prototype.BurnerInserter, iron_chest.position, Direction.DOWN, spacing=0)
+coal_belt = place_entity_next_to(Prototype.TransportBelt, coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Iron plate belt
+iron_belt = place_entity_next_to(Prototype.TransportBelt, iron_miner.position, Direction.DOWN, spacing=0)
+
+# Iron furnaces
+furnace = place_entity_next_to(Prototype.StoneFurnace, iron_miner.position, Direction.DOWN, spacing=2)
+for _ in range(2):
+    furnace = place_entity_next_to(Prototype.StoneFurnace, furnace.position, Direction.RIGHT, spacing=1)
+
+# Connect iron belt to furnaces
+connect_entities(iron_belt.position, Position(x=furnace.position.x, y=furnace.position.y-2), Prototype.TransportBelt)
+
+# Build copper mining/smelting line
+move_to(copper_patch.bounding_box.left_top)
+
+# Copper miners 
+copper_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, copper_patch.bounding_box.left_top)
+copper_chest = place_entity_next_to(Prototype.IronChest, copper_miner.position, Direction.UP, spacing=copper_miner.dimensions.height)
+insert_item(Prototype.Coal, copper_chest, 50)
+
+# Coal supply for copper
+copper_coal_inserter = place_entity_next_to(Prototype.BurnerInserter, copper_chest.position, Direction.DOWN, spacing=0)
+copper_coal_belt = place_entity_next_to(Prototype.TransportBelt, copper_coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Copper plate belt
+copper_belt = place_entity_next_to(Prototype.TransportBelt, copper_miner.position, Direction.DOWN, spacing=0)
+
+# Copper furnaces
+copper_furnace = place_entity_next_to(Prototype.StoneFurnace, copper_miner.position, Direction.DOWN, spacing=2)
+
+# Connect copper belt to furnace
+connect_entities(copper_belt.position, Position(x=copper_furnace.position.x, y=copper_furnace.position.y-2), Prototype.TransportBelt)
+
+# Gear assembly
+gear_assembler = place_entity_next_to(Prototype.AssemblingMachine1, furnace.position, Direction.DOWN, spacing=3)
+set_entity_recipe(gear_assembler, Prototype.IronGearWheel)
+
+# Science pack assembly
+science_assembler = place_entity_next_to(gear_assembler.position, Direction.RIGHT, spacing=2, Prototype.AssemblingMachine1)
+set_entity_recipe(science_assembler, Prototype.SciencePack1)
+
+# Output chest
+output_chest = place_entity_next_to(science_assembler.position, Direction.DOWN, spacing=2, Prototype.IronChest)
+
+# Connect with inserters
+place_entity(Prototype.BurnerInserter, Direction.DOWN, Position(x=science_assembler.position.x, y=output_chest.position.y-1))
+
+# Add coal to all inserters
+for entity in get_entities_of_type(Prototype.BurnerInserter):
+    insert_item(Prototype.Coal, entity, 5)
+
+# Validate setup
+assert len(get_entities_of_type(Prototype.BurnerMiningDrill)) >= 2, "Not enough mining drills"
+assert len(get_entities_of_type(Prototype.StoneFurnace)) >= 3, "Not enough furnaces"
+assert len(get_entities_of_type(Prototype.AssemblingMachine1)) >= 2, "Missing assemblers"
+assert len(get_entities_of_type(Prototype.IronChest)) >= 3, "Missing chests"
+[2024-10-28 18:38:45] 
+Attempt 1 failed:
+[2024-10-28 18:38:45] Error: positional argument follows keyword argument (<unknown>, line 55)
+[2024-10-28 18:38:45] Game state: []
+[2024-10-28 18:39:05] 
+Repaired implementation:
+[2024-10-28 18:39:05] # Find patches
+iron_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
+copper_patch = get_resource_patch(Resource.CopperOre, nearest(Resource.CopperOre))
+coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
+
+# Build iron mining/smelting line
+move_to(iron_patch.bounding_box.left_top)
+
+# Iron miners
+iron_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, iron_patch.bounding_box.left_top)
+iron_chest = place_entity_next_to(Prototype.IronChest, iron_miner.position, Direction.UP, spacing=iron_miner.dimensions.height)
+insert_item(Prototype.Coal, iron_chest, 50)
+
+# Coal supply for iron
+coal_inserter = place_entity_next_to(Prototype.BurnerInserter, iron_chest.position, Direction.DOWN, spacing=0)
+coal_belt = place_entity_next_to(Prototype.TransportBelt, coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Iron plate belt
+iron_belt = place_entity_next_to(Prototype.TransportBelt, iron_miner.position, Direction.DOWN, spacing=0)
+
+# Iron furnaces
+furnace = place_entity_next_to(Prototype.StoneFurnace, iron_miner.position, Direction.DOWN, spacing=2)
+for _ in range(2):
+    furnace = place_entity_next_to(Prototype.StoneFurnace, furnace.position, Direction.RIGHT, spacing=1)
+
+# Connect iron belt to furnaces  
+connect_entities(iron_belt.position, Position(x=furnace.position.x, y=furnace.position.y-2), Prototype.TransportBelt)
+
+# Build copper mining/smelting line
+move_to(copper_patch.bounding_box.left_top)
+
+# Copper miners
+copper_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, copper_patch.bounding_box.left_top)
+copper_chest = place_entity_next_to(Prototype.IronChest, copper_miner.position, Direction.UP, spacing=copper_miner.dimensions.height)
+insert_item(Prototype.Coal, copper_chest, 50)
+
+# Coal supply for copper
+copper_coal_inserter = place_entity_next_to(Prototype.BurnerInserter, copper_chest.position, Direction.DOWN, spacing=0)
+copper_coal_belt = place_entity_next_to(Prototype.TransportBelt, copper_coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Copper plate belt
+copper_belt = place_entity_next_to(Prototype.TransportBelt, copper_miner.position, Direction.DOWN, spacing=0)
+
+# Copper furnaces
+copper_furnace = place_entity_next_to(Prototype.StoneFurnace, copper_miner.position, Direction.DOWN, spacing=2)
+
+# Connect copper belt to furnace
+connect_entities(copper_belt.position, Position(x=copper_furnace.position.x, y=copper_furnace.position.y-2), Prototype.TransportBelt)
+
+# Gear assembly
+gear_assembler = place_entity_next_to(Prototype.AssemblingMachine1, furnace.position, Direction.DOWN, spacing=3)
+set_entity_recipe(gear_assembler, Prototype.IronGearWheel)
+
+# Science pack assembly
+science_assembler = place_entity(Prototype.AssemblingMachine1, Direction.RIGHT, Position(x=gear_assembler.position.x+2, y=gear_assembler.position.y))
+set_entity_recipe(science_assembler, Prototype.AutomationSciencePack)
+
+# Output chest
+output_chest = place_entity(Prototype.IronChest, Direction.DOWN, Position(x=science_assembler.position.x, y=science_assembler.position.y+2))
+
+# Connect with inserters
+place_entity(Prototype.BurnerInserter, Direction.DOWN, Position(x=science_assembler.position.x, y=output_chest.position.y-1))
+
+# Add coal to all inserters
+inserters = get_entities({Prototype.BurnerInserter})
+for inserter in inserters:
+    insert_item(Prototype.Coal, inserter, 5)
+
+# Validate setup
+mining_drills = get_entities({Prototype.BurnerMiningDrill})
+furnaces = get_entities({Prototype.StoneFurnace}) 
+assemblers = get_entities({Prototype.AssemblingMachine1})
+chests = get_entities({Prototype.IronChest})
+
+assert len(mining_drills) >= 2, "Not enough mining drills"
+assert len(furnaces) >= 3, "Not enough furnaces"
+assert len(assemblers) >= 2, "Missing assemblers"
+assert len(chests) >= 3, "Missing chests"
+[2024-10-28 18:39:17] 
+Attempt 2 failed:
+[2024-10-28 18:39:17] Error: Error occurred in the following lines:
+  Line 55: science_assembler = place_entity(Prototype.AssemblingMachine1, Direction.RIGHT, Position(x=gear_assembler.position.x+2, y=gear_assembler.position.y))
+
+Exception: ('Could not place assembling-machine-1 at (-11.5, 29.5)', '[string "global.actions.place_entity = function(player..."]:21: The target position is too far away to place the entity. The player position is 22.796875, 18.5 and the target position is -11.5, 29.5. The distance is 36.017712791981 and the max distance is 10. Move closer.')
+[2024-10-28 18:39:17] Game state: [Chest(name='iron-chest', position=Position(x=-19.5, y=17.5), direction=<Direction.UP: 0>, energy=0.0, type='container', dimensions=Dimensions(width=0.6953125, height=0.6953125), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.IronChest: ('iron-chest', <class 'factorio_entities.Chest'>)>, health=200.0, warnings=[], status=<EntityStatus.NORMAL: 'normal'>, inventory={'coal': 38}), Chest(name='iron-chest', position=Position(x=20.5, y=17.5), direction=<Direction.UP: 0>, energy=0.0, type='container', dimensions=Dimensions(width=0.6953125, height=0.6953125), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.IronChest: ('iron-chest', <class 'factorio_entities.Chest'>)>, health=200.0, warnings=[], status=<EntityStatus.NORMAL: 'normal'>, inventory={'coal': 41}), BurnerMiningDrill(fuel={'coal': 7}, name='burner-mining-drill', position=Position(x=-20.0, y=20.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, drop_position=Position(x=-19.50390625, y=21.296875)), BurnerInserter(fuel={'coal': 2}, name='burner-inserter', position=Position(x=-19.5, y=18.5), direction=<Direction.DOWN: 4>, energy=399500.00001118, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (-19.5, 19.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, pickup_position=Position(x=-19.5, y=17.5), drop_position=Position(x=-19.5, y=19.5)), BurnerMiningDrill(fuel={'coal': 5}, name='burner-mining-drill', position=Position(x=20.0, y=20.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['transport belt at drop position is blocked. Clear the belt at (20.5, 21.5) to continue mining.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, drop_position=Position(x=20.49609375, y=21.296875)), BurnerInserter(fuel={'coal': 2}, name='burner-inserter', position=Position(x=20.5, y=18.5), direction=<Direction.DOWN: 4>, energy=399500.00001118, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (20.5, 19.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, pickup_position=Position(x=20.5, y=17.5), drop_position=Position(x=20.5, y=19.5)), Furnace(fuel={}, name='stone-furnace', position=Position(x=-20.0, y=24.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), Furnace(fuel={}, name='stone-furnace', position=Position(x=-17.0, y=24.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), Furnace(fuel={}, name='stone-furnace', position=Position(x=-14.0, y=24.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), Furnace(fuel={}, name='stone-furnace', position=Position(x=20.0, y=24.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), BeltGroup(input_positions=[Position(x=-19.5, y=18.5)], position=Position(x=-18.5, y=18.5), belts=[TransportBelt(name='transport-belt', position=Position(x=-18.5, y=18.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-19.5, y=18.5), output_position=Position(x=-17.5, y=18.5), inventory={})], output_positions=[Position(x=-17.5, y=18.5)]), BeltGroup(input_positions=[Position(x=20.5, y=18.5)], position=Position(x=21.5, y=18.5), belts=[TransportBelt(name='transport-belt', position=Position(x=21.5, y=18.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=20.5, y=18.5), output_position=Position(x=22.5, y=18.5), inventory={})], output_positions=[Position(x=22.5, y=18.5)]), BeltGroup(input_positions=[Position(x=-20.5, y=21.5)], position=Position(x=-13.5, y=22.5), belts=[TransportBelt(name='transport-belt', position=Position(x=-18.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-19.5, y=21.5), output_position=Position(x=-17.5, y=21.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-17.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-18.5, y=21.5), output_position=Position(x=-16.5, y=21.5), inventory={'iron-ore': 1}), TransportBelt(name='transport-belt', position=Position(x=-16.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-17.5, y=21.5), output_position=Position(x=-15.5, y=21.5), inventory={'iron-ore': 1}), TransportBelt(name='transport-belt', position=Position(x=-15.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-16.5, y=21.5), output_position=Position(x=-14.5, y=21.5), inventory={'iron-ore': 4}), TransportBelt(name='transport-belt', position=Position(x=-14.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-15.5, y=21.5), output_position=Position(x=-13.5, y=21.5), inventory={'iron-ore': 4}), TransportBelt(name='transport-belt', position=Position(x=-19.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-20.5, y=21.5), output_position=Position(x=-18.5, y=21.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-13.5, y=21.5), direction=<Direction.DOWN: 4>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-13.5, y=20.5), output_position=Position(x=-13.5, y=22.5), inventory={'iron-ore': 5}), TransportBelt(name='transport-belt', position=Position(x=-13.5, y=22.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=['transport belt blocked. Place an inserter to drain entities from it.'], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-14.5, y=22.5), output_position=Position(x=-12.5, y=22.5), inventory={'iron-ore': 2})], output_positions=[Position(x=-12.5, y=22.5)]), BeltGroup(input_positions=[Position(x=20.5, y=20.5)], position=Position(x=20.5, y=21.5), belts=[TransportBelt(name='transport-belt', position=Position(x=20.5, y=21.5), direction=<Direction.DOWN: 4>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=['transport belt blocked. Place an inserter to drain entities from it.'], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=20.5, y=20.5), output_position=Position(x=20.5, y=22.5), inventory={})], output_positions=[Position(x=20.5, y=22.5)])]
+[2024-10-28 18:39:43] 
+Repaired implementation:
+[2024-10-28 18:39:43] # Find patches
+iron_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
+copper_patch = get_resource_patch(Resource.CopperOre, nearest(Resource.CopperOre))
+coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
+
+# Build iron mining/smelting line
+move_to(iron_patch.bounding_box.left_top)
+
+# Iron miners
+iron_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, iron_patch.bounding_box.left_top)
+iron_chest = place_entity_next_to(Prototype.IronChest, iron_miner.position, Direction.UP, spacing=iron_miner.dimensions.height)
+insert_item(Prototype.Coal, iron_chest, 50)
+
+# Coal supply for iron
+coal_inserter = place_entity_next_to(Prototype.BurnerInserter, iron_chest.position, Direction.DOWN, spacing=0)
+coal_belt = place_entity_next_to(Prototype.TransportBelt, coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Iron plate belt
+iron_belt = place_entity_next_to(Prototype.TransportBelt, iron_miner.position, Direction.DOWN, spacing=0)
+
+# Iron furnaces
+furnace = place_entity_next_to(Prototype.StoneFurnace, iron_miner.position, Direction.DOWN, spacing=2)
+for _ in range(2):
+    furnace = place_entity_next_to(Prototype.StoneFurnace, furnace.position, Direction.RIGHT, spacing=1)
+
+# Connect iron belt to furnaces
+connect_entities(iron_belt.position, Position(x=furnace.position.x, y=furnace.position.y-2), Prototype.TransportBelt)
+
+# Build copper mining/smelting line
+move_to(copper_patch.bounding_box.left_top)
+
+# Copper miners
+copper_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, copper_patch.bounding_box.left_top)
+copper_chest = place_entity_next_to(Prototype.IronChest, copper_miner.position, Direction.UP, spacing=copper_miner.dimensions.height)
+insert_item(Prototype.Coal, copper_chest, 50)
+
+# Coal supply for copper
+copper_coal_inserter = place_entity_next_to(Prototype.BurnerInserter, copper_chest.position, Direction.DOWN, spacing=0)
+copper_coal_belt = place_entity_next_to(Prototype.TransportBelt, copper_coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Copper plate belt
+copper_belt = place_entity_next_to(Prototype.TransportBelt, copper_miner.position, Direction.DOWN, spacing=0)
+
+# Copper furnaces
+copper_furnace = place_entity_next_to(Prototype.StoneFurnace, copper_miner.position, Direction.DOWN, spacing=2)
+
+# Connect copper belt to furnace
+connect_entities(copper_belt.position, Position(x=copper_furnace.position.x, y=copper_furnace.position.y-2), Prototype.TransportBelt)
+
+# Move to position for assembly line
+move_to(Position(x=copper_furnace.position.x+5, y=copper_furnace.position.y))
+
+# Gear assembly
+gear_assembler = place_entity(Prototype.AssemblingMachine1, Direction.RIGHT)
+set_entity_recipe(gear_assembler, Prototype.IronGearWheel)
+
+# Science pack assembly
+science_assembler = place_entity_next_to(Prototype.AssemblingMachine1, gear_assembler.position, Direction.RIGHT, spacing=2)
+set_entity_recipe(science_assembler, Prototype.AutomationSciencePack)
+
+# Output chest
+output_chest = place_entity_next_to(Prototype.IronChest, science_assembler.position, Direction.DOWN, spacing=2)
+
+# Connect with inserters
+place_entity(Prototype.BurnerInserter, Direction.DOWN, Position(x=science_assembler.position.x, y=output_chest.position.y-1))
+
+# Add coal to all inserters
+inserters = get_entities({Prototype.BurnerInserter})
+for inserter in inserters:
+    insert_item(Prototype.Coal, inserter, 5)
+
+# Validate setup
+mining_drills = get_entities({Prototype.BurnerMiningDrill})
+furnaces = get_entities({Prototype.StoneFurnace}) 
+assemblers = get_entities({Prototype.AssemblingMachine1})
+chests = get_entities({Prototype.IronChest})
+
+assert len(mining_drills) >= 2, "Not enough mining drills"
+assert len(furnaces) >= 3, "Not enough furnaces"
+assert len(assemblers) >= 2, "Missing assemblers"
+assert len(chests) >= 3, "Missing chests"
+[2024-10-28 18:39:54] 
+Attempt 3 failed:
+[2024-10-28 18:39:54] Error: Error occurred in the following lines:
+  Line 54: gear_assembler = place_entity(Prototype.AssemblingMachine1, Direction.RIGHT)
+
+Exception: ('Could not place assembling-machine-1 at (0.0, 0.0)', '[string "global.actions.place_entity = function(player..."]:21: The target position is too far away to place the entity. The player position is 25.5, 23.5 and the target position is 0, 0. The distance is 34.677081768799 and the max distance is 10. Move closer.')
+[2024-10-28 18:39:54] Game state: [Chest(name='iron-chest', position=Position(x=-19.5, y=17.5), direction=<Direction.UP: 0>, energy=0.0, type='container', dimensions=Dimensions(width=0.6953125, height=0.6953125), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.IronChest: ('iron-chest', <class 'factorio_entities.Chest'>)>, health=200.0, warnings=[], status=<EntityStatus.NORMAL: 'normal'>, inventory={'coal': 38}), Chest(name='iron-chest', position=Position(x=20.5, y=17.5), direction=<Direction.UP: 0>, energy=0.0, type='container', dimensions=Dimensions(width=0.6953125, height=0.6953125), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.IronChest: ('iron-chest', <class 'factorio_entities.Chest'>)>, health=200.0, warnings=[], status=<EntityStatus.NORMAL: 'normal'>, inventory={'coal': 41}), BurnerMiningDrill(fuel={'coal': 6}, name='burner-mining-drill', position=Position(x=-20.0, y=20.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, drop_position=Position(x=-19.50390625, y=21.296875)), BurnerInserter(fuel={'coal': 2}, name='burner-inserter', position=Position(x=-19.5, y=18.5), direction=<Direction.DOWN: 4>, energy=399500.00001118, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (-19.5, 19.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, pickup_position=Position(x=-19.5, y=17.5), drop_position=Position(x=-19.5, y=19.5)), BurnerMiningDrill(fuel={'coal': 5}, name='burner-mining-drill', position=Position(x=20.0, y=20.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['transport belt at drop position is blocked. Clear the belt at (20.5, 21.5) to continue mining.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, drop_position=Position(x=20.49609375, y=21.296875)), BurnerInserter(fuel={'coal': 2}, name='burner-inserter', position=Position(x=20.5, y=18.5), direction=<Direction.DOWN: 4>, energy=399500.00001118, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (20.5, 19.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, pickup_position=Position(x=20.5, y=17.5), drop_position=Position(x=20.5, y=19.5)), Furnace(fuel={}, name='stone-furnace', position=Position(x=-20.0, y=24.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), Furnace(fuel={}, name='stone-furnace', position=Position(x=-17.0, y=24.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), Furnace(fuel={}, name='stone-furnace', position=Position(x=-14.0, y=24.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), Furnace(fuel={}, name='stone-furnace', position=Position(x=20.0, y=24.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), BeltGroup(input_positions=[Position(x=-19.5, y=18.5)], position=Position(x=-18.5, y=18.5), belts=[TransportBelt(name='transport-belt', position=Position(x=-18.5, y=18.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-19.5, y=18.5), output_position=Position(x=-17.5, y=18.5), inventory={})], output_positions=[Position(x=-17.5, y=18.5)]), BeltGroup(input_positions=[Position(x=20.5, y=18.5)], position=Position(x=21.5, y=18.5), belts=[TransportBelt(name='transport-belt', position=Position(x=21.5, y=18.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=20.5, y=18.5), output_position=Position(x=22.5, y=18.5), inventory={})], output_positions=[Position(x=22.5, y=18.5)]), BeltGroup(input_positions=[Position(x=-20.5, y=21.5)], position=Position(x=-13.5, y=22.5), belts=[TransportBelt(name='transport-belt', position=Position(x=-18.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-19.5, y=21.5), output_position=Position(x=-17.5, y=21.5), inventory={'iron-ore': 2}), TransportBelt(name='transport-belt', position=Position(x=-17.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-18.5, y=21.5), output_position=Position(x=-16.5, y=21.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-16.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-17.5, y=21.5), output_position=Position(x=-15.5, y=21.5), inventory={'iron-ore': 4}), TransportBelt(name='transport-belt', position=Position(x=-15.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-16.5, y=21.5), output_position=Position(x=-14.5, y=21.5), inventory={'iron-ore': 4}), TransportBelt(name='transport-belt', position=Position(x=-14.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-15.5, y=21.5), output_position=Position(x=-13.5, y=21.5), inventory={'iron-ore': 4}), TransportBelt(name='transport-belt', position=Position(x=-19.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-20.5, y=21.5), output_position=Position(x=-18.5, y=21.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-13.5, y=21.5), direction=<Direction.DOWN: 4>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-13.5, y=20.5), output_position=Position(x=-13.5, y=22.5), inventory={'iron-ore': 5}), TransportBelt(name='transport-belt', position=Position(x=-13.5, y=22.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=['transport belt blocked. Place an inserter to drain entities from it.'], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-14.5, y=22.5), output_position=Position(x=-12.5, y=22.5), inventory={'iron-ore': 2})], output_positions=[Position(x=-12.5, y=22.5)]), BeltGroup(input_positions=[Position(x=20.5, y=20.5)], position=Position(x=20.5, y=21.5), belts=[TransportBelt(name='transport-belt', position=Position(x=20.5, y=21.5), direction=<Direction.DOWN: 4>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=['transport belt blocked. Place an inserter to drain entities from it.'], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=20.5, y=20.5), output_position=Position(x=20.5, y=22.5), inventory={})], output_positions=[Position(x=20.5, y=22.5)])]
+[2024-10-28 18:40:22] 
+Repaired implementation:
+[2024-10-28 18:40:22] # Find patches
+iron_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
+copper_patch = get_resource_patch(Resource.CopperOre, nearest(Resource.CopperOre))
+coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
+
+# Build iron mining/smelting line
+move_to(iron_patch.bounding_box.left_top)
+
+# Iron miners
+iron_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, iron_patch.bounding_box.left_top)
+iron_chest = place_entity_next_to(Prototype.IronChest, iron_miner.position, Direction.UP, spacing=iron_miner.dimensions.height)
+insert_item(Prototype.Coal, iron_chest, 50)
+
+# Coal supply for iron
+coal_inserter = place_entity_next_to(Prototype.BurnerInserter, iron_chest.position, Direction.DOWN, spacing=0)
+coal_belt = place_entity_next_to(Prototype.TransportBelt, coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Iron plate belt
+iron_belt = place_entity_next_to(Prototype.TransportBelt, iron_miner.position, Direction.DOWN, spacing=0)
+
+# Iron furnaces
+furnace = place_entity_next_to(Prototype.StoneFurnace, iron_miner.position, Direction.DOWN, spacing=2)
+for _ in range(2):
+    furnace = place_entity_next_to(Prototype.StoneFurnace, furnace.position, Direction.RIGHT, spacing=1)
+
+# Connect iron belt to furnaces
+connect_entities(iron_belt.position, Position(x=furnace.position.x, y=furnace.position.y-2), Prototype.TransportBelt)
+
+# Build copper mining/smelting line  
+move_to(copper_patch.bounding_box.left_top)
+
+# Copper miners
+copper_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, copper_patch.bounding_box.left_top)
+copper_chest = place_entity_next_to(Prototype.IronChest, copper_miner.position, Direction.UP, spacing=copper_miner.dimensions.height)
+insert_item(Prototype.Coal, copper_chest, 50)
+
+# Coal supply for copper
+copper_coal_inserter = place_entity_next_to(Prototype.BurnerInserter, copper_chest.position, Direction.DOWN, spacing=0)
+copper_coal_belt = place_entity_next_to(Prototype.TransportBelt, copper_coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Copper plate belt
+copper_belt = place_entity_next_to(Prototype.TransportBelt, copper_miner.position, Direction.DOWN, spacing=0)
+
+# Copper furnaces
+copper_furnace = place_entity_next_to(Prototype.StoneFurnace, copper_miner.position, Direction.DOWN, spacing=2)
+
+# Connect copper belt to furnace
+connect_entities(copper_belt.position, Position(x=copper_furnace.position.x, y=copper_furnace.position.y-2), Prototype.TransportBelt)
+
+# Move to position between iron and copper for assembly
+move_to(Position(x=(iron_miner.position.x + copper_miner.position.x)/2, y=copper_furnace.position.y + 5))
+
+# Gear assembly
+gear_assembler = place_entity(Prototype.AssemblingMachine1)
+set_entity_recipe(gear_assembler, Prototype.IronGearWheel)
+
+# Science pack assembly 
+science_assembler = place_entity_next_to(Prototype.AssemblingMachine1, gear_assembler.position, Direction.RIGHT, spacing=2)
+set_entity_recipe(science_assembler, Prototype.AutomationSciencePack)
+
+# Output chest
+output_chest = place_entity_next_to(Prototype.IronChest, science_assembler.position, Direction.DOWN, spacing=2)
+
+# Connect with inserters
+place_entity(Prototype.BurnerInserter, Direction.DOWN, Position(x=science_assembler.position.x, y=output_chest.position.y-1))
+
+# Add coal to all inserters
+inserters = get_entities({Prototype.BurnerInserter})
+for inserter in inserters:
+    insert_item(Prototype.Coal, inserter, 5)
+
+# Validate setup
+mining_drills = get_entities({Prototype.BurnerMiningDrill})
+furnaces = get_entities({Prototype.StoneFurnace})
+assemblers = get_entities({Prototype.AssemblingMachine1})
+chests = get_entities({Prototype.IronChest})
+
+assert len(mining_drills) >= 2, "Not enough mining drills"
+assert len(furnaces) >= 3, "Not enough furnaces"
+assert len(assemblers) >= 2, "Missing assemblers" 
+assert len(chests) >= 3, "Missing chests"
+[2024-10-28 18:40:45] 
+Attempt 4 failed:
+[2024-10-28 18:40:45] Error: Error occurred in the following lines:
+  Line 54: gear_assembler = place_entity(Prototype.AssemblingMachine1)
+
+Exception: ('Could not place assembling-machine-1 at (0.0, 0.0)', '[string "global.actions.place_entity = function(player..."]:21: The target position is too far away to place the entity. The player position is 1.5, 29.5 and the target position is 0, 0. The distance is 29.538110975484 and the max distance is 10. Move closer.')
+[2024-10-28 18:40:45] Game state: [Chest(name='iron-chest', position=Position(x=-19.5, y=17.5), direction=<Direction.UP: 0>, energy=0.0, type='container', dimensions=Dimensions(width=0.6953125, height=0.6953125), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.IronChest: ('iron-chest', <class 'factorio_entities.Chest'>)>, health=200.0, warnings=[], status=<EntityStatus.NORMAL: 'normal'>, inventory={'coal': 38}), Chest(name='iron-chest', position=Position(x=20.5, y=17.5), direction=<Direction.UP: 0>, energy=0.0, type='container', dimensions=Dimensions(width=0.6953125, height=0.6953125), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.IronChest: ('iron-chest', <class 'factorio_entities.Chest'>)>, health=200.0, warnings=[], status=<EntityStatus.NORMAL: 'normal'>, inventory={'coal': 41}), BurnerMiningDrill(fuel={'coal': 6}, name='burner-mining-drill', position=Position(x=-20.0, y=20.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, drop_position=Position(x=-19.50390625, y=21.296875)), BurnerInserter(fuel={'coal': 2}, name='burner-inserter', position=Position(x=-19.5, y=18.5), direction=<Direction.DOWN: 4>, energy=399500.00001118, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (-19.5, 19.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, pickup_position=Position(x=-19.5, y=17.5), drop_position=Position(x=-19.5, y=19.5)), BurnerMiningDrill(fuel={'coal': 5}, name='burner-mining-drill', position=Position(x=20.0, y=20.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['transport belt at drop position is blocked. Clear the belt at (20.5, 21.5) to continue mining.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, drop_position=Position(x=20.49609375, y=21.296875)), BurnerInserter(fuel={'coal': 2}, name='burner-inserter', position=Position(x=20.5, y=18.5), direction=<Direction.DOWN: 4>, energy=399500.00001118, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (20.5, 19.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, pickup_position=Position(x=20.5, y=17.5), drop_position=Position(x=20.5, y=19.5)), Furnace(fuel={}, name='stone-furnace', position=Position(x=-20.0, y=24.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), Furnace(fuel={}, name='stone-furnace', position=Position(x=-17.0, y=24.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), Furnace(fuel={}, name='stone-furnace', position=Position(x=-14.0, y=24.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), Furnace(fuel={}, name='stone-furnace', position=Position(x=20.0, y=24.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), BeltGroup(input_positions=[Position(x=-19.5, y=18.5)], position=Position(x=-18.5, y=18.5), belts=[TransportBelt(name='transport-belt', position=Position(x=-18.5, y=18.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-19.5, y=18.5), output_position=Position(x=-17.5, y=18.5), inventory={})], output_positions=[Position(x=-17.5, y=18.5)]), BeltGroup(input_positions=[Position(x=20.5, y=18.5)], position=Position(x=21.5, y=18.5), belts=[TransportBelt(name='transport-belt', position=Position(x=21.5, y=18.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=20.5, y=18.5), output_position=Position(x=22.5, y=18.5), inventory={})], output_positions=[Position(x=22.5, y=18.5)]), BeltGroup(input_positions=[Position(x=-20.5, y=21.5)], position=Position(x=-13.5, y=22.5), belts=[TransportBelt(name='transport-belt', position=Position(x=-18.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-19.5, y=21.5), output_position=Position(x=-17.5, y=21.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-17.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-18.5, y=21.5), output_position=Position(x=-16.5, y=21.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-16.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-17.5, y=21.5), output_position=Position(x=-15.5, y=21.5), inventory={'iron-ore': 4}), TransportBelt(name='transport-belt', position=Position(x=-15.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-16.5, y=21.5), output_position=Position(x=-14.5, y=21.5), inventory={'iron-ore': 4}), TransportBelt(name='transport-belt', position=Position(x=-14.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-15.5, y=21.5), output_position=Position(x=-13.5, y=21.5), inventory={'iron-ore': 4}), TransportBelt(name='transport-belt', position=Position(x=-19.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-20.5, y=21.5), output_position=Position(x=-18.5, y=21.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-13.5, y=21.5), direction=<Direction.DOWN: 4>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-13.5, y=20.5), output_position=Position(x=-13.5, y=22.5), inventory={'iron-ore': 5}), TransportBelt(name='transport-belt', position=Position(x=-13.5, y=22.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=['transport belt blocked. Place an inserter to drain entities from it.'], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-14.5, y=22.5), output_position=Position(x=-12.5, y=22.5), inventory={'iron-ore': 2})], output_positions=[Position(x=-12.5, y=22.5)]), BeltGroup(input_positions=[Position(x=20.5, y=20.5)], position=Position(x=20.5, y=21.5), belts=[TransportBelt(name='transport-belt', position=Position(x=20.5, y=21.5), direction=<Direction.DOWN: 4>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=['transport belt blocked. Place an inserter to drain entities from it.'], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=20.5, y=20.5), output_position=Position(x=20.5, y=22.5), inventory={})], output_positions=[Position(x=20.5, y=22.5)])]
+[2024-10-28 18:41:13] 
+Repaired implementation:
+[2024-10-28 18:41:13] # Find patches
+iron_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
+copper_patch = get_resource_patch(Resource.CopperOre, nearest(Resource.CopperOre))
+coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
+
+# Build iron mining/smelting line
+move_to(iron_patch.bounding_box.left_top)
+
+# Iron miners
+iron_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, iron_patch.bounding_box.left_top)
+iron_chest = place_entity_next_to(Prototype.IronChest, iron_miner.position, Direction.UP, spacing=1)
+insert_item(Prototype.Coal, iron_chest, 50)
+
+# Coal supply for iron
+coal_inserter = place_entity_next_to(Prototype.BurnerInserter, iron_chest.position, Direction.DOWN, spacing=0)
+coal_belt = place_entity_next_to(Prototype.TransportBelt, coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Iron plate belt
+iron_belt = place_entity_next_to(Prototype.TransportBelt, iron_miner.position, Direction.DOWN, spacing=0)
+
+# Iron furnaces
+furnace = place_entity_next_to(Prototype.StoneFurnace, iron_miner.position, Direction.DOWN, spacing=2)
+for _ in range(2):
+    furnace = place_entity_next_to(Prototype.StoneFurnace, furnace.position, Direction.RIGHT, spacing=1)
+
+# Connect iron belt to furnaces
+connect_entities(iron_belt.position, Position(x=furnace.position.x, y=furnace.position.y-2), Prototype.TransportBelt)
+
+# Build copper mining/smelting line  
+move_to(copper_patch.bounding_box.left_top)
+
+# Copper miners
+copper_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, copper_patch.bounding_box.left_top)
+copper_chest = place_entity_next_to(Prototype.IronChest, copper_miner.position, Direction.UP, spacing=1)
+insert_item(Prototype.Coal, copper_chest, 50)
+
+# Coal supply for copper
+copper_coal_inserter = place_entity_next_to(Prototype.BurnerInserter, copper_chest.position, Direction.DOWN, spacing=0)
+copper_coal_belt = place_entity_next_to(Prototype.TransportBelt, copper_coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Copper plate belt
+copper_belt = place_entity_next_to(Prototype.TransportBelt, copper_miner.position, Direction.DOWN, spacing=0)
+
+# Copper furnaces
+copper_furnace = place_entity_next_to(Prototype.StoneFurnace, copper_miner.position, Direction.DOWN, spacing=2)
+
+# Connect copper belt to furnace
+connect_entities(copper_belt.position, Position(x=copper_furnace.position.x, y=copper_furnace.position.y-2), Prototype.TransportBelt)
+
+# Move between iron and copper lines for assembly
+target_x = (iron_miner.position.x + copper_miner.position.x)/2
+target_y = copper_furnace.position.y + 5
+move_to(Position(x=target_x, y=target_y))
+
+# Place and configure gear assembler
+gear_assembler = place_entity(Prototype.AssemblingMachine1, position=Position(x=target_x-2, y=target_y))
+set_entity_recipe(gear_assembler, Prototype.IronGearWheel)
+
+# Place and configure science pack assembler
+science_assembler = place_entity_next_to(Prototype.AssemblingMachine1, gear_assembler.position, Direction.RIGHT, spacing=2)
+set_entity_recipe(science_assembler, Prototype.AutomationSciencePack)
+
+# Output chest
+output_chest = place_entity_next_to(Prototype.IronChest, science_assembler.position, Direction.DOWN, spacing=2)
+
+# Connect with inserters
+place_entity(Prototype.BurnerInserter, Direction.DOWN, Position(x=science_assembler.position.x, y=output_chest.position.y-1))
+
+# Add coal to all inserters
+inserters = get_entities({Prototype.BurnerInserter})
+for inserter in inserters:
+    insert_item(Prototype.Coal, inserter, 5)
+
+# Validate setup
+mining_drills = get_entities({Prototype.BurnerMiningDrill}) 
+furnaces = get_entities({Prototype.StoneFurnace})
+assemblers = get_entities({Prototype.AssemblingMachine1})
+chests = get_entities({Prototype.IronChest})
+
+assert len(mining_drills) >= 2, "Not enough mining drills"
+assert len(furnaces) >= 3, "Not enough furnaces" 
+assert len(assemblers) >= 2, "Missing assemblers"
+assert len(chests) >= 3, "Missing chests"
+[2024-10-28 18:41:27] 
+Attempt 5 failed:
+[2024-10-28 18:41:27] Error: Error occurred in the following lines:
+  Line 56: gear_assembler = place_entity(Prototype.AssemblingMachine1, position=Position(x=target_x-2, y=target_y))
+
+Exception: ('Could not place assembling-machine-1 at (-2.5, 29.0)', '[string "global.actions.place_entity = function(player..."]:34: No assembling_machine_1 in inventory.')
+[2024-10-28 18:41:27] Game state: [BurnerInserter(fuel={'coal': 2}, name='burner-inserter', position=Position(x=-20.5, y=17.5), direction=<Direction.DOWN: 4>, energy=399500.00001118, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (-20.5, 18.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, pickup_position=Position(x=-20.5, y=16.5), drop_position=Position(x=-20.5, y=18.5)), Chest(name='iron-chest', position=Position(x=-20.5, y=16.5), direction=<Direction.UP: 0>, energy=0.0, type='container', dimensions=Dimensions(width=0.6953125, height=0.6953125), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.IronChest: ('iron-chest', <class 'factorio_entities.Chest'>)>, health=200.0, warnings=[], status=<EntityStatus.NORMAL: 'normal'>, inventory={'coal': 38}), Chest(name='iron-chest', position=Position(x=20.5, y=17.5), direction=<Direction.UP: 0>, energy=0.0, type='container', dimensions=Dimensions(width=0.6953125, height=0.6953125), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.IronChest: ('iron-chest', <class 'factorio_entities.Chest'>)>, health=200.0, warnings=[], status=<EntityStatus.NORMAL: 'normal'>, inventory={'coal': 41}), BurnerMiningDrill(fuel={'coal': 7}, name='burner-mining-drill', position=Position(x=-21.0, y=19.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, drop_position=Position(x=-20.50390625, y=20.296875)), BurnerMiningDrill(fuel={'coal': 5}, name='burner-mining-drill', position=Position(x=20.0, y=20.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['transport belt at drop position is blocked. Clear the belt at (20.5, 21.5) to continue mining.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, drop_position=Position(x=20.49609375, y=21.296875)), BurnerInserter(fuel={'coal': 2}, name='burner-inserter', position=Position(x=20.5, y=18.5), direction=<Direction.DOWN: 4>, energy=399500.00001118, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (20.5, 19.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, pickup_position=Position(x=20.5, y=17.5), drop_position=Position(x=20.5, y=19.5)), Furnace(fuel={}, name='stone-furnace', position=Position(x=-21.0, y=23.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), Furnace(fuel={}, name='stone-furnace', position=Position(x=-18.0, y=23.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), Furnace(fuel={}, name='stone-furnace', position=Position(x=-15.0, y=23.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), Furnace(fuel={}, name='stone-furnace', position=Position(x=20.0, y=24.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), BeltGroup(input_positions=[Position(x=-20.5, y=17.5)], position=Position(x=-19.5, y=17.5), belts=[TransportBelt(name='transport-belt', position=Position(x=-19.5, y=17.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-20.5, y=17.5), output_position=Position(x=-18.5, y=17.5), inventory={})], output_positions=[Position(x=-18.5, y=17.5)]), BeltGroup(input_positions=[Position(x=20.5, y=18.5)], position=Position(x=21.5, y=18.5), belts=[TransportBelt(name='transport-belt', position=Position(x=21.5, y=18.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=20.5, y=18.5), output_position=Position(x=22.5, y=18.5), inventory={})], output_positions=[Position(x=22.5, y=18.5)]), BeltGroup(input_positions=[Position(x=-15.5, y=21.5)], position=Position(x=-14.5, y=20.5), belts=[TransportBelt(name='transport-belt', position=Position(x=-20.5, y=20.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-21.5, y=20.5), output_position=Position(x=-19.5, y=20.5), inventory={'iron-ore': 2}), TransportBelt(name='transport-belt', position=Position(x=-19.5, y=20.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-20.5, y=20.5), output_position=Position(x=-18.5, y=20.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-18.5, y=20.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-19.5, y=20.5), output_position=Position(x=-17.5, y=20.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-17.5, y=20.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-18.5, y=20.5), output_position=Position(x=-16.5, y=20.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-16.5, y=20.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-17.5, y=20.5), output_position=Position(x=-15.5, y=20.5), inventory={'iron-ore': 1}), TransportBelt(name='transport-belt', position=Position(x=-15.5, y=20.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-16.5, y=20.5), output_position=Position(x=-14.5, y=20.5), inventory={'iron-ore': 4}), TransportBelt(name='transport-belt', position=Position(x=-14.5, y=20.5), direction=<Direction.DOWN: 4>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-14.5, y=19.5), output_position=Position(x=-14.5, y=21.5), inventory={'iron-ore': 5}), TransportBelt(name='transport-belt', position=Position(x=-14.5, y=21.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=['transport belt blocked. Place an inserter to drain entities from it.'], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-15.5, y=21.5), output_position=Position(x=-13.5, y=21.5), inventory={'iron-ore': 2})], output_positions=[Position(x=-13.5, y=21.5)]), BeltGroup(input_positions=[Position(x=20.5, y=20.5)], position=Position(x=20.5, y=21.5), belts=[TransportBelt(name='transport-belt', position=Position(x=20.5, y=21.5), direction=<Direction.DOWN: 4>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=['transport belt blocked. Place an inserter to drain entities from it.'], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=20.5, y=20.5), output_position=Position(x=20.5, y=22.5), inventory={})], output_positions=[Position(x=20.5, y=22.5)])]
+[2024-10-28 18:42:01] 
+Repaired implementation:
+[2024-10-28 18:42:01] # Find patches
+iron_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
+copper_patch = get_resource_patch(Resource.CopperOre, nearest(Resource.CopperOre))
+coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
+
+# Harvest initial resources
+move_to(coal_patch.bounding_box.center)
+harvest_resource(coal_patch.bounding_box.center, 50)
+
+move_to(stone_position := nearest(Resource.Stone))
+harvest_resource(stone_position, 10)
+
+# Craft required items
+craft_item(Prototype.StoneFurnace, 5)
+craft_item(Prototype.BurnerMiningDrill, 2)
+craft_item(Prototype.BurnerInserter, 4) 
+craft_item(Prototype.TransportBelt, 20)
+craft_item(Prototype.IronChest, 3)
+craft_item(Prototype.AssemblingMachine1, 2)
+
+# Build iron mining/smelting line
+move_to(iron_patch.bounding_box.left_top)
+
+# Iron miners
+iron_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, iron_patch.bounding_box.left_top)
+iron_chest = place_entity_next_to(Prototype.IronChest, iron_miner.position, Direction.UP, spacing=1)
+insert_item(Prototype.Coal, iron_chest, 50)
+
+# Coal supply for iron
+coal_inserter = place_entity_next_to(Prototype.BurnerInserter, iron_chest.position, Direction.DOWN, spacing=0)
+coal_belt = place_entity_next_to(Prototype.TransportBelt, coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Iron plate belt
+iron_belt = place_entity_next_to(Prototype.TransportBelt, iron_miner.position, Direction.DOWN, spacing=0)
+
+# Iron furnaces
+furnace = place_entity_next_to(Prototype.StoneFurnace, iron_miner.position, Direction.DOWN, spacing=2)
+for _ in range(2):
+    furnace = place_entity_next_to(Prototype.StoneFurnace, furnace.position, Direction.RIGHT, spacing=1)
+
+# Connect iron belt to furnaces
+connect_entities(iron_belt.position, Position(x=furnace.position.x, y=furnace.position.y-2), Prototype.TransportBelt)
+
+# Build copper mining/smelting line  
+move_to(copper_patch.bounding_box.left_top)
+
+# Copper miners
+copper_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, copper_patch.bounding_box.left_top)
+copper_chest = place_entity_next_to(Prototype.IronChest, copper_miner.position, Direction.UP, spacing=1)
+insert_item(Prototype.Coal, copper_chest, 50)
+
+# Coal supply for copper
+copper_coal_inserter = place_entity_next_to(Prototype.BurnerInserter, copper_chest.position, Direction.DOWN, spacing=0)
+copper_coal_belt = place_entity_next_to(Prototype.TransportBelt, copper_coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Copper plate belt
+copper_belt = place_entity_next_to(Prototype.TransportBelt, copper_miner.position, Direction.DOWN, spacing=0)
+
+# Copper furnaces
+copper_furnace = place_entity_next_to(Prototype.StoneFurnace, copper_miner.position, Direction.DOWN, spacing=2)
+
+# Connect copper belt to furnace
+connect_entities(copper_belt.position, Position(x=copper_furnace.position.x, y=copper_furnace.position.y-2), Prototype.TransportBelt)
+
+# Add coal to all furnaces
+for furnace in get_entities({Prototype.StoneFurnace}):
+    insert_item(Prototype.Coal, furnace, 5)
+
+# Let resources accumulate before continuing
+sleep(10)
+
+# Move between iron and copper lines for assembly
+target_x = (iron_miner.position.x + copper_miner.position.x)/2
+target_y = copper_furnace.position.y + 5
+move_to(Position(x=target_x, y=target_y))
+
+# Craft assemblers if needed
+if len(get_entities({Prototype.AssemblingMachine1})) < 2:
+    craft_item(Prototype.AssemblingMachine1, 2)
+
+# Place and configure gear assembler
+gear_assembler = place_entity(Prototype.AssemblingMachine1, Direction.UP, Position(x=target_x-2, y=target_y))
+set_entity_recipe(gear_assembler, Prototype.IronGearWheel)
+
+# Place and configure science pack assembler
+science_assembler = place_entity_next_to(Prototype.AssemblingMachine1, gear_assembler.position, Direction.RIGHT, spacing=2)
+set_entity_recipe(science_assembler, Prototype.AutomationSciencePack)
+
+# Output chest
+output_chest = place_entity_next_to(Prototype.IronChest, science_assembler.position, Direction.DOWN, spacing=2)
+
+# Connect with inserters
+place_entity(Prototype.BurnerInserter, Direction.DOWN, Position(x=science_assembler.position.x, y=output_chest.position.y-1))
+
+# Add coal to all inserters
+inserters = get_entities({Prototype.BurnerInserter})
+for inserter in inserters:
+    insert_item(Prototype.Coal, inserter, 5)
+
+# Validate setup
+mining_drills = get_entities({Prototype.BurnerMiningDrill}) 
+furnaces = get_entities({Prototype.StoneFurnace})
+assemblers = get_entities({Prototype.AssemblingMachine1})
+chests = get_entities({Prototype.IronChest})
+
+assert len(mining_drills) >= 2, "Not enough mining drills"
+assert len(furnaces) >= 3, "Not enough furnaces" 
+assert len(assemblers) >= 2, "Missing assemblers"
+assert len(chests) >= 3, "Missing chests"
+[2024-10-28 18:42:14] 
+Attempt 6 failed:
+[2024-10-28 18:42:14] Error: Error occurred in the following lines:
+  Line 14: craft_item(Prototype.StoneFurnace, 5)
+
+Exception: Could not craft a stone-furnace - [string "global.actions.craft_item = function(player_i..."]:85: Failed to craft 5x_stone-furnace because missing ingredients that can't be crafted: stone
+[2024-10-28 18:42:14] Game state: []
+[2024-10-28 18:42:47] 
+Repaired implementation:
+[2024-10-28 18:42:47] # Find patches
+iron_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
+copper_patch = get_resource_patch(Resource.CopperOre, nearest(Resource.CopperOre))
+coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
+
+# Harvest initial resources
+move_to(coal_patch.bounding_box.center)
+harvest_resource(coal_patch.bounding_box.center, 50)
+
+move_to(stone_position := nearest(Resource.Stone))
+harvest_resource(stone_position, 20)
+
+# Craft initial items
+craft_item(Prototype.StoneFurnace)
+craft_item(Prototype.BurnerMiningDrill)
+
+# Set up initial stone production
+stone_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, stone_position)
+stone_chest = place_entity_next_to(Prototype.WoodenChest, stone_miner.position, Direction.DOWN, spacing=1)
+insert_item(Prototype.Coal, stone_miner, 5)
+
+# Let stone accumulate
+sleep(5)
+
+# Craft remaining infrastructure
+craft_item(Prototype.StoneFurnace, 4)
+craft_item(Prototype.BurnerMiningDrill)
+craft_item(Prototype.BurnerInserter, 4)
+craft_item(Prototype.TransportBelt, 20)
+craft_item(Prototype.IronChest, 3)
+craft_item(Prototype.AssemblingMachine1, 2)
+
+# Build iron mining/smelting line
+move_to(iron_patch.bounding_box.left_top)
+
+# Iron miners
+iron_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, iron_patch.bounding_box.left_top)
+iron_chest = place_entity_next_to(Prototype.IronChest, iron_miner.position, Direction.UP, spacing=1)
+insert_item(Prototype.Coal, iron_chest, 50)
+
+# Coal supply for iron
+coal_inserter = place_entity_next_to(Prototype.BurnerInserter, iron_chest.position, Direction.DOWN, spacing=0)
+coal_belt = place_entity_next_to(Prototype.TransportBelt, coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Iron plate belt
+iron_belt = place_entity_next_to(Prototype.TransportBelt, iron_miner.position, Direction.DOWN, spacing=0)
+
+# Iron furnaces
+furnace = place_entity_next_to(Prototype.StoneFurnace, iron_miner.position, Direction.DOWN, spacing=2)
+for _ in range(2):
+    furnace = place_entity_next_to(Prototype.StoneFurnace, furnace.position, Direction.RIGHT, spacing=1)
+
+# Connect iron belt to furnaces
+connect_entities(iron_belt.position, Position(x=furnace.position.x, y=furnace.position.y-2), Prototype.TransportBelt)
+
+# Build copper mining/smelting line  
+move_to(copper_patch.bounding_box.left_top)
+
+# Copper miners
+copper_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, copper_patch.bounding_box.left_top)
+copper_chest = place_entity_next_to(Prototype.IronChest, copper_miner.position, Direction.UP, spacing=1)
+insert_item(Prototype.Coal, copper_chest, 50)
+
+# Coal supply for copper
+copper_coal_inserter = place_entity_next_to(Prototype.BurnerInserter, copper_chest.position, Direction.DOWN, spacing=0)
+copper_coal_belt = place_entity_next_to(Prototype.TransportBelt, copper_coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Copper plate belt
+copper_belt = place_entity_next_to(Prototype.TransportBelt, copper_miner.position, Direction.DOWN, spacing=0)
+
+# Copper furnaces
+copper_furnace = place_entity_next_to(Prototype.StoneFurnace, copper_miner.position, Direction.DOWN, spacing=2)
+
+# Connect copper belt to furnace
+connect_entities(copper_belt.position, Position(x=copper_furnace.position.x, y=copper_furnace.position.y-2), Prototype.TransportBelt)
+
+# Add coal to all furnaces
+for furnace in get_entities({Prototype.StoneFurnace}):
+    insert_item(Prototype.Coal, furnace, 5)
+
+# Let resources accumulate before continuing
+sleep(10)
+
+# Move between iron and copper lines for assembly
+target_x = (iron_miner.position.x + copper_miner.position.x)/2
+target_y = copper_furnace.position.y + 5
+move_to(Position(x=target_x, y=target_y))
+
+# Place and configure gear assembler
+gear_assembler = place_entity(Prototype.AssemblingMachine1, Direction.UP, Position(x=target_x-2, y=target_y))
+set_entity_recipe(gear_assembler, Prototype.IronGearWheel)
+
+# Place and configure science pack assembler
+science_assembler = place_entity_next_to(Prototype.AssemblingMachine1, gear_assembler.position, Direction.RIGHT, spacing=2)
+set_entity_recipe(science_assembler, Prototype.AutomationSciencePack)
+
+# Output chest
+output_chest = place_entity_next_to(Prototype.IronChest, science_assembler.position, Direction.DOWN, spacing=2)
+
+# Connect with inserters
+place_entity(Prototype.BurnerInserter, Direction.DOWN, Position(x=science_assembler.position.x, y=output_chest.position.y-1))
+
+# Add coal to all inserters
+inserters = get_entities({Prototype.BurnerInserter})
+for inserter in inserters:
+    insert_item(Prototype.Coal, inserter, 5)
+
+# Validate setup
+mining_drills = get_entities({Prototype.BurnerMiningDrill}) 
+furnaces = get_entities({Prototype.StoneFurnace})
+assemblers = get_entities({Prototype.AssemblingMachine1})
+chests = get_entities({Prototype.IronChest})
+
+assert len(mining_drills) >= 2, "Not enough mining drills"
+assert len(furnaces) >= 3, "Not enough furnaces" 
+assert len(assemblers) >= 2, "Missing assemblers"
+assert len(chests) >= 3, "Missing chests"
+[2024-10-28 18:43:01] 
+Attempt 7 failed:
+[2024-10-28 18:43:01] Error: Error occurred in the following lines:
+  Line 15: craft_item(Prototype.BurnerMiningDrill)
+
+Exception: Could not craft a burner-mining-drill - [string "global.actions.craft_item = function(player_i..."]:85: Failed to craft 1x_burner-mining-drill because failed to craft intermediate ingredient: iron-plate
+[2024-10-28 18:43:01] Game state: []
+[2024-10-28 18:43:31] 
+Repaired implementation:
+[2024-10-28 18:43:31] # Find patches
+iron_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
+copper_patch = get_resource_patch(Resource.CopperOre, nearest(Resource.CopperOre))
+coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
+
+# Harvest initial resources
+move_to(coal_patch.bounding_box.center)
+harvest_resource(coal_patch.bounding_box.center, 50)
+
+move_to(stone_position := nearest(Resource.Stone))
+harvest_resource(stone_position, 20)
+
+move_to(iron_patch.bounding_box.center)
+harvest_resource(iron_patch.bounding_box.center, 20)
+
+# Craft initial items
+craft_item(Prototype.StoneFurnace, 2)
+
+# Set up initial iron smelting
+iron_furnace = place_entity(Prototype.StoneFurnace, Direction.DOWN, iron_patch.bounding_box.center)
+insert_item(Prototype.Coal, iron_furnace, 5)
+insert_item(Prototype.IronOre, iron_furnace, 10)
+
+# Let iron plates smelt
+sleep(5)
+
+# Craft remaining infrastructure once we have iron plates
+craft_item(Prototype.BurnerMiningDrill, 3)
+craft_item(Prototype.BurnerInserter, 4) 
+craft_item(Prototype.TransportBelt, 20)
+craft_item(Prototype.IronChest, 3)
+craft_item(Prototype.StoneFurnace, 3)
+craft_item(Prototype.AssemblingMachine1, 2)
+
+# Build iron mining/smelting line
+move_to(iron_patch.bounding_box.left_top)
+
+# Iron miners
+iron_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, iron_patch.bounding_box.left_top)
+iron_chest = place_entity_next_to(Prototype.IronChest, iron_miner.position, Direction.UP, spacing=1)
+insert_item(Prototype.Coal, iron_chest, 50)
+
+# Coal supply for iron
+coal_inserter = place_entity_next_to(Prototype.BurnerInserter, iron_chest.position, Direction.DOWN, spacing=0)
+coal_belt = place_entity_next_to(Prototype.TransportBelt, coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Iron plate belt
+iron_belt = place_entity_next_to(Prototype.TransportBelt, iron_miner.position, Direction.DOWN, spacing=0)
+
+# Iron furnaces
+furnace = place_entity_next_to(Prototype.StoneFurnace, iron_miner.position, Direction.DOWN, spacing=2)
+for _ in range(2):
+    furnace = place_entity_next_to(Prototype.StoneFurnace, furnace.position, Direction.RIGHT, spacing=1)
+
+# Connect iron belt to furnaces
+connect_entities(iron_belt.position, Position(x=furnace.position.x, y=furnace.position.y-2), Prototype.TransportBelt)
+
+# Build copper mining/smelting line
+move_to(copper_patch.bounding_box.left_top)
+
+# Copper miners
+copper_miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, copper_patch.bounding_box.left_top)
+copper_chest = place_entity_next_to(Prototype.IronChest, copper_miner.position, Direction.UP, spacing=1)
+insert_item(Prototype.Coal, copper_chest, 50)
+
+# Coal supply for copper
+copper_coal_inserter = place_entity_next_to(Prototype.BurnerInserter, copper_chest.position, Direction.DOWN, spacing=0)
+copper_coal_belt = place_entity_next_to(Prototype.TransportBelt, copper_coal_inserter.position, Direction.RIGHT, spacing=0)
+
+# Copper plate belt
+copper_belt = place_entity_next_to(Prototype.TransportBelt, copper_miner.position, Direction.DOWN, spacing=0)
+
+# Copper furnaces
+copper_furnace = place_entity_next_to(Prototype.StoneFurnace, copper_miner.position, Direction.DOWN, spacing=2)
+
+# Connect copper belt to furnace
+connect_entities(copper_belt.position, Position(x=copper_furnace.position.x, y=copper_furnace.position.y-2), Prototype.TransportBelt)
+
+# Add coal to all furnaces
+for furnace in get_entities({Prototype.StoneFurnace}):
+    insert_item(Prototype.Coal, furnace, 5)
+
+# Let resources accumulate before continuing
+sleep(10)
+
+# Move between iron and copper lines for assembly
+target_x = (iron_miner.position.x + copper_miner.position.x)/2
+target_y = copper_furnace.position.y + 5
+move_to(Position(x=target_x, y=target_y))
+
+# Place and configure gear assembler
+gear_assembler = place_entity(Prototype.AssemblingMachine1, Direction.UP, Position(x=target_x-2, y=target_y))
+set_entity_recipe(gear_assembler, Prototype.IronGearWheel)
+
+# Place and configure science pack assembler
+science_assembler = place_entity_next_to(Prototype.AssemblingMachine1, gear_assembler.position, Direction.RIGHT, spacing=2)
+set_entity_recipe(science_assembler, Prototype.AutomationSciencePack)
+
+# Output chest
+output_chest = place_entity_next_to(Prototype.IronChest, science_assembler.position, Direction.DOWN, spacing=2)
+
+# Connect with inserters
+place_entity(Prototype.BurnerInserter, Direction.DOWN, Position(x=science_assembler.position.x, y=output_chest.position.y-1))
+
+# Add coal to all inserters
+inserters = get_entities({Prototype.BurnerInserter})
+for inserter in inserters:
+    insert_item(Prototype.Coal, inserter, 5)
+
+# Validate setup
+mining_drills = get_entities({Prototype.BurnerMiningDrill})
+furnaces = get_entities({Prototype.StoneFurnace})
+assemblers = get_entities({Prototype.AssemblingMachine1})
+chests = get_entities({Prototype.IronChest})
+
+assert len(mining_drills) >= 2, "Not enough mining drills"
+assert len(furnaces) >= 3, "Not enough furnaces"
+assert len(assemblers) >= 2, "Missing assemblers"
+assert len(chests) >= 3, "Missing chests"
+[2024-10-28 18:43:44] 
+Attempt 8 failed:
+[2024-10-28 18:43:44] Error: Error occurred in the following lines:
+  Line 28: craft_item(Prototype.BurnerMiningDrill, 3)
+
+Exception: Could not craft a burner-mining-drill - [string "global.actions.craft_item = function(player_i..."]:85: Failed to craft 3x_burner-mining-drill because failed to craft intermediate ingredient: iron-gear-wheel
+[2024-10-28 18:43:44] Base skills selected:
+[2024-10-28 18:43:44]   - test_collect_iron_ore: Tests if a player can successfully harvest 10 iron ore by finding the nearest iron ore resource, moving to it, and collecting it. Verifies the correct quantity is added to inventory.
+[2024-10-28 18:43:44]   - test_simple_automated_drill: Tests automated placement and configuration of a basic coal mining setup in a factory automation system. Verifies correct positioning and connection of a burner mining drill, inserter, and transport belts to create a functional coal extraction loop. Checks that components are properly oriented and connected to enable automated coal mining and transport.
+[2024-10-28 18:43:44]   - test_create_offshore_pump_to_steam_engine: Tests the placement and connection of a basic power generation system by placing and configuring an offshore pump, boiler, and steam engine. Verifies correct entity positioning, rotation, pipe connections, and initial power network status. The test ensures the components are properly aligned and connected but intentionally leaves the steam engine disconnected from a power network.
+[2024-10-28 18:43:44] Combined inventory requirements: {'stone-furnace': 1, 'iron-chest': 3, 'burner-inserter': 6, 'coal': 50, 'transport-belt': 50, 'burner-mining-drill': 5, 'boiler': 1, 'steam-engine': 1, 'offshore-pump': 1, 'pipe': 100, 'iron-plate': 50, 'copper-plate': 20}
+[2024-10-28 18:43:47] Generated objective: Implement a snippet that creates a basic iron smelting operation by placing a stone furnace, connecting it to existing iron ore and coal mining setups via transport belts and inserters, and verifying the production of iron plates over multiple cycles. Test should confirm correct placement, orientation, and throughput of materials.
+[2024-10-28 18:44:09] # Find nearest iron ore patch and coal patch
+iron_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
+coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
+assert iron_patch and coal_patch, "Required resource patches not found"
+
+# Place iron ore mining drill
+iron_drill_pos = iron_patch.bounding_box.center
+move_to(iron_drill_pos)
+iron_drill = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, iron_drill_pos)
+assert iron_drill, "Failed to place iron ore mining drill"
+
+# Place coal mining drill if not already placed
+coal_drill_pos = coal_patch.bounding_box.center
+move_to(coal_drill_pos)
+coal_drill = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, coal_drill_pos)
+assert coal_drill, "Failed to place coal mining drill"
+
+# Place furnace between iron and coal sources
+furnace_pos = Position(
+    x=(iron_drill.position.x + coal_drill.position.x) / 2,
+    y=(iron_drill.position.y + coal_drill.position.y) / 2
+)
+move_to(furnace_pos)
+furnace = place_entity(Prototype.StoneFurnace, Direction.UP, furnace_pos)
+assert furnace, "Failed to place stone furnace"
+
+# Place inserters for iron ore input
+iron_inserter_pos = Position(x=furnace.position.x - 1, y=furnace.position.y)
+iron_inserter = place_entity(Prototype.BurnerInserter, Direction.RIGHT, iron_inserter_pos)
+assert iron_inserter, "Failed to place iron ore inserter"
+
+# Place inserter for coal input
+coal_inserter_pos = Position(x=furnace.position.x, y=furnace.position.y - 1)
+coal_inserter = place_entity(Prototype.BurnerInserter, Direction.DOWN, coal_inserter_pos)
+assert coal_inserter, "Failed to place coal inserter"
+
+# Place output inserter for iron plates
+output_inserter_pos = Position(x=furnace.position.x + 1, y=furnace.position.y)
+output_inserter = place_entity(Prototype.BurnerInserter, Direction.LEFT, output_inserter_pos)
+assert output_inserter, "Failed to place output inserter"
+
+# Connect iron ore drill to furnace input with belts
+iron_belt = connect_entities(
+    iron_drill.drop_position,
+    iron_inserter.pickup_position,
+    Prototype.TransportBelt
+)
+assert iron_belt, "Failed to place iron ore transport belt"
+
+# Connect coal drill to furnace with belts
+coal_belt = connect_entities(
+    coal_drill.drop_position,
+    coal_inserter.pickup_position,
+    Prototype.TransportBelt
+)
+assert coal_belt, "Failed to place coal transport belt"
+
+# Place output chest
+chest_pos = Position(x=furnace.position.x + 2, y=furnace.position.y)
+output_chest = place_entity(Prototype.IronChest, Direction.UP, chest_pos)
+assert output_chest, "Failed to place output chest"
+
+# Verify complete setup
+entities = inspect_entities(furnace.position, radius=5)
+assert entities.get_entity(Prototype.StoneFurnace), "Stone furnace not found"
+assert len(entities.get_entities(Prototype.BurnerInserter)) >= 3, "Missing inserters"
+assert entities.get_entity(Prototype.IronChest), "Output chest not found"
+
+# Insert initial coal to get system started
+insert_item(Prototype.Coal, coal_drill, quantity=5)
+insert_item(Prototype.Coal, iron_drill, quantity=5)
+insert_item(Prototype.Coal, iron_inserter, quantity=5)
+insert_item(Prototype.Coal, coal_inserter, quantity=5)
+insert_item(Prototype.Coal, output_inserter, quantity=5)
+
+# Wait for initial production
+wait_ticks(300)
+
+# Verify iron plate production
+chest_contents = inspect_inventory(output_chest)
+assert chest_contents.get(Prototype.IronPlate, 0) > 0, "No iron plates produced"
+
+print("Iron smelting setup complete and operational")
+[2024-10-28 18:44:18] 
+Attempt 1 failed:
+[2024-10-28 18:44:18] Error: Error occurred in the following lines:
+  Line 43: iron_belt = connect_entities(
+
+Exception: ('Could not connect transport-belt from x=-15.5 y=27.5 to x=2.5 y=5.5.', '[string "-- connect_entities.lua..."]:177: Player does not have the required item in their inventory.')
+[2024-10-28 18:44:19] Game state: [BurnerMiningDrill(fuel={}, name='burner-mining-drill', position=Position(x=25.0, y=-15.0), direction=<Direction.DOWN: 4>, energy=0.0, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['out of fuel'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, drop_position=Position(x=25.49609375, y=-13.703125)), BurnerInserter(fuel={}, name='burner-inserter', position=Position(x=3.5, y=5.5), direction=<Direction.RIGHT: 2>, energy=385020.0, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['out of fuel'], status=<EntityStatus.WAITING_FOR_SOURCE_ITEMS: 'waiting_for_source_items'>, pickup_position=Position(x=2.5, y=5.5), drop_position=Position(x=4.5, y=5.5)), BurnerInserter(fuel={}, name='burner-inserter', position=Position(x=4.5, y=4.5), direction=<Direction.DOWN: 4>, energy=385020.0, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['out of fuel'], status=<EntityStatus.WAITING_FOR_SOURCE_ITEMS: 'waiting_for_source_items'>, pickup_position=Position(x=4.5, y=3.5), drop_position=Position(x=4.5, y=5.5)), Furnace(fuel={}, name='stone-furnace', position=Position(x=5.0, y=6.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), BurnerInserter(fuel={}, name='burner-inserter', position=Position(x=6.5, y=6.5), direction=<Direction.LEFT: 6>, energy=385020.0, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['out of fuel'], status=<EntityStatus.WAITING_FOR_SOURCE_ITEMS: 'waiting_for_source_items'>, pickup_position=Position(x=7.5, y=6.5), drop_position=Position(x=5.5, y=6.5)), Furnace(fuel={'coal': 4}, name='stone-furnace', position=Position(x=-16.0, y=24.0), direction=<Direction.UP: 0>, energy=1600.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['no ingredients to smelt'], status=<EntityStatus.NO_INGREDIENTS: 'no_ingredients'>, furnace_source={}, furnace_result={'iron-plate': 10}), BurnerMiningDrill(fuel={}, name='burner-mining-drill', position=Position(x=-16.0, y=26.0), direction=<Direction.DOWN: 4>, energy=0.0, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['out of fuel'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, drop_position=Position(x=-15.50390625, y=27.296875)), BeltGroup(input_positions=[Position(x=7.5, y=9.5)], position=Position(x=6.5, y=9.5), belts=[TransportBelt(name='transport-belt', position=Position(x=6.5, y=9.5), direction=<Direction.LEFT: 6>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=7.5, y=9.5), output_position=Position(x=5.5, y=9.5), inventory={})], output_positions=[Position(x=5.5, y=9.5)]), BeltGroup(input_positions=[Position(x=6.5, y=11.5)], position=Position(x=6.5, y=10.5), belts=[TransportBelt(name='transport-belt', position=Position(x=6.5, y=10.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=6.5, y=11.5), output_position=Position(x=6.5, y=9.5), inventory={})], output_positions=[Position(x=6.5, y=9.5)]), BeltGroup(input_positions=[Position(x=8.5, y=10.5)], position=Position(x=7.5, y=10.5), belts=[TransportBelt(name='transport-belt', position=Position(x=7.5, y=10.5), direction=<Direction.LEFT: 6>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=8.5, y=10.5), output_position=Position(x=6.5, y=10.5), inventory={})], output_positions=[Position(x=6.5, y=10.5)]), BeltGroup(input_positions=[Position(x=7.5, y=12.5)], position=Position(x=7.5, y=11.5), belts=[TransportBelt(name='transport-belt', position=Position(x=7.5, y=11.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=7.5, y=12.5), output_position=Position(x=7.5, y=10.5), inventory={})], output_positions=[Position(x=7.5, y=10.5)]), BeltGroup(input_positions=[Position(x=9.5, y=11.5)], position=Position(x=8.5, y=11.5), belts=[TransportBelt(name='transport-belt', position=Position(x=8.5, y=11.5), direction=<Direction.LEFT: 6>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=11.5), output_position=Position(x=7.5, y=11.5), inventory={})], output_positions=[Position(x=7.5, y=11.5)]), BeltGroup(input_positions=[Position(x=8.5, y=13.5)], position=Position(x=8.5, y=12.5), belts=[TransportBelt(name='transport-belt', position=Position(x=8.5, y=12.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=8.5, y=13.5), output_position=Position(x=8.5, y=11.5), inventory={})], output_positions=[Position(x=8.5, y=11.5)]), BeltGroup(input_positions=[Position(x=10.5, y=12.5)], position=Position(x=9.5, y=12.5), belts=[TransportBelt(name='transport-belt', position=Position(x=9.5, y=12.5), direction=<Direction.LEFT: 6>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=10.5, y=12.5), output_position=Position(x=8.5, y=12.5), inventory={})], output_positions=[Position(x=8.5, y=12.5)]), BeltGroup(input_positions=[Position(x=9.5, y=30.5)], position=Position(x=9.5, y=13.5), belts=[TransportBelt(name='transport-belt', position=Position(x=9.5, y=13.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=14.5), output_position=Position(x=9.5, y=12.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=14.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=15.5), output_position=Position(x=9.5, y=13.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=15.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=16.5), output_position=Position(x=9.5, y=14.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=16.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=17.5), output_position=Position(x=9.5, y=15.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=17.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=18.5), output_position=Position(x=9.5, y=16.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=18.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=19.5), output_position=Position(x=9.5, y=17.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=19.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=20.5), output_position=Position(x=9.5, y=18.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=20.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=21.5), output_position=Position(x=9.5, y=19.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=21.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=22.5), output_position=Position(x=9.5, y=20.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=22.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=23.5), output_position=Position(x=9.5, y=21.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=23.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=24.5), output_position=Position(x=9.5, y=22.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=24.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=25.5), output_position=Position(x=9.5, y=23.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=25.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=26.5), output_position=Position(x=9.5, y=24.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=26.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=27.5), output_position=Position(x=9.5, y=25.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=27.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=28.5), output_position=Position(x=9.5, y=26.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=28.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=29.5), output_position=Position(x=9.5, y=27.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=9.5, y=29.5), direction=<Direction.UP: 0>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=9.5, y=30.5), output_position=Position(x=9.5, y=28.5), inventory={})], output_positions=[Position(x=9.5, y=12.5)]), BeltGroup(input_positions=[Position(x=-16.5, y=27.5)], position=Position(x=-1.5, y=28.5), belts=[TransportBelt(name='transport-belt', position=Position(x=-14.5, y=27.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-15.5, y=27.5), output_position=Position(x=-13.5, y=27.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-13.5, y=27.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-14.5, y=27.5), output_position=Position(x=-12.5, y=27.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-12.5, y=27.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-13.5, y=27.5), output_position=Position(x=-11.5, y=27.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-11.5, y=27.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-12.5, y=27.5), output_position=Position(x=-10.5, y=27.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-10.5, y=27.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-11.5, y=27.5), output_position=Position(x=-9.5, y=27.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-9.5, y=27.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-10.5, y=27.5), output_position=Position(x=-8.5, y=27.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-8.5, y=27.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-9.5, y=27.5), output_position=Position(x=-7.5, y=27.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-7.5, y=27.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-8.5, y=27.5), output_position=Position(x=-6.5, y=27.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-6.5, y=27.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-7.5, y=27.5), output_position=Position(x=-5.5, y=27.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-5.5, y=27.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-6.5, y=27.5), output_position=Position(x=-4.5, y=27.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-4.5, y=27.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-5.5, y=27.5), output_position=Position(x=-3.5, y=27.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-3.5, y=27.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-4.5, y=27.5), output_position=Position(x=-2.5, y=27.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-2.5, y=27.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-3.5, y=27.5), output_position=Position(x=-1.5, y=27.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-15.5, y=27.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-16.5, y=27.5), output_position=Position(x=-14.5, y=27.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-1.5, y=27.5), direction=<Direction.DOWN: 4>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-1.5, y=26.5), output_position=Position(x=-1.5, y=28.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=-1.5, y=28.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-2.5, y=28.5), output_position=Position(x=-0.5, y=28.5), inventory={})], output_positions=[Position(x=-0.5, y=28.5)]), BeltGroup(input_positions=[Position(x=-1.5, y=29.5)], position=Position(x=-0.5, y=29.5), belts=[TransportBelt(name='transport-belt', position=Position(x=-0.5, y=29.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-1.5, y=29.5), output_position=Position(x=0.5, y=29.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=0.5, y=29.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=-0.5, y=29.5), output_position=Position(x=1.5, y=29.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=1.5, y=29.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=0.5, y=29.5), output_position=Position(x=2.5, y=29.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=2.5, y=29.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=1.5, y=29.5), output_position=Position(x=3.5, y=29.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=3.5, y=29.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=2.5, y=29.5), output_position=Position(x=4.5, y=29.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=4.5, y=29.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=3.5, y=29.5), output_position=Position(x=5.5, y=29.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=5.5, y=29.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=4.5, y=29.5), output_position=Position(x=6.5, y=29.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=6.5, y=29.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=5.5, y=29.5), output_position=Position(x=7.5, y=29.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=7.5, y=29.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=6.5, y=29.5), output_position=Position(x=8.5, y=29.5), inventory={}), TransportBelt(name='transport-belt', position=Position(x=8.5, y=29.5), direction=<Direction.RIGHT: 2>, energy=0.0, type='transport-belt', dimensions=Dimensions(width=0.796875, height=0.796875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.TransportBelt: ('transport-belt', <class 'factorio_entities.TransportBelt'>)>, health=150.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, input_position=Position(x=7.5, y=29.5), output_position=Position(x=9.5, y=29.5), inventory={})], output_positions=[Position(x=9.5, y=29.5)])]
+[2024-10-28 18:44:36] 
+Repaired implementation:
+[2024-10-28 18:44:36] # Find nearest iron ore patch and coal patch
+iron_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
+coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
+assert iron_patch and coal_patch, "Required resource patches not found"
+
+# Place iron ore mining drill
+iron_drill_pos = iron_patch.bounding_box.center 
+move_to(iron_drill_pos)
+iron_drill = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, iron_drill_pos)
+assert iron_drill, "Failed to place iron ore mining drill"
+
+# Place coal mining drill
+coal_drill_pos = coal_patch.bounding_box.center
+move_to(coal_drill_pos) 
+coal_drill = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, coal_drill_pos)
+assert coal_drill, "Failed to place coal mining drill"
+
+# Place furnace between iron and coal sources
+furnace_pos = Position(
+    x=(iron_drill.position.x + coal_drill.position.x) / 2,
+    y=(iron_drill.position.y + coal_drill.position.y) / 2
+)
+move_to(furnace_pos)
+furnace = place_entity(Prototype.StoneFurnace, Direction.UP, furnace_pos)
+assert furnace, "Failed to place stone furnace"
+
+# Place inserters
+iron_inserter = place_entity_next_to(Prototype.BurnerInserter, furnace.position, Direction.LEFT)
+coal_inserter = place_entity_next_to(Prototype.BurnerInserter, furnace.position, Direction.UP) 
+output_inserter = place_entity_next_to(Prototype.BurnerInserter, furnace.position, Direction.RIGHT)
+
+# Rotate inserters to face furnace
+rotate_entity(iron_inserter, Direction.RIGHT)
+rotate_entity(coal_inserter, Direction.DOWN)
+rotate_entity(output_inserter, Direction.LEFT)
+
+# Place output chest
+chest_pos = Position(x=furnace.position.x + 2, y=furnace.position.y)
+output_chest = place_entity(Prototype.IronChest, Direction.UP, chest_pos)
+
+# Place transport belts from drills to inserters
+craft_item(Prototype.TransportBelt, 50)
+
+move_to(iron_drill.drop_position)
+connect_entities(iron_drill.drop_position, iron_inserter.pickup_position, Prototype.TransportBelt)
+
+move_to(coal_drill.drop_position)
+connect_entities(coal_drill.drop_position, coal_inserter.pickup_position, Prototype.TransportBelt)
+
+# Insert initial coal to get system started
+insert_item(Prototype.Coal, coal_drill, 5)
+insert_item(Prototype.Coal, iron_drill, 5)
+insert_item(Prototype.Coal, iron_inserter, 5)
+insert_item(Prototype.Coal, coal_inserter, 5)
+insert_item(Prototype.Coal, output_inserter, 5)
+
+# Wait for initial production
+sleep(10)
+
+# Verify iron plate production
+chest_contents = inspect_inventory(output_chest)
+assert chest_contents.get(Prototype.IronPlate, 0) > 0, "No iron plates produced"
+
+print("Iron smelting setup complete and operational")
+[2024-10-28 18:44:55] 
+Attempt 2 failed:
+[2024-10-28 18:44:55] Error: Error occurred in the following lines:
+  Line 42: craft_item(Prototype.TransportBelt, 50)
+
+Exception: Could not craft a transport-belt - [string "global.actions.craft_item = function(player_i..."]:85: Failed to craft 50x_transport-belt because still missing ingredients after crafting intermediates: iron-plate x25
+[2024-10-28 18:44:55] Game state: [BurnerMiningDrill(fuel={}, name='burner-mining-drill', position=Position(x=25.0, y=-15.0), direction=<Direction.DOWN: 4>, energy=0.0, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['out of fuel'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, drop_position=Position(x=25.49609375, y=-13.703125)), BurnerInserter(fuel={}, name='burner-inserter', position=Position(x=5.5, y=3.5), direction=<Direction.DOWN: 4>, energy=360020.00055879, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['out of fuel'], status=<EntityStatus.WAITING_FOR_SOURCE_ITEMS: 'waiting_for_source_items'>, pickup_position=Position(x=5.5, y=2.5), drop_position=Position(x=5.5, y=4.5)), BurnerInserter(fuel={}, name='burner-inserter', position=Position(x=3.5, y=5.5), direction=<Direction.RIGHT: 2>, energy=360020.00055879, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['out of fuel'], status=<EntityStatus.WAITING_FOR_SOURCE_ITEMS: 'waiting_for_source_items'>, pickup_position=Position(x=2.5, y=5.5), drop_position=Position(x=4.5, y=5.5)), Furnace(fuel={}, name='stone-furnace', position=Position(x=5.0, y=5.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), Chest(name='iron-chest', position=Position(x=7.5, y=5.5), direction=<Direction.UP: 0>, energy=0.0, type='container', dimensions=Dimensions(width=0.6953125, height=0.6953125), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.IronChest: ('iron-chest', <class 'factorio_entities.Chest'>)>, health=200.0, warnings=[], status=<EntityStatus.NORMAL: 'normal'>, inventory={}), BurnerInserter(fuel={}, name='burner-inserter', position=Position(x=6.5, y=5.5), direction=<Direction.LEFT: 6>, energy=360020.00055879, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['out of fuel', 'inserter waiting for source items'], status=<EntityStatus.WAITING_FOR_SOURCE_ITEMS: 'waiting_for_source_items'>, pickup_position=Position(x=7.5, y=5.5), drop_position=Position(x=5.5, y=5.5)), BurnerMiningDrill(fuel={}, name='burner-mining-drill', position=Position(x=-15.0, y=25.0), direction=<Direction.DOWN: 4>, energy=0.0, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['out of fuel'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, drop_position=Position(x=-14.50390625, y=26.296875))]
+[2024-10-28 18:45:16] 
+Repaired implementation:
+[2024-10-28 18:45:16] # Find nearest iron ore patch and coal patch
+iron_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
+coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
+assert iron_patch and coal_patch, "Required resource patches not found"
+
+# Place iron ore mining drill
+iron_drill_pos = iron_patch.bounding_box.center 
+move_to(iron_drill_pos)
+iron_drill = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, iron_drill_pos)
+assert iron_drill, "Failed to place iron ore mining drill"
+
+# Place coal mining drill
+coal_drill_pos = coal_patch.bounding_box.center
+move_to(coal_drill_pos) 
+coal_drill = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, coal_drill_pos)
+assert coal_drill, "Failed to place coal mining drill"
+
+# Place furnace between iron and coal sources
+furnace_pos = Position(
+    x=(iron_drill.position.x + coal_drill.position.x) / 2,
+    y=(iron_drill.position.y + coal_drill.position.y) / 2
+)
+move_to(furnace_pos)
+furnace = place_entity(Prototype.StoneFurnace, Direction.UP, furnace_pos)
+assert furnace, "Failed to place stone furnace"
+
+# Insert initial coal to get drills started
+insert_item(Prototype.Coal, coal_drill, 5)
+insert_item(Prototype.Coal, iron_drill, 5)
+
+# Wait for initial resources
+sleep(10)
+
+# Harvest some iron plates and coal for crafting
+harvest_resource(iron_drill.position, 10)
+harvest_resource(coal_drill.position, 10)
+
+# Craft iron plates for transport belts
+craft_item(Prototype.IronPlate, 25)
+craft_item(Prototype.IronGearWheel, 25)
+craft_item(Prototype.TransportBelt, 50)
+
+# Place inserters
+iron_inserter = place_entity_next_to(Prototype.BurnerInserter, furnace.position, Direction.LEFT)
+coal_inserter = place_entity_next_to(Prototype.BurnerInserter, furnace.position, Direction.UP) 
+output_inserter = place_entity_next_to(Prototype.BurnerInserter, furnace.position, Direction.RIGHT)
+
+# Rotate inserters to face furnace
+rotate_entity(iron_inserter, Direction.RIGHT)
+rotate_entity(coal_inserter, Direction.DOWN)
+rotate_entity(output_inserter, Direction.LEFT)
+
+# Place output chest
+chest_pos = Position(x=furnace.position.x + 2, y=furnace.position.y)
+output_chest = place_entity(Prototype.IronChest, Direction.UP, chest_pos)
+
+# Place transport belts from drills to inserters
+move_to(iron_drill.drop_position)
+connect_entities(iron_drill.drop_position, iron_inserter.pickup_position, Prototype.TransportBelt)
+
+move_to(coal_drill.drop_position)
+connect_entities(coal_drill.drop_position, coal_inserter.pickup_position, Prototype.TransportBelt)
+
+# Insert coal to get inserters started
+insert_item(Prototype.Coal, iron_inserter, 5)
+insert_item(Prototype.Coal, coal_inserter, 5)
+insert_item(Prototype.Coal, output_inserter, 5)
+
+# Wait for initial production
+sleep(10)
+
+# Verify iron plate production
+chest_contents = inspect_inventory(output_chest)
+assert chest_contents.get(Prototype.IronPlate, 0) > 0, "No iron plates produced"
+
+print("Iron smelting setup complete and operational")
+[2024-10-28 18:45:41] 
+Attempt 3 failed:
+[2024-10-28 18:45:41] Error: Error occurred in the following lines:
+  Line 39: craft_item(Prototype.IronPlate, 25)
+
+Exception: Could not craft a iron-plate - [string "global.actions.craft_item = function(player_i..."]:85: Failed to craft 25x_iron-plate because missing ingredients that can't be crafted: iron-ore
+[2024-10-28 18:45:41] Game state: [BurnerMiningDrill(fuel={'coal': 4}, name='burner-mining-drill', position=Position(x=25.0, y=-15.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (25.5, -13.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, drop_position=Position(x=25.49609375, y=-13.703125)), Furnace(fuel={}, name='stone-furnace', position=Position(x=5.0, y=5.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), BurnerMiningDrill(fuel={'coal': 4}, name='burner-mining-drill', position=Position(x=-15.0, y=25.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (-14.5, 26.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, drop_position=Position(x=-14.50390625, y=26.296875))]
+[2024-10-28 18:46:02] 
+Repaired implementation:
+[2024-10-28 18:46:02] # Find nearest iron ore patch and coal patch
+iron_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
+coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
+assert iron_patch and coal_patch, "Required resource patches not found"
+
+# Place iron ore mining drill
+iron_drill_pos = iron_patch.bounding_box.center 
+move_to(iron_drill_pos)
+iron_drill = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, iron_drill_pos)
+assert iron_drill, "Failed to place iron ore mining drill"
+
+# Place coal mining drill
+coal_drill_pos = coal_patch.bounding_box.center
+move_to(coal_drill_pos) 
+coal_drill = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, coal_drill_pos)
+assert coal_drill, "Failed to place coal mining drill"
+
+# Place furnace between iron and coal sources
+furnace_pos = Position(
+    x=(iron_drill.position.x + coal_drill.position.x) / 2,
+    y=(iron_drill.position.y + coal_drill.position.y) / 2
+)
+move_to(furnace_pos)
+furnace = place_entity(Prototype.StoneFurnace, Direction.UP, furnace_pos)
+assert furnace, "Failed to place stone furnace"
+
+# Insert initial coal to get drills started
+insert_item(Prototype.Coal, coal_drill, 5)
+insert_item(Prototype.Coal, iron_drill, 5)
+
+# Wait for initial resources
+sleep(10)
+
+# Harvest iron ore and coal
+harvest_resource(iron_drill.position, 10)
+harvest_resource(coal_drill.position, 10)
+
+# Craft transport belts
+craft_item(Prototype.IronGearWheel, 25)
+craft_item(Prototype.TransportBelt, 50)
+
+# Place inserters
+iron_inserter = place_entity_next_to(Prototype.BurnerInserter, furnace.position, Direction.LEFT)
+coal_inserter = place_entity_next_to(Prototype.BurnerInserter, furnace.position, Direction.UP) 
+output_inserter = place_entity_next_to(Prototype.BurnerInserter, furnace.position, Direction.RIGHT)
+
+# Rotate inserters to face furnace
+rotate_entity(iron_inserter, Direction.RIGHT)
+rotate_entity(coal_inserter, Direction.DOWN)
+rotate_entity(output_inserter, Direction.LEFT)
+
+# Place output chest
+chest_pos = Position(x=furnace.position.x + 2, y=furnace.position.y)
+output_chest = place_entity(Prototype.IronChest, Direction.UP, chest_pos)
+
+# Place transport belts from drills to inserters
+move_to(iron_drill.drop_position)
+connect_entities(iron_drill.drop_position, iron_inserter.pickup_position, Prototype.TransportBelt)
+
+move_to(coal_drill.drop_position)
+connect_entities(coal_drill.drop_position, coal_inserter.pickup_position, Prototype.TransportBelt)
+
+# Insert coal to get inserters started
+insert_item(Prototype.Coal, iron_inserter, 5)
+insert_item(Prototype.Coal, coal_inserter, 5)
+insert_item(Prototype.Coal, output_inserter, 5)
+
+# Insert some iron ore into furnace to start
+insert_item(Prototype.Coal, furnace, 5)
+move_to(iron_drill.position)
+harvest_resource(iron_drill.position, 10)
+insert_item(Prototype.IronOre, furnace, 5)
+
+# Wait for initial production
+sleep(10)
+
+# Verify iron plate production
+chest_contents = inspect_inventory(output_chest)
+assert chest_contents.get(Prototype.IronPlate, 0) > 0, "No iron plates produced"
+
+print("Iron smelting setup complete and operational")
+[2024-10-28 18:46:13] 
+Attempt 4 failed:
+[2024-10-28 18:46:13] Error: Error occurred in the following lines:
+  Line 40: craft_item(Prototype.TransportBelt, 50)
+
+Exception: Could not craft a transport-belt - [string "global.actions.craft_item = function(player_i..."]:85: Failed to craft 50x_transport-belt because failed to craft intermediate ingredient: iron-plate
+[2024-10-28 18:46:13] Game state: [BurnerMiningDrill(fuel={'coal': 4}, name='burner-mining-drill', position=Position(x=25.0, y=-15.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (25.5, -13.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, drop_position=Position(x=25.49609375, y=-13.703125)), Furnace(fuel={}, name='stone-furnace', position=Position(x=5.0, y=5.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), BurnerMiningDrill(fuel={'coal': 4}, name='burner-mining-drill', position=Position(x=-15.0, y=25.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (-14.5, 26.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, drop_position=Position(x=-14.50390625, y=26.296875))]
+[2024-10-28 18:46:36] 
+Repaired implementation:
+[2024-10-28 18:46:36] # Find nearest iron ore patch and coal patch
+iron_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
+coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
+assert iron_patch and coal_patch, "Required resource patches not found"
+
+# Place iron ore mining drill
+iron_drill_pos = iron_patch.bounding_box.center 
+move_to(iron_drill_pos)
+iron_drill = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, iron_drill_pos)
+assert iron_drill, "Failed to place iron ore mining drill"
+
+# Place coal mining drill
+coal_drill_pos = coal_patch.bounding_box.center
+move_to(coal_drill_pos)
+coal_drill = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, coal_drill_pos)
+assert coal_drill, "Failed to place coal mining drill"
+
+# Place furnace between iron and coal sources
+furnace_pos = Position(
+    x=(iron_drill.position.x + coal_drill.position.x) / 2,
+    y=(iron_drill.position.y + coal_drill.position.y) / 2
+)
+move_to(furnace_pos)
+furnace = place_entity(Prototype.StoneFurnace, Direction.UP, furnace_pos)
+assert furnace, "Failed to place stone furnace"
+
+# Insert initial coal to get drills started
+insert_item(Prototype.Coal, coal_drill, 5)
+insert_item(Prototype.Coal, iron_drill, 5)
+
+# Wait for initial resources
+sleep(10)
+
+# Collect resources from drills
+move_to(iron_drill.drop_position)
+pickup_entity(Prototype.IronOre, iron_drill.drop_position)
+move_to(coal_drill.drop_position) 
+pickup_entity(Prototype.Coal, coal_drill.drop_position)
+
+# Place inserters
+iron_inserter = place_entity_next_to(Prototype.BurnerInserter, furnace.position, Direction.LEFT)
+coal_inserter = place_entity_next_to(Prototype.BurnerInserter, furnace.position, Direction.UP)
+output_inserter = place_entity_next_to(Prototype.BurnerInserter, furnace.position, Direction.RIGHT)
+
+# Rotate inserters to face furnace
+rotate_entity(iron_inserter, Direction.RIGHT)
+rotate_entity(coal_inserter, Direction.DOWN)
+rotate_entity(output_inserter, Direction.LEFT)
+
+# Place output chest
+chest_pos = Position(x=furnace.position.x + 2, y=furnace.position.y)
+output_chest = place_entity(Prototype.IronChest, Direction.UP, chest_pos)
+
+# Insert coal to get inserters started
+insert_item(Prototype.Coal, iron_inserter, 5)
+insert_item(Prototype.Coal, coal_inserter, 5) 
+insert_item(Prototype.Coal, output_inserter, 5)
+
+# Insert coal and iron ore into furnace
+insert_item(Prototype.Coal, furnace, 5)
+insert_item(Prototype.IronOre, furnace, 5)
+
+# Wait for initial production
+sleep(10)
+
+# Verify iron plate production and collect
+inventory = inspect_inventory(furnace)
+if inventory.get(Prototype.IronPlate, 0) > 0:
+    extract_item(Prototype.IronPlate, furnace.position)
+    
+# Craft belts using iron plates
+craft_item(Prototype.IronGearWheel, 5)
+craft_item(Prototype.TransportBelt, 10)
+
+# Connect drills to inserters with belts
+connect_entities(iron_drill.drop_position, iron_inserter.pickup_position, Prototype.TransportBelt)
+connect_entities(coal_drill.drop_position, coal_inserter.pickup_position, Prototype.TransportBelt)
+
+print("Iron smelting setup complete and operational")
+[2024-10-28 18:46:47] 
+Attempt 5 failed:
+[2024-10-28 18:46:47] Error: Error occurred in the following lines:
+  Line 36: pickup_entity(Prototype.IronOre, iron_drill.drop_position)
+
+Exception: ('Could not pickup, did you intend to harvest?', '[string "global.actions.pickup_entity = function(playe..."]:42: Could not pick up')
+[2024-10-28 18:46:47] Game state: [BurnerMiningDrill(fuel={'coal': 4}, name='burner-mining-drill', position=Position(x=25.0, y=-15.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (25.5, -13.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, drop_position=Position(x=25.49609375, y=-13.703125)), Furnace(fuel={}, name='stone-furnace', position=Position(x=5.0, y=5.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), BurnerMiningDrill(fuel={'coal': 4}, name='burner-mining-drill', position=Position(x=-15.0, y=25.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (-14.5, 26.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, drop_position=Position(x=-14.50390625, y=26.296875))]
+[2024-10-28 18:47:09] 
+Repaired implementation:
+[2024-10-28 18:47:09] # Find nearest iron ore patch and coal patch
+iron_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
+coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
+assert iron_patch and coal_patch, "Required resource patches not found"
+
+# Place iron ore mining drill
+iron_drill_pos = iron_patch.bounding_box.center 
+move_to(iron_drill_pos)
+iron_drill = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, iron_drill_pos)
+assert iron_drill, "Failed to place iron ore mining drill"
+
+# Place coal mining drill
+coal_drill_pos = coal_patch.bounding_box.center
+move_to(coal_drill_pos)
+coal_drill = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, coal_drill_pos)
+assert coal_drill, "Failed to place coal mining drill"
+
+# Place furnace between iron and coal sources
+furnace_pos = Position(
+    x=(iron_drill.position.x + coal_drill.position.x) / 2,
+    y=(iron_drill.position.y + coal_drill.position.y) / 2
+)
+move_to(furnace_pos)
+furnace = place_entity(Prototype.StoneFurnace, Direction.UP, furnace_pos)
+assert furnace, "Failed to place stone furnace"
+
+# Insert initial coal to get drills started
+insert_item(Prototype.Coal, coal_drill, 5)
+insert_item(Prototype.Coal, iron_drill, 5)
+
+# Wait for initial resources
+sleep(10)
+
+# Collect resources from drills
+move_to(iron_drill.drop_position)
+harvest_resource(iron_drill.drop_position, 5)
+move_to(coal_drill.drop_position)
+harvest_resource(coal_drill.drop_position, 5)
+
+# Place inserters
+iron_inserter = place_entity_next_to(Prototype.BurnerInserter, furnace.position, Direction.LEFT)
+coal_inserter = place_entity_next_to(Prototype.BurnerInserter, furnace.position, Direction.UP)
+output_inserter = place_entity_next_to(Prototype.BurnerInserter, furnace.position, Direction.RIGHT)
+
+# Rotate inserters to face furnace
+rotate_entity(iron_inserter, Direction.RIGHT)
+rotate_entity(coal_inserter, Direction.DOWN)
+rotate_entity(output_inserter, Direction.LEFT)
+
+# Place output chest
+chest_pos = Position(x=furnace.position.x + 2, y=furnace.position.y)
+output_chest = place_entity(Prototype.IronChest, Direction.UP, chest_pos)
+
+# Insert coal to get inserters started
+insert_item(Prototype.Coal, iron_inserter, 5)
+insert_item(Prototype.Coal, coal_inserter, 5)
+insert_item(Prototype.Coal, output_inserter, 5)
+
+# Insert coal and iron ore into furnace
+insert_item(Prototype.Coal, furnace, 5)
+insert_item(Prototype.IronOre, furnace, 5)
+
+# Wait for initial production
+sleep(10)
+
+# Verify iron plate production and collect
+inventory = inspect_inventory(furnace)
+if inventory.get(Prototype.IronPlate, 0) > 0:
+    extract_item(Prototype.IronPlate, furnace.position)
+    
+# Craft belts using iron plates
+craft_item(Prototype.IronGearWheel, 5)
+craft_item(Prototype.TransportBelt, 10)
+
+# Connect drills to inserters with belts
+connect_entities(iron_drill.drop_position, iron_inserter.pickup_position, Prototype.TransportBelt)
+connect_entities(coal_drill.drop_position, coal_inserter.pickup_position, Prototype.TransportBelt)
+[2024-10-28 18:47:20] 
+Attempt 6 failed:
+[2024-10-28 18:47:20] Error: Error occurred in the following lines:
+  Line 52: output_chest = place_entity(Prototype.IronChest, Direction.UP, chest_pos)
+
+Exception: ('Could not place iron-chest at (7.0, 5.0)', '[string "global.actions.place_entity = function(player..."]:21: The target position is too far away to place the entity. The player position is 25.5, -14.5 and the target position is 7, 5. The distance is 26.879360111431 and the max distance is 10. Move closer.')
+[2024-10-28 18:47:20] Game state: [BurnerMiningDrill(fuel={'coal': 4}, name='burner-mining-drill', position=Position(x=25.0, y=-15.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (25.5, -13.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, drop_position=Position(x=25.49609375, y=-13.703125)), BurnerInserter(fuel={}, name='burner-inserter', position=Position(x=5.5, y=4.5), direction=<Direction.DOWN: 4>, energy=378520.00014529, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['out of fuel'], status=<EntityStatus.WORKING: 'working'>, pickup_position=Position(x=5.5, y=3.5), drop_position=Position(x=5.5, y=5.5)), BurnerInserter(fuel={}, name='burner-inserter', position=Position(x=4.5, y=5.5), direction=<Direction.RIGHT: 2>, energy=376020.00020117, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['out of fuel'], status=<EntityStatus.WORKING: 'working'>, pickup_position=Position(x=3.5, y=5.5), drop_position=Position(x=5.5, y=5.5)), Furnace(fuel={}, name='stone-furnace', position=Position(x=5.0, y=5.0), direction=<Direction.UP: 0>, energy=0.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['out of fuel', 'no ingredients to smelt'], status=<EntityStatus.NO_FUEL: 'no_fuel'>, furnace_source={}, furnace_result={}), BurnerInserter(fuel={}, name='burner-inserter', position=Position(x=6.5, y=5.5), direction=<Direction.LEFT: 6>, energy=380520.00010058, type='inserter', dimensions=Dimensions(width=0.296875, height=0.296875), tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), prototype=<Prototype.BurnerInserter: ('burner-inserter', <class 'factorio_entities.BurnerInserter'>)>, health=100.0, warnings=['out of fuel'], status=<EntityStatus.WORKING: 'working'>, pickup_position=Position(x=7.5, y=5.5), drop_position=Position(x=5.5, y=5.5)), BurnerMiningDrill(fuel={'coal': 4}, name='burner-mining-drill', position=Position(x=-15.0, y=25.0), direction=<Direction.DOWN: 4>, energy=2666.6666666667, type='mining-drill', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.BurnerMiningDrill: ('burner-mining-drill', <class 'factorio_entities.BurnerMiningDrill'>)>, health=150.0, warnings=['waiting for space in destination as the output is full. Place a sink object at (-14.5, 26.5) to unblock.'], status=<EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'waiting_for_space_in_destination'>, drop_position=Position(x=-14.50390625, y=26.296875))]

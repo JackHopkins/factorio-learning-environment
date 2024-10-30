@@ -11,6 +11,7 @@ import random
 from skills.skill_postprocessor import SkillPostProcessor
 load_dotenv()
 from skills.skills_db import SkillsDB
+from skills.get_test_data import extract_skills_from_test
 def is_valid_python(code_string: str) -> bool:
     try:
         ast.parse(code_string)
@@ -121,9 +122,14 @@ class SFTDatasetCreator:
             for skill in skills:
                 f.write(json.dumps(skill) + "\n")
 
-    def create_jsonl_dataset_from_db_skills(self, output_file: str) -> None:
+    def create_jsonl_dataset_from_db_skills(self, output_file: str, func_test_folder = None) -> None:
             all_skills = self.get_skills_for_sft()
+            if func_test_folder:
+                skills_from_func_tests = extract_skills_from_test(func_test_folder)
+                all_skills += skills_from_func_tests
+            
             self.skills_db_to_jsonl(all_skills, output_file)
+            
     def get_game_trace_from_skill(self, skill: Dict, instance) -> Dict:
         # We need a objective, starting mining setup and the starting inventory
         pass
@@ -162,6 +168,6 @@ if __name__ == "__main__":
     postprocessed_input_jsonl_file = r"datasets\sft_dataset_postprocessed.jsonl"
     successful_output_file = r"datasets\sft_successful_traces.jsonl"
     failed_output_file = r"datasets\sft_failed_traces.jsonl"
-    #dataloader.create_jsonl_dataset_from_db_skills(output_jsonl_file)
+    dataloader.create_jsonl_dataset_from_db_skills(output_jsonl_file)
     #dataloader.create_game_traces(output_jsonl_file, successful_output_file, failed_output_file)
     dataloader.postprocess_skills(raw_input_jsonl_file, postprocessed_input_jsonl_file)

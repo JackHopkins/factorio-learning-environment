@@ -113,7 +113,7 @@ Methods:
             example_string += f"###USER INPUT EXAMPLE\n\nDESCRIPTION\n{details['description']}\n\nINVENTORY REQUIREMENTS\n{details['dependencies']}\n\nNAME\n{details['name']}\n\nIMPLEMENTATION\n{snippet}\n\n"
             example_string += f"###OUTPUT EXAMPLE\n\n{details['objective']}\n\n"
         return example_string
-    def generate_objectives(self, skill) -> str:
+    def generate_objective(self, skill) -> str:
         prompt_folder = r"prompts\postprocessing_objectives"
         #read in system_prompt.md
         with open(os.path.join(prompt_folder, "system_prompt.md"), "r") as f:
@@ -134,13 +134,7 @@ Methods:
         
         return objective
 
-    def generate_synthetic_objectives_for_skills(self):
-        
-        skills = self.skills_db.get_all_skills()
-        for skill in skills:
-            objective = self.generate_objectives(skill)
-            print(f"Objective for skill {skill['name']}: {objective}")
+
 
 if __name__ == "__main__":
     post_processor = SkillPostProcessor()
-    post_processor.generate_synthetic_objectives_for_skills()

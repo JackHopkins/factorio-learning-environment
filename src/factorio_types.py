@@ -47,23 +47,23 @@ class Prototype(enum.Enum):
     WoodenChest = "wooden-chest", Chest
     IronGearWheel = "iron-gear-wheel", Entity
     Coal = "coal", None
-    IronPlate = "iron-plate", None
-    SteelPlate = "steel-plate", None
-    CopperPlate = "copper-plate", None
+    IronPlate = "iron-plate", None # Crafting requires smelting 1 iron ore, smelts for 0.5 seconds per ore
+    SteelPlate = "steel-plate", None # Crafting requires smelting 5 iron plates, smelts for 4 seconds per ore
+    CopperPlate = "copper-plate", None # Crafting requires smelting 1 copper ore, smelts for 0.5 seconds per ore
     SmallElectricPole = "small-electric-pole", Entity
     IronOre = "iron-ore", None
     CopperOre = "copper-ore", None
     Stone = "stone", None
-    CopperCable = "copper-cable", None
-    ElectronicCircuit = "electronic-circuit", None
-    Lab = "lab", Lab
+    CopperCable = "copper-cable", None # Crafting 2 copper cables requires 1 copper plate
+    ElectronicCircuit = "electronic-circuit", None # Crafting requires 3 copper cables, 1 iron plate
+    Lab = "lab", Lab # Crafting requires 10 electronic circuits, 10 iron gear wheels, 4 transport belts
     AutomationSciencePack = "automation-science-pack", None
     Accumulator = "accumulator", Accumulator
-    GunTurret = "gun-turret", GunTurret
-    FirearmMagazine = "firearm-magazine", Ammo
-    StoneBrick = "stone-brick", None
-    Radar = "radar", Entity
-    StoneWall = "stone-wall", Entity
+    GunTurret = "gun-turret", GunTurret # Crafting requires 10 copper plates, 10 iron gear wheels, 20 iron plates
+    FirearmMagazine = "firearm-magazine", Ammo # Crafting requires 4 iron plates
+    StoneBrick = "stone-brick", None # Crafting requires smelting 2 stone to make one stone brick
+    Radar = "radar", Entity # Crafting requires 5 electronic circuits, 5 iron gear wheels, 10 iron plates
+    StoneWall = "stone-wall", Entity # Crafting requires 5 stone bricks
 
 prototype_by_name = {prototype.value[0]: prototype for prototype in Prototype}
 

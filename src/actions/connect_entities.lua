@@ -1,20 +1,12 @@
 -- connect_entities.lua
 
 local wire_reach = {
-    ['small-electric-pole'] = 5,
+    ['small-electric-pole'] = 4,
     ['medium-electric-pole'] = 9,
     ['big-electric-pole'] = 30,
     ['substation'] = 18
 }
 
-local function get_last_belt_direction(serialized_entities)
-    for i = #serialized_entities, 1, -1 do
-        if serialized_entities[i].name == connection_type then
-            return serialized_entities[i].direction
-        end
-    end
-    return nil  -- Return nil if no belt was found
-end
 
 function get_step_size(connection_type)
     -- Adjust the step size based on the connection type's wire reach
@@ -72,9 +64,30 @@ local function interpolate_manhattan(pos1, pos2)
     local interpolated = {}
     local dx = pos2.x - pos1.x
     local dy = pos2.y - pos1.y
+    local manhatten_distance = math.abs(dx) + math.abs(dy)
+    if manhatten_distance > 2 then
+        game.print("Interpolating path between " .. serpent.line(pos1) .. " and " .. serpent.line(pos2) .. " with distance " .. manhatten_distance)
+    end
+    if manhatten_distance > 2 then
+        -- Get the number of steps in the path
+        local steps = math.max(math.abs(dx), math.abs(dy))
+        local x_step = dx / steps
+        local y_step = dy / steps
+        for i = 1, steps - 1 do
+            local new_pos = {x = pos1.x + math.round(x_step * i), y = pos1.y + math.round(y_step * i)}
+            if is_placeable(new_pos) then
+                table.insert(interpolated, {position = new_pos})
+            else
+                -- If the position is not placeable, try to find a placeable neighbor
+                local neighbor = find_placeable_neighbor(new_pos, pos1)
+                if neighbor then
+                    table.insert(interpolated, {position = neighbor})
+                end
+            end
+        end
 
-    -- Only interpolate if it's a diagonal move
-    if math.abs(dx) == 1 and math.abs(dy) == 1 then
+    -- If we are missing a chunk of the path (due to weird game pathing behaviour), we need to interpolate
+    elseif math.abs(dx) == 1 and math.abs(dy) == 1 then
         -- Try horizontal then vertical
         local mid_pos = {x = pos2.x, y = pos1.y}
         if is_placeable(mid_pos) then
@@ -93,7 +106,7 @@ local function interpolate_manhattan(pos1, pos2)
             end
         end
     end
-
+    --game.print("Interpolated path: " .. serpent.line(interpolated))
     return interpolated
 end
 
@@ -160,6 +173,22 @@ global.actions.normalise_path = function(original_path, start_position)
     --table.insert(path, original_path[#original_path])
     add_unique(original_path[#original_path].position)
 
+    --- This is horrendously inefficient, but it works for now. TODO fix this
+    for k = 1, 3 do
+        local previous_pos = path[1].position
+        for i = 1, #path do
+            local manhatten_distance = math.abs(path[i].position.x - previous_pos.x) + math.abs(path[i].position.y - previous_pos.y)
+            if manhatten_distance > 1 then
+                local interpolated = interpolate_manhattan(previous_pos, path[i].position)
+                -- for each interpolated point, add it to the path at the correct index
+                for _, point in ipairs(interpolated) do
+                    table.insert(path, i, point)
+                    i = i + 1
+                end
+            end
+            previous_pos = path[i].position
+        end
+    end
     return path
 end
 
@@ -233,7 +262,7 @@ local function place_at_position(player, connection_type, current_position, dir,
                 existing_entity = entity
                 break
             elseif entity.name ~= 'laser-beam' and entity.name ~= 'character' then
-                error("Cannot place entity at position (" .. current_position.x .. ", " .. current_position.y .. ") due to overlapping " .. entity.name .. ".")
+                --error("Cannot place entity at position (" .. current_position.x .. ", " .. current_position.y .. ") due to overlapping " .. entity.name .. ".")
             end
         end
     end
@@ -351,7 +380,8 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
 
 
     for i = 1, #path - 1 do
-        create_arrow_with_direction(player, get_direction(path[i].position, path[i + 1].position), path[i].position)
+        create_beam_point_with_direction(player, get_direction(path[i].position, path[i + 1].position), path[i].position)
+        --create_arrow_with_direction(player, get_direction(path[i].position, path[i + 1].position), path[i].position)
     end
 
     local serialized_entities = {}
@@ -359,14 +389,14 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     local ydiff = math.abs(source_y-target_y)
 
 
-    if xdiff + ydiff <= 1 then
+    if xdiff + ydiff < 1 then
         local dir = get_direction(start_position, end_position)
         local entity_dir = global.utils.get_entity_direction(connection_type, dir/2)
         place_at_position(player, connection_type, start_position, entity_dir, serialized_entities)
         return {entities = serialized_entities, connected = true}
     end
 
-    game.print("Diff: " .. xdiff + ydiff)
+    --game.print("Diff: " .. xdiff + ydiff)
     local step_size = get_step_size(connection_type)
     local dir
 
@@ -399,11 +429,16 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
         end
         place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities)
 
+        -- We might want to remove this last one
+        -- place_at_position(player, connection_type, preemptive_target, get_direction(path[#path-2].position, preemptive_target), serialized_entities)
+
     elseif connection_type == 'pipe' then
         -- If the connection_type is a pipe, we have to do some extra work to ensure no missing pipes
         place_at_position(player, connection_type, path[#path].position, get_direction(path[#path].position, preemptive_target), serialized_entities)
         place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities)
         place_at_position(player, connection_type, preemptive_target, get_direction(path[#path].position, preemptive_target), serialized_entities)
+        --place_at_position(player, connection_type, path[#path-1].position, get_direction(path[#path].position, preemptive_target), serialized_entities)
+
     else
         -- If the connection_type is an electricity pole, we need to place the last entity at the target position to ensure connection
         place_at_position(player, connection_type, path[#path].position, get_direction(path[#path].position, preemptive_target), serialized_entities)
@@ -412,7 +447,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
 
 
         --create_beam_point(game.players[1], path[#path].position)
-        create_beam_point(game.players[1], end_position)
+        --create_beam_point(game.players[1], end_position)
 
         --if connection_type ~= 'transport-belt' then
         --original_dir = path[1] and get_direction(end_position, path[1].position) or 0

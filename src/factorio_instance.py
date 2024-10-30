@@ -8,6 +8,7 @@ import functools
 import importlib
 import inspect
 import io
+import json
 import os
 import signal
 import sys
@@ -28,6 +29,7 @@ from src.factorio_rcon_utils import _load_initialisation_scripts, _lua2python, _
 from src.rcon.factorio_rcon import RCONClient
 from factorio_types import Prototype, Resource
 from models.game_state import GameState
+from utilities.controller_loader import load_schema, load_definitions, parse_file_for_structure
 from vocabulary import Vocabulary
 
 from factorio_entities import *
@@ -148,6 +150,19 @@ class FactorioInstance:
         #self.game_state._initial_score = 0
         self.game_state.initial_score, goal = self.score()
 
+    def set_inventory(self, **kwargs):
+        self.begin_transaction()
+        self.add_command('clear_inventory', PLAYER)
+        self.execute_transaction()
+
+        self.begin_transaction()
+        # kwargs dict to json
+        inventory_items = {k: v for k, v in kwargs.items()}
+        inventory_items_json = json.dumps(inventory_items)
+        self.add_command(f"/c global.actions.initialise_inventory({PLAYER}, '{inventory_items_json}')", raw=True)
+
+        self.execute_transaction()
+
     def speed(self, speed):
         self.rcon_client.send_command(f'/c game.speed = {speed}')
 
@@ -158,6 +173,31 @@ class FactorioInstance:
         if self.memory:
             self.memory.log_observation(str(arg))
         print(arg)
+
+    def get_system_prompt(self) -> str:
+        """
+        Get the system prompt for the Factorio environment.
+
+        This includes all the available actions, objects, and entities that the agent can interact with.
+
+        We get the system prompt by loading the schema, definitions, and entity definitions from their source files.
+
+        These are converted to their signatures - leaving out the implementations.
+        :return:
+        """
+        execution_path = os.path.dirname(os.path.realpath(__file__))
+        folder_path = f'{execution_path}/controllers'
+        schema = load_schema(folder_path, with_docstring=False)
+        type_definitions = load_definitions(f'{execution_path}/factorio_types.py')
+        # Filter `import` statements and `from` statements
+        type_definitions = "\n".join(list(
+            filter(lambda x: not x.startswith("import") and not x.startswith("from"), type_definitions.split("\n"))))
+        type_definitions = type_definitions.replace("\n\n\n", "\n").replace("\n\n", "\n").strip()
+        # entity_definitions = load_definitions(f'{execution_path}/factorio_entities.py')
+        entity_definitions = parse_file_for_structure(f'{execution_path}/factorio_entities.py')
+        brief = f"```types\n{type_definitions}\n```\n```objects\n{entity_definitions}\n```\n```tools\n{schema}\n```"
+
+        return brief
 
     def connect_to_server(self, address, tcp_port):
         try:
@@ -440,17 +480,22 @@ class FactorioInstance:
 
         self.begin_transaction()
         self.add_command(f'/c global.actions.clear_entities({PLAYER})', raw=True)
-        self.execute_transaction()
+        # self.execute_transaction()
+        #
+        # self.begin_transaction()
+        # count = 0
+        # for entity, count in kwargs.items():
+        #     self.add_command('give_item', PLAYER, entity, count)
+        #     count += 1
+        #     if count > 5:
+        #         self.execute_transaction()
+        #         self.begin_transaction()
+        #         count = 0
 
-        self.begin_transaction()
-        count = 0
-        for entity, count in kwargs.items():
-            self.add_command('give_item', PLAYER, entity, count)
-            count += 1
-            if count > 5:
-                self.execute_transaction()
-                self.begin_transaction()
-                count = 0
+        # kwargs dict to json
+        inventory_items = {k: v for k, v in kwargs.items()}
+        inventory_items_json = json.dumps(inventory_items)
+        self.add_command(f"/c global.actions.initialise_inventory({PLAYER}, '{inventory_items_json}')", raw=True)
 
         self.add_command("/c game.players[1].force.research_all_technologies()", raw=True)
         self.execute_transaction()
@@ -504,6 +549,7 @@ class FactorioInstance:
         self.lua_script_manager.load_init_into_game('util')
         self.lua_script_manager.load_init_into_game('serialize')
         self.lua_script_manager.load_init_into_game('production_score')
+        self.lua_script_manager.load_init_into_game('initialise_inventory')
 
         self._reset(**kwargs)
         # self.begin_transaction()
@@ -637,7 +683,7 @@ class FactorioInstance:
 
         return wrapper
 
-    def run_snippet_file_in_factorio_env(self, file_path):
+    def run_snippet_file_in_factorio_env(self, file_path, clean=True):
         """
         Execute a Python file in the Factorio environment, with access to all Factorio objects and support for
         debugging and breakpoints
@@ -659,7 +705,8 @@ class FactorioInstance:
                 exec(code, snippet_globals)
         finally:
             # Ensure cleanup is performed
-            self.cleanup()
+            if clean:
+                self.cleanup()
 
     def cleanup(self):
         # Close the RCON connection

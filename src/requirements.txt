@@ -14,3 +14,4 @@ openai
 anthropic
 scipy
 scikit-image
+pyautogui

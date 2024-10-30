@@ -8,7 +8,7 @@ from typing import List, Dict, Any
 from dotenv import load_dotenv
 from factorio_instance import FactorioInstance
 import random
-
+from skills.skill_postprocessor import SkillPostProcessor
 load_dotenv()
 from skills.skills_db import SkillsDB
 def is_valid_python(code_string: str) -> bool:
@@ -22,6 +22,7 @@ class SFTDatasetCreator:
     def __init__(self, starting_scenario_folder):
         self.skills_db = SkillsDB()
         self.init_starting_scenarios(starting_scenario_folder)
+        self.postprocessor = SkillPostProcessor()
     
     def init_starting_scenarios(self, starting_scenario_folder):
         # get all folder names in the starting scenario folder
@@ -93,7 +94,12 @@ class SFTDatasetCreator:
                     quantity += random.randint(20, 40)
                 inventory[name] = quantity
             
-            objective = "PLACEHOLDER"
+            objective = self.postprocessor.generate_objective(skill)
+
+            # now put them into the skill
+            skill["objective"] = objective
+            skill["starting_inventory"] = inventory
+            skill["starting_scenario"] = starting_scenario
         return skill
 
 

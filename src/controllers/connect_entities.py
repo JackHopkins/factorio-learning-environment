@@ -365,25 +365,6 @@ class ConnectEntities(Action):
                         self.pickup_entity(connection_type, entity_group.pipes[0].position)
                         entity_groups.remove(entity_group)
 
-        # If there is a small break somewhere in the path, we need to connect the two groups
-        # if len(entity_groups) == 2:
-        #     for input_position in entity_groups[0].input_positions:
-        #         for output_position in entity_groups[1].output_positions:
-        #             if abs(output_position.x - input_position.x) <= 2 and output_position.y == input_position.y:
-        #                 entity_groups = self.__call__(entity_groups[0], entity_groups[1], connection_type)
-        #                 break
-        #             elif abs(output_position.y - input_position.y) <= 2 and output_position.x == input_position.x:
-        #                 entity_groups = self.__call__(entity_groups[0], entity_groups[1], connection_type)
-        #                 break
-        #     for input_position in entity_groups[1].input_positions:
-        #         for output_position in entity_groups[0].output_positions:
-        #             if abs(output_position.x - input_position.x) <= 2 and output_position.y == input_position.y:
-        #                 entity_groups = self.__call__(entity_groups[1], entity_groups[0], connection_type)
-        #                 break
-        #             elif abs(output_position.y - input_position.y) <= 2 and output_position.x == input_position.x:
-        #                 entity_groups = self.__call__(entity_groups[1], entity_groups[0], connection_type)
-        #                 break
-
         # Use the new deduplication function
         return deduplicated_path + entity_groups
 

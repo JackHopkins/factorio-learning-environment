@@ -584,7 +584,7 @@ function get_entity_direction(entity, direction)
 			return defines.direction.west
 		end
 	elseif prototype and prototype.type == "transport-belt" then
-			game.print("Transport belt direction: " .. direction)
+			--game.print("Transport belt direction: " .. direction)
 			if direction == 0 then
 				return defines.direction.north
 			elseif direction == 3 then
@@ -641,7 +641,7 @@ function get_inverse_entity_direction(entity, factorio_direction)
 			return defines.direction.south
 		end
 	end
-	game.print("Getting inverse direction: " .. entity .. " with direction: " .. factorio_direction)
+	--game.print("Getting inverse direction: " .. entity .. " with direction: " .. factorio_direction)
 	if prototype and prototype.type == "inserter" then
 		if factorio_direction == defines.direction.south then
 			return defines.direction.north

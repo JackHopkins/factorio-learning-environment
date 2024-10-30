@@ -4,7 +4,7 @@ from typing import List
 
 import pytest
 
-from factorio_entities import Entity, Position
+from factorio_entities import Entity, Position, ResourcePatch
 from factorio_instance import Direction
 from factorio_types import Prototype, Resource, PrototypeName
 
@@ -27,7 +27,7 @@ def game(instance):
     instance.reset()
     yield instance
     instance.speed(1)
-    instance.reset()
+    #instance.reset()
 
 
 def test_inserter_pickup_positions(game):
@@ -268,6 +268,40 @@ def test_no_broken_edges(game):
     # Verify all belts are facing either UP or LEFT
     for belt in belt_group[0].belts:
         assert belt.direction.value in [Direction.UP.value, Direction.LEFT.value], f"Found belt with direction {belt.direction}"
+
+def test_connecting_transport_belts_around_sharp_edges(game):
+    water_patch: ResourcePatch = game.get_resource_patch(Resource.Water, game.nearest(Resource.Water))
+
+    # move to the water patch
+    game.move_to(water_patch.bounding_box.left_top)
+
+    # connect transport belts around the water patch
+    belts = game.connect_entities(water_patch.bounding_box.left_top, water_patch.bounding_box.right_bottom,
+                                  connection_type=Prototype.TransportBelt)
+
+    assert len(belts) == 1, "Failed to connect transport belts around the water patch"
+
+def test_connecting_transport_belts_around_sharp_edges2(game):
+    iron_patch: ResourcePatch = game.get_resource_patch(Resource.IronOre, game.nearest(Resource.IronOre))
+
+    right_top = Position(x=iron_patch.bounding_box.right_bottom.x, y=iron_patch.bounding_box.left_top.y)
+    left_bottom = Position(x=iron_patch.bounding_box.left_top.x, y=iron_patch.bounding_box.right_bottom.y)
+    positions = [left_bottom, iron_patch.bounding_box.left_top, right_top, iron_patch.bounding_box.right_bottom]
+
+    for position in positions:
+        # move to the iron patch
+        game.move_to(position)
+
+        # place a miner
+        miner = game.place_entity(Prototype.BurnerMiningDrill, position=position, direction=Direction.LEFT)
+
+        # connect transport belts around the water patch
+        belts = game.connect_entities(miner, Position(x=0, y=0), connection_type=Prototype.TransportBelt)
+
+        assert len(belts) == 1, "Failed to connect transport belts around the water patch"
+
+        game.reset()
+
 
 def test_connect_belt_groups_horizontally(game):
 

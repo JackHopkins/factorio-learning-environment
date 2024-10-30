@@ -4,7 +4,7 @@ from typing import List
 
 import pytest
 
-from factorio_entities import Entity, Position
+from factorio_entities import Entity, Position, ResourcePatch
 from factorio_instance import Direction
 from factorio_types import Prototype, Resource, PrototypeName
 
@@ -267,3 +267,14 @@ def test_no_broken_edges(game):
     # Verify all belts are facing either UP or LEFT
     for belt in belts:
         assert belt.direction.value in [Direction.UP.value, Direction.LEFT.value], f"Found belt with direction {belt.direction}"
+
+def test_connecting_transport_belts_around_sharp_edges(game):
+    water_patch: ResourcePatch = game.get_resource_patch(Resource.Water, game.nearest(Resource.Water))
+
+    # move to the water patch
+    game.move_to(water_patch.bounding_box.left_top)
+
+    # connect transport belts around the water patch
+    belts = game.connect_entities(water_patch.bounding_box.left_top, water_patch.bounding_box.right_bottom,
+                                  connection_type=Prototype.TransportBelt)
+    pass

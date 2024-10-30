@@ -1,0 +1,27 @@
+{
+  
+  "objective": "We need create an automated copper burner mine that mines copper ore to a chest further away from it with 1 burner mining drill. Another burner mining drill will mine copper ore to a furnace and smelt plates. The final setup should be checked by looking if the chest has any copper ore in it.",
+  "objective_gen_instructions": "Do not use electric mining drills or assembly machines. Generate setups with 2 mining drills that feed into different chests or a furnaces (multiple drills cannot feed into the same furnace or chest). The outputs need to be further away from the drills (atleast 5 spaces but not over 15)",
+  "scenario_starting_inv": {},
+  "objective_group": "create_burner_mines",
+  "starting_scenario": "full_scratch",
+  "inventory": {
+    "iron-plate": 50,
+    "coal": 200,
+    "copper-plate": 50,
+    "iron-chest": 5,
+    "burner-mining-drill": 5,
+    "electric-mining-drill": 1,
+    "assembling-machine-1": 1,
+    "stone-furnace": 9,
+    "transport-belt": 500,
+    "boiler": 1,
+    "burner-inserter": 32,
+    "pipe": 15,
+    "steam-engine": 1,
+    "small-electric-pole": 10,
+    "wooden-chest": 5,
+    "iron-ore": 20,
+    "offshore-pump": 1
+}
+}

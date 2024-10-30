@@ -2,6 +2,7 @@ import ast
 import json
 from typing import List, Dict, Any
 from dotenv import load_dotenv
+from factorio_instance import FactorioInstance
 
 load_dotenv()
 from skills.skills_db import SkillsDB
@@ -30,8 +31,29 @@ class SFTDatasetCreator:
     def create_jsonl_dataset_from_db_skills(self, output_file: str) -> None:
             all_skills = self.get_skills_for_sft()
             self.skills_db_to_jsonl(all_skills, output_file)
-
-
+    def get_game_trace_from_skill(self, skill: Dict, instance) -> Dict:
+        pass
+    def create_game_traces(self, input_file, output_file):
+        # read the skills from the input file
+        with open(input_file) as f:
+            skills = [json.loads(line) for line in f.readlines()]
+        
+        # create the game instance
+        inventory = {}
+        instance = FactorioInstance(address='localhost',
+                                bounding_box=200,
+                                tcp_port=27015,
+                                fast=True,
+                                #cache_scripts=False,
+                                inventory=inventory)
+        full_skill_traces = []
+        for skill in skills:
+            skill_trace = self.get_game_trace_from_skill(skill, instance)
+            full_skill_traces.append(skill_trace)
+        with open(output_file, "w") as f:
+            for skill_trace in full_skill_traces:
+                f.write(json.dumps(skill_trace) + "\n")
+                
 if __name__ == "__main__":
 
     dataloader = SFTDatasetCreator()

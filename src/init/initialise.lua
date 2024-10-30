@@ -248,6 +248,18 @@ function create_beam_point_with_direction (player, direction, position)
         end_position.x = end_position.x - 0.5
     elseif direction == defines.direction.east then
         end_position.x = end_position.x + 0.5
+    elseif direction == defines.direction.northeast then
+        end_position.x = end_position.x + 0.5
+        end_position.y = end_position.y - 0.5
+    elseif direction == defines.direction.southeast then
+        end_position.x = end_position.x + 0.5
+        end_position.y = end_position.y + 0.5
+    elseif direction == defines.direction.southwest then
+        end_position.x = end_position.x - 0.5
+        end_position.y = end_position.y + 0.5
+    elseif direction == defines.direction.northwest then
+        end_position.x = end_position.x - 0.5
+        end_position.y = end_position.y - 0.5
     end
 
     -- Create the beam entity.

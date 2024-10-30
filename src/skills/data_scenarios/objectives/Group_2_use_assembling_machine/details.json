@@ -1,0 +1,54 @@
+{
+  "mining_setup": "There are no entities on the map",
+  "objectives": [
+                {"objective": "We need to set up coal transport from a chest to a drill. The final setup should be checked by looking if the drill where we sent coal to is fueled",
+                "inventory": {
+                            "transport-belt": 100,
+                            "burner-inserter": 5
+                        },
+                "name": "power_drill_with_coal_from_chest"},
+                {"objective": "We need to set up coal transport from a chest to a furnace. The final setup should be checked by looking if the furnace where we sent coal to is fueled",
+                "inventory": {
+                            "transport-belt": 100,
+                            "burner-inserter": 5
+                        },
+                "name": "power_furnace_with_coal_from_chest"},
+                {"objective": "We need to set up iron plate transport from a furnace to a chest. The final setup should be checked by looking if the chest where we sent plates to has iron plates",
+                "inventory": {
+                            "transport-belt": 100,
+                            "burner-inserter": 5
+                        },
+                "name": "iron_plate_to_chest"},
+                {"objective": "We need to set up copper plate transport from a furnace to a chest. The final setup should be checked by looking if the chest where we sent plates to has copper plates",
+                "inventory": {
+                            "transport-belt": 100,
+                            "burner-inserter": 5
+                        },
+                "name": "copper_plate_to_chest"},
+                {"objective": "We need to set up stone brick transport from a furnace to a chest. The final setup should be checked by looking if the chest where we sent bricks to has stone bricks",
+                "inventory": {
+                            "transport-belt": 100,
+                            "burner-inserter": 5
+                        },
+                "name": "stone_brick_to_chest"},
+                {"objective": "You need to refuel all unfueled entitites. The final setup should be checked by looking all the entities you refueled have fuel",
+                "inventory": {
+                            "transport-belt": 100,
+                            "burner-inserter": 5
+                        },
+                "name": "refueling_entities"},
+                {"objective": "We need to set up iron ore transport from a a drill to a furnace. You need to send the correct ore to the furnace smelting that ore. To see which ore a drill is mining, find the resource patch it's closest to.  The final setup should be checked by looking if the furnace where we sent iron to has more iron ore than starting",
+                "inventory": {
+                            "transport-belt": 100,
+                            "burner-inserter": 5
+                        },
+                "name": "iron_drill_to_furnace"},
+                {"objective": "We need to set up copper ore transport from a a drill to a furnace. You need to send the correct ore to the furnace smelting that ore. To see which ore a drill is mining, find the resource patch it's closest to.  The final setup should be checked by looking if the furnace where we sent copper to has more copper ore than starting",
+                "inventory": {
+                            "transport-belt": 100,
+                            "burner-inserter": 5
+                        },
+                "name": "copper_drill_to_furnace"}
+
+  ]
+}

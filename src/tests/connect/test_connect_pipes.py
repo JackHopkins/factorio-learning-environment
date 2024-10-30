@@ -20,7 +20,7 @@ def game(instance):
         'transport-belt': 200,
         'coal': 100,
         'wooden-chest': 1,
-        PrototypeName.AssemblingMachine.value: 10,
+        'assembling-machine': 10,
     }
     instance.reset()
     yield instance
@@ -175,3 +175,49 @@ def test_connect_steam_engine_boiler_nearly_adjacent(game):
     inspection = game.inspect_entities(position=steam_engine.position)
 
     assert inspection.get_entity(Prototype.SteamEngine).warning == 'not connected to power network'
+
+def test_connect_pipe_groups_horizontally(game):
+
+    # Create a horizontal pipe group
+    pipe_group_right = game.connect_entities(Position(x=0, y=0), Position(x=5, y=0), Prototype.Pipe)
+
+    # Loop the pipes back around
+    pipe_group_right = game.connect_entities(pipe_group_right[0], pipe_group_right[0], Prototype.Pipe)
+
+    # This should result in a single contiguous group
+    assert len(pipe_group_right) == 1
+
+    pipe_group_left = game.connect_entities(Position(x=0, y=-10), Position(x=-5, y=-10), Prototype.Pipe)
+
+    # Loop the pipes back around
+    pipe_group_left = game.connect_entities(pipe_group_left[0], pipe_group_left[0], Prototype.Pipe)
+
+    # This should result in a single contiguous group
+    assert len(pipe_group_left) == 1
+
+def test_avoid_self_collision(game):
+
+    # Step 2: Move to the target location and find water
+    target_position = Position(x=5, y=-4)
+    game.move_to(target_position)
+    print(f"Moved to target position: {target_position}")
+
+    water_source = game.nearest(Resource.Water)
+    print(f"Nearest water source found at: {water_source}")
+
+    # Step 3: Place offshore pump
+    game.move_to(water_source)
+    offshore_pump = game.place_entity(Prototype.OffshorePump, position=water_source)
+    print(f"Placed offshore pump at: {offshore_pump.position}")
+
+    # Step 4: Place boiler
+    boiler_pos = Position(x=offshore_pump.position.x + 2, y=offshore_pump.position.y + 2)
+    game.move_to(boiler_pos)
+    boiler = game.place_entity(Prototype.Boiler, position=boiler_pos, direction=Direction.RIGHT)
+    print(f"Placed boiler at: {boiler.position}")
+
+    # Connect offshore pump to boiler with pipes
+    pipes = game.connect_entities(offshore_pump, boiler, Prototype.Pipe)
+    assert len(pipes) == 1, "Failed to construct a single contiguous pipe group"
+    assert pipes, "Failed to connect offshore pump to boiler with pipes"
+    print("Successfully connected offshore pump to boiler with pipes")

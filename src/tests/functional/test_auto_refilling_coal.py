@@ -89,9 +89,9 @@ def test_build_auto_refilling_coal_system(game):
     belts.extend(game.connect_entities(next_drill_inserter.pickup_position, first_drill_inserter.pickup_position, Prototype.TransportBelt))
 
     # Connect the first drill inserter to the drop point of the first inserter
-    belts.extend(game.connect_entities(belts[-1].output_position, belts[0].input_position, Prototype.TransportBelt))
+    belts.extend(game.connect_entities(belts[-1].belts[-1].output_position, belts[0].belts[0].input_position, Prototype.TransportBelt))
 
-    game.rotate_entity(belts[-1], Direction.RIGHT)
+    game.rotate_entity(belts[-1].belts[-1], Direction.RIGHT)
     # Initialize the system by adding some coal to each drill and inserter
     for drill in drills:
         game.insert_item(Prototype.Coal, drill, 5)

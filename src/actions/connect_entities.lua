@@ -1,20 +1,12 @@
 -- connect_entities.lua
 
 local wire_reach = {
-    ['small-electric-pole'] = 5,
+    ['small-electric-pole'] = 4,
     ['medium-electric-pole'] = 9,
     ['big-electric-pole'] = 30,
     ['substation'] = 18
 }
 
-local function get_last_belt_direction(serialized_entities)
-    for i = #serialized_entities, 1, -1 do
-        if serialized_entities[i].name == connection_type then
-            return serialized_entities[i].direction
-        end
-    end
-    return nil  -- Return nil if no belt was found
-end
 
 function get_step_size(connection_type)
     -- Adjust the step size based on the connection type's wire reach
@@ -149,7 +141,7 @@ local function place_at_position(player, connection_type, current_position, dir,
                 existing_entity = entity
                 break
             elseif entity.name ~= 'laser-beam' and entity.name ~= 'character' then
-                error("Cannot place entity at position (" .. current_position.x .. ", " .. current_position.y .. ") due to overlapping " .. entity.name .. ".")
+                --error("Cannot place entity at position (" .. current_position.x .. ", " .. current_position.y .. ") due to overlapping " .. entity.name .. ".")
             end
         end
     end
@@ -275,7 +267,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     local ydiff = math.abs(source_y-target_y)
 
 
-    if xdiff + ydiff <= 1 then
+    if xdiff + ydiff < 1 then
         local dir = get_direction(start_position, end_position)
         local entity_dir = global.utils.get_entity_direction(connection_type, dir/2)
         place_at_position(player, connection_type, start_position, entity_dir, serialized_entities)
@@ -315,11 +307,16 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
         end
         place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities)
 
+        -- We might want to remove this last one
+        -- place_at_position(player, connection_type, preemptive_target, get_direction(path[#path-2].position, preemptive_target), serialized_entities)
+
     elseif connection_type == 'pipe' then
         -- If the connection_type is a pipe, we have to do some extra work to ensure no missing pipes
         place_at_position(player, connection_type, path[#path].position, get_direction(path[#path].position, preemptive_target), serialized_entities)
         place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities)
         place_at_position(player, connection_type, preemptive_target, get_direction(path[#path].position, preemptive_target), serialized_entities)
+        --place_at_position(player, connection_type, path[#path-1].position, get_direction(path[#path].position, preemptive_target), serialized_entities)
+
     else
         -- If the connection_type is an electricity pole, we need to place the last entity at the target position to ensure connection
         place_at_position(player, connection_type, path[#path].position, get_direction(path[#path].position, preemptive_target), serialized_entities)

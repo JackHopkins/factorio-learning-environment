@@ -32,8 +32,9 @@ class SFTDatasetCreator:
             all_skills = self.get_skills_for_sft()
             self.skills_db_to_jsonl(all_skills, output_file)
     def get_game_trace_from_skill(self, skill: Dict, instance) -> Dict:
+        # We need a objective, starting mining setup and the starting inventory
         pass
-    def create_game_traces(self, input_file, output_file):
+    def create_game_traces(self, input_file, success_output_file, fail_output_file):
         # read the skills from the input file
         with open(input_file) as f:
             skills = [json.loads(line) for line in f.readlines()]
@@ -46,14 +47,21 @@ class SFTDatasetCreator:
                                 fast=True,
                                 #cache_scripts=False,
                                 inventory=inventory)
-        full_skill_traces = []
+        successful_traces = []
+        failed_traces = []
         for skill in skills:
-            skill_trace = self.get_game_trace_from_skill(skill, instance)
-            full_skill_traces.append(skill_trace)
-        with open(output_file, "w") as f:
-            for skill_trace in full_skill_traces:
+            success, skill_trace = self.get_game_trace_from_skill(skill, instance)
+            if success:
+                successful_traces.append(skill_trace)
+            else:
+                failed_traces.append(skill_trace)
+        with open(success_output_file, "w") as f:
+            for skill_trace in successful_traces:
                 f.write(json.dumps(skill_trace) + "\n")
-                
+        with open(fail_output_file, "w") as f:
+            for skill_trace in failed_traces:
+                f.write(json.dumps(skill_trace) + "\n")
+
 if __name__ == "__main__":
 
     dataloader = SFTDatasetCreator()

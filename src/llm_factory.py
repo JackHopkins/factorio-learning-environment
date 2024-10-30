@@ -34,8 +34,9 @@ class LLMFactory:
         ]
 
     def call(self, *args, **kwargs):
-
-        if "claude" in self.model:
+        max_tokens = kwargs.get('max_tokens', 1000)
+        model_to_use = kwargs.get('model', self.model)
+        if "claude" in model_to_use:
             # Set up and call the Anthropic API
             api_key = os.getenv('ANTHROPIC_API_KEY')
 
@@ -59,14 +60,11 @@ class LLMFactory:
             messages = self.merge_contiguous_messages(messages)
 
 
-            #model = "claude-3-5-sonnet-20240620" #kwargs.get('model', "claude-3-5-sonnet-20240620")
-            max_tokens = kwargs.get('max_tokens', 1000)
-
             try:
                 response = anthropic.Anthropic().messages.create(
                     temperature=kwargs.get('temperature', 0.7),
                     max_tokens=max_tokens,
-                    model=self.model,
+                    model=model_to_use,
                     messages=messages,
                     stop_sequences=["```END"],
                 )
@@ -75,7 +73,7 @@ class LLMFactory:
                 raise
 
             return response
-        elif "deepseek" in self.model:
+        elif "deepseek" in model_to_use:
             client = OpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
             response = client.chat.completions.create(*args,
                                                   **kwargs,
@@ -88,7 +86,7 @@ class LLMFactory:
                                                   stream=False)
             return response
 
-        elif "o1-mini" in self.model:
+        elif "o1-mini" in model_to_use:
             client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             # replace `max_tokens` with `max_completion_tokens` for OpenAI API
             if "max_tokens" in kwargs:
@@ -103,9 +101,13 @@ class LLMFactory:
                                                   stream=False)
         else:
             client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-            return client.chat.completions.create(*args, n=self.beam,
-                                                  **kwargs,
-                                                  temperature=0.9,
+            messages = kwargs.get('messages', [])
+            assert messages, "You must provide a list of messages to the model."
+            return client.chat.completions.create(model = model_to_use,
+                                                  n=self.beam,
+                                                  messages=messages,
+                                                  max_tokens = max_tokens,
+                                                  temperature=kwargs.get('temperature', 0.7),
                                                   #stop=["\n\n"],#, "\n#"],
                                                   presence_penalty=1,
                                                   frequency_penalty=0.6,

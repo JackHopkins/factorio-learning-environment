@@ -64,7 +64,6 @@ class Prototype(enum.Enum):
     StoneBrick = "stone-brick", None # Crafting requires smelting 2 stone to make one stone brick
     Radar = "radar", Entity # Crafting requires 5 electronic circuits, 5 iron gear wheels, 10 iron plates
     StoneWall = "stone-wall", Entity # Crafting requires 5 stone bricks
-    PumpJack = "pumpjack", PumpJack
 
 prototype_by_name = {prototype.value[0]: prototype for prototype in Prototype}
 

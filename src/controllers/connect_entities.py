@@ -66,6 +66,27 @@ class ConnectEntities(Action):
                 nearest_distance = distance
                 nearest_connection_point = connection_point
 
+        # The connection points need to be at the center of a tile. If either coordinate is an integer, it needs
+        # to be rounded to the half-tile furthest away from the source position.
+        # If the connection point is to the left of the source position, and a 0.5 x offset
+        nearest_connection_point_x = nearest_connection_point.x
+        nearest_connection_point_y = nearest_connection_point.y
+
+        # This ensures that the connection point is always outside of the entity (no longer just bordering it)
+        if nearest_connection_point_x % 1 == 0:
+            if nearest_connection_point_x < fluid_handler_source.position.x:
+                nearest_connection_point_x = nearest_connection_point_x - 0.5
+            elif nearest_connection_point_x > fluid_handler_source.position.x:
+                nearest_connection_point_x = nearest_connection_point_x + 0.5
+        if nearest_connection_point_y % 1 == 0:
+            if nearest_connection_point_y < fluid_handler_source.position.y:
+                nearest_connection_point_y = nearest_connection_point_y - 0.5
+            elif nearest_connection_point_y > fluid_handler_source.position.y:
+                nearest_connection_point_y = nearest_connection_point_y + 0.5
+
+        nearest_connection_point = Position(x=nearest_connection_point_x, y=nearest_connection_point_y)
+
+
         # # If the connection point is to the left of the source position, and a 0.5 x offset
         # if nearest_connection_point.x < fluid_handler_source.position.x:
         #     nearest_connection_point = Position(x=nearest_connection_point.x + 0.5, y=nearest_connection_point.y)
@@ -153,18 +174,19 @@ class ConnectEntities(Action):
                         #source_position = self._round_position(source_entity.steam_output_point)
                         x_diff_source_position_target_position = source_entity.position.x - source_entity.steam_output_point.x
                         y_diff_source_position_target_position = source_entity.position.y - source_entity.steam_output_point.y
-
+                        BOILER_WIDTH = 3
+                        OFFSET = 0
                         # check if steam_output_point is on the top, bottom, left or right of the boiler, if so, add a 0.5 offset to the position in the direction of the generator
                         if x_diff_source_position_target_position == 0:
                             if y_diff_source_position_target_position < 0:
-                                source_position = Position(x=source_entity.position.x, y=source_entity.position.y + 1.5)
+                                source_position = Position(x=source_entity.position.x, y=source_entity.position.y + BOILER_WIDTH/2 + OFFSET)
                             else:
-                                source_position = Position(x=source_entity.position.x, y=source_entity.position.y - 1.5)
+                                source_position = Position(x=source_entity.position.x, y=source_entity.position.y - BOILER_WIDTH/2 - OFFSET)
                         elif y_diff_source_position_target_position == 0:
                             if x_diff_source_position_target_position < 0:
-                                source_position = Position(x=source_entity.position.x + 1.5, y=source_entity.position.y)
+                                source_position = Position(x=source_entity.position.x + BOILER_WIDTH/2 + OFFSET, y=source_entity.position.y)
                             else:
-                                source_position = Position(x=source_entity.position.x - 1.5, y=source_entity.position.y)
+                                source_position = Position(x=source_entity.position.x - BOILER_WIDTH/2 - OFFSET, y=source_entity.position.y)
 
                         #source_position = Position(x=source_entity.steam_output_point.x, y=source_entity.steam_output_point.y)
                     elif target_entity and isinstance(target_entity, OffshorePump):

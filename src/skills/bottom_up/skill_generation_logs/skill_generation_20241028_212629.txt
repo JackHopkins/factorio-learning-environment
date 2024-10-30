@@ -1,0 +1,42 @@
+[2024-10-28 21:26:29] Base skills selected:
+[2024-10-28 21:26:29]   - test_create_offshore_pump_to_steam_engine: Tests the placement and connection of a basic power generation system by placing and configuring an offshore pump, boiler, and steam engine. Verifies correct entity positioning, rotation, pipe connections, and initial power network status. The test ensures the components are properly aligned and connected but intentionally leaves the steam engine disconnected from a power network.
+[2024-10-28 21:26:29] Combined inventory requirements: {'stone-furnace': 2, 'boiler': 2, 'steam-engine': 2, 'offshore-pump': 2, 'pipe': 200, 'iron-plate': 100, 'copper-plate': 40, 'coal': 100}
+[2024-10-28 21:26:31] Generated objective: Implement a snippet that creates and validates a complete power generation loop by placing an offshore pump, multiple boilers and steam engines in sequence, connecting them with power poles and fuel insertion, then verifying the entire system produces expected power output when fueled.
+[2024-10-28 21:26:39] # Find water and move there
+water_loc = nearest(Resource.Water)
+move_to(water_loc)
+
+# Place offshore pump
+pump = place_entity(Prototype.OffshorePump, position=water_loc, direction=Direction.UP)
+assert pump.direction == Direction.UP
+
+# Place first boiler
+boiler1 = place_entity_next_to(Prototype.Boiler, reference_position=pump.position, 
+                              direction=Direction.UP, spacing=2)
+boiler1 = rotate_entity(boiler1, Direction.RIGHT)
+insert_item(Prototype.Coal, boiler1, quantity=50)
+
+# Place first steam engine
+engine1 = place_entity_next_to(Prototype.SteamEngine, reference_position=boiler1.position,
+                              direction=Direction.UP, spacing=2)
+
+# Connect everything with pipes
+pump_to_boiler = connect_entities(pump, boiler1, Prototype.Pipe)
+boiler_to_engine = connect_entities(boiler1, engine1, Prototype.Pipe)
+
+# Place power pole to create power network
+pole = place_entity_next_to(Prototype.SmallElectricPole, reference_position=engine1.position,
+                           direction=Direction.RIGHT, spacing=1)
+
+# Wait for power generation to stabilize
+wait_ticks(120)
+
+# Verify power is being generated
+engine = inspect_entities(position=engine1.position, radius=1).get_entity(Prototype.SteamEngine)
+assert engine.warning is None
+assert engine.power_output > 0
+
+# Verify boiler is consuming fuel and producing steam
+boiler = inspect_entities(position=boiler1.position, radius=1).get_entity(Prototype.Boiler)
+assert boiler.temperature > 0
+assert boiler.fuel_value > 0

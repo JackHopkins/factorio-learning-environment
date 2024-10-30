@@ -29,6 +29,7 @@ from src.factorio_rcon_utils import _load_initialisation_scripts, _lua2python, _
 from src.rcon.factorio_rcon import RCONClient
 from factorio_types import Prototype, Resource
 from models.game_state import GameState
+from utilities.controller_loader import load_schema, load_definitions, parse_file_for_structure
 from vocabulary import Vocabulary
 
 from factorio_entities import *
@@ -172,6 +173,31 @@ class FactorioInstance:
         if self.memory:
             self.memory.log_observation(str(arg))
         print(arg)
+
+    def get_system_prompt(self) -> str:
+        """
+        Get the system prompt for the Factorio environment.
+
+        This includes all the available actions, objects, and entities that the agent can interact with.
+
+        We get the system prompt by loading the schema, definitions, and entity definitions from their source files.
+
+        These are converted to their signatures - leaving out the implementations.
+        :return:
+        """
+        execution_path = os.path.dirname(os.path.realpath(__file__))
+        folder_path = f'{execution_path}/controllers'
+        schema = load_schema(folder_path, with_docstring=False)
+        type_definitions = load_definitions(f'{execution_path}/factorio_types.py')
+        # Filter `import` statements and `from` statements
+        type_definitions = "\n".join(list(
+            filter(lambda x: not x.startswith("import") and not x.startswith("from"), type_definitions.split("\n"))))
+        type_definitions = type_definitions.replace("\n\n\n", "\n").replace("\n\n", "\n").strip()
+        # entity_definitions = load_definitions(f'{execution_path}/factorio_entities.py')
+        entity_definitions = parse_file_for_structure(f'{execution_path}/factorio_entities.py')
+        brief = f"```types\n{type_definitions}\n```\n```objects\n{entity_definitions}\n```\n```tools\n{schema}\n```"
+
+        return brief
 
     def connect_to_server(self, address, tcp_port):
         try:

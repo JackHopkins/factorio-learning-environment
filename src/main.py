@@ -1,5 +1,6 @@
 # !/usr/bin/env python3
 import os
+import textwrap
 from timeit import default_timer as timer
 
 from dotenv import load_dotenv
@@ -7,6 +8,7 @@ from dotenv import load_dotenv
 from factorio_instance import FactorioInstance
 from factorio_runner import FactorioRunner
 from llm_factory import LLMFactory
+from utilities.controller_loader import load_schema, load_definitions, parse_file_for_structure
 from vocabulary import Vocabulary
 
 observe_local_times = []
@@ -130,6 +132,8 @@ if __name__ == '__main__':
                                 fast = True,
                                 cache_scripts=False,
                                 inventory=inventory)
+    brief = instance.get_system_prompt()
+
     factorio_runner = FactorioRunner(
         #LLMFactory("gpt-4o", beam=1),
         #LLMFactory("claude-3-5-sonnet-20240620", beam=0),

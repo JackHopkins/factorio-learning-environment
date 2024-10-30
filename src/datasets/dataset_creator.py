@@ -7,6 +7,7 @@ import json
 from typing import List, Dict, Any
 from dotenv import load_dotenv
 from factorio_instance import FactorioInstance
+import random
 
 load_dotenv()
 from skills.skills_db import SkillsDB
@@ -18,9 +19,14 @@ def is_valid_python(code_string: str) -> bool:
         return False
 
 class SFTDatasetCreator:
-    def __init__(self):
+    def __init__(self, starting_scenario_folder):
         self.skills_db = SkillsDB()
+        self.init_starting_scenarios(starting_scenario_folder)
     
+    def init_starting_scenarios(self, starting_scenario_folder):
+        # get all folder names in the starting scenario folder
+        self.starting_scenario_names = os.listdir(starting_scenario_folder)
+
 
     def postprocess_skills(self, input_file, output_file) -> Dict:
         # check if the output file exists
@@ -36,10 +42,16 @@ class SFTDatasetCreator:
             skills = [json.loads(line) for line in f.readlines()]
 
 
-        post_processed_skill_names = [skill["name"] for skill in post_processed_skills]
         for skill in skills:
-            if skill["name"] not in post_processed_skill_names:
-                skill = self.enchance_skill_with_attributes(skill)
+            exists = False
+            # check if the skill is already post processed
+            for postprocessed_skill in post_processed_skills:
+                if postprocessed_skill["name"] == skill["name"] and postprocessed_skill["implementation"] == skill["implementation"]:
+                    exists = True
+                    break
+            if exists:
+                continue
+            skill = self.enchance_skill_with_attributes(skill)
             
             # save the skill to the output file
             with open(output_file, "a") as f:
@@ -48,7 +60,42 @@ class SFTDatasetCreator:
     def enchance_skill_with_attributes(self, skill: Dict) -> Dict:
         # We need a objective, starting mining scenario and the starting inventory
         # everything that is over 30 sleeep, put to 30
-        pass
+        if "mart" in skill["version"]:
+            # first get the objective and the starting inventory from the description
+            description = skill["description"]
+            # split by Starting Inventory: 
+            description_parts = description.split("Starting Inventory: ")
+            objective = description_parts[0].replace("Objective: ", "").strip()
+            inventory = description_parts[1].split("Scenario:")[0].strip()
+            inventory = inventory.replace("\n", "")
+            inventory = eval(inventory)
+            assert type(inventory) == dict, f"Inventory is not a dict: {inventory}"
+            # now we need to get the starting scenario
+            # get all starting scenarios that are in the name
+            starting_scenarios = [scenario for scenario in self.starting_scenario_names if scenario in skill["name"]]
+            # get the one that is longest (heuristic that the shorter ones are subset of longer ones)
+            starting_scenario = max(starting_scenarios, key=len)
+
+            # now put them into the skill
+            skill["objective"] = objective
+            skill["starting_inventory"] = inventory
+            skill["starting_scenario"] = starting_scenario
+        else:
+            starting_scenario = "full_scratch"
+            inventory = {}
+            for item in skill["dependencies"]:
+                item_split = item.split(":")
+                name = item_split[0].repalce("'", "").strip()
+                quantity = item_split[1].replace("-", "").strip()
+                quantity = int(quantity)
+                if name in ["pipe", "transport-belt", "small-electric-pole"]:
+                    # add a random number between 20 to 40
+                    quantity += random.randint(20, 40)
+                inventory[name] = quantity
+            
+            objective = "PLACEHOLDER"
+        return skill
+
 
     def get_skills_for_sft(self) -> List[Dict]:
         all_skills = self.skills_db.get_all_skills()
@@ -103,10 +150,12 @@ class SFTDatasetCreator:
                 f.write(json.dumps(skill_trace) + "\n")
 
 if __name__ == "__main__":
-
-    dataloader = SFTDatasetCreator()
-    output_jsonl_file = r"datasets\sft_dataset.jsonl"
+    starting_scenario_path = r"skills\data_scenarios\starting_scenarios"
+    dataloader = SFTDatasetCreator(starting_scenario_path)
+    raw_input_jsonl_file = r"datasets\sft_dataset_raw.jsonl"
+    postprocessed_input_jsonl_file = r"datasets\sft_dataset_postprocessed.jsonl"
     successful_output_file = r"datasets\sft_successful_traces.jsonl"
     failed_output_file = r"datasets\sft_failed_traces.jsonl"
     #dataloader.create_jsonl_dataset_from_db_skills(output_jsonl_file)
     #dataloader.create_game_traces(output_jsonl_file, successful_output_file, failed_output_file)
+    dataloader.postprocess_skills(raw_input_jsonl_file, postprocessed_input_jsonl_file)

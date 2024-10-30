@@ -34,8 +34,9 @@ class LLMFactory:
         ]
 
     def call(self, *args, **kwargs):
-        model = kwargs.get('model', self.model)
-        if "claude" in model:
+        max_tokens = kwargs.get('max_tokens', 1000)
+        model_to_use = kwargs.get('model', self.model)
+        if "claude" in model_to_use:
             # Set up and call the Anthropic API
             api_key = os.getenv('ANTHROPIC_API_KEY')
 
@@ -59,14 +60,11 @@ class LLMFactory:
             messages = self.merge_contiguous_messages(messages)
 
 
-            #model = "claude-3-5-sonnet-20240620" #kwargs.get('model', "claude-3-5-sonnet-20240620")
-            max_tokens = kwargs.get('max_tokens', 1000)
-
             try:
                 response = anthropic.Anthropic().messages.create(
                     temperature=kwargs.get('temperature', 0.7),
                     max_tokens=max_tokens,
-                    model=model,
+                    model=model_to_use,
                     messages=messages,
                     stop_sequences=["```END"],
                 )
@@ -75,7 +73,7 @@ class LLMFactory:
                 raise
 
             return response
-        elif "deepseek" in model:
+        elif "deepseek" in model_to_use:
             client = OpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
             response = client.chat.completions.create(*args,
                                                   **kwargs,
@@ -89,7 +87,7 @@ class LLMFactory:
                                                   stream=False)
             return response
 
-        elif "o1-mini" in model:
+        elif "o1-mini" in model_to_use:
             client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             # replace `max_tokens` with `max_completion_tokens` for OpenAI API
             if "max_tokens" in kwargs:
@@ -104,8 +102,8 @@ class LLMFactory:
                                                   stream=False)
         else:
             client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-            assert "messages" in kwargs, "messages are required for OpenAI API"
-            return client.chat.completions.create(model = model,
+            assert "messages" in kwargs, "You must provide a list of messages to the model."
+            return client.chat.completions.create(model = model_to_use,
                                                   max_tokens = kwargs.get('max_tokens', 2048),
                                                   temperature=kwargs.get('temperature', 0.3),
                                                   messages=kwargs.get('messages', None),

@@ -36,7 +36,69 @@ local function are_fluidboxes_connected(entity1, entity2)
     return false
 end
 
+local function is_placeable(position)
+    local tile = game.surfaces[1].get_tile(position.x, position.y)
+    return tile.collides_with('player-layer') == false
+end
+
+local function find_placeable_neighbor(pos, previous_pos)
+    local directions = {
+        {dx = 0, dy = -1},  -- up
+        {dx = 1, dy = 0},   -- right
+        {dx = 0, dy = 1},   -- down
+        {dx = -1, dy = 0}   -- left
+    }
+
+    if previous_pos then
+        local desired_dx = pos.x - previous_pos.x
+        local desired_dy = pos.y - previous_pos.y
+        table.sort(directions, function(a, b)
+            local a_score = math.abs(a.dx - desired_dx) + math.abs(a.dy - desired_dy)
+            local b_score = math.abs(b.dx - desired_dx) + math.abs(b.dy - desired_dy)
+            return a_score < b_score
+        end)
+    end
+
+    for _, dir in ipairs(directions) do
+        local test_pos = {x = pos.x + dir.dx, y = pos.y + dir.dy}
+        if is_placeable(test_pos) then
+            return test_pos
+        end
+    end
+    return nil
+end
+
 local function interpolate_manhattan(pos1, pos2)
+    local interpolated = {}
+    local dx = pos2.x - pos1.x
+    local dy = pos2.y - pos1.y
+
+    -- Only interpolate if it's a diagonal move
+    if math.abs(dx) == 1 and math.abs(dy) == 1 then
+        -- Try horizontal then vertical
+        local mid_pos = {x = pos2.x, y = pos1.y}
+        if is_placeable(mid_pos) then
+            table.insert(interpolated, {position = mid_pos})
+        else
+            -- Try vertical then horizontal
+            mid_pos = {x = pos1.x, y = pos2.y}
+            if is_placeable(mid_pos) then
+                table.insert(interpolated, {position = mid_pos})
+            else
+                -- If neither works, try to find a placeable neighbor
+                mid_pos = find_placeable_neighbor(mid_pos, pos1)
+                if mid_pos then
+                    table.insert(interpolated, {position = mid_pos})
+                end
+            end
+        end
+    end
+
+    return interpolated
+end
+
+
+local function interpolate_manhattan_old(pos1, pos2)
     local interpolated = {}
     local dx = pos2.x - pos1.x
     local dy = pos2.y - pos1.y
@@ -50,6 +112,8 @@ local function interpolate_manhattan(pos1, pos2)
 end
 
 global.actions.normalise_path = function(original_path, start_position)
+    --- This function interpolates the path to ensure that all positions are placeable and within 1 tile of each other
+
     local path = {}
     local seen = {}  -- To track seen positions
 
@@ -57,22 +121,42 @@ global.actions.normalise_path = function(original_path, start_position)
     local function add_unique(pos)
         local key = pos.x .. "," .. pos.y
         if not seen[key] then
-            table.insert(path, {position = pos})
-            seen[key] = true
+            if is_placeable(pos) then
+                table.insert(path, {position = pos})
+                seen[key] = true
+                return pos
+            else
+                local alt_pos = find_placeable_neighbor(pos, previous_pos)
+                if alt_pos then
+                    local alt_key = alt_pos.x .. "," .. alt_pos.y
+                    if not seen[alt_key] then
+                        table.insert(path, {position = alt_pos})
+                        seen[alt_key] = true
+                        return alt_pos
+                    end
+                end
+            end
         end
+        return nil
     end
 
 
     -- Add start position first
-    add_unique(start_position)
+    local previous_pos = nil
+    previous_pos = add_unique(start_position) or start_position
 
     for i = 1, #original_path - 1 do
-        add_unique(original_path[i].position)
-        local interpolated = interpolate_manhattan(original_path[i].position, original_path[i+1].position)
-        for _, point in ipairs(interpolated) do
-            add_unique(point.position)
+        local current_pos = add_unique(original_path[i].position, previous_pos)
+        if current_pos then
+            previous_pos = current_pos
+            local interpolated = interpolate_manhattan(current_pos, original_path[i+1].position)
+            for _, point in ipairs(interpolated) do
+                local new_pos = add_unique(point.position, previous_pos)
+                if new_pos then previous_pos = new_pos end
+            end
         end
     end
+
     --table.insert(path, original_path[#original_path])
     add_unique(original_path[#original_path].position)
 
@@ -262,12 +346,12 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
         error("Invalid path: " .. serpent.line(path))
     end
 
-
+    --- This invocation interpolates the path to ensure that all positions are placeable and within 1 tile of each other
     local path = global.actions.normalise_path(raw_path, start_position) --{x = source_x, y = source_y})
 
 
     for i = 1, #path - 1 do
-        --create_arrow_with_direction(player, get_direction(path[i].position, path[i + 1].position), path[i].position)
+        create_arrow_with_direction(player, get_direction(path[i].position, path[i + 1].position), path[i].position)
     end
 
     local serialized_entities = {}

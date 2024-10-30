@@ -1,3 +1,7 @@
+import sys
+sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\src")
+sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser")
+import os
 import ast
 import json
 from typing import List, Dict, Any
@@ -17,13 +21,49 @@ class SFTDatasetCreator:
     def __init__(self):
         self.skills_db = SkillsDB()
     
+
+    def postprocess_skills(self, input_file, output_file) -> Dict:
+        # check if the output file exists
+        if os.path.exists(output_file):
+            # read in the output jsonl file
+            with open(output_file) as f:
+                post_processed_skills = [json.loads(line) for line in f.readlines()]
+        else:
+            post_processed_skills = []
+
+        # read in the input jsonl file
+        with open(input_file) as f:
+            skills = [json.loads(line) for line in f.readlines()]
+
+
+        post_processed_skill_names = [skill["name"] for skill in post_processed_skills]
+        for skill in skills:
+            if skill["name"] not in post_processed_skill_names:
+                skill = self.enchance_skill_with_attributes(skill)
+            
+            # save the skill to the output file
+            with open(output_file, "a") as f:
+                f.write(json.dumps(skill) + "\n")
+
+    def enchance_skill_with_attributes(self, skill: Dict) -> Dict:
+        # We need a objective, starting mining scenario and the starting inventory
+        # everything that is over 30 sleeep, put to 30
+        pass
+
     def get_skills_for_sft(self) -> List[Dict]:
         all_skills = self.skills_db.get_all_skills()
         # remove all skills where implementation starts with def test
         all_skills = [skill for skill in all_skills if not skill["implementation"].startswith("def test")]
+        # use only skills where mart in version or version is 'v1.1'
+        all_skills = [skill for skill in all_skills if "mart" in skill["version"] or skill["version"] == "v1.1"]
         return all_skills
 
     def skills_db_to_jsonl(self, skills: List[Dict], output_file: str) -> None:
+        # check if the output file exists
+        # if it does, raise an error
+        if os.path.exists(output_file):
+            raise ValueError("Output file already exists")
+
         with open(output_file, "w") as f:
             for skill in skills:
                 f.write(json.dumps(skill) + "\n")
@@ -66,4 +106,7 @@ if __name__ == "__main__":
 
     dataloader = SFTDatasetCreator()
     output_jsonl_file = r"datasets\sft_dataset.jsonl"
-    dataloader.create_jsonl_dataset_from_db_skills(output_jsonl_file)
+    successful_output_file = r"datasets\sft_successful_traces.jsonl"
+    failed_output_file = r"datasets\sft_failed_traces.jsonl"
+    #dataloader.create_jsonl_dataset_from_db_skills(output_jsonl_file)
+    #dataloader.create_game_traces(output_jsonl_file, successful_output_file, failed_output_file)

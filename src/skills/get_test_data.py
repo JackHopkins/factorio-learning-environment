@@ -47,7 +47,8 @@ def extract_skills_from_test(test_file):
         skills.append({"implementation": function_parts,
                        "name": function_name,
                        "dependencies": [(key, value) for key, value in initial_inv.items()],
-                       "description": description,})
+                       "description": description,
+                       "version": "v1.1"})
     return skills
 
 

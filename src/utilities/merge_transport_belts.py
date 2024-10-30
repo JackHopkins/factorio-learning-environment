@@ -21,7 +21,7 @@ def _construct_group(entities: List[Entity],
                          position=position)
 
 
-def agglomerate_transport_belts(belts: List[Entity]) -> List[BeltGroup]:
+def agglomerate_groupable_entities(belts: List[Entity]) -> List[BeltGroup]:
     """
     Group contiguous transport belts into BeltGroup objects.
 
@@ -190,7 +190,9 @@ def agglomerate_transport_belts(belts: List[Entity]) -> List[BeltGroup]:
                         output_positions = []
                         if prototype == Prototype.TransportBelt:
                             merged_belts = group1.belts + group2.belts
-                            input_positions, output_positions = _calculate_belt_endpoints(merged_belts)
+                            #input_positions, output_positions = _calculate_belt_endpoints(merged_belts)
+                            input_positions = [merged_belts[0].input_position]
+                            output_positions = [merged_belts[-1].output_position]
                         elif prototype == Prototype.Pipe:
                             merged_belts = group1.pipes + group2.pipes
                             input_positions = _calculate_pipe_endpoints(merged_belts)

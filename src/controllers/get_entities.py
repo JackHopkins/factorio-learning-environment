@@ -4,7 +4,7 @@ from controllers._action import Action
 from factorio_entities import Position, Entity, BeltGroup, TransportBelt
 from factorio_instance import PLAYER
 from factorio_types import Prototype
-from utilities.merge_transport_belts import agglomerate_transport_belts
+from utilities.merge_transport_belts import agglomerate_groupable_entities
 
 
 class GetEntities(Action):
@@ -68,7 +68,7 @@ class GetEntities(Action):
                 except Exception as e1:
                     print(f"Could not create {entity_data['name']} object: {e1}")
 
-            belt_groups = agglomerate_transport_belts(belt_list)
+            belt_groups = agglomerate_groupable_entities(belt_list)
             entities_list.extend(belt_groups)
 
             return entities_list

@@ -198,7 +198,7 @@ function create_arrow_with_direction(player, direction, position)
         position = position,
         source_position = position,
         target_position = end_position,
-        duration = 100000,
+        duration = 6000,
         force = 'neutral',
         player = player
     }
@@ -240,26 +240,27 @@ end
 function create_beam_point_with_direction (player, direction, position)
     -- Calculate the end position of the beam based on the direction.
     local end_position = {x=position.x, y=position.y}
+    local length = 0.5
     if direction == defines.direction.north then
-        end_position.y = end_position.y - 0.5
+        end_position.y = end_position.y - length
     elseif direction == defines.direction.south then
-        end_position.y = end_position.y + 0.5
+        end_position.y = end_position.y + length
     elseif direction == defines.direction.west then
-        end_position.x = end_position.x - 0.5
+        end_position.x = end_position.x - length
     elseif direction == defines.direction.east then
-        end_position.x = end_position.x + 0.5
+        end_position.x = end_position.x + length
     elseif direction == defines.direction.northeast then
-        end_position.x = end_position.x + 0.5
-        end_position.y = end_position.y - 0.5
+        end_position.x = end_position.x + length
+        end_position.y = end_position.y - length
     elseif direction == defines.direction.southeast then
-        end_position.x = end_position.x + 0.5
-        end_position.y = end_position.y + 0.5
+        end_position.x = end_position.x + length
+        end_position.y = end_position.y + length
     elseif direction == defines.direction.southwest then
-        end_position.x = end_position.x - 0.5
-        end_position.y = end_position.y + 0.5
+        end_position.x = end_position.x - length
+        end_position.y = end_position.y + length
     elseif direction == defines.direction.northwest then
-        end_position.x = end_position.x - 0.5
-        end_position.y = end_position.y - 0.5
+        end_position.x = end_position.x - length
+        end_position.y = end_position.y - length
     end
 
     -- Create the beam entity.
@@ -268,7 +269,7 @@ function create_beam_point_with_direction (player, direction, position)
         position=position,
         source_position=position,
         target_position=end_position,
-        duration=100000,
+        duration=60000,
         direction=direction,
         force='neutral',
         player=player

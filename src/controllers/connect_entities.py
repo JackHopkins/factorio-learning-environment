@@ -7,13 +7,14 @@ from controllers._action import Action
 from typing import Tuple, List, Union
 
 from controllers.get_path import GetPath
+from controllers.pickup_entity import PickupEntity
 from controllers.request_path import RequestPath
 from controllers.rotate_entity import RotateEntity
 from factorio_entities import Entity, Boiler, FluidHandler, Position, Generator, Inserter, MiningDrill, TransportBelt, \
     OffshorePump, PumpJack, BeltGroup, EntityGroup, PipeGroup
 from factorio_instance import PLAYER, Direction
 from factorio_types import Prototype
-from utilities.merge_transport_belts import agglomerate_transport_belts
+from utilities.merge_transport_belts import agglomerate_groupable_entities
 
 
 class ConnectEntities(Action):
@@ -24,6 +25,7 @@ class ConnectEntities(Action):
         self.request_path = RequestPath(connection, game_state)
         self.get_path = GetPath(connection, game_state)
         self.rotate_entity = RotateEntity(connection, game_state)
+        self.pickup_entity = PickupEntity(connection, game_state)
 
 
     def _get_nearest_connection_point(self,
@@ -68,6 +70,27 @@ class ConnectEntities(Action):
             if distance < nearest_distance:
                 nearest_distance = distance
                 nearest_connection_point = connection_point
+
+        # The connection points need to be at the center of a tile. If either coordinate is an integer, it needs
+        # to be rounded to the half-tile furthest away from the source position.
+        # If the connection point is to the left of the source position, and a 0.5 x offset
+        nearest_connection_point_x = nearest_connection_point.x
+        nearest_connection_point_y = nearest_connection_point.y
+
+        # This ensures that the connection point is always outside of the entity (no longer just bordering it)
+        if nearest_connection_point_x % 1 == 0:
+            if nearest_connection_point_x < fluid_handler_source.position.x:
+                nearest_connection_point_x = nearest_connection_point_x - 0.5
+            elif nearest_connection_point_x > fluid_handler_source.position.x:
+                nearest_connection_point_x = nearest_connection_point_x + 0.5
+        if nearest_connection_point_y % 1 == 0:
+            if nearest_connection_point_y < fluid_handler_source.position.y:
+                nearest_connection_point_y = nearest_connection_point_y - 0.5
+            elif nearest_connection_point_y > fluid_handler_source.position.y:
+                nearest_connection_point_y = nearest_connection_point_y + 0.5
+
+        nearest_connection_point = Position(x=nearest_connection_point_x, y=nearest_connection_point_y)
+
 
         # # If the connection point is to the left of the source position, and a 0.5 x offset
         # if nearest_connection_point.x < fluid_handler_source.position.x:
@@ -159,18 +182,19 @@ class ConnectEntities(Action):
                         #source_position = self._round_position(source_entity.steam_output_point)
                         x_diff_source_position_target_position = source_entity.position.x - source_entity.steam_output_point.x
                         y_diff_source_position_target_position = source_entity.position.y - source_entity.steam_output_point.y
-
+                        BOILER_WIDTH = 3
+                        OFFSET = 0
                         # check if steam_output_point is on the top, bottom, left or right of the boiler, if so, add a 0.5 offset to the position in the direction of the generator
                         if x_diff_source_position_target_position == 0:
                             if y_diff_source_position_target_position < 0:
-                                source_position = Position(x=source_entity.position.x, y=source_entity.position.y + 1.5)
+                                source_position = Position(x=source_entity.position.x, y=source_entity.position.y + BOILER_WIDTH/2 + OFFSET)
                             else:
-                                source_position = Position(x=source_entity.position.x, y=source_entity.position.y - 1.5)
+                                source_position = Position(x=source_entity.position.x, y=source_entity.position.y - BOILER_WIDTH/2 - OFFSET)
                         elif y_diff_source_position_target_position == 0:
                             if x_diff_source_position_target_position < 0:
-                                source_position = Position(x=source_entity.position.x + 1.5, y=source_entity.position.y)
+                                source_position = Position(x=source_entity.position.x + BOILER_WIDTH/2 + OFFSET, y=source_entity.position.y)
                             else:
-                                source_position = Position(x=source_entity.position.x - 1.5, y=source_entity.position.y)
+                                source_position = Position(x=source_entity.position.x - BOILER_WIDTH/2 - OFFSET, y=source_entity.position.y)
 
                     elif target_entity and isinstance(target_entity, OffshorePump):
                         source_position = self._get_nearest_connection_point(source_entity,
@@ -305,29 +329,41 @@ class ConnectEntities(Action):
         # If we are connecting to an existing belt group, we need to agglomerate them all together
         if connection_type == Prototype.TransportBelt:
             if isinstance(source_entity, BeltGroup):
-                entity_groups = agglomerate_transport_belts(source_entity.belts + groupable_entities)
+                entity_groups = agglomerate_groupable_entities(source_entity.belts + groupable_entities)
                 entity_groups[0].input_positions = source_entity.input_positions
             elif isinstance(target_entity, BeltGroup):
-                entity_groups = agglomerate_transport_belts(groupable_entities + target_entity.belts)
+                entity_groups = agglomerate_groupable_entities(groupable_entities + target_entity.belts)
                 entity_groups[0].output_positions = target_entity.output_positions
             else:
-                entity_groups = agglomerate_transport_belts(groupable_entities)
+                entity_groups = agglomerate_groupable_entities(groupable_entities)
 
             for entity_group in entity_groups:
                 entity_group.belts = self._deduplicate_entities(entity_group.belts)
         elif connection_type == Prototype.Pipe:
             if isinstance(source_entity, PipeGroup):
-                entity_groups = agglomerate_transport_belts(source_entity.pipes + groupable_entities)
+                entity_groups = agglomerate_groupable_entities(source_entity.pipes + groupable_entities)
                 #entity_groups[0].input_positions = source_entity.input_positions
             elif isinstance(target_entity, PipeGroup):
-                entity_groups = agglomerate_transport_belts(groupable_entities + target_entity.pipes)
+                entity_groups = agglomerate_groupable_entities(groupable_entities + target_entity.pipes)
                 #entity_groups[0].output_positions = target_entity.output_positions
             else:
-                entity_groups = agglomerate_transport_belts(groupable_entities)
+                entity_groups = agglomerate_groupable_entities(groupable_entities)
 
             for entity_group in entity_groups:
                 entity_group.pipes = self._deduplicate_entities(entity_group.pipes)
 
+        # if we have more than one entity group - but one of them only has one entity (i.e it is dangling) we
+        # should pick it up back into the inventory, as the connect entities routine should not have created it
+        if len(entity_groups) > 1:
+            for entity_group in entity_groups:
+                if connection_type == Prototype.TransportBelt:
+                    if len(entity_group.belts) == 1:
+                        self.pickup_entity(connection_type, entity_group.belts[0].position)
+                        entity_groups.remove(entity_group)
+                elif connection_type == Prototype.Pipe:
+                    if len(entity_group.pipes) == 1:
+                        self.pickup_entity(connection_type, entity_group.pipes[0].position)
+                        entity_groups.remove(entity_group)
 
         # Use the new deduplication function
         return deduplicated_path + entity_groups

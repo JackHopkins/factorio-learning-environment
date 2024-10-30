@@ -1,6 +1,6 @@
 import pytest
 
-from factorio_entities import Entity, Position
+from factorio_entities import Entity, Position, EntityStatus
 from factorio_instance import Direction
 from factorio_types import Prototype, Resource, PrototypeName
 
@@ -17,11 +17,11 @@ def game(instance):
         'transport-belt': 200,
         'coal': 100,
         'wooden-chest': 1,
-        'assembling-machine': 10,
+        'assembling-machine-1': 10,
     }
     instance.reset()
     yield instance
-    instance.reset()
+    #instance.reset()
 def test_connect_steam_engine_to_assembler_with_electricity_poles(game):
     """
     Place a steam engine and an assembling machine next to each other.
@@ -53,10 +53,9 @@ def test_connect_steam_engine_to_assembler_with_electricity_poles(game):
     assert spent_poles == len(poles + poles2)
 
     # check to see if the assemblers are connected to the electricity network
-    inspected_assemblers = game.inspect_entities(position=diagonal_assembler.position, radius=50).get_entities(Prototype.AssemblingMachine1)
-
-    for assembler in inspected_assemblers:
-        assert assembler.warning == 'not receiving electricity'
+    assemblers = game.get_entities({Prototype.AssemblingMachine1})
+    for assembler in assemblers:
+        assert assembler.status == EntityStatus.NO_POWER
 
 def test_connect_power_poles_without_blocking_mining_drill(game):
     coal_position = game.nearest(Resource.Coal)

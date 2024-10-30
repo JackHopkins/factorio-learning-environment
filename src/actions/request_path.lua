@@ -20,11 +20,11 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
     --            true
     --)
     local start_position = {y = start_y, x = start_x}
-    create_beam_point_with_direction(player, 1, start_position)
-    create_beam_point_with_direction(player, 1, goal_position)
+    --create_beam_point_with_direction(player, 1, start_position)
+    --create_beam_point_with_direction(player, 1, goal_position)
     --
-    create_beam_point_with_direction(player, 2, {y = start_y, x = start_x, })
-    create_beam_point_with_direction(player, 2, {y = goal_y, x = goal_x})
+    --create_beam_point_with_direction(player, 2, {y = start_y, x = start_x, })
+    --create_beam_point_with_direction(player, 2, {y = goal_y, x = goal_x})
 
     local path_request = {
         bounding_box = {{-0.49, -0.49}, {0.49, 0.49}}, -- Assuming a 1x1 entity size
@@ -44,7 +44,7 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
         pathfind_flags = {
             cache = true,
             no_break = true,
-            prefer_straight_paths = true,
+            prefer_straight_paths = false,
             allow_paths_through_own_entities = allow_paths_through_own_entities
         }
     }

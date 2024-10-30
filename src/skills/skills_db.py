@@ -36,18 +36,21 @@ class SkillsDB:
 
         return [{"name": row[0], "implementation": row[1], "description": row[2], "signature": row[3]} for row in cursor.fetchall()] 
     
-    def delete_all_skills(self):
-        cursor = self.conn.cursor()
-        cursor.execute("DELETE FROM public.skills")
-        self.conn.commit()
+#     def delete_all_skills(self):
+#         cursor = self.conn.cursor()
+#         cursor.execute("DELETE FROM public.skills")
+#         self.conn.commit()
 
-    def save_function(self, name: str, implementation: str, description: str, dependencies: List[str], signature: str, implementation_model: str):
+    def save_function(self, name: str, implementation: str, 
+                      description: str, dependencies: List[str], 
+                      signature: str, implementation_model: str,
+                      version: str = "v1.0") -> None:
         cursor = self.conn.cursor()
         embedding = self.get_embedding(signature)
         cursor.execute("""
             INSERT INTO public.skills (name, implementation, description, embedding, dependencies, version, embedding_model, implementation_model, signature)
             VALUES (%s, %s, %s, %s::vector, %s, %s, %s, %s, %s)
-        """, (name, implementation, description, embedding, dependencies, "v1.0", "text-embedding-3-small",
+        """, (name, implementation, description, embedding, dependencies, version, "text-embedding-3-small",
               implementation_model, signature))
         self.conn.commit()
 

@@ -1,0 +1,4 @@
+{"name": "craft_stone_furnace",
+"description": "Tests gathering stone resources and crafting a stone furnace. Verifies the player can locate stone, harvest the required quantity, craft a furnace, and confirm the crafted item appears in inventory.",
+"dependencies":[],
+"objective": "Get a stone furnace"}

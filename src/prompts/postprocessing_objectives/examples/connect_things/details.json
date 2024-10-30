@@ -1,0 +1,4 @@
+{"name": "create_a_stone_mining_drill_that_feeds_into_a_fueled_furnace",
+"description": "Sets up an automated stone mining and smelting station by placing and fueling a burner mining drill, stone furnace, and burner inserter in the correct configuration near a stone patch",
+"dependencies":["'burner-inserter': 1", "'burner-mining-drill': 1", "'stone-furnace': 1", "'coal': 15"],
+"objective": "Create a burner mine that puts stone into a furnace for smelting."}

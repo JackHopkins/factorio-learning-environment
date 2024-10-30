@@ -111,19 +111,6 @@ local function interpolate_manhattan(pos1, pos2)
 end
 
 
-local function interpolate_manhattan_old(pos1, pos2)
-    local interpolated = {}
-    local dx = pos2.x - pos1.x
-    local dy = pos2.y - pos1.y
-
-    -- Move horizontally first, then vertically
-    if math.abs(dx) > 0 then
-        table.insert(interpolated, {position = {x = pos2.x, y = pos1.y}})
-    end
-
-    return interpolated
-end
-
 global.actions.normalise_path = function(original_path, start_position)
     --- This function interpolates the path to ensure that all positions are placeable and within 1 tile of each other
 
@@ -170,25 +157,23 @@ global.actions.normalise_path = function(original_path, start_position)
         end
     end
 
-    --table.insert(path, original_path[#original_path])
     add_unique(original_path[#original_path].position)
 
-    --- This is horrendously inefficient, but it works for now. TODO fix this
-    for k = 1, 3 do
-        local previous_pos = path[1].position
-        for i = 1, #path do
-            local manhatten_distance = math.abs(path[i].position.x - previous_pos.x) + math.abs(path[i].position.y - previous_pos.y)
-            if manhatten_distance > 1 then
-                local interpolated = interpolate_manhattan(previous_pos, path[i].position)
-                -- for each interpolated point, add it to the path at the correct index
-                for _, point in ipairs(interpolated) do
-                    table.insert(path, i, point)
-                    i = i + 1
-                end
+    --- @jack: Do we need this?
+    local previous_pos = path[1].position
+    for i = 1, #path do
+        local manhatten_distance = math.abs(path[i].position.x - previous_pos.x) + math.abs(path[i].position.y - previous_pos.y)
+        if manhatten_distance > 1 then
+            local interpolated = interpolate_manhattan(previous_pos, path[i].position)
+            -- for each interpolated point, add it to the path at the correct index
+            for _, point in ipairs(interpolated) do
+                table.insert(path, i, point)
+                i = i + 1
             end
-            previous_pos = path[i].position
         end
+        previous_pos = path[i].position
     end
+
     return path
 end
 

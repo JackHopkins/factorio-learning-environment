@@ -1,11 +1,7 @@
-import math
-from typing import List
-
 import pytest
 
-from factorio_entities import Entity, Position
-from factorio_instance import Direction
-from factorio_types import Prototype, Resource, PrototypeName
+from factorio_entities import Position
+from factorio_types import Prototype
 
 
 @pytest.fixture()

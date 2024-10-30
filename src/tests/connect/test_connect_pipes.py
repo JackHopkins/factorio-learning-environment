@@ -3,7 +3,7 @@ from typing import List
 
 import pytest
 
-from factorio_entities import Entity, Position
+from factorio_entities import Entity, Position, PipeGroup, EntityStatus
 from factorio_instance import Direction
 from factorio_types import Prototype, Resource, PrototypeName
 
@@ -20,7 +20,7 @@ def game(instance):
         'transport-belt': 200,
         'coal': 100,
         'wooden-chest': 1,
-        PrototypeName.AssemblingMachine.value: 10,
+        'assembling-machine-1': 10,
     }
     instance.reset()
     yield instance
@@ -98,15 +98,15 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
                                              direction=Direction.UP)
     assert steam_engine.direction.value == Direction.UP.value
 
-    connection: List[Entity] = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
+    connection: List[PipeGroup] = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
     # check to see if the steam engine has water
     #inspection = game.inspect_entities(position=steam_engine.position)
 
     #assert inspection.get_entity(Prototype.SteamEngine).warning == 'not receiving electricity'
     assert boilers_in_inventory - 1 == game.inspect_inventory()[Prototype.Boiler]
     assert steam_engines_in_inventory - 1 == game.inspect_inventory()[Prototype.SteamEngine]
-    assert pipes_in_inventory - len(connection) == game.inspect_inventory()[Prototype.Pipe]
-    assert len(connection) >= 10
+    assert pipes_in_inventory - len(connection[0].pipes) == game.inspect_inventory()[Prototype.Pipe]
+    assert len(connection[0].pipes) >= 10
 
     game.reset()
 
@@ -120,7 +120,7 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
         steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=offset, direction=direction)
 
         try:
-            connection: List[Entity] = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
+            connection: List[PipeGroup] = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
         except Exception as e:
             print(e)
             assert False
@@ -129,7 +129,7 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
 
         current_pipes_in_inventory = game.inspect_inventory()[Prototype.Pipe]
         spent_pipes = (pipes_in_inventory - current_pipes_in_inventory)
-        assert spent_pipes == len(connection)
+        assert spent_pipes == len(connection[0].pipes)
 
         # check to see if the steam engine has water
         inspection = game.inspect_entities(position=steam_engine.position)
@@ -172,9 +172,9 @@ def test_connect_steam_engine_boiler_nearly_adjacent(game):
     game.insert_item(Prototype.Coal, boiler, 50)
 
     # check to see if the steam engine has water
-    inspection = game.inspect_entities(position=steam_engine.position)
+    engine = game.get_entity(Prototype.SteamEngine, steam_engine.position)
 
-    assert inspection.get_entity(Prototype.SteamEngine).warning == 'not connected to power network'
+    assert engine.status == EntityStatus.NOT_PLUGGED_IN_ELECTRIC_NETWORK
 
 def test_connect_boiler_to_steam_engine_with_pipes_horizontally(game):
     boiler_pos = Position(x=0, y=0)
@@ -204,3 +204,49 @@ def test_connect_boiler_to_steam_engine_with_pipes_vertically(game):
     # Connect boiler to steam engine with pipes
     pipes = game.connect_entities(boiler, steam_engine, Prototype.Pipe)
     assert pipes, "Failed to connect boiler to steam engine with pipes"
+
+def test_connect_pipe_groups_horizontally(game):
+
+    # Create a horizontal pipe group
+    pipe_group_right = game.connect_entities(Position(x=0, y=0), Position(x=5, y=0), Prototype.Pipe)
+
+    # Loop the pipes back around
+    pipe_group_right = game.connect_entities(pipe_group_right[0], pipe_group_right[0], Prototype.Pipe)
+
+    # This should result in a single contiguous group
+    assert len(pipe_group_right) == 1
+
+    pipe_group_left = game.connect_entities(Position(x=0, y=-10), Position(x=-5, y=-10), Prototype.Pipe)
+
+    # Loop the pipes back around
+    pipe_group_left = game.connect_entities(pipe_group_left[0], pipe_group_left[0], Prototype.Pipe)
+
+    # This should result in a single contiguous group
+    assert len(pipe_group_left) == 1
+
+def test_avoid_self_collision(game):
+
+    # Step 2: Move to the target location and find water
+    target_position = Position(x=5, y=-4)
+    game.move_to(target_position)
+    print(f"Moved to target position: {target_position}")
+
+    water_source = game.nearest(Resource.Water)
+    print(f"Nearest water source found at: {water_source}")
+
+    # Step 3: Place offshore pump
+    game.move_to(water_source)
+    offshore_pump = game.place_entity(Prototype.OffshorePump, position=water_source)
+    print(f"Placed offshore pump at: {offshore_pump.position}")
+
+    # Step 4: Place boiler
+    boiler_pos = Position(x=offshore_pump.position.x + 2, y=offshore_pump.position.y + 2)
+    game.move_to(boiler_pos)
+    boiler = game.place_entity(Prototype.Boiler, position=boiler_pos, direction=Direction.RIGHT)
+    print(f"Placed boiler at: {boiler.position}")
+
+    # Connect offshore pump to boiler with pipes
+    pipes = game.connect_entities(offshore_pump, boiler, Prototype.Pipe)
+    assert len(pipes) == 1, "Failed to construct a single contiguous pipe group"
+    assert pipes, "Failed to connect offshore pump to boiler with pipes"
+    print("Successfully connected offshore pump to boiler with pipes")

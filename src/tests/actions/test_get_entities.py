@@ -9,7 +9,7 @@ from factorio_types import Prototype, Resource
 def game(instance):
     instance.initial_inventory = {
         **instance.initial_inventory,
-        'coal': 5,
+        'coal': 10,
         'iron-chest': 1,
         'iron-plate': 50,
         'iron-ore': 10,
@@ -74,7 +74,7 @@ def test_get_entities_bug(game):
     game.craft_item(Prototype.StoneFurnace, 3)
 
     # 1. Place a stone furnace
-    stone_furnace = game.place_entity(Prototype.WoodenChest, Direction.UP, iron_position)
+    stone_furnace = game.place_entity(Prototype.StoneFurnace, Direction.UP, iron_position)
     assert stone_furnace is not None, "Failed to place stone furnace"
 
     game.insert_item(Prototype.Coal, stone_furnace, 5)
@@ -88,3 +88,27 @@ def test_get_entities_bug(game):
 def test_get_no_entities(game):
     furnaces = game.get_entities()
     assert not furnaces
+
+def test_get_contiguous_transport_belts(game):
+    start_position = game.nearest(Resource.Stone)
+    end_position = game.nearest(Resource.IronOre)
+
+    game.connect_entities(start_position, end_position, connection_type=Prototype.TransportBelt)
+
+    transport_belts = game.get_entities({Prototype.TransportBelt}, start_position)
+
+    assert len(transport_belts) == 1, "Failed to retrieve transport belts"
+def test_get_filtered_entities(game):
+    # put down a chest at origin
+    chest = game.place_entity(Prototype.IronChest, position=Position(x=1, y=0))
+    # put 100 coal into the chest
+    chest = game.insert_item(Prototype.Coal, chest, 5)
+
+    # place a stone furnace
+    furnace = game.place_entity(Prototype.StoneFurnace, position=Position(x=3, y=0))
+
+    furnace = game.insert_item(Prototype.Coal, furnace, 5)
+
+    entities = game.get_entities({Prototype.StoneFurnace})
+
+    assert len(entities) == 1

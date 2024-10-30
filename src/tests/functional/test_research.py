@@ -8,15 +8,22 @@ from factorio_types import Resource, Prototype, PrototypeName
 @pytest.fixture()
 def game(instance):
     instance.initial_inventory = {
-        **instance.initial_inventory,
+        'coal': 50,
+        'copper-plate': 50,
+        'iron-plate': 50,
+        'iron-chest': 2,
+        'burner-mining-drill': 3,
+        'assembling-machine-1': 1,
+        'boiler': 1,
+        'steam-engine': 1,
         'stone-furnace': 10,
-        'burner-inserter': 50,
+        'burner-inserter': 32,
         'offshore-pump': 4,
         'pipe': 100,
         'small-electric-pole': 50,
         'transport-belt': 100,
         'lab': 1,
-        PrototypeName.AssemblingMachine.value: 10,
+        'assembling-machine': 10,
     }
     instance.reset()
     yield instance

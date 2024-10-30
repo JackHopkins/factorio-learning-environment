@@ -1,0 +1,12 @@
+{
+  "fixed_inventory": {"coal": 103,
+                     "iron_ore": 50, 
+                      "copper_ore": 50,
+                    "wooden-chest": 2,
+                  "burner-mining-drill": 2,
+                  "stone-furnace": 3,
+                "stone": 50},
+  "random_inventory": {
+},
+  "additional_inventory_for_starting_scenario": {}
+}

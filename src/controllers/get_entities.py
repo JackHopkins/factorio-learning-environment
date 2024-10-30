@@ -1,15 +1,17 @@
+from collections import defaultdict
 from typing import List, Set, Union
 from controllers._action import Action
-from factorio_entities import Position, Entity
+from factorio_entities import Position, Entity, BeltGroup, TransportBelt
 from factorio_instance import PLAYER
 from factorio_types import Prototype
+from utilities.merge_transport_belts import agglomerate_groupable_entities
 
 
 class GetEntities(Action):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
-    def __call__(self, entities: Set[Prototype] = set(), position: Position = None, radius: int = 5) -> List[Entity]:
+    def __call__(self, entities: Set[Prototype] = set(), position: Position = None, radius: int = 1000) -> List[Entity]:
         """
         Get entities within a radius of a given position.
         :param position: Position to search around. Can be a Position object or "player" for player's position.
@@ -34,6 +36,7 @@ class GetEntities(Action):
                 raise Exception("Could not get entities", response)
 
             entities_list = []
+            belt_list = []
             for entity_data in response:
                 # Find the matching Prototype
                 matching_prototype = None
@@ -46,6 +49,8 @@ class GetEntities(Action):
                     print(f"Warning: No matching Prototype found for {entity_data['name']}")
                     continue
 
+                if matching_prototype not in entities and entities:
+                    continue
                 metaclass = matching_prototype.value[1]
 
                 # Process nested dictionaries (like inventories)
@@ -56,9 +61,15 @@ class GetEntities(Action):
                 entity_data['prototype'] = prototype
                 try:
                     entity = metaclass(**entity_data)
-                    entities_list.append(entity)
-                except Exception as e:
-                    print(f"Could not create {entity_data['name']} object: {e}")
+                    if entity.prototype == Prototype.TransportBelt:
+                        belt_list.append(entity)
+                    else:
+                        entities_list.append(entity)
+                except Exception as e1:
+                    print(f"Could not create {entity_data['name']} object: {e1}")
+
+            belt_groups = agglomerate_groupable_entities(belt_list)
+            entities_list.extend(belt_groups)
 
             return entities_list
 

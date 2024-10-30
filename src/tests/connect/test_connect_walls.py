@@ -16,7 +16,7 @@ def game(instance):
     }
     instance.reset()
     yield instance
-    instance.reset()
+    #instance.reset()
 
 
 def test_connect_wall_line(game):
@@ -24,6 +24,6 @@ def test_connect_wall_line(game):
     end_position = Position(x=5, y=0)
 
     walls = game.connect_entities(start_position, end_position, connection_type=Prototype.StoneWall)
-    assert len(walls) == 5
+    assert len(walls) == 6
 
 

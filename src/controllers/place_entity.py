@@ -29,7 +29,6 @@ class PlaceObject(Action):
         :return: Entity object
         """
 
-
         if not isinstance(entity, Prototype):
             raise ValueError("The first argument must be a Prototype object")
         if not isinstance(direction, Direction):

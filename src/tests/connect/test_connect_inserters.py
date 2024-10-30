@@ -21,12 +21,12 @@ def game(instance):
         'transport-belt': 200,
         'coal': 100,
         'wooden-chest': 1,
-        PrototypeName.AssemblingMachine.value: 10,
+        'assembling-machine': 10,
     }
     instance.speed(10)
     instance.reset()
     yield instance
-    instance.reset()
+    #instance.reset()
     instance.speed(1)
 
 
@@ -81,7 +81,7 @@ def test_place_and_connect_entities_in_grid(game):
 
     assert spent_furnaces == grid_size * grid_size
     assert spent_inserters == 2 * grid_size * (grid_size - 1)
-    game.reset()
+    #game.reset()
 
 def test_burner_inserter_grid_with_coal_movement(game):
     """

@@ -1,15 +1,12 @@
-import psycopg2
-from openai import OpenAI
-from psycopg2.extras import Json
-import openai
-from typing import List, Dict, Union, Tuple
 import ast
-import json
 import os
 import textwrap
-from itertools import cycle
-from typing import List, Dict, Any
+from typing import List, Dict
+from typing import Tuple
+
+import psycopg2
 from dotenv import load_dotenv
+from openai import OpenAI
 
 from factorio_instance import FactorioInstance
 from llm_factory import LLMFactory
@@ -59,7 +56,7 @@ def is_valid_python(code_string: str) -> bool:
 
 
 class FactorioSkillGenerator:
-    def __init__(self, model="claude-3-5-sonnet-20240620"):
+    def __init__(self, model="claude-3-5-sonnet-20241022"):
         self.conn = psycopg2.connect(
             host="factorio.cwqst41cfhhd.us-east-1.rds.amazonaws.com",
             port="5432",
@@ -105,6 +102,7 @@ Methods:
         cursor.execute("""
             SELECT name, implementation, description, signature
             FROM public.skills
+            WHERE version = 'v1.1'
             ORDER BY embedding <-> %s::vector
             LIMIT %s
         """, (query_embedding, n))
@@ -117,14 +115,12 @@ Methods:
         prompt = f"""
         Objective: {objective}
 
-        Similar functions for reference:
+        Relevant unit test functions for reference:
         {context}
 
         {parent_implementation}
-        Write a short Python function to achieve the given objective. Include a function signature, docstring, assertions for self-validation, and use any relevant functions from the context. 
-        Any sub-goals should be represented by invoking appropriately named function - which we will implement later.
+        Write a short Python snippet to achieve the given objective. Include assertions for self-validation, and use patterns from the unit tests if necessary. 
         Your response should only include the Python code, nothing else, wrapped in ```python ````.
-        Ensure that all input arguments have type hints, and the function has a return type hint.
         """
 
         messages = [
@@ -148,14 +144,14 @@ Methods:
                 return textwrap.dedent('\n'.join(function_def_lines))
         return None
 
-    def save_function(self, name: str, implementation: str, description: str, dependencies: List[str], signature: str):
+    def save_function(self, name: str, implementation: str, description: str, dependencies: List[str], signature: str, version="v1.0"):
         cursor = self.conn.cursor()
         embedding = self.get_embedding(signature)
         implementation_model = self.llm_factory.model
         cursor.execute("""
             INSERT INTO public.skills (name, implementation, description, embedding, dependencies, version, embedding_model, implementation_model, signature)
             VALUES (%s, %s, %s, %s::vector, %s, %s, %s, %s, %s)
-        """, (name, implementation, description, embedding, dependencies, "v1.0", "text-embedding-3-small",
+        """, (name, implementation, description, embedding, dependencies, version, "text-embedding-3-small",
               implementation_model, signature))
         self.conn.commit()
 
@@ -170,9 +166,18 @@ Methods:
         except Exception as e:
             return False, str(e)
 
+    def verify_skill(self, implementation: str) -> Tuple[bool, str]:
+        try:
+            score, goal, result = self.factorio_instance.eval_with_error(implementation, timeout=20)
+            if 'error' in result.lower() or 'assertion' in result.lower():
+                return False, result
+            return True, result
+        except Exception as e:
+            return False, str(e)
+
     def repair_function(self, function_def: str, error_message: str, objective: str) -> str:
         repair_prompt = f"""
-        The following function failed to achieve its objective:
+        The following snippet failed to achieve its objective:
 
         ```python
         {function_def}
@@ -182,8 +187,8 @@ Methods:
 
         Objective: {objective}
 
-        Please modify the function to fix the error and achieve the objective. Ensure that all input arguments have type hints, and the function has a return type hint.
-        Your response should only include the Python code for the corrected function, nothing else.
+        Please modify the code to fix the error and achieve the objective.
+        Your response should only include the Python code for the corrected snippet, nothing else.
         """
 
         messages = [
@@ -222,14 +227,21 @@ Methods:
             print("Function implementation:")
             print(implementation)
             return None
+        except Exception as e:
+            print(f"Error saving function: {e}")
+            return implementation
+
+
     def implement_skill(self, objective: str, parent_context: str = "") -> str:
         similar_functions = self.find_similar_functions(objective)
+        #similar_function_implementations = [self.parse_implementation(func['implementation']) for func in similar_functions]
         implementation = self.generate_function(objective, similar_functions, parent_context)
-        function_name, function_def, description, signature = self.parse_implementation(implementation)
+        #function_name, function_def, description, signature = self.parse_implementation(implementation)
 
         max_repair_attempts = 4
         for attempt in range(max_repair_attempts):
-            success, result = self.verify_function(function_name, function_def)
+            implementation = implementation.replace("```python", "").replace("```", "").strip()
+            success, result = self.verify_skill(implementation)#self.verify_function(function_name, function_def)
             if success:
                 break
             if attempt < max_repair_attempts - 1:

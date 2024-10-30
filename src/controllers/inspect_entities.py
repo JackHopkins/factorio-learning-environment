@@ -45,6 +45,10 @@ class InspectEntities(Action):
                     if entity["name"] == "laser_beam":
                         continue
 
+                    if entity["name"] == "player_character":
+                        self.last_observed_player_location = tuple(entity["position"].values())
+                        continue
+
                     position = tuple(entity["position"].values())
 
                     # direction is 'west', 'east', 'north', 'south' - we need to convert to 0-3
@@ -89,7 +93,7 @@ class InspectEntities(Action):
 
                     entities.append(entity_info)
 
-            self.last_observed_player_location = (0, 0)
+            #self.last_observed_player_location = (0, 0)
             return InspectionResults(entities=entities, time_elapsed=time_elapsed, radius=radius,
                                      player_position=self.last_observed_player_location)
         except Exception as e:

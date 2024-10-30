@@ -164,6 +164,7 @@ def test_blueprint_functionality(game):
     assert any(e.prototype == Prototype.IronChest for e in placed_entities.entities)
 
 
+
 # Run the tests
 if __name__ == "__main__":
     pytest.main([__file__])

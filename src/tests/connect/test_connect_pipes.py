@@ -194,3 +194,30 @@ def test_connect_pipe_groups_horizontally(game):
 
     # This should result in a single contiguous group
     assert len(pipe_group_left) == 1
+
+def test_avoid_self_collision(game):
+
+    # Step 2: Move to the target location and find water
+    target_position = Position(x=5, y=-4)
+    game.move_to(target_position)
+    print(f"Moved to target position: {target_position}")
+
+    water_source = game.nearest(Resource.Water)
+    print(f"Nearest water source found at: {water_source}")
+
+    # Step 3: Place offshore pump
+    game.move_to(water_source)
+    offshore_pump = game.place_entity(Prototype.OffshorePump, position=water_source)
+    print(f"Placed offshore pump at: {offshore_pump.position}")
+
+    # Step 4: Place boiler
+    boiler_pos = Position(x=offshore_pump.position.x + 2, y=offshore_pump.position.y + 2)
+    game.move_to(boiler_pos)
+    boiler = game.place_entity(Prototype.Boiler, position=boiler_pos, direction=Direction.RIGHT)
+    print(f"Placed boiler at: {boiler.position}")
+
+    # Connect offshore pump to boiler with pipes
+    pipes = game.connect_entities(offshore_pump, boiler, Prototype.Pipe)
+    assert len(pipes) == 1, "Failed to construct a single contiguous pipe group"
+    assert pipes, "Failed to connect offshore pump to boiler with pipes"
+    print("Successfully connected offshore pump to boiler with pipes")

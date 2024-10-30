@@ -227,7 +227,7 @@ class ConnectEntities(Action):
             else:
                 target_position = Position(x=target_entity.position.x + x_sign*source_entity.tile_dimensions.tile_width/2,
                                            y=target_entity.position.y + y_sign*source_entity.tile_dimensions.tile_height/2)
-        elif connection_type.name == Prototype.TransportBelt.name or connection_type.name == Prototype.Pipe.name:
+        elif connection_type.name == Prototype.TransportBelt.name:# or connection_type.name == Prototype.Pipe.name:
             # If we are connecting a position with a transport belt / pipe, we need to add 0.5 to the position to prevent
             # Weird behaviour from the pathfinding
             target_position = Position(x=math.floor(target_position.x) + 0.5, y=math.floor(target_position.y) + 0.5)
@@ -258,7 +258,7 @@ class ConnectEntities(Action):
         target_position = Position(x=round(target_position.x*2)/2, y=round(target_position.y*2)/2)
         source_position = Position(x=round(source_position.x*2)/2, y=round(source_position.y*2)/2)
         if connection_type == Prototype.Pipe or connection_type == Prototype.TransportBelt:
-            path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y), start=source_position, allow_paths_through_own_entities=False)
+            path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y), start=source_position, allow_paths_through_own_entities=True)
         else:
             path_handle = self.request_path(finish=target_position, start=source_position, allow_paths_through_own_entities=True)
 

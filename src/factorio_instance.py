@@ -100,7 +100,7 @@ class FactorioInstance:
         self.setup_controllers(self.lua_script_manager, self.game_state)
 
         self.initial_inventory = inventory
-        self.initialise(**inventory)
+        self.initialise(fast, **inventory)
         try:
             self.observe_all()
         except Exception as e:
@@ -108,7 +108,7 @@ class FactorioInstance:
             self.lua_script_manager = FactorioLuaScriptManager(self.rcon_client, False)
             self.script_dict = {**self.lua_script_manager.action_scripts, **self.lua_script_manager.init_scripts}
             self.setup_controllers(self.lua_script_manager, self.game_state)
-            self.initialise(**inventory)
+            self.initialise(fast, **inventory)
             self.observe_all()
 
         self._tasks = []
@@ -362,8 +362,7 @@ class FactorioInstance:
                     self._sequential_exception_count += 1
                     error_traceback = traceback.format_exc()
                     error_lines = self._extract_error_lines(expr, error_traceback)
-                    # #error_message = f"Error at lines {node.lineno}-{node.end_lineno}: {str(e)}\n\nStack trace:\n{error_traceback}"
-                    # error_trace = e.__traceback__
+
                     error_message = f""
                     if error_lines:
                         error_message += "Error occurred in the following lines:\n"
@@ -472,6 +471,7 @@ class FactorioInstance:
         self.execute_transaction()
 
         self.begin_transaction()
+        self.add_command('/c global.actions.clear_walking_queue()', raw=True)
         self.add_command(f'/c global.actions.clear_entities({PLAYER})', raw=True)
         # self.execute_transaction()
         #
@@ -529,10 +529,11 @@ class FactorioInstance:
     def execute_transaction(self) -> Dict[str, Any]:
         return self._execute_transaction()
 
-    def initialise(self, **kwargs):
+    def initialise(self, fast=True, **kwargs):
 
         self.begin_transaction()
         self.add_command('/c global.alerts = {}', raw=True)
+        self.add_command('/c global.fast = {}'.format('true' if fast else 'false'), raw=True)
         self.add_command(f'/c player = game.players[{PLAYER}]', raw=True)
         self.execute_transaction()
 
@@ -545,35 +546,7 @@ class FactorioInstance:
         self.lua_script_manager.load_init_into_game('initialise_inventory')
 
         self._reset(**kwargs)
-        # self.begin_transaction()
-        # self.add_command('clear_inventory', PLAYER)
-        # self.add_command('clear_entities', PLAYER, 0, 0)
-        # self.add_command('alerts')
-        # self.add_command('util')
-        # self.add_command('serialize')
-        # self.add_command('production_score', PLAYER)
-        # self.add_command('reset_position', PLAYER, 0, 0)
-        #
-        # for entity, count in kwargs.items():
-        #     self.add_command('give_item', PLAYER, entity, count)
-        #
-        # self.execute_transaction()
 
-    def initialise2(self, **kwargs):
-        self._send('/c global.alerts = {}')
-        self._send(f'/c player = game.players[{PLAYER}]')
-        self._send('initialise', PLAYER)
-        self._send('alerts')
-        self._send('util')
-        self._send('serialize')
-        self._send('production_score')
-        # self._send('story')
-        # self.factorio_client.send('new_world', PLAYER)
-        self._send('clear_inventory', PLAYER)
-        self._send('reset_position', PLAYER, 0, 0)
-
-        for entity, count in kwargs.items():
-            self._send('give_item', PLAYER, entity, count)
 
 
     def get_warnings(self, seconds=10):

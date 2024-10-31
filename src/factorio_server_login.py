@@ -1,10 +1,14 @@
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List
+
 import pyautogui
 import time
 import subprocess
 import sys
 from dotenv import load_dotenv
 from cluster_ip import get_public_ips
+from factorio_instance import FactorioInstance
 
 """
 This script is used to connect the client to each Factorio server running on an ECS cluster,
@@ -19,11 +23,13 @@ IP_INPUT_FIELD = (720, 445)
 CONNECT_BUTTON = (850, 480)
 ESC_MENU_QUIT_BUTTON = (720, 520)
 
+
 def launch_factorio():
     # Adjust the path to your Factorio executable
     process = subprocess.Popen(["open", "-a", "Factorio"])
     time.sleep(10)  # Wait for the game to launch
     return process
+
 
 def focus_factorio():
     # Use AppleScript to focus Factorio
@@ -32,6 +38,7 @@ def focus_factorio():
     '''
     subprocess.run(["osascript", "-e", applescript])
     time.sleep(1)  # Wait a moment for the window to come into focus
+
 
 def connect_to_server(ip_address):
     focus_factorio()
@@ -57,8 +64,67 @@ def connect_to_server(ip_address):
     pyautogui.click(ESC_MENU_QUIT_BUTTON)
     time.sleep(3)  # Wait for the game to close
 
+
+def is_initialised(ip_address):
+    try:
+        instance = FactorioInstance(address=ip_address,
+                                    bounding_box=200,
+                                    tcp_port=27015,
+                                    cache_scripts=True,
+                                    fast=True)
+        return True
+    except Exception as e:
+        print(f"Error connecting to {ip_address}: {str(e)}")
+        return False
+
+
+def get_uninitialised_ips(ip_addresses: List[str], max_workers: int = 8) -> List[str]:
+    """
+    Check multiple IP addresses in parallel using ThreadPoolExecutor.
+
+    Args:
+        ip_addresses: List of IP addresses to check
+        max_workers: Maximum number of concurrent threads (default: 20)
+
+    Returns:
+        List of IP addresses that successfully initialized
+    """
+    invalid_ips = []
+    total_ips = len(ip_addresses)
+
+    print(f"Starting initialization check for {total_ips} IP addresses...")
+    start_time = time.time()
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Create a dictionary to map futures to their IP addresses
+        future_to_ip = {executor.submit(is_initialised, ip): ip
+                        for ip in ip_addresses}
+
+        # Process completed futures as they finish
+        for i, future in enumerate(as_completed(future_to_ip), 1):
+            ip = future_to_ip[future]
+            try:
+                if future.result():
+                    print(f"Progress: {i}/{total_ips} - {ip} is valid")
+                else:
+                    invalid_ips.append(ip)
+                    print(f"Progress: {i}/{total_ips} - {ip} is invalid")
+            except Exception as e:
+                print(f"Progress: {i}/{total_ips} - Unexpected error with {ip}: {str(e)}")
+
+    elapsed_time = time.time() - start_time
+    print(f"\nCompleted in {elapsed_time:.2f} seconds")
+    print(f"Found {len(invalid_ips)} uninitialised IPs out of {total_ips}")
+
+    return invalid_ips
 def main(cluster_name):
     ip_addresses = get_public_ips(cluster_name)
+
+    # filter out the ips that are not initialised
+    ip_addresses = get_uninitialised_ips(ip_addresses)
+
+    # a threadpool implementation would be better here
+
     #ip_addresses = ["localhost"]  # Uncomment for testing
     factorio_process = launch_factorio()
     for ip in ip_addresses:

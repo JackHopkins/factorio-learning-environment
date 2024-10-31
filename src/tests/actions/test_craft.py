@@ -14,21 +14,22 @@ def test_craft_item(game):
     :param game:
     :return:
     """
-
+    quantity = 5
+    iron_cost = 8
     # Check initial inventory
     initial_iron_plate = game.inspect_inventory()[Prototype.IronPlate]
     initial_iron_chest = game.inspect_inventory()[Prototype.IronChest]
 
     # Craft an iron chest
-    game.craft_item(Prototype.IronChest, quantity=1)
+    game.craft_item(Prototype.IronChest, quantity=quantity)
 
     # Check the inventory after crafting
     final_iron_plate = game.inspect_inventory()[Prototype.IronPlate]
     final_iron_chest = game.inspect_inventory()[Prototype.IronChest]
 
     # Assert that the iron plate has been deducted and the iron chest has been added
-    assert initial_iron_plate - 8 == final_iron_plate
-    assert initial_iron_chest + 1 == final_iron_chest
+    assert initial_iron_plate - final_iron_plate == iron_cost * quantity
+    assert initial_iron_chest + quantity == final_iron_chest
 
 def test_craft_copper_coil(game):
     """

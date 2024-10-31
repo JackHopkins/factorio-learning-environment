@@ -151,13 +151,13 @@ class FactorioInstance:
     def speed(self, speed):
         self.rcon_client.send_command(f'/c game.speed = {speed}')
 
-    def log(self, arg):
+    def log(self, *arg):
         """
         Shadows the builtin print function,and ensures that whatever is printed is logged in agent memory
         """
         #if self.memory:
         #    self.memory.log_observation(str(arg))
-        print(f"{self.address} log: {arg}")
+        print(f"{self.address} log: {repr(arg)}")
         return arg
 
     def connect_to_server(self, address, tcp_port):
@@ -307,7 +307,9 @@ class FactorioInstance:
                         # For expressions (including function calls), we can use eval
                         compiled = compile(ast.Expression(node.value), 'file', 'eval')
                         response = eval(compiled, eval_dict)
-                        if response is not True and response is not None:
+                        # add response to results
+                        # if node.value is a constant object, then it's a comment and we don't want to store it
+                        if response is not True and response is not None and not isinstance(node.value, ast.Constant):
                             results[index] = response
                             self._sequential_exception_count = 0
                     else:

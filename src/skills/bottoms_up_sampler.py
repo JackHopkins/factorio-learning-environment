@@ -13,7 +13,7 @@ import numpy as np
 import io
 load_dotenv()
 import time
-from skills_db import SkillsDB
+from skills.skills_db import SkillsDB
 import copy
 def is_valid_python(code_string: str) -> bool:
     try:

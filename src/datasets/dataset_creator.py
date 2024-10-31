@@ -1,6 +1,7 @@
 import sys
 sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\src")
 sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser")
+import re
 import os
 import ast
 import json
@@ -136,9 +137,41 @@ class SFTDatasetCreator:
             
             self.skills_db_to_jsonl(all_skills, output_file)
 
+    def try_to_fix_moving_closer_bugs(self, step, instance):
+        position_regex = "position=(?:Position\(x=.*?\)|[a-zA-Z_][a-zA-Z0-9_]*(?:\[[0-9]+\])*)"
+        new_steps = []
+        # split the steps by \n
+        lines = step.split("\n")
+        for line in lines:
+            if "place_entity" in line:
+                stripped_line = line.replace(" ", "").strip()
+                match = re.search(position_regex, stripped_line)
+                if match:
+                    # get the place_entity index
+                    place_entity_index = stripped_line.index("place_entity")
+            else:
+                new_steps.append(line)
+        new_step = "\n".join(new_steps)
+        output_list, result = eval_program_with_result_trace(instance, new_step)
+        return output_list, result, new_step
+
+
     def get_game_trace_from_skill(self, skill: Dict, instance) -> Dict:
         implementation = skill["implementation"]
-        implementation_steps = implementation.split("\n\n")
+        # get implementation steps
+        implementation_steps_raw = implementation.split("\n\n")
+        implementation_steps = []
+        # we now need to merge all steps that start with an indentation to the previous step
+        for step_idx,step in enumerate(implementation_steps_raw):
+            if step.startswith('"""'):
+                implementation_steps.append(step)
+                continue
+            if step.startswith("    "):
+                implementation_steps[-1] += "\n" + step
+            else:
+                implementation_steps.append(step)
+
+
         # if we have a double """ start, remove the first one 
         buffer = []
         traces = []
@@ -150,49 +183,53 @@ class SFTDatasetCreator:
         starting_scenario = skill["starting_scenario"]
         starting_scenario_path = os.path.join(self.starting_scenario_folder, starting_scenario)
         # read in the starting_snippet.py
-        with open(starting_scenario_path) as f:
+        with open(f"{starting_scenario_path}\starting_snippet.py") as f:
             starting_scenario_code = f.read()
 
-        _ = eval_program_with_result_trace(starting_scenario_code, instance)
+        output_list, result = eval_program_with_result_trace(instance, starting_scenario_code)
+        if "error" in result.lower():
+            return {"success": False, "traces": [], "error_message": result}
 
 
         initial_mining_setup = get_mining_setup(instance)
-        first_user_message = f"Your starting inventory is {skill['starting_inventory']}. Your initial mining setup is {initial_mining_setup}"
+        first_user_message = f"Your starting inventory is {skill['starting_inventory']}. Your initial mining setup is: {initial_mining_setup}"
         traces.append({"role": "user", "content": first_user_message})
         for step_idx, implementation_step in enumerate(implementation_steps):
             implementation_step = implementation_step.strip("\n")
             if implementation_step == "from factorio_instance import *":
                 continue
-            if implementation_step.startswith('"""'):
+            if implementation_step.strip().startswith('"""') and implementation_step.strip().endswith('"""'):
                 buffer.append(implementation_step)
                 continue
             
             if len(buffer) > 0:
-                if start:
-                    buffer_str = buffer[-1]
-                else:
-                    buffer_str = "\n".join(buffer)
+                buffer_str = "\n".join(buffer)
                 implementation_step = buffer_str + "\n\n" + implementation_step
             
+            #if "while " in implementation_step:
+            #    return {"success": False, "traces": [], "error_message": "While loops are not allowed"}
             # eval step
-            output_list, result = eval_program_with_result_trace(implementation_step, instance)
+            output_list, result = eval_program_with_result_trace(instance, implementation_step)
             if "error" in result.lower():
-                return {"success": False,"traces": [], "error_message": result}
+                #if "Move closer." in result:
+                #    # try to fix the bug
+                #    output_list, result, implementation_step = self.try_to_fix_moving_closer_bugs(implementation_step, instance)
+                #    if "error" in result.lower():
+                #        return {"success": False, "traces": [], "error_message": result}
+                #else:
+                    return {"success": False,"traces": [], "error_message": result}
             
             assistant_message = f"```python\n{implementation_step}\n```"
             if len(traces) == 1:
                 assistant_message = f"I should do the following: {skill['objective']}\n\n First step to achieve the objective is \n\n{assistant_message}"
-            if step_idx == len(implementation_steps) - 1:
-                assistant_message = f"```python\n{implementation_step}\n```"
-                assistant_message += f"\n\nI have achieved the objective: {skill['objective']}\n#COMPLETED"
-                traces.append({"role": "assistant", "content": assistant_message})
-                break
 
             traces.append({"role": "assistant", "content": assistant_message})
             user_message = f"Game logs: {output_list}\n\nGame result: {result}"
             traces.append({"role": "user", "content": user_message}) 
             buffer = []
             start = False
+        final_message = f"I have achieved the objective: {skill['objective']}\n#COMPLETED"
+        traces.append({"role": "assistant", "content": final_message})
         return {"success": True, "traces": traces}
     
     def create_game_traces(self, input_file, success_output_file, fail_output_file):
@@ -226,13 +263,15 @@ class SFTDatasetCreator:
                                 fast=True,
                                 #cache_scripts=False,
                                 inventory=inventory)
-        successful_traces = []
-        failed_traces = []
         for skill in skills:
+            exists = False
             # check if the skill is already in the successful or failed traces
             for trace in successful_traces + failed_traces:
                 if trace["name"] == skill["name"] and trace["implementation"] == skill["implementation"]:
-                    continue
+                    exists = True
+                    break
+            if exists:
+                continue
             trace_output = self.get_game_trace_from_skill(skill, instance)
             success = trace_output["success"]
             skill_trace = trace_output["traces"]
@@ -244,14 +283,90 @@ class SFTDatasetCreator:
                 skill["error_message"] = trace_output["error_message"]
                 with open(fail_output_file, "a") as f:
                     f.write(json.dumps(skill) + "\n")
+
+    def get_skill_from_nb_skills(self, implementation, curriculum_item):
+        objective = curriculum_item["objective"]
+        version = "mart_nb"
+        description =""
+        signature = ""
+        plan = curriculum_item["full_plan"]
+        plan = plan.replace("\n\n", "\n")
+        # remove import from implementation
+        implementation = implementation.replace("from factorio_instance import *", f'from factorio_instance import *\n\n"""\n{plan}"""')
+        implementation = implementation.replace("\n###SEP", "")
+        implementation = implementation.replace("\n#Step Execution", "")
+        starting_inventory = curriculum_item["starting_inventory"]
+        scenario_starting_inv = curriculum_item["scenario_starting_inv"]
+        if len(starting_inventory) == 0:
+            for item, value in scenario_starting_inv.items():
+                if item not in starting_inventory:
+                    starting_inventory[item] = 0
+                starting_inventory[item] += value
         
+        dependencies = [f"'{item}': {value}" for item, value in starting_inventory.items()]
+
+        return {"name": curriculum_item["name"], "implementation": implementation, "description": description, 
+                "signature": signature, "dependencies": dependencies, "version": version, "starting_inventory": starting_inventory, "objective": objective,
+                "starting_scenario": curriculum_item["starting_scenario"]}
+
+
+
+    def get_traces_from_notebook_skills(self, nb_skill_folder, output_file):
+        # open the output file to get existing successful traces
+        with open(output_file) as f:
+            successful_traces = [json.loads(line) for line in f.readlines()]
+        # create the game instance
+        inventory = {}
+        instance = FactorioInstance(address='localhost',
+                                bounding_box=200,
+                                tcp_port=27015,
+                                fast=True,
+                                #cache_scripts=False,
+                                inventory=inventory)
+        # get folders in nb_skill_folder
+        objective_groups = os.listdir(nb_skill_folder)
+        for objective_group in objective_groups:
+            objective_group_path = os.path.join(nb_skill_folder, objective_group)
+            starting_scenarios = os.listdir(objective_group_path)
+            for starting_scenario in starting_scenarios:
+                starting_scenario_path = os.path.join(objective_group_path, starting_scenario)
+                for skill in os.listdir(starting_scenario_path):
+                    if skill.startswith("_"):
+                        continue
+                    # raed in curriculumt_item.json
+                    with open(os.path.join(starting_scenario_path, skill, "curriculum_item.json")) as f:
+                        skill_data = json.load(f)
+                    # read in full_sniippet.py
+                    with open(os.path.join(starting_scenario_path, skill, "full_snippet.py")) as f:
+                        full_snippet = f.read()
+
+                    skill = self.get_skill_from_nb_skills(full_snippet, skill_data)
+                    exists = False
+                    for trace in successful_traces:
+                        if trace["name"] == skill["name"] and trace["implementation"] == skill["implementation"]:
+                            exists = True
+                            break
+                    if exists:
+                        continue
+                    trace_output = self.get_game_trace_from_skill(skill, instance)
+                    success = trace_output["success"]
+                    skill_trace = trace_output["traces"]
+                    if success:
+                        skill["trace"] = skill_trace
+                        with open(output_file, "a") as f:
+                            f.write(json.dumps(skill) + "\n")
+                    else:
+                        raise ValueError(f"Error in {objective_group} {starting_scenario} skill {skill['name']}: {trace_output['error_message']}")
+
 if __name__ == "__main__":
     starting_scenario_path = r"skills\data_scenarios\starting_scenarios"
     dataloader = SFTDatasetCreator(starting_scenario_path)
+    notebook_skill_path = r"datasets/notebook_skills"
     raw_input_jsonl_file = r"datasets\sft_dataset_raw.jsonl"
     postprocessed_input_jsonl_file = r"datasets\sft_dataset_postprocessed.jsonl"
     successful_output_file = r"datasets\sft_successful_traces.jsonl"
     failed_output_file = r"datasets\sft_failed_traces.jsonl"
     #dataloader.create_jsonl_dataset_from_db_skills(output_jsonl_file)
     #dataloader.postprocess_skills(raw_input_jsonl_file, postprocessed_input_jsonl_file)
-    dataloader.create_game_traces(postprocessed_input_jsonl_file, successful_output_file, failed_output_file)
+    #dataloader.create_game_traces(postprocessed_input_jsonl_file, successful_output_file, failed_output_file)
+    dataloader.get_traces_from_notebook_skills(notebook_skill_path, successful_output_file)

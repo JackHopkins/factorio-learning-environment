@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from factorio_instance import FactorioInstance
 import random
 from skills.skill_postprocessor import SkillPostProcessor
+from skills.bottoms_up_sampler import eval_program_with_result_trace, get_mining_setup
 load_dotenv()
 from skills.skills_db import SkillsDB
 from skills.get_test_data import extract_skills_from_test
@@ -24,6 +25,7 @@ class SFTDatasetCreator:
         self.skills_db = SkillsDB()
         self.init_starting_scenarios(starting_scenario_folder)
         self.postprocessor = SkillPostProcessor()
+        self.starting_scenario_folder = starting_scenario_folder
     
     def init_starting_scenarios(self, starting_scenario_folder):
         # get all folder names in the starting scenario folder
@@ -135,13 +137,87 @@ class SFTDatasetCreator:
             self.skills_db_to_jsonl(all_skills, output_file)
 
     def get_game_trace_from_skill(self, skill: Dict, instance) -> Dict:
-        # We need a objective, starting mining setup and the starting inventory
-        pass
+        implementation = skill["implementation"]
+        implementation_steps = implementation.split("\n\n")
+        # if we have a double """ start, remove the first one 
+        buffer = []
+        traces = []
+        start = True
+        instance.reset()
+        instance.initial_inventory = skill["starting_inventory"]
+        instance.reset()
+        # here need to run the starting scenario as well
+        starting_scenario = skill["starting_scenario"]
+        starting_scenario_path = os.path.join(self.starting_scenario_folder, starting_scenario)
+        # read in the starting_snippet.py
+        with open(starting_scenario_path) as f:
+            starting_scenario_code = f.read()
+
+        _ = eval_program_with_result_trace(starting_scenario_code, instance)
+
+
+        initial_mining_setup = get_mining_setup(instance)
+        first_user_message = f"Your starting inventory is {skill['starting_inventory']}. Your initial mining setup is {initial_mining_setup}"
+        traces.append({"role": "user", "content": first_user_message})
+        for step_idx, implementation_step in enumerate(implementation_steps):
+            implementation_step = implementation_step.strip("\n")
+            if implementation_step == "from factorio_instance import *":
+                continue
+            if implementation_step.startswith('"""'):
+                buffer.append(implementation_step)
+                continue
+            
+            if len(buffer) > 0:
+                if start:
+                    buffer_str = buffer[-1]
+                else:
+                    buffer_str = "\n".join(buffer)
+                implementation_step = buffer_str + "\n\n" + implementation_step
+            
+            # eval step
+            output_list, result = eval_program_with_result_trace(implementation_step, instance)
+            if "error" in result.lower():
+                return {"success": False,"traces": [], "error_message": result}
+            
+            assistant_message = f"```python\n{implementation_step}\n```"
+            if len(traces) == 1:
+                assistant_message = f"I should do the following: {skill['objective']}\n\n First step to achieve the objective is \n\n{assistant_message}"
+            if step_idx == len(implementation_steps) - 1:
+                assistant_message = f"```python\n{implementation_step}\n```"
+                assistant_message += f"\n\nI have achieved the objective: {skill['objective']}\n#COMPLETED"
+                traces.append({"role": "assistant", "content": assistant_message})
+                break
+
+            traces.append({"role": "assistant", "content": assistant_message})
+            user_message = f"Game logs: {output_list}\n\nGame result: {result}"
+            traces.append({"role": "user", "content": user_message}) 
+            buffer = []
+            start = False
+        return {"success": True, "traces": traces}
+    
     def create_game_traces(self, input_file, success_output_file, fail_output_file):
         # read the skills from the input file
         with open(input_file) as f:
             skills = [json.loads(line) for line in f.readlines()]
-        
+        # load in the failed and successful traces
+        if os.path.exists(success_output_file):
+            with open(success_output_file) as f:
+                successful_traces = [json.loads(line) for line in f.readlines()]
+        else:
+            successful_traces = []
+            #create the file
+            with open(success_output_file, "w") as f:
+                pass
+
+        if os.path.exists(fail_output_file):
+            with open(fail_output_file) as f:
+                failed_traces = [json.loads(line) for line in f.readlines()]
+        else:
+            failed_traces = []
+            # create the file
+            with open(fail_output_file, "w") as f:
+                pass
+
         # create the game instance
         inventory = {}
         instance = FactorioInstance(address='localhost',
@@ -153,18 +229,22 @@ class SFTDatasetCreator:
         successful_traces = []
         failed_traces = []
         for skill in skills:
-            success, skill_trace = self.get_game_trace_from_skill(skill, instance)
+            # check if the skill is already in the successful or failed traces
+            for trace in successful_traces + failed_traces:
+                if trace["name"] == skill["name"] and trace["implementation"] == skill["implementation"]:
+                    continue
+            trace_output = self.get_game_trace_from_skill(skill, instance)
+            success = trace_output["success"]
+            skill_trace = trace_output["traces"]
             if success:
-                successful_traces.append(skill_trace)
+                skill["trace"] = skill_trace
+                with open(success_output_file, "a") as f:
+                    f.write(json.dumps(skill) + "\n")
             else:
-                failed_traces.append(skill_trace)
-        with open(success_output_file, "w") as f:
-            for skill_trace in successful_traces:
-                f.write(json.dumps(skill_trace) + "\n")
-        with open(fail_output_file, "w") as f:
-            for skill_trace in failed_traces:
-                f.write(json.dumps(skill_trace) + "\n")
-
+                skill["error_message"] = trace_output["error_message"]
+                with open(fail_output_file, "a") as f:
+                    f.write(json.dumps(skill) + "\n")
+        
 if __name__ == "__main__":
     starting_scenario_path = r"skills\data_scenarios\starting_scenarios"
     dataloader = SFTDatasetCreator(starting_scenario_path)
@@ -173,5 +253,5 @@ if __name__ == "__main__":
     successful_output_file = r"datasets\sft_successful_traces.jsonl"
     failed_output_file = r"datasets\sft_failed_traces.jsonl"
     #dataloader.create_jsonl_dataset_from_db_skills(output_jsonl_file)
-    dataloader.postprocess_skills(raw_input_jsonl_file, postprocessed_input_jsonl_file)
-    #dataloader.create_game_traces(output_jsonl_file, successful_output_file, failed_output_file)
+    #dataloader.postprocess_skills(raw_input_jsonl_file, postprocessed_input_jsonl_file)
+    dataloader.create_game_traces(postprocessed_input_jsonl_file, successful_output_file, failed_output_file)

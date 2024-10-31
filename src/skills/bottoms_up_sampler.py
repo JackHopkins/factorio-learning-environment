@@ -22,6 +22,24 @@ def is_valid_python(code_string: str) -> bool:
     except SyntaxError:
         return False
 
+def eval_program_with_result_trace(instance, program):
+        # evaluate the step
+        try:
+            score, goal, result = instance.eval_with_error(program, timeout=60)
+        except Exception as e:
+            result = f"error: {str(e)}"
+        # split result by newlines
+        output_list = result.splitlines()
+        return output_list, result
+
+def get_mining_setup(instance):
+        mining_setup = instance.get_entities()
+        if len(mining_setup) == 0:
+            mining_setup = "There are no entities on the map"
+        else:
+            mining_setup = f"The following entities are on the map and can be used: {mining_setup}"
+        return mining_setup
+
 class BottomsUpSkillSampler:
     def __init__(self, prompt_path: str = "prompts/bottoms_up_prompts", examples_path: str = r"skills/rag_functions", model: str = "claude-3-5-sonnet-20240620"):
         self.model = model
@@ -346,24 +364,7 @@ Entities:
         return output_list, result
 
 
-    def eval_program_with_result_trace(self, instance, program):
-        # evaluate the step
-        try:
-            score, goal, result = instance.eval_with_error(program, timeout=60)
-        except Exception as e:
-            result = f"error: {str(e)}"
-        # split result by newlines
-        output_list = result.splitlines()
-        return output_list, result
     
-    def get_mining_setup(self, instance):
-        mining_setup = instance.get_entities()
-        if len(mining_setup) == 0:
-            mining_setup = "There are no entities on the map"
-        else:
-            mining_setup = f"The following entities are on the map and can be used: {mining_setup}"
-        return mining_setup
-
     def stream_curriculum(self, curriculum: Dict,  instance):   
         scenario_starting_inv = copy.deepcopy(curriculum["starting_inventory"])
         max_attempts = 0
@@ -376,7 +377,7 @@ Entities:
         _ = instance.eval_with_error(curriculum["starting_snippet"], timeout=60)
 
         starting_inventory = instance.inspect_inventory()
-        mining_setup = self.get_mining_setup(instance)
+        mining_setup = get_mining_setup(instance)
         objectives_output = self.generate_objectives(curriculum, 
                                                                mining_setup = mining_setup)
         for objective in objectives_output:
@@ -399,13 +400,13 @@ Entities:
                 program = step_script
                 
 
-            output_list, result = self.eval_program_with_result_trace(instance, program)
+            output_list, result = eval_program_with_result_trace(instance, program)
             errored = False if "error" not in result.lower() else True
             if "error" in result.lower():
                 errored = True
                 for i in range(max_attempts):
                     print(f"Error in step {objective}. Attempt {i+1}. Error: {result}")
-                    mining_setup_during_error = self.get_mining_setup(instance)
+                    mining_setup_during_error = get_mining_setup(instance)
                     step_script = self.correct_implementation_snippet(input_objective= objective["objective"], 
                                                               curriculum= curriculum, 
                                                               mining_setup=mining_setup, 
@@ -427,7 +428,7 @@ Entities:
                     instance.initial_inventory = curriculum["starting_inventory"]        
                     instance.reset()
                     _ = instance.eval_with_error(curriculum["starting_snippet"], timeout=60)
-                    output_list, result = self.eval_program_with_result_trace(instance, program)
+                    output_list, result = eval_program_with_result_trace(instance, program)
                     if "error" not in result.lower():
                         errored = False
                         break

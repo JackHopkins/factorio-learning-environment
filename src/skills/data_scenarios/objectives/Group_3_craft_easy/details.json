@@ -1,0 +1,28 @@
+{
+  "objectives": [
+                {"objective": "We need one stone furnace. The final success should be checked by looking if the stone furnace is in inventory",
+                "name": "craft_1_stone_furnace"},
+                {"objective": "We need three stone furnaces. The final success should be checked by looking if 3 stone furnaces are in inventory",
+                "name": "craft_3_stone_furnace"},
+                {"objective": "We need 12 iron plates. The final success should be checked by looking if the iron plates are in inventory",
+                "name": "smelt_20_iron_plates"},
+                {"objective": "We need to craft 18 copper plates. The final success should be checked by looking if the copper plates are in inventory",
+                "name": "smelt_20_copper_plates"},
+                {"objective": "We need to craft 5 iron gear wheels. The final success should be checked by looking if the gear wheels are in inventory",
+                "name": "craft_5_iron_gear_wheels"},
+                {"objective": "We need to craft 7 transport belts. The final success should be checked by looking if the  transport belts are in inventory",
+                "name": "craft_10_transport_belts"},
+                {"objective": "We need to craft 10 copper cables. The final success should be checked by looking if the copper cables are in inventory",
+                "name": "craft_10_copper_cables"},
+                {"objective": "We need to craft 7 electronic circuits. The final success should be checked by looking if the electronic circuits are in inventory",
+                "name": "craft_20_electronic_circuits"},
+                {"objective": "We need to craft 4 small electric poles. The final success should be checked by looking if the small electric poles are in inventory",
+                "name": "craft_10_small_electric_poles"},
+                {"objective": "We need to craft 4 automation science packs. The final success should be checked by looking if the automation science packs are in inventory",
+                "name": "craft_20_automation_packs"},
+                {"objective": "We need to craft 6 firearm magazines. The final success should be checked by looking if the firearm magazines are in inventory",
+                "name": "craft_20_firearm_magazines"},
+                {"objective": "We need to craft 11 stone bricks. The final success should be checked by looking if the stone bricks are in inventory",
+                "name": "craft_20_stone_bricks"}
+  ]
+}

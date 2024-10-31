@@ -77,4 +77,4 @@ if __name__ == "__main__":
         for ip in public_ips:
             print(ip)
     else:
-        print("No public IP addresses found for running containers.")
+        print("No public IP addaresses found for running containers.")

@@ -32,10 +32,14 @@ class SkillsDB:
         
     def get_all_skills(self) -> List[Dict]:
         cursor = self.conn.cursor()
-        cursor.execute("SELECT name, implementation, description, signature, dependencies, version FROM public.skills")
+        cursor.execute("SELECT name, implementation, description, signature FROM public.skills")
 
-        return [{"name": row[0], "implementation": row[1], "description": row[2], "signature": row[3], 
-                 "dependencies": row[4], "version": row[5]} for row in cursor.fetchall()] 
+        return [{"name": row[0], "implementation": row[1], "description": row[2], "signature": row[3]} for row in cursor.fetchall()] 
+    
+#     def delete_all_skills(self):
+#         cursor = self.conn.cursor()
+#         cursor.execute("DELETE FROM public.skills")
+#         self.conn.commit()
 
     def save_function(self, name: str, implementation: str, 
                       description: str, dependencies: List[str], 

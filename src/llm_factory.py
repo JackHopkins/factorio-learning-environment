@@ -78,8 +78,9 @@ class LLMFactory:
             response = client.chat.completions.create(*args,
                                                   **kwargs,
                                                   temperature=1,
-                                                  stop=["\n\n"],
-                                                  #stop=["```END"],
+                                                  model=model,
+                                                  #stop=["\n\n"],
+                                                  stop=["```END"],
                                                   #top_p=1,
                                                   presence_penalty=0.5,
                                                   frequency_penalty=0.8,
@@ -101,13 +102,11 @@ class LLMFactory:
                                                   stream=False)
         else:
             client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-            messages = kwargs.get('messages', [])
-            assert messages, "You must provide a list of messages to the model."
+            assert "messages" in kwargs, "You must provide a list of messages to the model."
             return client.chat.completions.create(model = model_to_use,
-                                                  n=self.beam,
-                                                  messages=messages,
-                                                  max_tokens = max_tokens,
-                                                  temperature=kwargs.get('temperature', 0.7),
+                                                  max_tokens = kwargs.get('max_tokens', 2048),
+                                                  temperature=kwargs.get('temperature', 0.3),
+                                                  messages=kwargs.get('messages', None),
                                                   #stop=["\n\n"],#, "\n#"],
                                                   presence_penalty=1,
                                                   frequency_penalty=0.6,

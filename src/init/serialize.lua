@@ -584,7 +584,7 @@ function get_entity_direction(entity, direction)
 			return defines.direction.west
 		end
 	elseif prototype and prototype.type == "transport-belt" then
-			game.print("Transport belt direction: " .. direction)
+			--game.print("Transport belt direction: " .. direction)
 			if direction == 0 then
 				return defines.direction.north
 			elseif direction == 3 then
@@ -641,7 +641,7 @@ function get_inverse_entity_direction(entity, factorio_direction)
 			return defines.direction.south
 		end
 	end
-	game.print("Getting inverse direction: " .. entity .. " with direction: " .. factorio_direction)
+	--game.print("Getting inverse direction: " .. entity .. " with direction: " .. factorio_direction)
 	if prototype and prototype.type == "inserter" then
 		if factorio_direction == defines.direction.south then
 			return defines.direction.north
@@ -817,6 +817,18 @@ global.utils.serialize_entity = function(entity)
 			x = x - 1
 		elseif entity.direction == defines.direction.west then
 			x = x + 1
+		elseif entity.direction == defines.direction.northeast then
+			x = x - 1
+			y = y + 1
+		elseif entity.direction == defines.direction.southeast then
+			x = x - 1
+			y = y - 1
+		elseif entity.direction == defines.direction.northwest then
+			x = x + 1
+			y = y + 1
+		elseif entity.direction == defines.direction.southwest then
+			x = x + 1
+			y = y - 1
 		end
 
 		serialized.input_position = {x = x, y = y}
@@ -831,8 +843,20 @@ global.utils.serialize_entity = function(entity)
 			x = x + 1
 		elseif entity.direction == defines.direction.west then
 			x = x - 1
+		elseif entity.direction == defines.direction.northeast then
+			x = x + 1
+			y = y - 1
+		elseif entity.direction == defines.direction.southeast then
+			x = x + 1
+			y = y + 1
+		elseif entity.direction == defines.direction.northwest then
+			x = x - 1
+			y = y - 1
+		elseif entity.direction == defines.direction.southwest then
+			x = x - 1
+			y = y + 1
 		end
-
+		create_beam_point_with_direction(game.players[1], entity.direction , {x = x, y = y})
 		serialized.output_position = {x = x, y = y}
 		serialized.inventory = entity.get_transport_line(1).get_contents()
 	end
@@ -881,6 +905,8 @@ global.utils.serialize_entity = function(entity)
 		for _, connection in pairs(entity.fluidbox.get_pipe_connections(1)) do
 			table.insert(serialized.connections, connection.position)
 		end
+
+		--serialized.fluidbox = global.utils.serialize_fluidbox(entity.fluidbox)
 	end
 
 	-- Add input and output locations if the entity is a pipe-to-ground
@@ -995,6 +1021,11 @@ global.utils.serialize_entity = function(entity)
 
 	-- Add fluid box if the entity is an offshore pump
 	if entity.type == "offshore-pump" then
+		serialized.connection_points = get_offshore_pump_pipe_position(entity)
+	end
+
+	-- If entity has a fluidbox
+	if entity.fluidbox then
 		local fluid_box = entity.fluidbox
 		if fluid_box and #fluid_box > 0 then
 			serialized.fluid_box = {}
@@ -1005,7 +1036,6 @@ global.utils.serialize_entity = function(entity)
 				end
 			end
 		end
-		serialized.connection_points = get_offshore_pump_pipe_position(entity)
 	end
 
 	serialized.direction = get_inverse_entity_direction(entity.name, entity.direction) --api_direction_map[entity.direction]

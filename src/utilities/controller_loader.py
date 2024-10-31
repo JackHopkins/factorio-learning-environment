@@ -2,6 +2,7 @@ import os
 import importlib.util
 import inspect
 from typing import Any, List, Tuple, Optional
+import ast
 
 def load_module_from_path(path: str) -> Optional[Any]:
     """Load and return a module from the given path."""
@@ -36,7 +37,7 @@ def load_controller_names(folder_path: str) -> List[str]:
                     continue
                 names.append(file[:-3])
     return names
-def load_schema(folder_path: str) -> str:
+def load_schema(folder_path: str, with_docstring=True) -> str:
 
     schema = ""
     """Main function to extract and output the required information."""
@@ -67,7 +68,9 @@ def load_schema(folder_path: str) -> str:
                             .replace("factorio_entities.", "") \
                             .replace("factorio_instance.", "") \
                             .replace("factorio_types.", "")
-                        named_call_signature_string = f'{file[:-3]}{localed_call_signature_string}\n"""\n{docstring}\n"""\n\n'
+
+                        docstring_element = f'"""\n{docstring}\n"""\n\n' if with_docstring else ""
+                        named_call_signature_string = f'{file[:-3]}{localed_call_signature_string}\n{docstring_element}'
 
                         schema += named_call_signature_string
     return schema
@@ -77,6 +80,100 @@ def load_definitions(file_path: str) -> str:
         return file.read()
 
 
+import ast
+from typing import List
+
+
+class CodeStructureVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.current_indent = 0
+        self.lines = []
+
+    def visit_ClassDef(self, node):
+        # Build class definition string
+        bases = [ast.unparse(base) for base in node.bases]
+        class_def = f"{'    ' * self.current_indent}class {node.name}"
+        if bases:
+            class_def += f"({', '.join(bases)})"
+        class_def += ":"
+        self.lines.append(class_def)
+
+        # Increase indent for class contents
+        self.current_indent += 1
+
+        # Process class body
+        for item in node.body:
+            if isinstance(item, ast.ClassDef):
+                # Handle nested classes
+                self.visit_ClassDef(item)
+            elif isinstance(item, ast.FunctionDef):
+                # Handle method definitions
+                self.visit_FunctionDef(item)
+            elif isinstance(item, ast.AnnAssign):
+                # Handle annotated assignments (type hints)
+                target = ast.unparse(item.target)
+                annotation = ast.unparse(item.annotation)
+                self.lines.append(f"{'    ' * self.current_indent}{target}: {annotation}")
+            elif isinstance(item, ast.Assign):
+                # Handle regular assignments
+                for target in item.targets:
+                    if isinstance(target, ast.Name):
+                        value = ast.unparse(item.value)
+                        self.lines.append(f"{'    ' * self.current_indent}{target.id} = {value}")
+
+        # Decrease indent after processing class contents
+        self.current_indent -= 1
+
+    def visit_FunctionDef(self, node):
+        # Build function signature
+        args = []
+        for arg in node.args.args:
+            if hasattr(arg, 'annotation') and arg.annotation:
+                args.append(f"{arg.arg}: {ast.unparse(arg.annotation)}")
+            else:
+                args.append(arg.arg)
+
+        # Handle return annotation
+        returns = ""
+        if node.returns:
+            returns = f" -> {ast.unparse(node.returns)}"
+
+        signature = f"{'    ' * self.current_indent}def {node.name}({', '.join(args)}){returns}:"
+        self.lines.append(signature)
+
+
+def extract_class_structure(code: str) -> str:
+    """
+    Extracts class definitions, type annotations, and method signatures from Python code.
+
+    Args:
+        code (str): Python source code as a string
+
+    Returns:
+        str: Formatted string containing class structures and method signatures
+    """
+    try:
+        tree = ast.parse(code)
+        visitor = CodeStructureVisitor()
+        visitor.visit(tree)
+        return "\n".join(visitor.lines)
+    except SyntaxError:
+        return "Error: Invalid Python syntax in the input code"
+
+
+def parse_file_for_structure(file_path: str) -> str:
+    """
+    Reads a Python file and extracts all class structures and method signatures.
+
+    Args:
+        file_path (str): Path to the Python file
+
+    Returns:
+        str: Formatted string containing class structures and method signatures
+    """
+    with open(file_path, 'r') as file:
+        code = file.read()
+    return extract_class_structure(code)
 
 if __name__ == "__main__":
     # get execution path

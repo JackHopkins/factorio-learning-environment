@@ -14,13 +14,17 @@ global.actions.get_entities = function(player_index, radius, entity_names_json, 
         {position.x + radius, position.y + radius}
     }
 
-    -- Directly use the entity_names in find_entities_filtered
-    local filter = {
-        area = area,
-        force = player.force,
-        -- Only add name filter if we have entity names
-        name = #entity_names > 0 and entity_names or nil
-    }
+    local filter = {}
+    if entity_names and #entity_names > 0 then
+        filter = {name = entity_names}
+    end
+
+    local entities
+    if #entity_names > 0 then
+        entities = player.surface.find_entities_filtered{area = area, force = player.force, filter=filter}
+    else
+        entities = player.surface.find_entities_filtered{area = area, force = player.force}
+    end
 
     local entities = player.surface.find_entities_filtered(filter)
     local result = {}

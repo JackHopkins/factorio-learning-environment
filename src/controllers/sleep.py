@@ -18,6 +18,6 @@ class Sleep(Action):
         :param seconds: Number of seconds to sleep.
         :return: True if sleep was successful.
         """
-        sleep(min(15, seconds))
+        sleep(min(30, seconds))
         return True
 

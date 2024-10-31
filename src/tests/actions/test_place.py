@@ -195,3 +195,12 @@ def test_place_burner_mining_drills(game):
                               position=location,
                               direction=Direction.DOWN)
     assert drill.direction.value == Direction.DOWN.value
+
+def test_placed_drill_status(game):
+    iron_position = game.nearest(Resource.IronOre)
+    game.move_to(iron_position)
+    drill = game.place_entity(Prototype.BurnerMiningDrill, position=iron_position)
+    game.insert_item(Prototype.Coal, drill, 5)
+    game.sleep(1)
+    drill = game.get_entity(Prototype.BurnerMiningDrill, drill.position)
+    assert drill.energy > 0

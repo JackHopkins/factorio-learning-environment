@@ -26,7 +26,6 @@ global.actions.get_entities = function(player_index, radius, entity_names_json, 
         entities = player.surface.find_entities_filtered{area = area, force = player.force}
     end
 
-    local entities = player.surface.find_entities_filtered(filter)
     local result = {}
     for _, entity in ipairs(entities) do
         if entity.name ~= 'character' then

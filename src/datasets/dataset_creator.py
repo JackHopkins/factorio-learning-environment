@@ -44,7 +44,8 @@ class SFTDatasetCreator:
             skills = [json.loads(line) for line in f.readlines()]
 
 
-        for skill in skills:
+        for skill_idx, skill in enumerate(skills):
+            print(f"Processing skill {skill_idx}/{len(skills)}")
             exists = False
             # check if the skill is already post processed
             for postprocessed_skill in post_processed_skills:
@@ -53,8 +54,11 @@ class SFTDatasetCreator:
                     break
             if exists:
                 continue
-            skill = self.enchance_skill_with_attributes(skill)
-            
+            try:
+                skill = self.enchance_skill_with_attributes(skill)
+            except Exception as e:
+                print(f"Error in skill {skill['name']}: {e}")
+                continue
             # save the skill to the output file
             with open(output_file, "a") as f:
                 f.write(json.dumps(skill) + "\n")
@@ -87,7 +91,7 @@ class SFTDatasetCreator:
             inventory = {}
             for item in skill["dependencies"]:
                 item_split = item.split(":")
-                name = item_split[0].repalce("'", "").strip()
+                name = item_split[0].replace("'", "").strip()
                 quantity = item_split[1].replace("-", "").strip()
                 quantity = int(quantity)
                 if name in ["pipe", "transport-belt", "small-electric-pole"]:
@@ -129,7 +133,7 @@ class SFTDatasetCreator:
                 all_skills += skills_from_func_tests
             
             self.skills_db_to_jsonl(all_skills, output_file)
-            
+
     def get_game_trace_from_skill(self, skill: Dict, instance) -> Dict:
         # We need a objective, starting mining setup and the starting inventory
         pass
@@ -168,6 +172,6 @@ if __name__ == "__main__":
     postprocessed_input_jsonl_file = r"datasets\sft_dataset_postprocessed.jsonl"
     successful_output_file = r"datasets\sft_successful_traces.jsonl"
     failed_output_file = r"datasets\sft_failed_traces.jsonl"
-    dataloader.create_jsonl_dataset_from_db_skills(output_jsonl_file)
-    #dataloader.create_game_traces(output_jsonl_file, successful_output_file, failed_output_file)
+    #dataloader.create_jsonl_dataset_from_db_skills(output_jsonl_file)
     dataloader.postprocess_skills(raw_input_jsonl_file, postprocessed_input_jsonl_file)
+    #dataloader.create_game_traces(output_jsonl_file, successful_output_file, failed_output_file)

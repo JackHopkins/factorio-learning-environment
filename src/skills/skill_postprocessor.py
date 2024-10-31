@@ -60,13 +60,6 @@ Methods:
                 **kwargs
             )
 
-            try:
-                self.token_count += response.usage.input_tokens + response.usage.output_tokens
-                self.cost += response.usage.input_tokens * 0.0000003 + response.usage.output_tokens * 0.0000015
-            except:
-                self.token_count += response.usage.total_tokens
-                self.cost += response.usage.prompt_tokens * 0.0000003 + response.usage.completion_tokens * 0.0000015
-
             if hasattr(response, 'choices'):
                 return response.choices[0].message.content
             elif hasattr(response, 'content'):
@@ -101,7 +94,7 @@ Methods:
 
     def get_objective_examples(self, examples_folder):
         example_string = ""
-        for example_folder in os.listdir(example_folder):
+        for example_folder in os.listdir(examples_folder):
             # read in details.json
             with open(os.path.join(examples_folder, example_folder, "details.json"), "r") as f:
                 details = json.load(f)
@@ -111,7 +104,7 @@ Methods:
                 snippet = f.read()
             
             example_string += f"###USER INPUT EXAMPLE\n\nDESCRIPTION\n{details['description']}\n\nINVENTORY REQUIREMENTS\n{details['dependencies']}\n\nNAME\n{details['name']}\n\nIMPLEMENTATION\n{snippet}\n\n"
-            example_string += f"###OUTPUT EXAMPLE\n\n{details['objective']}\n\n"
+            example_string += f'###OUTPUT EXAMPLE\n\n#OBJECTIVE\n{details["objective"]}\n#OBJECTIVE\n\n'
         return example_string
     def generate_objective(self, skill) -> str:
         prompt_folder = r"prompts\postprocessing_objectives"
@@ -123,15 +116,20 @@ Methods:
         with open(os.path.join(prompt_folder, "user_message.md"), "r") as f:
             user_message = f.read()
         
-        examples_folder = f"prompts/examples"
+        examples_folder = f"prompts/postprocessing_objectives/examples"
 
         examples_string = self.get_objective_examples(examples_folder)
         user_message = user_message.format(examples = examples_string,
                                            name = skill["name"],
                                            implementation = skill["implementation"],
-                                           description = skill["description"],)
+                                           description = skill["description"],
+                                           dependencies = skill["dependencies"])
         objective = self._call_api(system_prompt, user_message)
-        
+        # assert atleast 2 #OBJECTIVE is in objective
+        if objective.count("#OBJECTIVE") != 2:
+            raise ValueError("Objective is not formatted correctly")
+        # get the string between the two #OBJECTIVE
+        objective = objective.split("#OBJECTIVE")[1].strip()
         return objective
 
 

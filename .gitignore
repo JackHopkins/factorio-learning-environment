@@ -25,3 +25,4 @@ client/__pycache__/
 /src/.neptune/
 /src/.neptune/
 /src/.neptune/async/
+/src/skills/bottom_up/skill_generation_logs/

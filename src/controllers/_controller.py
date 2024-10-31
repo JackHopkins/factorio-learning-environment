@@ -68,6 +68,7 @@ class Controller:
         return script
 
     def execute(self, *args) -> Tuple[Dict, Any]:
+        lua_response = ""
         try:
             start = time.time()
             parameters = [lua.encode(arg) for arg in args]

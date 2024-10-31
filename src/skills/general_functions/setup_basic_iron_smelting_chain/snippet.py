@@ -12,8 +12,8 @@ print(f"Burner mining drill placed at {drill.position}")
 
 # Fuel the burner mining drill
 drill_with_coal = insert_item(Prototype.Coal, drill, quantity=5)
-assert drill_with_coal.fuel_inventory.get(Prototype.Coal, 0) > 0, "Failed to fuel burner mining drill"
-print(f"Inserted {drill_with_coal.fuel_inventory.get(Prototype.Coal, 0)} coal into burner mining drill")
+assert drill_with_coal.fuel.get(Prototype.Coal, 0) > 0, "Failed to fuel burner mining drill"
+print(f"Inserted {drill_with_coal.fuel.get(Prototype.Coal, 0)} coal into burner mining drill")
 
 # Place stone furnace next to drill
 furnace = place_entity_next_to(Prototype.StoneFurnace, reference_position=drill.position,
@@ -23,8 +23,8 @@ print(f"Stone furnace placed at {furnace.position}")
 
 # Fuel the stone furnace
 furnace_with_coal = insert_item(Prototype.Coal, furnace, quantity=5)
-assert furnace_with_coal.fuel_inventory.get(Prototype.Coal, 0) > 0, "Failed to fuel stone furnace"
-print(f"Inserted {furnace_with_coal.fuel_inventory.get(Prototype.Coal, 0)} coal into stone furnace")
+assert furnace_with_coal.fuel.get(Prototype.Coal, 0) > 0, "Failed to fuel stone furnace"
+print(f"Inserted {furnace_with_coal.fuel.get(Prototype.Coal, 0)} coal into stone furnace")
 
 # Place inserter next to furnace
 inserter = place_entity_next_to(Prototype.BurnerInserter, reference_position=furnace.position,
@@ -34,8 +34,8 @@ print(f"Inserter placed at {inserter.position}")
 
 # Fuel the inserter
 inserter_with_coal = insert_item(Prototype.Coal, inserter, quantity=2)
-assert inserter_with_coal.fuel_inventory.get(Prototype.Coal, 0) > 0, "Failed to fuel inserter"
-print(f"Inserted {inserter_with_coal.fuel_inventory.get(Prototype.Coal, 0)} coal into inserter")
+assert inserter_with_coal.fuel.get(Prototype.Coal, 0) > 0, "Failed to fuel inserter"
+print(f"Inserted {inserter_with_coal.fuel.get(Prototype.Coal, 0)} coal into inserter")
 
 # Place chest next to inserter
 chest = place_entity_next_to(Prototype.WoodenChest, reference_position=inserter.position,

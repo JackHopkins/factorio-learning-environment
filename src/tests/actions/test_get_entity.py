@@ -20,11 +20,40 @@ def game(instance):
         'automation-science-pack': 1,
         'gun-turret': 1,
         'firearm-magazine': 5,
-        'boiler': 1
+        'boiler': 1,
+        'offshore-pump': 1,
     }
     instance.reset()
     yield instance
     instance.reset()
+
+def test_get_offshore_pump(game):
+    """
+    Test to ensure that the inventory of an offshore pump is correctly updated after mining water
+    :param game:
+    :return:
+    """
+    # Check initial inventory
+    position = game.nearest(Resource.Water)
+    game.move_to(position)
+    offshore_pump = game.place_entity(Prototype.OffshorePump, Direction.RIGHT, position)
+    assert offshore_pump is not None, "Failed to place offshore pump"
+
+    boiler = game.place_entity_next_to(Prototype.Boiler, offshore_pump.position, Direction.RIGHT, spacing=2)
+    assert boiler
+
+    pipes = game.connect_entities(boiler, offshore_pump, Prototype.Pipe)
+    assert pipes
+    game.sleep(1)
+    # Load entities from the game
+    offshore_pump = game.get_entities({Prototype.OffshorePump})[0]
+    assert offshore_pump is not None, "Failed to retrieve offshore pump"
+    # Check to see if the offshore pump has water
+    assert offshore_pump.fluid_box, "Failed to get water"
+    boiler = game.get_entities({Prototype.Boiler})[0]
+    assert boiler is not None, "Failed to retrieve boiler"
+    # Check to see if the boiler has water
+    assert boiler.fluid_box, "Failed to get water"
 def test_get_stone_furnace(game):
     """
     Test to ensure that the inventory of a stone furnace is correctly updated after smelting iron ore

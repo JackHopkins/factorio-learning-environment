@@ -33,8 +33,8 @@ def test_basic_iron_smelting_chain(game):
 
     # Fuel the burner mining drill
     drill_with_coal = game.insert_item(Prototype.Coal, drill, quantity=5)
-    assert drill_with_coal.fuel_inventory.get(Prototype.Coal, 0) > 0, "Failed to fuel burner mining drill"
-    print(f"Inserted {drill_with_coal.fuel_inventory.get(Prototype.Coal, 0)} coal into burner mining drill")
+    assert drill_with_coal.fuel.get(Prototype.Coal, 0) > 0, "Failed to fuel burner mining drill"
+    print(f"Inserted {drill_with_coal.fuel.get(Prototype.Coal, 0)} coal into burner mining drill")
 
     # Place stone furnace next to drill
     furnace = game.place_entity_next_to(Prototype.StoneFurnace, reference_position=drill.position, direction=Direction.RIGHT)
@@ -43,8 +43,8 @@ def test_basic_iron_smelting_chain(game):
 
     # Fuel the stone furnace
     furnace_with_coal = game.insert_item(Prototype.Coal, furnace, quantity=5)
-    assert furnace_with_coal.fuel_inventory.get(Prototype.Coal, 0) > 0, "Failed to fuel stone furnace"
-    print(f"Inserted {furnace_with_coal.fuel_inventory.get(Prototype.Coal, 0)} coal into stone furnace")
+    assert furnace_with_coal.fuel.get(Prototype.Coal, 0) > 0, "Failed to fuel stone furnace"
+    print(f"Inserted {furnace_with_coal.fuel.get(Prototype.Coal, 0)} coal into stone furnace")
 
     # Place inserter next to furnace
     inserter = game.place_entity_next_to(Prototype.BurnerInserter, reference_position=furnace.position,
@@ -54,8 +54,8 @@ def test_basic_iron_smelting_chain(game):
 
     # Fuel the inserter
     inserter_with_coal = game.insert_item(Prototype.Coal, inserter, quantity=2)
-    assert inserter_with_coal.fuel_inventory.get(Prototype.Coal, 0) > 0, "Failed to fuel inserter"
-    print(f"Inserted {inserter_with_coal.fuel_inventory.get(Prototype.Coal, 0)} coal into inserter")
+    assert inserter_with_coal.fuel.get(Prototype.Coal, 0) > 0, "Failed to fuel inserter"
+    print(f"Inserted {inserter_with_coal.fuel.get(Prototype.Coal, 0)} coal into inserter")
 
     # Place chest next to inserter
     chest = game.place_entity_next_to(Prototype.WoodenChest, reference_position=inserter.position, direction=Direction.RIGHT)

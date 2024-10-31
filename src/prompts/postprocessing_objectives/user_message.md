@@ -9,7 +9,7 @@ DESCRIPTION
 {description}
 
 INVENTORY REQUIREMENTS
-{inventory}
+{dependencies}
 
 NAME
 {name}

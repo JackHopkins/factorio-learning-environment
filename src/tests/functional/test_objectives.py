@@ -1,16 +1,16 @@
 from time import sleep
-from typing import List
+from typing import List, Union
 
 import pytest
 
-from factorio_entities import Entity, Position, ResourcePatch, Recipe, BurnerMiningDrill
+from factorio_entities import Entity, Position, ResourcePatch, Recipe, BurnerMiningDrill, EntityGroup
 from factorio_instance import Direction
 from factorio_types import Prototype, Resource
 
 
 @pytest.fixture()
 def game(instance):
-    instance.initial_inventory = {'stone-furnace': 1}
+    instance.initial_inventory = {'stone-furnace': 1, 'boiler': 1, 'steam-engine': 1, 'pipe': 100, 'iron-plate': 10}
     #instance.rcon_client.send_command('game.reset_game_state()')
     #instance.rcon_client.send_command('game.reload_script()')
     instance.reset()
@@ -28,7 +28,7 @@ def test_collect_iron_ore(game):
     game.move_to(iron_ore)
     game.harvest_resource(iron_ore)
 
-    assert game.inspect_inventory()[Prototype.IronOre] == 10
+    assert game.inspect_inventory()[Prototype.IronOre] == 1
     game.reset()
 
 
@@ -90,7 +90,7 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
         steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=offset)
 
         try:
-            connection: List[Entity] = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
+            connection: List[Union[EntityGroup, Entity]] = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
         except Exception as e:
             print(e)
             assert False
@@ -99,7 +99,7 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
 
         current_pipes_in_inventory = game.inspect_inventory()[Prototype.Pipe]
         spent_pipes = (pipes_in_inventory - current_pipes_in_inventory)
-        assert spent_pipes == len(connection)
+        assert spent_pipes == len(connection[0].pipes)
 
         game.reset()  # Reset the game state after each iteration
 
@@ -214,7 +214,7 @@ def test_build_iron_gear_factory(game):
     burner_inserter = game.place_entity_next_to(Prototype.BurnerInserter,
                                                 reference_position=stone_furnace.position,
                                                 direction=Direction.UP,
-                                                spacing=1)
+                                                spacing=0)
 
     def ensure_ingredients(game, recipe, quantity=1):
         for ingredient in recipe.ingredients:
@@ -260,7 +260,7 @@ def test_build_iron_gear_factory(game):
     # place the boiler next to the offshore pump
     boiler = game.place_entity_next_to(Prototype.Boiler,
                                        reference_position=offshore_pump.position,
-                                       direction=Direction.RIGHT,
+                                       direction=Direction.UP,
                                        spacing=2)
 
     # craft a steam engine
@@ -279,12 +279,12 @@ def test_build_iron_gear_factory(game):
     # harvest nearby trees for wood
     tree_patch = game.get_resource_patch(Resource.Wood, game.nearest(Resource.Wood))
     game.move_to(tree_patch.bounding_box.left_top + Position(x=1, y=1))
-    game.harvest_resource(tree_patch.bounding_box.left_top, quantity=10)
+    game.harvest_resource(tree_patch.bounding_box.left_top, quantity=30)
 
-    # craft 5 small electric poles
+    # craft 15 small electric poles
     recipe = game.get_prototype_recipe(Prototype.SmallElectricPole)
-    ensure_ingredients(game, recipe, quantity=5)
-    game.craft_item(Prototype.SmallElectricPole, quantity=5)
+    ensure_ingredients(game, recipe, quantity=12)
+    game.craft_item(Prototype.SmallElectricPole, quantity=12)
 
     # place connect the steam engine and assembly machine with power poles
     game.connect_entities(steam_engine, assembly_machine, connection_type=Prototype.SmallElectricPole)

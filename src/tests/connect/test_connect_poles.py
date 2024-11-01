@@ -110,3 +110,93 @@ def test_connect_power_poles_without_blocking_mining_drill(game):
     drill = game.get_entity(Prototype.ElectricMiningDrill, miner.position)
     assert drill, "Failed to get mining drill"
     assert not drill.warnings, f"Drill has warnings: {drill.warnings}"
+
+def test_pole_to_generator(game):
+    game.move_to(Position(x=1, y=1))
+
+    # Place offshore pump near water
+    water_position = game.nearest(Resource.Water)
+    assert water_position, "No water source found nearby"
+    game.move_to(water_position)
+    offshore_pump = game.place_entity(Prototype.OffshorePump, Direction.DOWN, water_position)
+    assert offshore_pump, "Failed to place offshore pump"
+
+    # Place boiler next to offshore pump
+    # Important: The boiler needs to be placed with a spacing of 2 to allow for pipe connections
+    boiler = game.place_entity_next_to(Prototype.Boiler, offshore_pump.position, Direction.DOWN, spacing=2)
+    assert boiler, "Failed to place boiler"
+
+    # add coal to the boiler
+    # need to update the boiler var after insert
+    boiler = game.insert_item(Prototype.Coal, boiler, quantity=5)
+
+    # Connect offshore pump to boiler with pipes
+    pipes = game.connect_entities(offshore_pump, boiler, Prototype.Pipe)
+    assert pipes, "Failed to connect offshore pump to boiler"
+
+    # Place steam engine next to boiler
+    # Important: The steam engine needs to be placed with a spacing of 2 to allow for pipe connections
+    steam_engine = game.place_entity_next_to(Prototype.SteamEngine, boiler.position, Direction.LEFT, spacing=2)
+    assert steam_engine, "Failed to place steam engine"
+
+    # Connect boiler to steam engine with pipes
+    pipes = game.connect_entities(boiler, steam_engine, Prototype.Pipe)
+    assert pipes, "Failed to connect boiler to steam engine"
+
+    # check if the boiler is receiving electricity
+    # if it says not connected to power network, then it is working
+    # it just isn't connected to any power poles
+    inspected_steam_engine = game.inspect_entities(position=steam_engine.position, radius=1).get_entity(
+        Prototype.SteamEngine)
+    assert inspected_steam_engine.warning == 'not connected to power network'
+
+    """
+    Step 1: Place electric mining drill. We need to find a stone patch and place the electric mining drill on it.
+    """
+    # Inventory at the start of step {'small-electric-pole': 20, 'pipe': 10, 'electric-mining-drill': 1}
+    # Step Execution
+
+    # Find the nearest stone patch
+    stone_patch_position = game.nearest(Resource.Stone)
+    print(f"Nearest stone patch found at: {stone_patch_position}")
+
+    # Move to the stone patch location
+    game.move_to(stone_patch_position)
+    print(f"Moved to stone patch at: {stone_patch_position}")
+
+    # Place the electric mining drill on the stone patch
+    drill = game.place_entity(Prototype.ElectricMiningDrill, Direction.UP, stone_patch_position)
+    print(f"Placed electric mining drill at: {drill.position}")
+
+    print("Electric mining drill successfully placed on stone patch")
+    print(f"Current inventory: {game.inspect_inventory()}")
+
+    ###SEP
+    """
+    Step 2: Connect power to the drill. We need to create a power line from the steam engine to the electric mining drill using small electric poles.
+    """
+    # get the steam engine entity, first get all entities
+    entities = game.get_entities({Prototype.SteamEngine})
+    # get all steam engines by looking at the prototype
+    steam_engines = [x for x in entities if x.prototype is Prototype.SteamEngine]
+    # get the first one as we only have one
+    steam_engine = steam_engines[0]
+
+    connection = game.connect_entities(steam_engine, drill, Prototype.SmallElectricPole)
+    assert connection, "Failed to connect electric mining drill to power"
+    print("Electric mining drill connected to power")
+
+    """
+    Step 3: Verify power connection. We need to check if the electric mining drill is powered by examining its status.
+    - Wait for a few seconds to allow the power to stabilize
+    - Check the status of the electric mining drill to confirm it has power
+    """
+    # sleep for a few seconds to allow power to stabilize
+    game.sleep(5)
+
+    # update the drill entity to get the powered one
+    drill = game.get_entity(Prototype.ElectricMiningDrill, drill.position)
+    # Check the status of the electric mining drill
+    drill_status = drill.status
+    assert drill_status != EntityStatus.NO_POWER, "Electric mining drill is not powered"
+    print("Electric mining drill is powered and working")

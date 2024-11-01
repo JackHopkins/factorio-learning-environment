@@ -13,7 +13,7 @@ from skills.skill_postprocessor import SkillPostProcessor
 from skills.bottoms_up_sampler import eval_program_with_result_trace, get_mining_setup
 load_dotenv()
 from skills.skills_db import SkillsDB
-from skills.get_test_data import extract_skills_from_test
+from skills.get_test_data import get_skills_from_func_tests
 def is_valid_python(code_string: str) -> bool:
     try:
         ast.parse(code_string)
@@ -121,18 +121,36 @@ class SFTDatasetCreator:
 
     def skills_db_to_jsonl(self, skills: List[Dict], output_file: str) -> None:
         # check if the output file exists
-        # if it does, raise an error
+        # if it does, we append to it
         if os.path.exists(output_file):
-            raise ValueError("Output file already exists")
-
-        with open(output_file, "w") as f:
+            # open the file and read in the lines
+            with open(output_file) as f:
+                existing_skills = f.readlines()
+            # get the existing skills
+            existing_skills = [json.loads(line) for line in existing_skills]
+            # add the new skills to the existing skills
+            skills_to_be_saved = []
             for skill in skills:
-                f.write(json.dumps(skill) + "\n")
+                exists = False
+                for existing_skill in existing_skills:
+                    if existing_skill["name"] == skill["name"] and existing_skill["implementation"] == skill["implementation"]:
+                        exists = True
+                        break
+                if not exists:
+                    skills_to_be_saved.append(skill)
+            # append the new skills to the existing skills
+            with open(output_file, "a") as f:
+                for skill in skills_to_be_saved:
+                    f.write(json.dumps(skill) + "\n")
+        else:
+            with open(output_file, "w") as f:
+                for skill in skills:
+                    f.write(json.dumps(skill) + "\n")
 
     def create_jsonl_dataset_from_db_skills(self, output_file: str, func_test_folder = None) -> None:
             all_skills = self.get_skills_for_sft()
             if func_test_folder:
-                skills_from_func_tests = extract_skills_from_test(func_test_folder)
+                skills_from_func_tests = get_skills_from_func_tests(func_test_folder)
                 all_skills += skills_from_func_tests
             
             self.skills_db_to_jsonl(all_skills, output_file)
@@ -147,10 +165,13 @@ class SFTDatasetCreator:
                 stripped_line = line.replace(" ", "").strip()
                 match = re.search(position_regex, stripped_line)
                 if match:
-                    # get the place_entity index
-                    place_entity_index = stripped_line.index("place_entity")
-            else:
-                new_steps.append(line)
+                    print(f"Found: {match.group()}")
+                    place_pos = match.group()
+                    place_pos = place_pos.replace("position=", "")
+                    prefix = line.split("place_entity")[0]
+                    new_steps.append(f"# First move to where we want to place the entity\n{prefix}move_to({place_pos})")
+        
+            new_steps.append(line)
         new_step = "\n".join(new_steps)
         output_list, result = eval_program_with_result_trace(instance, new_step)
         return output_list, result, new_step
@@ -206,17 +227,17 @@ class SFTDatasetCreator:
                 buffer_str = "\n".join(buffer)
                 implementation_step = buffer_str + "\n\n" + implementation_step
             
-            #if "while " in implementation_step:
-            #    return {"success": False, "traces": [], "error_message": "While loops are not allowed"}
+            if "while " in implementation_step:
+                return {"success": False, "traces": [], "error_message": "While loops are not allowed"}
             # eval step
             output_list, result = eval_program_with_result_trace(instance, implementation_step)
             if "error" in result.lower():
-                #if "Move closer." in result:
-                #    # try to fix the bug
-                #    output_list, result, implementation_step = self.try_to_fix_moving_closer_bugs(implementation_step, instance)
-                #    if "error" in result.lower():
-                #        return {"success": False, "traces": [], "error_message": result}
-                #else:
+                if "Move closer." in result:
+                    # try to fix the bug
+                    output_list, result, implementation_step = self.try_to_fix_moving_closer_bugs(implementation_step, instance)
+                    if "error" in result.lower():
+                        return {"success": False, "traces": [], "error_message": result}
+                else:
                     return {"success": False,"traces": [], "error_message": result}
             
             assistant_message = f"```python\n{implementation_step}\n```"
@@ -343,7 +364,7 @@ class SFTDatasetCreator:
                     skill = self.get_skill_from_nb_skills(full_snippet, skill_data)
                     exists = False
                     for trace in successful_traces:
-                        if trace["name"] == skill["name"] and trace["implementation"] == skill["implementation"]:
+                        if trace["name"] == skill["name"]: #and trace["implementation"] == skill["implementation"]:
                             exists = True
                             break
                     if exists:
@@ -356,8 +377,8 @@ class SFTDatasetCreator:
                         with open(output_file, "a") as f:
                             f.write(json.dumps(skill) + "\n")
                     else:
-                        raise ValueError(f"Error in {objective_group} {starting_scenario} skill {skill['name']}: {trace_output['error_message']}")
-
+                        #raise ValueError(f"Error in {objective_group} {starting_scenario} skill {skill['name']}: {trace_output['error_message']}")
+                        pass
 if __name__ == "__main__":
     starting_scenario_path = r"skills\data_scenarios\starting_scenarios"
     dataloader = SFTDatasetCreator(starting_scenario_path)
@@ -366,7 +387,7 @@ if __name__ == "__main__":
     postprocessed_input_jsonl_file = r"datasets\sft_dataset_postprocessed.jsonl"
     successful_output_file = r"datasets\sft_successful_traces.jsonl"
     failed_output_file = r"datasets\sft_failed_traces.jsonl"
-    #dataloader.create_jsonl_dataset_from_db_skills(output_jsonl_file)
-    #dataloader.postprocess_skills(raw_input_jsonl_file, postprocessed_input_jsonl_file)
+    #dataloader.create_jsonl_dataset_from_db_skills(raw_input_jsonl_file,  r"tests\functional")
+    dataloader.postprocess_skills(raw_input_jsonl_file, postprocessed_input_jsonl_file)
     #dataloader.create_game_traces(postprocessed_input_jsonl_file, successful_output_file, failed_output_file)
-    dataloader.get_traces_from_notebook_skills(notebook_skill_path, successful_output_file)
+    #dataloader.get_traces_from_notebook_skills(notebook_skill_path, successful_output_file)

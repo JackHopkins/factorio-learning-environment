@@ -93,10 +93,14 @@ class SFTDatasetCreator:
             starting_scenario = "full_scratch"
             inventory = {}
             for item in skill["dependencies"]:
-                item_split = item.split(":")
-                name = item_split[0].replace("'", "").strip()
-                quantity = item_split[1].replace("-", "").strip()
-                quantity = int(quantity)
+                if isinstance(item, str):
+                    item_split = item.split(":")
+                    name = item_split[0].replace("'", "").strip()
+                    quantity = item_split[1].replace("-", "").strip()
+                    quantity = int(quantity)
+                else:
+                    name = item[0]
+                    quantity = int(item[1])
                 if name in ["pipe", "transport-belt", "small-electric-pole"]:
                     # add a random number between 20 to 40
                     quantity += random.randint(20, 40)
@@ -388,6 +392,6 @@ if __name__ == "__main__":
     successful_output_file = r"datasets\sft_successful_traces.jsonl"
     failed_output_file = r"datasets\sft_failed_traces.jsonl"
     #dataloader.create_jsonl_dataset_from_db_skills(raw_input_jsonl_file,  r"tests\functional")
-    dataloader.postprocess_skills(raw_input_jsonl_file, postprocessed_input_jsonl_file)
-    #dataloader.create_game_traces(postprocessed_input_jsonl_file, successful_output_file, failed_output_file)
+    #dataloader.postprocess_skills(raw_input_jsonl_file, postprocessed_input_jsonl_file)
+    dataloader.create_game_traces(postprocessed_input_jsonl_file, successful_output_file, failed_output_file)
     #dataloader.get_traces_from_notebook_skills(notebook_skill_path, successful_output_file)

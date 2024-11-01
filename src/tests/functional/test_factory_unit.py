@@ -35,7 +35,7 @@ def test_steam_engines(game: FactorioInstance):
     coal_inserter = game.place_entity_next_to(Prototype.BurnerInserter,
                                               reference_position=boiler.position,
                                               direction=Direction.RIGHT,
-                                              spacing=1)
+                                              spacing=0)
     coal_inserter = game.rotate_entity(coal_inserter, Direction.LEFT)
     game.move_to(game.nearest(Resource.Coal))
 
@@ -48,11 +48,9 @@ def test_steam_engines(game: FactorioInstance):
     assert burner_inserter
 
     belts = game.connect_entities(burner_mining_drill, burner_inserter, connection_type=Prototype.TransportBelt)
-
     assert belts
 
-    coal_to_boiler_belts = game.connect_entities(belts[0].belts[-1], coal_inserter, connection_type=Prototype.TransportBelt)
-
+    coal_to_boiler_belts = game.connect_entities(belts[0], coal_inserter.pickup_position, connection_type=Prototype.TransportBelt)
     assert coal_to_boiler_belts
 
     assembler = game.place_entity_next_to(Prototype.AssemblingMachine1,

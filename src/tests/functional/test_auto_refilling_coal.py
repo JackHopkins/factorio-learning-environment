@@ -192,8 +192,8 @@ def test_another_self_fueling_coal_belt(game):
     print("All components verified")
 
     # Kickstart the system by placing coal on the belt
-    game.move_to(belt_entities[0].input_position)
-    coal_placed = game.insert_item(Prototype.Coal, belt_entities[-1], quantity=10)
+    game.move_to(drills[0].position)
+    coal_placed = game.insert_item(Prototype.Coal, drills[0], quantity=10)
     assert coal_placed is not None, "Failed to place coal on the belt"
 
     print("System kickstarted with coal")

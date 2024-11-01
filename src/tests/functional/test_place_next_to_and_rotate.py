@@ -50,7 +50,7 @@ def test_place_boiler_next_to_offshore_pump_rotate_and_connect(game):
     offshore_pump = game.place_entity(Prototype.OffshorePump,
                                       position=water_location)
     # Get offshore pump direction
-    direction = Direction(offshore_pump.direction)
+    direction = Direction(offshore_pump.direction.value)
 
     # Get orthogonal direction
     opposite_direction = Direction.opposite(direction)
@@ -61,7 +61,7 @@ def test_place_boiler_next_to_offshore_pump_rotate_and_connect(game):
     # place the boiler next to the offshore pump
     boiler = game.place_entity_next_to(Prototype.Boiler,
                                        reference_position=offshore_pump.position,
-                                       direction=opposite_direction,
+                                       direction=direction,
                                        spacing=2)
 
     # rotate the boiler to face the offshore pump

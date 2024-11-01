@@ -11,7 +11,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
 
     local closest_distance = math.huge
     local closest_entity = nil
-    local area = {{position.x - 2, position.y - 2}, {position.x + 2, position.y + 2}}
+    local area = {{position.x - 1, position.y - 1}, {position.x + 1, position.y + 1}}
     local buildings = surface.find_entities_filtered{area = area}
 
     -- Function to check if an item can be inserted into an entity

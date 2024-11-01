@@ -1,6 +1,7 @@
 import pytest
 
-from factorio_types import Resource
+from factorio_types import Resource, Prototype
+
 
 @pytest.fixture()
 def game(instance):
@@ -53,3 +54,16 @@ def test_harvest_trees(game):
     final_wood = game.inspect_inventory()[Resource.Wood]
     # Assert that the coal has been added to the inventory
     assert quantity < final_wood - initial_wood
+
+def test_harvest_bug(game):
+    # Get stone for furnace
+    stone_pos = game.nearest(Resource.Stone)
+    game.move_to(stone_pos)
+    game.harvest_resource(stone_pos, 5)
+
+    # Craft stone furnace
+    game.craft_item(Prototype.StoneFurnace, 1)
+
+    # Verify we have stone furnace in inventory
+    inventory = game.inspect_inventory()
+    assert inventory.get(Prototype.StoneFurnace) >= 1, "Failed to craft stone furnace"

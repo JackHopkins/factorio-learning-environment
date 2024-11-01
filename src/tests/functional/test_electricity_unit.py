@@ -182,7 +182,7 @@ def test_build_iron_gear_factory(game):
     burner_inserter = game.place_entity_next_to(Prototype.BurnerInserter,
                                                 reference_position=stone_furnace.position,
                                                 direction=Direction.UP,
-                                                spacing=1)
+                                                spacing=0)
 
     def ensure_ingredients(game, recipe, quantity=1):
         for ingredient in recipe.ingredients:
@@ -249,12 +249,12 @@ def test_build_iron_gear_factory(game):
     # harvest nearby trees for wood
     tree_patch = game.get_resource_patch(Resource.Wood, game.nearest(Resource.Wood))
     game.move_to(tree_patch.bounding_box.left_top + Position(x=1, y=1))
-    game.harvest_resource(tree_patch.bounding_box.left_top, quantity=10)
+    game.harvest_resource(tree_patch.bounding_box.left_top, quantity=40)
 
     # craft 5 small electric poles
     recipe = game.get_prototype_recipe(Prototype.SmallElectricPole)
-    ensure_ingredients(game, recipe, quantity=5)
-    game.craft_item(Prototype.SmallElectricPole, quantity=5)
+    ensure_ingredients(game, recipe, quantity=10)
+    game.craft_item(Prototype.SmallElectricPole, quantity=10)
 
     # place connect the steam engine and assembly machine with power poles
     game.connect_entities(steam_engine, assembly_machine, connection_type=Prototype.SmallElectricPole)
@@ -265,11 +265,18 @@ def test_build_iron_gear_factory(game):
     # place connective pipes between the boiler and offshore pump
     game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
 
-    game.insert_item(Prototype.Coal, boiler, quantity=15)
-    game.insert_item(Prototype.Coal, burner_inserter, quantity=15)
-    game.insert_item(Prototype.Coal, stone_furnace, quantity=15)
+    game.move_to(boiler.position)
+    game.insert_item(Prototype.Coal, boiler, quantity=10)
+    game.insert_item(Prototype.Coal, burner_inserter, quantity=10)
+    game.insert_item(Prototype.Coal, stone_furnace, quantity=10)
 
-    game.sleep(5)
+    game.move_to(burner_mining_drill.position)
+    game.insert_item(Prototype.Coal, burner_mining_drill, quantity=10)
+
+    game.sleep(15)
+
+    # extract the iron gears from the assembly machine
+    game.extract_item(Prototype.IronGearWheel, assembly_machine, quantity=5)
 
     inventory = game.inspect_inventory(entity=assembly_machine)
 

@@ -186,6 +186,19 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
     -- [Rest of fast mode code remains the same but modified to return actual yield]
     local total_yield = 0
 
+    -- Function to calculate distance between two points
+    local function distance(pos1, pos2)
+        return math.sqrt((pos1.x - pos2.x)^2 + (pos1.y - pos2.y)^2)
+    end
+
+    -- Function to sort entities by distance from a given position
+    local function sort_entities_by_distance(entities, from_position)
+        table.sort(entities, function(a, b)
+            return distance(a.position, from_position) < distance(b.position, from_position)
+        end)
+        return entities
+    end
+
     function harvest_trees(entities, count, from_position)
         if count == 0 then return 0 end
         local yield = 0

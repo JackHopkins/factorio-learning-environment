@@ -169,7 +169,7 @@ def test_build_iron_plate_factory(game):
     above_current_furnace = Position(x=current_furnace.position.x, y=current_furnace.position.y - 2.5)
     iron_belt = game.connect_entities(iron_belt_start.position, above_current_furnace, Prototype.TransportBelt)
 
-    coal_to_iron_belt = game.connect_entities(iron_drill_coal_belt_inserter.drop_position, iron_belt[0].input_position, Prototype.TransportBelt)
+    coal_to_iron_belt = game.connect_entities(iron_drill_coal_belt_inserter.drop_position, iron_belt[0], Prototype.TransportBelt)
 
     next_coal_belt_position = coal_belt_start.position
 
@@ -202,8 +202,9 @@ def test_build_iron_plate_factory(game):
 
     # Place a chest at the end of the output belt
     output_chest = game.place_entity_next_to(Prototype.IronChest,
-                                             Position(x=output_belt[-1].output_position.x, y=output_belt[-1].position.y),
-                                             Direction.RIGHT, spacing=1)
+                                             Position(x=output_belt[-1].output_positions[0].x,
+                                                      y=output_belt[-1].output_positions[0].y),
+                                             Direction.RIGHT, spacing=0)
 
     # Place an inserter to move plates from belt to chest
     game.place_entity(Prototype.BurnerInserter, Direction.RIGHT,
@@ -219,7 +220,7 @@ def test_build_iron_plate_factory(game):
     coal_miner = game.place_entity(Prototype.BurnerMiningDrill, Direction.UP, coal_patch.bounding_box.left_top)
 
     # Connect coal to furnaces with transport belt
-    game.connect_entities(coal_miner.drop_position, coal_chest_inserter.pickup_position, Prototype.TransportBelt)
+    long_coal_belt = game.connect_entities(coal_miner.drop_position, coal_chest_inserter, Prototype.TransportBelt)
 
     # Insert coal into the coal miner
     game.insert_item(Prototype.Coal, coal_miner, 50)

@@ -282,17 +282,43 @@ class ConnectEntities(Action):
         target_position = Position(x=round(target_position.x*2)/2, y=round(target_position.y*2)/2)
         source_position = Position(x=round(source_position.x*2)/2, y=round(source_position.y*2)/2)
         if connection_type == Prototype.Pipe or connection_type == Prototype.TransportBelt:
-            path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y), start=source_position, allow_paths_through_own_entities=True)
+            try:
+                # Attempt to avoid entities
+                path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y),
+                                                start=source_position, allow_paths_through_own_entities=False)
+                response, elapsed = self.execute(PLAYER,
+                                                 source_position.x,
+                                                 source_position.y,
+                                                 target_position.x,
+                                                 target_position.y,
+                                                 path_handle,
+                                                 connection_prototype)
+                if not isinstance(response, dict) and response != "Passed":
+                    raise Exception(
+                        f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}.",
+                        response.lstrip())
+
+            except Exception as e:
+                # But accept allowing paths through own entities if it fails
+                path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y),
+                                                start=source_position, allow_paths_through_own_entities=True)
+                response, elapsed = self.execute(PLAYER,
+                                                 source_position.x,
+                                                 source_position.y,
+                                                 target_position.x,
+                                                 target_position.y,
+                                                 path_handle,
+                                                 connection_prototype)
         else:
             path_handle = self.request_path(finish=target_position, start=source_position, allow_paths_through_own_entities=True)
 
-        response, elapsed = self.execute(PLAYER,
-                                         source_position.x,
-                                         source_position.y,
-                                         target_position.x,
-                                         target_position.y,
-                                         path_handle,
-                                         connection_prototype)
+            response, elapsed = self.execute(PLAYER,
+                                             source_position.x,
+                                             source_position.y,
+                                             target_position.x,
+                                             target_position.y,
+                                             path_handle,
+                                             connection_prototype)
         if not isinstance(response, dict) and response != "Passed":
             raise Exception(f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}.", response.lstrip())
 

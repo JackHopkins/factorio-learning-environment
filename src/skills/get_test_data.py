@@ -52,18 +52,24 @@ def extract_skills_from_test(test_file):
     return skills
 
 
-def get_skills_from_func_tests(func_test_folder):
+def get_skills_from_func_tests(func_test_paths):
     """
     Get the skills from the functional tests.
     :param func_test_folder: The folder containing the functional tests.
     :return: A list of skills.
     """
     skills = []
-    for file in os.listdir(func_test_folder):
-        if file.endswith(".py"):
-            with open(os.path.join(func_test_folder, file)) as f:
+    for path in func_test_paths:
+        if path.endswith(".py"):
+            with open(path) as f:
                 content = f.read()
                 skills += extract_skills_from_test(content)
+        else:
+            for file in os.listdir(func_test_paths):
+                if file.endswith(".py"):
+                    with open(os.path.join(func_test_paths, file)) as f:
+                        content = f.read()
+                        skills += extract_skills_from_test(content)
 
     return skills
 

@@ -37,7 +37,6 @@ class InsertItem(Action):
             raise Exception("Could not insert", response)
 
         cleaned_response = self.clean_response(response)
-
         if isinstance(cleaned_response, dict):
             prototype = Prototype._value2member_map_[(target.name, type(target))]
             target = type(target)(prototype=prototype, **cleaned_response)

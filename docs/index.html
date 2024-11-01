@@ -1,0 +1,609 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Voyager | An Open-Ended Embodied Agent with Large Language Models</title>
+
+        <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet" />
+
+        <link rel="stylesheet" href="./static/css/bulma.min.css" />
+        <link rel="stylesheet" href="./static/css/bulma-carousel.min.css" />
+        <link rel="stylesheet" href="./static/css/bulma-slider.min.css" />
+        <link rel="stylesheet" href="./static/css/fontawesome.all.min.css" />
+        <link rel="stylesheet" href="./static/css/academicons.min.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" />
+        <link rel="stylesheet" href="./static/css/index.css" />
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script defer src="./static/js/fontawesome.all.min.js"></script>
+        <script src="./static/js/bulma-carousel.min.js"></script>
+        <script src="./static/js/bulma-slider.min.js"></script>
+        <script src="./static/js/index.js"></script>
+    </head>
+    <body>
+        <section class="hero">
+            <div class="hero-body">
+                <div class="container is-max-desktop">
+                    <div class="columns is-centered">
+                        <div class="column has-text-centered">
+                            <h1 class="title is-1 publication-title">Voyager: An Open-Ended Embodied Agent with Large Language Models</h1>
+                            <div class="is-size-5 publication-authors">
+                                <span class="author-block">
+                                    <a target="_blank" href="https://guanzhi.me/">Guanzhi&#160;Wang</a> <a href="mailto:guanzhi@caltech.edu"><i class="fas fa-envelope"></i></a><sup>1 2</sup>, <a target="_blank" href="https://xieleo5.github.io/">Yuqi&#160;Xie</a><sup>3</sup>,
+                                    <a target="_blank" href="https://yunfanj.com/">Yunfan&#160;Jiang</a><sup>4*</sup>, <a target="_blank" href="https://ai.stanford.edu/~amandlek/">Ajay&#160;Mandlekar</a><sup>1*</sup>,
+                                    <br />
+                                    <a target="_blank" href="https://xiaocw11.github.io/">Chaowei&#160;Xiao</a><sup>1 5</sup>, <a target="_blank" href="https://www.cs.utexas.edu/~yukez/">Yuke&#160;Zhu</a><sup>1 3</sup>,
+                                    <a target="_blank" href="https://jimfan.me/">Linxi&#160;"Jim"&#160;Fan</a> <a href="mailto:dr.jimfan.ai@gmail.com"><i class="fas fa-envelope"></i></a><sup>1&dagger;</sup>,
+                                    <a target="_blank" href="http://tensorlab.cms.caltech.edu/users/anima/">Anima&#160;Anandkumar</a>
+                                    <sup>1 2&dagger;</sup>
+                                </span>
+                            </div>
+
+                            <div class="is-size-5 publication-authors">
+                                <span class="author-block"><sup>1</sup>NVIDIA, </span>
+                                <span class="author-block"><sup>2</sup>Caltech, </span>
+                                <span class="author-block"><sup>3</sup>UT Austin, </span>
+                                <span class="author-block"><sup>4</sup>Stanford, </span>
+                                <span class="author-block"><sup>5</sup>ASU</span>
+                            </div>
+
+                            <div class="is-size-5 publication-authors">
+                                <span class="author-block"><sup>*</sup>Equal contribution</span>
+                                <span class="author-block"><sup>&dagger;</sup>Equal advising </span>
+                                <br />
+                                <span class="author-block"><i class="fas fa-envelope"></i> Corresponding authors: guanzhi@caltech.edu, dr.jimfan.ai@gmail.com</span>
+                            </div>
+
+                            <div class="column has-text-centered">
+                                <div class="publication-links">
+                                    <!-- TODO PDF Link. -->
+                                    <span class="link-block">
+                                        <a target="_blank" href="https://arxiv.org/abs/2305.16291" class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon">
+                                                <i class="ai ai-arxiv"></i>
+                                            </span>
+                                            <span>arXiv</span>
+                                        </a>
+                                    </span>
+
+                                    <span class="link-block">
+                                        <a target="_blank" href="assets/documents/voyager.pdf" class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </span>
+                                            <span>PDF</span>
+                                        </a>
+                                    </span>
+                                    <!-- Code Link. -->
+                                    <span class="link-block">
+                                        <a target="_blank" href="https://github.com/MineDojo/Voyager" class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon">
+                                                <i class="fab fa-github"></i>
+                                            </span>
+                                            <span>Code</span>
+                                        </a>
+                                    </span>
+                                    <span class="link-block">
+                                        <a target="_blank" href="https://twitter.com/DrJimFan/status/1662115266933972993" class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon">
+                                                <i class="fab fa-twitter"></i>
+                                            </span>
+                                            <span>Tweet</span>
+                                        </a>
+                                    </span>
+                                    <span class="link-block">
+                                        <a target="_blank" href="https://minedojo.org/" class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon">
+                                                <i class="fas fa-database"></i>
+                                            </span>
+                                            <span>MineDojo</span>
+                                        </a>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <style>
+            .video-column {
+                margin-left: -10px;
+                margin-right: -10px;
+                margin-bottom: -15px;
+                padding-bottom: 0px;
+            }
+
+            .video-column .column {
+                padding: 0 5px;
+            }
+        </style>
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div class="columns">
+                                <div class="column has-text-left video-column">
+                                    <video controls muted autoplay loop width="100%">
+                                        <source src="assets/videos/gallery/diamond.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+                                <div class="column has-text-left video-column">
+                                    <video controls muted autoplay loop width="100%">
+                                        <source src="assets/videos/gallery/cactus.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+                                <div class="column has-text-left video-column">
+                                    <video controls muted autoplay loop width="100%">
+                                        <source src="assets/videos/gallery/base.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+                            </div>
+                            <div class="columns">
+                                <div class="column has-text-left video-column">
+                                    <video controls muted autoplay loop width="100%">
+                                        <source src="assets/videos/gallery/enderman.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+                                <div class="column has-text-left video-column">
+                                    <video controls muted autoplay loop width="100%">
+                                        <source src="assets/videos/gallery/house.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+                                <div class="column has-text-left video-column">
+                                    <video controls muted autoplay loop width="100%">
+                                        <source src="assets/videos/gallery/gold.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+                            </div>
+                            <div class="columns">
+                                <div class="column has-text-left video-column">
+                                    <video controls muted autoplay loop width="100%">
+                                        <source src="assets/videos/gallery/portal.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+                                <div class="column has-text-left video-column">
+                                    <video controls muted autoplay loop width="100%">
+                                        <source src="assets/videos/gallery/pig.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+
+                                <div class="column has-text-left video-column">
+                                    <video controls muted autoplay loop width="100%">
+                                        <source src="assets/videos/gallery/fish.mp4" type="video/mp4" />
+                                    </video>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container is-max-desktop">
+                <!-- Abstract. -->
+                <div class="columns is-centered has-text-centered">
+                    <div class="column">
+                        <h2 class="title is-3">Abstract</h2>
+                        <div class="content has-text-justified">
+                            <p style="font-size: 125%;">
+                                We introduce Voyager, the first LLM-powered embodied lifelong learning agent in Minecraft that continuously explores the world, acquires diverse skills, and makes novel discoveries without human intervention.
+                                Voyager consists of three key components: 1) an automatic curriculum that maximizes exploration, 2) an ever-growing skill library of executable code for storing and retrieving complex behaviors, and 3) a new
+                                iterative prompting mechanism that incorporates environment feedback, execution errors, and self-verification for program improvement. Voyager interacts with GPT-4 via blackbox queries, which bypasses the
+                                need for model parameter fine-tuning. The skills developed by Voyager are temporally extended, interpretable, and compositional, which compounds the agent's abilities rapidly and alleviates catastrophic
+                                forgetting. Empirically, Voyager shows strong in-context lifelong learning capability and exhibits exceptional proficiency in playing Minecraft. It obtains 3.3x more unique items, travels 2.3x longer
+                                distances, and unlocks key tech tree milestones up to 15.3x faster than prior SOTA. Voyager is able to utilize the learned skill library in a new Minecraft world to solve novel tasks from scratch, while other
+                                techniques struggle to generalize.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div style="text-align: center;">
+                                <img src="assets/images/exploration_performance.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto; width: 80%;" />
+                                <br />
+                                <span style="font-size: 110%;">Voyager discovers new Minecraft items and skills continually by self-driven exploration, significantly outperforming the baselines.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!--Introduction-->
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <h2 class="title is-3"><span class="dvima">Introduction</span></h2>
+                            <div class="content has-text-justified">
+                                <span style="font-size: 110%;">
+                                    Building generally capable embodied agents that continuously explore, plan, and develop new skills in open-ended worlds is a grand challenge for the AI community. Classical approaches employ reinforcement
+                                    learning (RL) and imitation learning that operate on primitive actions, which could be challenging for systematic exploration, interpretability, and generalization. Recent advances in large language model
+                                    (LLM) based agents harness the world knowledge encapsulated in pre-trained LLMs to generate consistent action plans or executable policies. They are applied to embodied tasks like games and robotics, as
+                                    well as NLP tasks without embodiment. However, these agents are not lifelong learners that can progressively acquire, update, accumulate, and transfer knowledge over extended time spans.
+                                    <br />
+                                    <br />
+                                    Let us consider Minecraft as an example. Unlike most other games studied in AI, Minecraft does not impose a predefined end goal or a fixed storyline but rather provides a unique playground with endless
+                                    possibilities. An effective lifelong learning agent should have similar capabilities as human players: (1) <b>propose suitable tasks</b> based on its current skill level and world state, e.g., learn to
+                                    harvest sand and cactus before iron if it finds itself in a desert rather than a forest; (2) <b>refine skills</b> based on environment feedback and <b>commit mastered skills to memory</b> for future reuse
+                                    in similar situations (e.g. fighting zombies is similar to fighting spiders); (3) <b>continually explore the world</b> and seek out new tasks in a self-driven manner.
+                                </span>
+                            </div>
+                            <br />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!--Method-->
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <h2 class="title is-3"><span class="dvima">Voyager Components</span></h2>
+                            <div class="content has-text-justified">
+                                <span style="font-size: 110%;">
+                                    We introduce Voyager, the first <i>LLM-powered embodied lifelong learning agent</i> to drive exploration, master a wide range of skills, and make new discoveries continually without human intervention in
+                                    Minecraft. Voyager is made possible through three key modules: 1) an <b>automatic curriculum</b> that maximizes exploration; 2) a <b>skill library</b> for storing and retrieving complex behaviors; and 3)
+                                    a new <b>iterative prompting mechanism</b> that generates executable code for embodied control. We opt to use code as the action space instead of low-level motor commands because programs can naturally
+                                    represent temporally extended and compositional actions, which are essential for many long-horizon tasks in Minecraft. Voyager interacts with a blackbox LLM (GPT-4) through prompting and in-context
+                                    learning. Our approach bypasses the need for model parameter access and explicit gradient-based training or finetuning.
+                                </span>
+                            </div>
+                            <br />
+                            <br />
+                            <br />
+                            <img src="assets/images/components.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                            <span style="font-size: 110%;">
+                                <span style="font-weight: bold;">Voyager consists of three key components:</span>
+                                an automatic curriculum for open-ended exploration, a skill library for increasingly complex behaviors, and an iterative prompting mechanism that uses code as action space.
+                            </span>
+                            <br />
+                            <br />
+
+                            <h3 class="title is-4">Automatic Curriculum</h3>
+                            <img src="assets/images/curriculum.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                            <br />
+                            <div class="content has-text-justified">
+                                <span style="font-size: 110%;">
+                                    <span style="font-weight: bold;">Automatic curriculum.</span>
+                                    The automatic curriculum takes into account the exploration progress and the agent's state to maximize exploration. The curriculum is generated by GPT-4 based on the overarching goal of "discovering as
+                                    many diverse things as possible". This approach can be perceived as an in-context form of <i>novelty search</i>.
+                                </span>
+                            </div>
+                            <br />
+                            <br />
+
+                            <h3 class="title is-4">Skill Library</h3>
+                            <img src="assets/images/skill_library.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                            <br />
+                            <div class="content has-text-justified">
+                                <span style="font-size: 110%;">
+                                    <span style="font-weight: bold;">Skill library.</span>
+                                    <b>Top: Adding a new skill.</b> Each skill is indexed by the embedding of its description, which can be retrieved in similar situations in the future. <b>Bottom: Skill retrieval.</b> When faced with a new
+                                    task proposed by the automatic curriculum, we perform querying to identify the top-5 relevant skills. Complex skills can be synthesized by composing simpler programs, which compounds Voyager's
+                                    capabilities rapidly over time and alleviates catastrophic forgetting.
+                                </span>
+                            </div>
+                            <br />
+                            <br />
+
+                            <h3 class="title is-4">Iterative Prompting Mechanism</h3>
+                            <div style="width: 80%; margin: 0 auto;">
+                                <img src="assets/images/feedback.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                                <br />
+                                <div class="content has-text-justified">
+                                    <span style="font-size: 110%;">
+                                        <span style="font-weight: bold;">Left: Environment feedback.</span> GPT-4 realizes it needs 2 more planks before crafting sticks. <span style="font-weight: bold;">Right: Execution error.</span> GPT-4
+                                        realizes it should craft a wooden axe instead of an acacia axe since there is no acacia axe in Minecraft.
+                                    </span>
+                                </div>
+                            </div>
+                            <br />
+                            <br />
+                            <img src="assets/images/self_verification.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                            <br />
+                            <span style="font-size: 110%;">
+                                <span style="font-weight: bold;">Self-verification.</span>
+                                By providing the agent's current state and the task to GPT-4, we ask it to act as a critic and inform us whether the program achieves the task. In addition, if the task fails, it provides a critique by
+                                suggesting how to complete the task.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!--Experiments-->
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <h2 class="title is-3"><span class="dvima">Experiments</span></h2>
+                            <div class="content has-text-justified">
+                                <p style="font-size: 125%;">
+                                    We systematically evaluate Voyager and baselines on their exploration performance, tech tree mastery, map coverage, and zero-shot generalization capability to novel tasks in a new world.
+                                </p>
+                            </div>
+                            <br />
+                            <br />
+
+                            <h3 class="title is-4"><span class="dvima">Significantly Better Exploration</span></h3>
+                            <span style="font-size: 110%;">
+                                As shown in the first figure, Voyager's superiority is evident in its ability to consistently make new strides, discovering 63 unique items within 160 prompting iterations, 3.3x many novel items compared to
+                                its counterparts. On the other hand, AutoGPT lags considerably in discovering new items, while ReAct and Reflexion struggle to make significant progress.
+                            </span>
+                            <br />
+                            <br />
+
+                            <h3 class="title is-4"><span class="dvima">Tech Tree Mastery</span></h3>
+                            <img src="assets/images/tech_tree.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                            <div class="content has-text-justified">
+                                <span style="font-size: 110%;">
+                                    <span style="font-weight: bold;">Tech tree mastery.</span>
+                                    The Minecraft tech tree tests the agent's ability to craft and use a hierarchy of tools. Progressing through this tree (wooden tool &rarr; stone tool &rarr; iron tool &rarr; diamond tool) requires the
+                                    agent to master systematic and compositional skills. In this table, fractions indicate the number of successful trials out of three total runs.
+                                    <b>Numbers are prompting iterations averaged over three trials. The fewer the iterations, the more efficient the method.</b> Compared with baselines, Voyager unlocks the wooden level 15.3x faster (in
+                                    terms of the prompting iterations), the stone level 8.5x faster, the iron level 6.4x faster, and Voyager is the only one to unlock the diamond level of the tech tree
+                                </span>
+                            </div>
+                            <br />
+                            <br />
+
+                            <h3 class="title is-4"><span class="dvima">Extensive Map Traversal</span></h3>
+                            <div style="width: 80%; margin: 0 auto;">
+                                <img src="assets/images/map.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                                <br />
+                                <div class="content has-text-justified">
+                                    <span style="font-size: 110%;">
+                                        <span style="font-weight: bold;">Map coverage: Two bird's eye views of Minecraft maps.</span>
+                                        Voyager is able to navigate distances 2.3x longer compared to baselines by traversing a variety of terrains, while the baseline agents often find themselves confined to local areas, which
+                                        significantly hampers their capacity to discover new knowledge.
+                                    </span>
+                                </div>
+                            </div>
+
+                            <br />
+                            <br />
+
+                            <h3 class="title is-4"><span class="dvima">Efficient Zero-Shot Generalization to Unseen Tasks</span></h3>
+                            <div style="width: 80%; margin: 0 auto;">
+                                <img src="assets/images/zero_shot_table.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                                <img src="assets/images/zero_shot.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                                <br />
+                                <div class="content has-text-justified">
+                                    <span style="font-size: 110%;">
+                                        <span style="font-weight: bold;">Zero-shot generalization to unseen tasks.</span>
+                                        We clear the agent's inventory, reset it to a newly instantiated world, and test it with unseen tasks. In the table above, fractions indicate the number of successful trials out of three total runs.
+                                        <b>Numbers are prompting iterations averaged over three trials. The fewer the iterations, the more efficient the method.</b> Voyager can consistently solve all the tasks, while baselines cannot solve
+                                        any task within 50 prompting iterations. What's interesting to note is that our skill library constructed from lifelong learning not only enhances Voyager's performance but also gives a boost to
+                                        AutoGPT. This demonstrates that the skill library serves as a versatile tool that can be readily employed by other methods, effectively acting as a plug-and-play asset to enhance performance.
+                                    </span>
+                                </div>
+                            </div>
+
+                            <br />
+                            <br />
+
+                            <h3 class="title is-4"><span class="dvima">Ablation Studies</span></h3>
+                            <div style="width: 80%; margin: 0 auto;">
+                                <img src="assets/images/ablation.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                                <br />
+                                <div class="content has-text-justified">
+                                    <span style="font-size: 110%;">
+                                        <span style="font-weight: bold;">Ablation studies.</span> GPT-3.5 means replacing GPT-4 with GPT-3.5 for code generation. Voyager outperforms all the alternatives, demonstrating the critical role of
+                                        each component. In addition, GPT-4 significantly outperforms GPT-3.5 in code generation.
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!--Conclusion-->
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <h2 class="title is-3"><span class="dvima">Conclusion</span></h2>
+                            <div class="content has-text-justified">
+                                <p style="font-size: 125%;">
+                                    In this work, we introduce Voyager, the first LLM-powered embodied lifelong learning agent, which leverages GPT-4 to explore the world continuously, develop increasingly sophisticated skills, and make new
+                                    discoveries consistently without human intervention. Voyager exhibits superior performance in discovering novel items, unlocking the Minecraft tech tree, traversing diverse terrains, and applying its
+                                    learned skill library to unseen tasks in a newly instantiated world. Voyager serves as a starting point to develop powerful generalist agents without tuning the model parameters.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!--Media Coverage-->
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <h2 class="title is-3"><span class="dvima">Media Coverage</span></h2>
+                            <div class="content has-text-justified">
+                                <p style="font-size: 125%;">
+                                    "They Plugged GPT-4 Into Minecraft—and Unearthed New Potential for AI. The bot plays the video game by tapping the text generator to pick up new skills, suggesting that the tech behind ChatGPT could automate many workplace tasks." - Will Knight, <a href="https://www.wired.com/story/fast-forward-gpt-4-minecraft-chatgpt/" target="_blank">WIRED</a>
+                                    <br />
+                                    <br />
+                                    "The Voyager project shows, however, that by pairing GPT-4’s abilities with agent software that stores sequences that work and remembers what does not, developers can achieve stunning results." - John Koetsier, <a href="https://www.forbes.com/sites/johnkoetsier/2023/05/29/gpt-4-is-pretty-good-at-minecraft/?sh=1cf7262e2db6" target="_blank">Forbes</a>
+                                    <br />
+                                    <br />
+                                    "Voyager, the GTP-4 bot that plays Minecraft autonomously and better than anyone else" - <a href="https://www.ruetir.com/2023/06/voyager-the-gtp-4-bot-that-plays-minecraft-autonomously-and-better-than-anyone-else/" target="_blank">Ruetir</a>
+                                    <br />
+                                    <br />
+                                    "This AI used GPT-4 to become an expert Minecraft player" - Devin Coldewey, <a href="https://techcrunch.com/2023/06/02/this-ai-used-gpt-4-to-become-an-expert-minecraft-player/" target="_blank">TechCrunch</a>
+                                    <br />
+                                    <br />
+                                    Coverage Index:
+                                    <a href="https://atmarkit.itmedia.co.jp/ait/articles/2305/31/news053.html" target="_blank">[Atmarkit]</a>
+                                    <a href="https://posts.careerengine.us/p/64748e293d569e4bb807a367" target="_blank">[Career Engine]</a>
+                                    <a href="https://crast.net/344674/this-is-what-happens-when-you-teach-an-ai-to-play-minecraft-gpt-4-has-turned-out-to-be-quite-the-pro/" target="_blank">[Crast.net]</a>
+                                    <a href="https://dailytopfeeds.com/they-plugged-gpt-4-into-minecraft-and-unearthed-new-potential-for-ai/" target="_blank">[Daily Top Feeds]</a>
+                                    <a href="https://www.entrepreneur.com/es/noticias/la-inteligencia-artificial-que-demostro-su-potencial/453264" target="_blank">[Entrepreneur en Espanol]</a>
+                                    <a href="http://finance.jxyuging.com/gd/2023/0529/282042.html" target="_blank">[Finance Jxyuging]</a>
+                                    <a href="https://www.forbes.com/sites/johnkoetsier/2023/05/29/gpt-4-is-pretty-good-at-minecraft/?sh=1cf7262e2db6" target="_blank">[Forbes]</a>
+                                    <a href="https://www.forbesargentina.com/innovacion/asi-funciona-voyager-agente-software-juega-minecraft-informacion-e-inteligencia-proporcionadas-gpt-4-n34583" target="_blank">[Forbes Argentina]</a>
+                                    <a href="https://www.gamingdeputy.com/nvidias-ai-agent-is-connected-to-gpt-4-outperforms-autogpt-and-writes-code-independently-to-dominate-my-world-without-human-intervention/" target="_blank">[Gaming Deputy]</a>
+                                    <a href="https://www.gearrice.com/update/gpt-4s-ai-is-exceptional-playing-minecraft/" target="_blank">[Gearrice]</a>
+                                    <a href="https://haberik.com/bir-nvidia-ekibi-tarafinca-gpt-4-kullanilarak-olusturulan-3-kattan-fazla-unsur-elde-eden-ve-oteki-ai-botlarindan-15-kat-daha-suratli-araclar-olusturan-voyagera-bir-bakis-will-knight-wired/" target="_blank">[Haberik]</a>
+                                    <a href="https://headtopics.com/jp/125101245212531764898-39558875" target="_blank">[Head Topics]</a>
+                                    <a href="https://www.infoq.com/news/2023/05/minecraft-voyager-llm-agent/" target="_blank">[InfoQ]</a>
+                                    <a href="https://news.line.me/detail/oa-rp23831/i66io34cqk2f?mediadetail=1" target="_blank">[ITmedia News]</a>
+                                    <a href="https://www.marktechpost.com/2023/05/31/nvidia-announced-real-time-ai-npcs-in-video-games/" target="_blank">[Mark Tech Post]</a>
+                                    <a href="https://medium.com/@mikeyoung_97230/voyager-the-ai-gamer-thats-taking-minecraft-to-the-next-level-93449ff27537" target="_blank">[Medium]</a>
+                                    <a href="https://www.msn.com/de-de/nachrichten/digital/wie-ai-technologie-die-gaming-branche-f%C3%BCr-immer-ver%C3%A4ndern-wird/ar-AA1c0c0e" target="_blank">[MSN]</a>
+                                    <a href="https://note.com/te_ftef/n/ne7ec02a3b209" target="_blank">[Note]</a>
+                                    <a href="https://noticiasdehoy.com.mx/la-ia-de-gpt-4-es-excepcional-jugando-minecraft/" target="_blank">[Noticias de Hoy]</a>
+                                    <a href="https://www.ruetir.com/2023/06/voyager-the-gtp-4-bot-that-plays-minecraft-autonomously-and-better-than-anyone-else/" target="_blank">[Ruetir]</a>
+                                    <a href="https://www.stock-hk.com/news/232925" target="_blank">[Stock HK]</a>
+                                    <a href="https://fr.techtribune.net/jeux-videos/minecraft/minecraft-accueille-son-premier-agent-propulse-par-llm/725434/" target="_blank">[Tech Tribune France]</a>
+                                    <a href="https://techcrunch.com/2023/06/02/this-ai-used-gpt-4-to-become-an-expert-minecraft-player/" target="_blank">[TechCrunch]</a>
+                                    <a href="https://techbeezer.com/they-connected-gpt-4-to-minecraft-and-revealed-new-potential-for-artificial-intelligence/" target="_blank">[TechBeezer]</a>
+                                    <a href="https://www.toutiao.com/article/7238593146928513569/?wid=1686469229935" target="_blank">[Toutiao]</a>
+                                    <a href="https://ustimespost.com/they-plugged-gpt-4-into-minecraft-and-unearthed-new-potential-for-ai/" target="_blank">[US Times Post]</a>
+                                    <a href="https://vnexplorer.net/nie-ma-sie-z-czego-smiac-naukowcy-nauczyli-sztuczna-inteligencje-grac-w-minecraft-s2612596.html" target="_blank">[VN Explorer]</a>
+                                    <a href="https://www.wired.com/story/fast-forward-gpt-4-minecraft-chatgpt/" target="_blank">[WIRED]</a>
+                                    <a href="http://www.myzaker.com/article/647460778e9f09203d3afe20" target="_blank">[Zaker]</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!--Team-->
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <h2 class="title is-3"><span class="dvima">Team</span></h2>
+
+                            <div class="columns" style="max-width: 80%; padding-left: 10%;">
+                                <div class="column has-text-centered video-column">
+                                    <!-- Modified class -->
+                                    <a href="https://www.guanzhi.me/" target="_blank" style="border-bottom: none;">
+                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/avatars/guanzhi.jpg" alt="" style="width: 90%;" /></span>
+                                    </a>
+                                    <span style="font-weight: bold; font-size: 125%;">Guanzhi Wang</span>
+                                </div>
+
+                                <div class="column has-text-centered video-column">
+                                    <a href="https://xieleo5.github.io/" target="_blank" style="border-bottom: none;">
+                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/avatars/leo.jpeg" alt="" style="width: 90%;" /></span>
+                                    </a>
+                                    <span style="font-weight: bold; font-size: 125%;">Yuqi Xie</span>
+                                </div>
+
+                                <div class="column has-text-centered video-column">
+                                    <a href="https://yunfanj.com/" target="_blank" style="border-bottom: none;">
+                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/avatars/yunfan.jpg" alt="" style="width: 90%;" /></span>
+                                    </a>
+                                    <span style="font-weight: bold; font-size: 125%;">Yunfan Jiang<sup>*</sup></span>
+                                </div>
+
+                                <div class="column has-text-centered video-column">
+                                    <a href="https://ai.stanford.edu/~amandlek/" target="_blank" style="border-bottom: none;">
+                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/avatars/ajay.jpeg" alt="" style="width: 90%;" /></span>
+                                    </a>
+                                    <span style="font-weight: bold; font-size: 125%;">Ajay Mandlekar<sup>*</sup></span>
+                                </div>
+                            </div>
+                            <br />
+                            <div class="columns" style="max-width: 80%; padding-left: 10%;">
+                                <div class="column has-text-centered video-column">
+                                    <a href="https://xiaocw11.github.io/" target="_blank" style="border-bottom: none;">
+                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/avatars/chaowei.jpeg" alt="" style="width: 90%;" /></span>
+                                    </a>
+                                    <span style="font-weight: bold; font-size: 125%;">Chaowei Xiao</span>
+                                </div>
+
+                                <div class="column has-text-centered video-column">
+                                    <a href="https://www.cs.utexas.edu/~yukez/" target="_blank" style="border-bottom: none;">
+                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/avatars/yukezhu.png" alt="" style="width: 90%;" /></span>
+                                    </a>
+                                    <span style="font-weight: bold; font-size: 125%;">Yuke Zhu</span>
+                                </div>
+
+                                <div class="column has-text-centered video-column">
+                                    <a href="https://jimfan.me/" target="_blank" style="border-bottom: none;">
+                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/avatars/jim.jpeg" alt="" style="width: 90%;" /></span>
+                                    </a>
+                                    <span style="font-weight: bold; font-size: 125%;">Linxi "Jim" Fan<sup>&dagger;</sup></span>
+                                </div>
+
+                                <div class="column has-text-centered video-column">
+                                    <a href="http://tensorlab.cms.caltech.edu/users/anima/" target="_blank" style="border-bottom: none;">
+                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/avatars/anima.png" alt="" style="width: 90%;" /></span>
+                                    </a>
+                                    <span style="font-weight: bold; font-size: 125%;">Anima Anandkumar<sup>&dagger;</sup></span>
+                                </div>
+                            </div>
+                            <br />
+                            <span style="max-width: 80%; padding-left: 11%;">* Equal Contribution&nbsp; &nbsp;&dagger; Equal Advising</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="BibTeX">
+            <div class="container is-max-widescreen content">
+                <h2 class="title">BibTeX</h2>
+                <pre><code>@article{wang2023voyager,
+  title   = {Voyager: An Open-Ended Embodied Agent with Large Language Models},
+  author  = {Guanzhi Wang and Yuqi Xie and Yunfan Jiang and Ajay Mandlekar and Chaowei Xiao and Yuke Zhu and Linxi Fan and Anima Anandkumar},
+  year    = {2023},
+  journal = {arXiv preprint arXiv: Arxiv-2305.16291}
+}</code></pre>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="columns is-centered">
+                    <div class="column">
+                        <div class="content has-text-centered">
+                            <p>
+                                Website template borrowed from <a href="https://github.com/nerfies/nerfies.github.io" target="_blank">NeRFies</a>, <a href="https://github.com/cliport/cliport.github.io" target="_blank">CLIPort</a>, and
+                                <a href="https://github.com/vimalabs/vimalabs.github.io" target="_blank">VIMA</a>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </body>
+</html>

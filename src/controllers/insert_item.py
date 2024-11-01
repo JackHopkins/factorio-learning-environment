@@ -3,7 +3,7 @@ from typing import Tuple
 import pydantic
 
 from controllers._action import Action
-from factorio_entities import Entity
+from factorio_entities import Entity, EntityGroup
 from factorio_instance import PLAYER
 from factorio_types import Prototype
 
@@ -22,7 +22,7 @@ class InsertItem(Action):
         :return: The target entity inserted into
         """
         assert isinstance(entity, Prototype)
-        assert isinstance(target, Entity)
+        assert isinstance(target, Entity) or isinstance(target, EntityGroup)
 
         x, y = self.get_position(target.position)
         name, _ = entity.value

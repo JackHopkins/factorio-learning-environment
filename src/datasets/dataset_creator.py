@@ -151,10 +151,10 @@ class SFTDatasetCreator:
                 for skill in skills:
                     f.write(json.dumps(skill) + "\n")
 
-    def create_jsonl_dataset_from_db_skills(self, output_file: str, func_test_folder = None) -> None:
+    def create_jsonl_dataset_from_db_skills(self, output_file: str, func_test_paths = None) -> None:
             all_skills = self.get_skills_for_sft()
-            if func_test_folder:
-                skills_from_func_tests = get_skills_from_func_tests(func_test_folder)
+            if func_test_paths:
+                skills_from_func_tests = get_skills_from_func_tests(func_test_paths)
                 all_skills += skills_from_func_tests
             
             self.skills_db_to_jsonl(all_skills, output_file)
@@ -368,7 +368,7 @@ class SFTDatasetCreator:
                     skill = self.get_skill_from_nb_skills(full_snippet, skill_data)
                     exists = False
                     for trace in successful_traces:
-                        if trace["name"] == skill["name"]: #and trace["implementation"] == skill["implementation"]:
+                        if trace["name"] == skill["name"] and trace["implementation"] == skill["implementation"]:
                             exists = True
                             break
                     if exists:
@@ -381,8 +381,8 @@ class SFTDatasetCreator:
                         with open(output_file, "a") as f:
                             f.write(json.dumps(skill) + "\n")
                     else:
-                        #raise ValueError(f"Error in {objective_group} {starting_scenario} skill {skill['name']}: {trace_output['error_message']}")
-                        pass
+                        raise ValueError(f"Error in {objective_group} {starting_scenario} skill {skill['name']}: {trace_output['error_message']}")
+                       
 if __name__ == "__main__":
     starting_scenario_path = r"skills\data_scenarios\starting_scenarios"
     dataloader = SFTDatasetCreator(starting_scenario_path)
@@ -391,7 +391,11 @@ if __name__ == "__main__":
     postprocessed_input_jsonl_file = r"datasets\sft_dataset_postprocessed.jsonl"
     successful_output_file = r"datasets\sft_successful_traces.jsonl"
     failed_output_file = r"datasets\sft_failed_traces.jsonl"
-    #dataloader.create_jsonl_dataset_from_db_skills(raw_input_jsonl_file,  r"tests\functional")
+    func_test_paths = [r"tests\functional", r"tests\connect\test_connect_pipes.py",
+                       r"tests\connect\test_connect_poles.py",
+                       r"tests\connect\test_connect_transport_belts.py",
+                       r"tests\connect\test_connect_walls.py"]
+    dataloader.create_jsonl_dataset_from_db_skills(raw_input_jsonl_file,  r"tests\functional")
     #dataloader.postprocess_skills(raw_input_jsonl_file, postprocessed_input_jsonl_file)
-    dataloader.create_game_traces(postprocessed_input_jsonl_file, successful_output_file, failed_output_file)
+    #dataloader.create_game_traces(postprocessed_input_jsonl_file, successful_output_file, failed_output_file)
     #dataloader.get_traces_from_notebook_skills(notebook_skill_path, successful_output_file)

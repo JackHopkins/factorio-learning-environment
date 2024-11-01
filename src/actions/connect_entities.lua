@@ -350,9 +350,6 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     local start_position = {x = math.floor(source_x*2)/2, y = math.floor(source_y*2)/2}
     local end_position = {x = math.floor(target_x*2)/2, y = math.floor(target_y*2)/2}
 
-    --create_beam_point_with_direction(player, 0, start_position)
-    --create_beam_point_with_direction(player, 2, end_position)
-
     local raw_path = global.paths[path_handle]
 
     -- Check if path is valid
@@ -363,9 +360,9 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     --- This invocation interpolates the path to ensure that all positions are placeable and within 1 tile of each other
     local path = global.actions.normalise_path(raw_path, start_position) --{x = source_x, y = source_y})
 
-
+    --create_beam_point_with_direction(player, 0, start_position)
+    --create_beam_point_with_direction(player, 2, end_position)
     for i = 1, #path - 1 do
-        create_beam_point_with_direction(player, get_direction(path[i].position, path[i + 1].position), path[i].position)
         --create_arrow_with_direction(player, get_direction(path[i].position, path[i + 1].position), path[i].position)
     end
 
@@ -383,6 +380,10 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
 
     --game.print("Diff: " .. xdiff + ydiff)
     local step_size = get_step_size(connection_type)
+    local initial_offset = 0
+    if step_size ~= 1 then
+        initial_offset = step_size - 1
+    end
     local dir
 
     if connection_type == 'pipe' then
@@ -391,7 +392,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
 
     local last_position = path[1].position
     local last_dir
-    for i = 1, #path-1, step_size do
+    for i = 1 + initial_offset, #path-1, step_size do
         original_dir = (path[i + step_size] and get_direction(path[i].position, path[i + step_size].position)) or get_direction(path[i].position, end_position)
         dir = global.utils.get_entity_direction(connection_type, original_dir/2)
         place_at_position(player, connection_type, path[i].position, dir, serialized_entities)

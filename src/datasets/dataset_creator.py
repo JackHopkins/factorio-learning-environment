@@ -22,11 +22,12 @@ def is_valid_python(code_string: str) -> bool:
         return False
 
 class SFTDatasetCreator:
-    def __init__(self, starting_scenario_folder):
+    def __init__(self, starting_scenario_folder, finetuning_prompt_path):
         self.skills_db = SkillsDB()
         self.init_starting_scenarios(starting_scenario_folder)
         self.postprocessor = SkillPostProcessor()
         self.starting_scenario_folder = starting_scenario_folder
+        self.finetuning_prompt_path = finetuning_prompt_path
     
     def init_starting_scenarios(self, starting_scenario_folder):
         # get all folder names in the starting scenario folder
@@ -180,6 +181,31 @@ class SFTDatasetCreator:
         output_list, result = eval_program_with_result_trace(instance, new_step)
         return output_list, result, new_step
 
+    def get_policy_from_skill(self, skill: Dict, instance) -> Dict:
+        traces = []
+        
+        instance.reset()
+        instance.initial_inventory = skill["starting_inventory"]
+        instance.reset()
+        # here need to run the starting scenario as well
+        starting_scenario = skill["starting_scenario"]
+        starting_scenario_path = os.path.join(self.starting_scenario_folder, starting_scenario)
+        # read in the starting_snippet.py
+        with open(f"{starting_scenario_path}\starting_snippet.py") as f:
+            starting_scenario_code = f.read()
+
+        output_list, result = eval_program_with_result_trace(instance, starting_scenario_code)
+        if "error" in result.lower():
+            return {"success": False, "traces": [], "error_message": result}
+
+        initial_mining_setup = get_mining_setup(instance)
+        first_user_message = f"Your starting inventory is {skill['starting_inventory']}. Your initial mining setup is: {initial_mining_setup}. Create a script to achieve the following objective: {skill['objective']}"
+        traces.append({"role": "system", "content": self.system_prompt})
+        traces.append({"role": "user", "content": first_user_message})
+        assistant_message = f"The policy to achieve the objective is \n\n```python\n{skill['implementation']}\n```"
+        traces.append({"role": "assistant", "content": assistant_message})
+        return {"success": True, "traces": traces}
+
 
     def get_game_trace_from_skill(self, skill: Dict, instance) -> Dict:
         implementation = skill["implementation"]
@@ -218,6 +244,7 @@ class SFTDatasetCreator:
 
         initial_mining_setup = get_mining_setup(instance)
         first_user_message = f"Your starting inventory is {skill['starting_inventory']}. Your initial mining setup is: {initial_mining_setup}"
+        traces.append({"role": "system", "content": self.system_prompt})
         traces.append({"role": "user", "content": first_user_message})
         for step_idx, implementation_step in enumerate(implementation_steps):
             implementation_step = implementation_step.strip("\n")
@@ -256,8 +283,18 @@ class SFTDatasetCreator:
         final_message = f"I have achieved the objective: {skill['objective']}\n#COMPLETED"
         traces.append({"role": "assistant", "content": final_message})
         return {"success": True, "traces": traces}
-    
-    def create_game_traces(self, input_file, success_output_file, fail_output_file):
+    def init_system_prompt(self, instance):
+        api_description = instance.get_system_prompt()
+        system_prompt_path = self.finetuning_prompt_path
+        # read in the system prompt
+        with open(system_prompt_path, "r") as f:
+            system_prompt = f.read()
+        self.system_prompt = system_prompt.format(schema=api_description)
+        # change all " marks to '
+        self.system_prompt.replace('"', "'")
+        
+    def create_game_traces(self, input_file, success_output_file, 
+                           fail_output_file, full_policy = False):
         # read the skills from the input file
         with open(input_file) as f:
             skills = [json.loads(line) for line in f.readlines()]
@@ -288,6 +325,7 @@ class SFTDatasetCreator:
                                 fast=True,
                                 #cache_scripts=False,
                                 inventory=inventory)
+        self.init_system_prompt(instance)
         for skill in skills:
             exists = False
             # check if the skill is already in the successful or failed traces
@@ -297,7 +335,10 @@ class SFTDatasetCreator:
                     break
             if exists:
                 continue
-            trace_output = self.get_game_trace_from_skill(skill, instance)
+            if full_policy:
+                trace_output = self.get_policy_from_skill(skill, instance)
+            else:
+                trace_output = self.get_game_trace_from_skill(skill, instance)
             success = trace_output["success"]
             skill_trace = trace_output["traces"]
             if success:
@@ -336,7 +377,7 @@ class SFTDatasetCreator:
 
 
 
-    def get_traces_from_notebook_skills(self, nb_skill_folder, output_file):
+    def get_traces_from_notebook_skills(self, nb_skill_folder, output_file, full_policy = False):
         # open the output file to get existing successful traces
         with open(output_file) as f:
             successful_traces = [json.loads(line) for line in f.readlines()]
@@ -373,7 +414,10 @@ class SFTDatasetCreator:
                             break
                     if exists:
                         continue
-                    trace_output = self.get_game_trace_from_skill(skill, instance)
+                    if full_policy:
+                        trace_output = self.get_policy_from_skill(skill, instance)
+                    else:
+                        trace_output = self.get_game_trace_from_skill(skill, instance)
                     success = trace_output["success"]
                     skill_trace = trace_output["traces"]
                     if success:
@@ -382,20 +426,64 @@ class SFTDatasetCreator:
                             f.write(json.dumps(skill) + "\n")
                     else:
                         raise ValueError(f"Error in {objective_group} {starting_scenario} skill {skill['name']}: {trace_output['error_message']}")
-                       
+
+    def create_training_eval_dataset(self, full_dataset_path, training_dataset_path, eval_dataset_path, training_ratio=0.9):
+        with open(full_dataset_path) as f:
+            all_skills = [json.loads(line) for line in f.readlines()]
+        random.shuffle(all_skills)
+        training_skills = all_skills[:int(len(all_skills) * training_ratio)]
+        eval_skills = all_skills[int(len(all_skills) * training_ratio):]
+        training_skills = [{"messages": skill["trace"]} for skill in training_skills]
+        eval_skills = [{"messages": skill["trace"]} for skill in eval_skills]
+        with open(training_dataset_path, "w") as f:
+            for skill in training_skills:
+                f.write(json.dumps(skill) + "\n")
+        with open(eval_dataset_path, "w") as f:
+            for skill in eval_skills:
+                f.write(json.dumps(skill) + "\n")
+
+    def add_system_prompt(self, file):
+        instance = FactorioInstance(address='localhost',
+                                bounding_box=200,
+                                tcp_port=27015,
+                                fast=True,
+                                #cache_scripts=False,
+                                inventory={})
+        self.init_system_prompt(instance)
+        with open(file) as f:
+            skills = [json.loads(line) for line in f.readlines()]
+        system_prompt_message = {"role": "system", "content": self.system_prompt}
+        for skill in skills:
+            skill["messages"].insert(0, system_prompt_message)
+
+        # save the skills to file
+        with open(file, "w") as f:
+            for skill in skills:
+                f.write(json.dumps(skill) + "\n")
+
 if __name__ == "__main__":
     starting_scenario_path = r"skills\data_scenarios\starting_scenarios"
-    dataloader = SFTDatasetCreator(starting_scenario_path)
+    dataloader = SFTDatasetCreator(starting_scenario_path,
+                                   finetuning_prompt_path = r"prompts\bottoms_up_prompts\finetuning_prompts\system_message_policy.md")
     notebook_skill_path = r"datasets/notebook_skills"
     raw_input_jsonl_file = r"datasets\sft_dataset_raw.jsonl"
     postprocessed_input_jsonl_file = r"datasets\sft_dataset_postprocessed.jsonl"
     successful_output_file = r"datasets\sft_successful_traces.jsonl"
     failed_output_file = r"datasets\sft_failed_traces.jsonl"
+    training_dataset_path = r"datasets\sft_training_dataset.jsonl"
+    eval_dataset_path = r"datasets\sft_eval_dataset.jsonl"
+    successful_output_file_policy = r"datasets\sft_successful_traces_policy.jsonl"
+    failed_output_file_policy = r"datasets\sft_failed_traces_policy.jsonl"
+    training_dataset_path_policy = r"datasets\sft_training_dataset_policy.jsonl"
+    eval_dataset_path_policy = r"datasets\sft_eval_dataset_policy.jsonl"
     func_test_paths = [r"tests\functional", r"tests\connect\test_connect_pipes.py",
                        r"tests\connect\test_connect_poles.py",
                        r"tests\connect\test_connect_transport_belts.py",
                        r"tests\connect\test_connect_walls.py"]
-    dataloader.create_jsonl_dataset_from_db_skills(raw_input_jsonl_file,  r"tests\functional")
+    #dataloader.create_jsonl_dataset_from_db_skills(raw_input_jsonl_file,  func_test_paths)
     #dataloader.postprocess_skills(raw_input_jsonl_file, postprocessed_input_jsonl_file)
-    #dataloader.create_game_traces(postprocessed_input_jsonl_file, successful_output_file, failed_output_file)
-    #dataloader.get_traces_from_notebook_skills(notebook_skill_path, successful_output_file)
+    dataloader.create_game_traces(postprocessed_input_jsonl_file, successful_output_file_policy, failed_output_file_policy, full_policy = True)
+    dataloader.get_traces_from_notebook_skills(notebook_skill_path, successful_output_file_policy, full_policy=True)
+    dataloader.create_training_eval_dataset(successful_output_file_policy, training_dataset_path_policy, eval_dataset_path_policy)
+    #dataloader.add_system_prompt(training_dataset_path)
+    #dataloader.add_system_prompt(eval_dataset_path)

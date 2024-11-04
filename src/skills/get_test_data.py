@@ -33,7 +33,7 @@ def extract_skills_from_test(test_file):
             if "    " not in function_part:
                 continue
             # also remove game.
-            function_part.replace("game.", "")
+            function_part = function_part.replace("game.", "")
             function_part = function_part[4:]
             function_parts[part_idx] = function_part
         function_parts = "\n".join(function_parts)
@@ -65,9 +65,10 @@ def get_skills_from_func_tests(func_test_paths):
                 content = f.read()
                 skills += extract_skills_from_test(content)
         else:
-            for file in os.listdir(func_test_paths):
+            for file in os.listdir(path):
                 if file.endswith(".py"):
-                    with open(os.path.join(func_test_paths, file)) as f:
+                    file_path = os.path.join(path, file)
+                    with open(file_path) as f:
                         content = f.read()
                         skills += extract_skills_from_test(content)
 

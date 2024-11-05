@@ -1,6 +1,3 @@
-import sys
-sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\src")
-sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser")
 import re
 import os
 import ast
@@ -480,8 +477,8 @@ if __name__ == "__main__":
                        r"tests\connect\test_connect_poles.py",
                        r"tests\connect\test_connect_transport_belts.py",
                        r"tests\connect\test_connect_walls.py"]
-    #dataloader.create_jsonl_dataset_from_db_skills(raw_input_jsonl_file,  func_test_paths)
-    #dataloader.postprocess_skills(raw_input_jsonl_file, postprocessed_input_jsonl_file)
+    dataloader.create_jsonl_dataset_from_db_skills(raw_input_jsonl_file,  func_test_paths)
+    dataloader.postprocess_skills(raw_input_jsonl_file, postprocessed_input_jsonl_file)
     dataloader.create_game_traces(postprocessed_input_jsonl_file, successful_output_file_policy, failed_output_file_policy, full_policy = True)
     dataloader.get_traces_from_notebook_skills(notebook_skill_path, successful_output_file_policy, full_policy=True)
     dataloader.create_training_eval_dataset(successful_output_file_policy, training_dataset_path_policy, eval_dataset_path_policy)

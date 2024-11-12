@@ -108,7 +108,7 @@ class LLMFactory:
                                                   temperature=kwargs.get('temperature', 0.3),
                                                   messages=kwargs.get('messages', None),
                                                   #stop=["\n\n"],#, "\n#"],
-                                                  presence_penalty=1,
-                                                  frequency_penalty=0.6,
+                                                  #presence_penalty=1,
+                                                  #frequency_penalty=0.6,
                                                   stream=False)
 

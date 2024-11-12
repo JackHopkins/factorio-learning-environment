@@ -87,15 +87,20 @@ def _lua2python(command, response, *parameters, trace=False, start=0):
         if trace:
             print(f"success: {command}")
         end = timer()
-        splitted = response.split("\n")[-1]
 
-        if "[string" in splitted:
-            a, b = splitted.split("[string")
-            splitted = a + '[\"' + b.replace('"', '!!')
-            # remove trailing ',} '
-            splitted = re.sub(r',\s*}\s*$', '', splitted) + "\"]}"
+        if response[0] != '{':
 
-        output = lua.decode(splitted)
+            splitted = response.split("\n")[-1]
+
+            if "[string" in splitted:
+                a, b = splitted.split("[string")
+                splitted = a + '[\"' + b.replace('"', '!!')
+                # remove trailing ',} '
+                splitted = re.sub(r',\s*}\s*$', '', splitted) + "\"]}"
+
+            output = lua.decode(splitted)
+        else:
+            output = lua.decode(response)
 
         ##output = luadata.unserialize(splitted[-1], encoding="utf-8", multival=False)
 

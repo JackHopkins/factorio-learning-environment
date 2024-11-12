@@ -56,7 +56,7 @@ class ObserveAll(Action):
             if response.endswith("attempt to index field 'actions' (a nil value)"):
                 raise Exception("No actions available")
 
-        if response['local_environment']:
+        elif response['local_environment']:
             pass
 
         if not response:

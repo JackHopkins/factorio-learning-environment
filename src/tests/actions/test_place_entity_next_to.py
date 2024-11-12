@@ -22,7 +22,7 @@ def game(instance):
     }
     instance.reset()
     yield instance
-    instance.reset()
+    #instance.reset()
 
 @pytest.fixture
 def entity_prototype():
@@ -225,3 +225,60 @@ def test_inserters_above_chest(game):
         inserter = game.place_entity_next_to(Prototype.BurnerInserter, reference_position=Position(x=i, y=0),
                                         direction=Direction.UP, spacing=2)
         assert inserter, "Failed to place inserter"
+
+def test_adjacent_electric_mining_drills(game):
+    origin = game.get_resource_patch(Resource.CopperOre, game.nearest(Resource.CopperOre)).bounding_box.center
+    game.move_to(origin)
+    # Place electric-mining-drill
+    electric_mining_drill_1 = game.place_entity(Prototype.ElectricMiningDrill, direction=Direction.DOWN,
+                                                position=origin)
+    assert electric_mining_drill_1, 'Failed to place electric-mining-drill'
+
+    # Place electric-mining-drill
+    electric_mining_drill_2 = game.place_entity_next_to(Prototype.ElectricMiningDrill,
+                                                        reference_position=electric_mining_drill_1.position,
+                                                        direction=Direction.RIGHT, spacing=3)
+    electric_mining_drill_2 = game.rotate_entity(electric_mining_drill_2, Direction.DOWN)
+    assert electric_mining_drill_2, 'Failed to place electric-mining-drill'
+
+    # Place electric-mining-drill
+    electric_mining_drill_3 = game.place_entity_next_to(Prototype.ElectricMiningDrill,
+                                                        reference_position=electric_mining_drill_2.position,
+                                                        direction=Direction.RIGHT, spacing=3)
+    electric_mining_drill_3 = game.rotate_entity(electric_mining_drill_3, Direction.DOWN)
+    assert electric_mining_drill_3, 'Failed to place electric-mining-drill'
+
+    # Place electric-mining-drill
+    electric_mining_drill_4 = game.place_entity_next_to(Prototype.ElectricMiningDrill,
+                                                        reference_position=electric_mining_drill_3.position,
+                                                        direction=Direction.RIGHT, spacing=3)
+    electric_mining_drill_4 = game.rotate_entity(electric_mining_drill_4, Direction.DOWN)
+    assert electric_mining_drill_4, 'Failed to place electric-mining-drill'
+
+    # Place electric-mining-drill
+    electric_mining_drill_5 = game.place_entity_next_to(Prototype.ElectricMiningDrill,
+                                                        reference_position=electric_mining_drill_1.position,
+                                                        direction=Direction.LEFT)
+    electric_mining_drill_5 = game.rotate_entity(electric_mining_drill_5, Direction.RIGHT)
+    assert electric_mining_drill_5, 'Failed to place electric-mining-drill'
+
+    # Place electric-mining-drill
+    electric_mining_drill_6 = game.place_entity_next_to(Prototype.ElectricMiningDrill,
+                                                        reference_position=electric_mining_drill_1.position,
+                                                        direction=Direction.RIGHT)
+    electric_mining_drill_6 = game.rotate_entity(electric_mining_drill_6, Direction.RIGHT)
+    assert electric_mining_drill_6, 'Failed to place electric-mining-drill'
+
+    # Place electric-mining-drill
+    electric_mining_drill_7 = game.place_entity_next_to(Prototype.ElectricMiningDrill,
+                                                        reference_position=electric_mining_drill_2.position,
+                                                        direction=Direction.RIGHT)
+    electric_mining_drill_7 = game.rotate_entity(electric_mining_drill_7, Direction.RIGHT)
+    assert electric_mining_drill_7, 'Failed to place electric-mining-drill'
+
+    # Place electric-mining-drill
+    electric_mining_drill_8 = game.place_entity_next_to(Prototype.ElectricMiningDrill,
+                                                        reference_position=electric_mining_drill_3.position,
+                                                        direction=Direction.RIGHT)
+    electric_mining_drill_8 = game.rotate_entity(electric_mining_drill_8, Direction.RIGHT)
+    assert electric_mining_drill_8, 'Failed to place electric-mining-drill'

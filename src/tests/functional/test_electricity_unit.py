@@ -26,15 +26,14 @@ def test_create_offshore_pump_to_steam_engine(game):
     steam_engines_in_inventory = game.inspect_inventory()[Prototype.SteamEngine]
     pipes_in_inventory = game.inspect_inventory()[Prototype.Pipe]
 
-    DIR = Direction.UP
     # move to the nearest water source
     water_location = game.nearest(Resource.Water)
     game.move_to(water_location)
 
     offshore_pump = game.place_entity(Prototype.OffshorePump,
                                       position=water_location,
-                                      direction=DIR)
-    assert offshore_pump.direction.value == DIR.value
+                                      direction=Direction.UP)
+    assert offshore_pump.direction.value == Direction.UP.value
     # Get offshore pump direction
     direction = offshore_pump.direction
 
@@ -60,8 +59,8 @@ def test_create_offshore_pump_to_steam_engine(game):
     game.move_to(Position(x=0, y=10))
     steam_engine: Entity = game.place_entity_next_to(Prototype.SteamEngine,
                                                      reference_position=boiler.position,
-                                                     direction=DIR,
-                                                     spacing=2)
+                                                     direction=boiler.direction,
+                                                     spacing=1)
 
     # connect the boiler and steam engine with a pipe
     boiler_to_steam_engine_pipes = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
@@ -69,7 +68,9 @@ def test_create_offshore_pump_to_steam_engine(game):
     inspected_steam_engine = game.inspect_entities(position=steam_engine.position, radius=1).get_entity(Prototype.SteamEngine)
     assert inspected_steam_engine.warning == 'not connected to power network'
 
-    assert steam_engine.direction.value == DIR.value
+    assert steam_engine.direction.value == boiler.direction.value
+    game.add_command(f"/c game.take_screenshot{{zoom=1, anti_alias=true, show_entity_info=true, position={{x={boiler.position.x}, y={boiler.position.y}}}}}", raw=True)
+    game.execute_transaction()
 
 
 def test_build_iron_gear_factory(game):

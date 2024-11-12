@@ -18,7 +18,51 @@ class Controller:
         self.game_state = game_state
         self.name = self.camel_to_snake(self.__class__.__name__)
         self.lua_script_manager = lua_script_manager
+
     def clean_response(self, response):
+        def is_lua_list(d):
+            """Check if dictionary represents a Lua-style list (keys are consecutive numbers from 1)"""
+            if not isinstance(d, dict) or not d:
+                return False
+            keys = set(str(k) for k in d.keys())
+            return all(str(i) in keys for i in range(1, len(d) + 1))
+
+        def clean_value(value):
+            """Recursively clean a value"""
+            if isinstance(value, dict):
+                # Handle Lua-style lists
+                if is_lua_list(value):
+                    # Sort by numeric key and take only the values
+                    sorted_items = sorted(value.items(), key=lambda x: int(str(x[0])))
+                    return [clean_value(v) for k, v in sorted_items]
+
+                # Handle inventory special case
+                if any(isinstance(k, int) for k in value.keys()) and \
+                        all(isinstance(v, dict) and 'name' in v and 'count' in v for v in value.values()):
+                    cleaned_dict = {}
+                    for v in value.values():
+                        cleaned_dict[v['name']] = v['count']
+                    return cleaned_dict
+
+                # Regular dictionary
+                return {k: clean_value(v) for k, v in value.items()}
+
+            elif isinstance(value, list):
+                return [clean_value(v) for v in value]
+
+            return value
+
+        cleaned_response = {}
+        for key, value in response.items():
+            if key == 'status' and isinstance(value, str):
+                cleaned_response[key] = EntityStatus.from_string(value)
+            elif not value and key == 'warnings':
+                cleaned_response[key] = []
+            else:
+                cleaned_response[key] = clean_value(value)
+
+        return cleaned_response
+    def clean_response_deprecated(self, response):
         cleaned_response = {}
         for key, value in response.items():
             if key == 'status' and isinstance(value, str):

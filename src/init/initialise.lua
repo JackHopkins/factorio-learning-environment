@@ -84,7 +84,7 @@ global.actions.avoid_entity = function(player_index, entity, position)
     }
 
     while player_collision(player, target_area) do
-        player.teleport({player.position.x + width + 1, player.position.y}, player.surface)
+        player.teleport({player.position.x + width + 1, player.position.y+1}, player.surface)
     end
 end
 

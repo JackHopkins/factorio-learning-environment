@@ -26,3 +26,14 @@ client/__pycache__/
 /src/.neptune/
 /src/.neptune/async/
 /src/skills/bottom_up/skill_generation_logs/
+/data/blueprints/decoded/
+/data/blueprints/mining/
+/data/blueprints/electricity/
+/data/blueprints/manufacturing/
+/data/blueprints/misc/
+/data/blueprints/
+/data/encoded/
+/data/full/
+/data/place_next_to_connect/
+/data/refactor/
+/data/refactor2/

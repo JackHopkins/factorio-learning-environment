@@ -165,7 +165,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             }
 
             if not can_build then
-                error("Cannot place " .. entity .. " at the target location.")
+                --error("Cannot place " .. entity .. " at the target location.")
             end
         end
 

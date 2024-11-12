@@ -1,19 +1,19 @@
 global.actions.can_place_entity = function(player_index, entity, direction, x, y)
     local player = game.get_player(player_index)
-    --local position = {x = x, y = y}
+    local position = {x = x, y = y}
     --
     ---- Check player's reach distance
-    --local dx = player.position.x - x
-    --local dy = player.position.y - y
-    --local distance = math.sqrt(dx * dx + dy * dy)
-    --
+    local dx = player.position.x - x
+    local dy = player.position.y - y
+    local distance = math.sqrt(dx * dx + dy * dy)
+
     --if distance > player.reach_distance then
     --    error("The distance to the target position is too far away to place the entity (" ..distance.."). Move closer.")
     --end
 
-    if not global.actions.can_reach_entity(player, x, y) then
-        error("The target position is too far away to place the entity. The player position is " .. player.position.x .. ", " .. player.position.y .. " and the target position is " .. x .. ", " .. y .. ". Move closer.")
-    end
+    --if not global.actions.can_reach_entity(player, x, y) then
+    --    error("The target position is too far away to place the entity. The player position is " .. player.position.x .. ", " .. player.position.y .. " and the target position is " .. x .. ", " .. y .. ". Move closer.")
+    --end
 
     -- Check entity prototype exists
     if game.entity_prototypes[entity] == nil then
@@ -41,8 +41,16 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
     }
 
     -- Check for collision with other entities
-    local entities = player.surface.find_entities_filtered{area = target_area}
+    local entities = player.surface.find_entities_filtered{area = target_area, force = player.force}
+
+    -- iterate over entities and remove any with the player_character name
+    for i = #entities, 1, -1 do
+        if entities[i].name == "character" then
+            table.remove(entities, i)
+        end
+    end
     if #entities > 1 then
+        game.print(serpent.block(entities))
         error("Cannot place the entity at the specified location due to collision with other entities.")
     end
 
@@ -50,17 +58,18 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
     if entity == "offshore-pump" then
         local tile = player.surface.get_tile(x, y)
         if not tile.prototype.name:match("water") then
-            error("Cannot place the entity at the specified location due to lack of water.")
+            error("Cannot place the entity at the specified position due to lack of water.")
         end
     end
 
-    -- Check if the entity can be placed
-    local can_build = player.can_place_entity{name = entity, force = player.force, position = position, direction = direction_enum}
+    ---- Check if the entity can be placed
+    ---  force = player.force,
+    local can_build = player.can_place_entity{name = entity, position = position, direction = direction_enum}
     if not can_build then
-        error("Cannot place the entity at the specified location.")
+        error("Cannot place the entity at the specified position: x="..position.x..", y="..position.y)
     end
 
-    return
+    return true
 end
 
 function get_entity_direction(entity, direction)

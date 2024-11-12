@@ -3,7 +3,7 @@ import re
 import time
 from multiprocessing import freeze_support
 
-import neptune
+#import neptune
 from anthropic.types import Message
 from backoff import on_exception, expo
 from openai import OpenAI, RateLimitError, APIError
@@ -272,9 +272,9 @@ class FactorioRunner:
 
     def _reset(self):
         self.run.stop()
-        self.run = neptune.init_run(
-            project=self.neptune_project,
-            api_token=self.neptune_api_token,
-        )
+        # self.run = neptune.init_run(
+        #     project=self.neptune_project,
+        #     api_token=self.neptune_api_token,
+        # )
         self.instance.reset()
         self.memory = self.set_memory()

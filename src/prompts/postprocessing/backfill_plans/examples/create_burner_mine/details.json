@@ -1,0 +1,11 @@
+{"plan": "Here's a thorough plan to create an automated copper mining setup using a burner mining drill, a wooden chest, a burner inserter, and transport belts.\nWe have all the necessary components in our inventory, so we don't need to craft anything.\nThe plan will involve placing the drill on a copper patch and placing the chest at a distance. We then need to set up the inserter next to the chest that places items into the chest, rotate the inserter as the inserter needs to put items into the chest. Then we need to connect the drill drop position with the chest inserter pickup position.\nFinally, we'll need to fuel the drill and inserter, wait some time and then check if the chest has copper ore in it.",
+"starting_inventory": {
+    "burner-mining-drill": 3,
+    "stone-furnace": 9,
+    "transport-belt": 100,
+    "burner-inserter": 5,
+    "wooden-chest": 1,
+    "coal": 10
+},
+"mining_setup":"There are no entities on the map",
+"objective": "We need create an automated copper burner mine that mines copper ore to a chest further away from it"}

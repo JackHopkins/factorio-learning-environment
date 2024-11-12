@@ -7,7 +7,7 @@
                         "iron-plate": [0, 10],
                       "stone-furnace": [0, 2],
                       "burner-inserters": [0, 1],
-                      "transport-belt": [0, 10]
+                      "transport-belt": [70, 120]
                     },
   "mining_setup": "There are no entities on the map"
 }

@@ -106,8 +106,25 @@ Methods:
             example_string += f"###USER INPUT EXAMPLE\n\nDESCRIPTION\n{details['description']}\n\nINVENTORY REQUIREMENTS\n{details['dependencies']}\n\nNAME\n{details['name']}\n\nIMPLEMENTATION\n{snippet}\n\n"
             example_string += f'###OUTPUT EXAMPLE\n\n#OBJECTIVE\n{details["objective"]}\n#OBJECTIVE\n\n'
         return example_string
+    
+
+    def get_planning_examples(self, examples_folder):
+        example_string = ""
+        for example_folder in os.listdir(examples_folder):
+            # read in details.json
+            with open(os.path.join(examples_folder, example_folder, "details.json"), "r") as f:
+                details = json.load(f)
+            # read in snippet.py
+
+            with open(os.path.join(examples_folder, example_folder, "snippet.py"), "r") as f:
+                snippet = f.read()
+            
+            example_string += f"###USER INPUT EXAMPLE\n\nOBJECTIVE\n{details['objective']}\n\nINVENTORY\n{details['starting_inventory']}\n\nMINING SETUP\n{details['mining_setup']}\n\nIMPLEMENTATION\n{snippet}\n\n"
+            example_string += f'###OUTPUT EXAMPLE\n\n#PLANNING\n{details["plan"]}\n#PLANNING\n\n'
+        return example_string
+    
     def generate_objective(self, skill) -> str:
-        prompt_folder = r"prompts\postprocessing_objectives"
+        prompt_folder = r"prompts\postprocessing\backfill_objectives"
         #read in system_prompt.md
         with open(os.path.join(prompt_folder, "system_prompt.md"), "r") as f:
             system_prompt = f.read()
@@ -116,7 +133,7 @@ Methods:
         with open(os.path.join(prompt_folder, "user_message.md"), "r") as f:
             user_message = f.read()
         
-        examples_folder = f"prompts/postprocessing_objectives/examples"
+        examples_folder = f"{prompt_folder}/examples"
 
         examples_string = self.get_objective_examples(examples_folder)
         user_message = user_message.format(examples = examples_string,
@@ -131,6 +148,36 @@ Methods:
         # get the string between the two #OBJECTIVE
         objective = objective.split("#OBJECTIVE")[1].strip()
         return objective
+
+
+    def generate_planning(self, skill, mining_setup) -> str:
+        prompt_folder = r"prompts\postprocessing\backfill_plans"
+        #read in system_prompt.md
+        with open(os.path.join(prompt_folder, "system_prompt.md"), "r") as f:
+            system_prompt = f.read()
+        # read in recipes.md
+        with open(os.path.join(prompt_folder, "recipes.md"), "r") as f:
+            recipes = f.read()
+        system_prompt = system_prompt.format(recipes = recipes)
+        #read in user_message.md
+        with open(os.path.join(prompt_folder, "user_message.md"), "r") as f:
+            user_message = f.read()
+        
+        examples_folder = f"{prompt_folder}/examples"
+
+        examples_string = self.get_planning_examples(examples_folder)
+        user_message = user_message.format(examples = examples_string,
+                                           mining_setup = mining_setup,
+                                           implementation = skill["implementation"],
+                                           objective = skill["objective"],
+                                           inventory = skill["starting_inventory"])
+        plan = self._call_api(system_prompt, user_message)
+        # assert atleast 2 #OBJECTIVE is in objective
+        if plan.count("#PLANNING") != 2:
+            raise ValueError("planning is not formatted correctly")
+        # get the string between the two #OBJECTIVE
+        plan = plan.split("#PLANNING")[1].strip()
+        return plan
 
 
 

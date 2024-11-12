@@ -13,34 +13,6 @@ def game(instance):
     yield instance
     instance.reset()
 
-factorio = FactorioInstance(address='localhost',
-                            bounding_box=200,
-                            tcp_port=27015,
-                            cache_scripts=True,
-                            fast=True,
-                            inventory={
-                                'coal': 50,
-                                'copper-plate': 50,
-                                'iron-plate': 50,
-                                'iron-chest': 2,
-                                'burner-mining-drill': 3,
-                                'electric-mining-drill': 1,
-                                'assembling-machine-1': 1,
-                                'stone-furnace': 9,
-                                'transport-belt': 50,
-                                'boiler': 1,
-                                'burner-inserter': 32,
-                                'pipe': 15,
-                                'steam-engine': 1,
-                                'small-electric-pole': 10
-                        })
-
-@factorio.run_func_in_factorio_env
-def test_create_coal_transportation_system():
-    coal_position = nearest(Resource.Coal)
-    assert coal_position, "No coal found nearby"
-
-    move_to(coal_position)
 
 def test_move_to(game):
     """
@@ -119,3 +91,32 @@ def test_move_to_laying_leading(game):
 
 
 
+if __name__ == '__main__':
+    factorio = FactorioInstance(address='localhost',
+                            bounding_box=200,
+                            tcp_port=27015,
+                            cache_scripts=True,
+                            fast=True,
+                            inventory={
+                                'coal': 50,
+                                'copper-plate': 50,
+                                'iron-plate': 50,
+                                'iron-chest': 2,
+                                'burner-mining-drill': 3,
+                                'electric-mining-drill': 1,
+                                'assembling-machine-1': 1,
+                                'stone-furnace': 9,
+                                'transport-belt': 50,
+                                'boiler': 1,
+                                'burner-inserter': 32,
+                                'pipe': 15,
+                                'steam-engine': 1,
+                                'small-electric-pole': 10
+                        })
+
+    @factorio.run_func_in_factorio_env
+    def test_create_coal_transportation_system():
+        coal_position = nearest(Resource.Coal)
+        assert coal_position, "No coal found nearby"
+
+        move_to(coal_position)

@@ -3,6 +3,6 @@ Mining setup: The following entities are on the map and can be used: [Furnace(fu
 Inventory: {
         'wooden-chest': 1,
         'burner-inserter': 2,
-        "transport-belts": 15,
+        "transport-belt": 15,
         "coal": 10
     }

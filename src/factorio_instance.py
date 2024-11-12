@@ -197,6 +197,8 @@ class FactorioInstance:
         type_definitions = "\n".join(list(
             filter(lambda x: not x.startswith("import") and not x.startswith("from"), type_definitions.split("\n"))))
         type_definitions = type_definitions.replace("\n\n\n", "\n").replace("\n\n", "\n").strip()
+        # get everything from and including class Prototype(enum.Enum):
+        type_definitions = type_definitions[type_definitions.index("class Prototype(enum.Enum):"):]
         # entity_definitions = load_definitions(f'{execution_path}/factorio_entities.py')
         entity_definitions = parse_file_for_structure(f'{execution_path}/factorio_entities.py')
         brief = f"```types\n{type_definitions}\n```\n```objects\n{entity_definitions}\n```\n```tools\n{schema}\n```"

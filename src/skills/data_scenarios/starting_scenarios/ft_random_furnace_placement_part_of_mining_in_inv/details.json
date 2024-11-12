@@ -1,0 +1,16 @@
+{
+  "random_inventory": {
+    "coal": [0, 20],
+    "stone": [0, 10],
+    "iron-ore": [0, 20],
+    "copper-ore": [0, 20],
+    "transport-belt": [70, 120],
+    "burner-inserter": [5, 10],
+    "iron-plate": [0, 20],
+    "copper-plate": [0, 20],
+    "burner-mining-drill": [2, 5],
+    "electronic-circuit": [0, 20]
+},
+  "fixed_inventory": {
+                                                "stone-furnace": 2}
+}

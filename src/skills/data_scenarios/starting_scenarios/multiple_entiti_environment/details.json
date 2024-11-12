@@ -1,7 +1,7 @@
 {
   "fixed_inventory": {"coal": 103,
-                     "iron_ore": 50, 
-                      "copper_ore": 50,
+                     "iron-ore": 50, 
+                      "copper-ore": 50,
                     "wooden-chest": 2,
                   "burner-mining-drill": 2,
                   "stone-furnace": 3,

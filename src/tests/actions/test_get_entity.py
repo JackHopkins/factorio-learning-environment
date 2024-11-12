@@ -192,3 +192,22 @@ def test_get_boiler(game):
 
     assert retrieved_boiler is not None, "Failed to retrieve boiler"
     assert retrieved_boiler.fuel.get(Prototype.Coal, 0) == 5, "Failed to consume fuel"
+
+def test_get_assembling_machine_1(game):
+    """
+    Test to ensure that the inventory of an assembling machine is correctly updated after crafting items
+    :param game:
+    :return:
+    """
+    # Check initial inventory
+    inventory = game.inspect_inventory()
+    assembling_machine_count = inventory.get(Prototype.AssemblingMachine1, 0)
+    assert assembling_machine_count != 0, "Failed to get assembling machine count"
+
+    assembling_machine = game.place_entity(Prototype.AssemblingMachine1, position=Position(x=0, y=0))
+    game.set_entity_recipe(assembling_machine, Prototype.IronGearWheel)
+    game.insert_item(Prototype.IronPlate, assembling_machine, quantity=5)
+
+    retrieved_machine = game.get_entity(Prototype.AssemblingMachine1, assembling_machine.position)
+
+    assert retrieved_machine is not None, "Failed to retrieve assembling machine"

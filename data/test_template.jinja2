@@ -1,0 +1,29 @@
+import pytest
+
+from factorio_entities import Position
+from factorio_instance import Direction, FactorioInstance, BoundingBox
+from factorio_types import Prototype, Resource
+
+@pytest.fixture()
+def game():
+    instance = FactorioInstance(address='localhost',
+                                bounding_box=200,
+                                tcp_port=27015,
+                                cache_scripts=True,
+                                fast=True,
+                                inventory={
+                                                {% for item, quantity in inventory.items() %}
+                                                '{{ item }}': {{ quantity }},
+                                                {%- endfor %}
+                                            })
+    instance.reset()
+    yield instance
+
+
+def test_{{ test_name }}(game):
+    """
+    {{ test_description }}
+    :param game:
+    :return:
+    """
+    {{ test_content }}

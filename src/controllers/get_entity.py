@@ -26,6 +26,8 @@ class GetEntity(Action):
         try:
             x, y = self.get_position(position)
             name, metaclass = entity.value
+            while isinstance(metaclass, tuple):
+                metaclass = metaclass[1]
 
             response, elapsed = self.execute(PLAYER, name, x, y)
 

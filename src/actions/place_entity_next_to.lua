@@ -18,7 +18,9 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     end
 
     local ref_entities = player.surface.find_entities_filtered({
-        area = {{ref_x - 0.5, ref_y - 0.5}, {ref_x + 0.5, ref_y + 0.5}}
+        area = {{ref_x - 0.5, ref_y - 0.5}, {ref_x + 0.5, ref_y + 0.5}},
+        type = {"character", "resource"}, -- Find players
+        invert = true
     })
     local ref_entity = #ref_entities > 0 and ref_entities[1] or nil
 
@@ -29,6 +31,55 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     end
 
     local function calculate_position(direction, ref_pos, ref_entity, gap, is_belt, entity_to_place)
+        local new_pos = {x = ref_pos.x, y = ref_pos.y}
+        local effective_gap = gap or 0
+
+        -- Get reference entity's width/height based on its rotation
+        local ref_width, ref_height
+        if ref_entity then
+            local ref_orientation = ref_entity.direction  -- 0,2,4,6 = N,E,S,W
+            if ref_orientation == 2 or ref_orientation == 6 then  -- East or West
+                ref_width = ref_entity.prototype.tile_height
+                ref_height = ref_entity.prototype.tile_width
+            else  -- North or South
+                ref_width = ref_entity.prototype.tile_width
+                ref_height = ref_entity.prototype.tile_height
+            end
+        else
+            ref_width = 1
+            ref_height = 1
+        end
+
+        -- Get entity to place width/height based on desired direction
+        local entity_prototype = game.entity_prototypes[entity_to_place]
+        local entity_width, entity_height
+        if direction == 1 or direction == 3 then  -- East or West
+            entity_width = entity_prototype.tile_height
+            entity_height = entity_prototype.tile_width
+        else  -- North or South
+            entity_width = entity_prototype.tile_width
+            entity_height = entity_prototype.tile_height
+        end
+
+        -- Calculate spacing based on the relevant dimensions
+        if direction == 0 then     -- North
+            new_pos.y = new_pos.y - math.ceil(ref_height/2 + entity_height/2 + effective_gap)
+        elseif direction == 1 then -- East
+            new_pos.x = new_pos.x + math.ceil(ref_width/2 + entity_width/2 + effective_gap)
+        elseif direction == 2 then -- South
+            new_pos.y = new_pos.y + math.ceil(ref_height/2 + entity_height/2 + effective_gap)
+        else  -- West
+            new_pos.x = new_pos.x - math.ceil(ref_width/2 + entity_width/2 + effective_gap)
+        end
+
+        -- Round the position to the nearest 0.5 to align with Factorio's grid
+        new_pos.x = math.ceil(new_pos.x * 2) / 2
+        new_pos.y = math.ceil(new_pos.y * 2) / 2
+
+        return new_pos
+    end
+
+    local function calculate_position2(direction, ref_pos, ref_entity, gap, is_belt, entity_to_place)
         local new_pos = {x = ref_pos.x, y = ref_pos.y}
         local effective_gap = gap
 
@@ -197,7 +248,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             table.insert(entity_names, e.name)
         end
         error("Cannot place entity at the position " .. serpent.line(new_position) .. " with direction " ..
-              serpent.line(orientation) .. ". Nearby entities: " .. serpent.line(entity_names))
+              serpent.line(orientation) .. ". Attempting to place next to: "..ref_entity.name..". Nearby entities: " .. serpent.line(entity_names))
     end
 
     local new_entity = player.surface.create_entity({

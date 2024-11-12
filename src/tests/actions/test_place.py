@@ -10,7 +10,7 @@ def game(instance):
     instance.initial_inventory = {
         'stone-furnace': 1, 'boiler': 1, 'steam-engine': 1, 'offshore-pump': 4, 'pipe': 100,
         'iron-plate': 50, 'copper-plate': 20, 'coal': 50, 'burner-inserter': 50, 'burner-mining-drill': 50,
-        'transport-belt': 50, 'stone-wall': 100
+        'transport-belt': 50, 'stone-wall': 100, 'splitter': 4
     }
 
     instance.reset()
@@ -28,6 +28,25 @@ def test_place(game):
     game.place_entity(Prototype.Boiler, position=(0, 0))
     assert boilers_in_inventory - 1 == game.inspect_inventory()[Prototype.Boiler]
 
+def test_place_transport_belt_next_to_miner(game):
+    """
+    Place a transport belt next to a burner mining drill
+    :param game:
+    :return:
+    """
+    iron_position = game.get_resource_patch(Resource.IronOre, game.nearest(Resource.IronOre)).bounding_box.center
+    game.move_to(iron_position)
+    drill = game.place_entity(Prototype.BurnerMiningDrill, position=iron_position, exact=True)
+    for y in range(-1, 3, 1):
+        world_y = y + drill.position.y
+        world_x = -1.0 + drill.position.x - 1
+        game.move_to(Position(x=world_x, y=world_y))
+        game.place_entity(Prototype.TransportBelt, position=Position(x=world_x, y=world_y), direction=Direction.UP, exact=True)
+
+    #belt = game.place_entity(Prototype.TransportBelt, direction=Direction.RIGHT, position=iron_position + Position(x=-1, y=0))
+    #assert belt is not None
+    #assert belt.direction == Direction.RIGHT
+    pass
 def test_place_wall(game):
     """
     Place a wall at (0, 0)
@@ -204,3 +223,20 @@ def test_placed_drill_status(game):
     game.sleep(1)
     drill = game.get_entity(Prototype.BurnerMiningDrill, drill.position)
     assert drill.energy > 0
+
+def test_place_splitter(game):
+    """
+    Place a splitter at (0, 0)
+    :param game:
+    :return:
+    """
+    splitters_in_inventory = game.inspect_inventory()[Prototype.Splitter]
+    splitter = game.place_entity(Prototype.Splitter, position=(0, 2), direction=Direction.UP)
+    assert splitter.direction.value == Direction.UP.value
+    splitter = game.place_entity(Prototype.Splitter, position=splitter.output_positions[0], direction=Direction.DOWN)
+    assert splitter.direction.value == Direction.DOWN.value
+    splitter = game.place_entity(Prototype.Splitter, position=(2, 0), direction=Direction.RIGHT)
+    assert splitter.direction.value == Direction.RIGHT.value
+    splitter = game.place_entity(Prototype.Splitter, position=splitter.output_positions[0], direction=Direction.LEFT)
+    assert splitter.direction.value == Direction.LEFT.value
+    assert splitters_in_inventory - 4 == game.inspect_inventory()[Prototype.Splitter]

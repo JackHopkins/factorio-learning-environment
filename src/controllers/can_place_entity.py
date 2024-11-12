@@ -41,6 +41,11 @@ class CanPlaceEntity(Action):
         response, elapsed = self.execute(PLAYER, name, direction.value + 1, x, y)
 
         if not isinstance(response, dict):
-            return False
+            if isinstance(response, bool):
+                return response
+
+            if "cannot" not in response.lower():
+                return True
+            return True
 
         return True

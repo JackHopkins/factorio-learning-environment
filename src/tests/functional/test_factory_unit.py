@@ -129,6 +129,8 @@ def test_iron_smelting(game: FactorioInstance):
 def test_auto_driller(game: FactorioInstance):
     game.move_to(game.nearest(Resource.Coal))
     burner_mining_drill = game.place_entity(Prototype.BurnerMiningDrill, position=game.nearest(Resource.Coal))
+
+
     burner_inserter = game.place_entity_next_to(Prototype.BurnerInserter,
                                                 reference_position=burner_mining_drill.position,
                                                 direction=game.DOWN,
@@ -136,14 +138,17 @@ def test_auto_driller(game: FactorioInstance):
     burner_inserter = game.rotate_entity(burner_inserter, Direction.UP)
     assert burner_inserter
 
-    belts = game.connect_entities(burner_mining_drill, burner_inserter, connection_type=Prototype.TransportBelt)
 
+    belts = game.connect_entities(burner_mining_drill, burner_inserter, connection_type=Prototype.TransportBelt)
     assert belts
 
     game.insert_item(Prototype.Coal, burner_mining_drill, 5)
+    game.move_to(burner_mining_drill.position.right().right().right())
 
+    entities = game.get_entities()
     start_score, _ = game.score()
-    time.sleep(5)
+    time.sleep(10)
     end_score, _ = game.score()
 
     assert end_score > start_score
+

@@ -37,7 +37,8 @@ class GetEntities(Action):
 
             entities_list = []
             belt_list = []
-            for entity_data in response:
+            for raw_entity_data in response:
+                entity_data = self.clean_response(raw_entity_data)
                 # Find the matching Prototype
                 matching_prototype = None
                 for prototype in Prototype:
@@ -52,6 +53,8 @@ class GetEntities(Action):
                 if matching_prototype not in entities and entities:
                     continue
                 metaclass = matching_prototype.value[1]
+                while isinstance(metaclass, tuple):
+                    metaclass = metaclass[1]
 
                 # Process nested dictionaries (like inventories)
                 for key, value in entity_data.items():

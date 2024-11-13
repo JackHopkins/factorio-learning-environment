@@ -333,18 +333,19 @@ global.goal = nil
 global.actions.score = function()
     --player = game.players[1]
     local production_score = production_score.get_production_scores()
+    game.print(dump(production_score))
     production_score["player"] = production_score["player"] - global.initial_score["player"]
     local goal_description = game.players[1].get_goal_description()
+
     if global.goal ~= goal_description then
       global.goal = goal_description
       game.print(goal_description)
-      if goal_description ~= nil then
-        --production_score["goal"] = goal_description[1]:gsub("-", "_")
+      if goal_description ~= nil and #goal_description > 1 then
+        production_score["goal"] = goal_description[1]:gsub("-", "_")
       end
       return dump(production_score)
     end
-
-    return scores
+    return dump(production_score)
 end
 
 global.actions.production_stats = function(player)

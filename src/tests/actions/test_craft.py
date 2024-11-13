@@ -1,10 +1,16 @@
 import pytest
 
-from factorio_types import Prototype
+from factorio_types import Prototype, Resource
+
 
 @pytest.fixture()
 def game(instance):
     instance.reset()
+    instance.set_inventory(**{'iron-plate': 40,
+                              'iron-gear-wheel': 1,
+                              'electronic-circuit': 2,
+                              'pipe': 1,
+                              'copper-plate': 10})
     yield instance
     instance.reset()
 
@@ -66,3 +72,19 @@ def test_craft_entity_with_missing_intermediate_resources(game):
     final_stats = game.production_stats()
 
     assert crafted == 1
+
+def test_craft_uncraftable_entity(game):
+    # Find and move to the nearest iron ore patch
+    iron_ore_position = game.nearest(Resource.IronOre)
+    print(f"Moving to iron ore patch at {iron_ore_position}")
+    game.move_to(iron_ore_position)
+
+    # Mine iron ore (we need at least 8 iron plates, so mine a bit more to be safe)
+    print("Mining iron ore...")
+    game.harvest_resource(iron_ore_position, quantity=10)
+    print(f"Mined iron ore. Current inventory: {game.inspect_inventory()}")
+
+    # Craft iron gear wheels (each requires 2 iron plates)
+    print("Crafting iron gear wheels...")
+    response = game.craft_item(Prototype.IronGearWheel, quantity=3)
+    print(f"Crafted iron gear wheels. Current inventory: {game.inspect_inventory()}")

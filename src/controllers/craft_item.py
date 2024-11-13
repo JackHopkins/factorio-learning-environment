@@ -37,7 +37,8 @@ class CraftItem(Action):
             if success is None:
                 raise Exception(f"Could not craft a {name} - Ingredients cannot be crafted by hand.")
             else:
-                raise Exception(f"Could not craft a {name} - {success}")
+                result = success.split(']:')[1]
+                raise Exception(f"Could not craft a {name} - {result}")
 
         if not self.game_state.fast:
             sleep(0.5)

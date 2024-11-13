@@ -15,6 +15,10 @@ class ProductionStats(Controller):
         """
 
         result, _ = self.execute(PLAYER)
+
+        if isinstance(result, str):
+            raise Exception(result)
+
         result = self.clean_response(result)
 
         # Calculate the difference in production statistics

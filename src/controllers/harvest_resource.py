@@ -20,7 +20,7 @@ class HarvestResource(Action):
     def __call__(self,
                  position: Position,
                  quantity=1,
-                 radius=100
+                 radius=10
                  ) -> int:
         """
         Harvest a resource at position (x, y) if it exists on the world.

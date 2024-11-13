@@ -353,18 +353,11 @@ global.actions.production_stats = function(player)
     -- Get total production counts for force
     local force = game.forces.player
 
-    -- Debug print the raw counts first
-    game.print("Input counts:")
-    game.print(serpent.block(force.item_production_statistics.input_counts))
-    game.print("Output counts:")
-    game.print(serpent.block(force.item_production_statistics.output_counts))
-
     local item_input_counts = force.item_production_statistics.input_counts
     local item_production_counts = force.item_production_statistics.output_counts
     local fluid_input_counts = force.fluid_production_statistics.input_counts
     local fluid_production_counts = force.fluid_production_statistics.output_counts
-    --/c game.player.print(serpent.block(game.forces.player.item_production_statistics.input_counts))
-    -- Remove the sign checks since input_counts and output_counts are already separated
+
     for name, count in pairs(item_input_counts) do
         consumption_diff[name] = count
     end
@@ -381,7 +374,7 @@ global.actions.production_stats = function(player)
         production_diff[name] = count
     end
     return {
-        output = production_diff,
-        input = consumption_diff
+        output = consumption_diff,
+        input = production_diff
     }
 end

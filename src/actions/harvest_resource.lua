@@ -198,34 +198,39 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
         end)
         return entities
     end
-    function harvest_trees(entities, count, from_position)
-        if count == 0 then return 0 end
-        local yield = 0
-        entities = sort_entities_by_distance(entities, from_position)
-
-        for _, entity in ipairs(entities) do
-            if entity.valid and entity.type == "tree" then
-                local products = entity.prototype.mineable_properties.products
-                for _, product in pairs(products) do
-                    if product.name == "wood" then
-                        local amount = product.amount or 1
-                        yield = yield + amount
-                        -- Use mine_entity instead of direct insertion
-                        player.mine_entity(entity)
-
-                        local tree_position = entity.position
-                        local tree_surface = entity.surface
-                        local stump_name = entity.name.."-stump"
-                        tree_surface.create_entity({name=stump_name, position=tree_position})
-
-                        if yield >= count then break end
-                    end
-                end
-                if yield >= count then break end
-            end
-        end
-        return yield
-    end
+    --function harvest_trees(entities, count, from_position)
+    --    if count == 0 then return 0 end
+    --    local yield = 0
+    --    entities = sort_entities_by_distance(entities, from_position)
+    --
+    --    for _, entity in ipairs(entities) do
+    --        if entity.valid and entity.minable and entity.type == "tree" then
+    --            local products = entity.prototype.mineable_properties.products
+    --            for _, product in pairs(products) do
+    --                if product.name == "wood" then
+    --                    local amount = product.amount or 1
+    --                    yield = yield + amount
+    --                    -- Check to see if the entity is valid, if not, continue
+    --                    if not entity.valid then
+    --                        goto continue
+    --                    end
+    --                    -- Use mine_entity instead of direct insertion
+    --                    player.mine_entity(entity)
+    --
+    --                    local tree_position = entity.position
+    --                    local tree_surface = entity.surface
+    --                    local stump_name = entity.name.."-stump"
+    --                    tree_surface.create_entity({name=stump_name, position=tree_position})
+    --
+    --                    if yield >= count then break end
+    --                end
+    --                ::continue::
+    --            end
+    --            if yield >= count then break end
+    --        end
+    --    end
+    --    return yield
+    --end
 
     function harvest(entities, count, from_position)
         if count == 0 then return 0 end
@@ -238,17 +243,22 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
                 for _, product in pairs(products) do
                     local amount = product.amount or 1
                     yield = yield + amount
+                    -- Check to see if the entity is valid, if not, continue
+                    if not entity.valid then
+                        goto continue
+                    end
                     -- Use mine_entity instead of entity.mine()
                     player.mine_entity(entity)
                     if yield >= count then break end
                 end
                 if yield >= count then break end
             end
+            ::continue::
         end
         return yield
     end
 
-    function harvest_trees2(entities, count, from_position)
+    function harvest_trees(entities, count, from_position)
         if count == 0 then return 0 end
         local yield = 0
         entities = sort_entities_by_distance(entities, from_position)

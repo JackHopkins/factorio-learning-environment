@@ -15,3 +15,10 @@ anthropic
 scipy
 scikit-image
 pyautogui
+pydantic
+dotenv
+slpp
+factorio-rcon-py
+numpy
+pillow
+scikit-image

@@ -1,12 +1,31 @@
+import os
+import sys
+from pathlib import Path
+
 import pytest
-@pytest.fixture(scope="session")
+
+# Add the src directory to the Python path
+src_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if src_dir not in sys.path:
+    sys.path.append(src_dir)
+
+# Get the project root directory
+project_root = Path(__file__).parent.parent.parent
+
+# Add the project root and src to Python path
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+if str(project_root / 'src') not in sys.path:
+    sys.path.insert(0, str(project_root / 'src'))
+
+@pytest.fixture()#scope="session")
 def instance():
     from src.factorio_instance import FactorioInstance
     try:
         instance = FactorioInstance(address='localhost',
                                     bounding_box=200,
                                     tcp_port=27015,
-                                    cache_scripts=True,
+                                    cache_scripts=False,
                                     fast=True,
                                     inventory={
                                         'coal': 50,

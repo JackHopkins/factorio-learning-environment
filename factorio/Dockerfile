@@ -1,5 +1,5 @@
-FROM --platform=linux/amd64 factoriotools/factorio:1.1.107
-
+FROM factoriotools/factorio:1.1.110
+# --platform=linux/amd64/v2
 ARG CACHEBUST=4
 
 COPY config /factorio/config

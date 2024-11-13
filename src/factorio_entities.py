@@ -198,7 +198,7 @@ class TileDimensions(BaseModel):
 class Ingredient(BaseModel):
     name: str
     count: Optional[int] = 1
-    type: str
+    type: Optional[str] = None
 
 class Product(Ingredient):
     probability: Optional[float] = 1
@@ -236,7 +236,7 @@ class Entity(BaseModel):
     position: Position
     direction: Direction
     energy: float
-    type: str
+    type: Optional[str] = None
     dimensions: Dimensions
     tile_dimensions: TileDimensions
     prototype: Any  # Prototype

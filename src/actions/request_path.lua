@@ -1,3 +1,5 @@
+global.paths = global.paths or {}
+
 global.actions.request_path = function(player_index, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities)
     local player = game.get_player(player_index)
     if not player then return nil end
@@ -63,3 +65,33 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
 
     return request_id
 end
+
+script.on_event(defines.events.on_script_path_request_finished, function(event)
+    local request_data = global.path_requests[event.id]
+    if not request_data then
+        log("No request data found for ID: " .. event.id)
+        return
+    end
+
+    local player = game.get_player(request_data)
+    if not player then
+        log("Player not found for request ID: " .. event.id)
+        return
+    end
+
+    if event.path then
+        -- Path found successfully
+        player.print("Path found with " .. #event.path .. " waypoints")
+        global.paths[event.id] = event.path
+        log("Path found for request ID: " .. event.id)
+    elseif event.try_again_later then
+        player.print("Pathfinder is busy, try again later")
+        global.paths[event.id] = "busy"
+        log("Pathfinder busy for request ID: " .. event.id)
+    else
+        player.print("Path not found" .. serpent.block(event))
+        global.paths[event.id] = "not_found"
+        log("Path not found for request ID: " .. event.id)
+
+    end
+end)

@@ -1,5 +1,7 @@
 # curriculum_strategies.py
 from abc import ABC, abstractmethod
+from random import random
+
 from trace import Trace
 from typing import Dict, Tuple, List
 import logging
@@ -34,6 +36,7 @@ class RecipeBasedCurriculum(CurriculumStrategy):
 
     def get_task_dir(self, trace: Trace):
         return trace.task_description.replace(" ", "_").replace("-", "_").lower()
+
     def generate_next_task(self, task_history: List[Trace], instance) -> Dict:
         if not task_history or not any([t for t in task_history if t.success]):
             logger.info("No previous tasks - starting with initial iron plate production")
@@ -104,7 +107,7 @@ class RecipeBasedCurriculum(CurriculumStrategy):
                 recipe.name in task.achieved_pl["output"]
                 for task in task_history if task.success
             )
-            score = (ingredient_count * 0.5 + depth * 0.3) * (0.5 if previously_crafted else 1.0)
+            score = (ingredient_count * 0.5 + depth * 0.3) * (0.5 if previously_crafted else 1.0) + (random()-0.5)
             return score
 
         return max(craftable_recipes, key=recipe_score)

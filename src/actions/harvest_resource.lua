@@ -91,6 +91,7 @@ local function find_entity_type_at_position(surface, position)
     }
 
     if #exact_entities > 0 then
+        game.print("Found type ".. exact_entities[1].name)
         return exact_entities[1].type, exact_entities[1].name
     end
     return nil, nil
@@ -160,32 +161,31 @@ end
 function harvest(entities, count, from_position, player)
     if count == 0 then return 0 end
     local yield = 0
+    local has_mined = false
     entities = sort_entities_by_distance(entities, from_position)
-
-    while yield < count do
-        local harvested_something = false
-        for _, entity in ipairs(entities) do
-            if yield >= count then break end
-            if entity.valid and entity.minable then
-                -- Mine entity first
-                player.mine_entity(entity)
-                harvested_something = true
-                -- Then update yield
-                local products = entity.prototype.mineable_properties.products
-                for _, product in pairs(products) do
-                    local amount = product.amount or 1
-                    yield = yield + amount
-                end
+    ::start::
+    for _, entity in ipairs(entities) do
+        if entity.valid and entity.minable then
+            local products = entity.prototype.mineable_properties.products
+            for _, product in pairs(products) do
+                local amount = product.amount or 1
+                yield = yield + amount
+                entity.mine({ignore_minable=false, raise_destroyed=true})
+                player.insert({name=product.name, count=amount})
+                has_mined = true
+                if yield >= count then break end
             end
+            if yield >= count then break end
         end
-        -- If we couldn't harvest anything in this pass, break to avoid infinite loop
-        if not harvested_something then break end
+    end
+    if has_mined == true and yield < count then
+        goto start
     end
     return yield
 end
 
 function harvest_trees(entities, count, from_position, player)
-    game.print("Harvesting trees")
+    game.print("Harvesting "..#entities.." trees")
     if count == 0 then return 0 end
     local yield = 0
     entities = sort_entities_by_distance(entities, from_position)
@@ -197,7 +197,7 @@ function harvest_trees(entities, count, from_position, player)
             for _, product in pairs(products) do
                 if product.name == "wood" then
                     local amount = product.amount or 1
-                    --player.insert({name="wood", count=amount})
+                    player.insert({name="wood", count=amount})
                     yield = yield + amount
 
                     local tree_position = entity.position
@@ -247,24 +247,24 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
 
     -- Check what's under the player first
     local target_type, target_name = find_entity_type_at_position(surface, position)
-
+    local total_yield = 0
     if target_type then
         -- If we found something at the exact position, harvest that specific type
-        local yield = harvest_specific_resources(player, surface, position, count, target_type, target_name)
-        if yield > 0 then
-            game.print("Harvested " .. yield .. " items of " .. target_name)
-            return yield
+        total_yield = total_yield + harvest_specific_resources(player, surface, position, count, target_type, target_name)
+        if total_yield >= count then
+            game.print("Harvested " .. total_yield .. " items of " .. target_name)
+            return total_yield
         end
     end
 
     -- If nothing at exact position or couldn't get enough yield, fall back to original logic
     local tree_entities = surface.find_entities_filtered{position=position, radius=radius, type = "tree"}
-    local tree_yield = harvest_trees(tree_entities, count, position, player)
-    local total_yield = tree_yield
+    local tree_yield = harvest_trees(tree_entities, count - total_yield, position, player)
+    local total_yield = total_yield + tree_yield
 
     if tree_yield < count then
         local mineable_entities = surface.find_entities_filtered{position=position, radius=radius, type = "resource"}
-        local resource_yield = harvest(mineable_entities, count - tree_yield, position, player)
+        local resource_yield = harvest(mineable_entities, count - total_yield, position, player)
         total_yield = total_yield + resource_yield
 
         if total_yield == 0 then

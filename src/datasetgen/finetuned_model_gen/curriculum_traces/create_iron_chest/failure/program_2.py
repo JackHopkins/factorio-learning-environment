@@ -1,212 +1,160 @@
 
-
 from factorio_instance import *
 
 """
-Craft an iron chest from scratch
-
-:param game:
-:return:
+Step 1: Print recipes. We need to print the recipes for the following items:
+- stone-furnace
+- firearm-magazine
+- iron-chest
 """
+# Print the recipe for stone-furnace
+stone_furnace_recipe = get_prototype_recipe(Prototype.StoneFurnace)
+print("stone-furnace recipe:")
+print(stone_furnace_recipe)
 
-"""
-Planning:
-We need to create an iron chest. There are no iron chests on the map or in our inventory, so we need to craft one from scratch.
-To do this, we need to gather the necessary resources and craft the required items.
+# Print the recipe for firearm-magazine
+firearm_magazine_recipe = get_prototype_recipe(Prototype.FirearmMagazine)
+print("firearm-magazine recipe:")
+print(firearm_magazine_recipe)
 
-Steps:
-1. Gather resources:
-   - Mine at least 6 stone
-   - Mine at least 1 coal for fuel
-   - Mine at least 14 iron ore
-2. Craft a stone furnace
-3. Craft a burner mining drill
-4. Set up the burner mining drill to mine iron
-5. Smelt iron ore into iron plates
-6. Craft the iron chest
-"""
+# Print the recipe for iron-chest
+iron_chest_recipe = get_prototype_recipe(Prototype.IronChest)
+print("iron-chest recipe:")
+print(iron_chest_recipe)
 
 """
-Step 1: Gather resources
-- Mine at least 6 stone
-- Mine at least 1 coal for fuel
-- Mine at least 14 iron ore
+Step 2: Gather resources. We need to mine the following resources:
+- 6 stone (for the furnace)
+- 14 iron ore (for the iron plates)
+- 1 coal (for fuel)
 """
-
 # Define the resources we need to gather
 resources_to_gather = [
     (Resource.Stone, 6),
-    (Resource.Coal, 1),
-    (Resource.IronOre, 14)
+    (Resource.IronOre, 14),
+    (Resource.Coal, 1)
 ]
 
-# Loop through each resource type and quantity
-for resource_type, required_quantity in resources_to_gather:
+# Loop over each resource type and quantity
+for resource_type, quantity in resources_to_gather:
     # Find the nearest patch of this resource
     resource_position = nearest(resource_type)
-    
     # Move to the resource
     move_to(resource_position)
-    
+    print(f"Moved to {resource_type} at {resource_position}")
     # Harvest the resource
-    harvested = harvest_resource(resource_position, required_quantity)
-    
+    harvested = harvest_resource(resource_position, quantity)
+    print(f"Harvested {harvested} {resource_type}")
     # Check if we harvested enough
     current_inventory = inspect_inventory()
     actual_quantity = current_inventory.get(resource_type, 0)
-    
-    assert actual_quantity >= required_quantity, f"Failed to gather enough {resource_type}. Required: {required_quantity}, Actual: {actual_quantity}"
-    
-    print(f"Successfully gathered {actual_quantity} {resource_type}")
-
-print("Successfully gathered all required resources!")
+    assert actual_quantity >= quantity, f"Failed to gather enough {resource_type}. Expected {quantity}, got {actual_quantity}"
 
 # Final inventory check
 final_inventory = inspect_inventory()
-print("Final inventory:", final_inventory)
+print("Final inventory:")
+print(f"Stone: {final_inventory.get(Resource.Stone, 0)}")
+print(f"Iron Ore: {final_inventory.get(Resource.IronOre, 0)}")
+print(f"Coal: {final_inventory.get(Resource.Coal, 0)}")
 
-# Assert that we have at least the required quantities
+# Assert that we have gathered at least the required amount
 assert final_inventory.get(Resource.Stone, 0) >= 6, "Not enough Stone"
-assert final_inventory.get(Resource.Coal, 0) >= 1, "Not enough Coal"
 assert final_inventory.get(Resource.IronOre, 0) >= 14, "Not enough Iron Ore"
+assert final_inventory.get(Resource.Coal, 0) >= 1, "Not enough Coal"
 
-print("All required resources have been successfully gathered!")
-
-"""
-Step 2: Craft a stone furnace
-"""
-
-# Craft a stone furnace
-crafted_furnaces = craft_item(Prototype.StoneFurnace, quantity=1)
-print(f"Crafted {crafted_furnaces} stone furnaces")
-
-# Verify crafting success
-assert crafted_furnaces == 1, "Failed to craft stone furnace"
-print("Successfully crafted a stone furnace")
-
-# Check current inventory for stone
-current_stone_inventory = inspect_inventory().get(Resource.Stone, 0)
-print(f"Remaining stone in inventory: {current_stone_inventory}")
-
-# Check that we still have at least one stone left
-assert current_stone_inventory >= 1, "Not enough remaining stone"
+print("Successfully gathered all required resources!")
 
 """
-Step 3: Craft a burner mining drill
+Step 3: Craft stone furnace. Use 5 stone to craft a stone furnace.
 """
+# Craft the stone furnace
+crafted = craft_item(Prototype.StoneFurnace, 1)
+print(f"Crafted {crafted} Stone Furnace")
 
-# Get the recipe for burner mining drill
-bmd_recipe = get_prototype_recipe(Prototype.BurnerMiningDrill)
-print("Burner Mining Drill Recipe:")
-print(f"Ingredients: {bmd_recipe.ingredients}")
+# Check if the crafting was successful
+current_inventory = inspect_inventory()
+assert current_inventory.get(Prototype.StoneFurnace, 0) >= 1, "Failed to craft Stone Furnace"
 
-# Craft a burner mining drill
-crafted_drills = craft_item(Prototype.BurnerMiningDrill, quantity=1)
-print(f"Crafted {crafted_drills} burner mining drills")
-
-# Verify crafting success
-assert crafted_drills == 1, "Failed to craft burner mining drill"
-print("Successfully crafted a burner mining drill")
-
-# Check current inventory for required items
-current_iron_plate_inventory = inspect_inventory().get(Prototype.IronPlate, 0)
-current_iron_gear_wheel_inventory = inspect_inventory().get(Prototype.IronGearWheel, 0)
-current_stone_furnace_inventory = inspect_inventory().get(Prototype.StoneFurnace, 0)
-
-print(f"Remaining iron plates in inventory: {current_iron_plate_inventory}")
-print(f"Remaining iron gear wheels in inventory: {current_iron_gear_wheel_inventory}")
-print(f"Remaining stone furnaces in inventory: {current_stone_furnace_inventory}")
+print("Successfully crafted a Stone Furnace!")
 
 """
-Step 4: Set up the burner mining drill to mine iron
+Step 4: Set up smelting area. We need to:
+- Place the stone furnace
+- Add coal as fuel to the furnace
 """
+# Place the stone furnace at the origin
+furnace = place_entity(Prototype.StoneFurnace, position=Position(x=0, y=0))
+print(f"Placed Stone Furnace at {furnace.position}")
 
-# Find the nearest iron ore patch
-iron_ore_position = nearest(Resource.IronOre)
+# Insert coal into the furnace as fuel
+updated_furnace = insert_item(Prototype.Coal, furnace, quantity=1)
+print("Inserted coal into the Stone Furnace")
 
-# Move to the iron ore patch
-move_to(iron_ore_position)
+# Check if the coal was successfully added as fuel
+coal_in_furnace = updated_furnace.fuel.get(Prototype.Coal, 0)
+assert coal_in_furnace > 0, "Failed to add coal as fuel to the Stone Furnace"
 
-# Place the burner mining drill
-drill = place_entity(Prototype.BurnerMiningDrill, position=iron_ore_position)
-print(f"Placed burner mining drill at {drill.position}")
-
-# Insert coal into the burner mining drill as fuel
-coal_in_inventory = inspect_inventory().get(Prototype.Coal, 0)
-assert coal_in_inventory >= 1, f"Insufficient coal in inventory. Expected at least 1 but found {coal_in_inventory}"
-
-# Insert all available coal (should be at least 1) into the drill
-updated_drill = insert_item(Prototype.Coal, drill, quantity=coal_in_inventory)
-print(f"Inserted {coal_in_inventory} coal into the burner mining drill")
-
-# Verify that the drill now has fuel
-coal_in_drill = updated_drill.fuel.get(Prototype.Coal, 0)
-assert coal_in_drill > 0, "Failed to fuel burner mining drill"
-
-print("Burner mining drill successfully set up and fueled")
+print("Successfully set up smelting area!")
 
 """
-Step 5: Smelt iron ore into iron plates
+Step 5: Smelt iron plates. We need to:
+- Smelt 14 iron ore into 14 iron plates
 """
+# Insert 14 Iron Ore into the Furnace
+print("Inserting Iron Ore...")
+updated_furnace = insert_item(Prototype.IronOre, updated_furnace, quantity=14)
+print("Inserted Iron Ore into the Furnace")
 
-# Move to the existing stone furnace
-furnace_position = Position(x=0.0, y=0.0)
-move_to(furnace_position)
+# Wait for the smelting to complete
+smelting_time_per_unit = 0.7  # 0.7 seconds per iron ore
+total_smelting_time = int(smelting_time_per_unit * 14)
+sleep(total_smelting_time)
 
-# Get the stone furnace entity
-stone_furnace = get_entity(Prototype.StoneFurnace, position=furnace_position)
+# Extract Iron Plates from the Furnace
+max_attempts = 5
+for attempt in range(max_attempts):
+    print(f"Attempt {attempt + 1}: Extracting Iron Plates...")
+    extract_item(Prototype.IronPlate, updated_furnace.position, quantity=14)
+    current_iron_plates = inspect_inventory().get(Prototype.IronPlate, 0)
+    if current_iron_plates >= 14:
+        break
+    sleep(10)  # Wait a bit before trying again
 
-# Insert coal into the stone furnace as fuel
-updated_furnace = insert_item(Prototype.Coal, stone_furnace, quantity=1)
-print("Inserted 1 coal into the stone furnace")
+print(f"Extracted Iron Plates; Current Inventory Count: {current_iron_plates}")
+assert current_iron_plates >= 14, f"Failed to obtain required number of Iron Plates; Expected: 14, Actual: {current_iron_plates}"
 
-# Check if there are any existing contents in the furnace and extract them
-existing_contents = updated_furnace.furnace_result.get(Prototype.IronPlate, 0)
-if existing_contents > 0:
-    extract_item(Prototype.IronPlate, updated_furnace.position, existing_contents)
-    print(f"Extracted {existing_contents} existing iron plates from the furnace")
-
-# Insert all available iron ore into the furnace
-iron_ore_in_inventory = inspect_inventory().get(Prototype.IronOre, 0)
-assert iron_ore_in_inventory >= 14, f"Insufficient iron ore in inventory. Expected at least 14 but found {iron_ore_in_inventory}"
-
-updated_furnace = insert_item(Prototype.IronOre, updated_furnace, quantity=iron_ore_in_inventory)
-print(f"Inserted {iron_ore_in_inventory} iron ore into the stone furnace")
-
-# Wait for smelting to complete
-smelting_time = 0.7 * iron_ore_in_inventory  # Assuming a smelting time of 0.7 seconds per iron ore
-sleep(smelting_time)
-
-# Extract the smelted iron plates
-expected_iron_plates = inspect_inventory().get(Prototype.IronPlate, 0) + iron_ore_in_inventory
-extract_item(Prototype.IronPlate, updated_furnace.position, quantity=iron_ore_in_inventory)
-
-# Verify that we have extracted the expected number of iron plates
-actual_iron_plates = inspect_inventory().get(Prototype.IronPlate, 0)
-assert actual_iron_plates >= expected_iron_plates, f"Failed to obtain enough iron plates. Expected: {expected_iron_plates}, Actual: {actual_iron_plates}"
-
-print(f"Successfully obtained {actual_iron_plates} iron plates")
-
+print("Successfully smelted Iron Plates!")
 
 """
-Step 6: Craft the iron chest
+Step 6: Craft firearm magazine. We need to craft a firearm magazine using 4 iron plates.
 """
+# Crafting a Firearm Magazine
+crafted_magazines = craft_item(Prototype.FirearmMagazine, 1)
+print(f"Crafted {crafted_magazines} Firearm Magazine(s)")
 
-# Craft the iron chest
-crafted_chests = craft_item(Prototype.IronChest, quantity=1)
-print(f"Crafted {crafted_chests} iron chests")
+# Check if the crafting was successful
+magazines_in_inventory = inspect_inventory().get(Prototype.FirearmMagazine, 0)
+assert magazines_in_inventory >= 1, f"Failed to craft Firearm Magazine; Expected at least 1, Found: {magazines_in_inventory}"
 
-# Verify crafting success
-assert crafted_chests == 1, "Failed to craft iron chest"
-print("Successfully crafted an iron chest")
+print("Successfully crafted a Firearm Magazine!")
 
-# Check current inventory for iron plates
-current_iron_plate_inventory = inspect_inventory().get(Prototype.IronPlate, 0)
-print(f"Remaining iron plates in inventory: {current_iron_plate_inventory}")
+"""
+Step 7: Craft iron chest. We need to craft an iron chest using 8 iron plates.
+"""
+# Crafting an Iron Chest
+crafted_chests = craft_item(Prototype.IronChest, 1)
+print(f"Crafted {crafted_chests} Iron Chest(s)")
 
-# Assert that we have enough iron plates left
-assert current_iron_plate_inventory >= 4, "Not enough remaining iron plates"
+# Check if the crafting was successful
+chests_in_inventory = inspect_inventory().get(Prototype.IronChest, 0)
+assert chests_in_inventory >= 1, f"Failed to craft Iron Chest; Expected at least 1, Found: {chests_in_inventory}"
 
-print("Iron chest crafting completed successfully!")
+print("Successfully crafted an Iron Chest!")
 
+# Final inventory check
+final_inventory = inspect_inventory()
+print("Final Inventory:")
+print(f"Iron Plates: {final_inventory.get(Prototype.IronPlate, 0)}")
+print(f"Iron Chests: {final_inventory.get(Prototype.IronChest, 0)}")
+print(f"Firearm Magazines: {final_inventory.get(Prototype.FirearmMagazine, 0)}")
 

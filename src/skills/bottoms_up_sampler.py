@@ -1,6 +1,7 @@
 import ast
 import json
 import os
+import sys
 import textwrap
 from itertools import cycle
 from typing import List, Dict, Any
@@ -15,6 +16,8 @@ load_dotenv()
 import time
 from skills.skills_db import SkillsDB
 import copy
+
+
 def is_valid_python(code_string: str) -> bool:
     try:
         ast.parse(code_string)
@@ -27,7 +30,7 @@ def eval_program_with_result_trace(instance, program):
         try:
             score, goal, result = instance.eval_with_error(program, timeout=60)
         except Exception as e:
-            result = f"error: {str(e)}"
+            result = f"error: {str(e.args[0])}"
         # split result by newlines
         output_list = result.splitlines()
         return output_list, result

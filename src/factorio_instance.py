@@ -539,6 +539,9 @@ class FactorioInstance:
         self.begin_transaction()
         self.add_command('/c global.alerts = {}', raw=True)
         self.add_command('/c global.fast = {}'.format('true' if fast else 'false'), raw=True)
+        self.add_command('/c game.map_settings.enemy_expansion.enabled = false', raw=True)
+        self.add_command('/c game.map_settings.enemy_evolution.enabled = false', raw=True)
+        self.add_command('/c game.forces.enemy.kill_all_units()', raw=True)
         self.add_command(f'/c player = game.players[{PLAYER}]', raw=True)
         self.execute_transaction()
 

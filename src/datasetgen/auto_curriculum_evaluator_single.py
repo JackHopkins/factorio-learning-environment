@@ -14,7 +14,7 @@ from skills.bottoms_up_sampler import eval_program_with_result_trace, get_mining
 from prompts import TASK_GENERATION_PROMPT, USER_TASK_PROMPT, RECENT_TASK_HISTORY_PROMPT
 
 
-class AutoCurriculumEvaluator(ModelEvaluator):
+class AutoCurriculumEvaluatorSingle(ModelEvaluator):
     def __init__(self, *args,
                  curriculum_strategy: CurriculumStrategy = None,
                  **kwargs):
@@ -37,6 +37,10 @@ class AutoCurriculumEvaluator(ModelEvaluator):
         )
 
         program, full_output = self._get_program(messages)
+
+        # Reset position
+        instance.move_to(Position(x=0, y=0))
+
         output_list, result = eval_program_with_result_trace(instance, program)
         achieved_pl = instance.production_stats()
 
@@ -98,8 +102,6 @@ class AutoCurriculumEvaluator(ModelEvaluator):
             # Reset production stats before task
             instance.production_stats()
 
-            # Reset position
-            instance.move_to(Position(x=0, y=0))
             # Generate and execute program
             trace: Trace = self._execute_task(
                 instance,
@@ -263,7 +265,7 @@ if __name__ == '__main__':
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
 
-    evaluator = AutoCurriculumEvaluator(
+    evaluator = AutoCurriculumEvaluatorSingle(
         model_path=r"ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91",
         system_prompt_path=r"../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_self_gen.md",
         save_path=r"../datasetgen/finetuned_model_gen",
@@ -271,4 +273,4 @@ if __name__ == '__main__':
         curriculum_strategy=RecipeBasedCurriculum("recipes.jsonl")
     )
     instance = FactorioInstance(address='localhost', bounding_box=200, tcp_port=27015, fast=True, cache_scripts=False)
-    evaluator.run_curriculum_episode(instance)
+    evaluator.run_curriculum_episode(instance, num_tasks=120)

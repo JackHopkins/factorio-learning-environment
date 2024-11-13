@@ -28,6 +28,15 @@ def test_move_to(game):
             game.move_to(game.nearest(resource))
             pass
 
+def test_move_to_bug(game):
+    # Get stone for stone furnace
+    game.move_to(game.nearest(Resource.Stone))
+    game.harvest_resource(game.nearest(Resource.Stone), quantity=5)
+
+    # Check if we got the stone
+    inventory = game.inspect_inventory()
+    assert inventory.get(Prototype.Stone) >= 5, "Failed to get enough stone"
+
 def test_move_to_check_position(game):
     target_pos = Position(x=-9.5, y=-11.5)
 

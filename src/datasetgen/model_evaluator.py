@@ -1,18 +1,21 @@
-
-import os
-import ast
 import json
-from typing import List, Dict, Any
+import os
+from typing import List
+
 from dotenv import load_dotenv
+
+from datasetgen.trace import Trace
 from factorio_instance import FactorioInstance
-import random
 from skills.bottoms_up_sampler import eval_program_with_result_trace, get_mining_setup
+
 load_dotenv()
 from llm_factory import LLMFactory
-from dataset_utils import instantiate_the_map, initialise_starting_scenario
+from datasetgen.dataset_utils import instantiate_the_map, initialise_starting_scenario
+
+
 class ModelEvaluator:
     def __init__(self, model_path, system_prompt_path, save_path, starting_scenarios_folder):
-        
+
         self.model_path = model_path
         self.system_prompt_path = system_prompt_path
         self.llm_factory = LLMFactory(model_path)
@@ -27,6 +30,13 @@ For your plan, follow this structure:
 4) Execution -- Taking into account 1,2 and 3, what steps do we need to take to successfully carry out the task
 """
 
+    def parse_program(self, content: str):
+        if "```python" not in content:
+            print(f"Missing python code in response: {content}")
+            return content
+
+        program = content.split("```python")[1].split("```")[0]
+        return program
 
     def run_unsupervised_episode(self, instance, length: int, include_plan: bool = False):
         """
@@ -43,8 +53,8 @@ For your plan, follow this structure:
                 user_message = user_message.strip()
             messages.append({"role": "user", "content": user_message})
             response = self.llm_factory.call(messages=messages,
-                                            temperature=0.7,
-                                            max_tokens=4096)
+                                             temperature=0.7,
+                                             max_tokens=4096)
             full_output = response.choices[0].message.content
             if "```python" in full_output:
                 program = full_output.split("```python")[1]
@@ -60,20 +70,21 @@ For your plan, follow this structure:
                 else:
                     inventory_dict[item] = starting_inventory[item]
             traces.append({"program": program, "output": output_list, "result": result,
-                            "starting_inventory": inventory_dict, "mining_setup": mining_setup,
-                            "messages": messages, "planning": include_plan,
-                            "full_output": full_output, 
-                            "success": "error" not in result.lower()
-                            })
+                           "starting_inventory": inventory_dict, "mining_setup": mining_setup,
+                           "messages": messages, "planning": include_plan,
+                           "full_output": full_output,
+                           "success": "error" not in result.lower()
+                           })
             if "error" in result.lower():
                 print(f"Error in program: {result}")
             else:
-                print(f"Succcess")
-        
+                print(f"Success")
+
         # save the traces to the save path
         unsupervised_save_path = os.path.join(self.save_path, "unsupervised_traces")
         # first get the number of folders in unsupervised_save_path
-        num_folders = len([name for name in os.listdir(unsupervised_save_path) if os.path.isdir(os.path.join(unsupervised_save_path, name))])
+        num_folders = len([name for name in os.listdir(unsupervised_save_path) if
+                           os.path.isdir(os.path.join(unsupervised_save_path, name))])
         # create a new folder for the traces
         save_folder = os.path.join(unsupervised_save_path, f"trace_{num_folders}")
         os.makedirs(save_folder)
@@ -91,11 +102,11 @@ For your plan, follow this structure:
         Need to implement saving the successful trace
         """
         instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=27015,
-                                fast=True,
-                                #cache_scripts=False,
-                                inventory={})
+                                    bounding_box=200,
+                                    tcp_port=27015,
+                                    fast=True,
+                                    #cache_scripts=False,
+                                    inventory={})
         self.init_system_prompt(instance)
         for i in range(tries):
             messages = [{"role": "system", "content": self.system_prompt}]
@@ -107,8 +118,8 @@ For your plan, follow this structure:
                 user_message = user_message.strip()
             messages.append({"role": "user", "content": user_message})
             response = self.llm_factory.call(messages=messages,
-                                            temperature=0.7,
-                                            max_tokens=2048)
+                                             temperature=0.7,
+                                             max_tokens=2048)
             full_output = response.choices[0].message.content
             if "```python" in full_output:
                 program = full_output.split("```python")[1]
@@ -132,7 +143,7 @@ For your plan, follow this structure:
         # change all " marks to '
         #self.system_prompt.replace('"', "'")
 
-    def run_simulations_from_starting_scenarios(self, list_of_starting_scenario_folders: List[str], 
+    def run_simulations_from_starting_scenarios(self, list_of_starting_scenario_folders: List[str],
                                                 num_episodes: int, episode_length: int, include_plan: bool = False):
         """
         Runs the simulations from the starting scenarios
@@ -144,16 +155,17 @@ For your plan, follow this structure:
         """
         # start the factorio instance
         instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=27015,
-                                fast=True,
-                                #cache_scripts=False,
-                                inventory={})
-        self.init_system_prompt(instance) # Inits the system prompt
+                                    bounding_box=200,
+                                    tcp_port=27015,
+                                    fast=True,
+                                    #cache_scripts=False,
+                                    inventory={})
+        self.init_system_prompt(instance)  # Inits the system prompt
         for starting_scenario_folder in list_of_starting_scenario_folders:
             starting_scenario_path = os.path.join(self.starting_scenarios_folder, starting_scenario_folder)
             for i in range(num_episodes):
-                starting_scenario = initialise_starting_scenario(starting_scenario_path) # Gets the starting scenario details
+                starting_scenario = initialise_starting_scenario(
+                    starting_scenario_path)  # Gets the starting scenario details
                 # instantiate the map
                 result = instantiate_the_map(starting_scenario, instance, self.starting_scenarios_folder)
                 if not result["success"]:
@@ -162,16 +174,17 @@ For your plan, follow this structure:
                 # runs the actual episode
                 self.run_unsupervised_episode(instance, episode_length, include_plan)
 
+
 def get_all_folders_in_path(path):
     return [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
 
 
 if __name__ == "__main__":
     model_path = r"ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91"
-    evaluator = ModelEvaluator(model_path, 
-                               r"prompts\bottoms_up_prompts\finetuning_prompts\system_message_policy_self_gen.md",
-                               save_path = r"datasets\finetuned_model_gen", # Where to save the traces
-                               starting_scenarios_folder=r"skills\data_scenarios\starting_scenarios" # Where the starting scenarios are stored
+    evaluator = ModelEvaluator(model_path,
+                               r"../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_self_gen.md",
+                               save_path=r"../datasetgen/finetuned_model_gen",  # Where to save the traces
+                               starting_scenarios_folder=r"../skills/data_scenarios/starting_scenarios" # Where the starting scenarios are stored
                                )
     supervised_trace = True
     if supervised_trace:
@@ -180,5 +193,5 @@ if __name__ == "__main__":
         #starting_scenarios = ["multiple_entiti_environment"]
         evaluator.run_simulations_from_starting_scenarios(starting_scenarios, 2, 2, include_plan=True)
     else:
-       objective = "Get 1 offshore pump"
-       evaluator.run_supervised_episode(5, objective, include_plan=True)
+        objective = "Get 1 offshore pump"
+        evaluator.run_supervised_episode(5, objective, include_plan=True)

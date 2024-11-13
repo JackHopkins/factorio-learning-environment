@@ -59,6 +59,7 @@ class Prototype(enum.Enum):
     WoodenChest = "wooden-chest", Chest
     IronGearWheel = "iron-gear-wheel", Entity
     Coal = "coal", None
+    Wood = "wood", None
     IronPlate = "iron-plate", None # Crafting requires smelting 1 iron ore, smelts for 0.5 seconds per ore
     SteelPlate = "steel-plate", None # Crafting requires smelting 5 iron plates, smelts for 4 seconds per ore
     CopperPlate = "copper-plate", None # Crafting requires smelting 1 copper ore, smelts for 0.5 seconds per ore

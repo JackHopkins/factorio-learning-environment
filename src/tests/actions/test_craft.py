@@ -58,7 +58,11 @@ def test_craft_entity_with_missing_intermediate_resources(game):
     :param game:
     :return:
     """
+    starting_stats = game.production_stats()
     # Craft 20 copper coil
     crafted = game.craft_item(Prototype.OffshorePump, quantity=1)
+
+    # Check the production stats
+    final_stats = game.production_stats()
 
     assert crafted == 1

@@ -28,6 +28,22 @@ global.actions.craft_item = function(player_index, entity, count)
         return true, recipe
     end
 
+    -- Helper function to update production statistics
+    local function update_production_stats(force, recipe, crafts_count)
+        local stats = force.item_production_statistics
+        -- Record consumed ingredients
+        for _, ingredient in pairs(recipe.ingredients) do
+            stats.on_flow(ingredient.name, -ingredient.amount * crafts_count)
+        end
+        -- Record produced items
+        for _, product in pairs(recipe.products) do
+            if product.type == "item" then
+                stats.on_flow(product.name, product.amount * crafts_count)
+            end
+        end
+    end
+
+
     -- Slow crafting implementation
     local function slow_craft(player, entity_name, count)
         local can_craft, recipe_or_error = can_craft_recipe(player, entity_name)
@@ -51,6 +67,9 @@ global.actions.craft_item = function(player_index, entity, count)
         if crafted == 0 then
             return "unable to begin crafting - check prerequisites and inventory space"
         end
+
+        -- Update production statistics for successful craft
+        update_production_stats(player.force, recipe, crafted)
 
         return crafted
     end
@@ -99,6 +118,9 @@ global.actions.craft_item = function(player_index, entity, count)
         if crafted < actual_craft_count then
             player.surface.spill_item_stack(player.position, {name = entity_name, count = actual_craft_count - crafted})
         end
+
+        -- Update production statistics for successful craft
+        update_production_stats(player.force, recipe, crafted)
 
         return actual_craft_count
     end

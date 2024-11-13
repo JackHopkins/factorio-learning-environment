@@ -18,7 +18,11 @@ pyautogui
 pydantic
 dotenv
 slpp
+lupa
 factorio-rcon-py
 numpy
 pillow
 scikit-image
+openai
+anthropic
+psycopg2

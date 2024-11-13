@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+
+from factorio_entities import Position
 from trace import Trace
 from typing import List, Dict, Tuple
 from venv import logger
@@ -96,6 +98,8 @@ class AutoCurriculumEvaluator(ModelEvaluator):
             # Reset production stats before task
             instance.production_stats()
 
+            # Reset position
+            instance.move_to(Position(x=0, y=0))
             # Generate and execute program
             trace: Trace = self._execute_task(
                 instance,
@@ -266,5 +270,5 @@ if __name__ == '__main__':
         starting_scenarios_folder=r"../skills/data_scenarios/starting_scenarios",
         curriculum_strategy=RecipeBasedCurriculum("recipes.jsonl")
     )
-    instance = FactorioInstance(address='localhost', bounding_box=200, tcp_port=27015, fast=True)
+    instance = FactorioInstance(address='localhost', bounding_box=200, tcp_port=27015, fast=True, cache_scripts=False)
     evaluator.run_curriculum_episode(instance)

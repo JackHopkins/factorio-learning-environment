@@ -36,6 +36,6 @@ class GetPrototypeRecipe(Action):
                 if prototype.value[0] == name:
                     return prototype
 
-        ingredients = [Ingredient(name=ingredient['name'], count=ingredient['amount']) for ingredient in parsed_response['ingredients']]
+        ingredients = [Ingredient(name=ingredient['name'], count=ingredient['amount'], type=ingredient['type'] if 'type' in ingredient else None) for ingredient in parsed_response['ingredients']]
 
         return Recipe(name=name, ingredients=ingredients)

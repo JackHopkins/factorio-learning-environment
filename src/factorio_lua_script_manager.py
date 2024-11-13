@@ -1,10 +1,11 @@
 import hashlib
 import json
 from pathlib import Path
-
 from factorio_rcon_utils import _load_init, _get_action_dir, _get_init_dir, _get_action_names, _load_script, \
     _get_init_names, _load_action
 from src.rcon.factorio_rcon import RCONClient
+
+from lupa.lua54 import LuaRuntime
 
 class FactorioLuaScriptManager:
     def __init__(self,
@@ -21,13 +22,25 @@ class FactorioLuaScriptManager:
             self.game_checksums = self._get_game_checksums(rcon_client)
         self.action_scripts = self.get_actions_to_load()
         self.init_scripts = self.get_inits_to_load()
+        self.lua = LuaRuntime(unpack_returned_tuples=True)
 
     def init_action_checksums(self):
         checksum_init_script = _load_init("checksum")
         response = self.rcon_client.send_command("/c "+checksum_init_script)
         return response
 
+    def check_lua_syntax(self, script):
+        try:
+            self.lua.execute(script)
+            return True, None
+        except Exception as e:
+            if 'attempt to index a nil value' in e.args[0]:
+                if 'global' in e.args[0]:
+                    return True, None
+            return False, e.args[0]
+
     def load_action_into_game(self, name):
+
         if name not in self.action_scripts:
             # attempt to load the script from the filesystem
             script = _load_action(name)
@@ -40,7 +53,10 @@ class FactorioLuaScriptManager:
                 return
             self.update_game_checksum(self.rcon_client, name, checksum)
 
-        self.rcon_client.send_command(f'/c ' + script)
+        correct, error = self.check_lua_syntax(script)
+        if not correct:
+            raise Exception(f"Syntax error in: {name}: {error}")
+        result = self.rcon_client.send_command(f'/c ' + script)
 
     def load_init_into_game(self, name):
         if name not in self.init_scripts:

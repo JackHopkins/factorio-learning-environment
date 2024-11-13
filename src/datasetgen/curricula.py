@@ -104,7 +104,8 @@ class RecipeBasedCurriculum(CurriculumStrategy):
                 recipe.name in task.achieved_pl["output"]
                 for task in task_history if task.success
             )
-            return (ingredient_count * 0.5 + depth * 0.3) * (0.5 if previously_crafted else 1.0)
+            score = (ingredient_count * 0.5 + depth * 0.3) * (0.5 if previously_crafted else 1.0)
+            return score
 
         return max(craftable_recipes, key=recipe_score)
 

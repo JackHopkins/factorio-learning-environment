@@ -10,8 +10,8 @@ from slpp import slpp as lua
 
 
 def _load_script(filename):
-    with open(filename, "r") as file:
-        script_string = "".join(file.readlines())
+    with open(filename, "r", encoding='utf-8') as file:
+        script_string = file.read()
         pruned = Path(filename).name[:-4]
         return pruned, script_string
 

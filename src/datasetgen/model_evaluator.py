@@ -9,7 +9,7 @@ import random
 from skills.bottoms_up_sampler import eval_program_with_result_trace, get_mining_setup
 load_dotenv()
 from llm_factory import LLMFactory
-from datasets.dataset_utils import instantiate_the_map, initialise_starting_scenario
+from dataset_utils import instantiate_the_map, initialise_starting_scenario
 class ModelEvaluator:
     def __init__(self, model_path, system_prompt_path, save_path, starting_scenarios_folder):
         

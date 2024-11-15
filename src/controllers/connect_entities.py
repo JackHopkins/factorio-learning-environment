@@ -219,7 +219,7 @@ class ConnectEntities(Action):
             # If we are connecting a position with a transport belt, we need to add 0.5 to the position to prevent
             # Weird behaviour from the pathfinding
             source_position = Position(x=math.floor(source_position.x)+0.5, y=math.floor(source_position.y)+0.5)
-
+            pass
 
         if isinstance(target_entity, BeltGroup):
             target_position = target_entity.input_positions[0]
@@ -255,6 +255,7 @@ class ConnectEntities(Action):
             # If we are connecting a position with a transport belt / pipe, we need to add 0.5 to the position to prevent
             # Weird behaviour from the pathfinding
             target_position = Position(x=math.floor(target_position.x) + 0.5, y=math.floor(target_position.y) + 0.5)
+            pass
 
         if isinstance(source_entity, PipeGroup) and isinstance(target_entity, PipeGroup):
             # If the source_entity and the target_entity is the same object, ensure there are only 2 input_positions
@@ -384,7 +385,7 @@ class ConnectEntities(Action):
             for entity_group in entity_groups:
                 if connection_type == Prototype.TransportBelt:
                     if len(entity_group.belts) == 1:
-                        self.pickup_entity(connection_type, entity_group.belts[0].position)
+                        #self.pickup_entity(connection_type, entity_group.belts[0].position)
                         entity_groups.remove(entity_group)
                 elif connection_type == Prototype.Pipe:
                     if len(entity_group.pipes) == 1:

@@ -39,14 +39,14 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
         start = start_position,
         goal = goal_position,
         force = force,
-        radius = radius or 1,
+        radius = radius or 0,
         entity_to_ignore = player.character,
         can_open_gates = true,
         path_resolution_modifier = 0,
         pathfind_flags = {
-            cache = true,
+            cache = false,
             no_break = true,
-            prefer_straight_paths = false,
+            prefer_straight_paths = true,
             allow_paths_through_own_entities = allow_paths_through_own_entities
         }
     }

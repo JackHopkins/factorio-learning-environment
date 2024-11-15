@@ -63,13 +63,13 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
 
         -- Calculate spacing based on the relevant dimensions
         if direction == 0 then     -- North
-            new_pos.y = new_pos.y - math.ceil(ref_height/2 + entity_height/2 + effective_gap)
+            new_pos.y = new_pos.y - (math.ceil(ref_height + entity_height)/2 + effective_gap)
         elseif direction == 1 then -- East
-            new_pos.x = new_pos.x + math.ceil(ref_width/2 + entity_width/2 + effective_gap)
+            new_pos.x = new_pos.x + (math.ceil(ref_width + entity_width)/2 + effective_gap)
         elseif direction == 2 then -- South
-            new_pos.y = new_pos.y + math.ceil(ref_height/2 + entity_height/2 + effective_gap)
+            new_pos.y = new_pos.y + (math.ceil(ref_height + entity_height)/2 + effective_gap)
         else  -- West
-            new_pos.x = new_pos.x - math.ceil(ref_width/2 + entity_width/2 + effective_gap)
+            new_pos.x = new_pos.x - (math.ceil(ref_width + entity_width)/2 + effective_gap)
         end
 
         -- Round the position to the nearest 0.5 to align with Factorio's grid
@@ -241,7 +241,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     -- Modify the error message in the can_build check
     if not can_build then
         local area = {{new_position.x - 1, new_position.y - 1}, {new_position.x + 1, new_position.y + 1}}
-        local entities = player.surface.find_entities_filtered{area = area, type = {"beam", "resource"}, invert=true}
+        local entities = player.surface.find_entities_filtered{area = area, type = {"beam", "resource", "player"}, invert=true}
         local entity_names = {}
         for _, e in ipairs(entities) do
             game.print(e.type)

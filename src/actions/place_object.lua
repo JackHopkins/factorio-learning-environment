@@ -130,7 +130,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 if found_position then
                     local have_built = player.surface.create_entity{
                         name = entity,
-                        force = "player",
+                        force = player.force,
                         position = new_position,
                         direction = global.utils.get_entity_direction(entity, direction),
                         player = player
@@ -171,7 +171,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
         local have_built = player.surface.create_entity{
             name = entity,
-            force = "player",
+            force = player.force,
             position = position,
             direction = global.utils.get_entity_direction(entity, direction),
             player = player

@@ -30,6 +30,87 @@ def game(instance):
     #instance.reset()
 
 
+def test_multiple_inserter_connections(game):
+    """
+    Tests placing multiple pairs of burner inserters and connecting them with transport belts.
+    Verifies the belt positions and connections for each iteration.
+    """
+    test_iterations = 5  # Number of inserter pairs to test
+
+    for i in range(test_iterations):
+        # Place first inserter at position with some offset from origin
+        position_1 = Position(x=i * 5, y=i * 3)
+        game.move_to(position_1)
+        inserter_1 = game.place_entity(
+            Prototype.BurnerInserter,
+            position=position_1,
+            direction=Direction.LEFT,
+            exact=True
+        )
+
+        # Place second inserter at a different position
+        position_2 = Position(x=i * 5 + 10, y=i * 3 + 8)
+        game.move_to(position_2)
+        inserter_2 = game.place_entity(
+            Prototype.BurnerInserter,
+            position=position_2,
+            direction=Direction.LEFT,
+            exact=True
+        )
+
+        # Connect the inserters with transport belts
+        belt_groups = game.connect_entities(
+            inserter_1,
+            inserter_2,
+            connection_type=Prototype.TransportBelt
+        )
+
+        # Verify we got exactly one belt group
+        assert len(belt_groups) == 1, f"Iteration {i}: Expected 1 belt group, got {len(belt_groups)}"
+
+        belt_group = belt_groups[0]
+
+        # Verify the belt group has belts
+        assert len(belt_group.belts) > 0, f"Iteration {i}: Belt group has no belts"
+
+        # Verify the first belt position matches first inserter's position
+        assert belt_group.belts[0].position.is_close(
+            inserter_1.drop_position,
+            0.5
+        ), f"Iteration {i}: First belt position mismatch"
+
+        # Verify the last belt position matches second inserter's position
+        assert belt_group.belts[-1].position.is_close(
+            inserter_2.pickup_position,
+            0.5
+        ), f"Iteration {i}: Last belt position mismatch"
+
+        # Verify belt continuity - each belt should connect to the next one
+        for j in range(len(belt_group.belts) - 1):
+            current_belt = belt_group.belts[j]
+            next_belt = belt_group.belts[j + 1]
+
+            # Belts should be adjacent (distance of 1 or less)
+            distance = math.sqrt(
+                (current_belt.position.x - next_belt.position.x) ** 2 +
+                (current_belt.position.y - next_belt.position.y) ** 2
+            )
+            assert distance <= 1.0, f"Iteration {i}: Gap detected between belts at index {j}"
+
+        # Verify the number of belts matches the Manhattan distance between inserters
+        expected_belt_count = int(
+            abs(position_1.x - position_2.x) +
+            abs(position_1.y - position_2.y)
+        ) + 1  # +1 because we need to include both end points
+
+        assert len(belt_group.belts) >= expected_belt_count, (
+            f"Iteration {i}: Expected at least {expected_belt_count} belts, "
+            f"got {len(belt_group.belts)}"
+        )
+
+        # Clean up for next iteration
+        game.reset()
+
 def test_inserter_pickup_positions(game):
 
     # Lay belts from intermediate position to iron position (along X-axis)

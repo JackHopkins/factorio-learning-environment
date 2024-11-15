@@ -147,10 +147,8 @@ class FactorioInstance:
         if not game_state:
             self._reset(**self.initial_inventory if isinstance(self.initial_inventory, dict) else self.initial_inventory.__dict__)
         else:
-            blueprint = None
-            self._load_blueprint(blueprint)
-            self._reset(**game_state.inventory.__dict__)
-
+            self._reset(**dict(game_state.inventory))
+            self._load_entity_state(game_state.entities, decompress=True)
 
         try:
             self.observe_all()

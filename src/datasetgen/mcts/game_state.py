@@ -4,45 +4,41 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Dict, Any
 
-
-def _entity_serializer(obj: Any) -> Dict:
-    """Custom serializer for entity-related objects"""
-    if isinstance(obj, Enum):
-        return obj.value
-    if hasattr(obj, "dict"):
-        return obj.dict()
-    if hasattr(obj, "__dict__"):
-        return {k: v for k, v in obj.__dict__.items()
-                if not k.startswith('_')}
-    raise TypeError(f"Object of type {type(obj)} is not serializable")
-
 @dataclass
 class GameState:
     """Serializable Factorio game state"""
-    entities: List[Dict[str, Any]]
+    entities: str # Serialized list of entities
     inventory: Dict[str, int]
     timestamp: float = field(default_factory=time.time)
 
     @classmethod
     def from_instance(cls, instance: 'FactorioInstance') -> 'GameState':
         """Capture current game state from Factorio instance"""
-        entities = instance.get_entities()
-        serialized_entities = [_entity_serializer(entity) for entity in entities]
+        entities = instance._save_entity_state(compress=True, encode=True)
         return cls(
-            entities=serialized_entities,
+            entities=entities,
             inventory=instance.inspect_inventory(),
         )
 
-    def serialize(self) -> str:
+    @classmethod
+    def parse_raw(cls, json_str: str) -> 'GameState':
+        data = json.loads(json_str)
+        return cls(entities=data['entities'], inventory=data['inventory'], timestamp=data['timestamp'] if 'timestamp' in data else time.time())
+
+    @classmethod
+    def parse(cls, data) -> 'GameState':
+        return cls(entities=data['entities'], inventory=data['inventory'],
+                   timestamp=data['timestamp'] if 'timestamp' in data else time.time())
+
+    def to_raw(self) -> str:
         """Convert state to JSON string"""
         return json.dumps({
             'entities': self.entities,
-            'inventory': self.inventory,
+            'inventory': self.inventory.__dict__,
             'timestamp': self.timestamp
         })
 
-    @classmethod
-    def deserialize(cls, state_str: str) -> 'GameState':
-        """Reconstruct state from JSON string"""
-        data = json.loads(state_str)
-        return cls(**data)
+    def to_instance(self, instance: 'FactorioInstance'):
+        """Restore game state to Factorio instance"""
+        instance._load_entity_state(self.entities, decode=True)
+        instance.set_inventory(**self.inventory)

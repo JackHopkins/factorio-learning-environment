@@ -1,13 +1,18 @@
 import concurrent
+import os
 from typing import Tuple, List
 
+from dotenv import load_dotenv
+
 from cluster.local.cluster_ips import get_local_container_ips
+from datasetgen.mcts.db_client import DBClient
 from datasetgen.mcts.factorio_evaluator import FactorioEvaluator
 from datasetgen.mcts.game_state import GameState
 from datasetgen.mcts.mcts import MCTS
 from factorio_instance import FactorioInstance
 from llm_factory import LLMFactory
 
+load_dotenv()
 
 def create_instance(params: Tuple[str, int, int]) -> FactorioInstance:
     """Create a single Factorio instance with the given parameters"""
@@ -23,7 +28,7 @@ def create_instance(params: Tuple[str, int, int]) -> FactorioInstance:
 
 
 def create_parallel_instances() -> List[FactorioInstance]:
-    """Create Factorio instances in parallel using ThreadPoolExecutor"""
+    """Create Factorio instances in parallel using ThreadPoolExecutor from local servers"""
     ips, udp_ports, tcp_ports = get_local_container_ips()
     params = list(zip(ips, udp_ports, tcp_ports))
 
@@ -33,20 +38,27 @@ def create_parallel_instances() -> List[FactorioInstance]:
     return instances
 
 async def main():
-
-    instances = create_parallel_instances()
-
     # Initialize components
     llm = LLMFactory("ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91")
-    evaluator = FactorioEvaluator(instances)
+    db_client = DBClient(host=os.getenv("SKILLS_DB_HOST"),
+                         port=os.getenv("SKILLS_DB_PORT"),
+                         dbname=os.getenv("SKILLS_DB_NAME"),
+                         user=os.getenv("SKILLS_DB_USER"),
+                         password=os.getenv("SKILLS_DB_PASSWORD"))
+
+    instances = create_parallel_instances()
+    # Initialize FactorioEvaluator with the list of instances
+    evaluator = FactorioEvaluator(db_client, instances)
     initial_state = GameState.from_instance(instances[0])
 
+    # Get execution directory from __file__ or other source
+    execution_dir = os.path.dirname(os.path.realpath(__file__))
     # load from prompts/bottoms_up_prompts/system_message_policy_self_gen into string
-    with open("/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/src/prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_self_gen.md", "r") as f:
+    with open("../../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_self_gen.md", "r") as f:
         system_prompt = f.read().format(schema=instances[0].get_system_prompt())
 
     print("Initializing MCTS...")
-    mcts = MCTS(llm, evaluator, initial_state, system_prompt)
+    mcts = MCTS(llm, db_client, evaluator, system_prompt, initial_state)
 
     print("Starting MCTS search...")
     best_programs = await mcts.search(

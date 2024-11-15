@@ -13,7 +13,7 @@ class SaveEntityState(Action):
         super().__init__(*args)
 
     def __call__(self,
-                 distance=100,
+                 distance=500,
                  player_entities=True,
                  resource_entities=False,
                  encode=False,
@@ -24,7 +24,7 @@ class SaveEntityState(Action):
         :arg: distance: Distance around the player to search for entities. Default is 100 tiles.
         :arg: player_entities: Whether or not to include player entities in the blueprint. Default is True.
         :arg: resource_entities: Whether or not to include resource entities in the blueprint. Default is False.
-            Note: This is enormously expensive!
+            Note: This is *enormously* expensive!
         :arg: encode: Whether or not to encode the blueprint string. Default is False.
         :arg: compress: Whether or not to compress the blueprint string before encoding it. Default is False.
             Note: Perform encoding and compression if we are sending this over a network.

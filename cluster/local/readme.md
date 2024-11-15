@@ -1,0 +1,1 @@
+We run a local cluster using Docker

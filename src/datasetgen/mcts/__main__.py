@@ -1,0 +1,70 @@
+import concurrent
+from typing import Tuple, List
+
+from cluster.local.cluster_ips import get_local_container_ips
+from datasetgen.mcts.factorio_evaluator import FactorioEvaluator
+from datasetgen.mcts.game_state import GameState
+from datasetgen.mcts.mcts import MCTS
+from factorio_instance import FactorioInstance
+from llm_factory import LLMFactory
+
+
+def create_instance(params: Tuple[str, int, int]) -> FactorioInstance:
+    """Create a single Factorio instance with the given parameters"""
+    ip, udp_port, tcp_port = params
+    return FactorioInstance(
+        address=ip,
+        tcp_port=tcp_port,
+        bounding_box=200,
+        fast=True,
+        cache_scripts=False,
+        inventory={}
+    )
+
+
+def create_parallel_instances() -> List[FactorioInstance]:
+    """Create Factorio instances in parallel using ThreadPoolExecutor"""
+    ips, udp_ports, tcp_ports = get_local_container_ips()
+    params = list(zip(ips, udp_ports, tcp_ports))
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        instances = list(executor.map(create_instance, params))
+
+    return instances
+
+async def main():
+
+    instances = create_parallel_instances()
+
+    # Initialize components
+    llm = LLMFactory("ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91")
+    evaluator = FactorioEvaluator(instances)
+    initial_state = GameState.from_instance(instances[0])
+
+    # load from prompts/bottoms_up_prompts/system_message_policy_self_gen into string
+    with open("/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/src/prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_self_gen.md", "r") as f:
+        system_prompt = f.read().format(schema=instances[0].get_system_prompt())
+
+    print("Initializing MCTS...")
+    mcts = MCTS(llm, evaluator, initial_state, system_prompt)
+
+    print("Starting MCTS search...")
+    best_programs = await mcts.search(
+        n_iterations=100,
+        samples_per_iteration=5,
+        timeout=60,
+    )
+
+    print("\nBest programs found:")
+    for i, prog in enumerate(best_programs, 1):
+        print(f"\nProgram {i} (reward: {prog.value:.2f}):")
+        print(f"```python\n{prog.code}\n```")
+        print("\nConversation history:")
+        for msg in prog.conversation.messages:
+            print(f"\n{msg['role'].upper()}:")
+            print(msg['content'])
+
+if __name__ == '__main__':
+    # run asynchronously
+    import asyncio
+    asyncio.run(main())

@@ -104,6 +104,9 @@ class Inventory(BaseModel):
     def __setitem__(self, key: 'Prototype', value: int) -> None:
         self.__dict__[key] = value
 
+    def items(self):
+        return self.__dict__.items()
+
     def __repr__(self) -> str:
         return str(self.__dict__)
 
@@ -227,8 +230,7 @@ class Recipe(BaseModel):
 class BurnerType(BaseModel):
     class Config:
         arbitrary_types_allowed = True
-
-    fuel: Inventory
+    fuel: Inventory = Inventory()
 
 
 class Entity(BaseModel):
@@ -247,12 +249,12 @@ class Entity(BaseModel):
 class Splitter(Entity):
     input_positions: List[Position]
     output_positions: List[Position]
-    inventory: List[Inventory]
+    inventory: List[Inventory] = []
 
 class TransportBelt(Entity):
     input_position: Position
     output_position: Position
-    inventory: Inventory
+    inventory: Inventory = Inventory()
 
 class EnergySource(BaseModel):
     buffer_capacity: str
@@ -286,13 +288,13 @@ class Ammo(BaseModel):
     reload_time: Optional[float] = 0
 
 class GunTurret(Entity):
-    turret_ammo: Inventory
+    turret_ammo: Inventory = Inventory()
 
 class AssemblingMachine(Entity):
     recipe: Optional[Recipe] = None  # Prototype
-    assembling_machine_input: Inventory
-    assembling_machine_output: Inventory
-    assembling_machine_modules: Inventory
+    assembling_machine_input: Inventory = Inventory()
+    assembling_machine_output: Inventory = Inventory()
+    assembling_machine_modules: Inventory = Inventory()
 
 class FluidHandler(Entity):
     connection_points: List[Position]
@@ -315,15 +317,15 @@ class OffshorePump(FluidHandler):
 
 
 class Furnace(Entity, BurnerType):
-    furnace_source: Inventory
-    furnace_result: Inventory
+    furnace_source: Inventory = Inventory()
+    furnace_result: Inventory = Inventory()
 
 class Chest(Entity):
-    inventory: Inventory
+    inventory: Inventory = Inventory()
 
 class Lab(Entity):
-    lab_input: Inventory
-    lab_modules: Inventory
+    lab_input: Inventory = Inventory()
+    lab_modules: Inventory = Inventory()
 
 class EntityGroup(BaseModel):
     input_positions: List[Position]

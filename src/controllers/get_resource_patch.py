@@ -3,7 +3,7 @@ from typing import Tuple
 import numpy as np
 from scipy import ndimage
 
-from controllers._action import Action
+from controllers.__action import Action
 from factorio_entities import Position, ResourcePatch, BoundingBox
 
 from factorio_instance import PLAYER

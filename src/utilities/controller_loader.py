@@ -40,7 +40,7 @@ def load_controller_names(folder_path: str) -> List[str]:
 def load_schema(folder_path: str, with_docstring=True) -> str:
 
     schema = ""
-    """Main function to extract and output the required information."""
+
     for root, _, files in os.walk(folder_path):
         for file in files:
             if file.endswith(".py"):

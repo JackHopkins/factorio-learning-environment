@@ -4,16 +4,16 @@ from timeit import default_timer as timer
 import numpy as np
 from numpy import ndarray, zeros
 
-from controllers._action import Action
+from controllers.__action import Action
 from factorio_instance import PLAYER, CHUNK_SIZE, MAX_SAMPLES
-from models.game_state import FIELDS, GameState
+from models.observation_state import FIELDS, ObservationState
 
 from utils import stitch
 
 
 class ObserveAll(Action):
 
-    def __init__(self, connection, game_state: GameState):
+    def __init__(self, connection, game_state: ObservationState):
         super().__init__(connection, game_state)
         mu, sigma = 0, CHUNK_SIZE * 20
         self.minimap_normal = np.random.normal(mu, sigma, MAX_SAMPLES)

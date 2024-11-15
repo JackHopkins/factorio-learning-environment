@@ -73,12 +73,14 @@ class LLMFactory:
                 raise
 
             return response
+
         elif "deepseek" in model_to_use:
+
             client = OpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
             response = client.chat.completions.create(*args,
                                                   **kwargs,
                                                   temperature=1,
-                                                  model=model,
+                                                  model=model_to_use,
                                                   #stop=["\n\n"],
                                                   stop=["```END"],
                                                   #top_p=1,

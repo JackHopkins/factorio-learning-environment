@@ -1,0 +1,722 @@
+
+
+    <!doctype html>
+    <html class="no-js" lang="">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Area.Orientation module</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../spectre.min.css" type="text/css" />
+    <link rel="stylesheet" href="../spectre-icons.min.css" type="text/css" />
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+    </head>
+    <body>
+
+    <div class="container grid-1280">
+    <div class="columns">
+
+    <!-- sidebar start -->
+
+    <div id="sidebar" class="column col-3 col-sm-12">
+
+    <div class="sidebar-custom">
+
+    <div class="project-infobox">
+
+    <!-- project title -->
+
+    <a href="../index.html"><h1>Factorio Stdlib</h1></a>
+
+    <!-- project description -->
+    <p class="project-desc">Factorio Standard Library</p>
+
+    <!-- project full description -->
+    <span>  The Factorio Standard Library aims to extend the Factorio Lua API with well-tested, documented, and easy-to-use functions to make modding easier.</span>
+    </div>
+
+
+    <!-- sidebar navigation -->
+    <ul class="nav nav-modules">
+    <li class="nav-item">
+    <h2>Modules</h2>
+    <ul class="nav">
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Area.Area.html"><span class="module-name-item">Area.Area</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Area.Chunk.html"><span class="module-name-item">Area.Chunk</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Area.Direction.html"><span class="module-name-item">Area.Direction</span></a></div></li>
+    <li class="nav-item active"><div class="nav-item-block-active block"><a href="../modules/Area.Orientation.html"><span class="module-name-item">Area.Orientation</span></a><i class="icon icon-arrow-left icon-arrow-left-custom"></i></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Area.Position.html"><span class="module-name-item">Area.Position</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Area.Surface.html"><span class="module-name-item">Area.Surface</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Area.Tile.html"><span class="module-name-item">Area.Tile</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Core.html"><span class="module-name-item">Core</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Data.Pipes.html"><span class="module-name-item">Data.Pipes</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Data.Sprites.html"><span class="module-name-item">Data.Sprites</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Data.Util.html"><span class="module-name-item">Data.Util</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Entity.Entity.html"><span class="module-name-item">Entity.Entity</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Entity.Inventory.html"><span class="module-name-item">Entity.Inventory</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Entity.Resource.html"><span class="module-name-item">Entity.Resource</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Changes.html"><span class="module-name-item">Event.Changes</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Event.html"><span class="module-name-item">Event.Event</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Force.html"><span class="module-name-item">Event.Force</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Gui.html"><span class="module-name-item">Event.Gui</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Filters.html"><span class="module-name-item">Event.Filters</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Player.html"><span class="module-name-item">Event.Player</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Surface.html"><span class="module-name-item">Event.Surface</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Trains.html"><span class="module-name-item">Event.Trains</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Game.html"><span class="module-name-item">Game</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Misc.Config.html"><span class="module-name-item">Misc.Config</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Misc.Logger.html"><span class="module-name-item">Misc.Logger</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Misc.Migrate.html"><span class="module-name-item">Misc.Migrate</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Misc.Queue.html"><span class="module-name-item">Misc.Queue</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Utils.Color.html"><span class="module-name-item">Utils.Color</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="defines.anticolor.html"><span class="module-name-item">defines.anticolor</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="defines.color.html"><span class="module-name-item">defines.color</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="defines.lightcolor.html"><span class="module-name-item">defines.lightcolor</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="defines.time.html"><span class="module-name-item">defines.time</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Utils.Globals.html"><span class="module-name-item">Utils.Globals</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Utils.Is.html"><span class="module-name-item">Utils.Is</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Utils.Iter.html"><span class="module-name-item">Utils.Iter</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Utils.math.html"><span class="module-name-item">Utils.math</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Utils.string.html"><span class="module-name-item">Utils.string</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Utils.table.html"><span class="module-name-item">Utils.table</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="vendor.version.html"><span class="module-name-item">vendor.version</span></a></div></li>
+    </ul>
+    </li>
+    </ul>
+    <ul class="nav nav-modules">
+    <li class="nav-item">
+    <h2>Scripts</h2>
+    <ul class="nav">
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../scripts/Developer.html"><span class="module-name-item">Developer</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../scripts/quickstart.html"><span class="module-name-item">quickstart</span></a></div></li>
+    </ul>
+    </li>
+    </ul>
+    <ul class="nav nav-modules">
+    <li class="nav-item">
+    <h2>Classes</h2>
+    <ul class="nav">
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Data.Category.html"><span class="module-name-item">Data.Category</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Data.html"><span class="module-name-item">Data</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Data.Entity.html"><span class="module-name-item">Data.Entity</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Data.Fluid.html"><span class="module-name-item">Data.Fluid</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Data.Item.html"><span class="module-name-item">Data.Item</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Data.Recipe.html"><span class="module-name-item">Data.Recipe</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Data.Technology.html"><span class="module-name-item">Data.Technology</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/LinkedList.html"><span class="module-name-item">LinkedList</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/string_array.html"><span class="module-name-item">string_array</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/unique_array.html"><span class="module-name-item">unique_array</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Vendor.Enumerable.html"><span class="module-name-item">Vendor.Enumerable</span></a></div></li>
+    </ul>
+    </li>
+    </ul>
+    <ul class="nav nav-modules">
+    <li class="nav-item">
+    <h2>Topics</h2>
+    <ul class="nav">
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../topics/readme.md.html"><span class="module-name-item">readme.md</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../topics/changelog.txt.html"><span class="module-name-item">changelog.txt</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../topics/LICENSE.html"><span class="module-name-item">LICENSE</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../topics/contributing.md.html"><span class="module-name-item">contributing.md</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../topics/style-guide.md.html"><span class="module-name-item">style-guide.md</span></a></div></li>
+    </ul>
+    </li>
+    </ul>
+    <ul class="nav nav-modules">
+    <li class="nav-item">
+    <h2>Examples</h2>
+    <ul class="nav">
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../examples/event.lua.html"><span class="module-name-item">event.lua</span></a></div></li>
+    </ul>
+    </li>
+    </ul>
+
+
+
+    <!-- list of items in a module -->
+    <ul class="nav nav-module-contents">
+    <li class="nav-item">
+    <h4>Contents of <strong>Area.Orientation</strong></h4>
+    <ul class="nav">
+    <li class="nav-item"><a href="#Functions"><span class="fragment-hashtag">#</span> Functions</a></li>
+    <li class="nav-item"><a href="#Fields"><span class="fragment-hashtag">#</span> Fields</a></li>
+    </ul>
+    </li>
+    </ul>
+    </div>
+    <div class="up-to-top">
+    <a href="#">Top <i class="icon icon-upward"></i></a>
+    </div>
+    </div>
+    <!-- sidebar end -->
+
+    <!-- content body start -->
+    <div class="column col-9 col-sm-12">
+
+    <!-- module list on the main page start -->
+    <!-- module list on the main page end -->
+
+    <!-- module contents -->
+
+    <!-- module content header start -->
+
+    <h2><span class="body-module-name"><strong><em>Area.Orientation</em></strong></span> module</h2>
+    <p>Functions for working with orientations.</p>
+    <p>
+
+</p>
+
+
+    <!-- module info start -->
+    <!-- module info end -->
+
+    <!-- module usage start -->
+    <h3>Usage</h3>
+    <pre class="code" data-lang="Lua"><code><span class="keyword">local</span> Orientation = <span class="global">require</span>(<span class="string">'__stdlib__/stdlib/area/orientation'</span>)</code></pre>
+    <!-- module usage end -->
+
+    <!-- module content header end -->
+
+    <!-- module section list start -->
+    <table class="section-content-list">
+    <thead>
+    <h3><a href="#Functions">Functions</a></h3>
+    <span></span>
+    </thead>
+    <tbody>
+    <tr>
+    <td class="name"><a href="#to_direction">to_direction(orientation[, eight_way=false])</a></td>
+    <td class="summary">Returns a 4way or 8way direction from an orientation.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#opposite">opposite(orientation)</a></td>
+    <td class="summary">Returns the opposite orientation.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#add">add(orientation1, orientation2)</a></td>
+    <td class="summary">Add two orientations together.</td>
+    </tr>
+    </tbody>
+    </table>
+    <table class="section-content-list">
+    <thead>
+    <h3><a href="#Fields">Fields</a></h3>
+    <span></span>
+    </thead>
+    <tbody>
+    <tr>
+    <td class="name"><a href="#north">north</a></td>
+    <td class="summary">north orientation</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#east">east</a></td>
+    <td class="summary">east orientation</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#west">west</a></td>
+    <td class="summary">west orientation</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#south">south</a></td>
+    <td class="summary">south orientation</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#northeast">northeast</a></td>
+    <td class="summary">northeast orientation</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#northwest">northwest</a></td>
+    <td class="summary">northwest orientation</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#southeast">southeast</a></td>
+    <td class="summary">southeast orientation</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#southwest">southwest</a></td>
+    <td class="summary">southwest orientation</td>
+    </tr>
+    </tbody>
+    </table>
+    <!-- module section list end -->
+
+    <br />
+
+    <!-- section start -->
+    <h3><span id="Functions" class="section-title"><a href="#Functions">Functions</a></span></h3>
+    <dl class="section-body-container">
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#to_direction" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="to_direction">to_direction(orientation[, eight_way=false])</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Returns a 4way or 8way direction from an orientation.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>orientation</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+
+
+
+
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>eight_way</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#boolean">boolean</a></span>)
+
+
+
+
+
+    (<em>default</em>: false)
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/defines.html#defines.direction">defines.direction</a></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#opposite" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="opposite">opposite(orientation)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Returns the opposite orientation.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>orientation</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+    <span class="return-text">the opposite orientation</span>
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#add" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="add">add(orientation1, orientation2)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Add two orientations together.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>orientation1</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+
+
+
+
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>orientation2</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+    <span class="return-text">the orientations added together</span>
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    </dl>
+    <h3><span id="Fields" class="section-title"><a href="#Fields">Fields</a></span></h3>
+    <dl class="section-body-container">
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#north" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="north">north</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">north orientation</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#east" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="east">east</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">east orientation</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#west" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="west">west</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">west orientation</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#south" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="south">south</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">south orientation</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#northeast" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="northeast">northeast</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">northeast orientation</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#northwest" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="northwest">northwest</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">northwest orientation</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#southeast" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="southeast">southeast</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">southeast orientation</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#southwest" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="southwest">southwest</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">southwest orientation</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    </dl>
+
+    <!-- section end -->
+
+    </div>
+    </div>
+    </div>
+
+    <div class="footer container grid-1280">
+    <div class="divider divider-custom"></div>
+    <div class="footer-columns columns">
+    <div class="sidebar-footer column col-3 col-sm-12">
+    <i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+    </div>
+    <div class="content-footer column col-9 col-sm-12">
+    <i>Last updated 2020-09-21 21:54:21 UTC</i>
+    </div>
+    </div>
+    </div>
+    </body>
+    </html>

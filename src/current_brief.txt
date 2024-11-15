@@ -19,6 +19,9 @@ class PrototypeName(enum.Enum):
     Pipe = "pipe"
     SmallElectricPole = "small-electric-pole"
     IronChest = "iron-chest"
+    ElectronicCircuit = "electronic-circuit"
+    Lab = "lab"
+    GunTurret = "gun-turret"
 
 class ResourceName(enum.Enum):
     Coal = "coal"
@@ -31,29 +34,64 @@ class ResourceName(enum.Enum):
 
 
 class Prototype(enum.Enum):
-    AssemblingMachine1 = "assembling-machine-1", AssemblingMachine1
+    AssemblingMachine1 = "assembling-machine-1", AssemblingMachine
+    AssemblingMachine2 = "assembling-machine-2", AssemblingMachine
+    AssemblingMachine3 = "assembling-machine-3", AssemblingMachine
     BurnerInserter = "burner-inserter", BurnerInserter
+    FastInserter = "fast-inserter", Inserter
+    ExpressInserter = "express-inserter", Inserter
+    Inserter = "inserter", Inserter
     BurnerMiningDrill = "burner-mining-drill", BurnerMiningDrill
     ElectricMiningDrill = "electric-mining-drill", MiningDrill
     StoneFurnace = "stone-furnace", Furnace
+    FastTransportBelt = "fast-transport-belt", TransportBelt
+    ExpressTransportBelt = "express-transport-belt", TransportBelt
+    Splitter = "splitter", Splitter
+    FastSplitter = "fast-splitter", Splitter
+    ExpressSplitter = "express-splitter", Splitter
     TransportBelt = "transport-belt", TransportBelt
+    ExpressUndergroundBelt = "express-underground-belt", UndergroundBelt
+    FastUndergroundBelt = "fast-underground-belt", UndergroundBelt
+    UndergroundBelt = "underground-belt", UndergroundBelt
+
     OffshorePump = "offshore-pump", OffshorePump
+    PumpJack = "pumpjack", PumpJack
     Boiler = "boiler", Boiler
-    #Generator = "generator", Generator
     SteamEngine = "steam-engine", Generator
     Pipe = "pipe", Entity
-    IronChest = "iron-chest", Entity
-    WoodenChest = "wooden-chest", Entity
+    IronChest = "iron-chest", Chest
+    WoodenChest = "wooden-chest", Chest
     IronGearWheel = "iron-gear-wheel", Entity
     Coal = "coal", None
-    IronPlate = "iron-plate", None
-    CopperPlate = "copper-plate", None
+    Wood = "wood", None
+    IronPlate = "iron-plate", None # Crafting requires smelting 1 iron ore, smelts for 0.5 seconds per ore
+    SteelPlate = "steel-plate", None # Crafting requires smelting 5 iron plates, smelts for 4 seconds per ore
+    CopperPlate = "copper-plate", None # Crafting requires smelting 1 copper ore, smelts for 0.5 seconds per ore
     SmallElectricPole = "small-electric-pole", Entity
+    MediumElectricPole = "medium-electric-pole", Entity
+    BigElectricPole = "big-electric-pole", Entity
     IronOre = "iron-ore", None
     CopperOre = "copper-ore", None
     Stone = "stone", None
-    CopperCable = "copper-cable", None
+    CopperCable = "copper-cable", None # Crafting 2 copper cables requires 1 copper plate
+    ElectronicCircuit = "electronic-circuit", None # Crafting requires 3 copper cables, 1 iron plate
+    AdvancedCircuit = "advanced-circuit", None # Crafting requires 2 electronic circuits, 2 plastic bars, 4 copper cables
+    Lab = "lab", Lab # Crafting requires 10 electronic circuits, 10 iron gear wheels, 4 transport belts
+    AutomationSciencePack = "automation-science-pack", None
+    Accumulator = "accumulator", Accumulator
+    GunTurret = "gun-turret", GunTurret # Crafting requires 10 copper plates, 10 iron gear wheels, 20 iron plates
+    FirearmMagazine = "firearm-magazine", Ammo # Crafting requires 4 iron plates
+    StoneBrick = "stone-brick", None # Crafting requires smelting 2 stone to make one stone brick
+    Radar = "radar", Entity # Crafting requires 5 electronic circuits, 5 iron gear wheels, 10 iron plates
+    StoneWall = "stone-wall", Entity # Crafting requires 5 stone bricks
+    SmallLamp = "small-lamp", Entity # Crafting requires 1 electronic circuit, 3 iron plates
+    SciencePack1 = "science-pack-1", None # Crafting requires 1 copper plate, 1 iron gear wheel
+    SciencePack2 = "science-pack-2", None # Crafting requires 1 inserter, 1 transport belt
+    SciencePack3 = "science-pack-3", None # Crafting requires 1 advanced circuit, 1 engine unit, 1 electric mining drill
+    MilitarySciencePack = "military-science-pack", None # Crafting requires 1 piercing round magazine, 1 grenade, 1 gun turret
+    EngineUnit = "engine-unit", None # Crafting requires 1 iron gear wheel, 1 pipe, 2 engine units
 
+prototype_by_name = {prototype.value[0]: prototype for prototype in Prototype}
 
 class Resource:
     Coal = "coal", ResourcePatch
@@ -96,13 +134,19 @@ The agent picks up an given entity prototype e at position (x, y) if it exists o
 :return:
 """
 
-craft_item(entity: Prototype, quantity: int = 1) -> bool
+craft_item(entity: Prototype, quantity: int = 1) -> int
 """
 Craft an item from a Prototype if the ingredients exist in your inventory.
 :param entity: Entity to craft
 :param quantity: Quantity to craft
 :example craft_item(Prototype.Pipe, 1)
-:return: True if crafting was successful
+:return: Number of items crafted
+"""
+
+production_stats(self) -> Dict[str, Dict[str, int]]
+"""
+Gets the difference in production statistics since the last measurement.
+Returns a dictionary of item names to net production/consumption counts.
 """
 
 can_place_entity(entity: Prototype, direction: Direction = <Direction.UP: 0>, position: Position = Position(x=0.0, y=0.0)) -> bool
@@ -123,6 +167,15 @@ Get a given entity prototype at position (x, y) if it exists on the world.
 :param position: Position to get entity
 :example stone_furnace = get_entity(Prototype.StoneFurnace, nearest(Prototype.StoneFurnace))
 :return: Entity object
+"""
+
+get_entities(entities: Set[Prototype] = set(), position: Position = None, radius: int = 1000) -> List[Entity]
+"""
+Get entities within a radius of a given position.
+:param position: Position to search around. Can be a Position object or "player" for player's position.
+:param radius: Radius to search within.
+:param entities: Set of entity prototypes to filter by. If empty, all entities are returned.
+:return: List of Entity objects
 """
 
 inspect_inventory(entity=None) -> Inventory
@@ -166,7 +219,7 @@ Recursively print the
 :return:
 """
 
-connect_entities(source: Union[Position, Entity], target: Union[Position, Entity], connection_type: Prototype = <Prototype.Pipe: ('pipe', <class 'Entity'>)>) -> List[Entity]
+connect_entities(source: Union[Position, Entity, EntityGroup], target: Union[Position, Entity, EntityGroup], connection_type: Prototype = <Prototype.Pipe: ('pipe', <class 'Entity'>)>) -> List[Union[Entity, EntityGroup]]
 """
 Connect two entities or positions.
 :param source: First entity or position
@@ -204,14 +257,14 @@ Sleep for up to 15 seconds before continuing. Useful for waiting for actions to 
 :return: True if sleep was successful.
 """
 
-insert_item(entity: Prototype, target: Entity, quantity=5) -> int
+insert_item(entity: Prototype, target: Entity, quantity=5) -> Entity
 """
 The agent inserts an item into an target entity's inventory
 :param entity: Entity type to insert from inventory
 :param target: Entity to insert into
 :param quantity: Quantity to insert
 :example: insert_item(Prototype.IronPlate, nearest(Prototype.IronChest), 5)
-:return: The entity inserted into
+:return: The target entity inserted into
 """
 
 extract_item(entity: Prototype, position: Position, quantity=5) -> bool
@@ -235,6 +288,7 @@ Get the recipe of the given entity prototype.
 inspect_entities(position: Position = None, radius=10) -> InspectionResults
 """
 Inspect entities in a given radius around your position.
+Connected transport belts and pipes are considered as one entity.
 :param radius: The radius to inspect
 :param position: The position to inspect (if None, use your position)
 :example: entities_around_origin = inspect_entities(10, Position(x=0, y=0))
@@ -280,4 +334,3 @@ To interact with your world, you must only use the methods from this python API 
 Regarding coordinates: 
 - a more positive X value goes to the right. 
 - a more positive Y value goes down.
-

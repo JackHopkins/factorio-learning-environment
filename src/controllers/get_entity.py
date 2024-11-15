@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from controllers._action import Action
+from controllers.__action import Action
 from factorio_entities import Position, Entity
 
 from factorio_instance import PLAYER

@@ -2,7 +2,7 @@ from typing import Tuple
 
 import pydantic
 
-from controllers._action import Action
+from controllers.__action import Action
 from factorio_entities import Entity, EntityGroup
 from factorio_instance import PLAYER
 from factorio_types import Prototype

@@ -18,17 +18,20 @@ import types
 from enum import Enum
 from pathlib import Path
 from timeit import default_timer as timer
-from typing import List
+from typing import List, Iterator
 
 from dotenv import load_dotenv
 from slpp import slpp as lua
+from typing_extensions import deprecated
 
+from datasetgen.mcts.game_state import GameState
 from factorio_lua_script_manager import FactorioLuaScriptManager
 from factorio_transaction import FactorioTransaction
+from models.blueprint_entity import BlueprintEntity
 from src.factorio_rcon_utils import _load_initialisation_scripts, _lua2python, _get_action_dir
 from src.rcon.factorio_rcon import RCONClient
 from factorio_types import Prototype, Resource
-from models.game_state import GameState
+from models.observation_state import ObservationState
 from utilities.controller_loader import load_schema, load_definitions, parse_file_for_structure
 from vocabulary import Vocabulary
 
@@ -86,7 +89,7 @@ class FactorioInstance:
         self.tcp_port = tcp_port
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
 
-        self.game_state = GameState().with_default(vocabulary)
+        self.game_state = ObservationState().with_default(vocabulary)
         self.game_state.fast = fast
 
         self.max_sequential_exception_count = 2
@@ -136,22 +139,31 @@ class FactorioInstance:
         # Register the cleanup method to be called on exit
         atexit.register(self.cleanup)
 
-    def reset(self):
+    def reset(self, game_state: Optional[GameState]=None):
         for attr in dir(self):
             if not callable(getattr(self, attr)) and attr[0] != "_" and attr not in self._static_members:
                 self[attr] = None
 
-        self._reset(**self.initial_inventory if isinstance(self.initial_inventory, dict) else self.initial_inventory.__dict__)
+        if not game_state:
+            self._reset(**self.initial_inventory if isinstance(self.initial_inventory, dict) else self.initial_inventory.__dict__)
+        else:
+            blueprint = None
+            self._load_blueprint(blueprint)
+            self._reset(**game_state.inventory.__dict__)
+
+
         try:
             self.observe_all()
         except Exception as e:
             print(e)
             pass
-        #self.game_state._initial_score = 0
+
         try:
             self.game_state.initial_score, goal = self.score()
         except Exception as e:
             self.game_state.initial_score, goal = 0, None
+
+
 
     def set_inventory(self, **kwargs):
         self.begin_transaction()
@@ -245,7 +257,7 @@ class FactorioInstance:
         # Loop through the files in the directory
         for file in os.listdir(os.path.join(local_directory, callable_classes_directory)):
             # Check if the file is a Python file and does not start with '_'
-            if file.endswith(".py") and not file.startswith("_"):
+            if file.endswith(".py") and not file.startswith("__"):
                 # Load the module
                 module_name = Path(file).stem
                 module_spec = importlib.util.spec_from_file_location(module_name,
@@ -271,6 +283,7 @@ class FactorioInstance:
                     raise Exception(f"Could not instantiate {class_name}. {e}")
                 # Add the instance as a member method
                 setattr(self, module_name.lower(), callable_instance)
+        pass
 
     def __getitem__(self, key):
         if key not in dir(self) or key.startswith('__'):
@@ -338,49 +351,48 @@ class FactorioInstance:
 
         # Execute the expression
         for index, node in enumerate(tree.body):
-                try:
-                    
-                    if isinstance(node, ast.FunctionDef):
-                        # For function definitions, we need to compile and exec
-                        compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
-                        exec(compiled, eval_dict)
-                    elif isinstance(node, ast.Expr):
-                        # check if its print, if it is, then we route to log
-                        if isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) and node.value.func.id == 'print':
-                            # change print to log
-                            node.value.func.id = 'log'
-                        # For expressions (including function calls), we can use eval
-                        compiled = compile(ast.Expression(node.value), 'file', 'eval')
-                        response = eval(compiled, eval_dict)
-                        # add response to results
-                        # if node.value is a constant object, then it's a comment and we don't want to store it
-                        if response is not True and response is not None and not isinstance(node.value, ast.Constant):
-                            results[index] = response
-                            self._sequential_exception_count = 0
-                    else:
-                        # For other statements, use exec
-                        compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
-                        exec(compiled, eval_dict)
-                    
+            try:
+                if isinstance(node, ast.FunctionDef):
+                    # For function definitions, we need to compile and exec
+                    compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
+                    exec(compiled, eval_dict)
+                elif isinstance(node, ast.Expr):
+                    # check if its print, if it is, then we route to log
+                    if isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) and node.value.func.id == 'print':
+                        # change print to log
+                        node.value.func.id = 'log'
+                    # For expressions (including function calls), we can use eval
+                    compiled = compile(ast.Expression(node.value), 'file', 'eval')
+                    response = eval(compiled, eval_dict)
+                    # add response to results
+                    # if node.value is a constant object, then it's a comment and we don't want to store it
+                    if response is not True and response is not None and not isinstance(node.value, ast.Constant):
+                        results[index] = response
+                        self._sequential_exception_count = 0
+                else:
+                    # For other statements, use exec
+                    compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
+                    exec(compiled, eval_dict)
 
-                except Exception as e:
-                    self._sequential_exception_count += 1
-                    error_traceback = traceback.format_exc()
-                    error_lines = self._extract_error_lines(expr, error_traceback)
 
-                    error_message = f""
-                    if error_lines:
-                        error_message += "Error occurred in the following lines:\n"
-                        for line_num, line_content in error_lines:
-                            error_message += f"  Line {line_num}: {line_content}\n"
-                    error_type = error_traceback.strip().split('\n')[-1]
-                    error_message += f"\n{error_type}"
+            except Exception as e:
+                self._sequential_exception_count += 1
+                error_traceback = traceback.format_exc()
+                error_lines = self._extract_error_lines(expr, error_traceback)
 
-                    results[index] = error_message#"\n".join(error_traceback.split("\n")[3:])
-                    if self._sequential_exception_count == self.max_sequential_exception_count:
-                        pass
+                error_message = f""
+                if error_lines:
+                    error_message += "Error occurred in the following lines:\n"
+                    for line_num, line_content in error_lines:
+                        error_message += f"  Line {line_num}: {line_content}\n"
+                error_type = error_traceback.strip().split('\n')[-1]
+                error_message += f"\n{error_type}"
 
-                    raise Exception(error_message)
+                results[index] = error_message#"\n".join(error_traceback.split("\n")[3:])
+                if self._sequential_exception_count == self.max_sequential_exception_count:
+                    pass
+
+                raise Exception(error_message)
                         #break
 
                     # parts = list(e.args)
@@ -433,7 +445,7 @@ class FactorioInstance:
             return -1, "", "Error: Evaluation timed out"
         except Exception as e:
             trace = e.__traceback__
-            return -1, "", f"Error: {str(e)}: {e.args}".strip()
+            return -1, "", f"Error: {str(e)}".strip()
 
     def _get_command(self, command, parameters=[], measured=True):
         prefix = "/c " if not measured else '/command '
@@ -478,17 +490,6 @@ class FactorioInstance:
         self.begin_transaction()
         self.add_command('/c global.actions.clear_walking_queue()', raw=True)
         self.add_command(f'/c global.actions.clear_entities({PLAYER})', raw=True)
-        # self.execute_transaction()
-        #
-        # self.begin_transaction()
-        # count = 0
-        # for entity, count in kwargs.items():
-        #     self.add_command('give_item', PLAYER, entity, count)
-        #     count += 1
-        #     if count > 5:
-        #         self.execute_transaction()
-        #         self.begin_transaction()
-        #         count = 0
 
         # kwargs dict to json
         inventory_items = {k: v for k, v in kwargs.items()}
@@ -711,6 +712,7 @@ class FactorioInstance:
                 '/c game.players[1].character.walking_state = {walking = false, direction = defines.direction.north}')
         return lua_response
 
+    @deprecated("This was from the previous tensor-based observation model")
     def observe_statistics(self):
         """
         At each time t, statistics on the factory are returned
@@ -719,6 +721,7 @@ class FactorioInstance:
         response, execution_time = self._send('observe_performance', PLAYER)
         return response, execution_time
 
+    @deprecated("This was from the previous tensor-based observation model")
     def observe_position(self):
         """
         At each time t, the agent receives the agent’s current absolute position p.
@@ -726,6 +729,7 @@ class FactorioInstance:
         """
         return self._send('observe_position', PLAYER)
 
+    @deprecated("This was from the previous tensor-based observation model")
     def observe_nearest_points_of_interest(self):
         """
         At each time t, the agent receives the positions of the nearest points of interest.

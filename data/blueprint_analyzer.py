@@ -8,29 +8,13 @@ from typing import Union
 from factorio_entities import EntityGroup
 from factorio_instance import FactorioInstance
 from factorio_types import prototype_by_name
-
-
-@dataclass
-class Entity:
-    entity_number: int
-    name: str
-    position: Dict[str, float]
-    direction: int = 0
-    items: Dict[str, int] = None
-    type: str = None
-    neighbours: List[int] = None
-    input_priority: str = None
-    recipe: Optional[str] = None
-    output_priority: str = None
-    control_behavior: Dict = None
-    connections: Dict = None
-    filter: Dict = None
+from models.blueprint_entity import BlueprintEntity
 
 
 class BlueprintAnalyzer:
     def __init__(self, blueprint: Dict):
         self.blueprint = blueprint
-        self.entities = [Entity(**entity) for entity in self.blueprint['entities']]
+        self.entities = [BlueprintEntity(**entity) for entity in self.blueprint['entities']]
 
         # Calculate true bounding box
         self.min_x = min(e.position['x'] for e in self.entities)
@@ -128,7 +112,7 @@ class BlueprintAnalyzer:
         pairs.sort()
         return hash(tuple(pairs)), pairs
 
-    def verify_placement(self, game_entities: List[Union[Entity, EntityGroup]]) -> bool:
+    def verify_placement(self, game_entities: List[Union[BlueprintEntity, EntityGroup]]) -> bool:
         # Blueprint hash
         hash1, blueprint_pairs = self._get_hash()
 

@@ -260,7 +260,8 @@ class Memory(object):
             variable_string += f'\n{member} = {str(value)}'
 
         if variable_string:
-            self._log_history(f"variables - {{\n{variable_string.strip()}\n}}; goal - {self.current_goal.strip()}", type=EventType.VARIABLE, unique=True)
+            pass
+            #self._log_history(f"variables - {{\n{variable_string.strip()}\n}}; goal - {self.current_goal.strip()}", type=EventType.VARIABLE, unique=True)
 
     def observe_goal(self, goal):
         self.current_goal = goal

@@ -1,1 +1,0 @@
-sudo docker commit client_factorio_1_1 factorio_logged_in

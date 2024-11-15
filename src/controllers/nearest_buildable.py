@@ -1,7 +1,7 @@
 import math
 from typing import Optional
 
-from controllers._action import Action
+from controllers.__action import Action
 from factorio_entities import Position, BoundingBox
 from factorio_instance import PLAYER
 from factorio_types import Prototype

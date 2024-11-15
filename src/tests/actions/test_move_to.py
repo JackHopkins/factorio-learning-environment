@@ -11,7 +11,7 @@ from factorio_types import Prototype, Resource
 def game(instance):
     instance.reset()
     yield instance
-    instance.reset()
+    #instance.reset()
 
 
 def test_move_to(game):
@@ -97,7 +97,10 @@ def test_move_to_laying_leading(game):
     #     for resource in resources:
     #         game.move_to(game.nearest(resource), laying=Prototype.TransportBelt)
 
+def test_long_way(game):
+    position = Position(x=300, y=300)
 
+    game.move_to(position)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 import math
 
-from controllers._init import Init
+from controllers.__init import Init
 from factorio_instance import PLAYER
 
 

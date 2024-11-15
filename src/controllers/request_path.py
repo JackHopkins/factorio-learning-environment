@@ -1,6 +1,6 @@
 import time
 
-from controllers._action import Action
+from controllers.__action import Action
 from factorio_entities import Position
 from factorio_instance import PLAYER
 
@@ -20,6 +20,7 @@ class RequestPath(Action):
         try:
             start_x, start_y = self.get_position(start)
             goal_x, goal_y = finish.x, finish.y
+
 
             walltime_start = time.time()
             response, elapsed = self.execute(PLAYER, start_x, start_y, goal_x, goal_y, 0, allow_paths_through_own_entities)

@@ -1,6 +1,6 @@
 from collections import defaultdict
 from typing import List, Set, Union
-from controllers._action import Action
+from controllers.__action import Action
 from factorio_entities import Position, Entity, BeltGroup, TransportBelt
 from factorio_instance import PLAYER
 from factorio_types import Prototype
@@ -32,6 +32,9 @@ class GetEntities(Action):
             else:
                 response, time_elapsed = self.execute(PLAYER, radius, entity_names, position.x, position.y)
 
+            if not response:
+                return []
+
             if (not isinstance(response, dict) and not response) or isinstance(response, str):# or (isinstance(response, dict) and not response):
                 raise Exception("Could not get entities", response)
 
@@ -62,6 +65,10 @@ class GetEntities(Action):
                         entity_data[key] = self.process_nested_dict(value)
 
                 entity_data['prototype'] = prototype
+
+                # remove all empty values from the entity_data dictionary
+                entity_data = {k: v for k, v in entity_data.items() if v or isinstance(v, int)}
+
                 try:
                     entity = metaclass(**entity_data)
                     if entity.prototype == Prototype.TransportBelt:
@@ -77,7 +84,7 @@ class GetEntities(Action):
             return entities_list
 
         except Exception as e:
-            raise Exception(f"Error in GetEntities: {e}")
+            raise Exception(f"Error in GetEntities: {e}, {response}")
 
     def process_nested_dict(self, nested_dict):
         """Helper method to process nested dictionaries"""

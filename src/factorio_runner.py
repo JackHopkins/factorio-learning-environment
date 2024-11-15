@@ -3,17 +3,16 @@ import re
 import time
 from multiprocessing import freeze_support
 
-#import neptune
+import neptune
+# import neptune
 from anthropic.types import Message
 from backoff import on_exception, expo
-from openai import OpenAI, RateLimitError, APIError
+from openai import RateLimitError, APIError
 from openai.types.chat import ChatCompletion
 
-from factorio_instance import FactorioInstance
 from llm_factory import LLMFactory
 from models.insufficient_score_exception import InsufficientScoreException
 from models.split_memory import SplitMemory
-from vocabulary import Vocabulary
 
 """
 nearest().get("burner-mining-drill").rotate(NORTH)
@@ -22,8 +21,6 @@ at(0,0).place("burner-mining-drill").rotate(NORTH)
 at(0,0).get("burner-mining-drill").
 inventory.get("burner-mining-drill").place(0,0).rotate(NORTH)
 """
-
-import openai
 
 
 class FactorioRunner:
@@ -100,7 +97,7 @@ class FactorioRunner:
         try:
             response = self.llm_factory.call(
                 model=self.model,  # "gpt-3.5-turbo",x
-                max_tokens=500,
+                max_tokens=1000,
                 messages=messages,
                 #stream=True
             )
@@ -148,10 +145,13 @@ class FactorioRunner:
                 if not isinstance(buffer, str):
                     buffer = buffer.content
 
+                if not self.is_valid_python(buffer):
+                    buffer = '"""\n' + buffer + '\n"""'
+
                 if "START```" in buffer:
                     buffer = buffer.split("START```")[1]
 
-                values = buffer.split("\n\n")
+                values = [buffer]#.split("\n\n")
                 # set self.buffer to be a dict indexed by the index of the choice
                 for index, value in enumerate(values):
                     if index not in self.buffer:
@@ -196,8 +196,8 @@ class FactorioRunner:
                 buffer = buffer.replace('```python', "")
                 if self.is_valid_python(buffer):
                     response = self._execute_buffer(buffer)
-                    if response:
-                        self.memory.log_observation(response)
+                    if not response:
+                        self.memory.log_observation("**Crickets...**")
                     self.buffer[index] = ""
                 elif self.is_valid_python("# " + buffer) and buffer[0] != "#":
                     comment_line = ("\n".join(["# "+line for line in buffer.split('\n')])+"\n")

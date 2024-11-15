@@ -1,7 +1,7 @@
 
 from time import sleep
 
-from controllers._action import Action
+from controllers.__action import Action
 
 class Sleep(Action):
 

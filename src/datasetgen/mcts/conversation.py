@@ -3,6 +3,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Dict, Any
 
+from pydantic import BaseModel
+
 from datasetgen.mcts.game_state import GameState
 from factorio_entities import Direction as DirectionA
 from factorio_instance import Direction
@@ -38,36 +40,28 @@ def entity_serializer(obj: Any) -> Dict:
     raise TypeError(f"Object of type {type(obj)} is not serializable")
 
 
-@dataclass
-class Conversation:
+class Message(BaseModel):
+    role: str
+    content: str
+
+
+class Conversation(BaseModel):
     """Tracks dialogue between LLM and Factorio"""
-    messages: List[Dict[str, str]] = field(default_factory=list)
+    messages: List[Message] = field(default_factory=list)
 
-    def __init__(self, initial_state: GameState, system_prompt: str):
-        self.messages = [{
-            "role": "system",
-            "content": system_prompt
-        }, {
-            "role": "user",
-            "content": f"""Current game state:
-            Inventory: {json.dumps(initial_state.inventory.__dict__, indent=2)}
-            Entities: {json.dumps(initial_state.entities, indent=2, cls=EntityEncoder)}
-
-            Create a useful task that you can carry out in the current game and the python script to achieve the task"""
-        }]
+    @classmethod
+    def parse_raw(cls, data: Dict[str, Any]) -> 'Conversation':
+        messages = [Message(**msg) if isinstance(msg, dict) else msg
+                    for msg in data['messages']]
+        return cls(messages=messages)
 
     def add_result(self, program: str, reward: float, response: str, new_state: GameState):
         """Add program execution result to conversation"""
-        self.messages.append({
-            "role": "assistant",
-            "content": program
-        })
-        self.messages.append({
-            "role": "user",
-            "content": f"""Execution result (reward: {reward}):
+        self.messages.append(Message(role="assistant",content=program))
+        self.messages.append(Message(role="user", content=
+        f"""Execution result (reward: {reward}):
             {response}
 
             Updated state:
             Inventory: {json.dumps(new_state.inventory.__dict__, indent=2)}
-            Entities: {json.dumps(new_state.entities, indent=2, cls=EntityEncoder)}"""
-        })
+            Entities: {json.dumps(new_state.entities, indent=2, cls=EntityEncoder)}"""))

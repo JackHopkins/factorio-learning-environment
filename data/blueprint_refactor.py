@@ -14,11 +14,11 @@ from anthropic import Anthropic
 import pandas as pd
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+from cluster.remote.cluster_ips import get_public_ips
 from data.processing_state import ProcessingState
 from factorio_entities import Position
 from factorio_instance import FactorioInstance
 from blueprint_analyzer import BlueprintAnalyzer
-from cluster_ip import get_public_ips
 from factorio_types import Resource
 
 load_dotenv()

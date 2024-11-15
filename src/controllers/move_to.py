@@ -1,7 +1,7 @@
 import math
 from time import sleep
 
-from controllers._action import Action
+from controllers.__action import Action
 from controllers.get_path import GetPath
 from controllers.observe_all import ObserveAll
 from controllers.request_path import RequestPath
@@ -31,7 +31,10 @@ class MoveTo(Action):
 
         x, y = math.floor(position.x*4)/4 + X_OFFSET, math.floor(position.y*4)/4 + Y_OFFSET
         nposition = Position(x=x, y=y)
-        #print(f"Moving to {x}, {y}")
+
+        if nposition.is_close(Position(x=self.game_state.player_location[0], y=self.game_state.player_location[1]), tolerance=0.5):
+            return True
+
         path_handle = self.request_path(start=Position(x=self.game_state.player_location[0],
                                                        y=self.game_state.player_location[1]), finish=nposition,
                                         allow_paths_through_own_entities=True)

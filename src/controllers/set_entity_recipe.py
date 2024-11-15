@@ -1,4 +1,4 @@
-from controllers._action import Action
+from controllers.__action import Action
 from typing import Tuple
 
 from factorio_entities import Recipe, Entity

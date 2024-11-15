@@ -1,7 +1,7 @@
 import math
 from typing import Union
 
-from controllers._action import Action
+from controllers.__action import Action
 from factorio_entities import Position
 from factorio_instance import PLAYER
 from factorio_types import Prototype, Resource

@@ -1,4 +1,4 @@
-from controllers._action import Action
+from controllers.__action import Action
 
 from factorio_entities import Entity
 from factorio_instance import PLAYER, Direction

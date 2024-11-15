@@ -1,6 +1,6 @@
 from time import sleep
 
-from controllers._action import Action
+from controllers.__action import Action
 from controllers.get_entity import GetEntity
 from controllers.move_to import MoveTo
 from controllers.nearest import Nearest

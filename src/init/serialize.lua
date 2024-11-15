@@ -671,7 +671,7 @@ function get_inverse_entity_direction(entity, factorio_direction)
 	end
 end
 
-local entity_status_names = {
+global.entity_status_names = {
     [defines.entity_status.working] = "working",
     [defines.entity_status.normal] = "normal",
     [defines.entity_status.no_power] = "no_power",
@@ -748,7 +748,7 @@ global.utils.serialize_entity = function(entity)
 		health = entity.health,
 		energy = entity.energy,
 		type = "\""..entity.type.."\"",
-		status = entity_status_names[entity.status] or "normal",
+		status = global.entity_status_names[entity.status] or "normal",
 	}
 
 	if entity.grid then

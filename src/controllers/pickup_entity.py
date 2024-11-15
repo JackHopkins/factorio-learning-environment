@@ -1,4 +1,4 @@
-from controllers._action import Action
+from controllers.__action import Action
 from typing import Tuple, Union, Optional
 
 from factorio_entities import Position, Entity

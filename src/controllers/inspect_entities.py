@@ -1,5 +1,5 @@
 from typing import Dict, Any, List
-from controllers._action import Action
+from controllers.__action import Action
 from factorio_entities import Position
 from factorio_instance import PLAYER, Direction
 from factorio_types import InspectionResults, EntityInfo, EntityStatus
@@ -93,7 +93,7 @@ class InspectEntities(Action):
 
                     entities.append(entity_info)
 
-            #self.last_observed_player_location = (0, 0)
+            self.last_observed_player_location = (0, 0)
             return InspectionResults(entities=entities, time_elapsed=time_elapsed, radius=radius,
                                      player_position=self.last_observed_player_location)
         except Exception as e:

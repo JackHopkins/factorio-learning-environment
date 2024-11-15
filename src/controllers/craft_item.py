@@ -1,6 +1,6 @@
 from time import sleep
 
-from controllers._action import Action
+from controllers.__action import Action
 from controllers.inspect_inventory import InspectInventory
 from factorio_instance import PLAYER
 from factorio_types import Prototype

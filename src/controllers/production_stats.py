@@ -1,6 +1,6 @@
 from typing import Dict
 
-from controllers._controller import Controller
+from controllers.__controller import Controller
 from factorio_instance import PLAYER
 
 class ProductionStats(Controller):

@@ -2,7 +2,7 @@ volumes:
   scenarios:
 services:
   factorio_1:
-    image: 'factoriotools/factorio:1.1.109'
+    image: 'factoriotools/factorio:1.1.110'
     volumes:
       - type: bind
         source: ./scenarios/default_lab_scenario

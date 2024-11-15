@@ -161,9 +161,9 @@ end
 function harvest(entities, count, from_position, player)
     if count == 0 then return 0 end
     local yield = 0
-    local has_mined = false
     entities = sort_entities_by_distance(entities, from_position)
     ::start::
+    local has_mined = false
     for _, entity in ipairs(entities) do
         if entity.valid and entity.minable then
             local products = entity.prototype.mineable_properties.products

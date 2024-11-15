@@ -1,4 +1,4 @@
-from controllers._action import Action
+from controllers.__action import Action
 from typing import Tuple, OrderedDict, Union
 
 from factorio_entities import Recipe, Entity, Inventory, Ingredient

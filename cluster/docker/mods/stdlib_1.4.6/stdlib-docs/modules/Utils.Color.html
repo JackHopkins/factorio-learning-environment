@@ -1,0 +1,2632 @@
+
+
+    <!doctype html>
+    <html class="no-js" lang="">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Utils.Color module</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../spectre.min.css" type="text/css" />
+    <link rel="stylesheet" href="../spectre-icons.min.css" type="text/css" />
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+    </head>
+    <body>
+
+    <div class="container grid-1280">
+    <div class="columns">
+
+    <!-- sidebar start -->
+
+    <div id="sidebar" class="column col-3 col-sm-12">
+
+    <div class="sidebar-custom">
+
+    <div class="project-infobox">
+
+    <!-- project title -->
+
+    <a href="../index.html"><h1>Factorio Stdlib</h1></a>
+
+    <!-- project description -->
+    <p class="project-desc">Factorio Standard Library</p>
+
+    <!-- project full description -->
+    <span>  The Factorio Standard Library aims to extend the Factorio Lua API with well-tested, documented, and easy-to-use functions to make modding easier.</span>
+    </div>
+
+
+    <!-- sidebar navigation -->
+    <ul class="nav nav-modules">
+    <li class="nav-item">
+    <h2>Modules</h2>
+    <ul class="nav">
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Area.Area.html"><span class="module-name-item">Area.Area</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Area.Chunk.html"><span class="module-name-item">Area.Chunk</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Area.Direction.html"><span class="module-name-item">Area.Direction</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Area.Orientation.html"><span class="module-name-item">Area.Orientation</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Area.Position.html"><span class="module-name-item">Area.Position</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Area.Surface.html"><span class="module-name-item">Area.Surface</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Area.Tile.html"><span class="module-name-item">Area.Tile</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Core.html"><span class="module-name-item">Core</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Data.Pipes.html"><span class="module-name-item">Data.Pipes</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Data.Sprites.html"><span class="module-name-item">Data.Sprites</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Data.Util.html"><span class="module-name-item">Data.Util</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Entity.Entity.html"><span class="module-name-item">Entity.Entity</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Entity.Inventory.html"><span class="module-name-item">Entity.Inventory</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Entity.Resource.html"><span class="module-name-item">Entity.Resource</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Changes.html"><span class="module-name-item">Event.Changes</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Event.html"><span class="module-name-item">Event.Event</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Force.html"><span class="module-name-item">Event.Force</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Gui.html"><span class="module-name-item">Event.Gui</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Filters.html"><span class="module-name-item">Event.Filters</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Player.html"><span class="module-name-item">Event.Player</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Surface.html"><span class="module-name-item">Event.Surface</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Event.Trains.html"><span class="module-name-item">Event.Trains</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Game.html"><span class="module-name-item">Game</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Misc.Config.html"><span class="module-name-item">Misc.Config</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Misc.Logger.html"><span class="module-name-item">Misc.Logger</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Misc.Migrate.html"><span class="module-name-item">Misc.Migrate</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Misc.Queue.html"><span class="module-name-item">Misc.Queue</span></a></div></li>
+    <li class="nav-item active"><div class="nav-item-block-active block"><a href="../modules/Utils.Color.html"><span class="module-name-item">Utils.Color</span></a><i class="icon icon-arrow-left icon-arrow-left-custom"></i></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="defines.anticolor.html"><span class="module-name-item">defines.anticolor</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="defines.color.html"><span class="module-name-item">defines.color</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="defines.lightcolor.html"><span class="module-name-item">defines.lightcolor</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="defines.time.html"><span class="module-name-item">defines.time</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Utils.Globals.html"><span class="module-name-item">Utils.Globals</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Utils.Is.html"><span class="module-name-item">Utils.Is</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Utils.Iter.html"><span class="module-name-item">Utils.Iter</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Utils.math.html"><span class="module-name-item">Utils.math</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Utils.string.html"><span class="module-name-item">Utils.string</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="Utils.table.html"><span class="module-name-item">Utils.table</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="vendor.version.html"><span class="module-name-item">vendor.version</span></a></div></li>
+    </ul>
+    </li>
+    </ul>
+    <ul class="nav nav-modules">
+    <li class="nav-item">
+    <h2>Scripts</h2>
+    <ul class="nav">
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../scripts/Developer.html"><span class="module-name-item">Developer</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../scripts/quickstart.html"><span class="module-name-item">quickstart</span></a></div></li>
+    </ul>
+    </li>
+    </ul>
+    <ul class="nav nav-modules">
+    <li class="nav-item">
+    <h2>Classes</h2>
+    <ul class="nav">
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Data.Category.html"><span class="module-name-item">Data.Category</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Data.html"><span class="module-name-item">Data</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Data.Entity.html"><span class="module-name-item">Data.Entity</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Data.Fluid.html"><span class="module-name-item">Data.Fluid</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Data.Item.html"><span class="module-name-item">Data.Item</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Data.Recipe.html"><span class="module-name-item">Data.Recipe</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Data.Technology.html"><span class="module-name-item">Data.Technology</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/LinkedList.html"><span class="module-name-item">LinkedList</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/string_array.html"><span class="module-name-item">string_array</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/unique_array.html"><span class="module-name-item">unique_array</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../classes/Vendor.Enumerable.html"><span class="module-name-item">Vendor.Enumerable</span></a></div></li>
+    </ul>
+    </li>
+    </ul>
+    <ul class="nav nav-modules">
+    <li class="nav-item">
+    <h2>Topics</h2>
+    <ul class="nav">
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../topics/readme.md.html"><span class="module-name-item">readme.md</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../topics/changelog.txt.html"><span class="module-name-item">changelog.txt</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../topics/LICENSE.html"><span class="module-name-item">LICENSE</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../topics/contributing.md.html"><span class="module-name-item">contributing.md</span></a></div></li>
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../topics/style-guide.md.html"><span class="module-name-item">style-guide.md</span></a></div></li>
+    </ul>
+    </li>
+    </ul>
+    <ul class="nav nav-modules">
+    <li class="nav-item">
+    <h2>Examples</h2>
+    <ul class="nav">
+    <li class="nav-item"><div class="nav-item-block-inactive block"><a href="../examples/event.lua.html"><span class="module-name-item">event.lua</span></a></div></li>
+    </ul>
+    </li>
+    </ul>
+
+
+
+    <!-- list of items in a module -->
+    <ul class="nav nav-module-contents">
+    <li class="nav-item">
+    <h4>Contents of <strong>Utils.Color</strong></h4>
+    <ul class="nav">
+    <li class="nav-item"><a href="#Tables"><span class="fragment-hashtag">#</span> Tables</a></li>
+    <li class="nav-item"><a href="#Color_Constructors"><span class="fragment-hashtag">#</span> Color Constructors </a></li>
+    <li class="nav-item"><a href="#Color_Methods"><span class="fragment-hashtag">#</span> Color Methods </a></li>
+    <li class="nav-item"><a href="#Color_Functions"><span class="fragment-hashtag">#</span> Color Functions </a></li>
+    </ul>
+    </li>
+    </ul>
+    </div>
+    <div class="up-to-top">
+    <a href="#">Top <i class="icon icon-upward"></i></a>
+    </div>
+    </div>
+    <!-- sidebar end -->
+
+    <!-- content body start -->
+    <div class="column col-9 col-sm-12">
+
+    <!-- module list on the main page start -->
+    <!-- module list on the main page end -->
+
+    <!-- module contents -->
+
+    <!-- module content header start -->
+
+    <h2><span class="body-module-name"><strong><em>Utils.Color</em></strong></span> module</h2>
+    <p>For playing with colors.</p>
+    <p>
+
+</p>
+
+
+    <!-- module info start -->
+    <!-- module info end -->
+
+    <!-- module usage start -->
+    <h3>Usage</h3>
+    <pre class="code" data-lang="Lua"><code><span class="keyword">local</span> Color = <span class="global">require</span>(<span class="string">'__stdlib__/stdlib/utils/color'</span>)</code></pre>
+    <!-- module usage end -->
+
+    <!-- module content header end -->
+
+    <!-- module section list start -->
+    <table class="section-content-list">
+    <thead>
+    <h3><a href="#Tables">Tables</a></h3>
+    <span></span>
+    </thead>
+    <tbody>
+    <tr>
+    <td class="name"><a href="#color">color</a></td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#anticolor">anticolor</a></td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#lightcolor">lightcolor</a></td>
+    </tr>
+    </tbody>
+    </table>
+    <table class="section-content-list">
+    <thead>
+    <h3><a href="#Color_Constructors">Color Constructors </a></h3>
+    <span></span>
+    </thead>
+    <tbody>
+    <tr>
+    <td class="name"><a href="#new">new(any)</a></td>
+    <td class="summary">Create a new Color object.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#load">load(color)</a></td>
+    <td class="summary">Loads the color metatmethods into table without any checking.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#copy">copy(color[, alpha])</a></td>
+    <td class="summary">Copies the color into a new Color.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#white">white()</a></td>
+    <td class="summary">Returns a white Color.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#black">black()</a></td>
+    <td class="summary">Returns a black color.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#from_string">from_string(string_name[, alpha])</a></td>
+    <td class="summary">Returns a color from a string name if known.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#from_params">from_params([r=0][, g=0][, b=0][, a=255])</a></td>
+    <td class="summary">Converts a color in the rgb format to a color table.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#from_rgb">from_rgb</a></td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#from_array">from_array(color[, alpha])</a></td>
+    <td class="summary">Converts a color in the array format to a color in the table format.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#from_table">from_table(color[, alpha])</a></td>
+    <td class="summary">Converts a color in the dictionary format to a color in the Color format.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#from_hex">from_hex(color[, alpha=1])</a></td>
+    <td class="summary">Get a color table with a hexadecimal string.</td>
+    </tr>
+    </tbody>
+    </table>
+    <table class="section-content-list">
+    <thead>
+    <h3><a href="#Color_Methods">Color Methods </a></h3>
+    <span></span>
+    </thead>
+    <tbody>
+    <tr>
+    <td class="name"><a href="#normalize">normalize(color)</a></td>
+    <td class="summary">Normalizes a color between 0 and 1</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#alpha">alpha(color, alpha)</a></td>
+    <td class="summary">Set the alpha channel on a color</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#premul_alpha">premul_alpha(color, alpha)</a></td>
+    <td class="summary">Premultiply alpha</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#add">add(lhs, rhs)</a></td>
+    <td class="summary">Add 2 colors together.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#subtract">subtract(lhs, rhs)</a></td>
+    <td class="summary">Subtract 2 colors together.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#multiply">multiply(lhs, rhs)</a></td>
+    <td class="summary">Multiply 2 colors together.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#divide">divide(lhs, rhs)</a></td>
+    <td class="summary">Add 2 colors together.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#modulo">modulo(lhs, rhs)</a></td>
+    <td class="summary">Modulo of 2 colors.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#unary">unary(color)</a></td>
+    <td class="summary">Flip a color to white or black.</td>
+    </tr>
+    </tbody>
+    </table>
+    <table class="section-content-list">
+    <thead>
+    <h3><a href="#Color_Functions">Color Functions </a></h3>
+    <span></span>
+    </thead>
+    <tbody>
+    <tr>
+    <td class="name"><a href="#len">len(color)</a></td>
+    <td class="summary">Get the length of a color by adding all its values together</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#equals">equals(lhs, rhs)</a></td>
+    <td class="summary">Are both colors equal.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#less_than">less_than(lhs, rhs)</a></td>
+    <td class="summary">Is LHS less than RHS.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#less_than_eq">less_than_eq(lhs, rhs)</a></td>
+    <td class="summary">Is LHS less than or equal to RHS.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#to_hex">to_hex(color)</a></td>
+    <td class="summary">Return a hex formated string from a color.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#to_array">to_array(color)</a></td>
+    <td class="summary">Return an array with 4 paramaters.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#pack">pack</a></td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#to_params">to_params(color)</a></td>
+    <td class="summary">Return the color as 4 paramaters.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#unpack">unpack</a></td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#to_string">to_string(color)</a></td>
+    <td class="summary">Return the Color as a string.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#is_complex">is_complex(color)</a></td>
+    <td class="summary">Is this a correctly formatted color.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#is_Color">is_Color(color)</a></td>
+    <td class="summary">Is this a Color object.</td>
+    </tr>
+    <tr>
+    <td class="name"><a href="#is_color">is_color(color)</a></td>
+    <td class="summary">Is this a Color object or correctly formatted color table.</td>
+    </tr>
+    </tbody>
+    </table>
+    <!-- module section list end -->
+
+    <br />
+
+    <!-- section start -->
+    <h3><span id="Tables" class="section-title"><a href="#Tables">Tables</a></span></h3>
+    <dl class="section-body-container">
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#color" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="color">color</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">
+
+</p>
+    <p class="section-item-description"> <a href="defines.color.html">defines.color</a></p>
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#anticolor" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="anticolor">anticolor</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">
+
+</p>
+    <p class="section-item-description"> <a href="http://lua-api.factorio.com/latest/defines.html#defines.anticolor">defines.anticolor</a></p>
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#lightcolor" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="lightcolor">lightcolor</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">
+
+</p>
+    <p class="section-item-description"> <a href="http://lua-api.factorio.com/latest/defines.html#defines.lightcolor">defines.lightcolor</a></p>
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    </dl>
+    <h3><span id="Color_Constructors" class="section-title"><a href="#Color_Constructors">Color Constructors </a></span></h3>
+    <dl class="section-body-container">
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#new" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="new">new(any)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Create a new Color object.</p>
+    <p class="section-item-description"> it can be passed, A Color, a string color name, an array,
+ a list of float paramaters (RGB), a color dictionary, or hex</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>any</em></strong>
+
+
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><span class="type">Color</span></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#load" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="load">load(color)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Loads the color metatmethods into table without any checking.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="../modules/Utils.Color.html#color">color</a></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#copy" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="copy">copy(color[, alpha])</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Copies the color into a new Color.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>alpha</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+
+     Change the alpha of the copied color
+
+    (<em>optional</em>)
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><span class="type">Color</span></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#white" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="white">white()</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Returns a white Color.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><span class="type">Color</span></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#black" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="black">black()</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Returns a black color.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><span class="type">Color</span></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#from_string" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="from_string">from_string(string_name[, alpha])</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Returns a color from a string name if known.</p>
+    <p class="section-item-description"> Returns white if color string is unknown</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>string_name</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#string">string</a></span>)
+
+
+
+
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>alpha</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+
+
+
+
+
+    (<em>optional</em>)
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><span class="type">Color</span></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#from_params" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="from_params">from_params([r=0][, g=0][, b=0][, a=255])</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Converts a color in the rgb format to a color table.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>r</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+
+     0-255 red
+
+    (<em>default</em>: 0)
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>g</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+
+     0-255 green
+
+    (<em>default</em>: 0)
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>b</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+
+     0-255 blue
+
+    (<em>default</em>: 0)
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>a</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+
+     0-255 alpha
+
+    (<em>default</em>: 255)
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Concepts.html#Color">Color</a></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#from_rgb" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="from_rgb">from_rgb</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <strong>See also:</strong>
+    <ul>
+    <li><a href="../modules/Utils.Color.html#from_params">Color.from_params</a></li>
+    </ul>
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#from_array" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="from_array">from_array(color[, alpha])</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Converts a color in the array format to a color in the table format.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="https://www.lua.org/pil/11.1.html">array</a></span>)
+
+     the color to convert &mdash; { [1] = <a href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a>, [2] = <a href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a>, [3] = <a href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a>, [4] = <a href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a> }
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>alpha</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+
+
+
+
+
+    (<em>optional</em>)
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Concepts.html#Color">Color</a></span>)
+    <span class="return-text">a converted color &mdash; { r = c_arr[1], g = c_arr[2], b = c_arr[3], a = c_arr[4] }</span>
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#from_table" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="from_table">from_table(color[, alpha])</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Converts a color in the dictionary format to a color in the Color format.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="https://www.lua.org/pil/2.5.html">table</a></span>)
+
+     the color to convert
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>alpha</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+
+
+
+
+
+    (<em>optional</em>)
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><span class="type">Color</span></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#from_hex" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="from_hex">from_hex(color[, alpha=1])</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Get a color table with a hexadecimal string.</p>
+    <p class="section-item-description"> Optionally provide the value for the alpha channel.</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#string">string</a></span>)
+
+     hexadecimal color string (#ffffff, not #fff)
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>alpha</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+
+     the alpha value to set; such that <strong>* 0 &#8924; value &#8924; 1 *</strong>
+
+    (<em>default</em>: 1)
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Concepts.html#Color">Color</a></span>)
+    <span class="return-text">a color table with RGB converted from Hex and with alpha</span>
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    </dl>
+    <h3><span id="Color_Methods" class="section-title"><a href="#Color_Methods">Color Methods </a></span></h3>
+    <dl class="section-body-container">
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#normalize" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="normalize">normalize(color)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Normalizes a color between 0 and 1</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    <span class="return-text">Color</span>
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#alpha" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="alpha">alpha(color, alpha)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Set the alpha channel on a color</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>alpha</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><span class="type">Color</span></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#premul_alpha" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="premul_alpha">premul_alpha(color, alpha)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Premultiply alpha</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>alpha</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#float">float</a></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    <span class="return-text">Color</span>
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#add" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="add">add(lhs, rhs)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Add 2 colors together.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>lhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>rhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    <span class="return-text">Color</span>
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#subtract" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="subtract">subtract(lhs, rhs)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Subtract 2 colors together.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>lhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>rhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    <span class="return-text">Color</span>
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#multiply" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="multiply">multiply(lhs, rhs)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Multiply 2 colors together.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>lhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>rhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    <span class="return-text">Color</span>
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#divide" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="divide">divide(lhs, rhs)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Add 2 colors together.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>lhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>rhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    <span class="return-text">Color</span>
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#modulo" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="modulo">modulo(lhs, rhs)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Modulo of 2 colors.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>lhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>rhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><span class="type">Color</span></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#unary" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="unary">unary(color)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Flip a color to white or black.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><span class="type">Color</span></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    </dl>
+    <h3><span id="Color_Functions" class="section-title"><a href="#Color_Functions">Color Functions </a></span></h3>
+    <dl class="section-body-container">
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#len" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="len">len(color)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Get the length of a color by adding all its values together</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="https://www.lua.org/pil/2.3.html">number</a></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#equals" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="equals">equals(lhs, rhs)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Are both colors equal.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>lhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>rhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#boolean">boolean</a></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#less_than" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="less_than">less_than(lhs, rhs)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Is LHS less than RHS.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>lhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>rhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#boolean">boolean</a></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#less_than_eq" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="less_than_eq">less_than_eq(lhs, rhs)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Is LHS less than or equal to RHS.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>lhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>rhs</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#boolean">boolean</a></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#to_hex" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="to_hex">to_hex(color)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Return a hex formated string from a color.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#string">string</a></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#to_array" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="to_array">to_array(color)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Return an array with 4 paramaters.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="https://www.lua.org/pil/11.1.html">array</a></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#pack" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="pack">pack</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <strong>See also:</strong>
+    <ul>
+    <li><a href="../modules/Utils.Color.html#to_array">Color.to_array</a></li>
+    </ul>
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#to_params" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="to_params">to_params(color)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Return the color as 4 paramaters.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    <span class="return-text">float</span>
+    </li>
+    <li>
+    <span class="return-text">float</span>
+    </li>
+    <li>
+    <span class="return-text">float</span>
+    </li>
+    <li>
+    <span class="return-text">float</span>
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#unpack" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="unpack">unpack</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+
+    <!-- parameters start -->
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <strong>See also:</strong>
+    <ul>
+    <li><a href="../modules/Utils.Color.html#to_params">Color.to_params</a></li>
+    </ul>
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#to_string" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="to_string">to_string(color)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Return the Color as a string.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#string">string</a></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#is_complex" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="is_complex">is_complex(color)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Is this a correctly formatted color.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#boolean">boolean</a></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#is_Color" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="is_Color">is_Color(color)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Is this a Color object.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#boolean">boolean</a></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    <dt>
+    <div class="divider divider-custom"></div>
+    <div class="block section-item-header">
+    <a href="#is_color" class="fragment-hashtag">#</a>
+    <span class="section-item-title" id="is_color">is_color(color)</span>
+    </div>
+    </dt>
+    <dd>
+    <div class="section-item-body">
+
+    <p class="section-item-summary">Is this a Color object or correctly formatted color table.</p>
+    <p class="section-item-description">
+
+</p>
+
+    <!-- parameters start -->
+    <strong>Parameters:</strong>
+
+    <ul>
+
+
+
+
+
+    <li class="section-subitem-li">
+
+    <strong><em>color</em></strong>
+
+    <strong> : </strong>
+
+    (<span class="types"><span class="type">Color</span></span>)
+
+
+
+
+
+    </li>
+
+
+    </ul>
+
+    <!-- parameters end -->
+
+    <!-- returns start -->
+    <strong>Returns:</strong>
+    <ul>
+    <li>
+    (<span class="types"><a class="type" href="http://lua-api.factorio.com/latest/Builtin-Types.html#boolean">boolean</a></span>)
+    </li>
+    </ul>
+    <!-- returns end -->
+
+
+    <!-- see also start -->
+    <!-- see also end -->
+
+    <!-- usage start -->
+    <!-- usage end -->
+
+    </dd>
+    </dl>
+
+    <!-- section end -->
+
+    </div>
+    </div>
+    </div>
+
+    <div class="footer container grid-1280">
+    <div class="divider divider-custom"></div>
+    <div class="footer-columns columns">
+    <div class="sidebar-footer column col-3 col-sm-12">
+    <i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+    </div>
+    <div class="content-footer column col-9 col-sm-12">
+    <i>Last updated 2020-09-21 21:54:21 UTC</i>
+    </div>
+    </div>
+    </div>
+    </body>
+    </html>

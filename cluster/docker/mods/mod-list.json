@@ -1,0 +1,20 @@
+{
+  "mods":
+  [
+
+    {
+      "name": "base",
+      "enabled": true
+    },
+
+    {
+      "name": "headless-player",
+      "enabled": true
+    },
+
+    {
+      "name": "stdlib",
+      "enabled": true
+    }
+  ]
+}

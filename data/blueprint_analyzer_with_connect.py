@@ -8,23 +8,7 @@ from typing import Union
 from factorio_entities import EntityGroup
 from factorio_instance import FactorioInstance
 from factorio_types import prototype_by_name
-
-
-@dataclass
-class Entity:
-    entity_number: int
-    name: str
-    position: Dict[str, float]
-    direction: int = 0
-    items: Dict[str, int] = None
-    type: str = None
-    neighbours: List[int] = None
-    input_priority: str = None
-    recipe: Optional[str] = None
-    output_priority: str = None
-    control_behavior: Dict = None
-    connections: Dict = None
-    filter: Dict = None
+from models.blueprint_entity import BlueprintEntity
 
 
 class BlueprintAnalyzerWithConnect:
@@ -36,7 +20,7 @@ class BlueprintAnalyzerWithConnect:
 
     def __init__(self, blueprint: Dict):
         self.blueprint = blueprint
-        self.entities = [Entity(**entity) for entity in self.blueprint['entities']]
+        self.entities = [BlueprintEntity(**entity) for entity in self.blueprint['entities']]
 
         # Calculate true bounding box
         self.min_x = min(e.position['x'] for e in self.entities)
@@ -49,7 +33,7 @@ class BlueprintAnalyzerWithConnect:
             entity.position['x'] = entity.position['x'] - self.min_x
             entity.position['y'] = entity.position['y'] - self.min_y
 
-    def find_belt_sequences(self) -> List[List[Entity]]:
+    def find_belt_sequences(self) -> List[List[BlueprintEntity]]:
         """Find sequences of connected belts of the same type."""
         # Create a map of positions to entities for quick lookup
         pos_to_entity = {(e.position['x'], e.position['y']): e for e in self.entities}
@@ -58,7 +42,7 @@ class BlueprintAnalyzerWithConnect:
         processed = set()
         sequences = []
 
-        def get_connected_belts(entity: Entity, belt_type: str) -> List[Entity]:
+        def get_connected_belts(entity: BlueprintEntity, belt_type: str) -> List[BlueprintEntity]:
             """Get all belts connected to this entity in a sequence."""
             sequence = []
             stack = [entity]
@@ -184,7 +168,7 @@ class BlueprintAnalyzerWithConnect:
 
         return vertical_patterns, horizontal_patterns, singles
 
-    def verify_placement(self, game_entities: List[Union[Entity, EntityGroup]]) -> bool:
+    def verify_placement(self, game_entities: List[Union[BlueprintEntity, EntityGroup]]) -> bool:
         # Blueprint hash
         hash1, blueprint_pairs = self._get_hash()
 

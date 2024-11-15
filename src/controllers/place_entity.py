@@ -1,6 +1,6 @@
 from time import sleep
 
-from controllers._action import Action
+from controllers.__action import Action
 from typing import Optional, Tuple
 
 from controllers.get_entity import GetEntity

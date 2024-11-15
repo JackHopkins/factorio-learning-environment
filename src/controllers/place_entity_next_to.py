@@ -29,24 +29,17 @@ class PlaceEntityNextTo(Action):
         """
         try:
             name, metaclass = entity.value
-            #x, y = math.floor(reference_position.x*2)/2, math.floor(reference_position.y*2)/2
+
             x, y = reference_position.x, reference_position.y
 
             factorio_direction = Direction.to_factorio_direction(direction)
 
             response, elapsed = self.execute(PLAYER, name, x, y, factorio_direction, spacing)
 
-            #response, elapsed = self.execute(PLAYER, name, x, y, n_dir, spacing)#-0.5)
 
             if not isinstance(response, dict) or response == {}:
                 raise Exception(f"Could not place {name} at {reference_position}.", response)
 
-            # for key, value in response.items():
-            #     if isinstance(value, dict):
-            #         if 1 in value.keys():
-            #             response[key] = []
-            #             for sub_key, sub_value in value.items():
-            #                 response[key].append(sub_value)
             cleaned_response = self.clean_response(response)
 
             try:

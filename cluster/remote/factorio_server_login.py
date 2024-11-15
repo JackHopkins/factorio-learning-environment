@@ -7,7 +7,8 @@ import time
 import subprocess
 import sys
 from dotenv import load_dotenv
-from cluster_ip import get_public_ips
+
+from cluster.remote.cluster_ips import get_public_ips
 from factorio_instance import FactorioInstance
 
 """

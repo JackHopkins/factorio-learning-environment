@@ -20,5 +20,4 @@ cp config/mod-list.json ~/Library/Application\ Support/Factorio/mods/mod-list.js
 docker run -d \
   -p 34197:34197/udp \
   -p 27015:27015/tcp \
-
   factorio

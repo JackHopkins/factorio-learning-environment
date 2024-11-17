@@ -244,7 +244,10 @@ local function get_direction(from_position, to_position)
     end
 end
 
-local function place_at_position(player, connection_type, current_position, dir, serialized_entities)
+local function place_at_position(player, connection_type, current_position, dir, serialized_entities, dry_run)
+    if dry_run then
+        return
+    end
 
     -- Check if the connection_type is an electricity pole
     local is_electric_pole = wire_reach[connection_type] ~= nil
@@ -359,7 +362,7 @@ local function get_closest_entity(player, position)
 end
 
 -- Using the new shortest_path function.
-global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type)
+global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run)
     local player = game.get_player(player_index)
 
     local start_position = {x = math.floor(source_x*2)/2, y = math.floor(source_y*2)/2}
@@ -392,7 +395,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     if xdiff + ydiff < 1 then
         local dir = get_direction(start_position, end_position)
         local entity_dir = global.utils.get_entity_direction(connection_type, dir/2)
-        place_at_position(player, connection_type, start_position, entity_dir, serialized_entities)
+        place_at_position(player, connection_type, start_position, entity_dir, serialized_entities, dry_run)
         return {entities = serialized_entities, connected = true}
     end
 
@@ -404,7 +407,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     local dir
 
     if connection_type == 'pipe' then
-        place_at_position(player, connection_type, start_position, dir, serialized_entities)
+        place_at_position(player, connection_type, start_position, dir, serialized_entities, dry_run)
     end
 
     local last_position = path[1].position
@@ -412,7 +415,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     for i = 1 + initial_offset, #path-1, step_size do
         original_dir = (path[i + step_size] and get_direction(path[i].position, path[i + step_size].position)) or get_direction(path[i].position, end_position)
         dir = global.utils.get_entity_direction(connection_type, original_dir/2)
-        place_at_position(player, connection_type, path[i].position, dir, serialized_entities)
+        place_at_position(player, connection_type, path[i].position, dir, serialized_entities, dry_run)
         last_position = path[i].position
         last_dir = dir
     end
@@ -430,19 +433,19 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
 --             local ndir = global.utils.get_entity_direction(connection_type, dir/2)
 --            -- place_at_position(player, connection_type, path[#path].position, ndir, serialized_entities)
 --         end
-        place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities)
+        place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities, dry_run)
 
     elseif connection_type == 'pipe' then
         -- If the connection_type is a pipe, we have to do some extra work to ensure no missing pipes
-        place_at_position(player, connection_type, path[#path].position, get_direction(path[#path].position, preemptive_target), serialized_entities)
-        place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities)
-        place_at_position(player, connection_type, preemptive_target, get_direction(path[#path].position, preemptive_target), serialized_entities)
+        place_at_position(player, connection_type, path[#path].position, get_direction(path[#path].position, preemptive_target), serialized_entities, dry_run)
+        place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities, dry_run)
+        place_at_position(player, connection_type, preemptive_target, get_direction(path[#path].position, preemptive_target), serialized_entities, dry_run)
         --place_at_position(player, connection_type, path[#path-1].position, get_direction(path[#path].position, preemptive_target), serialized_entities)
 
     else
         -- If the connection_type is an electricity pole, we need to place the last entity at the target position to ensure connection
-        place_at_position(player, connection_type, path[#path].position, get_direction(path[#path].position, preemptive_target), serialized_entities)
-        place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities)
+        place_at_position(player, connection_type, path[#path].position, get_direction(path[#path].position, preemptive_target), serialized_entities, dry_run)
+        place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities, dry_run)
     end
 
     -- Check if entities are connected

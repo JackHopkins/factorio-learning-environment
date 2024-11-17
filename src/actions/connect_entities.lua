@@ -363,7 +363,7 @@ local function get_closest_entity(player, position)
 end
 
 -- Using the new shortest_path function.
-local function global.actions.connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run)
+local function connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run)
     
     local counter_state = {place_counter = 0}    
     local player = game.get_player(player_index)
@@ -474,13 +474,20 @@ local function global.actions.connect_entities(player_index, source_x, source_y,
 end
 
 -- Using the new shortest_path function.
-global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run)
+global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run, number_of_connection_entities)
     --First do a dry run
-    local result = connect_entities_local(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, true)
-
+    local result = connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, true)
+    
     -- then do an actual run if dry run is false
     if not dry_run then
-        result = connect_entities_local(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, false)
+        -- Check if the player has enough entities in their inventory
+        local required_count = result.number_of_entities
+        game.print("Required count: " .. required_count)
+        game.print("Available count: " .. number_of_connection_entities)
+        if number_of_connection_entities < required_count then
+            error("Player does not have enough " .. connection_type .. " in their inventory to complete this connection. Required number: " .. required_count .. ", Available in inventory: " .. number_of_connection_entities)
+        end
+        result = connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, false)
     end
     
     return result

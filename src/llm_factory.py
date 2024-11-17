@@ -34,7 +34,7 @@ class LLMFactory:
         ]
 
     def call(self, *args, **kwargs):
-        max_tokens = kwargs.get('max_tokens', 1000)
+        max_tokens = kwargs.get('max_tokens', 1500)
         model_to_use = kwargs.get('model', self.model)
         if "claude" in model_to_use:
             # Set up and call the Anthropic API

@@ -5,6 +5,7 @@ from typing import Tuple, List
 from dotenv import load_dotenv
 
 from cluster.local.cluster_ips import get_local_container_ips
+from datasetgen.mcts.conversation_formatter import OutputOnlyFormatter
 from datasetgen.mcts.db_client import DBClient
 from datasetgen.mcts.factorio_evaluator import FactorioEvaluator
 from datasetgen.mcts.game_state import GameState
@@ -58,13 +59,13 @@ async def main():
         system_prompt = f.read().format(schema=instances[0].get_system_prompt())
 
     print("Initializing MCTS...")
-    mcts = MCTS(llm, db_client, evaluator, system_prompt, initial_state)
+    mcts = MCTS(llm, db_client, evaluator, system_prompt, initial_state, version=2, formatter=OutputOnlyFormatter(planning=True))
 
     print("Starting MCTS search...")
     best_programs = await mcts.search(
         n_iterations=100,
         samples_per_iteration=5,
-        timeout=60,
+        skip_failures=False,
     )
 
     print("\nBest programs found:")

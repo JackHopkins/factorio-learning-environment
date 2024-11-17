@@ -23,6 +23,8 @@ class Program(BaseModel):
     prompt_token_usage: Optional[int] = None
     completion_token_usage: Optional[int] = None
     token_usage: Optional[int] = None
+    response: Optional[str] = None
+    version: int = 1
 
     def get_uct(self, parent_visits: int, exploration_constant: float = 1.41) -> float:
         if self.visits == 0:
@@ -51,4 +53,5 @@ class Program(BaseModel):
             prompt_token_usage=row['prompt_token_usage'],
             completion_token_usage=row['completion_token_usage'],
             token_usage=row['token_usage'],
+            response=row['response'],
         )

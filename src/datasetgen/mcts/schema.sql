@@ -23,8 +23,7 @@ CREATE TABLE evaluation_queue (
     result_json JSONB
 );
 
--- Function for softmax sampling
-CREATE OR REPLACE FUNCTION sample_parent()
+CREATE OR REPLACE FUNCTION sample_parent(target_version INTEGER)
 RETURNS INTEGER AS $$
 DECLARE
     selected_id INTEGER;
@@ -32,6 +31,7 @@ BEGIN
     WITH recent AS (
         SELECT id, value
         FROM programs
+        WHERE version = target_version
         ORDER BY created_at DESC
         LIMIT 20
     ),

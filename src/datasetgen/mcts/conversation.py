@@ -1,12 +1,12 @@
 import json
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 
 from pydantic import BaseModel
 
 from datasetgen.mcts.game_state import GameState
-from factorio_entities import Direction as DirectionA
+from factorio_entities import Direction as DirectionA, Entity, EntityGroup
 from factorio_instance import Direction
 
 class EntityEncoder(json.JSONEncoder):
@@ -55,7 +55,7 @@ class Conversation(BaseModel):
                     for msg in data['messages']]
         return cls(messages=messages)
 
-    def add_result(self, program: str, reward: float, response: str, new_state: GameState):
+    def add_result(self, program: str, reward: float, response: str, new_state: GameState, entities: List[Union[Entity, EntityGroup]]):
         """Add program execution result to conversation"""
         self.messages.append(Message(role="assistant",content=program))
         self.messages.append(Message(role="user", content=
@@ -64,4 +64,4 @@ class Conversation(BaseModel):
 
             Updated state:
             Inventory: {json.dumps(new_state.inventory.__dict__, indent=2)}
-            Entities: {json.dumps(new_state.entities, indent=2, cls=EntityEncoder)}"""))
+            Entities: {json.dumps(entities, indent=2, cls=EntityEncoder)}"""))

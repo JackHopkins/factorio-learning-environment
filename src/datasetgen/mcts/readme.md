@@ -176,7 +176,7 @@ def from_instance(cls, instance: 'FactorioInstance') -> 'GameState':
    - Add program pattern extraction
    - Implement template learning
    - Track successful strategies
-
+   
 ## Dependencies
 
 - Python 3.8+

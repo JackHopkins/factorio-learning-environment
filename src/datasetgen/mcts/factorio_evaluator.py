@@ -1,10 +1,11 @@
 import asyncio
 from copy import deepcopy
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 
 from datasetgen.mcts.db_client import DBClient
 from datasetgen.mcts.game_state import GameState
 from datasetgen.mcts.program import Program
+from factorio_entities import Entity, EntityGroup
 from factorio_instance import FactorioInstance
 
 
@@ -32,7 +33,7 @@ class FactorioEvaluator:
         print(f"Holdout value: {holdout_value}")
 
         # Update programs with relative rewards
-        for program, (raw_reward, state, response) in zip(programs, eval_results):
+        for program, (raw_reward, state, response, entities) in zip(programs, eval_results):
             relative_reward = raw_reward - holdout_value
             print(f"Program {program.id}: raw={raw_reward}, relative={relative_reward}")
 
@@ -41,23 +42,18 @@ class FactorioEvaluator:
             program.state = state
             program.raw_reward = raw_reward
             program.holdout_value = holdout_value
-            program.conversation.add_result(program.code, relative_reward, response, state)
+            program.conversation.add_result(program.code, relative_reward, response, state, entities)
+            program.response = response
 
-            # Then save to DB with updated conversation
-            await self.db.update_program(program.id, {
-                'value': relative_reward,
-                'raw_reward': raw_reward,
-                'holdout_value': holdout_value,
-                'state_json': state.to_raw(),
-                'conversation_json': program.conversation.model_dump_json()
-            })
-
+        # Filter out programs with no state - these are
+        # Return updated programs
         return programs
 
-    async def _evaluate_single(self, program: Program, instance: FactorioInstance) -> Tuple[float, GameState, str]:
+    async def _evaluate_single(self, program: Program, instance: FactorioInstance) -> Tuple[float, GameState, str, List[Union[Entity, EntityGroup]]]:
         reward, _, result  = instance.eval(program.code, timeout=60)
         state = GameState.from_instance(instance)
-        return reward, state, result
+        entities = instance.get_entities()
+        return reward, state, result, entities
 
     async def _run_holdout(self) -> float:
         """Run holdout instance for same duration as programs"""

@@ -2,10 +2,11 @@ import json
 from typing import Optional, Dict, Any
 
 import psycopg2
+import tenacity
+from tenacity import wait_exponential, retry_if_exception_type
 
 from datasetgen.mcts.evaluation_task import EvaluationTask
 from datasetgen.mcts.program import Program
-from datasetgen.mcts.task_status import TaskStatus
 
 
 class DBClient:
@@ -15,22 +16,32 @@ class DBClient:
     async def create_program(self, program: Program) -> Program:
         with self.conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, completion_token_usage, prompt_token_usage, token_usage)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, completion_token_usage, prompt_token_usage, token_usage, response, holdout_value, raw_reward, version)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id, created_at
             """, (program.code, program.value, program.visits, program.parent_id,
-                  json.dumps(program.state.dict()) if program.state else None,
-                  json.dumps(program.conversation.dict()),program.completion_token_usage, program.prompt_token_usage, program.token_usage))
+                  program.state.to_raw() if program.state else None,
+                  json.dumps(program.conversation.dict()),
+                  program.completion_token_usage,
+                  program.prompt_token_usage,
+                  program.token_usage,
+                  program.response,
+                  program.holdout_value,
+                  program.raw_reward,
+                  program.version
+                  ))
+
             id, created_at = cur.fetchone()
             self.conn.commit()
             program.id = id
             program.created_at = created_at
             return program
 
-    async def sample_parent(self) -> Optional[Program]:
+    @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)), wait=wait_exponential(multiplier=1, min=4, max=10))
+    async def sample_parent(self, version=1) -> Optional[Program]:
         with self.conn.cursor() as cur:
             # Get sampled ID
-            cur.execute("SELECT sample_parent()")
+            cur.execute(f"SELECT sample_parent({version})")
             sampled_id = cur.fetchone()[0]
             if not sampled_id:
                 return None

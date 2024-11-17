@@ -129,6 +129,7 @@ class ConnectEntities(Action):
                  source: Union[Position, Entity, EntityGroup],
                  target: Union[Position, Entity, EntityGroup],
                  connection_type: Prototype = Prototype.Pipe,
+                 dry_run: bool = False
                  ) -> List[Union[Entity, EntityGroup]]:
         """
         Connect two entities or positions.
@@ -293,7 +294,8 @@ class ConnectEntities(Action):
                                                  target_position.x,
                                                  target_position.y,
                                                  path_handle,
-                                                 connection_prototype)
+                                                 connection_prototype,
+                                                 dry_run)
                 if not isinstance(response, dict) and response != "Passed":
                     raise Exception(
                         f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}.",
@@ -309,7 +311,8 @@ class ConnectEntities(Action):
                                                  target_position.x,
                                                  target_position.y,
                                                  path_handle,
-                                                 connection_prototype)
+                                                 connection_prototype,
+                                                 dry_run)
         else:
             path_handle = self.request_path(finish=target_position, start=source_position, allow_paths_through_own_entities=True)
 
@@ -319,7 +322,8 @@ class ConnectEntities(Action):
                                              target_position.x,
                                              target_position.y,
                                              path_handle,
-                                             connection_prototype)
+                                             connection_prototype,
+                                             dry_run)
         if not isinstance(response, dict) and response != "Passed":
             raise Exception(f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}.", response.lstrip())
 

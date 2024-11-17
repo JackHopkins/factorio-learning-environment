@@ -363,7 +363,7 @@ local function get_closest_entity(player, position)
 end
 
 -- Using the new shortest_path function.
-global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run)
+local function global.actions.connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run)
     
     local counter_state = {place_counter = 0}    
     local player = game.get_player(player_index)
@@ -471,4 +471,17 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
         connected = is_connected, 
         number_of_entities = counter_state.place_counter
     }
+end
+
+-- Using the new shortest_path function.
+global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run)
+    --First do a dry run
+    local result = connect_entities_local(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, true)
+
+    -- then do an actual run if dry run is false
+    if not dry_run then
+        result = connect_entities_local(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, false)
+    end
+    
+    return result
 end

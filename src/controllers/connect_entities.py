@@ -10,6 +10,7 @@ from controllers.get_path import GetPath
 from controllers.pickup_entity import PickupEntity
 from controllers.request_path import RequestPath
 from controllers.rotate_entity import RotateEntity
+from controllers.inspect_inventory import InspectInventory
 from factorio_entities import Entity, Boiler, FluidHandler, Position, Generator, Inserter, MiningDrill, TransportBelt, \
     OffshorePump, PumpJack, BeltGroup, EntityGroup, PipeGroup
 from factorio_instance import PLAYER, Direction
@@ -26,6 +27,7 @@ class ConnectEntities(Action):
         self.get_path = GetPath(connection, game_state)
         self.rotate_entity = RotateEntity(connection, game_state)
         self.pickup_entity = PickupEntity(connection, game_state)
+        self.inspect_inventory = InspectInventory(connection, game_state)
 
 
     def _get_nearest_connection_point(self,
@@ -129,6 +131,7 @@ class ConnectEntities(Action):
                  source: Union[Position, Entity, EntityGroup],
                  target: Union[Position, Entity, EntityGroup],
                  connection_type: Prototype = Prototype.Pipe,
+                 dry_run: bool = False
                  ) -> List[Union[Entity, EntityGroup]]:
         """
         Connect two entities or positions.
@@ -143,6 +146,11 @@ class ConnectEntities(Action):
         connection_prototype, metaclass = connection_type.value
         source_entity = None
         target_entity = None
+
+        # get the inventory
+        inventory = self.inspect_inventory()
+        # get the number of the connection_prototype in the inventory
+        number_of_connection_prototype = inventory.get(connection_prototype, 0)
 
         if isinstance(source, Entity) or isinstance(source, EntityGroup):
             source_entity = source
@@ -293,7 +301,9 @@ class ConnectEntities(Action):
                                                  target_position.x,
                                                  target_position.y,
                                                  path_handle,
-                                                 connection_prototype)
+                                                 connection_prototype,
+                                                 dry_run,
+                                                 number_of_connection_prototype)
                 if not isinstance(response, dict) and response != "Passed":
                     raise Exception(
                         f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}.",
@@ -309,7 +319,9 @@ class ConnectEntities(Action):
                                                  target_position.x,
                                                  target_position.y,
                                                  path_handle,
-                                                 connection_prototype)
+                                                 connection_prototype,
+                                                 dry_run,
+                                                 number_of_connection_prototype)
         else:
             path_handle = self.request_path(finish=target_position, start=source_position, allow_paths_through_own_entities=True)
 
@@ -319,11 +331,16 @@ class ConnectEntities(Action):
                                              target_position.x,
                                              target_position.y,
                                              path_handle,
-                                             connection_prototype)
+                                             connection_prototype,
+                                             dry_run,
+                                             number_of_connection_prototype)
         if not isinstance(response, dict) and response != "Passed":
             raise Exception(f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}.", response.lstrip())
 
-
+        if dry_run:
+            return {"number_of_entities_required": response["number_of_entities"],
+                    "number_of_entities_available": number_of_connection_prototype}
+        
         success = response.get('connected', False)
         entities_list = response.get('entities', {}).values()
         path = []

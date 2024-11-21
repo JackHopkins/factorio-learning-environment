@@ -25,6 +25,10 @@ class Program(BaseModel):
     token_usage: Optional[int] = None
     response: Optional[str] = None
     version: int = 1
+    version_description: str = ""
+
+    def __repr__(self):
+        return self.code
 
     def get_uct(self, parent_visits: int, exploration_constant: float = 1.41) -> float:
         if self.visits == 0:
@@ -54,4 +58,6 @@ class Program(BaseModel):
             completion_token_usage=row['completion_token_usage'],
             token_usage=row['token_usage'],
             response=row['response'],
+            version=row['version'],
+            version_description=row['version_description']
         )

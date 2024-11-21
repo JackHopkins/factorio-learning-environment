@@ -8,7 +8,7 @@ def game(instance):
     instance.reset()
     instance.set_inventory(**{'iron-plate': 40,
                               'iron-gear-wheel': 1,
-                              'electronic-circuit': 2,
+                              #'electronic-circuit': 2,
                               'pipe': 1,
                               'copper-plate': 10})
     yield instance
@@ -36,6 +36,10 @@ def test_craft_item(game):
     # Assert that the iron plate has been deducted and the iron chest has been added
     assert initial_iron_plate - final_iron_plate == iron_cost * quantity
     assert initial_iron_chest + quantity == final_iron_chest
+
+def test_recursive_crafting(game):
+    crafted_circuits = game.craft_item(Prototype.ElectronicCircuit, quantity=4)
+    assert crafted_circuits
 
 def test_craft_copper_coil(game):
     """
@@ -66,7 +70,7 @@ def test_craft_entity_with_missing_intermediate_resources(game):
     """
     starting_stats = game.production_stats()
     # Craft 20 copper coil
-    crafted = game.craft_item(Prototype.OffshorePump, quantity=1)
+    crafted = game.craft_item(Prototype.ElectronicCircuit, quantity=1)
 
     # Check the production stats
     final_stats = game.production_stats()

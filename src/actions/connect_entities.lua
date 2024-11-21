@@ -485,7 +485,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
         game.print("Required count: " .. required_count)
         game.print("Available count: " .. number_of_connection_entities)
         if number_of_connection_entities < required_count then
-            error("Player does not have enough " .. connection_type .. " in their inventory to complete this connection. Required number: " .. required_count .. ", Available in inventory: " .. number_of_connection_entities)
+            error("\"Player does not have enough " .. connection_type .. " in their inventory to complete this connection. Required number: " .. required_count .. ", Available in inventory: " .. number_of_connection_entities.."\"")
         end
         result = connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, false)
     end

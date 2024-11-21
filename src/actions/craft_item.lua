@@ -1,6 +1,145 @@
 global.actions.craft_item = function(player_index, entity, count)
     local player = game.get_player(player_index)
 
+    -- Helper functions remain the same
+    local function get_missing_ingredients(player, recipe, count)
+        local missing_ingredients = {}
+        local crafts_needed = math.ceil(count / recipe.products[1].amount)
+        for _, ingredient in pairs(recipe.ingredients) do
+            local count_that_player_has = player.get_item_count(ingredient.name)
+            local needed = ingredient.amount * crafts_needed
+            if count_that_player_has < needed then
+                local difference = needed - count_that_player_has
+                missing_ingredients[ingredient.name] = difference
+            end
+        end
+        return missing_ingredients
+    end
+
+    local function can_craft_recipe(player, recipe_name)
+        local recipe = player.force.recipes[recipe_name]
+        if not recipe then
+            return false, "recipe doesn't exist"
+        end
+        if not recipe.enabled then
+            return false, "recipe not unlocked"
+        end
+        if recipe.category ~= "crafting" then
+            return false, "recipe requires specific crafting machine"
+        end
+        return true, recipe
+    end
+
+    local function update_production_stats(force, recipe, crafts_count)
+        local stats = force.item_production_statistics
+        for _, ingredient in pairs(recipe.ingredients) do
+            stats.on_flow(ingredient.name, -ingredient.amount * crafts_count)
+        end
+        for _, product in pairs(recipe.products) do
+            if product.type == "item" then
+                stats.on_flow(product.name, product.amount * crafts_count)
+            end
+        end
+    end
+
+    -- Single recursive crafting function that handles both fast and slow modes
+    local function attempt_craft(player, entity_name, count, attempted_recipes)
+        attempted_recipes = attempted_recipes or {}
+
+        -- Prevent infinite recursion
+        if attempted_recipes[entity_name] then
+            return 0, "recursive crafting loop detected"
+        end
+        attempted_recipes[entity_name] = true
+
+        local can_craft, recipe_or_error = can_craft_recipe(player, entity_name)
+        if not can_craft then
+            return 0, recipe_or_error
+        end
+
+        local recipe = recipe_or_error
+        local crafts_needed = math.ceil(count / recipe.products[1].amount)
+        local actual_craft_count = crafts_needed * recipe.products[1].amount
+
+        -- Check for missing ingredients
+        local missing_ingredients = get_missing_ingredients(player, recipe, actual_craft_count)
+        if next(missing_ingredients) then
+            -- Try to craft each missing ingredient
+            for ingredient_name, needed_amount in pairs(missing_ingredients) do
+                local crafted_amount, error_msg = attempt_craft(player, ingredient_name, needed_amount, attempted_recipes)
+                if crafted_amount == 0 then
+                    return 0, "couldn't craft intermediate " .. ingredient_name .. ": " .. error_msg
+                end
+            end
+        end
+
+        -- After potentially crafting intermediates, check if we can now craft the original item
+        if global.fast then
+            -- Fast crafting implementation
+            local missing = get_missing_ingredients(player, recipe, actual_craft_count)
+            if next(missing) then
+                local missing_str = ""
+                for name, amount in pairs(missing) do
+                    missing_str = missing_str .. name .. " x" .. amount .. ", "
+                end
+                return 0, "still missing ingredients: " .. missing_str:sub(1, -3)
+            end
+
+            for _, ingredient in pairs(recipe.ingredients) do
+                player.remove_item({name = ingredient.name, count = ingredient.amount * crafts_needed})
+            end
+
+            local crafted = player.insert({name = entity_name, count = actual_craft_count})
+            if crafted < actual_craft_count then
+                player.surface.spill_item_stack(player.position, {name = entity_name, count = actual_craft_count - crafted})
+            end
+
+            update_production_stats(player.force, recipe, crafted)
+            return crafted, nil
+        else
+            -- Slow crafting implementation
+            local crafted = player.begin_crafting{count=count, recipe=entity_name}
+            if crafted == 0 then
+                return 0, "unable to begin crafting - check prerequisites and inventory space"
+            end
+            update_production_stats(player.force, recipe, crafted)
+            return crafted, nil
+        end
+    end
+
+    -- Main crafting logic
+    local total_crafted = 0
+    local final_error = nil
+
+    while total_crafted < count do
+        local remaining = count - total_crafted
+        local crafted_amount, error_msg = attempt_craft(player, entity, remaining, {})
+
+        if crafted_amount > 0 then
+            total_crafted = total_crafted + crafted_amount
+            if not global.fast then
+                break
+            end
+        else
+            final_error = error_msg
+            break
+        end
+    end
+
+    if total_crafted >= count or (not global.fast and total_crafted > 0) then
+        return count
+    elseif total_crafted > 0 then
+        error(string.format("\"Successfully crafted %dx but failed to craft %dx %s because %s\"",
+            total_crafted, count - total_crafted, entity, final_error))
+    else
+        error(string.format("\"Failed to craft %dx %s because %s\"",
+            count, entity, final_error))
+    end
+end
+
+global.actions.craft_item2 = function(player_index, entity, count)
+    local player = game.get_player(player_index)
+
     -- Helper function to check missing ingredients
     local function get_missing_ingredients(player, recipe, count)
         local missing_ingredients = {}
@@ -139,10 +278,10 @@ global.actions.craft_item = function(player_index, entity, count)
     if total_crafted >= count or (not global.fast and total_crafted > 0) then
         return count
     elseif total_crafted > 0 then
-        error("Successfully crafted " .. total_crafted .."x but failed to craft "
-                .. (count-total_crafted) .. "x " .. entity.." because ".. reason)
+        error("\"Successfully crafted " .. total_crafted .."x but failed to craft "
+                .. (count-total_crafted) .. "x " .. entity.." because ".. reason.."\"")
     else
-        error("Failed to craft " .. count .. "x " .. entity.." because "..reason)
+        error("\"Failed to craft " .. count .. "x " .. entity.." because "..reason.."\"")
     end
 end
 
@@ -303,10 +442,10 @@ global.actions.craft_item3 = function(player_index, entity, count)
     if total_crafted >= count or (not global.fast and total_crafted > 0) then
         return count
     elseif total_crafted > 0 then
-        error("Successfully crafted " .. total_crafted .."x but failed to craft "
-                .. (count-total_crafted) .. "x " .. entity.." because ".. reason)
+        error("\"Successfully crafted " .. total_crafted .."x but failed to craft "
+                .. (count-total_crafted) .. "x " .. entity.." because ".. reason.."\"")
     else
-        error("Failed to craft " .. count .. "x " .. entity.." because "..reason)
+        error("\"Failed to craft " .. count .. "x " .. entity.." because "..reason.."\"")
     end
 end
 
@@ -391,9 +530,9 @@ global.actions.craft_item2 = function(player_index, entity, count)
         game.print("Crafted x"..count.." "..entity)
         return count
     elseif total_crafted > 0 then
-        error("Successfully crafted " .. total_crafted .."x but failed to craft "
-                .. (count-total_crafted) .. "x " .. entity.." because ".. reason)
+        error("\"Successfully crafted " .. total_crafted .."x but failed to craft "
+                .. (count-total_crafted) .. "x " .. entity.." because ".. reason.."\"")
     else
-        error("Failed to craft " .. count .. "x_" .. entity.." because "..reason)
+        error("\"Failed to craft " .. count .. "x_" .. entity.." because "..reason.."\"")
     end
 end

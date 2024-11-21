@@ -29,6 +29,6 @@ global.actions.get_entity = function(player_index, entity, x, y)
         --local entity_json = game.table_to_json(serialized)-- game.table_to_json(entity
         return serialized
     else
-        error("No entity of type " .. entity .. " found at the specified position.")
+        error("\"No entity of type " .. entity .. " found at the specified position.\"")
     end
 end

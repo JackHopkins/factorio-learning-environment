@@ -181,7 +181,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             else
                 colliding_entity_name = table.concat(colliding_entity_names, ", ", 1, #colliding_entity_names - 1) .. ", and " .. colliding_entity_names[#colliding_entity_names]
             end
-            error("A " .. colliding_entity_name .. " already exists at the new position " .. serpent.line(new_position) .. ".")
+            error("\"A " .. colliding_entity_name .. " already exists at the new position " .. serpent.line(new_position) .. ".\"")
         end
     end
 

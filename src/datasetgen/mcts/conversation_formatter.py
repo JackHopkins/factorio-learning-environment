@@ -1,18 +1,148 @@
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple, Optional
 
 from datasetgen.mcts.conversation import Message, Conversation
 
 PLANNING_ADDITION_PROMPT = \
 """
-First bring out a thorough step-by-step plan how you can achieve this task and then create the python script to achieve the task.
+Your goal is to automate an increasingly complex factory process.
+Identify an appropriate next task given the recent history and environment feedback to achieve this goal.
+Develop thorough step-by-step plans for how you can achieve the next task and then create the python script to achieve the task.
 For your plan, follow this structure:
 1) What entities are needed for the task
 2) What entities do we have on the map, in different entity inventories or in our inventory
 3) What entities are we missing for the task
-4) Execution -- Taking into account 1,2 and 3, what steps do we need to take to successfully carry out the task
+4) Execution -- Taking into account 1,2 and 3, what are the steps we need to take to successfully carry out the task.
 """
+
+
+class CodeProcessor:
+    """Handles code block processing and summarization"""
+
+    @staticmethod
+    def is_comment_start(line: str) -> bool:
+        """Check if line starts a comment (either # or \"\"\")"""
+        stripped = line.strip()
+        return stripped.startswith('#') or stripped.startswith('"""')
+
+    @staticmethod
+    def is_comment_end(line: str) -> bool:
+        """Check if line ends a comment block"""
+        stripped = line.strip()
+        return not stripped.startswith('"""') and stripped.endswith('"""')
+
+    @staticmethod
+    def extract_code_blocks(content: str) -> List[Tuple[str, int, int]]:
+        """
+        Extract code blocks that are between comments.
+        Returns list of (code, start_line, end_line) tuples.
+        """
+        lines = content.splitlines()
+        blocks = []
+        current_block = []
+        block_start = None
+
+        for i, line in enumerate(lines, 1):  # Start line counting from 1
+            stripped = line.strip()
+
+            if stripped.startswith('#'):
+                # If we have an active block, end it
+                if current_block:
+                    blocks.append((
+                        '\n'.join(current_block),
+                        block_start,
+                        i - 1
+                    ))
+                    current_block = []
+                    block_start = None
+            else:
+                # If this is first code line after comment
+                if stripped and block_start is None:
+                    block_start = i
+                # Add non-empty lines to current block
+                if stripped:
+                    current_block.append(line)
+
+        # Handle any remaining block
+        if current_block:
+            blocks.append((
+                '\n'.join(current_block),
+                block_start,
+                len(lines)
+            ))
+
+        # If no blocks found, treat entire content as one block
+        if not blocks:
+            return [(content, 1, len(lines))]
+
+        return blocks
+
+    @staticmethod
+    def summarize_code_block(code: str, start_line: int = None, end_line: int = None,
+                             preserve_comments: bool = True) -> str:
+        """
+        Summarize a code block by replacing code sections with line count indicators.
+        Handles both inline (#) and block (\"\"\") comments.
+        """
+        lines = code.splitlines()
+
+        if not lines:
+            return ""
+
+        result = []
+        code_start = None
+        code_lines = 0
+        in_docstring = False
+
+        for i, line in enumerate(lines, 1):
+            stripped = line.strip()
+
+            # Handle docstring boundaries
+            if stripped.startswith('"""'):
+                if not in_docstring:  # Start of docstring
+                    if code_start is not None:
+                        if code_lines == 1:
+                            result.append(f"<LINE {code_start} CUT/>")
+                        else:
+                            result.append(f"<LINES {code_start}-{code_start + code_lines - 1} CUT/>")
+                        code_start = None
+                        code_lines = 0
+                    in_docstring = True
+                    result.append(line)
+                    continue
+
+            if in_docstring:
+                result.append(line)
+                if stripped.endswith('"""'):
+                    in_docstring = False
+                continue
+
+            # Handle regular comments and code
+            if stripped.startswith('#'):
+                if code_start is not None:
+                    if code_lines == 1:
+                        result.append(f"<LINE {code_start} CUT/>")
+                    else:
+                        result.append(f"<LINES {code_start}-{code_start + code_lines - 1} CUT/>")
+                    code_start = None
+                    code_lines = 0
+                result.append(line)
+            else:
+                if stripped:
+                    if code_start is None:
+                        code_start = i
+                    code_lines += 1
+
+        # Handle any remaining code section
+        if code_start is not None:
+            if code_lines == 1:
+                result.append(f"<LINE {code_start} CUT/>")
+            else:
+                result.append(f"<LINES {code_start}-{code_start + code_lines - 1} CUT/>")
+
+        return '\n'.join(result)
 
 class ConversationFormatter(ABC):
     """Abstract base class for conversation formatting strategies"""
@@ -41,71 +171,78 @@ class DefaultFormatter(ConversationFormatter):
     def format_message(self, message: Message) -> Message:
         return message
 
-class OutputOnlyFormatter(ConversationFormatter):
+
+class StructurePreservingFormatter(ConversationFormatter):
     """
-    Concrete formatter that preserves program outputs but omits program code.
-    Only includes the results/printed output from program execution.
+    Formatter that preserves program structure through comments while reducing token usage.
+    It replaces all code not in the most recent history with `<LINE X CUT/>` tags.
     """
 
-    def __init__(self, planning = False):
+    def __init__(self, planning=True):
+        self.code_processor = CodeProcessor()
         self.planning = planning
+
+    def format_message(self, message: Message, is_last: bool = False) -> Optional[Message]:
+        if message.role == "system":
+            return Message(role="system", content=message.content)
+
+        elif message.role == "assistant":
+            if not is_last:  # Summarize all but the last program
+                content = self.code_processor.summarize_code_block(message.content)
+                return Message(
+                    role="assistant",
+                    content=content,
+                    metadata={"summarized": True}
+                )
+            else:
+                return Message(
+                    role="assistant",
+                    content=message.content,
+                    metadata={"summarized": False}
+                )
+
+        elif message.role == "user":
+            content = message.content
+            try:
+                if "Execution result:" in content:
+                    result = content.split("Execution result:")[1].split("Updated state:")[0]
+                    content = f"Execution result:\n{result.strip()}"
+                    #if self.planning:
+                    #    content = PLANNING_ADDITION_PROMPT + '\n' + content
+                    return Message(
+                        role="user",
+                        content=content
+                    )
+                else:
+                    return Message(
+                        role="user",
+                        content=content.strip()
+                    )
+            except Exception as e:
+                print(f"Error formatting user message: {str(e)}")
+                return None
+
+        return None
 
     def format_conversation(self, conversation: Conversation) -> List[Message]:
         formatted = []
 
-        # Keep system message unchanged
+        # Handle system message if present
         if conversation.messages and conversation.messages[0].role == "system":
             formatted.append(self.format_message(conversation.messages[0]))
             messages = conversation.messages[1:]
         else:
             messages = conversation.messages
 
-        # Process message pairs (assistant's program + user's result)
-        for i in range(0, len(messages), 2):
-            if i + 1 >= len(messages):
-                break
+        last_message_role = messages[-1].role
 
-            assistant_msg = messages[i]
-            user_msg = messages[i + 1]
-
-            # Skip the assistant's program code
-            if assistant_msg.role != "assistant":
-                continue
-
-            # Extract and format only the program output
-            formatted_result = self.format_message(user_msg)
-            if formatted_result:
-                formatted.append(formatted_result)
+        # Format each message
+        for i, msg in enumerate(messages):
+            if last_message_role == 'assistant':
+                formatted_msg = self.format_message(msg, is_last=(i == len(messages) - 1))
+            elif last_message_role == 'user':
+                formatted_msg = self.format_message(msg, is_last=(i == len(messages) - 2))
+            if formatted_msg:
+                formatted.append(formatted_msg)
 
         return formatted
-
-    def format_message(self, message: Message) -> Message:
-        if message.role == "system":
-            # Preserve system messages unchanged
-            return Message(role="system", content=message.content)
-
-        elif message.role == "user":
-            # Extract only the program output/results
-            content = message.content
-            try:
-                # Split on common result markers
-                if "Execution result" in content:
-                    content = content.split("Execution result")[1]
-
-                # Remove state information but keep reward
-                if "Updated state:" in content:
-                    content = content.split("Updated state:")[0]
-
-                # Clean up and format
-                content = content.strip()
-                if content:
-                    return Message(
-                        role="user",
-                        content=f"{PLANNING_ADDITION_PROMPT if self.planning else ''} Previous attempt result: {content}".strip()
-                    )
-            except Exception as e:
-                print(f"Error formatting user message: {str(e)}")
-                return None
-
-        # Skip assistant messages (programs)
-        return None

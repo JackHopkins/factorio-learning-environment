@@ -1,6 +1,8 @@
 import asyncio
 import json
-from typing import Optional, List
+from typing import Optional, List, Dict
+
+from tenacity import wait_exponential, retry
 
 from datasetgen.mcts.conversation import Conversation, Message
 from datasetgen.mcts.conversation_formatter import ConversationFormatter, DefaultFormatter, PLANNING_ADDITION_PROMPT
@@ -19,6 +21,7 @@ class MCTS:
                  initial_state: GameState,
                  formatter: ConversationFormatter = DefaultFormatter(),
                  version=1,
+                 version_description=""
                  ):
 
         self.llm = llm_factory
@@ -27,60 +30,113 @@ class MCTS:
         self.system_prompt = system_prompt
         self.initial_state = initial_state
         self.version = version
+        self.version_description=version_description
         self.formatter = formatter
 
-    def _extract_code(self, response) -> str:
-        content = response.content if "claude" in self.llm.model else response.choices[0].message.content
-        try:
-            content = content.split('```python')[1].split('```')[0].strip()
-        except IndexError as e:
-            pass
+    def _verify_response_is_python(self, content):
+        code = content
         # Parse into an AST to verify that this is a program
         try:
-            ast = compile(content, filename="<ast>", mode="exec")
-        except SyntaxError as e:
+            ast = compile(code, filename="<ast>", mode="exec")
+        except SyntaxError:
             # Take the last line off and try again
-            content = content.rsplit('\n', 1)[0] + '\n'
+            code = code.rsplit('\n', 1)[0] + '\n'
+            ast = compile(code, filename="<ast>", mode="exec")
+
+        return code
+
+    def _extract_code_from_choice(self, choice) -> Optional[str]:
+        """Extract code from a single completion choice"""
+        code = ""
+        try:
+            content = choice.message.content
+            code = self._verify_response_is_python(content)
+            return code
+        except Exception as e:
             try:
-                ast = compile(content, filename="<ast>", mode="exec")
-            except SyntaxError as e1:
-                raise ValueError(f"Invalid Python code: {content}") from e
+                content = choice.message.content
+                code = content.split('```python')[1].split('```')[0].strip()
+                code = self._verify_response_is_python(code)
+                return code
+            except Exception as e1:
+                # Sometimes it samples a leading line, before writing unblocked python code.
+                content = "\n".join(choice.message.content.split("\n")[1:])
+                try:
+                    code = self._verify_response_is_python(content)
+                    return code
+                except Exception as e2:
+                    try:
+                        code = content.split('from factorio_instance import *')[1].strip()
+                        code = self._verify_response_is_python(code)
+                        return code
+                    except Exception as e2:
+                        print(f"Failed to extract code from choice after removing leading line and factorio_instance import: {str(e2)}")
+                        return None
+                    print(f"Failed to extract code from choice after removing leading line: {str(e2)}")
+                print(f"Failed to extract code from choice: {str(e1)}")
 
-        return content.strip()
-
-
-    async def _generate_programs_batch(self, conversation: Conversation, n_samples: int) -> List[Program]:
-        tasks = []
-        messages = conversation.model_dump()['messages']
+    @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
+    async def _generate_programs_batch(self, conversation: Conversation, n_samples: int, logit_bias: Optional[Dict[str, float]] = None) -> List[Program]:
+        """Generate multiple programs in a single API call using 'n' parameter"""
         formatted_messages = self.formatter.to_llm_messages(
             self.formatter.format_conversation(conversation)
         )
+        if "claude" in self.llm.model:
+            assert n_samples == 1, "Number of samples must be 1 for Claude"
 
-        async def generate_single():
-            try:
-                response = self.llm.call(messages=formatted_messages)
-                code = self._extract_code(response)
-                completion_token_usage = response.usage.completion_tokens if hasattr(response, 'usage') else None
-                prompt_token_usage = response.usage.prompt_tokens if hasattr(response, 'usage') else None
-                token_usage = response.usage.total_tokens if hasattr(response, 'usage') else None
-                id_ = hash((code, json.dumps(messages))) # create an ID by hashing the code and conversation
-                return Program(
-                    id=id_,
-                    code=code,
-                    conversation=conversation,
-                    token_usage=token_usage,
-                    completion_token_usage=completion_token_usage,
-                    prompt_token_usage=prompt_token_usage,
-                    version=self.version
-                )
-            except Exception as e:
-                print(f"Program generation failed: {str(e)}")
-                return None
+        try:
+            # Single API call to generate n_samples completions
+            response = self.llm.call(
+                messages=formatted_messages,
+                max_tokens=2048,
+                n=n_samples,
+                temperature=0.7,  # Adjust as needed
+                logit_bias=logit_bias
+            )
 
-        for _ in range(n_samples):
-            tasks.append(generate_single())
+            programs = []
+            messages = conversation.model_dump()['messages']
 
-        return [p for p in await asyncio.gather(*tasks) if p is not None]
+            # Process all choices from the response
+            if "claude" in self.llm.model:
+
+                # Handle Claude response format
+                code = self._extract_code_from_choice(response)
+                if code:
+                    programs.append(Program(
+                        id=hash((code, json.dumps(messages))),
+                        code=code,
+                        conversation=conversation,
+                        token_usage=response.usage.total_tokens if hasattr(response, 'usage') else None,
+                        completion_token_usage=response.usage.completion_tokens if hasattr(response, 'usage') else None,
+                        prompt_token_usage=response.usage.prompt_tokens if hasattr(response, 'usage') else None,
+                        version=self.version,
+                        version_description=self.version_description
+                    ))
+            else:
+                # Handle OpenAI response format with multiple choices
+                for choice in response.choices:
+                    code = self._extract_code_from_choice(choice)
+                    if code:
+                        programs.append(Program(
+                            id=hash((code, json.dumps(messages))),
+                            code=code,
+                            conversation=conversation,
+                            token_usage=response.usage.total_tokens // n_samples if hasattr(response,
+                                                                                            'usage') else None,
+                            completion_token_usage=response.usage.completion_tokens // n_samples if hasattr(response,
+                                                                                                            'usage') else None,
+                            prompt_token_usage=response.usage.prompt_tokens // n_samples if hasattr(response,
+                                                                                                    'usage') else None,
+                            version=self.version,
+                            version_description=self.version_description
+                        ))
+
+            return programs
+
+        except Exception as e:
+            print(f"Batch program generation failed: {str(e)}")
+            return []
 
     async def search(self,
                      n_iterations: int,
@@ -112,9 +168,11 @@ class MCTS:
                             content=f"Inventory: {json.dumps(start_state.inventory.__dict__)}\n\n{PLANNING_ADDITION_PROMPT}")
                 ])
 
+            self.evaluator.set_sampling_status()
             # Generate multiple programs from same parent
             programs = await self._generate_programs_batch(conversation, samples_per_iteration)
             if not programs:
+                self.evaluator.logger.update_progress()
                 continue
 
             # Filter out None programs
@@ -141,4 +199,7 @@ class MCTS:
 
             except Exception as e:
                 print(f"Evaluation failed for batch: {str(e)}")
+                self.evaluator.logger.update_progress()
                 continue
+
+            self.evaluator.logger.update_progress()

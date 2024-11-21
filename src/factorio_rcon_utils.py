@@ -118,5 +118,9 @@ def _lua2python(command, response, *parameters, trace=False, start=0):
         if trace:
             print(f"failure: {command} \t")
     end = timer()
-    return lua.decode(response), (end - start)
+
+    try:
+        return lua.decode(response), (end - start)
+    except Exception as e:
+        return None, (end - start)
 

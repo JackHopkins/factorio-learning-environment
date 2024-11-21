@@ -1,5 +1,5 @@
 import json
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 import psycopg2
 import tenacity
@@ -14,28 +14,57 @@ class DBClient:
         self.conn = psycopg2.connect(**db_config)
 
     async def create_program(self, program: Program) -> Program:
-        with self.conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, completion_token_usage, prompt_token_usage, token_usage, response, holdout_value, raw_reward, version)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, created_at
-            """, (program.code, program.value, program.visits, program.parent_id,
-                  program.state.to_raw() if program.state else None,
-                  json.dumps(program.conversation.dict()),
-                  program.completion_token_usage,
-                  program.prompt_token_usage,
-                  program.token_usage,
-                  program.response,
-                  program.holdout_value,
-                  program.raw_reward,
-                  program.version
-                  ))
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, completion_token_usage, prompt_token_usage, token_usage, response, holdout_value, raw_reward, version, version_description)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id, created_at
+                """, (program.code, program.value, 0, program.parent_id,
+                      program.state.to_raw() if program.state else None,
+                      json.dumps(program.conversation.dict()),
+                      program.completion_token_usage,
+                      program.prompt_token_usage,
+                      program.token_usage,
+                      program.response,
+                      program.holdout_value,
+                      program.raw_reward,
+                      program.version,
+                      program.version_description
+                      ))
 
-            id, created_at = cur.fetchone()
-            self.conn.commit()
-            program.id = id
-            program.created_at = created_at
-            return program
+                id, created_at = cur.fetchone()
+                self.conn.commit()
+                program.id = id
+                program.created_at = created_at
+                return program
+        except Exception as e:
+            print(e)
+            raise e
+
+
+    @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
+                    wait=wait_exponential(multiplier=1, min=4, max=10))
+    async def get_all_program_rewards(self, version: int = None) -> List[float]:
+        """Get all program rewards for a given version."""
+        query = """
+            SELECT value 
+            FROM programs 
+            WHERE value IS NOT NULL
+        """
+
+        if version is not None:
+            query += f" AND version = {version}"
+
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query.strip())
+                results = cur.fetchall()
+                return [row[0] for row in results]
+        except Exception as e:
+            print(f"Error fetching program rewards: {e}")
+            return []
 
     @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)), wait=wait_exponential(multiplier=1, min=4, max=10))
     async def sample_parent(self, version=1) -> Optional[Program]:
@@ -51,6 +80,36 @@ class DBClient:
             row = cur.fetchone()
             return Program.from_row(dict(zip([desc[0] for desc in cur.description], row)))
 
+    @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
+                    wait=wait_exponential(multiplier=1, min=4, max=10))
+    async def get_parent_visit_stats(self, version: int = None) -> Dict[str, float]:
+        """Get statistics about parent visit counts"""
+        query = """
+                SELECT 
+                    AVG(visits) as avg_visits,
+                    MIN(visits) as min_visits,
+                    MAX(visits) as max_visits,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY visits) as median_visits
+                FROM programs 
+                WHERE visits > 0
+            """
+
+        if version is not None:
+            query += f" AND version = {version}"
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query)
+                result = cur.fetchone()
+                return {
+                    'avg_visits': result[0],
+                    'min_visits': result[1],
+                    'max_visits': result[2],
+                    'median_visits': result[3]
+                }
+        except Exception as e:
+            print(f"Error fetching visit statistics: {e}")
+            return {}
 
     async def update_program(self, program_id: int, updates: Dict[str, Any]) -> Program:
         with self.conn.cursor() as cur:

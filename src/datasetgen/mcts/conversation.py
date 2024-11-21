@@ -43,6 +43,7 @@ def entity_serializer(obj: Any) -> Dict:
 class Message(BaseModel):
     role: str
     content: str
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 class Conversation(BaseModel):
@@ -58,10 +59,8 @@ class Conversation(BaseModel):
     def add_result(self, program: str, reward: float, response: str, new_state: GameState, entities: List[Union[Entity, EntityGroup]]):
         """Add program execution result to conversation"""
         self.messages.append(Message(role="assistant",content=program))
-        self.messages.append(Message(role="user", content=
-        f"""Execution result (reward: {reward}):
-            {response}
+        self.messages.append(Message(role="user", content=f"Execution result: \n{response}"))
 
-            Updated state:
-            Inventory: {json.dumps(new_state.inventory.__dict__, indent=2)}
-            Entities: {json.dumps(entities, indent=2, cls=EntityEncoder)}"""))
+            # Updated state:
+            # Inventory: {json.dumps(new_state.inventory.__dict__, indent=2)}
+            # Entities: {json.dumps(entities, indent=2, cls=EntityEncoder)}"""))

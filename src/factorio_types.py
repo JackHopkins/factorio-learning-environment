@@ -54,7 +54,7 @@ class Prototype(enum.Enum):
     PumpJack = "pumpjack", PumpJack
     Boiler = "boiler", Boiler
     SteamEngine = "steam-engine", Generator
-    Pipe = "pipe", Entity
+    Pipe = "pipe", Pipe
     IronChest = "iron-chest", Chest
     WoodenChest = "wooden-chest", Chest
     IronGearWheel = "iron-gear-wheel", Entity

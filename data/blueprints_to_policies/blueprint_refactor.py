@@ -5,7 +5,7 @@ import queue
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Literal, Optional, Dict, NamedTuple, Tuple
+from typing import List, Literal, Optional, NamedTuple
 from dataclasses import dataclass
 import openai
 from dotenv import load_dotenv
@@ -15,7 +15,7 @@ import pandas as pd
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from cluster.remote.cluster_ips import get_public_ips
-from data.processing_state import ProcessingState
+from data.blueprints_to_policies.processing_state import ProcessingState
 from factorio_entities import Position
 from factorio_instance import FactorioInstance
 from blueprint_analyzer import BlueprintAnalyzer

@@ -40,7 +40,7 @@ global.actions.nearest = function(player_index, resource)
                 end
             end
             if closest == nil then
-                error("Could not find an entity called "..resource)
+                error("\"Could not find an entity called "..resource.."\"")
             end
             --return { x = position.x - closest.x, y = position.y - closest.y }
             return {x = closest.x, y = closest.y}
@@ -60,7 +60,7 @@ global.actions.nearest = function(player_index, resource)
         end
 
         if closest == nil then
-            error("Could not find an entity called "..resource)
+            error("\"Could not find an entity called "..resource.."\"")
         end
         game.print("Distance to "..resource.." is "..closest_distance)
         return {x= closest.x, y = closest.y}

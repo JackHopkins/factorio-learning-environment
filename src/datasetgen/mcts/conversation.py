@@ -1,6 +1,7 @@
 import json
 from dataclasses import dataclass, field
 from enum import Enum
+from importlib.metadata import metadata
 from typing import List, Dict, Any, Union
 
 from pydantic import BaseModel
@@ -56,9 +57,9 @@ class Conversation(BaseModel):
                     for msg in data['messages']]
         return cls(messages=messages)
 
-    def add_result(self, program: str, reward: float, response: str, new_state: GameState, entities: List[Union[Entity, EntityGroup]]):
+    def add_result(self, program: str, response: str, **kwargs):
         """Add program execution result to conversation"""
-        self.messages.append(Message(role="assistant",content=program))
+        self.messages.append(Message(role="assistant",content=program, metadata=kwargs))
         self.messages.append(Message(role="user", content=f"Execution result: \n{response}"))
 
             # Updated state:

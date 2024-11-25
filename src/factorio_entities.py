@@ -327,6 +327,9 @@ class Lab(Entity):
     lab_input: Inventory = Inventory()
     lab_modules: Inventory = Inventory()
 
+class Pipe(Entity):
+    pass
+
 class EntityGroup(BaseModel):
     input_positions: List[Position]
     position: Position
@@ -336,8 +339,13 @@ class BeltGroup(EntityGroup):
     belts: List[TransportBelt]
     output_positions: List[Position]
 
-class Pipe(Entity):
-    #connections: List[Position] = []
-    pass
+    def __repr__(self) -> str:
+        belt_summary = f"[{len(self.belts)} belts]"
+        return f"BeltGroup(position={self.position}, input_positions={self.input_positions}, output_positions={self.output_positions}, status={self.status}, belts={belt_summary})"
+
 class PipeGroup(EntityGroup):
     pipes: List[Pipe]
+
+    def __repr__(self) -> str:
+        pipe_summary = f"[{len(self.pipes)} pipes]"
+        return f"PipeGroup(position={self.position}, input_positions={self.input_positions}, status={self.status}, pipes={pipe_summary})"

@@ -141,7 +141,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                         return global.actions.get_entity(player_index, entity, new_position.x, new_position.y)
                     end
                 else
-                    error("Could not find a suitable position to place " .. entity .. " near the target location.")
+                    error("\"Could not find a suitable position to place " .. entity .. " near the target location.\"")
                 end
             else
                 -- Clear existing entities if exact placement is required
@@ -193,7 +193,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             if #entities > 0 then
                 return global.utils.serialize_entity(entities[1])
             end
-            error("Could not find placed entity")
+            error("\"Could not find placed entity\"")
         end
     end
 
@@ -318,7 +318,7 @@ global.actions.place_entity2 = function(player_index, entity, direction, x, y, e
                     return global.actions.get_entity(player_index, entity, new_position.x, new_position.y)
                 end
             else
-                error("Could not find a suitable position to place " .. entity .. " near the target location.")
+                error("\"Could not find a suitable position to place " .. entity .. " near the target location.\"")
             end
         else
             --local existing_entity = global.actions.get_entity(player_index, entity, position.x, position.y)
@@ -383,7 +383,7 @@ global.actions.place_entity2 = function(player_index, entity, direction, x, y, e
                 return serialized
              end
 
-            error("Could not find entity")
+            error("\"Could not find entity\"")
         end
     end
 end

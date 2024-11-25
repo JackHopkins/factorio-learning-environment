@@ -99,6 +99,7 @@ def test_get_contiguous_transport_belts(game):
 
     transport_belts = game.get_entities({Prototype.TransportBelt}, start_position)
 
+    transport_belt_string = str(transport_belts)
     assert len(transport_belts) == 1, "Failed to retrieve transport belts"
 def test_get_filtered_entities(game):
     # put down a chest at origin

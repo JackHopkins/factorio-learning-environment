@@ -355,7 +355,8 @@ function lacks_assembler_resources(entity)
             end
 
             if #missing_resources > 0 then
-                return "cannot_create_" .. recipe.name:gsub(" ", "_") .. "_due_to_missing_resources:_" .. table.concat(missing_resources, ",_")
+                return "\"cannot create " .. recipe.name .. " due to missing resources: " .. table.concat(missing_resources, ",_").."\""
+
             end
         end
     end

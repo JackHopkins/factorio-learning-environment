@@ -22,7 +22,7 @@ global.actions.extract_item = function(player_index, extract_item, count, x, y)
     end
 
     if closest_entity == nil then
-        error("Could not find a nearby entity to extract from.")
+        error("\"Could not find a nearby entity to extract from.\"")
     end
 
     -- If we can find an entity to extract from near the player's x, y position

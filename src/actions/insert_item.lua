@@ -6,7 +6,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
     -- Check if player has enough items
     local item_count = player.get_item_count(insert_item)
     if item_count == 0 then
-        error('No '..insert_item..' to place')
+        error('\"No '..insert_item..' to place\"')
     end
 
     local closest_distance = math.huge
@@ -60,7 +60,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
                     end
                 end
                 if existing_item and existing_item ~= item_name then
-                    error("Cannot insert " .. item_name .. " - furnace already contains " .. existing_item)
+                    error("\"Cannot insert " .. item_name .. " - furnace already contains " .. existing_item.."\"")
                 end
             end
             -- Check if it's a valid ingredient for any furnace recipe
@@ -111,7 +111,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
     end
 
     if closest_entity == nil then
-        error("Could not find a nearby entity that can accept " .. insert_item)
+        error("\"Could not find a nearby entity that can accept " .. insert_item.."\"")
     end
 
     -- Throw an error if the entity is too far away from the player

@@ -91,6 +91,7 @@ class FactorioInstance:
 
         self.game_state = ObservationState().with_default(vocabulary)
         self.game_state.fast = fast
+        self._speed = 1
 
         self.max_sequential_exception_count = 2
         self._sequential_exception_count = 0
@@ -178,6 +179,7 @@ class FactorioInstance:
 
     def speed(self, speed):
         self.rcon_client.send_command(f'/c game.speed = {speed}')
+        self.game_state._speed = speed
 
     def log(self, *arg):
         """

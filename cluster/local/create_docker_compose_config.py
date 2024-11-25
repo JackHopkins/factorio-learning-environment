@@ -29,6 +29,11 @@ def generate_compose_config(num_instances: int) -> Dict[str, Any]:
                     "type": "bind",
                     "source": "../scenarios/default_lab_scenario",
                     "target": "/opt/factorio/scenarios/default_lab_scenario"
+                },
+                {
+                    "type": "bind",
+                    "source": "~/Applications/Factorio.app/Contents/Resources/mods",
+                    "target": "/opt/factorio/mods"
                 }
             ],
             "ports": [
@@ -81,7 +86,7 @@ def setup_docker_compose(num_instances: int):
     time.sleep(10)
 
 if __name__ == "__main__":
-    num_instances = 4
+    num_instances = 8
     if len(sys.argv) != 2:
         print("Usage: python create_docker_compose_config.py <number_of_instances>")
     else:

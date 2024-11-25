@@ -2,7 +2,9 @@ import asyncio
 import json
 from typing import Optional, List, Dict
 
-from tenacity import wait_exponential, retry
+import psycopg2
+import tenacity
+from tenacity import wait_exponential, retry, retry_if_exception_type
 
 from datasetgen.mcts.conversation import Conversation, Message
 from datasetgen.mcts.conversation_formatter import ConversationFormatter, DefaultFormatter, PLANNING_ADDITION_PROMPT
@@ -32,6 +34,8 @@ class MCTS:
         self.version = version
         self.version_description=version_description
         self.formatter = formatter
+        self.retry_count = 0
+        self.max_retries = 3
 
     def _verify_response_is_python(self, content):
         code = content
@@ -70,9 +74,10 @@ class MCTS:
                         code = self._verify_response_is_python(code)
                         return code
                     except Exception as e2:
-                        print(f"Failed to extract code from choice after removing leading line and factorio_instance import: {str(e2)}")
-                        return None
-                    print(f"Failed to extract code from choice after removing leading line: {str(e2)}")
+                        #print(f"Failed to extract code from choice after removing leading line and factorio_instance import: {str(e2)} \n\n`{content}`")
+                        chain_of_thoughts = '"""\n'+content.strip().strip("\"")+'\n"""'
+                        return chain_of_thoughts
+                    #print(f"Failed to extract code from choice after removing leading line: {str(e2)}")
                 print(f"Failed to extract code from choice: {str(e1)}")
 
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
@@ -86,12 +91,13 @@ class MCTS:
 
         try:
             # Single API call to generate n_samples completions
-            response = self.llm.call(
+            response = await self.llm.acall(
                 messages=formatted_messages,
                 max_tokens=2048,
                 n=n_samples,
-                temperature=0.7,  # Adjust as needed
-                logit_bias=logit_bias
+                temperature=1,
+                logit_bias=logit_bias,
+                presency_penalty=0.7
             )
 
             programs = []
@@ -151,16 +157,22 @@ class MCTS:
 
         for iteration in range(n_iterations):
             print(f"Starting iteration {iteration}")
+            await self.run_iteration(samples_per_iteration, skip_failures)
+            self.evaluator.logger.update_progress()
 
-            # Sample single parent for this iteration
+    @tenacity.retry(
+        retry=retry_if_exception_type(psycopg2.Error),
+        wait=wait_exponential(multiplier=1, min=1, max=4),
+        stop=tenacity.stop_after_attempt(3)
+    )
+    async def run_iteration(self, samples_per_iteration, skip_failures):
+        """Run a single MCTS iteration with retries for concurrent operations"""
+        try:
             parent = await self.db.sample_parent(version=self.version)
             if parent:
-                print(
-                    f"Sampling parent with id: {parent.id}, and reward: {parent.value} and trace length: {len(parent.conversation.messages)}")
                 start_state = parent.state
                 conversation = parent.conversation
             else:
-                print("Sampling from initial state")
                 start_state = self.initial_state
                 conversation = Conversation(messages=[
                     Message(role="system", content=self.system_prompt),
@@ -169,37 +181,32 @@ class MCTS:
                 ])
 
             self.evaluator.set_sampling_status()
-            # Generate multiple programs from same parent
+            
             programs = await self._generate_programs_batch(conversation, samples_per_iteration)
+
             if not programs:
-                self.evaluator.logger.update_progress()
-                continue
+                return
 
-            # Filter out None programs
             programs = [p for p in programs if p is not None]
-
-            # Set parent IDs
             for program in programs:
                 program.parent_id = parent.id if parent else None
 
-            try:
-                # Evaluate all programs against same holdout first
-                print(f"Evaluating {len(programs)} programs against holdout")
-                evaluated_programs = await self.evaluator.evaluate_batch(programs, start_state)
+            evaluated_programs = await self.evaluator.evaluate_batch(programs, start_state)
 
-                # Only save programs that were successfully evaluated
-                for program in evaluated_programs:
-                    if program.state is not None:
-                        if skip_failures and program.value is not None:
-                            await self.db.create_program(program)
-                        else:
-                            await self.db.create_program(program)
-                    else:
-                        print(f"Skipping program save due to missing evaluation data")
+            # Use a connection pool or new connections for parallel saves
+            save_tasks = []
+            for program in evaluated_programs:
+                if program.state is not None:
+                    if not skip_failures or program.value is not None:
+                        save_tasks.append(self.db.create_program(program))
 
-            except Exception as e:
-                print(f"Evaluation failed for batch: {str(e)}")
-                self.evaluator.logger.update_progress()
-                continue
+            if save_tasks:
+                await asyncio.gather(*save_tasks)
 
-            self.evaluator.logger.update_progress()
+        except Exception as e:
+            self.retry_count += 1
+            if self.retry_count >= self.max_retries:
+                print(f"Max retries ({self.max_retries}) reached. Error: {str(e)}")
+                self.retry_count = 0
+                raise e
+            raise e

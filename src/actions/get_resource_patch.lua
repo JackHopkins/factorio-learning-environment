@@ -52,7 +52,7 @@ global.actions.get_resource_patch = function(player_index, resource, x, y, radiu
     else
         local resource_entities = surface.find_entities_filtered{position = position, name = resource, radius = radius}
         if #resource_entities == 0 then
-            error("No resource of type " .. resource .. " at the specified location.")
+            error("\"No resource of type " .. resource .. " at the specified location.\"")
         end
 
         -- Recursive function to explore all connected resource entities

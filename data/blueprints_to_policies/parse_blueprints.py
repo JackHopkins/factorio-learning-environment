@@ -185,7 +185,7 @@ def plot_histograms(blueprints: List[Blueprint]):
 
 def load_json_files() -> dict:
     data = {}
-    for file in Path("./blueprints/decoded").rglob("*.json"):
+    for file in Path("blueprints/decoded").rglob("*.json"):
         with open(file, "r") as f:
             data[str(file)] = json.load(f)
     return data
@@ -255,7 +255,7 @@ def main():
     plot_histograms(index.blueprints)
 
     # Get already processed blueprints
-    processed_names = get_processed_filenames("./blueprints")
+    processed_names = get_processed_filenames("blueprints")
 
 
     # Find mining drill blueprints

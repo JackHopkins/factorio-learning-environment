@@ -66,15 +66,17 @@ etc...
         response = self.llm_factory.call(messages=messages,
                                          model = self.model,
                                         temperature=0.7,
-                                        max_tokens=256,
+                                        max_tokens=512,
                                         stop_sequences = ["```"])
         
-        
-        full_output = response.choices[0].message.content
+        try:
+            full_output = response.choices[0].message.content
+        except:
+            full_output = response.content[0].text.strip()
         full_output = full_output.strip()
         new_line_idx = full_output.rfind("\n")
         full_output = full_output[:new_line_idx].replace("Sure!", "").strip()
-        full_output = f'"""\n{full_output}\n"""'
+        #full_output = f'"""\n{full_output}\n"""'
         return full_output, response
     
     def get_mining_setup(self, instance):
@@ -100,13 +102,15 @@ etc...
         try:
             return objective.split("'''")[1].strip(), response
         except:
-            return objective.split('"""')[2].strip(), response
+            try:
+                return objective.split('"""')[2].strip(), response
+            except:
+                return objective.strip(), response
 
-    def get_game_state(self, instance, starting_scenario_name):
+    def get_game_state(self, instance, starting_scenario_path):
         # gets starting scenario details
-        starting_scenario_path = os.path.join(self.starting_scenarios_folder, starting_scenario_name)
-        starting_scenario = initialise_starting_scenario(
-                    starting_scenario_path)  # Gets the starting scenario details
+        #starting_scenario_path = os.path.join(self.starting_scenarios_folder, starting_scenario_name)
+        starting_scenario = initialise_starting_scenario(starting_scenario_path)  # Gets the starting scenario details
         # instantiate the map
         result = instantiate_the_map(starting_scenario, instance, self.starting_scenarios_folder)
         if not result["success"]:

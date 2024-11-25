@@ -172,7 +172,7 @@ global.actions.nearest_buildable = function(player_index, entity_name, bounding_
             end
         end
 
-        error("Could not find a buildable position for the entity: " .. entity_name)
+        error("\"Could not find a buildable position for the entity: " .. entity_name.."\"")
     end
 
     return spiral_search()
@@ -335,7 +335,7 @@ global.actions.nearest_buildable2 = function(player_index, entity_name, bounding
             end
         end
 
-        error("Could not find a buildable position for the entity: " .. entity_name)
+        error("\"Could not find a buildable position for the entity: " .. entity_name.."\"")
     end
 
     return spiral_search()
@@ -465,7 +465,7 @@ global.actions.nearest_buildable_brute_force = function(player_index, entity_nam
                 search_radius = search_radius + search_increment
             end
         end
-        error("Could not find a buildable position for the entity: " .. entity_name)
+        error("\"Could not find a buildable position for the entity: " .. entity_name.."\"")
     end
 
     return find_nearest_buildable_position(player, bounding_box)

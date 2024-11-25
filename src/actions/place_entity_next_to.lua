@@ -247,8 +247,8 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             game.print(e.type)
             table.insert(entity_names, e.name)
         end
-        error("Cannot place entity at the position " .. serpent.line(new_position) .. " with direction " ..
-              serpent.line(orientation) .. ". Attempting to place next to: "..ref_entity.name..". Nearby entities: " .. serpent.line(entity_names))
+        error("\'Cannot place entity at the position " .. serpent.line(new_position) .. " with direction " ..
+              serpent.line(orientation) .. ". Attempting to place next to: "..ref_entity.name..". Nearby entities: " .. serpent.line(entity_names).."\'")
     end
 
     local new_entity = player.surface.create_entity({

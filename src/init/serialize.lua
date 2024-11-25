@@ -390,6 +390,7 @@ global.utils.serialize_fluidbox = function(fluidbox)
     return serialized
 end
 
+
 local function get_offshore_pump_pipe_position(entity)
 	local x, y = entity.position.x, entity.position.y
 	local orientation = entity.orientation * 8
@@ -506,25 +507,6 @@ function get_boiler_pipe_positions(entity)
     return pipe_positions
 end
 
-function add_burner_inventory2(burner)
-    local fuel_inventory = burner.inventory
-    if fuel_inventory and #fuel_inventory > 0 then
-        local serialized = {}
-        for i = 1, #fuel_inventory do
-            local item = fuel_inventory[i]
-            if item and item.valid_for_read then
-                local item_name = "\"" .. item.name .. "\""
-                if serialized[item_name] then
-                    serialized[item_name] = serialized[item_name] + item.count
-                else
-                    serialized[item_name] = item.count
-                end
-            end
-        end
-        return serialized
-    end
-    return {}
-end
 
 function add_burner_inventory(serialized, burner)
 	local fuel_inventory = burner.inventory
@@ -653,23 +635,86 @@ function get_inverse_entity_direction(entity, factorio_direction)
 		else
 			return -1
 		end
-	--elseif prototype and prototype.type == "mining-drill" then
-	--	if factorio_direction == defines.direction.east then
-	--		return defines.direction.east
-	--	elseif factorio_direction == defines.direction.south then
-	--		return defines.direction.south
-	--	elseif factorio_direction == defines.direction.west then
-	--		return defines.direction.west
-	--	else  -- north
-	--		return defines.direction.north
-	--	end
 	else
 		game.print("Returning direction: " .. math.floor(factorio_direction / 2) .. ', '.. factorio_direction)
 		-- For other entity types, convert Factorio's direction to 0-3 range
 		return factorio_direction
-		--return factorio_direction
 	end
 end
+
+-- Helper function to check if a position is valid (not colliding with water or other impassable tiles)
+local function is_valid_connection_point(surface, position)
+    -- Get the tile at the position
+    local tile = surface.get_tile(position.x, position.y)
+
+    -- Check if the tile is water or other impassable tiles
+    local invalid_tiles = {
+        ["water"] = true,
+        ["deepwater"] = true,
+        ["water-green"] = true,
+        ["deepwater-green"] = true,
+        ["water-shallow"] = true,
+        ["water-mud"] = true,
+    }
+
+    -- Return false if the tile is invalid, true otherwise
+    return not invalid_tiles[tile.name]
+end
+
+-- Helper function to filter connection points
+local function filter_connection_points(entity, points)
+    if not points then return nil end
+
+    local filtered_points = {}
+    for _, point in ipairs(points) do
+        if is_valid_connection_point(entity.surface, point) then
+            table.insert(filtered_points, point)
+        end
+    end
+
+    -- If all points were filtered out, return nil
+    if #filtered_points == 0 then
+        return nil
+    end
+
+    return filtered_points
+end
+
+-- Modified pipe position functions to include filtering
+local function get_pipe_positions_filtered(entity)
+    local positions = get_pipe_positions(entity)
+    return filter_connection_points(entity, positions)
+end
+
+local function get_pumpjack_pipe_position_filtered(entity)
+    local positions = get_pumpjack_pipe_position(entity)
+    return filter_connection_points(entity, positions)
+end
+
+local function get_boiler_pipe_positions_filtered(entity)
+    local positions = get_boiler_pipe_positions(entity)
+
+    -- Special handling for boiler since it has a different structure
+    if not positions then return nil end
+
+    local filtered = {
+        water_inputs = filter_connection_points(entity, positions.water_inputs),
+        steam_output = positions.steam_output -- Usually steam output doesn't need filtering as it connects to pipes above ground
+    }
+
+    -- If all water inputs were filtered out, return nil
+    if not filtered.water_inputs or #filtered.water_inputs == 0 then
+        return nil
+    end
+
+    return filtered
+end
+
+local function get_offshore_pump_pipe_position_filtered(entity)
+    local positions = get_offshore_pump_pipe_position(entity)
+    return filter_connection_points(entity, positions)
+end
+
 
 global.entity_status_names = {
     [defines.entity_status.working] = "working",
@@ -727,12 +772,6 @@ global.utils.serialize_entity = function(entity)
 	end
 	--game.print("Serializing entity: " .. entity.name .. " with direction: " .. entity.direction)
 	local direction = entity.direction
-
-	-- This is needed because the entity.direction on the map is not always the actual direction
-	-- (e.g inserters and offshore pumps have opposite directions on the map to the actual cardinal)
-	--if entity.direction ~= nil then
-	--	direction = get_inverse_entity_direction(entity.name, entity.direction/2)*2--get_inverse_entity_direction(entity.name, entity.direction)
-	--end
 
 	if direction ~= nil then
 		direction = get_entity_direction(entity.name, entity.direction)
@@ -1046,15 +1085,10 @@ global.utils.serialize_entity = function(entity)
 			serialized.connection_points = {{x = x + 0.5, y = y - 2}, {x = x + 0.5, y = y + 2}}
 			serialized.steam_output_point = {x = x - 2, y = y}
 		end
-
-		--serialized.fluid_input_point = entity.fluidbox.get_connections(1)[1].position
 	end
 
 	if entity.type == "generator" then
 		serialized.connection_points = get_pipe_positions(entity)
-
-		--create_beam_point(game.players[1], serialized.connection_points[1])
-		--create_beam_point(game.players[1], serialized.connection_points[2])
 	end
 
 	if entity.name == "pumpjack" then
@@ -1100,6 +1134,44 @@ global.utils.serialize_entity = function(entity)
 
 	serialized.direction = get_inverse_entity_direction(entity.name, entity.direction) --api_direction_map[entity.direction]
 
+    -- Post-process connection points if they exist
+    if serialized.connection_points then
+        local filtered_points = {}
+        for _, point in ipairs(serialized.connection_points) do
+            if is_valid_connection_point(game.surfaces[1], point) then
+                table.insert(filtered_points, point)
+            end
+        end
+
+        -- Update connection points or remove if all were filtered
+        if #filtered_points > 0 then
+            serialized.connection_points = filtered_points
+        else
+            serialized.connection_points = nil
+        end
+
+        -- Add warning if points were filtered
+        if not serialized.warnings then
+            serialized.warnings = {}
+        end
+
+        if serialized.connection_points ~= nil then
+            if #filtered_points < #serialized.connection_points then
+                table.insert(serialized.warnings, "Some connection points were filtered due to distance from entity center")
+            end
+        end
+    end
+
+    -- Handle special case for boilers which have separate steam output points
+    if serialized.steam_output_point then
+        if not is_valid_connection_point(game.surfaces[1], serialized.steam_output_point) then
+            serialized.steam_output_point = nil
+            if not serialized.warnings then
+                serialized.warnings = {}
+            end
+            table.insert(serialized.warnings, "Steam output point was filtered due to distance from entity center")
+        end
+    end
 
 	return serialized
 end

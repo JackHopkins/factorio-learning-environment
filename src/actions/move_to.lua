@@ -119,7 +119,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
                 end
                 return created
             else
-                error("No ".. trailing_entity .." in the inventory")
+                error("\"No ".. trailing_entity .." in the inventory\"")
             end
         elseif surface.can_fast_replace{name=trailing_entity, position=place_position, direction=direction, force='player'} then
             local existing_entity = surface.find_entity(trailing_entity, place_position)

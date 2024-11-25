@@ -19,6 +19,7 @@ class ObservationState(BaseModel):
     minimap_bounding_box: int = 100 * 4
     initial_score: int = 0
     fast: bool = False
+    speed: int = 1
     vocabulary: Vocabulary = None
     minimaps: np.ndarray = Field(default_factory=lambda: np.zeros((len(FIELDS), 100 * 4, 100 * 4), dtype=object))
 

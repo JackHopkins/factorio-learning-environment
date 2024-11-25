@@ -3,7 +3,7 @@ from typing import List
 
 import pytest
 
-from factorio_entities import Entity, Position, PipeGroup, EntityStatus
+from factorio_entities import Entity, Position, PipeGroup, EntityStatus, ResourcePatch
 from factorio_instance import Direction
 from factorio_types import Prototype, Resource, PrototypeName
 
@@ -250,3 +250,45 @@ def test_avoid_self_collision(game):
     assert len(pipes) == 1, "Failed to construct a single contiguous pipe group"
     assert pipes, "Failed to connect offshore pump to boiler with pipes"
     print("Successfully connected offshore pump to boiler with pipes")
+
+def test_connect_where_connection_points_are_blocked(game):
+    # Move to the water source
+    water_source = game.nearest(Resource.Water)
+    game.move_to(water_source)
+    print(f"Moved to water source at {water_source}")
+    # Place the offshore pump
+    pump = game.place_entity(Prototype.OffshorePump, Direction.UP, water_source)
+    print(f"Placed offshore pump at {pump.position}")
+    """
+    Step 2: Place the boiler and connect it to the pump
+    """
+    # Calculate position for the boiler (4 tiles away from the pump)
+    boiler_position = Position(x=pump.position.x + 4, y=pump.position.y)
+
+    # Move to the calculated position
+    game.move_to(boiler_position)
+    print(f"Moved to boiler position at {boiler_position}")
+
+    # Place the boiler
+    boiler = game.place_entity(Prototype.Boiler, Direction.UP, boiler_position)
+    print(f"Placed boiler at {boiler.position}")
+
+    # Connect the pump to the boiler with pipes
+    pump_to_boiler_pipes = game.connect_entities(pump, boiler, Prototype.Pipe)
+    assert pump_to_boiler_pipes, "Failed to connect pump to boiler with pipes"
+    print("Connected pump to boiler with pipes")
+
+    assert boiler.connection_points[0] in pump_to_boiler_pipes[0].input_positions
+
+def test_connect_ragged_edges(game):
+    water: ResourcePatch = game.get_resource_patch(Resource.Water, game.nearest(Resource.Water))
+
+    start_pos = water.bounding_box.left_top
+    end_pos = water.bounding_box.right_bottom
+
+    # Move to the start position and place an offshore pump
+    game.move_to(start_pos)
+
+    pipes = game.connect_entities(start_pos, end_pos, Prototype.Pipe)
+
+    assert len(pipes) == 1

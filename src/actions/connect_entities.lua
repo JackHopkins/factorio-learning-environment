@@ -29,13 +29,21 @@ local function are_fluidboxes_connected(entity1, entity2)
 end
 
 local function is_placeable(position)
-    --local tile = game.surfaces[1].get_tile(position.x, position.y)
-    --return tile.collides_with('player-layer') == false
+     -- Check if the tile is water or other impassable tiles
+    local invalid_tiles = {
+        ["water"] = true,
+        ["deepwater"] = true,
+        ["water-green"] = true,
+        ["deepwater-green"] = true,
+        ["water-shallow"] = true,
+        ["water-mud"] = true,
+    }
+
     local entities = game.surfaces[1].find_entities_filtered{
         position = position,
         collision_mask = "player-layer"
     }
-    return #entities == 0
+    return #entities == 0 and not invalid_tiles[game.surfaces[1].get_tile(position.x, position.y).name]
 end
 
 local function find_placeable_neighbor(pos, previous_pos)

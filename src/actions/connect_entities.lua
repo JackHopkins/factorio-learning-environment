@@ -176,10 +176,12 @@ global.actions.normalise_path = function(original_path, start_position, end_posi
     previous_pos = add_unique(start_position) or start_position
 
     -- Interpolate the start to the second position in the original path.
-    local interpolated = interpolate_manhattan(start_position, original_path[2].position)
-    for _, point in ipairs(interpolated) do
-        local new_pos = add_unique(point.position, previous_pos)
-        if new_pos then previous_pos = new_pos end
+    if #original_path > 2 then
+        local interpolated = interpolate_manhattan(start_position, original_path[2].position)
+        for _, point in ipairs(interpolated) do
+            local new_pos = add_unique(point.position, previous_pos)
+            if new_pos then previous_pos = new_pos end
+        end
     end
 
     for i = 1, #original_path - 1 do

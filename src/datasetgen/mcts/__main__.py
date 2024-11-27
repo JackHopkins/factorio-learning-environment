@@ -1,19 +1,21 @@
+import json
 import os
 import random
 import asyncio
 import concurrent.futures
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from pathlib import Path
 
 from dotenv import load_dotenv
 from rich import print
 
 from datasetgen.auto_curriculum.plan_sampler import PlanSampler
+from datasetgen.mcts.blueprint_scenario_sampler import BlueprintScenarioSampler
 from datasetgen.mcts.chunked_mcts import ChunkedMCTS
 from datasetgen.mcts.conversation import Conversation, Message
 from datasetgen.mcts.parallel_mcts import ParallelMCTS
 from datasetgen.mcts.parallel_mcts_config import ParallelMCTSConfig
-from datasetgen.mcts.conversation_formatter import StructurePreservingFormatter
+from datasetgen.mcts.conversation_formatter import StructurePreservingFormatter, PLANNING_ADDITION_PROMPT
 from datasetgen.mcts.db_client import DBClient
 from datasetgen.mcts.game_state import GameState
 from datasetgen.mcts.program import Program
@@ -173,13 +175,30 @@ async def get_seed_programs(
 
     return seeded_programs
 
+
+async def create_blueprint_seeds(
+        mcts: ChunkedMCTS,
+        db_config: Dict[str, str],
+        n_seeds: int = 10
+) -> List[Program]:
+    """Generate seed programs from blueprint scenarios"""
+    sampler = BlueprintScenarioSampler(
+        db_config=db_config,
+        system_prompt=mcts.system_prompt
+    )
+    return await sampler.sample_scenarios(
+        instance=mcts.evaluator.instances[0],
+        n_samples=n_seeds
+    )
+
+
 async def main():
     # Configuration
     CONFIG = {
         'model': "ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91",
         'prompt_path': "../../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_refined.md",
-        'version': 16,
-        'version_desc': "Seeded / Multi-MCTS / No planning prompt in user messages / No failures / Step-wise evaluation / Refined system prompt",
+        'version': 18,
+        'version_desc': "Layout / Multi-MCTS / No planning prompt in user messages / Step-wise evaluation / Refined system prompt",
         'max_conv_len': 10,
         'logit_bias': { # We add these logit biases to prevent sampling the truncated code of previous messages.
             "15714": -100,  # 'LINE'
@@ -233,11 +252,28 @@ async def main():
         config=mcts_config
     )
 
-    # Generate and save seed programs
-    print("Sampling seed scenarios...")
-    sampler = PlanSampler(CONFIG['model'], CONFIG['prompt_path'], "../../skills/data_scenarios/starting_scenarios")
-    seeded_programs = await create_seed_programs(parallel_mcts.instance_groups[0].mcts, sampler, n_seeds=5)
-    for program in seeded_programs:
+    # Generate and save seed programs from the finetuned model.
+    # print("Sampling seed scenarios...")
+    # sampler = PlanSampler(CONFIG['model'], CONFIG['prompt_path'], "../../skills/data_scenarios/starting_scenarios")
+    # seeded_programs = await create_seed_programs(parallel_mcts.instance_groups[0].mcts, sampler, n_seeds=5)
+    # for program in seeded_programs:
+    #     await db_client.create_program(program)
+
+    # Generate and save seed programs from blueprints
+    print("Sampling blueprint scenarios...")
+    blueprint_seeds = await create_blueprint_seeds(
+        parallel_mcts.instance_groups[0].mcts,
+        {
+            'host': os.getenv("SKILLS_DB_HOST"),
+            'port': os.getenv("SKILLS_DB_PORT"),
+            'dbname': os.getenv("SKILLS_DB_NAME"),
+            'user': os.getenv("SKILLS_DB_USER"),
+            'password': os.getenv("SKILLS_DB_PASSWORD")
+        },
+        n_seeds=10
+    )
+
+    for program in blueprint_seeds:
         await db_client.create_program(program)
 
     # Run search

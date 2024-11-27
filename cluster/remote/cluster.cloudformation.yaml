@@ -57,7 +57,7 @@ Resources:
       TaskRoleArn: !Ref ECSTaskRole
       ContainerDefinitions:
         - Name: factorio
-          Image: public.ecr.aws/j0c1a2v4/paperclipmaximiser/factorio:1.1.107
+          Image: public.ecr.aws/j0c1a2v4/paperclipmaximiser/factorio:latest
           PortMappings:
             - ContainerPort: 34197
               HostPort: 34197

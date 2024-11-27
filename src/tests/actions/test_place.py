@@ -240,3 +240,12 @@ def test_place_splitter(game):
     splitter = game.place_entity(Prototype.Splitter, position=splitter.output_positions[0], direction=Direction.LEFT)
     assert splitter.direction.value == Direction.LEFT.value
     assert splitters_in_inventory - 4 == game.inspect_inventory()[Prototype.Splitter]
+
+def test_place_generator(game):
+    """
+    Place a steam engine at (0,0)
+    """
+
+    engine = game.place_entity(Prototype.SteamEngine, position=Position(x=0, y=0), direction=Direction.UP)
+
+    pass

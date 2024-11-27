@@ -2,6 +2,7 @@ import json
 import math
 import random
 from typing import Optional, Dict, Any, List
+from contextlib import contextmanager
 
 import psycopg2
 import tenacity
@@ -13,70 +14,105 @@ from datasetgen.mcts.program import Program
 class DBClient:
     def __init__(self, max_conversation_length: int = 10, **db_config):
         self.db_config = db_config
-        self.conn = psycopg2.connect(**db_config)
         self.max_conversation_length = max_conversation_length
+        # Don't store connection as instance variable
+        # Instead create connection pool
+        self.pool = []
+        self.max_pool_size = 5
 
-    def _get_new_connection(self):
-        """Create a new database connection"""
-        return psycopg2.connect(**self.db_config)
-
-    @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.DatabaseError)),
-                    wait=wait_exponential(multiplier=1, min=4, max=10))
-    async def create_program(self, program: Program) -> Program:
-        """Create a new program, now with conversation length validation"""
-        # Check conversation length before saving
-        # if len(program.conversation.messages) > (self.max_conversation_length*2) + 1:
-        #     raise ValueError(f"Conversation length ({len(program.conversation.messages)}) "
-        #                      f"exceeds maximum allowed length ({self.max_conversation_length})")
-
+    @contextmanager
+    def get_connection(self):
+        """Context manager to handle database connections"""
+        conn = None
         try:
-            with self.conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, completion_token_usage, prompt_token_usage, token_usage, response, holdout_value, raw_reward, version, version_description)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    RETURNING id, created_at
-                """, (program.code, program.value, 0, program.parent_id,
-                      program.state.to_raw() if program.state else None,
-                      json.dumps(program.conversation.dict()),
-                      program.completion_token_usage,
-                      program.prompt_token_usage,
-                      program.token_usage,
-                      program.response,
-                      program.holdout_value,
-                      program.raw_reward,
-                      program.version,
-                      program.version_description
-                      ))
+            # Try to get connection from pool
+            if self.pool:
+                conn = self.pool.pop()
+                try:
+                    # Test if connection is still alive
+                    conn.cursor().execute('SELECT 1')
+                except (psycopg2.OperationalError, psycopg2.InterfaceError):
+                    # If connection is dead, close it and create new one
+                    conn.close()
+                    conn = None
 
-                id, created_at = cur.fetchone()
-                self.conn.commit()
-                program.id = id
-                program.created_at = created_at
-                return program
+            # If no connection from pool, create new one
+            if conn is None:
+                conn = psycopg2.connect(**self.db_config)
+
+            yield conn
+
+            # If connection still good, return to pool
+            try:
+                conn.cursor().execute('SELECT 1')
+                if len(self.pool) < self.max_pool_size:
+                    self.pool.append(conn)
+                else:
+                    conn.close()
+            except:
+                conn.close()
+
         except Exception as e:
-            print(e)
+            if conn:
+                conn.close()
             raise e
 
+    @tenacity.retry(
+        retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.DatabaseError)),
+        wait=wait_exponential(multiplier=1, min=4, max=10))
+    async def create_program(self, program: Program) -> Program:
+        """Create a new program, now with connection management"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, 
+                                           completion_token_usage, prompt_token_usage, token_usage, response, 
+                                           holdout_value, raw_reward, version, version_description)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        RETURNING id, created_at
+                    """, (program.code, program.value, 0, program.parent_id,
+                          program.state.to_raw() if program.state else None,
+                          json.dumps(program.conversation.dict()),
+                          program.completion_token_usage,
+                          program.prompt_token_usage,
+                          program.token_usage,
+                          program.response,
+                          program.holdout_value,
+                          program.raw_reward,
+                          program.version,
+                          program.version_description
+                          ))
+
+                    id, created_at = cur.fetchone()
+                    conn.commit()
+                    program.id = id
+                    program.created_at = created_at
+                    return program
+        except Exception as e:
+            print(f"Error creating program: {e}")
+            raise e
 
     @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
                     wait=wait_exponential(multiplier=1, min=4, max=10))
     async def get_all_program_rewards(self, version: int = None) -> List[float]:
-        """Get all program rewards for a given version."""
+        """Get all program rewards with proper connection management"""
         query = """
             SELECT value 
             FROM programs 
             WHERE value IS NOT NULL
         """
-
         if version is not None:
-            query += f" AND version = {version}"
+            query += " AND version = %s"
 
+        params = (version,) if version is not None else ()
 
         try:
-            with self.conn.cursor() as cur:
-                cur.execute(query.strip())
-                results = cur.fetchall()
-                return [row[0] for row in results]
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(query.strip(), params)
+                    results = cur.fetchall()
+                    return [row[0] for row in results]
         except Exception as e:
             print(f"Error fetching program rewards: {e}")
             return []
@@ -84,17 +120,13 @@ class DBClient:
     @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
                     wait=wait_exponential(multiplier=1, min=4, max=10))
     async def sample_parent(self, version=1) -> Optional[Program]:
-        """
-        Sample parent using a separate connection and transaction to avoid blocking.
-        Each MCTS group can call this independently without serialization.
-        Now includes conversation length filtering.
-        """
-        max_assistant_length = (self.max_conversation_length*2)+1
-        # Create a new connection for this sampling operation
-        with self._get_new_connection() as conn:
-            with conn.cursor(cursor_factory=DictCursor) as cur:
-                # First get recent programs with conversation length filter
-                cur.execute("""
+        """Sample parent with proper connection management"""
+        max_assistant_length = (self.max_conversation_length * 2) + 1
+
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=DictCursor) as cur:
+                    cur.execute("""
                         WITH recent AS (
                             SELECT id, value, conversation_json
                             FROM programs
@@ -108,83 +140,92 @@ class DBClient:
                         FROM recent
                         """, (version, max_assistant_length))
 
-                results = cur.fetchall()
-                if not results:
-                    return None
+                    results = cur.fetchall()
+                    if not results:
+                        return None
 
-                # Calculate softmax weights
-                max_value = max(row['value'] for row in results)
-                weights = [
-                    (row['id'],
-                     math.exp(row['value'] - max_value))
-                    for row in results
-                ]
+                    # Calculate softmax weights
+                    max_value = max(row['value'] for row in results)
+                    weights = [
+                        (row['id'],
+                         math.exp(row['value'] - max_value))
+                        for row in results
+                    ]
 
-                # Normalize weights
-                total_weight = sum(w[1] for w in weights)
-                if total_weight == 0:
-                    # If all weights are 0, use uniform distribution
-                    sampled_id = random.choice([w[0] for w in weights])
-                else:
-                    # Sample using normalized weights
-                    normalized_weights = [(id, w / total_weight) for id, w in weights]
-                    sampled_id = random.choices(
-                        [id for id, _ in normalized_weights],
-                        weights=[w for _, w in normalized_weights],
-                        k=1
-                    )[0]
+                    # Normalize weights
+                    total_weight = sum(w[1] for w in weights)
+                    if total_weight == 0:
+                        sampled_id = random.choice([w[0] for w in weights])
+                    else:
+                        normalized_weights = [(id, w / total_weight) for id, w in weights]
+                        sampled_id = random.choices(
+                            [id for id, _ in normalized_weights],
+                            weights=[w for _, w in normalized_weights],
+                            k=1
+                        )[0]
 
-                # Fetch the selected program
-                cur.execute("""
+                    # Fetch the selected program
+                    cur.execute("""
                         SELECT * FROM programs WHERE id = %s
                         """, (sampled_id,))
 
-                row = cur.fetchone()
-                return Program.from_row(dict(row)) if row else None
+                    row = cur.fetchone()
+                    return Program.from_row(dict(row)) if row else None
+        except Exception as e:
+            print(f"Error sampling parent: {e}")
+            raise e
 
     @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
                     wait=wait_exponential(multiplier=1, min=4, max=10))
     async def get_parent_visit_stats(self, version: int = None) -> Dict[str, float]:
-        """Get statistics about parent visit counts"""
+        """Get visit statistics with proper connection management"""
         query = """
-                SELECT 
-                    AVG(visits) as avg_visits,
-                    MIN(visits) as min_visits,
-                    MAX(visits) as max_visits,
-                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY visits) as median_visits
-                FROM programs 
-                WHERE visits > 0
-            """
-
+            SELECT 
+                AVG(visits) as avg_visits,
+                MIN(visits) as min_visits,
+                MAX(visits) as max_visits,
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY visits) as median_visits
+            FROM programs 
+            WHERE visits > 0
+        """
         if version is not None:
-            query += f" AND version = {version}"
+            query += " AND version = %s"
+
+        params = (version,) if version is not None else ()
 
         try:
-            with self.conn.cursor() as cur:
-                cur.execute(query)
-                result = cur.fetchone()
-                return {
-                    'avg_visits': result[0],
-                    'min_visits': result[1],
-                    'max_visits': result[2],
-                    'median_visits': result[3]
-                }
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(query, params)
+                    result = cur.fetchone()
+                    return {
+                        'avg_visits': result[0],
+                        'min_visits': result[1],
+                        'max_visits': result[2],
+                        'median_visits': result[3]
+                    }
         except Exception as e:
             print(f"Error fetching visit statistics: {e}")
             return {}
 
     async def update_program(self, program_id: int, updates: Dict[str, Any]) -> Program:
-        with self.conn.cursor() as cur:
-            set_clauses = [f"{k} = %s" for k in updates.keys()]
-            values = list(updates.values())
+        """Update program with proper connection management"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    set_clauses = [f"{k} = %s" for k in updates.keys()]
+                    values = list(updates.values())
 
-            cur.execute(f"""
-                UPDATE programs
-                SET {', '.join(set_clauses)}
-                WHERE id = %s
-                RETURNING *
-            """, values + [program_id])
+                    cur.execute(f"""
+                        UPDATE programs
+                        SET {', '.join(set_clauses)}
+                        WHERE id = %s
+                        RETURNING *
+                    """, values + [program_id])
 
-            self.conn.commit()
-            row = cur.fetchone()
-            return Program.from_row(dict(zip([desc[0] for desc in cur.description], row)))
+                    conn.commit()
+                    row = cur.fetchone()
+                    return Program.from_row(dict(zip([desc[0] for desc in cur.description], row)))
+        except Exception as e:
+            print(f"Error updating program: {e}")
+            raise e

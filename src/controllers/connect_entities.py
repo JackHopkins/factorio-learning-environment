@@ -142,275 +142,277 @@ class ConnectEntities(Action):
         :example connect_entities(source=miner, target=stone_furnace, connection_type=Prototype.TransportBelt)
         :return: List of entities that were created
         """
+        try:
+            connection_prototype, metaclass = connection_type.value
+            source_entity = None
+            target_entity = None
 
-        connection_prototype, metaclass = connection_type.value
-        source_entity = None
-        target_entity = None
+            # get the inventory
+            inventory = self.inspect_inventory()
+            # get the number of the connection_prototype in the inventory
+            number_of_connection_prototype = inventory.get(connection_prototype, 0)
 
-        # get the inventory
-        inventory = self.inspect_inventory()
-        # get the number of the connection_prototype in the inventory
-        number_of_connection_prototype = inventory.get(connection_prototype, 0)
+            if isinstance(source, Entity) or isinstance(source, EntityGroup):
+                source_entity = source
+                source_position = Position(x=source_entity.position.x, y=source_entity.position.y)
+            elif isinstance(source, Position):
+                source_position = source
+            else:
+                raise TypeError("Source must be either an Entity, Position or EntityGroup")
 
-        if isinstance(source, Entity) or isinstance(source, EntityGroup):
-            source_entity = source
-            source_position = Position(x=source_entity.position.x, y=source_entity.position.y)
-        elif isinstance(source, Position):
-            source_position = source
-        else:
-            raise TypeError("Source must be either an Entity, Position or EntityGroup")
+            if isinstance(target, Entity) or isinstance(target, EntityGroup):
+                target_entity = target
+                target_position = Position(x=target_entity.position.x, y=target_entity.position.y)
+            elif isinstance(target, Position):
+                target_position = target
+            else:
+                raise TypeError("Target must be either an Entity or Position.")
 
-        if isinstance(target, Entity) or isinstance(target, EntityGroup):
-            target_entity = target
-            target_position = Position(x=target_entity.position.x, y=target_entity.position.y)
-        elif isinstance(target, Position):
-            target_position = target
-        else:
-            raise TypeError("Target must be either an Entity or Position.")
+            if source_entity:
+                x_sign = numpy.sign(source_entity.position.x - target_position.x)
+                y_sign = numpy.sign(source_entity.position.y - target_position.y)
+            else:
+                x_sign = numpy.sign(source_position.x - target_position.x)
+                y_sign = numpy.sign(source_position.y - target_position.y)
 
-        if source_entity:
-            x_sign = numpy.sign(source_entity.position.x - target_position.x)
-            y_sign = numpy.sign(source_entity.position.y - target_position.y)
-        else:
-            x_sign = numpy.sign(source_position.x - target_position.x)
-            y_sign = numpy.sign(source_position.y - target_position.y)
+            if isinstance(source_entity, BeltGroup):
+                source_position = source_entity.output_positions[0]
+            elif source_entity and isinstance(source, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
+                if isinstance(source_entity, PumpJack) and connection_type.name == Prototype.Pipe.name:
+                    source_position = source_entity.connection_points[0]
+                    pass
+                elif isinstance(source_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
+                    if isinstance(source_entity, OffshorePump):
+                        source_position = Position(x=source_entity.connection_points[0].x,
+                                                   y=source_entity.connection_points[0].y)
+                    elif isinstance(source_entity, Boiler):
+                        if target_entity and isinstance(target_entity, Generator):
+                            #source_position = self._round_position(source_entity.steam_output_point)
+                            x_diff_source_position_target_position = source_entity.position.x - source_entity.steam_output_point.x
+                            y_diff_source_position_target_position = source_entity.position.y - source_entity.steam_output_point.y
+                            BOILER_WIDTH = 3
+                            OFFSET = 0
+                            # check if steam_output_point is on the top, bottom, left or right of the boiler, if so, add a 0.5 offset to the position in the direction of the generator
+                            if x_diff_source_position_target_position == 0:
+                                if y_diff_source_position_target_position < 0:
+                                    source_position = Position(x=source_entity.position.x, y=source_entity.position.y + BOILER_WIDTH/2 + OFFSET)
+                                else:
+                                    source_position = Position(x=source_entity.position.x, y=source_entity.position.y - BOILER_WIDTH/2 - OFFSET)
+                            elif y_diff_source_position_target_position == 0:
+                                if x_diff_source_position_target_position < 0:
+                                    source_position = Position(x=source_entity.position.x + BOILER_WIDTH/2 + OFFSET, y=source_entity.position.y)
+                                else:
+                                    source_position = Position(x=source_entity.position.x - BOILER_WIDTH/2 - OFFSET, y=source_entity.position.y)
 
-        if isinstance(source_entity, BeltGroup):
-            source_position = source_entity.output_positions[0]
-        elif source_entity and isinstance(source, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
-            if isinstance(source_entity, PumpJack) and connection_type.name == Prototype.Pipe.name:
-                source_position = source_entity.connection_points[0]
-                pass
-            elif isinstance(source_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
-                if isinstance(source_entity, OffshorePump):
-                    source_position = Position(x=source_entity.connection_points[0].x,
-                                               y=source_entity.connection_points[0].y)
-                elif isinstance(source_entity, Boiler):
-                    if target_entity and isinstance(target_entity, Generator):
-                        #source_position = self._round_position(source_entity.steam_output_point)
-                        x_diff_source_position_target_position = source_entity.position.x - source_entity.steam_output_point.x
-                        y_diff_source_position_target_position = source_entity.position.y - source_entity.steam_output_point.y
-                        BOILER_WIDTH = 3
-                        OFFSET = 0
-                        # check if steam_output_point is on the top, bottom, left or right of the boiler, if so, add a 0.5 offset to the position in the direction of the generator
-                        if x_diff_source_position_target_position == 0:
-                            if y_diff_source_position_target_position < 0:
-                                source_position = Position(x=source_entity.position.x, y=source_entity.position.y + BOILER_WIDTH/2 + OFFSET)
-                            else:
-                                source_position = Position(x=source_entity.position.x, y=source_entity.position.y - BOILER_WIDTH/2 - OFFSET)
-                        elif y_diff_source_position_target_position == 0:
-                            if x_diff_source_position_target_position < 0:
-                                source_position = Position(x=source_entity.position.x + BOILER_WIDTH/2 + OFFSET, y=source_entity.position.y)
-                            else:
-                                source_position = Position(x=source_entity.position.x - BOILER_WIDTH/2 - OFFSET, y=source_entity.position.y)
+                        elif target_entity and isinstance(target_entity, OffshorePump):
+                            source_position = self._get_nearest_connection_point(source_entity,
+                                                                                 source_position,
+                                                                                 existing_connection_entity=target_entity)
 
-                    elif target_entity and isinstance(target_entity, OffshorePump):
+                    else:
                         source_position = self._get_nearest_connection_point(source_entity,
-                                                                             source_position,
+                                                                             target_position,
                                                                              existing_connection_entity=target_entity)
 
+                elif isinstance(source_entity, Inserter):
+                    source_position = source_entity.drop_position
+                elif isinstance(source_entity, MiningDrill):
+                    source_position = source_entity.drop_position
+                elif isinstance(source_entity, TransportBelt):
+                    source_position = source_entity.position
                 else:
-                    source_position = self._get_nearest_connection_point(source_entity,
-                                                                         target_position,
-                                                                         existing_connection_entity=target_entity)
+                    source_position = Position(x=source_entity.position.x-x_sign*source_entity.tile_dimensions.tile_width/2,
+                                               y=source_entity.position.y-y_sign*source_entity.tile_dimensions.tile_height/2)
+            elif connection_type.name == Prototype.TransportBelt.name:
+                # If we are connecting a position with a transport belt, we need to add 0.5 to the position to prevent
+                # Weird behaviour from the pathfinding
+                source_position = Position(x=math.floor(source_position.x)+0.5, y=math.floor(source_position.y)+0.5)
+                pass
 
-            elif isinstance(source_entity, Inserter):
-                source_position = source_entity.drop_position
-            elif isinstance(source_entity, MiningDrill):
-                source_position = source_entity.drop_position
-            elif isinstance(source_entity, TransportBelt):
-                source_position = source_entity.position
-            else:
-                source_position = Position(x=source_entity.position.x-x_sign*source_entity.tile_dimensions.tile_width/2,
-                                           y=source_entity.position.y-y_sign*source_entity.tile_dimensions.tile_height/2)
-        elif connection_type.name == Prototype.TransportBelt.name:
-            # If we are connecting a position with a transport belt, we need to add 0.5 to the position to prevent
-            # Weird behaviour from the pathfinding
-            source_position = Position(x=math.floor(source_position.x)+0.5, y=math.floor(source_position.y)+0.5)
-            pass
-
-        if isinstance(target_entity, BeltGroup):
-            target_position = target_entity.input_positions[0]
-        elif isinstance(target, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
-            if isinstance(target_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
-                if isinstance(target_entity, Boiler):
-                    if isinstance(source_entity, OffshorePump):
+            if isinstance(target_entity, BeltGroup):
+                target_position = target_entity.input_positions[0]
+            elif isinstance(target, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
+                if isinstance(target_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
+                    if isinstance(target_entity, Boiler):
+                        if isinstance(source_entity, OffshorePump):
+                            target_position = self._get_nearest_connection_point(target_entity,
+                                                                                 source_position,
+                                                                                 existing_connection_entity=source_entity)
+                        else:
+                            target_position = target_entity.steam_input_point
+                    elif isinstance(target_entity, Boiler) and isinstance(source_entity, Generator):
+                        target_position = target_entity.steam_input_point
+                        pass
+                    else:
                         target_position = self._get_nearest_connection_point(target_entity,
                                                                              source_position,
                                                                              existing_connection_entity=source_entity)
+                        #target_position = Position(x=target_position.x+0.5, y=target_position.y+0.5)
+                        target_position = Position(x=target_position.x, y=target_position.y)
+
+                elif isinstance(target_entity, Inserter):
+                    target_position = target_entity.pickup_position
+                elif isinstance(target_entity, MiningDrill):
+                    target_position = target_entity.drop_position
+                elif isinstance(target_entity, TransportBelt):
+                    target_position = target_entity.position
+                else:
+                    target_position = Position(x=target_entity.position.x + x_sign*source_entity.tile_dimensions.tile_width/2,
+                                               y=target_entity.position.y + y_sign*source_entity.tile_dimensions.tile_height/2)
+            elif connection_type.name == Prototype.TransportBelt.name:# or connection_type.name == Prototype.Pipe.name:
+                # If we are connecting a position with a transport belt / pipe, we need to add 0.5 to the position to prevent
+                # Weird behaviour from the pathfinding
+                target_position = Position(x=math.floor(target_position.x) + 0.5, y=math.floor(target_position.y) + 0.5)
+                pass
+
+            if isinstance(source_entity, PipeGroup) and isinstance(target_entity, PipeGroup):
+                # If the source_entity and the target_entity is the same object, ensure there are only 2 input_positions
+                # And set them.
+                if source_entity.pipes[0].position == target_entity.pipes[0].position:
+                    if len(source_entity.input_positions) == 2:
+                        source_position = source_entity.input_positions[0]
+                        target_position = target_entity.input_positions[1]
                     else:
-                        target_position = target_entity.steam_input_point
-                elif isinstance(target_entity, Boiler) and isinstance(source_entity, Generator):
-                    target_position = target_entity.steam_input_point
-                    pass
+                        raise Exception("PipeGroup must have only 2 input_position if connecting to itself.")
                 else:
-                    target_position = self._get_nearest_connection_point(target_entity,
-                                                                         source_position,
-                                                                         existing_connection_entity=source_entity)
-                    #target_position = Position(x=target_position.x+0.5, y=target_position.y+0.5)
-                    target_position = Position(x=target_position.x, y=target_position.y)
-
-            elif isinstance(target_entity, Inserter):
-                target_position = target_entity.pickup_position
-            elif isinstance(target_entity, MiningDrill):
-                target_position = target_entity.drop_position
-            elif isinstance(target_entity, TransportBelt):
-                target_position = target_entity.position
-            else:
-                target_position = Position(x=target_entity.position.x + x_sign*source_entity.tile_dimensions.tile_width/2,
-                                           y=target_entity.position.y + y_sign*source_entity.tile_dimensions.tile_height/2)
-        elif connection_type.name == Prototype.TransportBelt.name:# or connection_type.name == Prototype.Pipe.name:
-            # If we are connecting a position with a transport belt / pipe, we need to add 0.5 to the position to prevent
-            # Weird behaviour from the pathfinding
-            target_position = Position(x=math.floor(target_position.x) + 0.5, y=math.floor(target_position.y) + 0.5)
-            pass
-
-        if isinstance(source_entity, PipeGroup) and isinstance(target_entity, PipeGroup):
-            # If the source_entity and the target_entity is the same object, ensure there are only 2 input_positions
-            # And set them.
-            if source_entity.pipes[0].position == target_entity.pipes[0].position:
-                if len(source_entity.input_positions) == 2:
-                    source_position = source_entity.input_positions[0]
-                    target_position = target_entity.input_positions[1]
-                else:
-                    raise Exception("PipeGroup must have only 2 input_position if connecting to itself.")
-            else:
-                # check each input_position from the source_entity, and each output_position from the target_entity
-                # determine which pair is the closest, and connect them
-                shortest_distance = 1000000
-                for source_input_position in source_entity.input_positions:
-                    for target_output_position in target_entity.input_positions:
-                        distance = abs(source_input_position.x - target_output_position.x) + abs(source_input_position.y - target_output_position.y)
-                        if distance < shortest_distance:
-                            shortest_distance = distance
-                            source_position = source_input_position
-                            target_position = target_output_position
+                    # check each input_position from the source_entity, and each output_position from the target_entity
+                    # determine which pair is the closest, and connect them
+                    shortest_distance = 1000000
+                    for source_input_position in source_entity.input_positions:
+                        for target_output_position in target_entity.input_positions:
+                            distance = abs(source_input_position.x - target_output_position.x) + abs(source_input_position.y - target_output_position.y)
+                            if distance < shortest_distance:
+                                shortest_distance = distance
+                                source_position = source_input_position
+                                target_position = target_output_position
 
 
-        # Move the source and target positions to the center of the tile
-        target_position = Position(x=round(target_position.x*2)/2, y=round(target_position.y*2)/2)
-        source_position = Position(x=round(source_position.x*2)/2, y=round(source_position.y*2)/2)
-        if connection_type == Prototype.Pipe or connection_type == Prototype.TransportBelt:
-            try:
-                # Attempt to avoid entities
-                path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y),
-                                                start=source_position, allow_paths_through_own_entities=False)
-                response, elapsed = self.execute(PLAYER,
-                                                 source_position.x,
-                                                 source_position.y,
-                                                 target_position.x,
-                                                 target_position.y,
-                                                 path_handle,
-                                                 connection_prototype,
-                                                 dry_run,
-                                                 number_of_connection_prototype)
-                if not isinstance(response, dict) and response != "Passed":
-                    raise Exception(
-                        f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}.",
-                        response.lstrip())
-
-            except Exception as e:
-                # But accept allowing paths through own entities if it fails
-                path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y),
-                                                start=source_position, allow_paths_through_own_entities=True)
-                response, elapsed = self.execute(PLAYER,
-                                                 source_position.x,
-                                                 source_position.y,
-                                                 target_position.x,
-                                                 target_position.y,
-                                                 path_handle,
-                                                 connection_prototype,
-                                                 dry_run,
-                                                 number_of_connection_prototype)
-        else:
-            path_handle = self.request_path(finish=target_position, start=source_position, allow_paths_through_own_entities=True)
-
-            response, elapsed = self.execute(PLAYER,
-                                             source_position.x,
-                                             source_position.y,
-                                             target_position.x,
-                                             target_position.y,
-                                             path_handle,
-                                             connection_prototype,
-                                             dry_run,
-                                             number_of_connection_prototype)
-        if not isinstance(response, dict) and response != "Passed":
-            raise Exception(f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}.", response.lstrip())
-
-        if dry_run:
-            return {"number_of_entities_required": response["number_of_entities"],
-                    "number_of_entities_available": number_of_connection_prototype}
-        
-        success = response.get('connected', False)
-        entities_list = response.get('entities', {}).values()
-        path = []
-        groupable_entities = []
-        for value in entities_list:
-            if isinstance(value, dict):
+            # Move the source and target positions to the center of the tile
+            target_position = Position(x=round(target_position.x*2)/2, y=round(target_position.y*2)/2)
+            source_position = Position(x=round(source_position.x*2)/2, y=round(source_position.y*2)/2)
+            if connection_type == Prototype.Pipe or connection_type == Prototype.TransportBelt:
                 try:
-                    if not value['warnings']:
-                        del value['warnings']
-                        value['warnings'] = []
-                    entity = metaclass(prototype=connection_type, **value)
+                    # Attempt to avoid entities
+                    path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y),
+                                                    start=source_position, allow_paths_through_own_entities=False)
+                    response, elapsed = self.execute(PLAYER,
+                                                     source_position.x,
+                                                     source_position.y,
+                                                     target_position.x,
+                                                     target_position.y,
+                                                     path_handle,
+                                                     connection_prototype,
+                                                     dry_run,
+                                                     number_of_connection_prototype)
+                    if not isinstance(response, dict) and response != "Passed":
+                        raise Exception(
+                            f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}.",
+                            response.lstrip())
 
-                    if entity.prototype == Prototype.TransportBelt or entity.prototype == Prototype.Pipe:
-                        groupable_entities.append(entity)
-                    else:
-                        path.append(entity)
                 except Exception as e:
-                    if not value:
-                        continue
-                    raise Exception(f"Could not create {connection_prototype} object from response: {response}", e)
-
-        # If the source and target entities are both BeltGroups, we need to make sure that the final belt is rotated
-        # to face the first belt of the source entity group.
-        if isinstance(source_entity, BeltGroup) and isinstance(target_entity, BeltGroup):
-            self.rotate_final_belt_when_connecting_groups(groupable_entities, source_entity)
-
-        deduplicated_path = self._deduplicate_entities(path)
-
-        entity_groups = []
-        # If we are connecting to an existing belt group, we need to agglomerate them all together
-        if connection_type == Prototype.TransportBelt:
-            if isinstance(source_entity, BeltGroup):
-                entity_groups = agglomerate_groupable_entities(source_entity.belts + groupable_entities)
-                entity_groups[0].input_positions = source_entity.input_positions
-            elif isinstance(target_entity, BeltGroup):
-                entity_groups = agglomerate_groupable_entities(groupable_entities + target_entity.belts)
-                entity_groups[0].output_positions = target_entity.output_positions
+                    # But accept allowing paths through own entities if it fails
+                    path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y),
+                                                    start=source_position, allow_paths_through_own_entities=True)
+                    response, elapsed = self.execute(PLAYER,
+                                                     source_position.x,
+                                                     source_position.y,
+                                                     target_position.x,
+                                                     target_position.y,
+                                                     path_handle,
+                                                     connection_prototype,
+                                                     dry_run,
+                                                     number_of_connection_prototype)
             else:
-                entity_groups = agglomerate_groupable_entities(groupable_entities)
+                path_handle = self.request_path(finish=target_position, start=source_position, allow_paths_through_own_entities=True)
 
-            for entity_group in entity_groups:
-                entity_group.belts = self._deduplicate_entities(entity_group.belts)
-        elif connection_type == Prototype.Pipe:
-            if isinstance(source_entity, PipeGroup):
-                entity_groups = agglomerate_groupable_entities(source_entity.pipes + groupable_entities)
-                #entity_groups[0].input_positions = source_entity.input_positions
-            elif isinstance(target_entity, PipeGroup):
-                entity_groups = agglomerate_groupable_entities(groupable_entities + target_entity.pipes)
-                #entity_groups[0].output_positions = target_entity.output_positions
-            else:
-                entity_groups = agglomerate_groupable_entities(groupable_entities)
+                response, elapsed = self.execute(PLAYER,
+                                                 source_position.x,
+                                                 source_position.y,
+                                                 target_position.x,
+                                                 target_position.y,
+                                                 path_handle,
+                                                 connection_prototype,
+                                                 dry_run,
+                                                 number_of_connection_prototype)
+            if not isinstance(response, dict) and response != "Passed":
+                raise Exception(f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}.", response.lstrip())
 
-            for entity_group in entity_groups:
-                entity_group.pipes = self._deduplicate_entities(entity_group.pipes)
+            if dry_run:
+                return {"number_of_entities_required": response["number_of_entities"],
+                        "number_of_entities_available": number_of_connection_prototype}
 
-        # if we have more than one entity group - but one of them only has one entity (i.e it is dangling) we
-        # should pick it up back into the inventory, as the connect entities routine should not have created it
-        if len(entity_groups) > 1:
-            for entity_group in entity_groups:
-                if connection_type == Prototype.TransportBelt:
-                    if len(entity_group.belts) == 1:
-                        #self.pickup_entity(connection_type, entity_group.belts[0].position)
-                        entity_groups.remove(entity_group)
-                elif connection_type == Prototype.Pipe:
-                    if len(entity_group.pipes) == 1:
-                        self.pickup_entity(connection_type, entity_group.pipes[0].position)
-                        entity_groups.remove(entity_group)
+            success = response.get('connected', False)
+            entities_list = response.get('entities', {}).values()
+            path = []
+            groupable_entities = []
+            for value in entities_list:
+                if isinstance(value, dict):
+                    try:
+                        if not value['warnings']:
+                            del value['warnings']
+                            value['warnings'] = []
+                        entity = metaclass(prototype=connection_type, **value)
 
-        # Use the new deduplication function
-        return deduplicated_path + entity_groups
+                        if entity.prototype == Prototype.TransportBelt or entity.prototype == Prototype.Pipe:
+                            groupable_entities.append(entity)
+                        else:
+                            path.append(entity)
+                    except Exception as e:
+                        if not value:
+                            continue
+                        raise Exception(f"Could not create {connection_prototype} object from response: {response}", e)
+
+            # If the source and target entities are both BeltGroups, we need to make sure that the final belt is rotated
+            # to face the first belt of the source entity group.
+            if isinstance(source_entity, BeltGroup) and isinstance(target_entity, BeltGroup):
+                self.rotate_final_belt_when_connecting_groups(groupable_entities, source_entity)
+
+            deduplicated_path = self._deduplicate_entities(path)
+
+            entity_groups = []
+            # If we are connecting to an existing belt group, we need to agglomerate them all together
+            if connection_type == Prototype.TransportBelt:
+                if isinstance(source_entity, BeltGroup):
+                    entity_groups = agglomerate_groupable_entities(source_entity.belts + groupable_entities)
+                    entity_groups[0].input_positions = source_entity.input_positions
+                elif isinstance(target_entity, BeltGroup):
+                    entity_groups = agglomerate_groupable_entities(groupable_entities + target_entity.belts)
+                    entity_groups[0].output_positions = target_entity.output_positions
+                else:
+                    entity_groups = agglomerate_groupable_entities(groupable_entities)
+
+                for entity_group in entity_groups:
+                    entity_group.belts = self._deduplicate_entities(entity_group.belts)
+            elif connection_type == Prototype.Pipe:
+                if isinstance(source_entity, PipeGroup):
+                    entity_groups = agglomerate_groupable_entities(source_entity.pipes + groupable_entities)
+                    #entity_groups[0].input_positions = source_entity.input_positions
+                elif isinstance(target_entity, PipeGroup):
+                    entity_groups = agglomerate_groupable_entities(groupable_entities + target_entity.pipes)
+                    #entity_groups[0].output_positions = target_entity.output_positions
+                else:
+                    entity_groups = agglomerate_groupable_entities(groupable_entities)
+
+                for entity_group in entity_groups:
+                    entity_group.pipes = self._deduplicate_entities(entity_group.pipes)
+
+            # if we have more than one entity group - but one of them only has one entity (i.e it is dangling) we
+            # should pick it up back into the inventory, as the connect entities routine should not have created it
+            if len(entity_groups) > 1:
+                for entity_group in entity_groups:
+                    if connection_type == Prototype.TransportBelt:
+                        if len(entity_group.belts) == 1:
+                            #self.pickup_entity(connection_type, entity_group.belts[0].position)
+                            entity_groups.remove(entity_group)
+                    elif connection_type == Prototype.Pipe:
+                        if len(entity_group.pipes) == 1:
+                            self.pickup_entity(connection_type, entity_group.pipes[0].position)
+                            entity_groups.remove(entity_group)
+
+            # Use the new deduplication function
+            return deduplicated_path + entity_groups
+        except Exception as e:
+            raise e
 
     def rotate_final_belt_when_connecting_groups(self, new_belt: BeltGroup, target: BeltGroup) -> BeltGroup:
         source_belt = new_belt[-1]

@@ -35,8 +35,8 @@ class FactorioEvaluator:
             self.holdout_group_id = self.port_to_group[self.holdout.tcp_port]
 
     def set_status(self, status):
-        for i in range(len(self.instances)):
-            self.logger.update_instance(i, status=status)
+        for instance in self.instances:
+            self.logger.update_instance(instance.tcp_port, status=status)
 
     def set_sampling_status(self):
         """Update status for all instances in this evaluator's group"""

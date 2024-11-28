@@ -83,7 +83,7 @@ class DBClient:
                           program.version,
                           program.version_description,
                           program.model,
-                          program.meta
+                          json.dumps(program.meta)
                           ))
 
                     id, created_at = cur.fetchone()

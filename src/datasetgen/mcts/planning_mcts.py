@@ -22,8 +22,16 @@ def get_mining_setup(instance):
 
 class PlanningMCTS(MCTS):
 
-    def __init__(self, *args, planning_model, executor_model, objective_model, step_executor_prompt_path, step_generator_prompt_path, 
-                 step_judge_prompt_path, example_plan_prompt_path, **kwargs):
+    def __init__(self, *args,
+                 planning_model,
+                 executor_model,
+                 objective_model,
+                 step_executor_prompt_path,
+                 step_generator_prompt_path,
+                 step_judge_prompt_path,
+                 example_plan_prompt_path,
+                 **kwargs):
+
         super().__init__(*args, **kwargs)
         self.planning_model = planning_model
         self.executor_model = executor_model
@@ -135,6 +143,7 @@ class PlanningMCTS(MCTS):
         step.program.state = step.end_state
         step.program.response = response
         step.program.parent_id = parent_id
+        step.program.conversation.add_result(step.program.code, response, score=step.reward, advantage=step.reward - holdout_value)
         return step, holdout_value, entity_list
 
     def get_inventory_dict(self, inventory):
@@ -182,7 +191,7 @@ class PlanningMCTS(MCTS):
                 
         return task_outputs, start_state
 
-    async def   generate_plans(self, task_outputs: List[TaskOutput]) -> List[InitialPlanOutput]:
+    async def generate_plans(self, task_outputs: List[TaskOutput]) -> List[InitialPlanOutput]:
         generation_params = GenerationParameters(
             model = self.executor_model,
             stop_sequences = ["```"]
@@ -232,10 +241,11 @@ class PlanningMCTS(MCTS):
             conversations_to_process+=[(Conversation(messages = [Message(role="system", content=self.step_generator_system_prompt),
                 Message(role="user", content=user_message)]), plan_output.meta["plan_id"])]*self.number_of_steps_for_judge
             
-        step_outputs = [asyncio.ensure_future(self._generate_natural_language_batch(conversation[0], generation_params, meta = {"type": "next_step_candidates",
-                                                                                                                                 "plan_id": conversation[1],
-                                                                                                                                 "mining_setup": mining_setup,
-                                                                                                                                 "starting_inventory": starting_inventory_dict})) for conversation in conversations_to_process]
+        step_outputs = [asyncio.ensure_future(self._generate_natural_language_batch(conversation[0], generation_params,
+                                                                                    meta = {"type": "next_step_candidates",
+                                                                                            "plan_id": conversation[1],
+                                                                                            "mining_setup": mining_setup,
+                                                                                            "starting_inventory": starting_inventory_dict})) for conversation in conversations_to_process]
         responses = await asyncio.gather(*step_outputs)
         step_output_objects = {}
         for idx, response in enumerate(responses):

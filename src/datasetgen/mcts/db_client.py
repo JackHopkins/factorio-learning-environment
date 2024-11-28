@@ -12,7 +12,7 @@ from datasetgen.mcts.program import Program
 
 
 class DBClient:
-    def __init__(self, max_conversation_length: int = 10, **db_config):
+    def __init__(self, max_conversation_length: int = 20, **db_config):
         self.db_config = db_config
         self.max_conversation_length = max_conversation_length
         # Don't store connection as instance variable
@@ -68,8 +68,8 @@ class DBClient:
                     cur.execute("""
                         INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, 
                                            completion_token_usage, prompt_token_usage, token_usage, response, 
-                                           holdout_value, raw_reward, version, version_description)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                           holdout_value, raw_reward, version, version_description, model, meta)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id, created_at
                     """, (program.code, program.value, 0, program.parent_id,
                           program.state.to_raw() if program.state else None,
@@ -81,7 +81,9 @@ class DBClient:
                           program.holdout_value,
                           program.raw_reward,
                           program.version,
-                          program.version_description
+                          program.version_description,
+                          program.model,
+                          json.dumps(program.meta)
                           ))
 
                     id, created_at = cur.fetchone()
@@ -134,7 +136,7 @@ class DBClient:
                             AND value IS NOT NULL
                             AND jsonb_array_length(conversation_json->'messages') < %s
                             ORDER BY created_at DESC
-                            LIMIT 100
+                            LIMIT 300
                         )
                         SELECT id, value 
                         FROM recent

@@ -29,6 +29,8 @@ os.environ.update({
     "TERM": "xterm-256color"
 })
 load_dotenv()
+#MODEL = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-unmasked:AYH6LsSe"
+MODEL = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-masked:AYIViDdb"
 
 def create_factorio_instances() -> List[FactorioInstance]:
     """Create Factorio instances in parallel from local servers"""
@@ -108,6 +110,7 @@ async def create_seed_programs(
             token_usage=token_usage,
             completion_token_usage=completion_tokens,
             prompt_token_usage=prompt_tokens,
+            model=MODEL
         )
         seeded_programs.append(program)
 
@@ -147,8 +150,6 @@ async def get_seed_programs(
             if len(objective) < 100:
                 continue
 
-
-
             conversation = Conversation(messages=[
                 Message(role="system", content=mcts.system_prompt),
                 Message(role="user",
@@ -170,6 +171,7 @@ async def get_seed_programs(
                 token_usage=response.usage.total_tokens if hasattr(response, 'usage') else None,
                 completion_token_usage=response.usage.completion_tokens if hasattr(response, 'usage') else None,
                 prompt_token_usage=response.usage.prompt_tokens if hasattr(response, 'usage') else None,
+                model=MODEL
             )
             seeded_programs.append(program)
 
@@ -195,10 +197,11 @@ async def create_blueprint_seeds(
 async def main():
     # Configuration
     CONFIG = {
-        'model': "ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91",
+        #'model': "ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91",
+        "model": MODEL,
         'prompt_path': "../../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_refined.md",
-        'version': 18,
-        'version_desc': "Layout / Multi-MCTS / No planning prompt in user messages / Step-wise evaluation / Refined system prompt",
+        'version': 21,
+        'version_desc': "Multi-MCTS / No planning prompt in user messages / Step-wise evaluation / Refined system prompt",
         'max_conv_len': 10,
         'logit_bias': { # We add these logit biases to prevent sampling the truncated code of previous messages.
             "15714": -100,  # 'LINE'
@@ -227,8 +230,9 @@ async def main():
     initial_state = GameState.from_instance(instances[0])
 
     # Load system prompt
-    with open(CONFIG['prompt_path']) as f:
-        system_prompt = f.read().format(schema=instances[0].get_system_prompt())
+    #with open(CONFIG['prompt_path']) as f:
+    #    system_prompt = f.read().format(schema=instances[0].get_system_prompt())
+    system_prompt = instances[0].get_system_prompt()
 
     # Initialize MCTS
     print("Initializing MCTS...")
@@ -260,25 +264,25 @@ async def main():
     #     await db_client.create_program(program)
 
     # Generate and save seed programs from blueprints
-    print("Sampling blueprint scenarios...")
-    blueprint_seeds = await create_blueprint_seeds(
-        parallel_mcts.instance_groups[0].mcts,
-        {
-            'host': os.getenv("SKILLS_DB_HOST"),
-            'port': os.getenv("SKILLS_DB_PORT"),
-            'dbname': os.getenv("SKILLS_DB_NAME"),
-            'user': os.getenv("SKILLS_DB_USER"),
-            'password': os.getenv("SKILLS_DB_PASSWORD")
-        },
-        n_seeds=10
-    )
-
-    for program in blueprint_seeds:
-        await db_client.create_program(program)
+    # print("Sampling blueprint scenarios...")
+    # blueprint_seeds = await create_blueprint_seeds(
+    #     parallel_mcts.instance_groups[0].mcts,
+    #     {
+    #         'host': os.getenv("SKILLS_DB_HOST"),
+    #         'port': os.getenv("SKILLS_DB_PORT"),
+    #         'dbname': os.getenv("SKILLS_DB_NAME"),
+    #         'user': os.getenv("SKILLS_DB_USER"),
+    #         'password': os.getenv("SKILLS_DB_PASSWORD")
+    #     },
+    #     n_seeds=10
+    # )
+    #
+    # for program in blueprint_seeds:
+    #     await db_client.create_program(program)
 
     # Run search
     print("Starting MCTS search...")
-    await parallel_mcts.search(n_iterations=500, skip_failures=False)
+    await parallel_mcts.search(n_iterations=1000, skip_failures=False)
 
 if __name__ == '__main__':
     asyncio.run(main())

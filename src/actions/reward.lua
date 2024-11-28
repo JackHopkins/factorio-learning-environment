@@ -114,7 +114,7 @@ local default_seed_prices = function()
   }
 end
 
-local default_ingredient_exponent = function() return 1.025 end
+local default_ingredient_exponent = function() return 2 end--1.025 end -- We use 2 as the exponent to heavily bias in favour of complex recipes.
 local default_raw_resource_price = function() return 2.5 end
 local default_resource_ignore = function() return {} end
 

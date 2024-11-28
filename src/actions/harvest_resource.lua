@@ -1,5 +1,10 @@
 --- global.actions.harvest_resource(player_index, x, y, count, radius)
 
+local function update_production_stats(force, entity_name, amount)
+        local stats = force.item_production_statistics
+        stats.on_flow(entity_name, amount)
+    end
+
 -- Helper function to start mining an entity and track yields
 local function start_mining_entity(player, entity)
     if entity.valid and entity.minable then
@@ -172,6 +177,7 @@ function harvest(entities, count, from_position, player)
                 yield = yield + amount
                 entity.mine({ignore_minable=false, raise_destroyed=true})
                 player.insert({name=product.name, count=amount})
+                update_production_stats(player.force, product.name, amount)
                 has_mined = true
                 if yield >= count then break end
             end
@@ -198,6 +204,7 @@ function harvest_trees(entities, count, from_position, player)
                 if product.name == "wood" then
                     local amount = product.amount or 1
                     player.insert({name="wood", count=amount})
+                    update_production_stats(player.force, "wood", amount)
                     yield = yield + amount
 
                     local tree_position = entity.position

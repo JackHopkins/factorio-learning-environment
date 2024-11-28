@@ -11,9 +11,13 @@ class ParallelMCTSConfig:
                  system_prompt: str,
                  initial_state: GameState,
                  mcts_class: Type[MCTS],
-                 mcts_kwargs: Dict[str, Any] = None):
+                 mcts_kwargs: Dict[str, Any] = None,
+                 **kwargs):
         self.n_parallel = n_parallel
         self.system_prompt = system_prompt
         self.initial_state = initial_state
         self.mcts_class = mcts_class
         self.mcts_kwargs = mcts_kwargs or {}
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)

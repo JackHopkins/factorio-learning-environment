@@ -297,7 +297,7 @@ class AssemblingMachine(Entity):
     assembling_machine_modules: Inventory = Inventory()
 
 class FluidHandler(Entity):
-    connection_points: List[Position]
+    connection_points: List[Position] = []
     fluid_box: Optional[Union[dict, list]] = []
 
 class PumpJack(MiningDrill, FluidHandler):

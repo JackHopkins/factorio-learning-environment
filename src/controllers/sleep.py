@@ -18,6 +18,6 @@ class Sleep(Action):
         :param seconds: Number of seconds to sleep.
         :return: True if sleep was successful.
         """
-        sleep(min(30, seconds/(self.game_state._speed+0.001)))
+        sleep(min(30, seconds/(self.game_state._speed/2+0.001)))
         return True
 

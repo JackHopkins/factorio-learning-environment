@@ -292,3 +292,12 @@ def test_connect_ragged_edges(game):
     pipes = game.connect_entities(start_pos, end_pos, Prototype.Pipe)
 
     assert len(pipes) == 1
+
+def test_connect_pipes_by_positions(game):
+    """
+    This should ensure that pipe groups are always returned - instead of pipes themselves.
+    """
+    position_1 = Position(x=0, y=1)
+    position_2 = Position(x=2, y=4)
+    belts = game.connect_entities(position_1, position_2, Prototype.Pipe)
+    print(game.get_entities())

@@ -150,7 +150,7 @@ class LLMFactory:
                     max_tokens=max_tokens,
                     model=model_to_use,
                     messages=messages,
-                    stop_sequences=["```END"],
+                    stop_sequences=kwargs.get('stop_sequences', None),
                 )
             except Exception as e:
                 print(e)
@@ -194,8 +194,8 @@ class LLMFactory:
                                                   temperature=kwargs.get('temperature', 0.3),
                                                   messages=kwargs.get('messages', None),
                                                   logit_bias=kwargs.get('logit_bias', None),
-                                                  n=kwargs.get('n', None),
-                                                  #stop=["\n\n"],#, "\n#"],
+                                                  n=kwargs.get('n_samples', None),
+                                                  stop=kwargs.get('stop_sequences', None),#, "\n#"],
                                                   #presence_penalty=1,
                                                   #frequency_penalty=0.6,
                                                   stream=False)

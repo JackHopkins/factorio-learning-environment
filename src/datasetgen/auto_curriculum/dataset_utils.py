@@ -9,8 +9,8 @@ def instantiate_the_map(input_scenario, instance, starting_scenarios_folder):
         instance.reset()
         # here need to run the starting scenario as well
         starting_scenario_code = input_scenario["starting_scenario_code"]
-        output_list, result = eval_program_with_result_trace(instance, starting_scenario_code)
-        if "error" in result.lower():
+        output_list, result, error = eval_program_with_result_trace(instance, starting_scenario_code)
+        if error:
             return {"success": False, "error": result}
 
         initial_mining_setup = get_mining_setup(instance)

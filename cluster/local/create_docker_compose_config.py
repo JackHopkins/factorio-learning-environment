@@ -14,7 +14,8 @@ def generate_compose_config(num_instances: int) -> Dict[str, Any]:
     for i in range(num_instances):
         service_name = f"factorio_{i}"
         services[service_name] = {
-            "image": "factorio:latest",
+            "image": "factorio",
+            "pull_policy": "never",
             "platform": "linux/amd64",
             "environment": [
                 f"SAVES=/opt/factorio/saves",
@@ -86,7 +87,7 @@ def setup_docker_compose(num_instances: int):
     time.sleep(10)
 
 if __name__ == "__main__":
-    num_instances = 8
+    num_instances = 16
     if len(sys.argv) != 2:
         print("Usage: python create_docker_compose_config.py <number_of_instances>")
     else:

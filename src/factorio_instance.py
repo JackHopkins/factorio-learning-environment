@@ -151,10 +151,14 @@ class FactorioInstance:
         else:
             self._reset(**dict(game_state.inventory))
             self._load_entity_state(game_state.entities, decompress=True)
-            env = pickle.loads(game_state.namespace)
-            for key, value in env.items():
-                if not hasattr(self, key):
-                    setattr(self, key, value)
+            try:
+                if game_state.namespace:
+                    env = pickle.loads(game_state.namespace)
+                    for key, value in env.items():
+                        if not hasattr(self, key):
+                            setattr(self, key, value)
+            except Exception as e:
+                pass
 
 
 

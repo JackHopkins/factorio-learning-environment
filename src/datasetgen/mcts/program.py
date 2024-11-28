@@ -26,6 +26,7 @@ class Program(BaseModel):
     response: Optional[str] = None
     version: int = 1
     version_description: Optional[str] = ""
+    model: str = "gpt-4o"
 
     def __repr__(self):
         return self.code

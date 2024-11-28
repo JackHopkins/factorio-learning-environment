@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 
 from datasetgen.mcts.diversity.trace import Trace
-from datasetgen.mcts.diversity.trace_encoder import TraceEncoder
+from datasetgen.mcts.diversity.encoder.trace_encoder import TraceEncoder
 from tiktoken import get_encoding
 
 class NGramEncoder(TraceEncoder):

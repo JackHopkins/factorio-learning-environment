@@ -10,6 +10,7 @@ import inspect
 import io
 import json
 import os
+import pickle
 import signal
 import sys
 import threading
@@ -150,6 +151,12 @@ class FactorioInstance:
         else:
             self._reset(**dict(game_state.inventory))
             self._load_entity_state(game_state.entities, decompress=True)
+            env = pickle.loads(game_state.namespace)
+            for key, value in env.items():
+                if not hasattr(self, key):
+                    setattr(self, key, value)
+
+
 
         try:
             self.observe_all()

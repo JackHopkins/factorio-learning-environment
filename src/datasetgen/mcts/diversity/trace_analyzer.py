@@ -1,39 +1,47 @@
+import logging
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List
 
 import networkx as nx
 import numpy as np
-from sklearn.cluster import KMeans
 
 from datasetgen.mcts.db_client import DBClient
+from datasetgen.mcts.diversity.extractor.trace_extractor import TraceExtractor
 from datasetgen.mcts.diversity.trace import Trace
-from datasetgen.mcts.diversity.trace_encoder import TraceEncoder
+from datasetgen.mcts.diversity.encoder.trace_encoder import TraceEncoder
 from sklearn.preprocessing import normalize
 import hdbscan
 from datasetgen.mcts.diversity.trace_visualiser import TraceVisualizer
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 class TraceAnalyzer:
     def __init__(self,
                  encoder: TraceEncoder,
                  discount_factor: float = 0.95,
-                 min_cluster_size: int = 5,
-                 cluster_selection_epsilon: float = 0.5,
-                 alpha: float = 1.0):
+                 min_samples: int = 1,  # Added parameter
+                 min_cluster_size: int = 2,
+                 cluster_selection_epsilon: float = 0.15,  # Reduced from 0.5
+                 alpha: float = 0.5,  # Reduced from 1.0
+                 cluster_selection_method: str = 'eom'):  # Added parameter
         self.encoder = encoder
         self.discount_factor = discount_factor
         self.min_cluster_size = min_cluster_size
         self.cluster_selection_epsilon = cluster_selection_epsilon
         self.alpha = alpha
+        self.min_samples = min_samples
+        self.cluster_selection_method = cluster_selection_method
 
     def get_all_traces(self, db_client: DBClient) -> Dict[int, Dict]:
         """Get all programs and build program dictionary"""
         with db_client.get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    SELECT id, parent_id, value, response 
+                    SELECT id, parent_id, value, response, code
                     FROM programs
+                    WHERE value > 0
                 """)
                 programs = {}
                 for row in cur.fetchall():
@@ -42,6 +50,7 @@ class TraceAnalyzer:
                         'parent_id': row[1],
                         'value': row[2],
                         'response': row[3],
+                        'code': row[4],
                         'children': []
                     }
 
@@ -72,7 +81,7 @@ class TraceAnalyzer:
             else:
                 prog['discounted_value'] = prog['value']
 
-    def extract_traces(self, programs: Dict[int, Dict]) -> List[Trace]:
+    def extract_traces(self, programs: Dict[int, Dict], extractor: TraceExtractor) -> List[Trace]:
         """Extract all complete traces from root to leaf"""
         traces = []
         roots = [pid for pid, prog in programs.items() if prog['parent_id'] is None]
@@ -82,7 +91,7 @@ class TraceAnalyzer:
             current_trace.append(current_id)
 
             if not prog['children']:  # Leaf node
-                text = " ".join(programs[pid]['response'] if programs[pid]['response'] else '' for pid in current_trace)
+                text = extractor.extract_from_trace(current_trace)
                 traces.append(Trace(
                     programs=current_trace.copy(),
                     value=prog['discounted_value'],
@@ -98,63 +107,101 @@ class TraceAnalyzer:
 
         return traces
 
-    def cluster_traces(self, traces: List[Trace]) -> List[List[Trace]]:
-        """Cluster traces using density-based clustering"""
-        # Convert traces to feature vectors using the encoder
-        X = self.encoder.encode_traces(traces[:500])
-
+    def cluster_traces(self, X, traces: List[Trace]) -> List[List[Trace]]:
+        """Cluster traces using density-based clustering with modifications for more fragmentation"""
         # Normalize the feature vectors
         if isinstance(X, np.ndarray):
             X_normalized = normalize(X)
         else:
-            # For sparse matrices
             X_normalized = normalize(X.toarray())
 
-        # Configure HDBSCAN
+        # Configure HDBSCAN with parameters that encourage fragmentation
+        logger.debug("Creating HDBScan")
         clusterer = hdbscan.HDBSCAN(
             min_cluster_size=self.min_cluster_size,
+            min_samples=self.min_samples,
             cluster_selection_epsilon=self.cluster_selection_epsilon,
             alpha=self.alpha,
-            # Use euclidean metric since as we normalized the vectors, it is equivalent to cosine.
             metric='euclidean',
-            # Configure core distance calculation
-            min_samples=None,  # Let HDBSCAN determine this automatically
-            cluster_selection_method='eom'  # Excess of Mass - tends to produce more conservative clusters
+            cluster_selection_method=self.cluster_selection_method,
+            prediction_data=True
         )
 
         # Perform clustering
+        logger.debug("Clustering...")
         labels = clusterer.fit_predict(X_normalized)
 
-        # Group traces by cluster
-        clusters = defaultdict(list)
-        for trace, label in zip(traces, labels):
-            # Note: -1 label indicates noise points in HDBSCAN
-            clusters[label].append(trace)
+        # Get probabilities for cluster membership
+        strengths = clusterer.probabilities_
 
-        # Handle noise points (label -1) - could be their own cluster or merged based on nearest neighbors
+        # Group traces by cluster with strength threshold
+        clusters = defaultdict(list)
+        strength_threshold = 0.05
+
+        for trace, label, strength in zip(traces, labels, strengths):
+            if label == -1 and strength >= strength_threshold:
+                # Create new singleton cluster for strong noise points
+                new_label = max(clusters.keys()) + 1 if clusters else 0
+                clusters[new_label].append(trace)
+            else:
+                clusters[label].append(trace)
+
+        # Remove noise cluster if it exists
         if -1 in clusters:
             noise_points = clusters.pop(-1)
-            if len(noise_points) >= self.min_cluster_size:
-                # If we have enough noise points, make them their own cluster
-                clusters[max(clusters.keys()) + 1] = noise_points
+            # For each noise point, try to assign to the nearest cluster
+            for trace in noise_points:
+                trace_idx = traces.index(trace)
+                # Find nearest cluster using distances
+                if hasattr(clusterer, 'probabilities_'):
+                    cluster_probs = clusterer.probabilities_[trace_idx]
+                    if cluster_probs.max() > strength_threshold:
+                        nearest_cluster = cluster_probs.argmax()
+                        clusters[nearest_cluster].append(trace)
+                    else:
+                        # Create new singleton cluster
+                        new_label = max(clusters.keys()) + 1
+                        clusters[new_label] = [trace]
+
+        # Split large clusters based on internal distance
+        max_cluster_size = 10
+        new_clusters = {}
+        next_label = max(clusters.keys()) + 1
+
+        for label, cluster in clusters.items():
+            if len(cluster) > max_cluster_size:
+                # Calculate pairwise distances within cluster
+                cluster_indices = [traces.index(t) for t in cluster]
+                cluster_vectors = X_normalized[cluster_indices]
+
+                # Use hierarchical clustering to split large clusters
+                sub_clusterer = hdbscan.HDBSCAN(
+                    min_cluster_size=2,
+                    min_samples=1,
+                    metric='euclidean',
+                    cluster_selection_method='eom'
+                )
+                sub_labels = sub_clusterer.fit_predict(cluster_vectors)
+
+                # Distribute to new clusters
+                for sub_label_idx, sub_label in enumerate(sub_labels):
+                    if sub_label == -1:
+                        new_clusters[next_label] = [cluster[sub_label_idx]]
+                        next_label += 1
+                    else:
+                        sub_cluster_label = f"{label}_{sub_label}"
+                        if sub_cluster_label not in new_clusters:
+                            new_clusters[sub_cluster_label] = []
+                        new_clusters[sub_cluster_label].append(cluster[sub_label_idx])
             else:
-                # Assign each noise point to the nearest cluster
-                for trace in noise_points:
-                    # Find nearest cluster using probabilities
-                    trace_idx = traces.index(trace)
-                    if hasattr(clusterer, 'probabilities_'):
-                        # Get cluster with highest probability
-                        cluster_probs = clusterer.probabilities_[trace_idx]
-                        if cluster_probs.max() > 0:
-                            nearest_cluster = np.argmax(cluster_probs)
-                            clusters[nearest_cluster].append(trace)
+                new_clusters[label] = cluster
 
-        return list(clusters.values())
+        return list(new_clusters.values())
 
-    def sample_traces(self, clustered_traces: List[List[Trace]], samples_per_cluster: int = 3) -> List[Trace]:
+    def sample_traces(self, clustered_traces: List[List[Trace]], samples_per_cluster: int = 1) -> List[Trace]:
         """Sample high-value traces from each cluster"""
         selected_traces = []
-
+        logger.debug("Sampling traces")
         for cluster in clustered_traces:
             # Sort traces by value
             sorted_traces = sorted(cluster, key=lambda t: t.value, reverse=True)
@@ -169,21 +216,25 @@ class TraceAnalyzer:
 
         return selected_traces
 
-    def analyze(self, db_client: DBClient, samples_per_cluster: int = 3, output_dir: Path = None) -> List[Trace]:
+    def analyze(self, programs: Dict[int, Dict],
+                extractor: TraceExtractor,
+                samples_per_cluster: int = 1,
+                output_dir: Path = None) -> List[Trace]:
         """Main analysis pipeline"""
-        # Get all programs and build tree
-        programs = self.get_all_traces(db_client)
 
         # Backpropagate rewards
+        logger.debug("Backpropagating rewards")
         self.backpropagate_rewards(programs)
 
         # Extract all traces
-        traces = self.extract_traces(programs)
+        logger.debug("Extracting traces")
+        traces = self.extract_traces(programs, extractor)
 
         if output_dir:
             visualizer = TraceVisualizer(output_dir)
 
             # Get embeddings before clustering
+            logger.debug("Encoding initial traces")
             X = self.encoder.encode_traces(traces)
             before_viz = visualizer.prepare_visualization_data(
                 embeddings=X,
@@ -191,12 +242,15 @@ class TraceAnalyzer:
                 cluster_labels=np.zeros(len(traces)),  # No clusters yet
                 selected_indices=[]  # No selections yet
             )
+            logger.debug("Plotting initial traces with UMAP")
             visualizer.plot_clusters(before_viz, "Before Clustering")
 
         # Cluster traces
-        clustered_traces = self.cluster_traces(traces)
+        logger.debug("Clustering traces")
+        clustered_traces = self.cluster_traces(X, traces)
 
         # Sample diverse, high-value traces
+        logger.debug("Sampling traces")
         selected_traces = self.sample_traces(clustered_traces, samples_per_cluster)
 
         if output_dir:

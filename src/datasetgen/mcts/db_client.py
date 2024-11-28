@@ -12,7 +12,7 @@ from datasetgen.mcts.program import Program
 
 
 class DBClient:
-    def __init__(self, max_conversation_length: int = 10, **db_config):
+    def __init__(self, max_conversation_length: int = 20, **db_config):
         self.db_config = db_config
         self.max_conversation_length = max_conversation_length
         # Don't store connection as instance variable
@@ -135,7 +135,7 @@ class DBClient:
                             AND value IS NOT NULL
                             AND jsonb_array_length(conversation_json->'messages') < %s
                             ORDER BY created_at DESC
-                            LIMIT 100
+                            LIMIT 300
                         )
                         SELECT id, value 
                         FROM recent

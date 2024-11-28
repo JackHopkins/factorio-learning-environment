@@ -6,7 +6,7 @@ import psycopg2
 import tenacity
 from tenacity import wait_exponential, retry, retry_if_exception_type
 
-from datasetgen.mcts.conversation import Conversation, Message
+from datasetgen.mcts.conversation import Conversation, Message, GenerationParameters
 from datasetgen.mcts.conversation_formatter import ConversationFormatter, DefaultFormatter, PLANNING_ADDITION_PROMPT
 from datasetgen.mcts.db_client import DBClient
 from datasetgen.mcts.factorio_evaluator import FactorioEvaluator
@@ -55,88 +55,110 @@ class MCTS:
         try:
             content = choice.message.content
             code = self._verify_response_is_python(content)
-            return code
+            return code, None
         except Exception as e:
             try:
                 content = choice.message.content
-                code = content.split('```python')[1].split('```')[0].strip()
+                content_split = content.split('```python')
+                code = content_split[1].split('```')[0].strip()
+                text_response = content_split[0].strip()
                 code = self._verify_response_is_python(code)
-                return code
+                return code, text_response
             except Exception as e1:
                 # Sometimes it samples a leading line, before writing unblocked python code.
                 content = "\n".join(choice.message.content.split("\n")[1:])
                 try:
                     code = self._verify_response_is_python(content)
-                    return code
+                    return code, None
                 except Exception as e2:
                     try:
-                        code = content.split('from factorio_instance import *')[1].strip()
+                        content_split = content.split('from factorio_instance import *')
+                        code = content_split[1].strip()
+                        text_response = content_split[0].strip()
                         code = self._verify_response_is_python(code)
-                        return code
+                        return code, text_response
                     except Exception as e2:
                         #print(f"Failed to extract code from choice after removing leading line and factorio_instance import: {str(e2)} \n\n`{content}`")
                         chain_of_thoughts = '"""\n'+content.strip().strip("\"")+'\n"""'
-                        return chain_of_thoughts
+                        return chain_of_thoughts, content.strip()
                     #print(f"Failed to extract code from choice after removing leading line: {str(e2)}")
                 print(f"Failed to extract code from choice: {str(e1)}")
 
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
-    async def _generate_programs_batch(self, conversation: Conversation, n_samples: int, logit_bias: Optional[Dict[str, float]] = None) -> List[Program]:
+    async def _generate_programs_batch(self, conversation: Conversation, 
+                                       generation_params: GenerationParameters,
+                                       meta = {}
+                                       ) -> List[Program]:
         """Generate multiple programs in a single API call using 'n' parameter"""
         formatted_messages = self.formatter.to_llm_messages(
             self.formatter.format_conversation(conversation)
         )
-        if "claude" in self.llm.model:
-            assert n_samples == 1, "Number of samples must be 1 for Claude"
+        if "claude" in generation_params.model:
+            assert generation_params.n == 1, "Number of samples must be 1 for Claude"
 
         try:
             # Single API call to generate n_samples completions
             response = await self.llm.acall(
                 messages=formatted_messages,
-                max_tokens=2048,
-                n=n_samples,
-                temperature=1,
-                logit_bias=logit_bias,
-                presency_penalty=0.7
+                n_samples=generation_params.n,
+                temperature=generation_params.temperature,
+                max_tokens=generation_params.max_tokens,
+                logit_bias=generation_params.logit_bias,
+                stop_sequences=generation_params.stop_sequences,
+                model = generation_params.model,
+                presency_penalty=generation_params.presency_penalty
             )
 
             programs = []
-            messages = conversation.model_dump()['messages']
+            try:
+                messages = conversation.model_dump()['messages']
+            except Exception as e:
+                messages = conversation.dict()['messages']
 
             # Process all choices from the response
-            if "claude" in self.llm.model:
+            if "claude" in generation_params.model:
 
                 # Handle Claude response format
-                code = self._extract_code_from_choice(response)
+                code, text_response = self._extract_code_from_choice(response)
                 if code:
                     programs.append(Program(
                         id=hash((code, json.dumps(messages))),
                         code=code,
                         conversation=conversation,
+                        response = response.message.content,
                         token_usage=response.usage.total_tokens if hasattr(response, 'usage') else None,
                         completion_token_usage=response.usage.completion_tokens if hasattr(response, 'usage') else None,
                         prompt_token_usage=response.usage.prompt_tokens if hasattr(response, 'usage') else None,
                         version=self.version,
-                        version_description=self.version_description
+                        version_description=self.version_description,
+                        meta = {"text_response": text_response,
+                                "model": generation_params.model}
                     ))
+                    if meta:
+                        programs[0].meta.update(meta)
             else:
                 # Handle OpenAI response format with multiple choices
                 for choice in response.choices:
-                    code = self._extract_code_from_choice(choice)
+                    code, text_response  = self._extract_code_from_choice(choice)
                     if code:
                         programs.append(Program(
                             id=hash((code, json.dumps(messages))),
                             code=code,
                             conversation=conversation,
-                            token_usage=response.usage.total_tokens // n_samples if hasattr(response,
+                            response = choice.message.content,
+                            token_usage=response.usage.total_tokens // generation_params.n if hasattr(response,
                                                                                             'usage') else None,
-                            completion_token_usage=response.usage.completion_tokens // n_samples if hasattr(response,
+                            completion_token_usage=response.usage.completion_tokens // generation_params.n if hasattr(response,
                                                                                                             'usage') else None,
-                            prompt_token_usage=response.usage.prompt_tokens // n_samples if hasattr(response,
+                            prompt_token_usage=response.usage.prompt_tokens // generation_params.n if hasattr(response,
                                                                                                     'usage') else None,
                             version=self.version,
-                            version_description=self.version_description
+                            version_description=self.version_description,
+                            meta = {"text_response": text_response,
+                                    "model": generation_params.model}
                         ))
+                        if meta:
+                            programs[-1].meta.update(meta)
 
             return programs
 
@@ -181,9 +203,11 @@ class MCTS:
                 ])
 
             self.evaluator.set_sampling_status()
-            
-            programs = await self._generate_programs_batch(conversation, samples_per_iteration)
-
+            generation_parameters = GenerationParameters(n = samples_per_iteration,
+                                                         model = self.llm.model,
+                                                         presency_penalty=0.7)
+            # Generate multiple programs from same parent
+            programs = await self._generate_programs_batch(conversation, generation_parameters)
             if not programs:
                 return
 

@@ -1,6 +1,7 @@
 import ast
 import asyncio
 import json
+from datasetgen.mcts.conversation import GenerationParameters
 from typing import List, Tuple, Optional, Union
 
 from datasetgen.mcts.conversation import Conversation, Message
@@ -253,8 +254,11 @@ class ChunkedMCTS(MCTS):
             raise
 
     async def _generate_programs_batch(self, conversation: Conversation, n_samples: int) -> List[Tuple[Program, List[Program]]]:
+        generation_parameters = GenerationParameters(n = n_samples+1,
+                                                         model = self.llm.model,
+                                                         logit_bias=self.logit_bias,)
         # We generate one extra program in case there is an error in parsing one. This way we can always return n_samples programs to keep the servers occupied.
-        programs = (await super()._generate_programs_batch(conversation, n_samples+1, logit_bias=self.logit_bias))[:n_samples]
+        programs = (await super()._generate_programs_batch(conversation, generation_params=generation_parameters))[:n_samples]
         chunked_programs = []
 
         for i, program in enumerate(programs):

@@ -477,6 +477,23 @@ class FactorioInstance:
         result_output = parse_result_into_str(self.logging_results)
         return score, goal, result_output
 
+    def _change_print_to_log(self, node):
+        if isinstance(node, ast.Expr):
+            # check if its print, if it is, then we route to log
+            if isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) and node.value.func.id == 'print':
+                # change print to log
+                node.value.func.id = 'log'
+
+        elif isinstance(node, ast.If) or isinstance(node, ast.For) or isinstance(node, ast.While):
+            for subnode_idx, subnode in enumerate(node.body):
+                node.body[subnode_idx] = self._change_print_to_log(subnode)
+            for subnode_idx, subnode in enumerate(node.orelse):
+                node.orelse[subnode_idx] = self._change_print_to_log(subnode)
+        elif isinstance(node, ast.FunctionDef):
+            for subnode_idx, subnode in enumerate(node.body):
+                node.body[subnode_idx] = self._change_print_to_log(subnode)
+        return node
+    
     def eval_with_error(self, expr, timeout=60):
         """ Evaluate an expression with a timeout, and return the result without error handling"""
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:

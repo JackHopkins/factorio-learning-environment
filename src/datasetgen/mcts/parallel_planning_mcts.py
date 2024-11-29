@@ -215,7 +215,10 @@ class ParallelPlanningMCTS:
                     plans = await self._process_group_step(group, step_idx, skip_failures, start_state, parent)
 
                     for plan in plans:
-                        await self.save_step(plan, plan.steps[-1])
+                        try:
+                            await self.save_step(plan, plan.steps[-1])
+                        except Exception as e:
+                            print("Count not save step - possibly missing (in case of skipping errors)")
 
                     group.evaluator.logger.update_progress()
 
@@ -377,6 +380,10 @@ class ParallelPlanningMCTS:
             step_to_process = plan.steps[-1]
             step_to_process, holdout, entity_list = await self._evaluate_step(step_to_process, start_state, group, instance_id,
                                                                               parent_id)
+
+            if skip_failures and "error" in step_to_process.program.response.lower():
+                raise Exception("Found error in response. Skipping step.")
+
             plan.steps[-1] = step_to_process
             log_str = f"Step {len(plan.steps)}: {step_to_process.final_step}\n{step_to_process.program.response}"
             plan.logs.append(log_str)
@@ -486,7 +493,7 @@ class ParallelPlanningMCTS:
         conversation = Conversation(messages=[
             Message(role="system", content=self.config.system_prompt),
             Message(role="user",
-                    content=f"Your starting inventory is {starting_inventory}. Your initial mining setup is: {mining_setup}. Create a useful task that you can carry out in the current game and the python script to achieve the task")
+                    content=f"Your starting inventory is {starting_inventory}. {mining_setup}. Create an incrementally useful task that you can carry out in the current game, in order to grow your factory's throughput.")
         ])
 
         generation_params = GenerationParameters(

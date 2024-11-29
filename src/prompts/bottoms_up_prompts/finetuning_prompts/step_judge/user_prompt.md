@@ -1,7 +1,7 @@
-Some examples of steps are as follows
+Some examples of steps are as follows:
 
 Global objective
-Create a automatic iron plate mining setup into a chest
+Create an automatic iron plate mining setup into a chest 
 Map setup
 There are no entities on the map
 Initial inventory
@@ -12,11 +12,11 @@ Step 2 - #STEP Calculate all the ingredients and print out all the recipes requi
 Step 3 - #STEP Gather 87 iron ore, 10 stone and 2 wood #STEP
 Step 4 - #STEP Smelt 87 iron plates #STEP
 Step 5 - #STEP Craft for 1 burner mining drill, 1 burner inserter, 1 stone furnace, 1 wooden chest and 50 transport belts #STEP
-Step 6 - #STEP Create a iron plate mine from a drill at Position(x = 11, y = 12) to a chest 10 spaces away. Check the construct by looking if the chest has iron plates in them #STEP
+Step 6 - #STEP Create a iron plate mine from a drill at Position(x = 11, y = 12) and connect it to a chest 10 spaces away. Check the construct by looking if the chest has iron plates in them #STEP
 #OUTPUT An automatic iron plate mine has been created to the drill at Position(x = 11, y = 12) to the chest at Position(x = 5, y = 9) #OUTPUT
 
 Global objective
-Craft 5 offshore pumps
+Craft 5 offshore pumps to make an engine block
 Map setup
 The following entities are on the map [{{"name": "wooden-chest", "inventory": [("iron-plate", 10)], "position": Position(x = 0, y = 1)}}]
 Initial inventory
@@ -29,7 +29,7 @@ Step 3 - #STEP Craft for 5 offshore pumps #STEP
 #OUTPUT 5 offshore pumps have been created #OUTPUT
 
 Global objective
-Create a automatic coal mining setup into a chest
+Create an automatic coal mining setup into a chest
 Map setup
 The following entities are on the map [{{"name": "wooden-chest", "inventory": [("iron-plate", 10)], "position": Position(x = 0, y = 1)}}]
 Initial inventory

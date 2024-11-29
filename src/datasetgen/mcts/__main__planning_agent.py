@@ -139,9 +139,10 @@ async def main():
     objective_model_prompt_path = r"../../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_self_gen.md"
     nr_of_seeded_programs = 4
     version = 101
-    version = 26
+    version = 30
     parent_version = 4
-    version_description = "Seeded / No planning prompt in user messages / Step-wise evaluation / Errors not saved"
+    version_description = "Scratch / Planning MCTS / Errors not saved"
+
 
 
     # Initialize components
@@ -172,7 +173,7 @@ async def main():
         system_prompt=system_prompt,
         initial_state=initial_state,
         max_steps_per_objective=8,
-        number_of_steps_for_judge=4,
+        number_of_steps_for_judge=3,
         mcts_kwargs={
             "planning_model":planner_model,
             "executor_model":step_executor_model_path,
@@ -202,8 +203,8 @@ async def main():
 
     print("Starting MCTS search...")
     best_programs = await mcts.search(
-        n_iterations=500,
-        skip_failures=False,
+        n_iterations=100,
+        skip_failures=True,
     )
 
     print("\nBest programs found:")

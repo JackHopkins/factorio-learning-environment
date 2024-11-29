@@ -17,7 +17,7 @@ def get_mining_setup(instance):
         if len(mining_setup) == 0:
             mining_setup = "There are no entities on the map"
         else:
-            mining_setup = f"The following entities are on the map and can be used: {mining_setup}"
+            mining_setup = f"The following entities comprise your factory: {mining_setup}"
         return mining_setup
 
 class PlanningMCTS(MCTS):

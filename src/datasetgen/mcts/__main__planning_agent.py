@@ -4,6 +4,9 @@ import statistics
 
 from datasetgen.auto_curriculum.plan_sampler import PlanSampler
 from datasetgen.mcts.chunked_mcts import ChunkedMCTS
+from datasetgen.mcts.grouped_logger import GroupedFactorioLogger
+from datasetgen.mcts.parallel_mcts_config import ParallelMCTSConfig
+from datasetgen.mcts.parallel_planning_mcts import ParallelPlanningMCTS
 from datasetgen.mcts.planning_mcts import PlanningMCTS
 from datasetgen.mcts.conversation import Conversation, Message
 from datasetgen.mcts.program import Program
@@ -42,16 +45,22 @@ def create_instance(params: Tuple[str, int, int]) -> FactorioInstance:
     )
 
 
+def create_factorio_instances() -> List[FactorioInstance]:
+    """Create Factorio instances in parallel from local servers"""
+    def init_instance(params: Tuple[str, int, int]) -> FactorioInstance:
+        ip, udp_port, tcp_port = params
+        return FactorioInstance(
+            address=ip,
+            tcp_port=tcp_port,
+            bounding_box=200,
+            fast=True,
+            cache_scripts=False,
+            inventory={}
+        )
 
-def create_parallel_instances(nr_of_instances) -> List[FactorioInstance]:
-    """Create Factorio instances in parallel using ThreadPoolExecutor from local servers"""
     ips, udp_ports, tcp_ports = get_local_container_ips()
-    params = list(zip(ips, udp_ports, tcp_ports))
-
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        instances = list(executor.map(create_instance, params))
-
-    return instances[:nr_of_instances]
+        return list(executor.map(init_instance, zip(ips, udp_ports, tcp_ports)))
 
 
 async def get_seed_programs(
@@ -122,17 +131,18 @@ async def main():
     step_executor_model_path = "ft:gpt-4o-2024-08-06:paperplane-ai:fact-instruct-1:ATSVGf4d:ckpt-step-214"
     planner_model = "claude-3-5-sonnet-20241022"
     objective_model = "ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91"
-    step_executor_prompt_path = r"src\prompts\bottoms_up_prompts\finetuning_prompts\step_supervised"
-    step_generator_prompt_path = r"src\prompts\bottoms_up_prompts\finetuning_prompts\step_generator"
-    executor_plan_prompt_path = r"src\prompts\bottoms_up_prompts\finetuning_prompts\executor_plan"
-    step_judge_prompt_path = r"src\prompts\bottoms_up_prompts\finetuning_prompts\step_judge"
-    starting_scenario_folder = r"src\skills\data_scenarios\starting_scenarios"
-    objective_model_prompt_path = r"src\prompts\bottoms_up_prompts\finetuning_prompts\system_message_policy_self_gen.md"
+    step_executor_prompt_path = r"../../prompts/bottoms_up_prompts/finetuning_prompts/step_supervised"
+    step_generator_prompt_path = r"../../prompts/bottoms_up_prompts/finetuning_prompts/step_generator"
+    executor_plan_prompt_path = r"../../prompts/bottoms_up_prompts/finetuning_prompts/executor_plan"
+    step_judge_prompt_path = r"../../prompts/bottoms_up_prompts/finetuning_prompts/step_judge"
+    starting_scenario_folder = r"../../skills/data_scenarios/starting_scenarios"
+    objective_model_prompt_path = r"../../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_self_gen.md"
     nr_of_seeded_programs = 4
     version = 101
-    version = 8
+    version = 30
     parent_version = 4
-    version_description = "Seeded / No planning prompt in user messages / Step-wise evaluation / Errors not saved"
+    version_description = "Scratch / Planning MCTS / Errors not saved"
+
 
     # Initialize components
     llm = LLMFactory(step_executor_model_path)
@@ -142,13 +152,12 @@ async def main():
                          user=os.getenv("SKILLS_DB_USER"),
                          password=os.getenv("SKILLS_DB_PASSWORD"))
 
-    instances = create_parallel_instances(2)
-
+    instances = create_factorio_instances()
     for instance in instances:
         instance.speed(10) # Set the game speed to 10x normal speed for faster testing
 
     # Initialize FactorioEvaluator with the list of instances
-    evaluator = FactorioEvaluator(db_client, instances, value_accrual_time=3)
+
     initial_state = GameState.from_instance(instances[0])
 
     # load from prompts/bottoms_up_prompts/system_message_policy_self_gen into string
@@ -157,21 +166,32 @@ async def main():
 
     print("Initializing MCTS...")
 
-    mcts = PlanningMCTS(llm,
+    config = ParallelMCTSConfig(
+        n_parallel=4,
+        mcts_class=PlanningMCTS,
+        system_prompt=system_prompt,
+        initial_state=initial_state,
+        max_steps_per_objective=8,
+        number_of_steps_for_judge=3,
+        mcts_kwargs={
+            "planning_model":planner_model,
+            "executor_model":step_executor_model_path,
+            "objective_model":objective_model,
+            "step_executor_prompt_path":step_executor_prompt_path,
+            "step_generator_prompt_path":step_generator_prompt_path,
+            "step_judge_prompt_path":step_judge_prompt_path,
+            "example_plan_prompt_path":executor_plan_prompt_path,
+            "system_prompt": system_prompt,
+            "initial_state": initial_state
+        }
+    )
+
+    mcts = ParallelPlanningMCTS(instances,
                 db_client,
-                evaluator,
-                system_prompt, # Not used
-                initial_state,
+                llm,
+                config,
                 version=version,
-                version_description=version_description,
-                planning_model = planner_model,
-                executor_model = step_executor_model_path, 
-                objective_model = objective_model, 
-                step_executor_prompt_path = step_executor_prompt_path, 
-                step_generator_prompt_path = step_generator_prompt_path, 
-                step_judge_prompt_path = step_judge_prompt_path, 
-                example_plan_prompt_path = executor_plan_prompt_path, 
-                )
+                version_description=version_description)
 
     sampler = PlanSampler(objective_model, objective_model_prompt_path, starting_scenario_folder)
 
@@ -182,9 +202,8 @@ async def main():
 
     print("Starting MCTS search...")
     best_programs = await mcts.search(
-        n_iterations=500,
-        samples_per_iteration=len(instances)-1, # One for each instance, minus a holdout.
-        skip_failures=False,
+        n_iterations=100,
+        skip_failures=True,
     )
 
     print("\nBest programs found:")

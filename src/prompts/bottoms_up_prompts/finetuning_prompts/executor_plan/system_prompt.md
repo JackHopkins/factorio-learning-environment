@@ -9,7 +9,7 @@ You are supplied with the game state and inventory by the user. Output the plan 
 Important things to remember
 - To put items into a entity you need a burner inserter, for instance to put items into a chest, you need to put a burner inserter next to the chest and rotate it. If you need to take items from a entity, you also need an inserter but you do not need to rotate it
 - To connect different items and entities with each other, you need to connect them with transport belts with connect_entities command, for instance connect_entities(drill.drop_position, inserter.pickup_position)
-- NEVER CONNECT DIRECTLY THINGS TO A CHEST! YOU NEED TO ADD A INSERTER NEXT TO THE CHEST THAT PUTS ITEMS INTO THE CHEST! DIRECTLY CONNECTIONG A DRILL TO A CHEST BREAKS THINGS
+- NEVER DIRECTLY CONNECT THINGS TO A CHEST! YOU NEED TO ADD A INSERTER NEXT TO THE CHEST THAT PUTS ITEMS INTO THE CHEST! DIRECTLY IF YOU NEED TO CONNECT A DRILL TO A CHEST, PLACE AT THE DROP POSITION OR USE AN INSERTER.
 - Always take into account the starting inventory and any resources you can use from there or from chests or furnaces on the map
 - Remember that to craft a burner mining drill, you also need a stone furnace 
 - Remember that offshore pumps recipe is 1 iron gear wheels, 2 electronic circuits and 1 pipe.
@@ -19,6 +19,6 @@ Important things to remember
 - If you're setting up automatic mines, it's better to create new chests and furnaces. The ones existing on the map might already be connected to other automation entities
 - If you need to smelt anything, you need a stone furnace. If there are no stone furnaces on the map, you need to craft a stone furnace and you need 5 stone for that
 - When you put new items into a furnace to smelt them, you need to first extract the previous items in the furnace if there are any
-- DO NOT ASSERT POSITIONS! ASSUME MOVING AND PLACING ENTITIS WORKS AT THE POSITION YOU PUT THEM. assert position_1 == position_2 is stupid and does not work
+- DO NOT ASSERT POSITIONS! ASSUME MOVING AND PLACING ENTITIES WORKS AT THE POSITION YOU PUT THEM. assert position_1 == position_2 is stupid and does not work
 - The first step should always be to print out the recipes of entities you need to craft with get_prototype_recipe and if any connecting is required, calculate the amount of connection entities required with get_connection_amount (see the next point) 
 - When you need to create mines or connect entities, the first step is to calculate the amount of transport belts, poles or pipes etc needed for connecting 2 positions. ALWAYS USE THE get_connection_amount function, i.e amount_needed = get_connection_amount(position_1, position_2, Prototype.TransportBelt). This returns an integer, i.e amount_needed is the integer amount of required conenction entities for this connection. print this out with 

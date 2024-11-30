@@ -139,7 +139,7 @@ async def main():
     objective_model_prompt_path = r"../../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_self_gen.md"
     nr_of_seeded_programs = 4
     version = 101
-    version = 30
+    version = 34
     parent_version = 4
     version_description = "Scratch / Planning MCTS / Errors not saved"
 
@@ -167,7 +167,7 @@ async def main():
     print("Initializing MCTS...")
 
     config = ParallelMCTSConfig(
-        n_parallel=4,
+        n_parallel=8,
         mcts_class=PlanningMCTS,
         system_prompt=system_prompt,
         initial_state=initial_state,
@@ -202,8 +202,8 @@ async def main():
 
     print("Starting MCTS search...")
     best_programs = await mcts.search(
-        n_iterations=100,
-        skip_failures=True,
+        n_iterations=1000,
+        skip_failures=False,
     )
 
     print("\nBest programs found:")

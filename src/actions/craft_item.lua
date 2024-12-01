@@ -38,6 +38,12 @@ global.actions.craft_item = function(player_index, entity, count)
         for _, product in pairs(recipe.products) do
             if product.type == "item" then
                 stats.on_flow(product.name, product.amount * crafts_count)
+
+                if global.crafted_items[product.name] then
+                    global.crafted_items[product.name] = global.crafted_items[product.name] + product.amount * crafts_count
+                else
+                    global.crafted_items[product.name] = product.amount * crafts_count
+                end
             end
         end
     end

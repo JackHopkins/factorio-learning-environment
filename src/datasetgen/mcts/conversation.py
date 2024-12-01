@@ -4,7 +4,7 @@ from enum import Enum
 from importlib.metadata import metadata
 from typing import List, Dict, Any, Union, Optional
 
-from pydantic import BaseModel, Field 
+from pydantic import BaseModel, Field
 
 from datasetgen.mcts.game_state import GameState
 from factorio_entities import Direction as DirectionA, Entity, EntityGroup

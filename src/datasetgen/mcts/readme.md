@@ -24,7 +24,8 @@ The core algorithm is structured as follows:
 
 Programs are selected based on:
 - **Relative advantage** against a holdout instance during execution (i.e did they do a better job than a program that does nothing but wait)
-- **Diversity of game state**. We calculate the divergence between the current game state and the average game state of successful programs. This is calculated by comparing the number of unique entities on the map, as well as the number of unique entities produced and consumed.:
+- **Diversity of game state**. We calculate the divergence between the current game state and the average game state of successful programs. This is calculated by comparing the number of unique entities on the map, as well as the number of unique entities produced and consumed.
+  - ds
 
 ## Core Components
 

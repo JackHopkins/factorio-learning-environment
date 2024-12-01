@@ -99,3 +99,65 @@ def indep_roll(arr, shifts, axis=1):
     result = arr[tuple(all_idcs)]
     arr = np.swapaxes(result,-1,axis)
     return arr
+
+
+
+def eval_program_with_achievements(instance, program):
+        pre_production_flows = instance.get_production_stats()
+        # evaluate the step
+        try:
+            score, goal, result = instance.eval_with_error(program, timeout=300)
+            error = False
+        except Exception as e:
+            result = e
+            # get the error message
+            result = str(e)
+            error = True
+        # split result by newlines
+        output_list = result.splitlines()
+        post_production_flows = instance.get_production_stats()
+        achievements = get_achievements(pre_production_flows, post_production_flows)
+        return output_list, result, error, achievements
+
+def get_achievements(pre_production_flows, post_production_flows):
+        """
+        Calculate the dynamic production flows between two states
+        """
+        achievements = {"static": {}, "dynamic": {}}
+        if not isinstance(pre_production_flows, dict) or not isinstance(post_production_flows, dict):
+            return achievements
+        if "output" not in pre_production_flows or "output" not in post_production_flows:
+            return achievements
+        
+        # merge the crafted and harvested dicts to one dict
+        post_production_flows["static_items"] = get_updated_static_items(pre_production_flows, post_production_flows)
+        
+        achievements = process_achievements(pre_production_flows, post_production_flows, achievements)
+        return achievements
+
+def get_updated_static_items(pre_production_flows, post_production_flows, static_keys = ["crafted", "harvested"]):
+    static_items = {}
+    for static_flow_key in static_keys:
+        for item, value in post_production_flows[static_flow_key].items():
+            pre_crafted_item_value = pre_production_flows[static_flow_key][item] if item in pre_production_flows[static_flow_key] else 0
+            created_item_value = value - pre_crafted_item_value
+            if created_item_value > 0:
+                static_items[item] = created_item_value
+    return static_items
+
+def process_achievements(pre_sleep_production_flows, post_sleep_production_flows, achievements):
+    for item_key in post_sleep_production_flows["output"]:
+        post_output_value = post_sleep_production_flows["output"][item_key]
+        pre_output_value = pre_sleep_production_flows["output"][item_key] if item_key in pre_sleep_production_flows["output"] else 0
+        # check if new items have been created
+        if post_output_value > pre_output_value:
+            created_value = post_output_value - pre_output_value
+            # We need to look if its dynamic or static added value
+            # if static greater than 0, we add it to static
+            # we add the rest to dynamic
+            static_value = post_sleep_production_flows["static_items"][item_key] if item_key in post_sleep_production_flows["static_items"] else 0
+            if static_value > 0:
+                achievements["static"][item_key] = static_value
+            if created_value > static_value:
+                achievements["dynamic"][item_key] = created_value - static_value
+    return achievements

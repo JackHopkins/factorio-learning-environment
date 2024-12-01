@@ -4,13 +4,27 @@ A Monte Carlo Tree Search (MCTS) implementation for discovering optimal Factorio
 
 ## Overview
 
-This implementation uses MCTS to explore the space of possible Factorio automation programs. Unlike traditional MCTS which explores discrete action spaces, this version:
+This implementation uses MCTS to explore the space of possible Factorio automation programs. 
 
-1. Uses LLMs to generate complete Python programs
+Unlike traditional MCTS which explores discrete action spaces, this version:
+1. Uses LLMs to generate Python programs that execute against the game environment.
 2. Maintains dialogue between the LLM and game environment
 3. Evaluates programs in parallel across multiple Factorio instances
 4. Computes relative advantages against a holdout instance
 5. Tracks successful program trajectories
+
+## Algorithm
+
+The core algorithm is structured as follows:
+1. **Initialization**: Set up the initial game state and LLM.
+2. **Tree Expansion**: Generate new programs using the LLM.
+3. **Simulation**: Execute each program in parallel and compute their values.
+4. **Backpropagation**: Update the tree with the results of simulations.
+5. **Selection**: Choose the best program based on its value and visit count.
+
+Programs are selected based on:
+- **Relative advantage** against a holdout instance during execution (i.e did they do a better job than a program that does nothing but wait)
+- **Diversity of game state**. We calculate the divergence between the current game state and the average game state of successful programs. This is calculated by comparing the number of unique entities on the map, as well as the number of unique entities produced and consumed.:
 
 ## Core Components
 

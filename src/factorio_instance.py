@@ -2,41 +2,35 @@ import ast
 import atexit
 import builtins
 import concurrent
-import contextlib
 import enum
 import functools
 import importlib
 import inspect
-import io
 import json
 import os
 import pickle
-import signal
 import sys
 import threading
 import traceback
 import types
-from enum import Enum
 from pathlib import Path
 from timeit import default_timer as timer
-from typing import List, Iterator
 
 from dotenv import load_dotenv
 from slpp import slpp as lua
 from typing_extensions import deprecated
 
 from datasetgen.mcts.game_state import GameState
+from factorio_entities import *
 from factorio_lua_script_manager import FactorioLuaScriptManager
 from factorio_transaction import FactorioTransaction
-from models.blueprint_entity import BlueprintEntity
-from src.factorio_rcon_utils import _load_initialisation_scripts, _lua2python, _get_action_dir
-from src.rcon.factorio_rcon import RCONClient
 from factorio_types import Prototype, Resource
 from models.observation_state import ObservationState
+from src.factorio_rcon_utils import _lua2python
+from src.rcon.factorio_rcon import RCONClient
 from utilities.controller_loader import load_schema, load_definitions, parse_file_for_structure
 from vocabulary import Vocabulary
 
-from factorio_entities import *
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000
 
@@ -157,10 +151,9 @@ class FactorioInstance:
                     for key, value in env.items():
                         if not hasattr(self, key):
                             setattr(self, key, value)
+
             except Exception as e:
                 pass
-
-
 
         try:
             self.observe_all()
@@ -546,6 +539,7 @@ class FactorioInstance:
         self.begin_transaction()
         self.add_command('/c global.alerts = {}', raw=True)
         self.add_command('/c game.reset_game_state()', raw=True)
+        self.add_command('/c global.actions.reset_production_stats()', raw=True)
         self.add_command('clear_inventory', PLAYER)
         self.add_command('reset_position', PLAYER, 0, 0)
 

@@ -201,9 +201,9 @@ async def main():
         #'model': "ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91",
         "model": MODEL,
         'prompt_path': "../../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_refined.md",
-        'version': 25,
-        'version_desc': "Namespace reinit / Seeded / Multi-MCTS / No planning prompt in user messages / Step-wise evaluation / Refined system prompt",
-        'max_conv_len': 20,
+        'version': 37,
+        'version_desc': "Resetting production stats / Adaptive exploitation/exploration sampling / ^2 unit pricing / Tick based sleep / Step-wise evaluation",
+        'max_conv_len': 30,
         'logit_bias': { # We add these logit biases to prevent sampling the truncated code of previous messages.
             "15714": -100,  # 'LINE'
             "145968": -100, # ' CUT'

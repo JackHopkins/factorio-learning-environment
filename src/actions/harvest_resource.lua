@@ -3,6 +3,11 @@
 local function update_production_stats(force, entity_name, amount)
         local stats = force.item_production_statistics
         stats.on_flow(entity_name, amount)
+        if global.harvested_items[entity_name] then
+            global.harvested_items[entity_name] = global.harvested_items[entity_name] + amount
+        else
+            global.harvested_items[entity_name] = amount
+        end
     end
 
 -- Helper function to start mining an entity and track yields

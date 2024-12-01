@@ -379,3 +379,12 @@ global.actions.production_stats = function(player)
         input = production_diff
     }
 end
+
+global.action.reset_production_stats = function(player)
+    local force = player.force
+    -- Reset item statistics
+    force.item_production_statistics.clear()
+
+    -- Reset fluid statistics
+    force.fluid_production_statistics.clear()
+end

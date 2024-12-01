@@ -8,6 +8,13 @@ from typing import List, Dict, Any
 def is_serializable(obj: Any) -> bool:
     """Test if an object can be serialized with pickle"""
     try:
+        if isinstance(obj, type):
+            return False
+
+        # Common built-in types that are always serializable
+        if isinstance(obj, (int, float, str, bool, list, dict, tuple, set)):
+            return True
+
         pickle.dumps(obj)
         return True
     except (pickle.PicklingError, TypeError, AttributeError):
@@ -20,6 +27,7 @@ def filter_serializable_vars(vars_dict: Dict[str, Any]) -> Dict[str, Any]:
         if is_serializable(value)
     }
 
+
 @dataclass
 class GameState:
     """Serializable Factorio game state"""
@@ -30,6 +38,7 @@ class GameState:
 
     @classmethod
     def from_instance(cls, instance: 'FactorioInstance') -> 'GameState':
+
         """Capture current game state from Factorio instance"""
         entities = instance._save_entity_state(compress=True, encode=True)
 

@@ -120,6 +120,4 @@ def test_achievements_electricity():
 
 
 if __name__ == '__main__':
-    #unittest.main()
-    test_achievements_electricity()
-
+    unittest.main()

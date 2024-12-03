@@ -33,3 +33,15 @@ global.actions.production_stats = function(player)
         crafted = crafted_items
     }
 end
+
+global.action.reset_production_stats = function(player)
+    local force = player.force
+    -- Reset item statistics
+    force.item_production_statistics.clear()
+
+    -- Reset fluid statistics
+    force.fluid_production_statistics.clear()
+
+    global.harvested_items = {}
+    global.crafted_items = {}
+end

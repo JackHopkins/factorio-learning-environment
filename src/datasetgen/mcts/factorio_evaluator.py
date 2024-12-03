@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Dict
 
 from datasetgen.mcts.db_client import DBClient
 from datasetgen.mcts.game_state import GameState
@@ -7,6 +7,7 @@ from datasetgen.mcts.logger import FactorioLogger
 from datasetgen.mcts.program import Program
 from factorio_entities import Entity, EntityGroup
 from factorio_instance import FactorioInstance
+from utils import get_achievements
 
 
 class FactorioEvaluator:
@@ -75,7 +76,7 @@ class FactorioEvaluator:
                 )
 
             # Update program results
-            for i, (program, (raw_reward, state, response, entities)) in enumerate(zip(programs, eval_results)):
+            for i, (program, (raw_reward, state, response, entities, achievements)) in enumerate(zip(programs, eval_results)):
                 relative_reward = raw_reward - holdout_value
 
                 if self.logger:
@@ -112,19 +113,23 @@ class FactorioEvaluator:
             raise e
 
     async def _evaluate_single(self, instance_id: int, program: Program, instance: FactorioInstance) -> Tuple[
-        float, GameState, str, List[Union[Entity, EntityGroup]]]:
+        float, GameState, str, List[Union[Entity, EntityGroup], Dict[str, Dict[str, int]]]]:
         try:
             # Convert instance_id to TCP port
             tcp_port = self.instance_to_port[instance_id]
 
+            # Get initial state information
+            self.logger.update_instance(tcp_port, status="starting value")
             start_entities = instance.get_entities()
             start_inventory = instance.inspect_inventory()
-            self.logger.update_instance(tcp_port, status="starting value")
+            start_production_flows = instance.get_production_stats()
             initial_value, start_time = instance.score()
 
+            # Executing code
             self.logger.update_instance(tcp_port, status="executing")
             reward, time, result = instance.eval(program.code, timeout=60)
 
+            # Capturing immediate resulting state
             self.logger.update_instance(tcp_port, status="capturing state")
             state = GameState.from_instance(instance)
             entities = instance.get_entities()
@@ -149,6 +154,9 @@ class FactorioEvaluator:
 
             score, _ = instance.score()
             final_reward = score - initial_value
+
+            post_production_flows = instance.get_production_stats()
+            achievements = get_achievements(start_production_flows, post_production_flows)
 
             group_id = self.port_to_group[tcp_port]
             group = self.logger.groups[group_id]
@@ -176,7 +184,7 @@ class FactorioEvaluator:
                     error_count=instance_metrics.error_count + 1
                 )
 
-            return final_reward, state, result, entities
+            return final_reward, state, result, entities, achievements
 
         except Exception as e:
             print(f"Error in _evaluate_single:")

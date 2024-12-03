@@ -459,6 +459,10 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         -- If the connection_type is an electricity pole, we need to place the last entity at the target position to ensure connection
         place_at_position(player, connection_type, path[#path].position, get_direction(path[#path].position, preemptive_target), serialized_entities, dry_run, counter_state)
         place_at_position(player, connection_type, end_position, get_direction(preemptive_target, { x = target_x, y = target_y }), serialized_entities, dry_run, counter_state)
+
+        -- Add one more pole at the second position from the start to ensure connection, while avoiding drop / pickup positions etc.
+        place_at_position(player, connection_type, path[2].position, get_direction(path[2].position, preemptive_target), serialized_entities, dry_run, counter_state)
+
     end
 
     -- Check if entities are connected

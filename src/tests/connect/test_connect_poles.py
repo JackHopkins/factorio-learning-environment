@@ -200,3 +200,20 @@ def test_pole_to_generator(game):
     drill_status = drill.status
     assert drill_status != EntityStatus.NO_POWER, "Electric mining drill is not powered"
     print("Electric mining drill is powered and working")
+
+def test_connect_steam_engine_mining_drill(game):
+    pos = game.nearest(Resource.Water)
+    game.move_to(pos)
+    pump = game.place_entity(Prototype.OffshorePump, position=pos)
+    boiler = game.place_entity_next_to(Prototype.Boiler, reference_position=pump.position, spacing=2, direction=Direction.UP)
+    game.connect_entities(pump, boiler, Prototype.Pipe)
+    steam_engine = game.place_entity_next_to(Prototype.SteamEngine, reference_position=boiler.position, spacing=2,
+                                        direction=Direction.UP)
+    game.connect_entities(boiler, steam_engine, Prototype.Pipe)
+    game.insert_item(Prototype.Coal, boiler, 2)
+    game.sleep(2)
+    pos = game.nearest(Resource.IronOre)
+    game.move_to(pos)
+    drill = game.place_entity(Prototype.ElectricMiningDrill, position=pos)
+    game.connect_entities(drill, steam_engine, Prototype.SmallElectricPole)
+    pass

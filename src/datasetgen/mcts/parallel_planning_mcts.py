@@ -137,6 +137,7 @@ class ParallelPlanningMCTS:
             mcts = self.config.mcts_class(
                 llm_factory=self.llm,
                 db_client=self.db_client,
+                sampler=self.sampler,
                 evaluator=evaluator,
                 **self.config.mcts_kwargs
             )
@@ -504,7 +505,7 @@ class ParallelPlanningMCTS:
         conversation = Conversation(messages=[
             Message(role="system", content=self.config.system_prompt),
             Message(role="user",
-                    content=f"Your starting inventory is {starting_inventory}. {mining_setup}. Create an incrementally useful task that you can carry out in the current game, in order to grow your factory's throughput.")
+                    content=f"Your starting inventory is {starting_inventory}. {mining_setup}. Create an incrementally useful task that you can carry out in the current game, in order to grow your factory's _automatic_ throughput.")
         ])
 
         generation_params = GenerationParameters(

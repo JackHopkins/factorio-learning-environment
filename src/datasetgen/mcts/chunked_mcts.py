@@ -95,6 +95,7 @@ class ChunkedMCTS(MCTS):
             self.evaluator.holdout.reset(start_state)
             initial_holdout_value, _ = self.evaluator.holdout.score()
 
+            executed_chunks = []
             # Evaluate each chunk while tracking holdout
             for chunk in chunks:
                 # Reset active instance to current state
@@ -115,11 +116,17 @@ class ChunkedMCTS(MCTS):
                     instance
                 )
 
+                # If there was an error in the chunk, do not continue evaluating. We need to reflect on the issue
+                # and determine how to proceed.
+                if 'error' in response.lower():
+                    break
+
                 # Get holdout value after this chunk
                 holdout_score, _ = self.evaluator.holdout.score()
                 holdout_value = holdout_score - initial_holdout_value
 
                 # Store results
+                executed_chunks.append(chunk)
                 achievement_list.append(achievements)
                 entity_list.append(entities)
                 holdout_values.append(holdout_value)
@@ -139,7 +146,7 @@ class ChunkedMCTS(MCTS):
                         current_reward=holdout_value
                     )
 
-            return chunks, holdout_values, entity_list, achievement_list
+            return executed_chunks, holdout_values, entity_list, achievement_list
 
         except Exception as e:
             print(f"Error during chunk evaluation:")

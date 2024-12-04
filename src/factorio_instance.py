@@ -13,6 +13,7 @@ import sys
 import threading
 import traceback
 import types
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from pathlib import Path
 from timeit import default_timer as timer
 
@@ -470,7 +471,7 @@ class FactorioInstance:
     
     def eval_with_error(self, expr, timeout=60):
         """ Evaluate an expression with a timeout, and return the result without error handling"""
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        with ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(self._eval_with_timeout, expr)
             score, goal, result = future.result(timeout)
             return score, goal, result
@@ -479,7 +480,7 @@ class FactorioInstance:
         "Evaluate several lines of input, returning the result of the last line with a timeout"
         try:
             return self.eval_with_error(expr, timeout)
-        except concurrent.futures.TimeoutError:
+        except TimeoutError:
             return -1, "", "Error: Evaluation timed out"
         except Exception as e:
             trace = e.__traceback__

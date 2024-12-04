@@ -99,6 +99,7 @@ class ParallelMCTS:
                 llm_factory=self.llm_factory,
                 db_client=self.db_client,
                 evaluator=evaluator,
+                sampler=self.config.sampler,
                 system_prompt=self.config.system_prompt,
                 initial_state=self.config.initial_state,
                 **self.config.mcts_kwargs

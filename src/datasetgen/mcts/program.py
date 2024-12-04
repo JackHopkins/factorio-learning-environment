@@ -28,6 +28,7 @@ class Program(BaseModel):
     version_description: Optional[str] = ""
     model: str = "gpt-4o"
     meta: dict = {}
+    achievements: dict ={}
 
     def __repr__(self):
         return self.code
@@ -63,4 +64,5 @@ class Program(BaseModel):
             version=row['version'],
             version_description=row['version_description'],
             meta=row['meta'] if row['meta'] else {},
+            achievements=row['achievements_json'] if row['achievements_json'] else {}
         )

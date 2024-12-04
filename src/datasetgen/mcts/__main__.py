@@ -19,6 +19,7 @@ from datasetgen.mcts.conversation_formatter import StructurePreservingFormatter,
 from datasetgen.mcts.db_client import DBClient
 from datasetgen.mcts.game_state import GameState
 from datasetgen.mcts.program import Program
+from datasetgen.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
 from factorio_instance import FactorioInstance
 from llm_factory import LLMFactory
 from cluster.local.cluster_ips import get_local_container_ips
@@ -201,8 +202,8 @@ async def main():
         #'model': "ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91",
         "model": MODEL,
         'prompt_path': "../../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_refined.md",
-        'version': 37,
-        'version_desc': "Resetting production stats / Adaptive exploitation/exploration sampling / ^2 unit pricing / Tick based sleep / Step-wise evaluation",
+        'version': 39,
+        'version_desc': "KLD Diversity Sampling / Tick based sleep / Step-wise evaluation",
         'max_conv_len': 30,
         'logit_bias': { # We add these logit biases to prevent sampling the truncated code of previous messages.
             "15714": -100,  # 'LINE'
@@ -211,6 +212,7 @@ async def main():
             "20225": -100   # '/>'
         }
     }
+
 
     # Initialize components
     llm = LLMFactory(CONFIG['model'])
@@ -222,6 +224,9 @@ async def main():
         user=os.getenv("SKILLS_DB_USER"),
         password=os.getenv("SKILLS_DB_PASSWORD")
     )
+
+    # Sampler
+    sampler = KLDiversityAchievementSampler(db_client)
 
     # Set up Factorio instances
     instances = create_factorio_instances()
@@ -242,6 +247,7 @@ async def main():
         system_prompt=system_prompt,
         initial_state=initial_state,
         mcts_class=ChunkedMCTS,
+        sampler=sampler,
         mcts_kwargs={
             'logit_bias': CONFIG['logit_bias'],
             'version': CONFIG['version'],
@@ -283,7 +289,7 @@ async def main():
 
     # Run search
     print("Starting MCTS search...")
-    await parallel_mcts.search(n_iterations=3000, skip_failures=False)
+    await parallel_mcts.search(n_iterations=1000, skip_failures=False)
 
 if __name__ == '__main__':
     asyncio.run(main())

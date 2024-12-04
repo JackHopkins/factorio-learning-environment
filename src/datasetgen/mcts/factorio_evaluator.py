@@ -97,6 +97,7 @@ class FactorioEvaluator:
                 program.holdout_value = holdout_value
                 program.conversation.add_result(program.code, response, score=raw_reward, advantage=relative_reward)
                 program.response = response
+                program.achievements = achievements
 
             return programs
 
@@ -112,8 +113,8 @@ class FactorioEvaluator:
                     )
             raise e
 
-    async def _evaluate_single(self, instance_id: int, program: Program, instance: FactorioInstance) -> Tuple[
-        float, GameState, str, List[Union[Entity, EntityGroup], Dict[str, Dict[str, int]]]]:
+    async def _evaluate_single(self, instance_id: int, program: Program, instance: FactorioInstance) \
+            -> Tuple[float, GameState, str, List[Union[Entity, EntityGroup]], Dict[str, Dict[str, int]]]:
         try:
             # Convert instance_id to TCP port
             tcp_port = self.instance_to_port[instance_id]

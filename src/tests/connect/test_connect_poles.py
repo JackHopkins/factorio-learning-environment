@@ -216,4 +216,6 @@ def test_connect_steam_engine_mining_drill(game):
     game.move_to(pos)
     drill = game.place_entity(Prototype.ElectricMiningDrill, position=pos)
     game.connect_entities(drill, steam_engine, Prototype.SmallElectricPole)
-    pass
+
+    drill = game.get_entity(Prototype.ElectricMiningDrill, position=pos)
+    assert drill.status == EntityStatus.WORKING

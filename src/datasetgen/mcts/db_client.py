@@ -8,7 +8,7 @@ from contextlib import contextmanager
 import psycopg2
 import tenacity
 from psycopg2.extras import DictCursor
-from tenacity import wait_exponential, retry_if_exception_type
+from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
 from datasetgen.mcts.program import Program
 
 
@@ -60,7 +60,7 @@ class DBClient:
 
     @tenacity.retry(
         retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.DatabaseError)),
-        wait=wait_exponential(multiplier=1, min=4, max=10))
+        wait=wait_random_exponential(multiplier=1, min=4, max=10))
     async def create_program(self, program: Program) -> Program:
         """Create a new program, now with connection management"""
         try:
@@ -180,7 +180,7 @@ class DBClient:
     #         raise e
 
     @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
-                    wait=wait_exponential(multiplier=1, min=4, max=10))
+                    wait=wait_random_exponential(multiplier=1, min=4, max=10))
     async def sample_parent(self, version=1, compression_strength: Optional[float] = None,
                             adaptive_period: int = 100) -> Optional[Program]:
         """
@@ -274,7 +274,7 @@ class DBClient:
             raise e
 
     @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
-                    wait=wait_exponential(multiplier=1, min=4, max=10))
+                    wait=wait_random_exponential(multiplier=1, min=4, max=10))
     async def get_parent_visit_stats(self, version: int = None) -> Dict[str, float]:
         """Get visit statistics with proper connection management"""
         query = """

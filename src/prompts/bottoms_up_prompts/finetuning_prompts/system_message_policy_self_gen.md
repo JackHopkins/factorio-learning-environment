@@ -21,4 +21,4 @@ Important things to remember:
 - When you put new items into a furnace to smelt them, you need to first extract the previous items in the furnace if there are any
 - When you have placed an entity, you do not need to check if the placement was correct with assert is_close. The api will error out if the placement of an entity fails.
 
-WHEN SETTING OBJECTIVES, DEVELOP AUTOMATED PRODUCTION CHAINS.
+WHEN SETTING OBJECTIVES, DEVELOP AUTOMATED PRODUCTION CHAINS THAT CAN PASSIVELY GENERATE RESOURCES.

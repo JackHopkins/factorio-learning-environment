@@ -144,6 +144,10 @@ class Position(BaseModel):
         return Position(x=self.x - 1, y=self.y)
     def right(self) -> 'Position':
         return Position(x=self.x + 1, y=self.y)
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Position):
+            return NotImplemented
+        return self.is_close(other, tolerance=1)
 
 
 class EntityInfo(BaseModel):

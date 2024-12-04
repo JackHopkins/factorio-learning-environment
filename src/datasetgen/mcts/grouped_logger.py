@@ -178,9 +178,9 @@ class GroupedFactorioLogger:
         # Use a more compact panel style with reduced padding and simplified border
         return Panel(
             group_layout,
-            title=f"Group {group.group_id}",  # Shortened title
+            #title=f"Group {group.group_id}",  # Shortened title
             border_style="green",
-            padding=(0, 1),  # Reduce vertical and horizontal padding
+            padding=(0, 0),  # Reduce vertical and horizontal padding
             box=SIMPLE  # Use simpler border style
         )
 

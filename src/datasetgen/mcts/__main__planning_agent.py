@@ -197,7 +197,7 @@ async def main():
                 version=version,
                 version_description=version_description)
 
-    sampler = PlanSampler(objective_model, objective_model_prompt_path, starting_scenario_folder)
+    #sampler = PlanSampler(objective_model, objective_model_prompt_path, starting_scenario_folder)
 
     #print("Sampling seed scenarios...")
     #seeded_programs = await get_seed_programs(mcts, sampler, n_seeds=nr_of_seeded_programs)
@@ -209,15 +209,6 @@ async def main():
         n_iterations=1000,
         skip_failures=False,
     )
-
-    print("\nBest programs found:")
-    for i, prog in enumerate(best_programs, 1):
-        print(f"\nProgram {i} (reward: {prog.value:.2f}):")
-        print(f"```python\n{prog.code}\n```")
-        print("\nConversation history:")
-        for msg in prog.conversation.messages:
-            print(f"\n{msg['role'].upper()}:")
-            print(msg['content'])
             
 
 if __name__ == '__main__':

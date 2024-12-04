@@ -354,10 +354,18 @@ class ParallelPlanningMCTS:
             mining_setup = candidate_step.meta["mining_setup"]
             starting_inventory = candidate_step.meta["starting_inventory"]
         judge_messages = step.judge_language_output_step.conversation.model_dump()['messages']
+        judge_output = step.judge_step_str
         executor_step = step.final_step
-        meta = {"objective": objective, "initial_plan": initial_plan, "candidate_steps": candidate_step_meta,
-                "judge_messages": judge_messages, "executor_step": executor_step,
-                "mining_setup": mining_setup, "starting_inventory": starting_inventory,
+        meta = {"objective": objective, 
+                "initial_plan": initial_plan, 
+                "candidate_steps": candidate_step_meta,
+                "judge_step": {"messages": judge_messages,
+                               "output": judge_output}, 
+                "executor_step": {"input_step":executor_step,
+                                  "natural_language_plan": step.program.meta["text_response"],
+                                  "model": step.program.meta["model"]},
+                "mining_setup": mining_setup, 
+                "starting_inventory": starting_inventory,
                 "final_output": plan.final_output}
 
         program = step.program

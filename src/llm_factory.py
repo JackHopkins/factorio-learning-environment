@@ -114,6 +114,7 @@ class LLMFactory:
                 messages=kwargs.get('messages', None),
                 logit_bias=kwargs.get('logit_bias', None),
                 n=kwargs.get('n', None),
+                stop=kwargs.get('stop_sequences', None),
                 stream=False
             )
 

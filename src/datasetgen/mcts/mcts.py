@@ -12,6 +12,7 @@ from datasetgen.mcts.db_client import DBClient
 from datasetgen.mcts.factorio_evaluator import FactorioEvaluator
 from datasetgen.mcts.game_state import GameState
 from datasetgen.mcts.program import Program
+from datasetgen.mcts.samplers.db_sampler import DBSampler
 
 
 class MCTS:
@@ -19,6 +20,7 @@ class MCTS:
                  llm_factory: 'LLMFactory',
                  db_client: DBClient,
                  evaluator: FactorioEvaluator,
+                 sampler: DBSampler,
                  system_prompt: str,
                  initial_state: GameState,
                  formatter: ConversationFormatter = DefaultFormatter(),
@@ -31,6 +33,7 @@ class MCTS:
         self.evaluator = evaluator
         self.system_prompt = system_prompt
         self.initial_state = initial_state
+        self.sampler = sampler
         self.version = version
         self.version_description=version_description
         self.formatter = formatter
@@ -190,7 +193,7 @@ class MCTS:
     async def run_iteration(self, samples_per_iteration, skip_failures):
         """Run a single MCTS iteration with retries for concurrent operations"""
         try:
-            parent = await self.db.sample_parent(version=self.version)
+            parent = await self.sampler.sample_parent(version=self.version)
             if parent:
                 start_state = parent.state
                 conversation = parent.conversation

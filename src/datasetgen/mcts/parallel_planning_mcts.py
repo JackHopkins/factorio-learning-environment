@@ -14,6 +14,7 @@ from datasetgen.mcts.db_client import DBClient
 from datasetgen.mcts.factorio_evaluator import FactorioEvaluator
 from datasetgen.mcts.grouped_logger import GroupedFactorioLogger
 from datasetgen.mcts.instance_group import InstanceGroup
+from datasetgen.mcts.parallel_mcts_config import ParallelMCTSConfig
 from datasetgen.mcts.planning_mcts import get_mining_setup
 from datasetgen.mcts.planning_models import PlanOutput, TaskOutput, Step, LanguageOutput, InitialPlanOutput
 from datasetgen.mcts.game_state import GameState
@@ -38,7 +39,7 @@ class ParallelPlanningMCTS:
                  instances: List[FactorioInstance],
                  db_client: DBClient,
                  llm_factory: Any,
-                 config: Any,
+                 config: ParallelMCTSConfig,
                  version=26,
                  version_description="",
                  formatter: ConversationFormatter = StructurePreservingFormatter(),
@@ -54,6 +55,7 @@ class ParallelPlanningMCTS:
         """
         self.console = Console()
         self.config = config
+        self.sampler = config.sampler
         self.db_client = db_client
         self.llm = llm_factory
         self.version = version
@@ -198,7 +200,7 @@ class ParallelPlanningMCTS:
         try:
             for iteration in range(n_iterations):
 
-                parent = await self.db_client.sample_parent(version=self.version)
+                parent = await self.sampler.sample_parent(version=self.version)
 
                 group.evaluator.set_status(f"Generating tasks")
                 tasks, start_state = await self._get_tasks(group, parent)
@@ -327,6 +329,7 @@ class ParallelPlanningMCTS:
         step.program.state = step.end_state
         step.program.response = response
         step.program.parent_id = parent_id
+        step.program.achievements = achievements
 
         return step, holdout_value, entity_list
 

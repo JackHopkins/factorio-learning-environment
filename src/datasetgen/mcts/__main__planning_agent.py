@@ -10,6 +10,7 @@ from datasetgen.mcts.parallel_planning_mcts import ParallelPlanningMCTS
 from datasetgen.mcts.planning_mcts import PlanningMCTS
 from datasetgen.mcts.conversation import Conversation, Message
 from datasetgen.mcts.program import Program
+from datasetgen.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
 
 os.environ["FORCE_COLOR"] = "1"
 os.environ["TERM"] = "xterm-256color"
@@ -139,9 +140,9 @@ async def main():
     objective_model_prompt_path = r"../../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_self_gen.md"
     nr_of_seeded_programs = 4
     version = 101
-    version = 34
+    version = 40
     parent_version = 4
-    version_description = "Scratch / Planning MCTS / Errors not saved"
+    version_description = "KLD Diversity Sampling / Scratch / Planning MCTS / Errors not saved"
 
 
     # Initialize components
@@ -165,10 +166,13 @@ async def main():
         system_prompt = f.read().format(schema=instances[0].get_system_prompt())
 
     print("Initializing MCTS...")
+    # Sampler
+    sampler = KLDiversityAchievementSampler(db_client)
 
     config = ParallelMCTSConfig(
         n_parallel=8,
         mcts_class=PlanningMCTS,
+        sampler=sampler,
         system_prompt=system_prompt,
         initial_state=initial_state,
         max_steps_per_objective=8,

@@ -207,7 +207,7 @@ class ParallelPlanningMCTS:
 
                 group.evaluator.set_status(f"Generating plans")
                 group.plans = await self.generate_plans(tasks)
-
+                saved_step_ids = []
                 for step_idx in range(self.max_steps_per_objective):
                     if step_idx == 0:
                         # reset the instances
@@ -218,15 +218,11 @@ class ParallelPlanningMCTS:
 
                     for plan in plans:
                         try:
-                            # If we succeed in our objective, we add a final print statement to indicate that.
-                            # We also add the resultant output to the response
-                            if plan.success:
-                                program = plan.steps[-1].program
-                                program.code += "\nprint('Objective complete. Now lets prepare the next objective.')\n"
-                                program.response += "\n" + str(
-                                    len(program.code.split('\n'))) + f': (\'Objective complete. Now lets prepare the next objective.\',)'
-
-                            await self.save_step(plan, plan.steps[-1])
+                            # Save the step
+                            step_to_save = plan.steps[-1]
+                            if step_to_save.program.id not in saved_step_ids:
+                                await self.save_step(plan, step_to_save)
+                                saved_step_ids.append(step_to_save.program.id)
                         except Exception as e:
                             print("Could not save step - possibly missing (in case of skipping errors)")
 
@@ -255,8 +251,12 @@ class ParallelPlanningMCTS:
 
             # Evaluate programs in parallel across instances
             eval_futures = []
+            completed_plans = []
             for instance_id, (instance, plan) in enumerate(zip(group.active_instances, group.plans.values())):
                 if plan.success:
+                    if plan.steps[-1].program is None:
+                        plan.steps[-1].program = self._create_output_completed_program(plan, parent.id if parent else None)
+                    completed_plans.append(plan)
                     continue
 
                 latest_program = plan.steps[-1].program
@@ -273,7 +273,7 @@ class ParallelPlanningMCTS:
                     skip_failures=skip_failures
                 ))
 
-            return await asyncio.gather(*eval_futures)
+            return await asyncio.gather(*eval_futures) + completed_plans
 
         except Exception as e:
             print(f"Error in group {group.group_id}, step {step_idx}: {str(e)}")
@@ -345,6 +345,21 @@ class ParallelPlanningMCTS:
         return step, holdout_value, entity_list
 
     async def save_step(self, plan: PlanOutput, step: Step):
+        candidate_step_meta = []
+        # first we check if judge has been done on this step
+        # If not, then its the final output step
+        if step.judge_step_str == "":
+            for candidate_step in step.candidate_language_outputs:
+                try:
+                    messages = candidate_step.conversation.model_dump()['messages']
+                except:
+                    messages = candidate_step.conversation.dict()['messages']
+                output = candidate_step.response
+                candidate_step_meta.append({"output": output, "messages": messages,
+                                            })
+            step.program.meta["candidate_steps"] = candidate_step_meta
+            await self.db_client.create_program(step.program)
+            return
         # we need to save all the programs but we need to add some meta fields
         objective = plan.task.task
         initial_plan = plan.initial_plan.initial_plan
@@ -355,7 +370,6 @@ class ParallelPlanningMCTS:
             if next_step.final_step == step.final_step:
                 parent_id = current_step.program.id
 
-        candidate_step_meta = []
         for candidate_step in step.candidate_language_outputs:
             try:
                 messages = candidate_step.conversation.model_dump()['messages']
@@ -367,7 +381,10 @@ class ParallelPlanningMCTS:
                                         })
             mining_setup = candidate_step.meta["mining_setup"]
             starting_inventory = candidate_step.meta["starting_inventory"]
-        judge_messages = step.judge_language_output_step.conversation.model_dump()['messages']
+        try:
+            judge_messages = step.judge_language_output_step.conversation.model_dump()['messages']
+        except:
+            judge_messages = step.judge_language_output_step.conversation.dict()['messages']
         judge_output = step.judge_step_str
         executor_step = step.final_step
         meta = {"objective": objective, 
@@ -417,6 +434,22 @@ class ParallelPlanningMCTS:
             # pop the last step from plan
             plan.steps.pop()
             return plan
+        
+    def _create_output_completed_program(self, plan: PlanOutput,
+                                 parent_id: Optional[int]) -> PlanOutput:
+        objective = f"'{plan.task.task}'"
+        python_code = f"print('Objective {objective} has been completed. Now lets prepare the next objective.')"
+        program_parent_id = plan.steps[-2].program.id if len(plan.steps) > 1 else parent_id
+        program = Program(
+                        id=hash((python_code, plan.task.task, program_parent_id)),
+                        code=python_code,
+                        conversation=[],
+                        parent_id=program_parent_id,
+                        version=self.version,
+                        version_description=self.version_description,
+                        meta={"objective": plan.task.task}
+                    )
+        return program
 
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
     async def _generate_natural_language_batch(self, conversation: Conversation,

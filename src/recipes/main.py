@@ -24,8 +24,6 @@ for recipe in recipes:
     recipe_dict[recipe_name] = recipe_ingredients
 
 # Function to build the nested ingredient tree
-
-# Function to build the nested ingredient tree
 def build_ingredient_tree(recipe_name, graph, visited=None):
     if visited is None:
         visited = set()

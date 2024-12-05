@@ -12,13 +12,13 @@ from rich import print
 from datasetgen.auto_curriculum.plan_sampler import PlanSampler
 from datasetgen.mcts.blueprint_scenario_sampler import BlueprintScenarioSampler
 from datasetgen.mcts.chunked_mcts import ChunkedMCTS
-from datasetgen.mcts.conversation import Conversation, Message
+from datasetgen.mcts.model.conversation import Conversation, Message
 from datasetgen.mcts.parallel_mcts import ParallelMCTS
 from datasetgen.mcts.parallel_mcts_config import ParallelMCTSConfig
 from datasetgen.mcts.conversation_formatter import StructurePreservingFormatter, PLANNING_ADDITION_PROMPT
 from datasetgen.mcts.db_client import DBClient
-from datasetgen.mcts.game_state import GameState
-from datasetgen.mcts.program import Program
+from datasetgen.mcts.model.game_state import GameState
+from datasetgen.mcts.model.program import Program
 from datasetgen.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
 from factorio_instance import FactorioInstance
 from llm_factory import LLMFactory
@@ -202,14 +202,15 @@ async def main():
         #'model': "ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91",
         "model": MODEL,
         'prompt_path': "../../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_refined.md",
-        'version': 39,
-        'version_desc': "KLD Diversity Sampling / Tick based sleep / Step-wise evaluation",
+        'version': 42,
+        'version_desc': "Chunked / KLD Diversity Sampling / Tick based sleep / Step-wise evaluation",
         'max_conv_len': 30,
         'logit_bias': { # We add these logit biases to prevent sampling the truncated code of previous messages.
             "15714": -100,  # 'LINE'
             "145968": -100, # ' CUT'
             "27": -100,     # '<'
-            "20225": -100   # '/>'
+            "20225": -100,   # '/>'
+            "7032": -100 # while (we don't like while loops)
         }
     }
 

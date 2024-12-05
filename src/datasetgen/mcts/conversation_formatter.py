@@ -1,9 +1,7 @@
-import re
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Tuple, Optional
 
-from datasetgen.mcts.conversation import Message, Conversation
+from datasetgen.mcts.model.conversation import Message, Conversation
 
 PLANNING_ADDITION_PROMPT = \
 """

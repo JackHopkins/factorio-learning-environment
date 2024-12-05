@@ -2,9 +2,9 @@ import asyncio
 from typing import List, Tuple, Union, Dict
 
 from datasetgen.mcts.db_client import DBClient
-from datasetgen.mcts.game_state import GameState
+from datasetgen.mcts.model.game_state import GameState
 from datasetgen.mcts.logger import FactorioLogger
-from datasetgen.mcts.program import Program
+from datasetgen.mcts.model.program import Program
 from factorio_entities import Entity, EntityGroup
 from factorio_instance import FactorioInstance
 from utils import get_achievements

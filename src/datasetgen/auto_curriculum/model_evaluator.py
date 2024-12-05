@@ -1,7 +1,7 @@
 from factorio_types import BeltGroup
 import os
 import json
-from typing import List, Dict, Any
+from typing import List
 from dotenv import load_dotenv
 from factorio_instance import FactorioInstance
 import random
@@ -10,7 +10,7 @@ load_dotenv()
 from llm_factory import LLMFactory
 from datasetgen.auto_curriculum.dataset_utils import instantiate_the_map, initialise_starting_scenario
 from skills.skills_db import SkillsDB
-from datasetgen.mcts.game_state import GameState
+from datasetgen.mcts.model.game_state import GameState
 class ModelEvaluator:
     def __init__(self, executor_model, system_prompt_path, save_path, starting_scenarios_folder, objective_model = None):
         

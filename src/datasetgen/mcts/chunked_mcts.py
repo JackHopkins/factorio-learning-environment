@@ -1,14 +1,14 @@
 import ast
 import asyncio
 import json
-from datasetgen.mcts.conversation import GenerationParameters
+from datasetgen.mcts.model.conversation import GenerationParameters
 from typing import List, Tuple, Optional, Union
 
-from datasetgen.mcts.conversation import Conversation, Message
+from datasetgen.mcts.model.conversation import Conversation, Message
 from datasetgen.mcts.conversation_formatter import PLANNING_ADDITION_PROMPT
-from datasetgen.mcts.game_state import GameState
+from datasetgen.mcts.model.game_state import GameState
 from datasetgen.mcts.mcts import MCTS
-from datasetgen.mcts.program import Program
+from datasetgen.mcts.model.program import Program
 from factorio_entities import Entity, EntityGroup
 
 
@@ -116,10 +116,6 @@ class ChunkedMCTS(MCTS):
                     instance
                 )
 
-                # If there was an error in the chunk, do not continue evaluating. We need to reflect on the issue
-                # and determine how to proceed.
-                if 'error' in response.lower():
-                    break
 
                 # Get holdout value after this chunk
                 holdout_score, _ = self.evaluator.holdout.score()
@@ -145,6 +141,11 @@ class ChunkedMCTS(MCTS):
                         status="completed",
                         current_reward=holdout_value
                     )
+
+                # If there was an error in the chunk, do not continue evaluating. We need to reflect on the issue
+                # and determine how to proceed.
+                if 'error' in response.lower():
+                    break
 
             return executed_chunks, holdout_values, entity_list, achievement_list
 

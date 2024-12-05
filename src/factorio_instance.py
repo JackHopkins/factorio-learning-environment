@@ -1,7 +1,6 @@
 import ast
 import atexit
 import builtins
-import concurrent
 import enum
 import functools
 import importlib
@@ -21,7 +20,7 @@ from dotenv import load_dotenv
 from slpp import slpp as lua
 from typing_extensions import deprecated
 
-from datasetgen.mcts.game_state import GameState
+from datasetgen.mcts.model.game_state import GameState
 from factorio_entities import *
 from factorio_lua_script_manager import FactorioLuaScriptManager
 from factorio_transaction import FactorioTransaction
@@ -182,7 +181,7 @@ class FactorioInstance:
         self.execute_transaction()
 
     def speed(self, speed):
-        self.rcon_client.send_command(f'/c game.speed = {speed}')
+        response = self.rcon_client.send_command(f'/c game.speed = {speed}')
         self.game_state._speed = speed
 
     def log(self, *arg):
@@ -497,6 +496,9 @@ class FactorioInstance:
         return script
 
     def _send(self, command, *parameters, trace=False) -> List[str]:
+        """
+        Send a Lua command to the underlying Factorio instance
+        """
         start = timer()
         script = self._get_command(command, parameters=list(parameters), measured=False)
         lua_response = self.rcon_client.send_command(script)
@@ -517,6 +519,9 @@ class FactorioInstance:
         self.rcon_client.send_command(f"[img=entity/character] " + str(comment) + ", ".join(args))
 
     def _reset_static_achievement_counters(self):
+        """
+        This resets the cached production flows that we track for achievements and diversity sampling.
+        """
         self.add_command('/c global.crafted_items = {}', raw=True)
         self.add_command('/c global.harvested_items = {}', raw=True)
         self.execute_transaction()

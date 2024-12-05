@@ -3,14 +3,13 @@ import asyncio
 import json
 from typing import List, Tuple, Optional
 import os
-from datasetgen.mcts.conversation import Conversation, Message, GenerationParameters
-from datasetgen.mcts.conversation_formatter import PLANNING_ADDITION_PROMPT
-from datasetgen.mcts.game_state import GameState
+from datasetgen.mcts.model.conversation import Conversation, Message, GenerationParameters
+from datasetgen.mcts.model.game_state import GameState
 from datasetgen.mcts.mcts import MCTS
-from datasetgen.mcts.program import Program
+from datasetgen.mcts.model.program import Program
 from datasetgen.mcts.planning_models import LanguageOutput, TaskOutput, InitialPlanOutput, PlanOutput, Step
 from tenacity import wait_exponential, retry
-import aiohttp
+
 
 def get_mining_setup(instance):
         mining_setup = instance.get_entities()

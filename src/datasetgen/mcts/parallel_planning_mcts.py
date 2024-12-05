@@ -8,17 +8,16 @@ from dataclasses import dataclass
 from rich.console import Console
 from tenacity import retry, wait_exponential
 
-from datasetgen.mcts.conversation import Conversation, GenerationParameters, Message
-from datasetgen.mcts.conversation_formatter import ConversationFormatter, DefaultFormatter, StructurePreservingFormatter
+from datasetgen.mcts.model.conversation import Conversation, GenerationParameters, Message
+from datasetgen.mcts.conversation_formatter import ConversationFormatter, StructurePreservingFormatter
 from datasetgen.mcts.db_client import DBClient
 from datasetgen.mcts.factorio_evaluator import FactorioEvaluator
 from datasetgen.mcts.grouped_logger import GroupedFactorioLogger
-from datasetgen.mcts.instance_group import InstanceGroup
 from datasetgen.mcts.parallel_mcts_config import ParallelMCTSConfig
 from datasetgen.mcts.planning_mcts import get_mining_setup
 from datasetgen.mcts.planning_models import PlanOutput, TaskOutput, Step, LanguageOutput, InitialPlanOutput
-from datasetgen.mcts.game_state import GameState
-from datasetgen.mcts.program import Program
+from datasetgen.mcts.model.game_state import GameState
+from datasetgen.mcts.model.program import Program
 from factorio_instance import FactorioInstance
 
 logger = logging.basicConfig(level=logging.INFO)
@@ -263,12 +262,14 @@ class ParallelPlanningMCTS:
                 latest_program = plan.steps[-1].program
                 group.evaluator.logger.update_instance(instance_id, program_id=latest_program.id, status="evaluating")
 
+                parent_id = parent.id if parent else None
+
                 eval_futures.append(self._process_last_step(
                     plan=plan,
                     start_state=start_state,
                     group=group,
                     instance_id=instance_id,
-                    parent_id=parent.id if parent else None,
+                    parent_id=parent_id,
                     skip_failures=skip_failures
                 ))
 
@@ -287,6 +288,7 @@ class ParallelPlanningMCTS:
 
     def get_group_metrics(self, group_id: int) -> Dict[str, Any]:
         """Get metrics for a specific group"""
+
         if 0 <= group_id < len(self.instance_groups):
             group = self.instance_groups[group_id]
             return {
@@ -561,7 +563,8 @@ class ParallelPlanningMCTS:
                                            content=self.example_plan_user_prompt.format(task=task_output.task))]) for
             task_output in task_outputs]
 
-        initial_plans = [asyncio.ensure_future(self._generate_natural_language_batch(conversation, generation_params,
+        initial_plans = [asyncio.ensure_future(self._generate_natural_language_batch(conversation,
+                                                                                     generation_params,
                                                                                      meta={"type": "initial_plan_generation"}))
                          for conversation in conversations_to_process]
         # initial_plans = [self._generate_natural_language_batch(conversation, generation_params, meta={"type": "initial_plan_generation"}) for conversation in conversations_to_process]

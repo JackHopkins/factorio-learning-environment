@@ -9,7 +9,7 @@ from psycopg2.extras import DictCursor
 from tenacity import retry_if_exception_type, wait_exponential
 
 from datasetgen.mcts.db_client import DBClient
-from datasetgen.mcts.program import Program
+from datasetgen.mcts.model.program import Program
 from datasetgen.mcts.samplers.db_sampler import DBSampler
 
 

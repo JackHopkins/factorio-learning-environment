@@ -1,5 +1,5 @@
 import unittest
-from datasetgen.mcts.conversation import Message, Conversation
+from datasetgen.mcts.model.conversation import Message, Conversation
 
 from datasetgen.mcts.conversation_formatter import StructurePreservingFormatter, CodeProcessor
 

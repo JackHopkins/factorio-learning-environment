@@ -9,7 +9,7 @@ import psycopg2
 import tenacity
 from psycopg2.extras import DictCursor
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
-from datasetgen.mcts.program import Program
+from datasetgen.mcts.model.program import Program
 
 
 class DBClient:
@@ -121,63 +121,23 @@ class DBClient:
             print(f"Error fetching program rewards: {e}")
             return []
 
-    # @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
-    #                 wait=wait_exponential(multiplier=1, min=4, max=10))
-    # async def sample_parent(self, version=1) -> Optional[Program]:
-    #     """Sample parent with proper connection management"""
-    #     max_assistant_length = (self.max_conversation_length * 2) + 1
-    #
-    #     try:
-    #         with self.get_connection() as conn:
-    #             with conn.cursor(cursor_factory=DictCursor) as cur:
-    #                 cur.execute("""
-    #                     WITH recent AS (
-    #                         SELECT id, value, conversation_json
-    #                         FROM programs
-    #                         WHERE version = %s
-    #                         AND value IS NOT NULL
-    #                         AND jsonb_array_length(conversation_json->'messages') < %s
-    #                         ORDER BY created_at DESC
-    #                         LIMIT 300
-    #                     )
-    #                     SELECT id, value
-    #                     FROM recent
-    #                     """, (version, max_assistant_length))
-    #
-    #                 results = cur.fetchall()
-    #                 if not results:
-    #                     return None
-    #
-    #                 # Calculate softmax weights
-    #                 max_value = max(row['value'] for row in results)
-    #                 weights = [
-    #                     (row['id'],
-    #                      math.exp(row['value'] - max_value))
-    #                     for row in results
-    #                 ]
-    #
-    #                 # Normalize weights
-    #                 total_weight = sum(w[1] for w in weights)
-    #                 if total_weight == 0:
-    #                     sampled_id = random.choice([w[0] for w in weights])
-    #                 else:
-    #                     normalized_weights = [(id, w / total_weight) for id, w in weights]
-    #                     sampled_id = random.choices(
-    #                         [id for id, _ in normalized_weights],
-    #                         weights=[w for _, w in normalized_weights],
-    #                         k=1
-    #                     )[0]
-    #
-    #                 # Fetch the selected program
-    #                 cur.execute("""
-    #                     SELECT * FROM programs WHERE id = %s
-    #                     """, (sampled_id,))
-    #
-    #                 row = cur.fetchone()
-    #                 return Program.from_row(dict(row)) if row else None
-    #     except Exception as e:
-    #         print(f"Error sampling parent: {e}")
-    #         raise e
+    @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
+                    wait=wait_exponential(multiplier=1, min=4, max=10))
+    async def get_largest_version(self) -> int:
+        query = """
+            SELECT MAX(version)
+            FROM programs
+        """
+
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(query)
+                    result = cur.fetchone()
+                    return result[0] if result else 0
+        except Exception as e:
+            print(f"Error fetching largest version: {e}")
+
 
     @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
                     wait=wait_random_exponential(multiplier=1, min=4, max=10))

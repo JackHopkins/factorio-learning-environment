@@ -1,13 +1,10 @@
 import json
-from dataclasses import dataclass, field
 from enum import Enum
-from importlib.metadata import metadata
-from typing import List, Dict, Any, Union, Optional
+from typing import List, Dict, Any, Optional
 
 from pydantic import BaseModel, Field
 
-from datasetgen.mcts.game_state import GameState
-from factorio_entities import Direction as DirectionA, Entity, EntityGroup
+from factorio_entities import Direction as DirectionA
 from factorio_instance import Direction
 
 class EntityEncoder(json.JSONEncoder):

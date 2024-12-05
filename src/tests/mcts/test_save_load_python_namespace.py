@@ -1,10 +1,6 @@
 import unittest
-import ast
-from dataclasses import dataclass
-from typing import List, Optional
 
-from datasetgen.mcts.chunked_mcts import ChunkedMCTS
-from datasetgen.mcts.game_state import GameState
+from datasetgen.mcts.model.game_state import GameState
 from factorio_instance import FactorioInstance
 
 

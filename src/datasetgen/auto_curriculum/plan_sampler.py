@@ -1,13 +1,9 @@
-from pyexpat.errors import messages
 from typing import Any
 
-from datasetgen.mcts.conversation import Conversation
-from datasetgen.mcts.program import Program
 from llm_factory import LLMFactory
-import os
 from datasetgen.auto_curriculum.dataset_utils import instantiate_the_map, initialise_starting_scenario
-from datasetgen.mcts.game_state import GameState
-from factorio_instance import FactorioInstance
+from datasetgen.mcts.model.game_state import GameState
+
 
 class PlanSampler():
     def __init__(self, model, system_prompt_path, starting_scenarios_folder):

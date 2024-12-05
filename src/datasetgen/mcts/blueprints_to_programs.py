@@ -1,15 +1,14 @@
 import asyncio
 import os
-from typing import List, Optional, Tuple, Dict
+from typing import List, Dict
 
 import psycopg2
 from dotenv import load_dotenv
 from psycopg2.extras import DictCursor
 
-from datasetgen.mcts.conversation import Conversation, Message
+from datasetgen.mcts.model.conversation import Conversation, Message
 from datasetgen.mcts.db_client import DBClient
-from datasetgen.mcts.game_state import GameState
-from datasetgen.mcts.program import Program
+from datasetgen.mcts.model.program import Program
 from factorio_instance import FactorioInstance
 
 load_dotenv()

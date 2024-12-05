@@ -9,7 +9,7 @@ from psycopg2.extras import DictCursor
 from tenacity import retry_if_exception_type, wait_exponential
 
 from datasetgen.mcts.db_client import DBClient
-from datasetgen.mcts.program import Program
+from datasetgen.mcts.model.program import Program
 from datasetgen.mcts.samplers.db_sampler import DBSampler
 
 
@@ -20,17 +20,24 @@ class DynamicRewardWeightedSampler(DBSampler):
 
     The adaptive compression strength acts like a dynamic temperature parameter that automatically cycles
     between exploration (low compression) and exploitation (high compression) phases.
+
+    Args:
+        db_client: Database client to get programs
+        compression_strength: Fixed compression strength between 0 and 1.
+                                    If None, uses adaptive compression. Higher values mean more exploitation. Lower means more exploration.
+        adaptive_period: Number of steps for a full sine wave cycle when using adaptive compression.
     """
 
-    def __init__(self, db_client: DBClient, max_conversation_length=20):
+    def __init__(self, db_client: DBClient, compression_strength = None, max_conversation_length=20, adaptive_period=200):
         super().__init__(db_client)
         self.max_conversation_length = max_conversation_length
         self.db_client = db_client
+        self.compression_strength = compression_strength
+        self.adaptive_period = adaptive_period
 
     @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
                     wait=wait_exponential(multiplier=1, min=4, max=10))
-    async def sample_parent(self, version=1, compression_strength: Optional[float] = None, adaptive_period: int = 100) \
-            -> Optional[Program]:
+    async def sample_parent(self, version=1) -> Optional[Program]:
 
             """
             Sample parent with adjusted reward scaling.
@@ -48,12 +55,12 @@ class DynamicRewardWeightedSampler(DBSampler):
                 with self.db_client.get_connection() as conn:
                     with conn.cursor(cursor_factory=DictCursor) as cur:
                         # First get the current step count for adaptive compression
-                        if compression_strength is None:
+                        if self.compression_strength is None:
                             cur.execute(f"SELECT COUNT(*) as step_count FROM programs WHERE version = {version}")
                             step_count = cur.fetchone()['step_count']
                             # Calculate adaptive compression using sine wave
                             # sin goes from -1 to 1, so we transform to 0 to 1
-                            compression_strength = (math.sin(2 * math.pi * step_count / adaptive_period) + 1) / 2
+                            compression_strength = (math.sin(2 * math.pi * step_count / self.adaptive_period) + 1) / 2
 
                         cur.execute("""
                                 WITH recent AS (

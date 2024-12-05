@@ -1,9 +1,8 @@
 from typing import Any, Dict, Type
 
-from datasetgen.mcts.game_state import GameState
+from datasetgen.mcts.model.game_state import GameState
 from datasetgen.mcts.mcts import MCTS
 from datasetgen.mcts.samplers.db_sampler import DBSampler
-from datasetgen.mcts.samplers.dynamic_reward_weighted_sampler import DynamicRewardWeightedSampler
 
 
 class ParallelMCTSConfig:

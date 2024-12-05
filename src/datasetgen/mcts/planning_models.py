@@ -2,12 +2,11 @@ from datetime import datetime
 from typing import Dict
 from typing import Optional
 
-import numpy as np
 from pydantic import BaseModel, Field
 
-from datasetgen.mcts.conversation import Conversation
-from datasetgen.mcts.program import Program
-from datasetgen.mcts.game_state import GameState
+from datasetgen.mcts.model.conversation import Conversation
+from datasetgen.mcts.model.program import Program
+from datasetgen.mcts.model.game_state import GameState
 
 
 class LanguageOutput(BaseModel):

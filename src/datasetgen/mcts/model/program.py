@@ -5,8 +5,8 @@ from typing import Optional
 import numpy as np
 from pydantic import BaseModel, Field
 
-from datasetgen.mcts.conversation import Conversation
-from datasetgen.mcts.game_state import GameState
+from datasetgen.mcts.model.conversation import Conversation
+from datasetgen.mcts.model.game_state import GameState
 
 
 class Program(BaseModel):

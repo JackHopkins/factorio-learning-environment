@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from datasetgen.mcts.db_client import DBClient
-from datasetgen.mcts.program import Program
+from datasetgen.mcts.model.program import Program
 
 
 class DBSampler(ABC):

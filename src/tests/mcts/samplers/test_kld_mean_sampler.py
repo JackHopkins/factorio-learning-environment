@@ -1,12 +1,11 @@
 import unittest
 from unittest.mock import Mock, patch
-import json
 from collections import Counter
 
 import numpy as np
 from psycopg2.extras import DictRow
 
-from datasetgen.mcts.program import Program
+from datasetgen.mcts.model.program import Program
 from datasetgen.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
 
 

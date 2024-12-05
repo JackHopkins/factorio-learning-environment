@@ -1,10 +1,10 @@
 # Factorio Program Synthesis via MCTS
 
-A Monte Carlo Tree Search (MCTS) implementation for discovering optimal Factorio automation programs using large language models. This system uses parallel program evaluation and maintains dialogue context to iteratively improve factory automation strategies.
+Monte Carlo Tree Search (MCTS) implementations for creating automated factories using large language models. This system uses parallel program evaluation and maintains dialogue context to iteratively improve factory automation strategies.
 
 ## Overview
 
-This implementation uses MCTS to explore the space of possible Factorio automation programs. 
+This implementation uses MCTS to explore the space of possible Factorio automation trajectories. 
 
 Unlike traditional MCTS which explores discrete action spaces, this version:
 1. Uses LLMs to generate Python programs that execute against the game environment.
@@ -19,13 +19,17 @@ The core algorithm is structured as follows:
 1. **Initialization**: Set up the initial game state and LLM.
 2. **Tree Expansion**: Generate new programs using the LLM.
 3. **Simulation**: Execute each program in parallel and compute their values.
-4. **Backpropagation**: Update the tree with the results of simulations.
-5. **Selection**: Choose the best program based on its value and visit count.
+4. **Selection**: Choose the best program based on its value.
 
 Programs are selected based on:
 - **Relative advantage** against a holdout instance during execution (i.e did they do a better job than a program that does nothing but wait)
-- **Diversity of game state**. We calculate the divergence between the current game state and the average game state of successful programs. This is calculated by comparing the number of unique entities on the map, as well as the number of unique entities produced and consumed.
-  - ds
+- **Diversity of game state**. We calculate the divergence between the current game state and the game state of successful programs. This is calculated by comparing the number of unique entities produced and consumed both statically (manually) and dynamically (automatically).
+
+## Implementations
+
+1. **MCTS**: Basic MCTS implementation, in which programs are generated and executed.
+2. **Chunked MCTS**: Sampled programs are chunked into smaller sub-programs delimited by docstrings, to prevent errors-carried-forward.
+3. **Planning MCTS**: Higher-level reasoning over traces, to generate sequences of programs that conform to a high-level plan over a longer horizon.
 
 ## Core Components
 
@@ -158,40 +162,6 @@ def from_instance(cls, instance: 'FactorioInstance') -> 'GameState':
 - Handles serialization for storage/analysis
 - Maintains entity and inventory state
 
-## Best Practices
-
-1. **Program Generation**
-   - Keep programs focused and atomic
-   - Handle errors gracefully
-   - Verify resource availability
-
-2. **State Management**
-   - Capture complete state after each program
-   - Track entity relationships
-   - Monitor resource consumption
-
-3. **Evaluation**
-   - Use sufficient timeout for complex programs
-   - Monitor parallel instance health
-   - Handle evaluation failures gracefully
-
-## Future Improvements
-
-1. **Program Analysis**
-   - Add program similarity metrics
-   - Implement program mutation operators
-   - Track resource usage patterns
-
-2. **Performance Optimization**
-   - Add caching for similar programs
-   - Implement batch LLM requests
-   - Optimize state serialization
-
-3. **Learning Enhancement**
-   - Add program pattern extraction
-   - Implement template learning
-   - Track successful strategies
-   
 ## Dependencies
 
 - Python 3.8+

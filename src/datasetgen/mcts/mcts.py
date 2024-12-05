@@ -1,17 +1,17 @@
 import asyncio
 import json
-from typing import Optional, List, Dict
+from typing import Optional, List
 
 import psycopg2
 import tenacity
 from tenacity import wait_exponential, retry, retry_if_exception_type
 
-from datasetgen.mcts.conversation import Conversation, Message, GenerationParameters
+from datasetgen.mcts.model.conversation import Conversation, Message, GenerationParameters
 from datasetgen.mcts.conversation_formatter import ConversationFormatter, DefaultFormatter, PLANNING_ADDITION_PROMPT
 from datasetgen.mcts.db_client import DBClient
 from datasetgen.mcts.factorio_evaluator import FactorioEvaluator
-from datasetgen.mcts.game_state import GameState
-from datasetgen.mcts.program import Program
+from datasetgen.mcts.model.game_state import GameState
+from datasetgen.mcts.model.program import Program
 from datasetgen.mcts.samplers.db_sampler import DBSampler
 
 

@@ -219,9 +219,17 @@ class ParallelPlanningMCTS:
 
                     for plan in plans:
                         try:
+                            # If we succeed in our objective, we add a final print statement to indicate that.
+                            # We also add the resultant output to the response
+                            if plan.success:
+                                program = plan.steps[-1].program
+                                program.code += "\nprint('Objective complete. Now lets prepare the next objective.')\n"
+                                program.response += "\n" + str(
+                                    len(program.code.split('\n'))) + f': (\'Objective complete. Now lets prepare the next objective.\',)'
+
                             await self.save_step(plan, plan.steps[-1])
                         except Exception as e:
-                            print("Count not save step - possibly missing (in case of skipping errors)")
+                            print("Could not save step - possibly missing (in case of skipping errors)")
 
                     group.evaluator.logger.update_progress()
 
@@ -231,7 +239,7 @@ class ParallelPlanningMCTS:
         finally:
             self.cleanup()
 
-    async def _process_group_step(self, group: PlanningGroup, step_idx: int, skip_failures: bool, start_state: GameState, parent: Program):
+    async def _process_group_step(self, group: PlanningGroup, step_idx: int, skip_failures: bool, start_state: GameState, parent: Program) -> List[PlanOutput]:
         """Process a single step for a group"""
         try:
             # Generate candidates
@@ -387,7 +395,7 @@ class ParallelPlanningMCTS:
                                  group: PlanningGroup,
                                  instance_id: int,
                                  parent_id: Optional[int],
-                                 skip_failures: bool):
+                                 skip_failures: bool) -> PlanOutput:
         try:
             step_to_process = plan.steps[-1]
             step_to_process, holdout, entity_list = await self._evaluate_step(step_to_process, start_state, group, instance_id,
@@ -542,7 +550,10 @@ class ParallelPlanningMCTS:
     async def generate_plans(self, task_outputs: List[TaskOutput]) -> List[InitialPlanOutput]:
         generation_params = GenerationParameters(
             model=self.executor_model,
-            stop_sequences=["```"]
+            stop_sequences=["```"],
+            logits={
+                '7032': -100
+            }
         )
         conversations_to_process = [
             Conversation(messages=[Message(role="system", content=self.example_plan_system_prompt),
@@ -633,7 +644,7 @@ class ParallelPlanningMCTS:
         plan_outputs = group.plans
         generation_params = GenerationParameters(
             model=self.planning_model,
-            max_tokens=4096
+            max_tokens=4096,
         )
         conversations_to_process = []
         for instance_id, plan_output in plan_outputs.items():
@@ -693,7 +704,8 @@ class ParallelPlanningMCTS:
         generation_params = GenerationParameters(
             model=self.config.mcts_kwargs['executor_model'],
             temperature=0.5,
-            max_tokens=4096
+            max_tokens=4096,
+            logits={'7032': -100} # 'while' should never be sampled to prevent infinite loops
         )
         conversations_to_process = []
 

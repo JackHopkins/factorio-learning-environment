@@ -115,7 +115,9 @@ class LLMFactory:
                 logit_bias=kwargs.get('logit_bias', None),
                 n=kwargs.get('n_samples', None),
                 stop=kwargs.get('stop_sequences', None),
-                stream=False
+                stream=False,
+                presence_penalty=kwargs.get('presence_penalty', None),
+                frequency_penalty=kwargs.get('frequency_penalty', None),
             )
 
     def call(self, *args, **kwargs):

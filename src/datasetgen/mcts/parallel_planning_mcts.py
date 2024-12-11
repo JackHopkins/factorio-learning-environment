@@ -1,5 +1,6 @@
 import json
 import os
+from pyexpat.errors import messages
 from typing import List, Dict, Optional, Any, Tuple
 import asyncio
 from math import floor
@@ -443,7 +444,7 @@ class ParallelPlanningMCTS:
         program = Program(
                         id=hash((python_code, plan.task.task, program_parent_id)),
                         code=python_code,
-                        conversation=[],
+                        conversation=Conversation(messages=[]),
                         parent_id=program_parent_id,
                         version=self.version,
                         version_description=self.version_description,
@@ -868,7 +869,7 @@ class ParallelPlanningMCTS:
                 logit_bias=generation_params.logit_bias,
                 stop_sequences=generation_params.stop_sequences,
                 model=generation_params.model,
-                presency_penalty=generation_params.presency_penalty
+                presence_penalty=generation_params.presence_penalty
             )
 
             programs = []

@@ -8,7 +8,7 @@ from rich.console import Console
 from datasetgen.mcts.db_client import DBClient
 from datasetgen.mcts.factorio_evaluator import FactorioEvaluator
 from datasetgen.mcts.grouped_logger import GroupedFactorioLogger
-from datasetgen.mcts.instance_group import InstanceGroup
+from datasetgen.mcts.model.instance_group import InstanceGroup
 from datasetgen.mcts.parallel_mcts_config import ParallelMCTSConfig
 from factorio_instance import FactorioInstance
 
@@ -25,7 +25,9 @@ class ParallelMCTS:
                  instances: List['FactorioInstance'],
                  db_client: DBClient,
                  llm_factory: 'LLMFactory',
-                 config: ParallelMCTSConfig):
+                 config: ParallelMCTSConfig,
+                 version: int,
+                 version_description: str):
         """
         Initialize parallel MCTS with configuration
 
@@ -39,6 +41,8 @@ class ParallelMCTS:
         self.config = config
         self.db_client = db_client
         self.llm_factory = llm_factory
+        self.version = version
+        self.version_description = version_description
 
         # Validate instance count
         self._validate_instance_count(len(instances), config.n_parallel)

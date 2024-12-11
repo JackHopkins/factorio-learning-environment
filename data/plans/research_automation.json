@@ -1,0 +1,955 @@
+{
+  "description": "Research automation from scratch",
+  "completed": false,
+  "children": [
+    {
+      "description": "Gather initial resources manually",
+      "completed": false,
+      "children": [
+        {
+          "description": "Mine iron ore, copper ore, coal, and stone",
+          "completed": false,
+          "children": []
+        },
+        {
+          "description": "Smelt ores into iron plates and copper plates",
+          "completed": false,
+          "children": [
+            {
+              "description": "Place furnaces",
+              "completed": false,
+              "children": []
+            },
+            {
+              "description": "Feed furnaces with ore and coal",
+              "completed": false,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Build a basic coal and iron setup",
+      "completed": false,
+      "children": [
+        {
+          "description": "Place a burner mining drill on coal",
+          "completed": false,
+          "children": []
+        },
+        {
+          "description": "Place a furnace on iron ore",
+          "completed": false,
+          "children": []
+        },
+        {
+          "description": "Use coal to fuel both the mining drill and the furnace",
+          "completed": false,
+          "children": [
+            {
+              "description": "Ensure coal is inserted into the mining drill",
+              "completed": false,
+              "children": []
+            },
+            {
+              "description": "Ensure coal is inserted into the furnace",
+              "completed": false,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Set up initial science production",
+      "completed": false,
+      "children": [
+        {
+          "description": "Gather resources for science packs",
+          "completed": false,
+          "children": [
+            {
+              "description": "Mine iron and copper",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Place mining drills on iron and copper deposits",
+                  "completed": false,
+                  "children": []
+                },
+                {
+                  "description": "Transport mined resources to furnaces",
+                  "completed": false,
+                  "children": []
+                }
+              ]
+            },
+            {
+              "description": "Collect coal for fuel",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Mine coal using a pickaxe",
+                  "completed": false,
+                  "children": [
+                    {
+                      "description": "Locate a coal deposit",
+                      "completed": false,
+                      "children": []
+                    },
+                    {
+                      "description": "Equip pickaxe",
+                      "completed": false,
+                      "children": [
+                        {
+                          "description": "Craft pickaxe",
+                          "completed": false,
+                          "children": [
+                            {
+                              "description": "Gather resources",
+                              "completed": false,
+                              "children": [
+                                {
+                                  "description": "Mine iron ore",
+                                  "completed": false,
+                                  "children": [
+                                    {
+                                      "description": "Place electric mining drills on iron ore patches",
+                                      "completed": false,
+                                      "children": []
+                                    },
+                                    {
+                                      "description": "Transport mined iron ore to furnaces",
+                                      "completed": false,
+                                      "children": []
+                                    }
+                                  ]
+                                },
+                                {
+                                  "description": "Mine copper ore",
+                                  "completed": false,
+                                  "children": [
+                                    {
+                                      "description": "Place copper ore in a furnace",
+                                      "completed": false,
+                                      "children": []
+                                    },
+                                    {
+                                      "description": "Smelt copper ore to obtain copper plates",
+                                      "completed": false,
+                                      "children": []
+                                    }
+                                  ]
+                                },
+                                {
+                                  "description": "Collect coal",
+                                  "completed": false,
+                                  "children": [
+                                    {
+                                      "description": "Use a burner mining drill on coal",
+                                      "completed": false,
+                                      "children": []
+                                    },
+                                    {
+                                      "description": "Place a stone furnace to collect coal",
+                                      "completed": false,
+                                      "children": []
+                                    }
+                                  ]
+                                },
+                                {
+                                  "description": "Gather stone",
+                                  "completed": false,
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "description": "Manually mine coal",
+                      "completed": false,
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "description": "Transport coal to the burner mining drill and furnace",
+                  "completed": false,
+                  "children": []
+                }
+              ]
+            },
+            {
+              "description": "Gather stone for advanced recipes",
+              "completed": false,
+              "children": []
+            }
+          ]
+        },
+        {
+          "description": "Assemble science packs",
+          "completed": false,
+          "children": [
+            {
+              "description": "Assemble red science packs",
+              "completed": false,
+              "children": []
+            },
+            {
+              "description": "Assemble green science packs",
+              "completed": false,
+              "children": []
+            }
+          ]
+        },
+        {
+          "description": "Set up labs to consume science packs",
+          "completed": false,
+          "children": [
+            {
+              "description": "Connect labs to the logistic network",
+              "completed": false,
+              "children": []
+            },
+            {
+              "description": "Ensure labs are supplied with science packs from the network",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Use inserters to feed science packs into labs",
+                  "completed": false,
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Expand resource acquisition",
+      "completed": false,
+      "children": [
+        {
+          "description": "Build additional mining drills",
+          "completed": false,
+          "children": [
+            {
+              "description": "Place more mining drills on resource patches",
+              "completed": false,
+              "children": []
+            },
+            {
+              "description": "Connect drills to power if electric",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Place power poles near drills",
+                  "completed": false,
+                  "children": []
+                },
+                {
+                  "description": "Ensure power network is active",
+                  "completed": false,
+                  "children": [
+                    {
+                      "description": "Connect power poles to the network",
+                      "completed": false,
+                      "children": [
+                        {
+                          "description": "Place power poles near accumulators",
+                          "completed": false,
+                          "children": []
+                        },
+                        {
+                          "description": "Ensure all accumulators are linked to the same power network",
+                          "completed": false,
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "description": "Verify power pole connections",
+                      "completed": false,
+                      "children": [
+                        {
+                          "description": "Check for overlapping power pole coverage",
+                          "completed": false,
+                          "children": []
+                        },
+                        {
+                          "description": "Ensure all poles are connected to the network",
+                          "completed": false,
+                          "children": [
+                            {
+                              "description": "Place poles so their coverage overlaps",
+                              "completed": false,
+                              "children": []
+                            },
+                            {
+                              "description": "Use red or green wires to connect poles if needed",
+                              "completed": false,
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Set up more smelting facilities",
+          "completed": false,
+          "children": [
+            {
+              "description": "Build additional smelters",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Place smelters in a grid pattern",
+                  "completed": false,
+                  "children": []
+                },
+                {
+                  "description": "Connect smelters to power",
+                  "completed": false,
+                  "children": []
+                }
+              ]
+            },
+            {
+              "description": "Ensure smelters have adequate input and output belts",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Use splitters to balance ore and coal on input belts",
+                  "completed": false,
+                  "children": []
+                },
+                {
+                  "description": "Ensure output belts are not backed up with plates",
+                  "completed": false,
+                  "children": [
+                    {
+                      "description": "Monitor the output belts for any signs of backup",
+                      "completed": false,
+                      "children": []
+                    },
+                    {
+                      "description": "Adjust the flow of plates to maintain a steady output",
+                      "completed": false,
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Increase science production",
+      "completed": false,
+      "children": [
+        {
+          "description": "Expand production facilities",
+          "completed": false,
+          "children": [
+            {
+              "description": "Build additional smelting lines",
+              "completed": false,
+              "children": []
+            },
+            {
+              "description": "Increase assembly machine count",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Place additional assembly machines",
+                  "completed": false,
+                  "children": []
+                },
+                {
+                  "description": "Connect new machines to power",
+                  "completed": false,
+                  "children": [
+                    {
+                      "description": "Place electric poles to cover new machine areas",
+                      "completed": false,
+                      "children": []
+                    },
+                    {
+                      "description": "Ensure power grid is continuous",
+                      "completed": false,
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "description": "Ensure new machines have input materials",
+                  "completed": false,
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Optimize resource allocation",
+          "completed": false,
+          "children": [
+            {
+              "description": "Balance production and consumption rates",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Adjust production to match consumption",
+                  "completed": false,
+                  "children": [
+                    {
+                      "description": "Monitor production and consumption rates",
+                      "completed": false,
+                      "children": []
+                    },
+                    {
+                      "description": "Increase production if consumption exceeds production",
+                      "completed": false,
+                      "children": [
+                        {
+                          "description": "Build additional production facilities",
+                          "completed": false,
+                          "children": [
+                            {
+                              "description": "Construct more assembly machines",
+                              "completed": false,
+                              "children": [
+                                {
+                                  "description": "Place assembly machines near existing resources",
+                                  "completed": false,
+                                  "children": []
+                                },
+                                {
+                                  "description": "Connect assembly machines to power",
+                                  "completed": false,
+                                  "children": [
+                                    {
+                                      "description": "Place power poles near assembly machines",
+                                      "completed": false,
+                                      "children": []
+                                    },
+                                    {
+                                      "description": "Ensure power grid is connected to a power source",
+                                      "completed": false,
+                                      "children": []
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "description": "Set up additional smelting lines",
+                              "completed": false,
+                              "children": [
+                                {
+                                  "description": "Construct new smelting lines for iron and copper",
+                                  "completed": false,
+                                  "children": [
+                                    {
+                                      "description": "Build smelting lines with 48 furnaces each",
+                                      "completed": false,
+                                      "children": []
+                                    },
+                                    {
+                                      "description": "Ensure each line has a full yellow belt output",
+                                      "completed": false,
+                                      "children": []
+                                    }
+                                  ]
+                                },
+                                {
+                                  "description": "Ensure smelting lines are supplied with adequate ore",
+                                  "completed": false,
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "description": "Optimize existing production lines",
+                          "completed": false,
+                          "children": [
+                            {
+                              "description": "Identify bottlenecks in current production",
+                              "completed": false,
+                              "children": []
+                            },
+                            {
+                              "description": "Reallocate resources to improve efficiency",
+                              "completed": false,
+                              "children": [
+                                {
+                                  "description": "Identify bottlenecks in production",
+                                  "completed": false,
+                                  "children": [
+                                    {
+                                      "description": "Monitor production rates of key resources",
+                                      "completed": false,
+                                      "children": []
+                                    },
+                                    {
+                                      "description": "Adjust production to match demand",
+                                      "completed": false,
+                                      "children": []
+                                    }
+                                  ]
+                                },
+                                {
+                                  "description": "Adjust resource allocation to address bottlenecks",
+                                  "completed": false,
+                                  "children": [
+                                    {
+                                      "description": "Identify areas with insufficient resources",
+                                      "completed": false,
+                                      "children": []
+                                    },
+                                    {
+                                      "description": "Reallocate resources to balance production",
+                                      "completed": false,
+                                      "children": []
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "description": "Decrease production if consumption is below production",
+                      "completed": false,
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "description": "Use storage tanks to buffer excess production",
+                  "completed": false,
+                  "children": [
+                    {
+                      "description": "Place storage tanks at the output of each chemical plant",
+                      "completed": false,
+                      "children": []
+                    },
+                    {
+                      "description": "Connect storage tanks to a circuit network to monitor fluid levels",
+                      "completed": false,
+                      "children": [
+                        {
+                          "description": "Use red or green wires to connect storage tanks",
+                          "completed": false,
+                          "children": []
+                        },
+                        {
+                          "description": "Set up a display to show fluid levels",
+                          "completed": false,
+                          "children": [
+                            {
+                              "description": "Connect a storage tank to a red or green wire network",
+                              "completed": false,
+                              "children": [
+                                {
+                                  "description": "Attach a red or green wire to the storage tank",
+                                  "completed": false,
+                                  "children": []
+                                },
+                                {
+                                  "description": "Connect the other end of the wire to a circuit network",
+                                  "completed": false,
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "description": "Use a decider combinator to output signals based on fluid levels",
+                              "completed": false,
+                              "children": [
+                                {
+                                  "description": "Connect the storage tank to a decider combinator",
+                                  "completed": false,
+                                  "children": [
+                                    {
+                                      "description": "Place a decider combinator near the storage tank",
+                                      "completed": false,
+                                      "children": []
+                                    },
+                                    {
+                                      "description": "Connect the storage tank to the input of the decider combinator using a wire",
+                                      "completed": false,
+                                      "children": []
+                                    },
+                                    {
+                                      "description": "Configure the decider combinator to output a signal when the fluid level is below a certain threshold",
+                                      "completed": false,
+                                      "children": []
+                                    }
+                                  ]
+                                },
+                                {
+                                  "description": "Configure the decider combinator to output a signal if fluid level is below a threshold",
+                                  "completed": false,
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "description": "Connect the output of the decider combinator to a display (e.g., lamps or an arithmetic combinator)",
+                              "completed": false,
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "description": "Adjust resource input to match output needs",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Increase iron plate input to 15 per second",
+                  "completed": false,
+                  "children": []
+                },
+                {
+                  "description": "Increase copper plate input to 10 per second",
+                  "completed": false,
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Research and build new technology",
+      "completed": false,
+      "children": [
+        {
+          "description": "Gather resources to build a lab",
+          "completed": false,
+          "children": [
+            {
+              "description": "Smelt iron and copper into plates",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Place furnaces for iron and copper ore",
+                  "completed": false,
+                  "children": []
+                },
+                {
+                  "description": "Use coal or electric power for furnaces",
+                  "completed": false,
+                  "children": []
+                }
+              ]
+            },
+            {
+              "description": "Craft electronic circuits",
+              "completed": false,
+              "children": []
+            },
+            {
+              "description": "Craft gears",
+              "completed": false,
+              "children": []
+            },
+            {
+              "description": "Assemble lab from plates, gears, and circuits",
+              "completed": false,
+              "children": []
+            }
+          ]
+        },
+        {
+          "description": "Produce science packs",
+          "completed": false,
+          "children": [
+            {
+              "description": "Set up production lines for science packs",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Produce red science packs",
+                  "completed": false,
+                  "children": [
+                    {
+                      "description": "Gather copper and iron resources",
+                      "completed": false,
+                      "children": [
+                        {
+                          "description": "Mine copper and iron ore",
+                          "completed": false,
+                          "children": [
+                            {
+                              "description": "Place mining drills on copper and iron ore patches",
+                              "completed": false,
+                              "children": []
+                            },
+                            {
+                              "description": "Transport ore to furnaces using conveyor belts",
+                              "completed": false,
+                              "children": []
+                            }
+                          ]
+                        },
+                        {
+                          "description": "Smelt ores into plates",
+                          "completed": false,
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "description": "Craft red science packs",
+                      "completed": false,
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "description": "Produce green science packs",
+                  "completed": false,
+                  "children": []
+                }
+              ]
+            },
+            {
+              "description": "Automate science pack production",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Set up assembly lines for science packs",
+                  "completed": false,
+                  "children": []
+                },
+                {
+                  "description": "Automate resource gathering",
+                  "completed": false,
+                  "children": [
+                    {
+                      "description": "Set up mining drills",
+                      "completed": false,
+                      "children": [
+                        {
+                          "description": "Place mining drills on iron ore patches",
+                          "completed": false,
+                          "children": []
+                        },
+                        {
+                          "description": "Connect mining drills to power",
+                          "completed": false,
+                          "children": [
+                            {
+                              "description": "Place power poles near mining drills",
+                              "completed": false,
+                              "children": []
+                            },
+                            {
+                              "description": "Ensure power poles are connected to the main power grid",
+                              "completed": false,
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "description": "Transport resources using conveyor belts",
+                      "completed": false,
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Research automation technology",
+          "completed": false,
+          "children": [
+            {
+              "description": "Gather resources for automation technology",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Gather stone for building",
+                  "completed": false,
+                  "children": []
+                }
+              ]
+            },
+            {
+              "description": "Build a lab",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Gather resources to craft a lab",
+                  "completed": false,
+                  "children": [
+                    {
+                      "description": "Mine iron plates",
+                      "completed": false,
+                      "children": [
+                        {
+                          "description": "Set up mining drills on iron ore",
+                          "completed": false,
+                          "children": [
+                            {
+                              "description": "Place mining drills on iron ore patch",
+                              "completed": false,
+                              "children": []
+                            },
+                            {
+                              "description": "Connect mining drills to power source",
+                              "completed": false,
+                              "children": [
+                                {
+                                  "description": "Ensure power grid is active",
+                                  "completed": false,
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "description": "Transport iron ore to furnaces",
+                          "completed": false,
+                          "children": []
+                        },
+                        {
+                          "description": "Smelt iron ore into iron plates",
+                          "completed": false,
+                          "children": [
+                            {
+                              "description": "Place iron ore into a furnace",
+                              "completed": false,
+                              "children": []
+                            },
+                            {
+                              "description": "Ensure the furnace has fuel",
+                              "completed": false,
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "description": "Mine copper plates",
+                      "completed": false,
+                      "children": [
+                        {
+                          "description": "Set up copper mining drills",
+                          "completed": false,
+                          "children": [
+                            {
+                              "description": "Place mining drills on copper ore patches",
+                              "completed": false,
+                              "children": []
+                            }
+                          ]
+                        },
+                        {
+                          "description": "Transport copper ore to furnaces",
+                          "completed": false,
+                          "children": []
+                        },
+                        {
+                          "description": "Smelt copper ore into copper plates",
+                          "completed": false,
+                          "children": [
+                            {
+                              "description": "Place copper ore into a furnace",
+                              "completed": false,
+                              "children": [
+                                {
+                                  "description": "Collect copper plates from the furnace",
+                                  "completed": false,
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "description": "Mine gears",
+                      "completed": false,
+                      "children": [
+                        {
+                          "description": "Craft gears from iron plates",
+                          "completed": false,
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "description": "Mine electronic circuits",
+                      "completed": false,
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "description": "Place the lab on the ground",
+                  "completed": false,
+                  "children": []
+                }
+              ]
+            },
+            {
+              "description": "Set up initial lab for research",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Place a lab on the map",
+                  "completed": false,
+                  "children": []
+                },
+                {
+                  "description": "Power the lab",
+                  "completed": false,
+                  "children": []
+                },
+                {
+                  "description": "Insert science packs into the lab",
+                  "completed": false,
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

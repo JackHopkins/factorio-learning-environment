@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from cluster.local.cluster_ips import get_local_container_ips
 from datasetgen.mcts.db_client import DBClient
 from datasetgen.mcts.mcts_factory import MCTSFactory
+from datasetgen.mcts.run_results import RunResults
 from datasetgen.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
 from llm_factory import LLMFactory
 from factorio_instance import FactorioInstance
@@ -28,7 +29,7 @@ def create_factorio_instances() -> List[FactorioInstance]:
 async def main():
     try:
         db_client = DBClient(
-            max_conversation_length=30,
+            max_conversation_length=40,
             host=os.getenv("SKILLS_DB_HOST"),
             port=os.getenv("SKILLS_DB_PORT"),
             dbname=os.getenv("SKILLS_DB_NAME"),
@@ -58,9 +59,6 @@ async def main():
 
     mcts_config.system_prompt = instances[0].get_system_prompt()
 
-
-    llm_factory = LLMFactory(mcts_config.model)
-
     # Initialize factory singleton
     factory.initialize(instances, db_client, mcts_config, sampler_config) #llm_factory, config)
 
@@ -69,7 +67,12 @@ async def main():
 
     # Run search
     print("Starting MCTS search...")
-    await mcts.search(n_iterations=1000, skip_failures=False)
+    await mcts.search(n_iterations=2000, skip_failures=False)
+
+    run = RunResults(version=mcts_config.version, db_client=db_client)
+    run.save_plots()
+
+
 
 
 if __name__ == '__main__':

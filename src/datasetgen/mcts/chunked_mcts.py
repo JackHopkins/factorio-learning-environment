@@ -18,14 +18,15 @@ class ChunkedMCTS(MCTS):
         super().__init__(*args, **kwargs)
         self.logit_bias = logit_bias
 
-    def _split_into_chunks(self, program_code: str) -> List[Program]:
+    def _split_into_chunks(self, program: Program) -> List[Program]:
         """Split the program code into chunks based on docstrings."""
 
-        program_code = program_code.replace("from factorio_instance import *", "").strip()
+        program_code = program.code.replace("from factorio_instance import *", "").strip()
         lines = program_code.splitlines()
         chunks = []
         module = ast.parse(program_code)
-
+        meta = program.meta
+        meta["original_program_id"] = program.id
         # Find all docstrings and their positions
         docstring_positions = []
         for node in module.body:
@@ -42,7 +43,8 @@ class ChunkedMCTS(MCTS):
             if any(line.strip() for line in preamble):  # If there's any non-empty content
                 chunks.append(Program(
                     code='\n'.join(preamble),
-                    conversation=Conversation(messages=[])
+                    conversation=Conversation(messages=[]),
+                    meta=meta
                 ))
 
         # Process each chunk
@@ -64,7 +66,8 @@ class ChunkedMCTS(MCTS):
             if chunk_lines:
                 chunks.append(Program(
                     code='\n'.join(chunk_lines),
-                    conversation=Conversation(messages=[])
+                    conversation=Conversation(messages=[]),
+                    meta=meta
                 ))
 
         return chunks
@@ -212,7 +215,8 @@ class ChunkedMCTS(MCTS):
                         parent_id=last_chunk_id,
                         token_usage=program.token_usage // len(evaluated_chunks),
                         completion_token_usage=program.completion_token_usage // len(evaluated_chunks),
-                        prompt_token_usage=program.prompt_token_usage // len(evaluated_chunks)
+                        prompt_token_usage=program.prompt_token_usage // len(evaluated_chunks),
+                        meta = chunk.meta
                     )
 
                     last_conversation_stage.add_result(
@@ -221,10 +225,12 @@ class ChunkedMCTS(MCTS):
                         score=chunk.value,
                         advantage=chunk.value - holdout_value
                     )
-
-                    chunk_program.id = hash(
+                    try:
+                        chunk_program.id = hash(
                         (chunk.code, json.dumps(chunk_program.conversation.model_dump()['messages']))
-                    )
+                        )
+                    except Exception as e:
+                        chunk_program.id = hash((chunk.code, json.dumps(chunk_program.conversation.dict()['messages'])))
                     chunk_program.conversation = last_conversation_stage
 
                     if skip_failures and "error" in chunk.response.lower():
@@ -263,7 +269,7 @@ class ChunkedMCTS(MCTS):
 
         for i, program in enumerate(programs):
             try:
-                chunks = self._split_into_chunks(program.code)
+                chunks = self._split_into_chunks(program)
                 if not chunks:
                     continue
 

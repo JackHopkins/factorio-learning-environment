@@ -166,11 +166,23 @@ class ChunkedMCTS(MCTS):
     async def run_iteration(self, samples_per_iteration, skip_failures):
         parent = await self.sampler.sample_parent(version=self.version)
         start_state = parent.state if parent else self.initial_state
-        conversation = parent.conversation if parent else Conversation(messages=[
-            Message(role="system", content=self.system_prompt),
-            Message(role="user",
-                    content=f"Inventory: {json.dumps(start_state.inventory.__dict__)}\n\n{PLANNING_ADDITION_PROMPT}")
-        ])
+        if not parent:
+            self.evaluator.instances[0].reset(start_state)
+            entities = self.evaluator.instances[0].get_entities()
+            conversation = Conversation(messages=[
+                Message(role="system", content=self.system_prompt),
+                Message(role="user", content=PLANNING_ADDITION_PROMPT),
+                Message(role="assistant", content="print(f'Inventory: {inspect_inventory()}')\n"
+                                                  "print(f'Entities: {get_entities()}')\n"),
+                Message(role="user", content=f"1: ('Inventory: {start_state.inventory.__dict__}')\n"
+                                             f"2: ('Entities: {entities}')"),
+            ])
+        else:
+            conversation = parent.conversation
+
+        if len(conversation.messages) > (self.db.max_conversation_length*2)+1:
+            difference = (len(conversation.messages) - ((self.db.max_conversation_length*2)+1)) // 2
+            conversation.messages = conversation.messages[difference:]
 
         self.evaluator.set_sampling_status()
         raw_programs = await self._generate_programs_batch(conversation, samples_per_iteration)

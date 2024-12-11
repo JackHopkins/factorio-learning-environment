@@ -69,7 +69,8 @@ class DBClient:
                     cur.execute("""
                         INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, 
                                            completion_token_usage, prompt_token_usage, token_usage, response, 
-                                           holdout_value, raw_reward, version, version_description, model, meta, achievements_json)
+                                           holdout_value, raw_reward, version, version_description, model, meta, 
+                                           achievements_json)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id, created_at
                     """, (program.code, program.value, 0, program.parent_id,
@@ -172,13 +173,13 @@ class DBClient:
                             FROM programs
                             WHERE version = %s 
                             AND value IS NOT NULL
-                            AND jsonb_array_length(conversation_json->'messages') < %s
+                            -- AND jsonb_array_length(conversation_json->'messages') < %s
                             ORDER BY created_at DESC
                             LIMIT 300
                         )
                         SELECT id, value 
                         FROM recent
-                        """, (version, max_assistant_length))
+                        """, (version)) #, max_assistant_length))
 
                     results = cur.fetchall()
                     if not results:

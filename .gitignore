@@ -38,3 +38,7 @@ client/__pycache__/
 /data/place_next_to_connect/
 /data/refactor/
 /data/refactor2/
+/data/plans/factorio_guides/processed/
+/data/plans/factorio_guides/raw/
+/data/plans/factorio_guides/visited/
+/src/datasetgen/mcts/plots/

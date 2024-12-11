@@ -1,3 +1,4 @@
+from distutils.command.config import config
 from typing import Optional, Dict, Union, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
@@ -37,6 +38,8 @@ class BaseConfig:
     skip_failures: bool = False
     model: Optional[str] = None
     sampler_type: Optional[SamplerType] = None
+    presence_penalty: float = 0
+    frequency_penalty: float = 0
 
 
 @dataclass
@@ -53,9 +56,10 @@ class PlanningConfig(BaseConfig):
     n_parallel: int = 8
 
 
+
 @dataclass
 class ChunkedConfig(BaseConfig):
-    max_conversation_length: int = 30
+    max_conversation_length: int = 50
     logit_bias: Dict[str, float] = field(default_factory=lambda: {
         "15714": -100,  # 'LINE'
         "145968": -100,  # ' CUT'
@@ -137,7 +141,9 @@ class MCTSFactory:
             instances=self.instances,
             db_client=self.db_client,
             llm_factory=self.llm_factory,
-            config=mcts_config
+            config=mcts_config,
+            version=config.version,
+            version_description=config.version_description
         )
 
     def _create_chunked_mcts(self, config: ChunkedConfig):
@@ -164,7 +170,9 @@ class MCTSFactory:
             instances=self.instances,
             db_client=self.db_client,
             llm_factory=self.llm_factory,
-            config=mcts_config
+            config=mcts_config,
+            version=config.version,
+            version_description=config.version_description
         )
 
     def _create_planning_mcts(self, config: PlanningConfig):
@@ -275,7 +283,7 @@ class MCTSFactory:
             instruction="Choose MCTS algorithm variant. Planning is recommended for complex tasks."
         ).ask()
 
-        model = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-masked:AYIViDdb"
+        model = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-full:AbYn5Pj6" #"ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-masked:AYIViDdb"
         if mcts_type != 'planning':
             model = questionary.text(
                 "Model name:",
@@ -294,6 +302,14 @@ class MCTSFactory:
             'n_parallel': int(questionary.text(
                 "Number of parallel instances:",
                 default="4"
+            ).ask()),
+            'presence_penalty': float(questionary.text(
+                'Fixed presence penalty applied across previously sampled logits. -2 to 2.',
+                default='0'
+            ).ask()),
+            'frequency_penalty': float(questionary.text(
+                'Dynamic frequency penalty applied across previously sampled logits. -2 to 2.',
+                default='0'
             ).ask()),
             'system_prompt': ''
         }
@@ -358,11 +374,15 @@ class MCTSFactory:
                 ).ask())
             )
         elif mcts_config.sampler_type == SamplerType.WEIGHTED_REWARD:
+            compression_strength = float(questionary.text(
+                "Compression strength:",
+                instruction="Between 0-1. Higher values mean more exploration. Lower means more exploitation. -1 means adaptively cycle",
+                default="1").ask())
+            if compression_strength < 0:
+                compression_strength = None
+
             sampler_config = SamplerConfig(
-                compression_strength=float(questionary.text(
-                    "Compression strength:",
-                    instruction="Between 0-1. Higher values mean more exploration. Lower means more exploitation. -1 means adaptively cycle",
-                    default="1").ask()),
+                compression_strength=compression_strength,
                 max_conversation_length=int(questionary.text(
                     "Maximum conversation length:",
                     instruction="The maximum number of steps in the dialogue",

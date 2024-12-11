@@ -51,7 +51,8 @@ class GenerationParameters(BaseModel):
     max_tokens: int = 2048
     logit_bias: Optional[Dict[str, float]] = None
     stop_sequences: Optional[List] = None
-    presency_penalty: Optional[float] = 0
+    presence_penalty: Optional[float] = 0
+    frequency_penalty: Optional[float] = 0
     
 
 class Conversation(BaseModel):

@@ -109,7 +109,8 @@ class MCTS:
                 logit_bias=generation_params.logit_bias,
                 stop_sequences=generation_params.stop_sequences,
                 model = generation_params.model,
-                presency_penalty=generation_params.presency_penalty
+                presence_penalty=generation_params.presence_penalty,
+                frequency_penalty=generation_params.frequency_penalty
             )
 
             programs = []
@@ -208,7 +209,7 @@ class MCTS:
             self.evaluator.set_sampling_status()
             generation_parameters = GenerationParameters(n = samples_per_iteration,
                                                          model = self.llm.model,
-                                                         presency_penalty=0.7)
+                                                         presence_penalty=0.7)
             # Generate multiple programs from same parent
             programs = await self._generate_programs_batch(conversation, generation_parameters)
             if not programs:

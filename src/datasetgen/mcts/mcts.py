@@ -55,7 +55,7 @@ class MCTS:
         try:
             content = choice.message.content
             code = self._verify_response_is_python(content)
-            return code, None
+            return code, content
         except Exception as e:
             try:
                 content = choice.message.content
@@ -69,7 +69,7 @@ class MCTS:
                 content = "\n".join(choice.message.content.split("\n")[1:])
                 try:
                     code = self._verify_response_is_python(content)
-                    return code, None
+                    return code, content
                 except Exception as e2:
                     try:
                         content_split = content.split('from factorio_instance import *')

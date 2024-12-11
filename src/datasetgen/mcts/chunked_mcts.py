@@ -215,7 +215,8 @@ class ChunkedMCTS(MCTS):
                         parent_id=last_chunk_id,
                         token_usage=program.token_usage // len(evaluated_chunks),
                         completion_token_usage=program.completion_token_usage // len(evaluated_chunks),
-                        prompt_token_usage=program.prompt_token_usage // len(evaluated_chunks)
+                        prompt_token_usage=program.prompt_token_usage // len(evaluated_chunks),
+                        meta = chunk.meta
                     )
 
                     last_conversation_stage.add_result(
@@ -224,10 +225,12 @@ class ChunkedMCTS(MCTS):
                         score=chunk.value,
                         advantage=chunk.value - holdout_value
                     )
-
-                    chunk_program.id = hash(
+                    try:
+                        chunk_program.id = hash(
                         (chunk.code, json.dumps(chunk_program.conversation.model_dump()['messages']))
-                    )
+                        )
+                    except Exception as e:
+                        chunk_program.id = hash((chunk.code, json.dumps(chunk_program.conversation.dict()['messages'])))
                     chunk_program.conversation = last_conversation_stage
 
                     if skip_failures and "error" in chunk.response.lower():

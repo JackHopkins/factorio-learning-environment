@@ -71,7 +71,7 @@ class GameState:
         """Convert state to JSON string"""
         return json.dumps({
             'entities': self.entities,
-            'inventory': self.inventory.__dict__,
+            'inventory': self.inventory.__dict__ if hasattr(self.inventory, '__dict__') else self.inventory,
             'timestamp': self.timestamp,
             'namespace': self.namespace.hex() if self.namespace else ''
         })

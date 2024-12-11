@@ -18,7 +18,7 @@ class ChunkedMCTS(MCTS):
         super().__init__(*args, **kwargs)
         self.logit_bias = logit_bias
 
-    def _split_into_chunks(self, program: str) -> List[Program]:
+    def _split_into_chunks(self, program: Program) -> List[Program]:
         """Split the program code into chunks based on docstrings."""
 
         program_code = program.code.replace("from factorio_instance import *", "").strip()

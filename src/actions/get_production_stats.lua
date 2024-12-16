@@ -30,6 +30,19 @@ global.actions.production_stats = function(player)
         output = consumption_diff,
         input = production_diff,
         harvested = harvested_items,
-        crafted = crafted_items
+        crafted = crafted_items,
+        price_list = global.actions.generate_price_list()
     }
+end
+
+global.action.reset_production_stats = function(player)
+    local force = player.force
+    -- Reset item statistics
+    force.item_production_statistics.clear()
+
+    -- Reset fluid statistics
+    force.fluid_production_statistics.clear()
+
+    global.harvested_items = {}
+    global.crafted_items = {input = {}, output = {}}
 end

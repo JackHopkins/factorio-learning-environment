@@ -1,8 +1,4 @@
 import unittest
-import sys
-sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\src")
-sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser")
-
 from factorio_instance import FactorioInstance
 from utils import eval_program_with_achievements
 

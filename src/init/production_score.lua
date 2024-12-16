@@ -213,7 +213,7 @@ end
 
 production_score = {}
 
-production_score.generate_price_list = function(param)
+global.actions.generate_price_list = function(param)
 
   local param = param or {}
   local price_list = param.seed_prices or default_seed_prices()
@@ -310,7 +310,7 @@ production_score.generate_price_list = function(param)
 end
 
 production_score.get_production_scores = function(price_list)
-  local price_list = price_list or production_score.generate_price_list()
+  local price_list = price_list or global.actions.generate_price_list()
   local scores = {}
   for k, force in pairs (game.forces) do
     local score = 0

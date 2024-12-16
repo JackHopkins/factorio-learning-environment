@@ -1,10 +1,12 @@
 import unittest
+import sys
+sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\src")
+sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser")
 
 from factorio_instance import FactorioInstance
 from utils import eval_program_with_achievements
 
-class TestAchievements(unittest.TestCase):
-    def test_achievements(self):
+def test_achievements():
         instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
                                 tcp_port=27015,
@@ -27,4 +29,5 @@ class TestAchievements(unittest.TestCase):
         assert achievements == ground_truth_achievement
 
 if __name__ == '__main__':
-    unittest.main()
+    #unittest.main()
+    test_achievements()    

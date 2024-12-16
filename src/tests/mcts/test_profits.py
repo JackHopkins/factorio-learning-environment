@@ -1,7 +1,3 @@
-import sys
-sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\src")
-sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser")
-
 import unittest
 import math
 from factorio_instance import FactorioInstance

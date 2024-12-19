@@ -32,20 +32,18 @@ global.actions.craft_item = function(player_index, entity, count)
 
     local function update_production_stats(force, recipe, crafts_count)
         local stats = force.item_production_statistics
+        local craft_stats = {crafted_count = crafts_count, inputs = {}, outputs = {}}
         for _, ingredient in pairs(recipe.ingredients) do
+            craft_stats.inputs[ingredient.name] = ingredient.amount * crafts_count
             stats.on_flow(ingredient.name, -ingredient.amount * crafts_count)
         end
         for _, product in pairs(recipe.products) do
             if product.type == "item" then
                 stats.on_flow(product.name, product.amount * crafts_count)
-
-                if global.crafted_items[product.name] then
-                    global.crafted_items[product.name] = global.crafted_items[product.name] + product.amount * crafts_count
-                else
-                    global.crafted_items[product.name] = product.amount * crafts_count
-                end
+                craft_stats.outputs[product.name] = product.amount * crafts_count
             end
         end
+        table.insert(global.crafted_items, craft_stats)
     end
 
     -- Single recursive crafting function that handles both fast and slow modes

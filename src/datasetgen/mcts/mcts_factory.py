@@ -13,6 +13,7 @@ class MCTSType(Enum):
     CHUNKED = "chunked"
     PLANNING = "planning"
     NORMAL = "mcts"
+    OBJECTIVE = "objective"
 
 class SamplerType(Enum):
     KLD = "kld"
@@ -56,17 +57,22 @@ class PlanningConfig(BaseConfig):
     n_parallel: int = 8
 
 
-
 @dataclass
 class ChunkedConfig(BaseConfig):
     max_conversation_length: int = 50
     logit_bias: Dict[str, float] = field(default_factory=lambda: {
         "15714": -100,  # 'LINE'
+        '193595': -100, # 'LINES'
         "145968": -100,  # ' CUT'
         "27": -100,  # '<'
         "20225": -100,  # '/>'
         "7032": -100  # 'while'
     })
+
+@dataclass
+class ObjectiveConfig(ChunkedConfig):
+    objective_model: str = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:plans-tree:AcZ8gHSo"
+
 
 
 def _get_sampler(sampler_type: SamplerType,
@@ -108,7 +114,7 @@ class MCTSFactory:
         self.llm_factory = LLMFactory(model=config.model)
         self.sampler = _get_sampler(config.sampler_type, db_client, **sampler_config.__dict__)
 
-    def create_mcts(self, config: Union[BaseConfig, PlanningConfig, ChunkedConfig]):
+    def create_mcts(self, config: Union[BaseConfig, PlanningConfig, ChunkedConfig, ObjectiveConfig]):
         if not all([self.instances, self.db_client, self.llm_factory, self.sampler]):
             raise ValueError("Factory not initialized. Call initialize() first.")
 
@@ -116,6 +122,8 @@ class MCTSFactory:
             return self._create_chunked_mcts(config)
         elif config.mcts_type == MCTSType.PLANNING:
             return self._create_planning_mcts(config)
+        elif config.mcts_type == MCTSType.OBJECTIVE:
+            return self._create_objective_mcts(config)
         elif config.mcts_type == MCTSType.NORMAL:
             return self._create_mcts(config)
 
@@ -162,7 +170,41 @@ class MCTSFactory:
                 'logit_bias': config.logit_bias,
                 'version': config.version,
                 'version_description': config.version_description,
-                'formatter': StructurePreservingFormatter(planning=True)
+                'formatter': StructurePreservingFormatter(planning=True),
+                'presence_penalty': config.presence_penalty,
+                'frequency_penalty': config.frequency_penalty,
+            }
+        )
+
+        return ParallelMCTS(
+            instances=self.instances,
+            db_client=self.db_client,
+            llm_factory=self.llm_factory,
+            config=mcts_config,
+            version=config.version,
+            version_description=config.version_description
+        )
+
+    def _create_objective_mcts(self, config: ObjectiveConfig):
+        from datasetgen.mcts.objective_mcts import ObjectiveMCTS
+        from datasetgen.mcts.parallel_mcts import ParallelMCTS
+        from datasetgen.mcts.parallel_mcts_config import ParallelMCTSConfig
+        from datasetgen.mcts.conversation_formatter import StructurePreservingFormatter
+
+        mcts_config = ParallelMCTSConfig(
+            n_parallel=config.n_parallel,
+            system_prompt=config.system_prompt,
+            initial_state=GameState.from_instance(self.instances[0]),
+            mcts_class=ObjectiveMCTS,
+            sampler=self.sampler,
+            mcts_kwargs={
+                'objective_model': config.objective_model,
+                'logit_bias': config.logit_bias,
+                'version': config.version,
+                'version_description': config.version_description,
+                'formatter': StructurePreservingFormatter(planning=True),
+                'presence_penalty': config.presence_penalty,
+                'frequency_penalty': config.frequency_penalty,
             }
         )
 
@@ -214,7 +256,7 @@ class MCTSFactory:
     @staticmethod
     def get_config_from_cli(default_version=42) -> Tuple[Union[BaseConfig, PlanningConfig, ChunkedConfig], SamplerConfig]:
         parser = argparse.ArgumentParser()
-        parser.add_argument('--type', choices=['chunked', 'planning', 'normal'], help='MCTS type')
+        parser.add_argument('--type', choices=['chunked', 'planning', 'normal', 'objective'], help='MCTS type')
         parser.add_argument('--no-interactive', action='store_true', help='Skip interactive prompts')
         args, _ = parser.parse_known_args()
 
@@ -257,6 +299,16 @@ class MCTSFactory:
                 n_parallel=args.n_parallel,
                 system_prompt=''
             )
+        elif mcts_type == MCTSType.OBJECTIVE:
+            mcts_config = ObjectiveConfig(
+                objective_model=args.objective_model,
+                mcts_type=mcts_type,
+                model=args.model,
+                version=args.version,
+                version_description=args.version_description,
+                n_parallel=args.n_parallel,
+                system_prompt=''
+            )
         else:
             mcts_config = BaseConfig(
                 mcts_type=mcts_type,
@@ -279,11 +331,12 @@ class MCTSFactory:
             Tuple[Union[BaseConfig, PlanningConfig, ChunkedConfig], SamplerConfig]:
         mcts_type = default_type or questionary.select(
             "Select MCTS type:",
-            choices=['normal', 'chunked', 'planning'],
+            choices=['normal', 'chunked', 'planning', 'objective'],
             instruction="Choose MCTS algorithm variant. Planning is recommended for complex tasks."
         ).ask()
 
-        model = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-full:AbYn5Pj6" #"ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-masked:AYIViDdb"
+        #model = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-full:AbYn5Pj6" #"ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-masked:AYIViDdb"
+        model = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-masked:AYIViDdb"
         if mcts_type != 'planning':
             model = questionary.text(
                 "Model name:",
@@ -347,6 +400,12 @@ class MCTSFactory:
                 step_judge_prompt_path=Path("../../prompts/bottoms_up_prompts/finetuning_prompts/step_judge"),
                 example_plan_prompt_path=Path("../../prompts/bottoms_up_prompts/finetuning_prompts/executor_plan")
             )
+        elif mcts_type == 'objective':
+            mcts_config = ObjectiveConfig(**base_config, objective_model=questionary.text(
+                    "Objective model:",
+                    default="ft:gpt-4o-mini-2024-07-18:paperplane-ai:plans-tree:AcZ8gHSo",
+                    instruction="The model that samples objectives."
+                ).ask())
         elif mcts_type == 'chunked':
             mcts_config = ChunkedConfig(**base_config)
         else:

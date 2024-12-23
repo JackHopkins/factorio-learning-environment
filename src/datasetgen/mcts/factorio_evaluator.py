@@ -118,7 +118,10 @@ class FactorioEvaluator:
         try:
             # Convert instance_id to TCP port
             tcp_port = self.instance_to_port[instance_id]
+        except:
+            tcp_port = instance_id
 
+        try:
             # Get initial state information
             self.logger.update_instance(tcp_port, status="starting value")
             start_entities = instance.get_entities()

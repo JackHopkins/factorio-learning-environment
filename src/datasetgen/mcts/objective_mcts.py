@@ -1,11 +1,13 @@
 import asyncio
 import json
+import re
 from typing import Optional, List
 
 import psycopg2
 import tenacity
 from tenacity import wait_exponential, retry, retry_if_exception_type
 
+from datasetgen.mcts.mcts import MCTS
 from datasetgen.mcts.model.conversation import Conversation, Message, GenerationParameters
 from datasetgen.mcts.conversation_formatter import ConversationFormatter, DefaultFormatter, PLANNING_ADDITION_PROMPT
 from datasetgen.mcts.db_client import DBClient
@@ -13,9 +15,11 @@ from datasetgen.mcts.factorio_evaluator import FactorioEvaluator
 from datasetgen.mcts.model.game_state import GameState
 from datasetgen.mcts.model.program import Program
 from datasetgen.mcts.samplers.db_sampler import DBSampler
+from datasetgen.mcts.samplers.objective_sampler import ObjectiveTreeSampler
+from llm_factory import LLMFactory
 
 
-class MCTS:
+class ObjectiveMCTS(MCTS):
     def __init__(self,
                  llm_factory: 'LLMFactory',
                  db_client: DBClient,
@@ -26,86 +30,76 @@ class MCTS:
                  formatter: ConversationFormatter = DefaultFormatter(),
                  version=1,
                  version_description="",
+                 logit_bias=[],
                  presence_penalty=0,
-                 frequency_penalty=0
+                 frequency_penalty=0,
+                 objective_model: str = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:plans-tree:AcZ8gHSo"
                  ):
+        self.logit_bias = logit_bias
+        self.objective_tree_sampler = ObjectiveTreeSampler(LLMFactory(model=objective_model))
+        super().__init__(llm_factory,
+                         db_client,
+                         evaluator,
+                         sampler,
+                         system_prompt,
+                         initial_state,
+                         formatter,
+                         version,
+                         version_description,
+                         presence_penalty,
+                         frequency_penalty)
 
-        self.llm = llm_factory
-        self.db = db_client
-        self.evaluator = evaluator
-        self.system_prompt = system_prompt
-        self.initial_state = initial_state
-        self.sampler = sampler
-        self.version = version
-        self.version_description=version_description
-        self.formatter = formatter
-        self.retry_count = 0
-        self.max_retries = 3
-        self.presence_penalty = presence_penalty
-        self.frequency_penalty = frequency_penalty
+    async def _get_objectives(self, conversation: Conversation) -> List[str]:
+        if len(conversation.messages) == 0:
+            previous_objectives = []
+        elif not 'objectives' in conversation.messages[-1].metadata:
+            previous_objectives = []
+        elif not conversation.messages[-1].metadata['objectives']:
+            previous_objectives = []
+        else:
+            previous_objectives = conversation.messages[-1].metadata['objectives']
 
+        objective = await self.objective_tree_sampler.sample_tree(previous_objectives, number=1)
 
-    def _verify_response_is_python(self, content):
-        code = content
-        # Parse into an AST to verify that this is a program
-        try:
-            ast = compile(code, filename="<ast>", mode="exec")
-        except SyntaxError:
-            # Take the last line off and try again
-            code = code.rsplit('\n', 1)[0] + '\n'
-            ast = compile(code, filename="<ast>", mode="exec")
+        return previous_objectives + objective
 
-        return code
-
-    def _extract_code_from_choice(self, choice) -> Optional[str]:
-        """Extract code from a single completion choice"""
-        code = ""
-        try:
-            content = choice.message.content
-            code = self._verify_response_is_python(content)
-            return code, None
-        except Exception as e:
-            try:
-                content = choice.message.content
-                content_split = content.split('```python')
-                code = content_split[1].split('```')[0].strip()
-                text_response = content_split[0].strip()
-                code = self._verify_response_is_python(code)
-                return code, text_response
-            except Exception as e1:
-                # Sometimes it samples a leading line, before writing unblocked python code.
-                content = "\n".join(choice.message.content.split("\n")[1:])
-                try:
-                    code = self._verify_response_is_python(content)
-                    return code, None
-                except Exception as e2:
-                    try:
-                        content_split = content.split('from factorio_instance import *')
-                        code = content_split[1].strip()
-                        text_response = content_split[0].strip()
-                        code = self._verify_response_is_python(code)
-                        return code, text_response
-                    except Exception as e2:
-                        #print(f"Failed to extract code from choice after removing leading line and factorio_instance import: {str(e2)} \n\n`{content}`")
-                        chain_of_thoughts = '"""\n'+content.strip().strip("\"")+'\n"""'
-                        return chain_of_thoughts, content.strip()
-                    #print(f"Failed to extract code from choice after removing leading line: {str(e2)}")
-                print(f"Failed to extract code from choice: {str(e1)}")
 
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
-    async def _generate_programs_batch(self, conversation: Conversation, 
+    async def _generate_programs_batch(self, conversation: Conversation,
                                        generation_params: GenerationParameters,
                                        meta = {}
                                        ) -> List[Program]:
         """Generate multiple programs in a single API call using 'n' parameter"""
+
+        objectives = []
+        objective = ""
+        if 'objectives' not in meta:
+            objectives = await self._get_objectives(conversation)
+            meta['objectives'] = objectives
+            objective = objectives[-1]
+            message = Message(
+                role="assistant",
+                content=f'"""\nObjective: {objective}\n"""\nprint("Inventory: ", inspect_inventory())\nprint("Entities: ", get_entities())\n',
+            )
+            conversation.messages.append(message)
+            response = Message(
+                role="user",
+                content="0: ('Inventory: ', {})\n1: ('Entities: ': {})"
+            )
+            conversation.messages.append(response)
+        else:
+            last_objective = meta['objectives'][-1]
+            pass
+
         formatted_messages = self.formatter.to_llm_messages(
             self.formatter.format_conversation(conversation)
         )
+
         if "claude" in generation_params.model:
             assert generation_params.n == 1, "Number of samples must be 1 for Claude"
 
         try:
-            # Single API call to generate n_samples completions
+            # Single API call to ge nerate n_samples completions
             response = await self.llm.acall(
                 messages=formatted_messages,
                 n_samples=generation_params.n,
@@ -149,6 +143,10 @@ class MCTS:
                 # Handle OpenAI response format with multiple choices
                 for choice in response.choices:
                     code, text_response  = self._extract_code_from_choice(choice)
+
+                    if not code and objective:
+                        code = '"""\n' + objective + '\n"""'
+
                     if code:
                         programs.append(Program(
                             id=hash((code, json.dumps(messages))),
@@ -164,7 +162,8 @@ class MCTS:
                             version=self.version,
                             version_description=self.version_description,
                             meta = {"text_response": text_response,
-                                    "model": generation_params.model}
+                                    "model": generation_params.model,
+                                    "objectives": objectives}
                         ))
                         if meta:
                             programs[-1].meta.update(meta)
@@ -214,6 +213,8 @@ class MCTS:
             self.evaluator.set_sampling_status()
             generation_parameters = GenerationParameters(n = samples_per_iteration,
                                                          model = self.llm.model,
+                                                         stop_sequences=['Objective:'],
+                                                         logit_bias=self.logit_bias,
                                                          presence_penalty=0.7)
             # Generate multiple programs from same parent
             programs = await self._generate_programs_batch(conversation, generation_parameters)

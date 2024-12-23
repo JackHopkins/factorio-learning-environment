@@ -194,7 +194,7 @@ class FactorioInstance:
             self.logging_results[self.line_value] = []
         self.logging_results[self.line_value].append(repr(arg))
 
-        print(f"{self.address} log: {repr(arg)}")
+        print(f"{self.tcp_port}: {repr(arg)}")
         return arg
 
     def get_system_prompt(self) -> str:

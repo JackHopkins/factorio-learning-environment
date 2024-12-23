@@ -61,6 +61,8 @@ class DynamicRewardWeightedSampler(DBSampler):
                             # Calculate adaptive compression using sine wave
                             # sin goes from -1 to 1, so we transform to 0 to 1
                             compression_strength = (math.sin(2 * math.pi * step_count / self.adaptive_period) + 1) / 2
+                        else:
+                            compression_strength = self.compression_strength
 
                         cur.execute("""
                                 WITH recent AS (
@@ -97,8 +99,10 @@ class DynamicRewardWeightedSampler(DBSampler):
                             return (compressed + 1.0) / 2.0 + 1e-6
 
                         # Log current compression state
-                        print(f"Using compression strength: {compression_strength:.3f} "
-                              f"({'adaptive' if compression_strength is None else 'fixed'})")
+                        if compression_strength:
+                            print(f"Using compression strength: {compression_strength:.3f}")
+                        else:
+                            print(f"Using adaptive compression strength")
 
                         # Calculate transformed weights
                         weights = [

@@ -113,9 +113,11 @@ class LLMFactory:
                 temperature=kwargs.get('temperature', 0.3),
                 messages=kwargs.get('messages', None),
                 logit_bias=kwargs.get('logit_bias', None),
-                n=kwargs.get('n', None),
+                n=kwargs.get('n_samples', None),
                 stop=kwargs.get('stop_sequences', None),
-                stream=False
+                stream=False,
+                presence_penalty=kwargs.get('presence_penalty', None),
+                frequency_penalty=kwargs.get('frequency_penalty', None),
             )
 
     def call(self, *args, **kwargs):

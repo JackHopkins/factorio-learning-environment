@@ -3,7 +3,7 @@ import ast
 from dataclasses import dataclass
 from typing import List, Optional
 
-from datasetgen.mcts.chunked_mcts import ChunkedMCTS
+from search.mcts.chunked_mcts import ChunkedMCTS
 
 
 @dataclass

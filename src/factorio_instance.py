@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 from slpp import slpp as lua
 from typing_extensions import deprecated
 
-from datasetgen.mcts.model.game_state import GameState
+from search.mcts.model.game_state import GameState
 from factorio_entities import *
 from factorio_lua_script_manager import FactorioLuaScriptManager
 from factorio_transaction import FactorioTransaction
@@ -533,6 +533,7 @@ class FactorioInstance:
         self.add_command('/c global.alerts = {}', raw=True)
         self.add_command('/c game.reset_game_state()', raw=True)
         self.add_command('/c global.actions.reset_production_stats()', raw=True)
+        #self.add_command('/c script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
         self.add_command('clear_inventory', PLAYER)
         self.add_command('reset_position', PLAYER, 0, 0)
 
@@ -592,6 +593,7 @@ class FactorioInstance:
         self.begin_transaction()
         self.add_command('/c global.alerts = {}', raw=True)
         self.add_command('/c global.fast = {}'.format('true' if fast else 'false'), raw=True)
+        #self.add_command('/c script.on_nth_tick(nil)', raw=True)
         self.add_command('/c game.map_settings.enemy_expansion.enabled = false', raw=True)
         self.add_command('/c game.map_settings.enemy_evolution.enabled = false', raw=True)
         self.add_command('/c game.forces.enemy.kill_all_units()', raw=True)

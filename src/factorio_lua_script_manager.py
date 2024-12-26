@@ -56,7 +56,7 @@ class FactorioLuaScriptManager:
         correct, error = self.check_lua_syntax(script)
         if not correct:
             raise Exception(f"Syntax error in: {name}: {error}")
-        print(f"Loading action {name} into game (port={self.rcon_client.port})")
+        print(f"{self.rcon_client.port}: Loading action {name} into game")
 
         result = self.rcon_client.send_command(f'/c ' + script)
 

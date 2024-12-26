@@ -1,6 +1,6 @@
 import unittest
 
-from datasetgen.mcts.model.game_state import GameState
+from search.mcts.model.game_state import GameState
 from factorio_instance import FactorioInstance
 
 

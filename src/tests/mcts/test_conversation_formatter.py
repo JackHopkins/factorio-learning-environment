@@ -1,7 +1,7 @@
 import unittest
-from datasetgen.mcts.conversation import Message, Conversation
+from search.mcts.model.conversation import Message, Conversation
 
-from datasetgen.mcts.conversation_formatter import StructurePreservingFormatter, CodeProcessor
+from search.mcts.conversation_formatter import StructurePreservingFormatter, CodeProcessor
 
 
 class TestStructurePreservingFormatter(unittest.TestCase):

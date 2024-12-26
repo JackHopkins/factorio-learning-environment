@@ -1,42 +1,36 @@
 import ast
 import atexit
 import builtins
-import concurrent
-import contextlib
 import enum
 import functools
 import importlib
 import inspect
-import io
 import json
 import os
 import pickle
-import signal
 import sys
 import threading
 import traceback
 import types
-from enum import Enum
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from pathlib import Path
 from timeit import default_timer as timer
-from typing import List, Iterator
 
 from dotenv import load_dotenv
 from slpp import slpp as lua
 from typing_extensions import deprecated
 
-from datasetgen.mcts.game_state import GameState
+from search.mcts.model.game_state import GameState
+from factorio_entities import *
 from factorio_lua_script_manager import FactorioLuaScriptManager
 from factorio_transaction import FactorioTransaction
-from models.blueprint_entity import BlueprintEntity
-from src.factorio_rcon_utils import _load_initialisation_scripts, _lua2python, _get_action_dir
-from src.rcon.factorio_rcon import RCONClient
 from factorio_types import Prototype, Resource
 from models.observation_state import ObservationState
+from src.factorio_rcon_utils import _lua2python
+from src.rcon.factorio_rcon import RCONClient
 from utilities.controller_loader import load_schema, load_definitions, parse_file_for_structure
 from vocabulary import Vocabulary
 
-from factorio_entities import *
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000
 
@@ -156,10 +150,9 @@ class FactorioInstance:
                     for key, value in env.items():
                         if not hasattr(self, key):
                             setattr(self, key, value)
+
             except Exception as e:
                 pass
-
-
 
         try:
             self.observe_all()
@@ -188,7 +181,7 @@ class FactorioInstance:
         self.execute_transaction()
 
     def speed(self, speed):
-        self.rcon_client.send_command(f'/c game.speed = {speed}')
+        response = self.rcon_client.send_command(f'/c game.speed = {speed}')
         self.game_state._speed = speed
 
     def log(self, *arg):
@@ -201,7 +194,7 @@ class FactorioInstance:
             self.logging_results[self.line_value] = []
         self.logging_results[self.line_value].append(repr(arg))
 
-        print(f"{self.address} log: {repr(arg)}")
+        print(f"{self.tcp_port}: {repr(arg)}")
         return arg
 
     def get_system_prompt(self) -> str:
@@ -477,7 +470,7 @@ class FactorioInstance:
     
     def eval_with_error(self, expr, timeout=60):
         """ Evaluate an expression with a timeout, and return the result without error handling"""
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        with ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(self._eval_with_timeout, expr)
             score, goal, result = future.result(timeout)
             return score, goal, result
@@ -486,7 +479,7 @@ class FactorioInstance:
         "Evaluate several lines of input, returning the result of the last line with a timeout"
         try:
             return self.eval_with_error(expr, timeout)
-        except concurrent.futures.TimeoutError:
+        except TimeoutError:
             return -1, "", "Error: Evaluation timed out"
         except Exception as e:
             trace = e.__traceback__
@@ -503,6 +496,9 @@ class FactorioInstance:
         return script
 
     def _send(self, command, *parameters, trace=False) -> List[str]:
+        """
+        Send a Lua command to the underlying Factorio instance
+        """
         start = timer()
         script = self._get_command(command, parameters=list(parameters), measured=False)
         lua_response = self.rcon_client.send_command(script)
@@ -523,6 +519,9 @@ class FactorioInstance:
         self.rcon_client.send_command(f"[img=entity/character] " + str(comment) + ", ".join(args))
 
     def _reset_static_achievement_counters(self):
+        """
+        This resets the cached production flows that we track for achievements and diversity sampling.
+        """
         self.add_command('/c global.crafted_items = {}', raw=True)
         self.add_command('/c global.harvested_items = {}', raw=True)
         self.execute_transaction()
@@ -533,6 +532,8 @@ class FactorioInstance:
         self.begin_transaction()
         self.add_command('/c global.alerts = {}', raw=True)
         self.add_command('/c game.reset_game_state()', raw=True)
+        self.add_command('/c global.actions.reset_production_stats()', raw=True)
+        #self.add_command('/c script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
         self.add_command('clear_inventory', PLAYER)
         self.add_command('reset_position', PLAYER, 0, 0)
 
@@ -592,6 +593,7 @@ class FactorioInstance:
         self.begin_transaction()
         self.add_command('/c global.alerts = {}', raw=True)
         self.add_command('/c global.fast = {}'.format('true' if fast else 'false'), raw=True)
+        #self.add_command('/c script.on_nth_tick(nil)', raw=True)
         self.add_command('/c game.map_settings.enemy_expansion.enabled = false', raw=True)
         self.add_command('/c game.map_settings.enemy_evolution.enabled = false', raw=True)
         self.add_command('/c game.forces.enemy.kill_all_units()', raw=True)

@@ -16,8 +16,8 @@ def game(instance):
     instance.reset()
     instance.speed(10)
     yield instance
-    instance.reset()
-    instance.speed(1)
+    #instance.reset()
+    #instance.speed(1)
 
 def test_build_auto_refilling_coal_system(game):
     num_drills = 3

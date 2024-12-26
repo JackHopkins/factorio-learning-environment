@@ -14,7 +14,7 @@ class InsertItem(Action):
         super().__init__(connection, game_state)
     def __call__(self, entity: Prototype, target: Entity, quantity=5) -> Entity:
         """
-        The agent inserts an item into an target entity's inventory
+        The agent inserts an item into a target entity's inventory
         :param entity: Entity type to insert from inventory
         :param target: Entity to insert into
         :param quantity: Quantity to insert

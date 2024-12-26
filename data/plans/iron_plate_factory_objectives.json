@@ -1,0 +1,65 @@
+{
+  "description": "Create an iron-plate factory from scratch",
+  "completed": false,
+  "children": [
+    {
+      "description": "Mine iron ore",
+      "completed": false,
+      "children": [
+        {
+          "description": "Place electric mining drills on iron ore patches",
+          "completed": false,
+          "children": [
+            {
+              "description": "Connect drills to power source",
+              "completed": false,
+              "children": [
+                {
+                  "description": "Place power poles near drills",
+                  "completed": false,
+                  "children": []
+                },
+                {
+                  "description": "Ensure power grid is active",
+                  "completed": false,
+                  "children": []
+                }
+              ]
+            },
+            {
+              "description": "Transport mined iron ore to smelting area",
+              "completed": false,
+              "children": []
+            }
+          ]
+        },
+        {
+          "description": "Transport mined iron ore to furnaces",
+          "completed": false,
+          "children": []
+        }
+      ]
+    },
+    {
+      "description": "Smelt iron ore into iron plates",
+      "completed": false,
+      "children": [
+        {
+          "description": "Place iron ore into a furnace",
+          "completed": false,
+          "children": []
+        },
+        {
+          "description": "Ensure the furnace has fuel",
+          "completed": false,
+          "children": []
+        }
+      ]
+    },
+    {
+      "description": "Transport iron plates to a central location",
+      "completed": false,
+      "children": []
+    }
+  ]
+}

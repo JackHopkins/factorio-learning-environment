@@ -30,8 +30,7 @@ global.actions.production_stats = function(player)
         output = consumption_diff,
         input = production_diff,
         harvested = harvested_items,
-        crafted = crafted_items,
-        price_list = global.actions.generate_price_list()
+        crafted = crafted_items
     }
 end
 
@@ -44,5 +43,5 @@ global.action.reset_production_stats = function(player)
     force.fluid_production_statistics.clear()
 
     global.harvested_items = {}
-    global.crafted_items = {input = {}, output = {}}
+    global.crafted_items = {}
 end

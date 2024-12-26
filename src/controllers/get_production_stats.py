@@ -10,8 +10,4 @@ class GetProductionStats(Action):
 
     def __call__(self, *args, **kwargs):
         response, execution_time = self.execute(PLAYER, *args, **kwargs)
-        
-
         return response
-
-

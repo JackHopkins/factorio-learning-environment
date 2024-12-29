@@ -2,7 +2,7 @@ from typing import Any
 
 from llm_factory import LLMFactory
 from search.auto_curriculum.dataset_utils import instantiate_the_map, initialise_starting_scenario
-from search.mcts.model.game_state import GameState
+from search.model.game_state import GameState
 
 
 class PlanSampler():

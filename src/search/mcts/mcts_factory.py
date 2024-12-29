@@ -1,11 +1,16 @@
-from distutils.command.config import config
+import dataclasses
+import json
+from datetime import datetime
 from typing import Optional, Dict, Union, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 import argparse
 from pathlib import Path
 import questionary
-from search.mcts.model.game_state import GameState
+from dataclasses import asdict
+
+from search.mcts.samplers.beam_sampler import BeamSampler
+from search.model.game_state import GameState
 from llm_factory import LLMFactory
 
 
@@ -18,6 +23,7 @@ class MCTSType(Enum):
 class SamplerType(Enum):
     KLD = "kld"
     WEIGHTED_REWARD = "weighted reward"
+    BEAM = "beam"
 
 @dataclass
 class SamplerConfig:
@@ -26,6 +32,10 @@ class SamplerConfig:
     max_conversation_length: Optional[int] = 30
     adaptive_period: Optional[int] = 200
     window_size: Optional[int] = 200
+    beam_width: Optional[int] = 8
+    exploration_prob: Optional[float] = 0.1
+
+
 
 
 @dataclass
@@ -41,6 +51,7 @@ class BaseConfig:
     sampler_type: Optional[SamplerType] = None
     presence_penalty: float = 0
     frequency_penalty: float = 0
+    error_penalty: float = -10  # Added error penalty with default of -10
 
 
 @dataclass
@@ -74,19 +85,22 @@ class ObjectiveConfig(ChunkedConfig):
     objective_model: str = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:plans-tree:AcZ8gHSo"
 
 
-
 def _get_sampler(sampler_type: SamplerType,
                  db_client,
                  compression_strength = None,
                  max_conversation_length=20,
                  adaptive_period=200,
                  window_size: int = 300,
-                 temperature: float = 1.0):
+                 temperature: float = 1.0,
+                 beam_width:int = 8,
+                 exploration_prob=0.1):
     from search.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
     from search.mcts.samplers.dynamic_reward_weighted_sampler import DynamicRewardWeightedSampler
 
     if sampler_type == SamplerType.KLD:
         return KLDiversityAchievementSampler(db_client, window_size, temperature)
+    elif sampler_type == SamplerType.BEAM:
+        return BeamSampler(db_client, beam_width, max_conversation_length, exploration_prob)
     return DynamicRewardWeightedSampler(db_client, compression_strength, max_conversation_length, adaptive_period)
 
 class MCTSFactory:
@@ -143,6 +157,7 @@ class MCTSFactory:
             mcts_kwargs={
                 'version': config.version,
                 'version_description': config.version_description,
+                'error_penalty': config.error_penalty,  # Added error penalty
             }
         )
         return ParallelMCTS(
@@ -173,6 +188,7 @@ class MCTSFactory:
                 'formatter': StructurePreservingFormatter(planning=True),
                 'presence_penalty': config.presence_penalty,
                 'frequency_penalty': config.frequency_penalty,
+                'error_penalty': config.error_penalty,  # Added error penalty
             }
         )
 
@@ -205,6 +221,7 @@ class MCTSFactory:
                 'formatter': StructurePreservingFormatter(planning=True),
                 'presence_penalty': config.presence_penalty,
                 'frequency_penalty': config.frequency_penalty,
+                'error_penalty': config.error_penalty,  # Added error penalty
             }
         )
 
@@ -240,7 +257,8 @@ class MCTSFactory:
                 "step_judge_prompt_path": config.step_judge_prompt_path,
                 "example_plan_prompt_path": config.example_plan_prompt_path,
                 "system_prompt": config.system_prompt,
-                "initial_state": game_state
+                "initial_state": game_state,
+                "error_penalty": config.error_penalty,  # Added error penalty
             }
         )
 
@@ -260,9 +278,16 @@ class MCTSFactory:
         parser.add_argument('--no-interactive', action='store_true', help='Skip interactive prompts')
         args, _ = parser.parse_known_args()
 
+
         if args.no_interactive:
-            return MCTSFactory._get_config_from_args(parser)
-        return MCTSFactory._get_config_interactive(args.type, default_version)
+            config, sampler_config = MCTSFactory._get_config_from_args(parser)
+        else:
+            config, sampler_config = MCTSFactory._get_config_interactive(args.type, default_version)
+
+            # Save the configuration
+        MCTSFactory._save_config(config, sampler_config)
+
+        return config, sampler_config
 
     @staticmethod
     def _get_config_from_args(parser) -> Tuple[Union[BaseConfig, PlanningConfig, ChunkedConfig], SamplerConfig]:
@@ -270,6 +295,7 @@ class MCTSFactory:
         parser.add_argument('--version', type=int, required=True)
         parser.add_argument('--version-description', required=True)
         parser.add_argument('--n-parallel', type=int, default=4)
+        parser.add_argument('--error-penalty', type=float, default=-10)  # Added error penalty argument
 
         args = parser.parse_args()
         mcts_type = MCTSType(args.type)
@@ -286,9 +312,10 @@ class MCTSFactory:
                 executor_model=args.executor_model,
                 objective_model=args.objective_model,
                 step_executor_prompt_path=Path(args.step_executor_prompt_path),
-                step_generator_prompt_path=Path(args.step_generator_prompt_path),
+                step_generator_prompt_path=Path(args.step_sgenerator_prompt_path),
                 step_judge_prompt_path=Path(args.step_judge_prompt_path),
-                example_plan_prompt_path=Path(args.example_plan_prompt_path)
+                example_plan_prompt_path=Path(args.example_plan_prompt_path),
+                error_penalty=args.error_penalty  # Added error penalty
             )
         elif mcts_type == MCTSType.CHUNKED:
             mcts_config = ChunkedConfig(
@@ -297,7 +324,8 @@ class MCTSFactory:
                 version=args.version,
                 version_description=args.version_description,
                 n_parallel=args.n_parallel,
-                system_prompt=''
+                system_prompt='',
+                error_penalty=args.error_penalty  # Added error penalty
             )
         elif mcts_type == MCTSType.OBJECTIVE:
             mcts_config = ObjectiveConfig(
@@ -307,7 +335,8 @@ class MCTSFactory:
                 version=args.version,
                 version_description=args.version_description,
                 n_parallel=args.n_parallel,
-                system_prompt=''
+                system_prompt='',
+                error_penalty=args.error_penalty  # Added error penalty
             )
         else:
             mcts_config = BaseConfig(
@@ -316,7 +345,8 @@ class MCTSFactory:
                 version=args.version,
                 version_description=args.version_description,
                 n_parallel=args.n_parallel,
-                system_prompt=''
+                system_prompt='',
+                error_penalty=args.error_penalty  # Added error penalty
             )
 
         return mcts_config, SamplerConfig(temperature=args.temperature,
@@ -336,7 +366,8 @@ class MCTSFactory:
         ).ask()
 
         #model = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-full:AbYn5Pj6" #"ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-masked:AYIViDdb"
-        model = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-masked:AYIViDdb"
+        model = "gpt-4o"
+        #model = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-masked:AYIViDdb"
         if mcts_type != 'planning':
             model = questionary.text(
                 "Model name:",
@@ -364,6 +395,7 @@ class MCTSFactory:
                 'Dynamic frequency penalty applied across previously sampled logits. -2 to 2.',
                 default='0'
             ).ask()),
+            'error_penalty': int(questionary.text('Penalty applied when there is an execution error(e.g. syntax error).',default='0').ask()),
             'system_prompt': ''
         }
 
@@ -415,9 +447,17 @@ class MCTSFactory:
 
         mcts_config.sampler_type = SamplerType(questionary.select(
             "Select MCTS node sampler type:",
-            choices=['kld', 'weighted reward'],
+            choices=['kld', 'weighted reward', 'beam'],
             instruction="Choose the sampling method for selecting actions. KLD priorities varied game states. Weighted reward prioritizes high-reward states."
         ).ask())
+
+        skip_failures = questionary.select(
+            "Skip failures?",
+            choices=['yes', 'no'],
+            instruction='Shall we skip nodes that trigger an exception/error?'
+        ).ask()
+
+        mcts_config.skip_failures = skip_failures == 'yes'
 
         if mcts_config.sampler_type == SamplerType.KLD:
             sampler_config = SamplerConfig(
@@ -430,6 +470,19 @@ class MCTSFactory:
                     "Window size:",
                     default="100",
                     instruction="The number of recent programs to consider when sampling the next node"
+                ).ask())
+            )
+        elif mcts_config.sampler_type == SamplerType.BEAM:
+            sampler_config = SamplerConfig(
+                beam_width=int(questionary.text(
+                    "Beam width:",
+                    default="8",
+                    instruction="The number of nodes to keep in the beam for sampling subsequent nodes"
+                ).ask()),
+                exploration_prob=float(questionary.text(
+                    "Exploration probability:",
+                    default="0.1",
+                    instruction="The probability to sample outside of the beam (for exploration)"
                 ).ask())
             )
         elif mcts_config.sampler_type == SamplerType.WEIGHTED_REWARD:
@@ -452,6 +505,8 @@ class MCTSFactory:
                 instruction="The period for cycling exploration and exploitation",
                 default="200").ask()) if sampler_config.compression_strength != -1 else None
 
+
+
         version_description = ""
         for key, value in mcts_config.__dict__.items():
             if isinstance(value, Path):
@@ -467,3 +522,33 @@ class MCTSFactory:
         mcts_config.version_description = version_description
 
         return mcts_config, sampler_config
+
+    @staticmethod
+    def _save_config(config: Union[BaseConfig, PlanningConfig, ChunkedConfig], sampler_config: SamplerConfig):
+        """Save the run configuration to a JSON file"""
+        runs_dir = Path(f"runs/{config.version}")
+        runs_dir.mkdir(exist_ok=True)
+
+        # Convert configs to dictionaries, excluding complex objects
+        config_dict = {
+            k: str(v) if isinstance(v, (Path, MCTSType, SamplerType)) else v
+            for k, v in asdict(config).items()
+            if not k.endswith('_model') and not isinstance(v, (Path, type(None)))
+        }
+
+        sampler_dict = {
+            k: v for k, v in dataclasses.asdict(sampler_config).items()
+            if v is not None
+        }
+
+        # Combine configurations
+        save_data = {
+            'mcts_config': config_dict,
+            'sampler_config': sampler_dict,
+            'timestamp': datetime.now().isoformat()
+        }
+
+        # Save to file
+        config_file = runs_dir / f"config.json"
+        with open(config_file, 'w') as f:
+            json.dump(save_data, f, indent=2)

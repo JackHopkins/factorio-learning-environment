@@ -9,7 +9,7 @@ import psycopg2
 import tenacity
 from psycopg2.extras import DictCursor
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
-from search.mcts.model.program import Program
+from search.model.program import Program
 
 
 class DBClient:

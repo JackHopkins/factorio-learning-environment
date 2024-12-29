@@ -10,7 +10,7 @@ load_dotenv()
 from llm_factory import LLMFactory
 from search.auto_curriculum.dataset_utils import instantiate_the_map, initialise_starting_scenario
 from skills.skills_db import SkillsDB
-from search.mcts.model.game_state import GameState
+from search.model.game_state import GameState
 class ModelEvaluator:
     def __init__(self, executor_model, system_prompt_path, save_path, starting_scenarios_folder, objective_model = None):
         

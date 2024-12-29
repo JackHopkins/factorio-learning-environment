@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Tuple, Optional
 
-from search.mcts.model.conversation import Message, Conversation
+from search.model.conversation import Message, Conversation
 
 PLANNING_ADDITION_PROMPT = \
 """

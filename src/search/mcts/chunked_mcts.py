@@ -1,14 +1,13 @@
 import ast
 import asyncio
 import json
-from search.mcts.model.conversation import GenerationParameters
+from search.model.conversation import GenerationParameters
 from typing import List, Tuple, Optional, Union
 
-from search.mcts.model.conversation import Conversation, Message
-from search.mcts.conversation_formatter import PLANNING_ADDITION_PROMPT
-from search.mcts.model.game_state import GameState
+from search.model.conversation import Conversation, Message
+from search.model.game_state import GameState
 from search.mcts.mcts import MCTS
-from search.mcts.model.program import Program
+from search.model.program import Program
 from factorio_entities import Entity, EntityGroup
 
 
@@ -160,10 +159,10 @@ class ChunkedMCTS(MCTS):
 
     async def search(self, n_iterations: int, samples_per_iteration: int, skip_failures: bool = False):
         for iteration in range(n_iterations):
-            self.run_iteration(samples_per_iteration, skip_failures)
+            await self.run_iteration(samples_per_iteration, skip_failures, iteration)
             self.evaluator.logger.update_progress()
 
-    async def run_iteration(self, samples_per_iteration, skip_failures):
+    async def run_iteration(self, samples_per_iteration, skip_failures, iteration, n_iterations):
         parent = await self.sampler.sample_parent(version=self.version)
         start_state = parent.state if parent else self.initial_state
         if not parent:
@@ -171,7 +170,7 @@ class ChunkedMCTS(MCTS):
             entities = self.evaluator.instances[0].get_entities()
             conversation = Conversation(messages=[
                 Message(role="system", content=self.system_prompt),
-                Message(role="user", content=PLANNING_ADDITION_PROMPT),
+                #Message(role="user", content=PLANNING_ADDITION_PROMPT),
                 Message(role="assistant", content="print(f'Inventory: {inspect_inventory()}')\n"
                                                   "print(f'Entities: {get_entities()}')\n"),
                 Message(role="user", content=f"1: ('Inventory: {start_state.inventory.__dict__}')\n"
@@ -185,6 +184,7 @@ class ChunkedMCTS(MCTS):
             conversation.messages = conversation.messages[difference:]
 
         self.evaluator.set_sampling_status()
+        self.evaluator.set_iteration(iteration, n_iterations)
         raw_programs = await self._generate_programs_batch(conversation, samples_per_iteration)
 
         # Process programs in parallel
@@ -192,7 +192,7 @@ class ChunkedMCTS(MCTS):
         for i, (program, chunks) in enumerate(raw_programs):
             instance_id = i % (len(self.evaluator.instances))
             self.evaluator.instances[instance_id].reset(start_state)
-            self.evaluator.logger.update_instance(self.evaluator.instances[i].tcp_port, program_id=program.id, status="resetting")
+            self.evaluator.logger.update_instance(self.evaluator.instances[i].tcp_port, program_id=program.id, status="resetting", n_iterations=n_iterations)
 
             # Create evaluation future for this program's chunks
             eval_futures.append(self._process_program_chunks(
@@ -224,7 +224,7 @@ class ChunkedMCTS(MCTS):
                     chunk_program = Program(
                         code=chunk.code,
                         conversation=program.conversation,
-                        value=chunk.value - holdout_value,  # Use per-chunk holdout value
+                        value=chunk.value - holdout_value - (abs(self.error_penalty) if 'error' in chunk.response.lower() else 0),  # Use per-chunk holdout value
                         raw_reward=chunk.value,
                         holdout_value=holdout_value,
                         state=chunk.state,
@@ -243,7 +243,6 @@ class ChunkedMCTS(MCTS):
                         chunk.response,
                         score=chunk.value,
                         advantage=chunk.value - holdout_value,
-
                     )
 
                     chunk_program.id = hash(

@@ -1,19 +1,18 @@
 import asyncio
 import json
-import re
-from typing import Optional, List
+from typing import List
 
 import psycopg2
 import tenacity
 from tenacity import wait_exponential, retry, retry_if_exception_type
 
 from search.mcts.mcts import MCTS
-from search.mcts.model.conversation import Conversation, Message, GenerationParameters
-from search.mcts.conversation_formatter import ConversationFormatter, DefaultFormatter, PLANNING_ADDITION_PROMPT
+from search.model.conversation import Conversation, Message, GenerationParameters
+from search.mcts.conversation_formatter import ConversationFormatter, DefaultFormatter
 from search.mcts.db_client import DBClient
 from search.mcts.factorio_evaluator import FactorioEvaluator
-from search.mcts.model.game_state import GameState
-from search.mcts.model.program import Program
+from search.model.game_state import GameState
+from search.model.program import Program
 from search.mcts.samplers.db_sampler import DBSampler
 from search.mcts.samplers.objective_sampler import ObjectiveTreeSampler
 from llm_factory import LLMFactory

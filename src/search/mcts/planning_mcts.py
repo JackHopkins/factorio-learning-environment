@@ -3,10 +3,10 @@ import asyncio
 import json
 from typing import List, Tuple, Optional
 import os
-from search.mcts.model.conversation import Conversation, Message, GenerationParameters
-from search.mcts.model.game_state import GameState
+from search.model.conversation import Conversation, Message, GenerationParameters
+from search.model.game_state import GameState
 from search.mcts.mcts import MCTS
-from search.mcts.model.program import Program
+from search.model.program import Program
 from search.mcts.planning_models import LanguageOutput, TaskOutput, InitialPlanOutput, PlanOutput, Step
 from tenacity import wait_exponential, retry
 
@@ -136,7 +136,7 @@ class PlanningMCTS(MCTS):
             raise e  # Propagate the exception to handle it elsewhere if needed.
 
         holdout_value = await holdout_future
-        step.program.value=step.reward - holdout_value
+        step.program.value=step.reward - holdout_value - (abs(self.error_penalty) if 'error' in response else 0)
         step.program.achievements = achievements
         step.program.raw_reward=step.reward
         step.program.holdout_value=holdout_value

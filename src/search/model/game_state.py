@@ -8,6 +8,16 @@ from typing import List, Dict, Any
 def is_serializable(obj: Any) -> bool:
     """Test if an object can be serialized with pickle"""
     try:
+        # Skip builtin types
+        if obj.__module__ == 'builtins':
+            return False
+
+        if isinstance(obj, Enum):
+            return True
+
+        if isinstance(obj, (list, dict)):
+            return all(is_serializable(item) for item in obj)
+
         if isinstance(obj, type):
             return False
 
@@ -44,7 +54,7 @@ class GameState:
 
         # Filter and pickle only serializable variables
         if hasattr(instance, 'persistent_vars'):
-            serializable_vars = filter_serializable_vars(instance.persistent_vars)
+            serializable_vars = filter_serializable_vars(instance.__dict__)
             namespace = pickle.dumps(serializable_vars) if serializable_vars else bytes()
         else:
             namespace = bytes()
@@ -54,6 +64,12 @@ class GameState:
             inventory=instance.inspect_inventory(),
             namespace=namespace
         )
+
+    def __repr__(self):
+        readable_namespace=pickle.loads(self.namespace)
+        return f"GameState(entities={self.entities}, inventory={self.inventory}, timestamp={self.timestamp}, namespace={{{readable_namespace}}})"
+
+
 
     @classmethod
     def parse_raw(cls, json_str: str) -> 'GameState':

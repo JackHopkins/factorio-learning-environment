@@ -1,6 +1,5 @@
 import json
 import os
-from pyexpat.errors import messages
 from typing import List, Dict, Optional, Any, Tuple
 import asyncio
 from math import floor
@@ -9,7 +8,7 @@ from dataclasses import dataclass
 from rich.console import Console
 from tenacity import retry, wait_exponential
 
-from search.mcts.model.conversation import Conversation, GenerationParameters, Message
+from search.model.conversation import Conversation, GenerationParameters, Message
 from search.mcts.conversation_formatter import ConversationFormatter, StructurePreservingFormatter
 from search.mcts.db_client import DBClient
 from search.mcts.factorio_evaluator import FactorioEvaluator
@@ -17,8 +16,8 @@ from search.mcts.grouped_logger import GroupedFactorioLogger
 from search.mcts.parallel_mcts_config import ParallelMCTSConfig
 from search.mcts.planning_mcts import get_mining_setup
 from search.mcts.planning_models import PlanOutput, TaskOutput, Step, LanguageOutput, InitialPlanOutput
-from search.mcts.model.game_state import GameState
-from search.mcts.model.program import Program
+from search.model.game_state import GameState
+from search.model.program import Program
 from factorio_instance import FactorioInstance
 
 logger = logging.basicConfig(level=logging.INFO)
@@ -130,7 +129,8 @@ class ParallelPlanningMCTS:
                 db_client=self.db_client,
                 instances=group_instances,
                 value_accrual_time=3,
-                logger=self.logger
+                logger=self.logger,
+                error_penalty=self.config.mcts_kwargs['error_penalty']
             )
 
             # Create MCTS instance
@@ -148,7 +148,6 @@ class ParallelPlanningMCTS:
                 evaluator=evaluator,
                 active_instances=active_instances,
                 holdout_instance=holdout_instance,
-
             ))
 
         return groups

@@ -1,0 +1,34 @@
+{
+  "mcts_config": {
+    "mcts_type": "MCTSType.CHUNKED",
+    "system_prompt": "",
+    "version": 302,
+    "version_description": "mcts_type:MCTSType.CHUNKED\nsystem_prompt:\nversion:302\nversion_description:\nn_parallel:4\nmax_steps:1000\nskip_failures:True\nmodel:claude-3-5-sonnet-20241022\nsampler_type:SamplerType.WEIGHTED_REWARD\npresence_penalty:0.0\nfrequency_penalty:0.0\nerror_penalty:10\nmax_conversation_length:50\nlogit_bias:{'15714': -100, '193595': -100, '145968': -100, '27': -100, '20225': -100, '7032': -100}\ntemperature:0.7\ncompression_strength:None\nmax_conversation_length:40\nadaptive_period:50\nwindow_size:200\nbeam_width:8\nexploration_prob:0.1\n",
+    "n_parallel": 4,
+    "max_steps": 1000,
+    "skip_failures": true,
+    "model": "claude-3-5-sonnet-20241022",
+    "sampler_type": "SamplerType.WEIGHTED_REWARD",
+    "presence_penalty": 0.0,
+    "frequency_penalty": 0.0,
+    "error_penalty": 10,
+    "max_conversation_length": 50,
+    "logit_bias": {
+      "15714": -100,
+      "193595": -100,
+      "145968": -100,
+      "27": -100,
+      "20225": -100,
+      "7032": -100
+    }
+  },
+  "sampler_config": {
+    "temperature": 0.7,
+    "max_conversation_length": 40,
+    "adaptive_period": 50,
+    "window_size": 200,
+    "beam_width": 8,
+    "exploration_prob": 0.1
+  },
+  "timestamp": "2024-12-29T14:31:28.893320"
+}

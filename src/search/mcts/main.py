@@ -4,9 +4,7 @@ from dotenv import load_dotenv
 from cluster.local.cluster_ips import get_local_container_ips
 from search.mcts.db_client import DBClient
 from search.mcts.mcts_factory import MCTSFactory
-from search.mcts.run_results import RunResults
-from search.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
-from llm_factory import LLMFactory
+from search.model.run_results import RunResults
 from factorio_instance import FactorioInstance
 import concurrent.futures
 from typing import List, Tuple
@@ -25,6 +23,24 @@ def create_factorio_instances() -> List[FactorioInstance]:
     with concurrent.futures.ThreadPoolExecutor() as executor:
         return list(executor.map(init_instance, zip(ips, udp_ports, tcp_ports)))
 
+SYSTEM_PROMPT = \
+"""
+You are an agent designed to operate within FactoryEnv, a novel evaluation framework built on the game Factorio, with capabilities in long-horizon planning, spatial reasoning, and systematic automation. 
+
+You interact with the environment through Python program synthesis, using any of the API's 28 core methods below.
+The environment behaves like an interactive shell, with the user responses representing the STDOUT of the REPL, and your messages acting as the Python programs to be executed. 
+
+To play the game, consider the conversation history to better understand the changes that are happening to the environment and your inventory. Think extensively step-by-step (in Python docstrings / comments ONLY) to first plan your algorithm, before writing clean code to execute it. Use assert statements to self-verify your beliefs against the environment.
+
+Your reward in the environment is proportional to the resources you create. This means you should focus on generating items through automation, as this allows greater scale than getting them manually.
+
+Everything you write MUST be valid Python - either as code or as docstring comments. Any text that is not syntactically valid Python will be rejected.
+
+Always consider the most profitable next task, what entities are needed for the task, what entities exist in the game (in different entity inventories or in your inventory), what entities are you missing for the task.
+"""
+
+with open("TEST_PROMPT.md", "r") as f:
+    TEST_PROMPT = f.read()
 
 async def main():
     try:
@@ -57,7 +73,7 @@ async def main():
     mcts_config, sampler_config = factory.get_config_from_cli(default_version=largest_version_to_date+1)
 
 
-    mcts_config.system_prompt = instances[0].get_system_prompt()
+    mcts_config.system_prompt = SYSTEM_PROMPT + '\n\n' + instances[0].get_system_prompt() + '\n\nExamples:\n```\n' + TEST_PROMPT + '\n```'
 
     # Initialize factory singleton
     factory.initialize(instances, db_client, mcts_config, sampler_config) #llm_factory, config)
@@ -67,7 +83,7 @@ async def main():
 
     # Run search
     print("Starting MCTS search...")
-    await mcts.search(n_iterations=2000, skip_failures=False)
+    await mcts.search(n_iterations=200, skip_failures=mcts_config.skip_failures)
 
     run = RunResults(version=mcts_config.version, db_client=db_client)
     run.save_plots()

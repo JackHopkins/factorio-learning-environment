@@ -34,7 +34,7 @@ class SamplerConfig:
     window_size: Optional[int] = 200
     beam_width: Optional[int] = 8
     exploration_prob: Optional[float] = 0.1
-
+    maximum_lookback: int = 20
 
 
 
@@ -93,7 +93,8 @@ def _get_sampler(sampler_type: SamplerType,
                  window_size: int = 300,
                  temperature: float = 1.0,
                  beam_width:int = 8,
-                 exploration_prob=0.1):
+                 exploration_prob=0.1,
+                 maximum_lookback=10):
     from search.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
     from search.mcts.samplers.dynamic_reward_weighted_sampler import DynamicRewardWeightedSampler
 
@@ -101,7 +102,7 @@ def _get_sampler(sampler_type: SamplerType,
         return KLDiversityAchievementSampler(db_client, window_size, temperature)
     elif sampler_type == SamplerType.BEAM:
         return BeamSampler(db_client, beam_width, max_conversation_length, exploration_prob)
-    return DynamicRewardWeightedSampler(db_client, compression_strength, max_conversation_length, adaptive_period)
+    return DynamicRewardWeightedSampler(db_client, compression_strength, max_conversation_length, adaptive_period, maximum_lookback)
 
 class MCTSFactory:
     _instance = None
@@ -188,7 +189,7 @@ class MCTSFactory:
                 'formatter': StructurePreservingFormatter(planning=True),
                 'presence_penalty': config.presence_penalty,
                 'frequency_penalty': config.frequency_penalty,
-                'error_penalty': config.error_penalty,  # Added error penalty
+                'error_penalty': config.error_penalty,  # Added error penalty,
             }
         )
 
@@ -361,7 +362,7 @@ class MCTSFactory:
             Tuple[Union[BaseConfig, PlanningConfig, ChunkedConfig], SamplerConfig]:
         mcts_type = default_type or questionary.select(
             "Select MCTS type:",
-            choices=['normal', 'chunked', 'planning', 'objective'],
+            choices=['chunked', 'normal', 'planning', 'objective'],
             instruction="Choose MCTS algorithm variant. Planning is recommended for complex tasks."
         ).ask()
 
@@ -369,10 +370,17 @@ class MCTSFactory:
         model = "gpt-4o"
         #model = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-masked:AYIViDdb"
         if mcts_type != 'planning':
-            model = questionary.text(
+            model = questionary.select(
                 "Model name:",
-                default=model,
-                instruction="Model to use for program synthesis, e.g. ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-masked:AYIViDdb"
+                choices=[
+                    'gemini-2.0-flash-exp',
+                    'gemini-2.0-flash-thinking-exp-1219',
+                    'gemini-exp-1206',
+                    'deepseek-chat',
+                    'gpt-4o',
+                    'claude-3-5-sonnet-20241022',
+                    'ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-masked:AYIViDdb'],
+                instruction='Model to use for program synthesis.'
             ).ask()
 
         base_config = {
@@ -395,8 +403,8 @@ class MCTSFactory:
                 'Dynamic frequency penalty applied across previously sampled logits. -2 to 2.',
                 default='0'
             ).ask()),
-            'error_penalty': int(questionary.text('Penalty applied when there is an execution error(e.g. syntax error).',default='0').ask()),
-            'system_prompt': ''
+            'error_penalty': int(questionary.text('Penalty applied when there is an execution error(e.g. syntax error).',default='10').ask()),
+            'system_prompt': '',
         }
 
 
@@ -447,13 +455,13 @@ class MCTSFactory:
 
         mcts_config.sampler_type = SamplerType(questionary.select(
             "Select MCTS node sampler type:",
-            choices=['kld', 'weighted reward', 'beam'],
+            choices=['weighted reward', 'kld', 'beam'],
             instruction="Choose the sampling method for selecting actions. KLD priorities varied game states. Weighted reward prioritizes high-reward states."
         ).ask())
 
         skip_failures = questionary.select(
             "Skip failures?",
-            choices=['yes', 'no'],
+            choices=['no','yes'],
             instruction='Shall we skip nodes that trigger an exception/error?'
         ).ask()
 
@@ -470,7 +478,8 @@ class MCTSFactory:
                     "Window size:",
                     default="100",
                     instruction="The number of recent programs to consider when sampling the next node"
-                ).ask())
+                ).ask()),
+                maximum_lookback=int(questionary.text('Maximum lookback steps', default='20').ask())
             )
         elif mcts_config.sampler_type == SamplerType.BEAM:
             sampler_config = SamplerConfig(
@@ -483,13 +492,14 @@ class MCTSFactory:
                     "Exploration probability:",
                     default="0.1",
                     instruction="The probability to sample outside of the beam (for exploration)"
-                ).ask())
+                ).ask()),
+                maximum_lookback=int(questionary.text('Maximum lookback steps', default='20').ask())
             )
         elif mcts_config.sampler_type == SamplerType.WEIGHTED_REWARD:
             compression_strength = float(questionary.text(
                 "Compression strength:",
                 instruction="Between 0-1. Higher values mean more exploration. Lower means more exploitation. -1 means adaptively cycle",
-                default="1").ask())
+                default="-1").ask())
             if compression_strength < 0:
                 compression_strength = None
 
@@ -497,13 +507,15 @@ class MCTSFactory:
                 compression_strength=compression_strength,
                 max_conversation_length=int(questionary.text(
                     "Maximum conversation length:",
-                    instruction="The maximum number of steps in the dialogue",
+                    instruction="The maximum number of assistant actions in the dialogue",
                     default="20").ask()),
             )
             sampler_config.adaptive_period = int(questionary.text(
                 "Adaptive period:",
                 instruction="The period for cycling exploration and exploitation",
-                default="200").ask()) if sampler_config.compression_strength != -1 else None
+                default="50").ask()) if sampler_config.compression_strength != -1 else None
+
+            sampler_config.maximum_lookback = int(questionary.text('Maximum lookback steps', default='10').ask())
 
 
 

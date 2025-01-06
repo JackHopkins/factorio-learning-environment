@@ -29,6 +29,77 @@ class RunResults:
         self.neptune_run = neptune_run
         self.dir_path = Path(f"runs/{self.version}")
 
+    def plot_reward_mean_std(self, root_nodes: List[Node], metric='raw_reward', cumulative=True):
+        """
+        Creates a plot showing mean reward over depth with standard deviation bands.
+
+        Args:
+            root_nodes: List of root nodes to analyze
+            metric (str): The metric to plot
+            cumulative (bool): Whether to use cumulative values
+
+        Returns:
+            matplotlib.figure: The generated plot
+        """
+        rewards_by_depth = defaultdict(list)
+
+        def collect_rewards(node: Node, depth: int = 0, parent_value: float = 0, parent_set: Optional[set] = None):
+            if isinstance(node.metrics[metric], set):
+                current_set = parent_set.union(node.metrics[metric]) if parent_set else node.metrics[metric]
+                value = len(current_set)
+            else:
+                value = parent_value + (node.metrics[metric] or 0)
+                current_set = None
+
+            rewards_by_depth[depth].append(value)
+            for child in node.children:
+                collect_rewards(child, depth + 1, value if cumulative else 0, current_set if current_set else None)
+
+        # Collect rewards for all root nodes
+        for root in root_nodes:
+            collect_rewards(root)
+
+        max_depth = max(rewards_by_depth.keys())
+        depths = range(max_depth + 1)
+
+        # Calculate mean and std for each depth
+        means = []
+        stds = []
+        for depth in depths:
+            values = rewards_by_depth[depth]
+            means.append(np.mean(values) if values else 0)
+            stds.append(np.std(values) if values else 0)
+
+        # Create the plot
+        fig, ax = plt.subplots(figsize=(12, 8))
+
+        # Plot mean line
+        ax.plot(depths, means, 'r-', label=f'Mean')
+
+        # Plot STD lines as dotted
+        ax.plot(depths, np.array(means) + np.array(stds), 'r:', alpha=0.2)  # Upper STD line
+        ax.plot(depths, np.array(means) - np.array(stds), 'r:', alpha=0.2)  # Lower STD line
+
+        # Plot standard deviation bands
+        ax.fill_between(
+            depths,
+            np.array(means) - np.array(stds),
+            np.array(means) + np.array(stds),
+            color='red',
+            alpha=0.2,
+            label='±1 STD'
+        )
+
+        name = metric.replace("_", " ").title()
+        ax.set_xlabel('Depth')
+        ax.set_ylabel(f'Cumulative {name}' if cumulative else name)
+        ax.set_title(
+            f'{"Cumulative " if cumulative else ""}{name} Distribution Over Tree Depth - Version {self.version}')
+        ax.legend()
+        ax.grid(True)
+
+        return plt
+
     def plot_dynamic_resources_by_depth(self, root_nodes: List[Node], cumulative: bool = True):
         """
         Create a stacked bar chart showing average/cumulative average number of each type of
@@ -140,6 +211,15 @@ class RunResults:
                                                                                   cumulative=False,
                                                                                   metric=metric)
 
+            print(f"Generating mean/std cumulative plot")
+            plots[f'{metric}_mean_std_cumulative.png'] = self.plot_reward_mean_std(results[0],
+                                                                                   metric=metric,
+                                                                                   cumulative=True)
+
+            print(f"Generating mean/std raw plot")
+            plots[f'{metric}_mean_std_raw.png'] = self.plot_reward_mean_std(results[0],
+                                                                            metric=metric,
+                                                                            cumulative=False)
 
             for filename, plot in plots.items():
                 filepath = Path(f"{self.dir_path}/{filename}")

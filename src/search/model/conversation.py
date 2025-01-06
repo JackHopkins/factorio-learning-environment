@@ -47,7 +47,7 @@ class Message(BaseModel):
 class GenerationParameters(BaseModel):
     model: str
     n: int = 1
-    temperature: float = 0.7
+    temperature: float = 1
     max_tokens: int = 2048
     logit_bias: Optional[Dict[str, float]] = None
     stop_sequences: Optional[List] = None

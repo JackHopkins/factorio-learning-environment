@@ -2,6 +2,7 @@ import asyncio
 import json
 import re
 from asyncio import sleep
+from random import random
 from typing import Optional, List
 
 import psycopg2
@@ -30,7 +31,8 @@ class MCTS:
                  version_description="",
                  presence_penalty=0,
                  frequency_penalty=0,
-                 error_penalty=0
+                 error_penalty=0,
+                 maximum_lookback=20
                  ):
 
         self.llm = llm_factory
@@ -47,6 +49,7 @@ class MCTS:
         self.presence_penalty = presence_penalty
         self.frequency_penalty = frequency_penalty
         self.error_penalty = error_penalty
+        self.maximum_lookback = maximum_lookback
 
 
     def _verify_response_is_python(self, content):
@@ -101,6 +104,11 @@ class MCTS:
                     #print(f"Failed to extract code from choice after removing leading line: {str(e2)}")
                 print(f"Failed to extract code from choice: {str(e1)}")
 
+    def _is_model_compatible_with_n_samples(self, model):
+        """Check if the model is compatible with generating n samples in a single call"""
+        return "gpt" in model or 'o1' in model or 'gemini' in model
+
+
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
     async def _generate_programs_batch(self, conversation: Conversation,
                                        generation_params: GenerationParameters,
@@ -110,6 +118,13 @@ class MCTS:
         formatted_messages = self.formatter.to_llm_messages(
             self.formatter.format_conversation(conversation)
         )
+        system_message = formatted_messages[0]
+
+        # Take the most recent messages up to maximum_lookback, excluding the system message
+        recent_messages = formatted_messages[1:][-self.db.max_conversation_length:]
+
+        # Combine system message with recent messages
+        formatted_messages = [system_message, *recent_messages]
 
         try:
             messages = conversation.model_dump()['messages']
@@ -117,7 +132,7 @@ class MCTS:
             messages = conversation.dict()['messages']
 
         try:
-            if "gpt" in generation_params.model or 'o1' in generation_params.model and hasattr(self.llm, "acall"):
+            if self._is_model_compatible_with_n_samples(generation_params.model) and hasattr(self.llm, "acall"):
                 # Use OpenAI's native n parameter support
                 response = await self.llm.acall(
                     messages=formatted_messages,
@@ -133,6 +148,7 @@ class MCTS:
                 return await self._process_openai_response(response, conversation, generation_params, messages, meta)
             else:
                 # Make parallel calls for other providers
+                #conversation.messages = formatted_messages
                 return await self._generate_parallel(
                     conversation,
                     generation_params,
@@ -161,7 +177,8 @@ class MCTS:
                     presence_penalty=self.presence_penalty,
                     frequency_penalty=self.frequency_penalty
                 )
-                await sleep(2) # Sleep to avoid rate limiting issues
+                if 'sonnet' in generation_params.model or 'gemini' in generation_params.model:
+                    await sleep(5 + random()*5) # Sleep with jitter to avoid rate limiting issues
                 return response
             except Exception as e:
                 print(f"Single generation failed: {str(e)}")
@@ -188,7 +205,7 @@ class MCTS:
 
     async def _create_program(self, response, conversation, messages, model, meta) -> Program:
         """Create a Program instance from a single response"""
-        if 'choices' in response:
+        if hasattr(response, 'choices'):
             choice = response.choices[0]  # Assuming only one choice per call
             input_tokens = response.usage.prompt_tokens if hasattr(response, 'usage') else 0
             output_tokens = response.usage.completion_tokens if hasattr(response, 'usage') else 0
@@ -212,8 +229,10 @@ class MCTS:
             completion_token_usage=output_tokens,
             prompt_token_usage=input_tokens,
             version=self.version,
+            model=model,
             version_description=self.version_description,
-            meta={"text_response": text_response, "model": model}
+            meta={"text_response": text_response, "model": model},
+            depth=len(messages)-2, # -2 because of the first 2 messages being system and initial user message
         )
 
         if meta:
@@ -225,6 +244,12 @@ class MCTS:
                                        messages, meta) -> List[Program]:
         """Process OpenAI's response with multiple choices"""
         programs = []
+        total_tokens = completion_tokens = prompt_tokens = 0
+        if hasattr(response, 'usage'):
+            total_tokens = response.usage.total_tokens if response.usage.total_tokens else response.usage.totalTokens
+            completion_tokens = response.usage.completion_tokens if response.usage.completion_tokens else response.usage.completionTokens
+            prompt_tokens = response.usage.prompt_tokens if response.usage.prompt_tokens else response.usage.promptTokens
+
         for choice in response.choices:
             code, text_response = self._extract_code_from_choice(choice)
             if code:
@@ -233,12 +258,9 @@ class MCTS:
                     code=code,
                     conversation=conversation,
                     response=choice.message.content,
-                    token_usage=response.usage.total_tokens // generation_params.n if hasattr(response,
-                                                                                              'usage') else None,
-                    completion_token_usage=response.usage.completion_tokens // generation_params.n if hasattr(response,
-                                                                                                              'usage') else None,
-                    prompt_token_usage=response.usage.prompt_tokens // generation_params.n if hasattr(response,
-                                                                                                      'usage') else None,
+                    token_usage=total_tokens // generation_params.n,
+                    completion_token_usage=completion_tokens // generation_params.n,
+                    prompt_token_usage=prompt_tokens // generation_params.n,
                     version=self.version,
                     version_description=self.version_description,
                     meta={"text_response": text_response, "model": generation_params.model}
@@ -271,7 +293,7 @@ class MCTS:
     async def run_iteration(self, samples_per_iteration, skip_failures, iteration, n_iterations):
         """Run a single MCTS iteration with retries for concurrent operations"""
         try:
-            parent = await self.sampler.sample_parent(version=self.version)
+            parent = await self.sampler.sample_parent(version=self.version, maximum_lookback=self.maximum_lookback)
             if parent:
                 start_state = parent.state
                 conversation = parent.conversation

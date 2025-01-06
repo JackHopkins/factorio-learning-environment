@@ -1,5 +1,4 @@
-
-def test_defence(game):
+def test_defence():
     # First, gather available resources
     iron_ore_position = nearest(Resource.IronOre)
     coal_position = nearest(Resource.Coal)
@@ -83,10 +82,9 @@ def test_defence(game):
     print("Objective completed: Built a defensive line of gun turrets and manually supplied them with ammunition")
 
 
-def test_collect_iron_ore(game):
+def test_collect_iron_ore():
     """
     Collect 10 iron ore
-    :param game:
     :return:
     """
     iron_ore = nearest(Resource.IronOre)
@@ -98,10 +96,9 @@ def test_collect_iron_ore(game):
     reset()
 
 
-def test_place_ore_in_furnace(game):
+def test_place_ore_in_furnace():
     """
     Collect 10 iron ore and place it in a furnace
-    :param game:
     :return:
     """
     furnace = place_entity(Prototype.StoneFurnace, position=Position(x=0, y=0))
@@ -124,10 +121,9 @@ def test_place_ore_in_furnace(game):
     reset()
 
 
-def test_connect_steam_engines_to_boilers_using_pipes(game):
+def test_connect_steam_engines_to_boilers_using_pipes():
     """
     Place a boiler and a steam engine next to each other in 3 cardinal directions.
-    :param game:
     :return:
     """
     boilers_in_inventory = inspect_inventory()[Prototype.Boiler]
@@ -167,13 +163,11 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
         spent_pipes = (pipes_in_inventory - current_pipes_in_inventory)
         assert spent_pipes == len(connection[0].pipes)
 
-        reset()  # Reset the game state after each iteration
 
 
-def test_build_iron_gear_factory(game):
+def test_build_iron_gear_factory():
     """
     Build a factory that produces iron gears from iron plates.
-    :param game:
     :return:
     """
     # move to the iron ore
@@ -282,20 +276,20 @@ def test_build_iron_gear_factory(game):
                                                 direction=Direction.UP,
                                                 spacing=0)
 
-    def ensure_ingredients(game, recipe, quantity=1):
+    def ensure_ingredients(recipe, quantity=1):
         for ingredient in recipe.ingredients:
             required = ingredient.count * quantity
             available = inspect_inventory()[ingredient.name]
             if available < required:
-                craft_recursive(game, ingredient.name, required - available)
+                craft_recursive(ingredient.name, required - available)
 
-    def craft_recursive(game, item_name, quantity):
+    def craft_recursive(item_name, quantity):
         recipe = get_prototype_recipe(item_name)
-        ensure_ingredients(game, recipe, quantity)
+        ensure_ingredients(recipe, quantity)
         craft_item(item_name, quantity=quantity)
 
     recipe = get_prototype_recipe(Prototype.AssemblingMachine1)
-    ensure_ingredients(game, recipe)
+    ensure_ingredients(recipe)
 
     # craft an assembly machine
     craft_item(Prototype.AssemblingMachine1)
@@ -310,7 +304,7 @@ def test_build_iron_gear_factory(game):
 
     # craft an offshore pump
     recipe = get_prototype_recipe(Prototype.OffshorePump)
-    ensure_ingredients(game, recipe)
+    ensure_ingredients(recipe)
     craft_item(Prototype.OffshorePump)
 
     # place the offshore pump at nearest water source
@@ -320,7 +314,7 @@ def test_build_iron_gear_factory(game):
 
     # craft a boiler
     recipe = get_prototype_recipe(Prototype.Boiler)
-    ensure_ingredients(game, recipe)
+    ensure_ingredients(recipe)
     craft_item(Prototype.Boiler)
 
     # place the boiler next to the offshore pump
@@ -331,7 +325,7 @@ def test_build_iron_gear_factory(game):
 
     # craft a steam engine
     recipe = get_prototype_recipe(Prototype.SteamEngine)
-    ensure_ingredients(game, recipe)
+    ensure_ingredients(recipe)
     craft_item(Prototype.SteamEngine)
 
     # place the steam engine next to the boiler
@@ -349,7 +343,7 @@ def test_build_iron_gear_factory(game):
 
     # craft 15 small electric poles
     recipe = get_prototype_recipe(Prototype.SmallElectricPole)
-    ensure_ingredients(game, recipe, quantity=12)
+    ensure_ingredients(recipe, quantity=12)
     craft_item(Prototype.SmallElectricPole, quantity=12)
 
     # place connect the steam engine and assembly machine with power poles
@@ -357,7 +351,7 @@ def test_build_iron_gear_factory(game):
 
     #place_entity(Prototype.OffshorePump, position=water_patch.bounding_box.left_top)
 
-def test_auto_fueling_iron_smelting_factory(game):
+def test_auto_fueling_iron_smelting_factory():
     """
     Builds an auto-fueling iron smelting factory:
     - Mines coal and iron ore.
@@ -427,10 +421,9 @@ def test_auto_fueling_iron_smelting_factory(game):
     print(f"Successfully produced {iron_plates_in_chest} iron plates.")
 
 
-def test_create_offshore_pump_to_steam_engine(game):
+def test_create_offshore_pump_to_steam_engine():
     """
     Place a boiler and a steam engine next to each other in 3 cardinal directions.
-    :param game:
     :return:
     """
     boilers_in_inventory = inspect_inventory()[Prototype.Boiler]
@@ -476,18 +469,16 @@ def test_create_offshore_pump_to_steam_engine(game):
     # connect the boiler and steam engine with a pipe
     boiler_to_steam_engine_pipes = connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
 
-    inspected_steam_engine = inspect_entities(position=steam_engine.position, radius=1).get_entity(Prototype.SteamEngine)
+    inspected_steam_engine = get_entities({Prototype.SteamEngine})[0]
     assert inspected_steam_engine.warning == 'not connected to power network'
 
     assert steam_engine.direction.value == boiler.direction.value
-    add_command(f"/c take_screenshot{{zoom=1, anti_alias=true, show_entity_info=true, position={{x={boiler.position.x}, y={boiler.position.y}}}}}", raw=True)
-    execute_transaction()
+    
 
 
-def test_build_iron_gear_factory(game):
+def test_build_iron_gear_factory():
     """
     Build a factory that produces iron gears from iron plates.
-    :param game:
     :return:
     """
     # move to the iron ore
@@ -596,20 +587,20 @@ def test_build_iron_gear_factory(game):
                                                 direction=Direction.UP,
                                                 spacing=0)
 
-    def ensure_ingredients(game, recipe, quantity=1):
+    def ensure_ingredients(recipe, quantity=1):
         for ingredient in recipe.ingredients:
             required = ingredient.count * quantity
             available = inspect_inventory()[ingredient.name]
             if available < required:
-                craft_recursive(game, ingredient.name, required - available)
+                craft_recursive(ingredient.name, required - available)
 
-    def craft_recursive(game, item_name, quantity):
+    def craft_recursive(item_name, quantity):
         recipe = get_prototype_recipe(item_name)
-        ensure_ingredients(game, recipe, quantity)
+        ensure_ingredients(recipe, quantity)
         craft_item(item_name, quantity=quantity)
 
     recipe = get_prototype_recipe(Prototype.AssemblingMachine1)
-    ensure_ingredients(game, recipe)
+    ensure_ingredients(recipe)
 
     # craft an assembly machine
     craft_item(Prototype.AssemblingMachine1)
@@ -624,7 +615,7 @@ def test_build_iron_gear_factory(game):
 
     # craft an offshore pump
     recipe = get_prototype_recipe(Prototype.OffshorePump)
-    ensure_ingredients(game, recipe)
+    ensure_ingredients(recipe)
     craft_item(Prototype.OffshorePump)
 
     # place the offshore pump at nearest water source
@@ -635,7 +626,7 @@ def test_build_iron_gear_factory(game):
 
     # craft a boiler
     recipe = get_prototype_recipe(Prototype.Boiler)
-    ensure_ingredients(game, recipe)
+    ensure_ingredients(recipe)
     craft_item(Prototype.Boiler)
 
     # place the boiler next to the offshore pump
@@ -647,7 +638,7 @@ def test_build_iron_gear_factory(game):
 
     # craft a steam engine
     recipe = get_prototype_recipe(Prototype.SteamEngine)
-    ensure_ingredients(game, recipe)
+    ensure_ingredients(recipe)
     craft_item(Prototype.SteamEngine)
 
     # place the steam engine next to the boiler
@@ -665,7 +656,7 @@ def test_build_iron_gear_factory(game):
 
     # craft 5 small electric poles
     recipe = get_prototype_recipe(Prototype.SmallElectricPole)
-    ensure_ingredients(game, recipe, quantity=10)
+    ensure_ingredients(recipe, quantity=10)
     craft_item(Prototype.SmallElectricPole, quantity=10)
 
     # place connect the steam engine and assembly machine with power poles
@@ -695,7 +686,7 @@ def test_build_iron_gear_factory(game):
     assert inventory.get(Prototype.IronGearWheel) >= 0
 
 
-def test_craft_automation_packs_and_research(game):
+def test_craft_automation_packs_and_research():
     # Gather resources
     move_to(nearest(Resource.IronOre))
     harvest_resource(nearest(Resource.IronOre), 20)
@@ -759,7 +750,7 @@ def test_craft_automation_packs_and_research(game):
     print(f"Successfully started research. Progress: {current_research}")
     
 
-def test_build_auto_refilling_coal_system(game):
+def test_build_auto_refilling_coal_system():
     num_drills = 3
 
     # Start at the origin
@@ -838,7 +829,7 @@ def test_build_auto_refilling_coal_system(game):
 
     print(f"Auto-refilling coal mining system with {num_drills} drills has been built!")
 
-def test_simple_automated_drill(game):
+def test_simple_automated_drill():
     # Find nearest coal patch
     coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
     assert coal_patch, "No coal patch found nearby"
@@ -867,15 +858,15 @@ def test_simple_automated_drill(game):
     print(f"Placed {len(belts)} transport belt(s) from drill to inserter")
 
     # Verify the setup
-    entities = inspect_entities(drill.position, radius=5)
-    assert entities.get_entity(Prototype.BurnerMiningDrill), "Burner mining drill not found in setup"
-    assert entities.get_entity(Prototype.BurnerInserter), "Inserter not found in setup"
-    assert any(e.name == "transport-belt" for e in entities.entities), "Transport belts not found in setup"
+    entities = get_entities({Prototype.TransportBelt}, drill.position)[0]
+    assert get_entities({Prototype.BurnerMiningDrill}), "Burner mining drill not found in setup"
+    assert get_entities({Prototype.BurnerInserter}), "Inserter not found in setup"
+    assert any(e.name == "transport-belt" for e in entities), "Transport belts not found in setup"
 
     print("Successfully set up coal mining loop with burner mining drill, inserter, and transport belts")
 
 
-def test_another_self_fueling_coal_belt(game):
+def test_another_self_fueling_coal_belt():
     # Find the nearest coal patch
     coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
     assert coal_patch is not None, "No coal patch found nearby"
@@ -915,21 +906,7 @@ def test_another_self_fueling_coal_belt(game):
     assert len(belt_to_close_loop) > 0, "Failed to connect belt to close the loop"
 
     print(f"Placed {len(belt_entities)} transport belt segments")
-
     print("Completed the belt loop")
-
-    # Verify the setup
-    inspection = inspect_entities(coal_patch.bounding_box.center, radius=15)
-    assert len([e for e in inspection.entities if
-                e.name == Prototype.BurnerMiningDrill.value[0]]) == 5, "Not all burner mining drills were placed"
-    assert len([e for e in inspection.entities if
-                e.name == Prototype.BurnerInserter.value[0]]) == 5, "Not all inserters were placed"
-    # sum all inspected entities with the name transport-belt
-    total_belts = sum([e.quantity if e.quantity else 1 for e in inspection.entities if e.name == Prototype.TransportBelt.value[0]])
-
-    assert total_belts >= 15, "Not enough transport belt segments were placed"
-
-    print("All components verified")
 
     # Kickstart the system by placing coal on the belt
     move_to(drills[0].position)
@@ -939,7 +916,7 @@ def test_another_self_fueling_coal_belt(game):
     print("System kickstarted with coal")
     print("Self-fueling belt of 5 burner mining drills successfully set up")
 
-def test_basic_iron_smelting_chain(game):
+def test_basic_iron_smelting_chain():
     # Place iron ore patch
     iron_ore_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
     assert iron_ore_patch, "No iron ore patch found"
@@ -991,7 +968,7 @@ def test_basic_iron_smelting_chain(game):
     assert iron_plates > 0, f"No iron plates produced after 60 seconds. Check fuel levels and connections."
     print(f"Success! {iron_plates} iron plates produced and stored in the chest.")
 
-def test_steel_smelting_chain(game):
+def test_steel_smelting_chain():
     # Find the nearest iron ore patch
     iron_ore_position = nearest(Resource.IronOre)
     move_to(iron_ore_position)
@@ -1023,15 +1000,6 @@ def test_steel_smelting_chain(game):
     insert_item(Prototype.Coal, furnace2, 5)
     insert_item(Prototype.Coal, inserter1, 1)
 
-    # Verify setup
-    entities = inspect_entities(burner_drill.position, radius=10)
-    assert any(
-        e.name == "burner-mining-drill" for e in entities.entities), "Burner mining drill not found in inspection"
-    assert sum(
-        1 for e in entities.entities if e.name == "stone-furnace") == 2, "Two stone furnaces not found in inspection"
-    assert sum(1 for e in entities.entities if
-               e.name == "burner-inserter") == 1, "A burner inserter not found in inspection"
-
     # Test that the stone furnace has steel after 60 seconds
     sleep(60)
     furnace_inventory = inspect_inventory(furnace2)
@@ -1041,7 +1009,7 @@ def test_steel_smelting_chain(game):
     print("Steel smelting chain setup complete and verified")
 
 
-def test_build_iron_plate_factory(game):
+def test_build_iron_plate_factory():
 
     WIDTH_SPACING = 1 # Spacing between entities in our factory the x-axis
 
@@ -1203,12 +1171,6 @@ def test_steam_engines():
 
     sleep(30)
 
-    # inspect assembler
-    inspected_assembler = inspect_entities(assembler.position, radius=1).get_entity(Prototype.AssemblingMachine1)
-    assert not inspected_assembler.warning
-
-
-
 def test_iron_smelting():
     """
     Create an auto driller for coal.
@@ -1280,6 +1242,3 @@ def test_auto_driller():
 
     insert_item(Prototype.Coal, burner_mining_drill, 5)
     move_to(burner_mining_drill.position.right().right().right())
-
-
-```

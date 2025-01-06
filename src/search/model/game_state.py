@@ -8,6 +8,14 @@ from typing import List, Dict, Any
 def is_serializable(obj: Any) -> bool:
     """Test if an object can be serialized with pickle"""
     try:
+        if obj == True or obj == False:
+            return True
+
+
+        # Skip type objects
+        if isinstance(obj, type):
+            return False
+
         # Skip builtin types
         if obj.__module__ == 'builtins':
             return False
@@ -18,12 +26,10 @@ def is_serializable(obj: Any) -> bool:
         if isinstance(obj, (list, dict)):
             return all(is_serializable(item) for item in obj)
 
-        if isinstance(obj, type):
-            return False
-
         # Common built-in types that are always serializable
         if isinstance(obj, (int, float, str, bool, list, dict, tuple, set)):
             return True
+
 
         pickle.dumps(obj)
         return True
@@ -54,7 +60,7 @@ class GameState:
 
         # Filter and pickle only serializable variables
         if hasattr(instance, 'persistent_vars'):
-            serializable_vars = filter_serializable_vars(instance.__dict__)
+            serializable_vars = filter_serializable_vars(instance.persistent_vars)
             namespace = pickle.dumps(serializable_vars) if serializable_vars else bytes()
         else:
             namespace = bytes()

@@ -19,6 +19,9 @@ class ChunkedMCTS(MCTS):
         super().__init__(*args, **kwargs)
         self.logit_bias = logit_bias
 
+    import ast
+    from typing import List
+
     def _split_into_chunks(self, program_code: str) -> List[Program]:
         """Split the program code into chunks based on docstrings."""
 
@@ -46,27 +49,45 @@ class ChunkedMCTS(MCTS):
                     conversation=Conversation(messages=[])
                 ))
 
-        # Process each chunk
-        for i, (start_pos, end_pos, docstring) in enumerate(docstring_positions):
-            chunk_lines = []
+        if len(docstring_positions) == 1:
+            # Process each chunk
+            start_pos, end_pos, docstring = docstring_positions[0]
+            chunk_lines = program_code.splitlines()
+            chunk_lines = chunk_lines[end_pos+1:]
+            remainder = '\n'.join(chunk_lines)
 
-            # Add docstring lines
-            chunk_lines.extend(lines[start_pos:end_pos + 1])
-
-            # Add code lines until next docstring or end
-            if i < len(docstring_positions) - 1:
-                next_start = docstring_positions[i + 1][0]
-                chunk_lines.extend(lines[end_pos + 1:next_start])
-            else:
-                # For last chunk, add all remaining lines
-                chunk_lines.extend(lines[end_pos + 1:])
-
+            chunk_strings = remainder.split("\n\n")
+            chunk_strings[0] = f'"""\n{docstring.strip()}\n"""'+'\n'+chunk_strings[0]
             # Create program for this chunk
-            if chunk_lines:
-                chunks.append(Program(
-                    code='\n'.join(chunk_lines),
-                    conversation=Conversation(messages=[])
-                ))
+            for chunk in chunk_strings:
+                if chunk.strip():
+                    chunks.append(Program(
+                        code=chunk,
+                        conversation=Conversation(messages=[])
+                    ))
+
+        else:
+            # Process each chunk
+            for i, (start_pos, end_pos, docstring) in enumerate(docstring_positions):
+                chunk_lines = []
+
+                # Add docstring lines
+                chunk_lines.extend(lines[start_pos:end_pos + 1])
+
+                # Add code lines until next docstring or end
+                if i < len(docstring_positions) - 1:
+                    next_start = docstring_positions[i + 1][0]
+                    chunk_lines.extend(lines[end_pos + 1:next_start])
+                else:
+                    # For last chunk, add all remaining lines
+                    chunk_lines.extend(lines[end_pos + 1:])
+
+                # Create program for this chunk
+                if chunk_lines:
+                    chunks.append(Program(
+                        code='\n'.join(chunk_lines),
+                        conversation=Conversation(messages=[])
+                    ))
 
         return chunks
 
@@ -219,6 +240,9 @@ class ChunkedMCTS(MCTS):
 
         # Wait for all programs to complete
         await asyncio.gather(*eval_futures)
+
+        # Visit parent
+        await self.sampler.visit(parent.id, len(eval_futures))
 
     async def _process_program_chunks(self, program: Program, chunks: List[Program],
                                       start_state: GameState, instance_id: int,

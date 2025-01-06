@@ -336,6 +336,9 @@ class MCTS:
             if save_tasks:
                 await asyncio.gather(*save_tasks)
 
+                # Visit parent
+                await self.sampler.visit(parent.id, len(save_tasks))
+
         except Exception as e:
             self.retry_count += 1
             if self.retry_count >= self.max_retries:

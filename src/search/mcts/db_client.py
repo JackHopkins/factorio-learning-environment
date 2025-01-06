@@ -70,8 +70,8 @@ class DBClient:
                         INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, 
                                            completion_token_usage, prompt_token_usage, token_usage, response, 
                                            holdout_value, raw_reward, version, version_description, model, meta, 
-                                           achievements_json)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                           achievements_json, instance, depth)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id, created_at
                     """, (program.code, program.value, 0, program.parent_id,
                           program.state.to_raw() if program.state else None,
@@ -86,7 +86,9 @@ class DBClient:
                           program.version_description,
                           program.model,
                           json.dumps(program.meta),
-                          json.dumps(program.achievements)
+                          json.dumps(program.achievements),
+                          program.instance,
+                          program.depth/2
                           ))
 
                     id, created_at = cur.fetchone()

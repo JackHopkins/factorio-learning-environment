@@ -1,6 +1,8 @@
 import ast
 import asyncio
 import json
+import pickle
+
 from search.model.conversation import GenerationParameters
 from typing import List, Tuple, Optional, Union
 
@@ -85,6 +87,12 @@ class ChunkedMCTS(MCTS):
             - List of entity lists (one per chunk)
         """
         current_state = start_state
+        try:
+            vars = pickle.loads(current_state.namespace)
+        except Exception as e:
+            # This is good - the current state should be wiped.
+            pass
+
         holdout_values = []
         entity_list = []
         achievement_list = []
@@ -115,6 +123,7 @@ class ChunkedMCTS(MCTS):
                     instance
                 )
 
+                new_namespace = pickle.loads(state.namespace)
 
                 # Get holdout value after this chunk
                 holdout_score, _ = self.evaluator.holdout.score()
@@ -179,9 +188,13 @@ class ChunkedMCTS(MCTS):
         else:
             conversation = parent.conversation
 
-        if len(conversation.messages) > (self.db.max_conversation_length*2)+1:
-            difference = (len(conversation.messages) - ((self.db.max_conversation_length*2)+1)) // 2
-            conversation.messages = conversation.messages[difference:]
+        # if len(conversation.messages) > (self.db.max_conversation_length*2)+1:
+        #     difference = (len(conversation.messages) - ((self.db.max_conversation_length*2)+1)) // 2
+        #     conversation.messages = conversation.messages[difference:]
+
+        # verify that the system message exists
+        if not any(msg.role == "system" for msg in conversation.messages):
+            raise RuntimeError("System message has been lost somehow...")
 
         self.evaluator.set_sampling_status()
         self.evaluator.set_iteration(iteration, n_iterations)
@@ -219,6 +232,7 @@ class ChunkedMCTS(MCTS):
             last_chunk_id = parent_id
             last_conversation_stage = program.conversation
 
+            depth = program.depth
             for chunk, holdout_value, entities, achievements in zip(evaluated_chunks, holdout_values, entity_list, achievement_list):
                 try:
                     chunk_program = Program(
@@ -235,8 +249,11 @@ class ChunkedMCTS(MCTS):
                         token_usage=program.token_usage // len(evaluated_chunks),
                         completion_token_usage=program.completion_token_usage // len(evaluated_chunks),
                         prompt_token_usage=program.prompt_token_usage // len(evaluated_chunks),
-                        achievements=achievements
+                        achievements=achievements,
+                        instance=instance_id,
+                        depth=depth+2
                     )
+                    depth += 1
 
                     last_conversation_stage.add_result(
                         chunk.code,

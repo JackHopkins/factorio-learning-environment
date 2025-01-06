@@ -155,6 +155,7 @@ class FactorioEvaluator:
             self.logger.update_instance(tcp_port, status="capturing state")
             state = GameState.from_instance(instance)
 
+            # Get the namespace variables in a human readable format for debugging purposes
             vars = pickle.loads(state.namespace)
 
             entities = instance.get_entities()

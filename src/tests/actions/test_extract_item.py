@@ -13,5 +13,5 @@ def game(instance):
 def test_extract(game):
     chest = game.place_entity(Prototype.IronChest, position=Position(x=0, y=0))
     game.insert_item(Prototype.IronPlate, chest, quantity=10)
-    game.extract_item(Prototype.IronPlate, chest.position, quantity=1)
+    count = game.extract_item(Prototype.IronPlate, chest.position, quantity=2)
     assert game.inspect_inventory()[Prototype.IronPlate] == 1

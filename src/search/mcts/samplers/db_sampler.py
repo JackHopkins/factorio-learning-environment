@@ -26,7 +26,9 @@ class DBSampler(ABC):
             id: The ID of the program to increment the visit count for.
             count: The number of times to increment the visit count. Defaults to 1.
         """
-        assert children > 0
+        if children == 0:
+            return
+
         with self.db_client.get_connection() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 # Get visit count from the database.

@@ -4,7 +4,7 @@ from typing import List
 
 import pytest
 
-from factorio_entities import Entity, Position, ResourcePatch
+from factorio_entities import Entity, Position, ResourcePatch, BeltGroup
 from factorio_instance import Direction
 from factorio_types import Prototype, Resource, PrototypeName
 
@@ -454,3 +454,10 @@ def test_connect_betl_groups_into_an_octagon(game):
 
     # This should result in a single contiguous group
     assert len(belt_group) == 1
+
+def test_belt_group(game):
+    game.connect_entities(Position(x=0, y=0), Position(x=5, y=0), Prototype.TransportBelt)
+    entities = game.get_entities()
+    print(entities)
+    belt_groups = [entity for entity in game.get_entities() if isinstance(entity, BeltGroup)]
+    pass

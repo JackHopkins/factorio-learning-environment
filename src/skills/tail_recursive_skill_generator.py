@@ -454,7 +454,7 @@ Here are some examples of similar snippets for reference:
                     dependency_implementation = self.implement_skill(
                         Objective(objective=suggested_objective, starting_inventory=current_inventory),
                         parent_context=implementation,
-                        depth=depth + 1
+                        depth=depth + 2
                     )
 
                     if dependency_implementation:

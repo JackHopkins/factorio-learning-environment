@@ -84,7 +84,7 @@ class GetEntities(Action):
             return entities_list
 
         except Exception as e:
-            raise Exception(f"Error in GetEntities: {e}, {response}")
+            raise Exception(f"Error in GetEntities: {e}")
 
     def process_nested_dict(self, nested_dict):
         """Helper method to process nested dictionaries"""

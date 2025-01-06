@@ -35,8 +35,8 @@ class PlaceObject(Action):
 
         if not isinstance(entity, Prototype):
             raise ValueError("The first argument must be a Prototype object")
-        if not isinstance(direction, Direction):
-            raise ValueError("The second argument must be a Direction object")
+        #if not isinstance(direction, Direction):
+        #    raise ValueError("The second argument must be a Direction object")
 
         # If position is a tuple, cast it to a Position object:
         if isinstance(position, tuple):

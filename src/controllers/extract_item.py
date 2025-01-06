@@ -39,7 +39,10 @@ class ExtractItem(Action):
                                        quantity,
                                        x,
                                        y)
-        if response != 1:
+        if isinstance(response, str):
+            raise Exception(response)
+
+        if not response or response < 1:
             raise Exception("Could not extract.", response)
 
-        return True
+        return response

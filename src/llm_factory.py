@@ -92,6 +92,19 @@ class LLMFactory:
             )
             return response
 
+        elif any(model in model_to_use for model in ["llama", "Qwen"]):
+            client = AsyncOpenAI(api_key=os.getenv("TOGETHER_API_KEY"), base_url="https://api.together.xyz/v1")
+            return await client.chat.completions.create(
+                model=model_to_use,
+                max_tokens=kwargs.get('max_tokens', 2048),
+                temperature=kwargs.get('temperature', 0.3),
+                messages=kwargs.get('messages', None),
+                logit_bias=kwargs.get('logit_bias', None),
+                n=kwargs.get('n_samples', None),
+                stop=kwargs.get('stop_sequences', None),
+                stream=False
+            )
+        
         elif "o1-mini" in model_to_use:
             client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             # replace `max_tokens` with `max_completion_tokens` for OpenAI API

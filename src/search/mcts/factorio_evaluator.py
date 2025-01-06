@@ -1,21 +1,31 @@
 import asyncio
+import pickle
 from typing import List, Tuple, Union, Dict
 
 from search.mcts.db_client import DBClient
-from search.mcts.model.game_state import GameState
+from search.model.game_state import GameState
 from search.mcts.logger import FactorioLogger
-from search.mcts.model.program import Program
+from search.model.program import Program
 from factorio_entities import Entity, EntityGroup
 from factorio_instance import FactorioInstance
 from utils import get_achievements
 
 
 class FactorioEvaluator:
-    def __init__(self, db_client: DBClient, instances: List[FactorioInstance], value_accrual_time=10, logger=None):
+    def __init__(self,
+                 db_client: DBClient,
+                 instances: List[FactorioInstance],
+                 value_accrual_time=10,
+                 error_penalty=10,
+                 logger=None):
         self.db = db_client
         self.instances = instances[:-1]  # Main instances
         self.holdout = instances[-1]  # Holdout instance
         self.value_accrual_time = value_accrual_time  # Time to accrue value before evaluating
+        self.error_penalty = error_penalty  # Penalty for errors during evaluation
+
+
+        # Initialize logger if not provided
         if not logger:
             self.logger = FactorioLogger(len(instances))
             self.logger.start()
@@ -46,6 +56,14 @@ class FactorioEvaluator:
                 self.logger.update_instance(instance.tcp_port, status="sampling")
             # Also update holdout status
             self.logger.update_instance(self.holdout.tcp_port, status="sampling")
+
+    def set_iteration(self, iteration, n_iterations):
+        """Update iteration number for all instances in this evaluator's group"""
+        if self.logger:
+            for instance in self.instances:
+                self.logger.update_instance(instance.tcp_port, iteration=iteration, n_iterations=n_iterations)
+            # Also update holdout status
+            self.logger.update_instance(self.holdout.tcp_port, iteration=iteration, n_iterations=n_iterations)
 
     async def evaluate_batch(self, programs: List[Program], start_state: GameState) -> List[Program]:
         try:
@@ -136,6 +154,10 @@ class FactorioEvaluator:
             # Capturing immediate resulting state
             self.logger.update_instance(tcp_port, status="capturing state")
             state = GameState.from_instance(instance)
+
+            # Get the namespace variables in a human readable format for debugging purposes
+            vars = pickle.loads(state.namespace)
+
             entities = instance.get_entities()
             final_inventory = instance.inspect_inventory()
 

@@ -45,3 +45,4 @@ global.action.reset_production_stats = function(player)
     global.harvested_items = {}
     global.crafted_items = {}
 end
+

@@ -97,7 +97,7 @@ print("Steel plate extraction and verification completed successfully.")
 
 class TestProgramChunkSplitter(unittest.TestCase):
     def setUp(self):
-        self.splitter = ChunkedMCTS(None, None, None, "", None)
+        self.splitter = ChunkedMCTS(None, None, None, "", None, initial_state=None)
 
     def test_single_chunk(self):
         code = '''
@@ -139,7 +139,6 @@ z = 3
         for program, task, value in zip(chunks, ["First task", "Second task", "Third task"], ["x = 1", "y = 2", "z = 3"]):
             self.assertTrue(task in program.code)
             self.assertTrue(value in program.code)
-
 
     def test_multiline_code(self):
         code = '''
@@ -224,6 +223,22 @@ string but not a docstring"""
         chunks = self.splitter._split_into_chunks(FULL_PROGRAM2)
 
         pass
+
+    def test_multiple_chunks_with_one_docstring(self):
+            code = '''
+"""First task
+
+With a gap
+"""
+x = 1
+
+y = 2
+
+z = 3
+'''
+            chunks = self.splitter._split_into_chunks(code)
+            self.assertEqual(len(chunks), 3)
+
 
 if __name__ == '__main__':
     unittest.main()

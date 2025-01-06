@@ -3,9 +3,9 @@ from typing import List, Optional, Tuple, Dict
 import psycopg2
 from psycopg2.extras import DictCursor
 
-from search.mcts.model.conversation import Conversation, Message
-from search.mcts.model.game_state import GameState
-from search.mcts.model.program import Program
+from search.model.conversation import Conversation, Message
+from search.model.game_state import GameState
+from search.model.program import Program
 from factorio_instance import FactorioInstance
 
 

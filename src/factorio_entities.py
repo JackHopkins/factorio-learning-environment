@@ -127,6 +127,10 @@ class Position(BaseModel):
     x: float
     y: float
 
+    def __init(self, x, y):
+        self.x = x
+        self.y = y
+
     def __add__(self, other) -> 'Position':
         return Position(x=self.x + other.x, y=self.y + other.y)
 

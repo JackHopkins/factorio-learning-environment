@@ -1,14 +1,15 @@
 import ast
 import asyncio
 import json
-from search.mcts.model.conversation import GenerationParameters
+import pickle
+
+from search.model.conversation import GenerationParameters
 from typing import List, Tuple, Optional, Union
 
-from search.mcts.model.conversation import Conversation, Message
-from search.mcts.conversation_formatter import PLANNING_ADDITION_PROMPT
-from search.mcts.model.game_state import GameState
+from search.model.conversation import Conversation, Message
+from search.model.game_state import GameState
 from search.mcts.mcts import MCTS
-from search.mcts.model.program import Program
+from search.model.program import Program
 from factorio_entities import Entity, EntityGroup
 
 
@@ -17,6 +18,9 @@ class ChunkedMCTS(MCTS):
     def __init__(self, *args, logit_bias: Optional[float] = None, **kwargs):
         super().__init__(*args, **kwargs)
         self.logit_bias = logit_bias
+
+    import ast
+    from typing import List
 
     def _split_into_chunks(self, program_code: str) -> List[Program]:
         """Split the program code into chunks based on docstrings."""
@@ -45,27 +49,45 @@ class ChunkedMCTS(MCTS):
                     conversation=Conversation(messages=[])
                 ))
 
-        # Process each chunk
-        for i, (start_pos, end_pos, docstring) in enumerate(docstring_positions):
-            chunk_lines = []
+        if len(docstring_positions) == 1:
+            # Process each chunk
+            start_pos, end_pos, docstring = docstring_positions[0]
+            chunk_lines = program_code.splitlines()
+            chunk_lines = chunk_lines[end_pos+1:]
+            remainder = '\n'.join(chunk_lines)
 
-            # Add docstring lines
-            chunk_lines.extend(lines[start_pos:end_pos + 1])
-
-            # Add code lines until next docstring or end
-            if i < len(docstring_positions) - 1:
-                next_start = docstring_positions[i + 1][0]
-                chunk_lines.extend(lines[end_pos + 1:next_start])
-            else:
-                # For last chunk, add all remaining lines
-                chunk_lines.extend(lines[end_pos + 1:])
-
+            chunk_strings = remainder.split("\n\n")
+            chunk_strings[0] = f'"""\n{docstring.strip()}\n"""'+'\n'+chunk_strings[0]
             # Create program for this chunk
-            if chunk_lines:
-                chunks.append(Program(
-                    code='\n'.join(chunk_lines),
-                    conversation=Conversation(messages=[])
-                ))
+            for chunk in chunk_strings:
+                if chunk.strip():
+                    chunks.append(Program(
+                        code=chunk,
+                        conversation=Conversation(messages=[])
+                    ))
+
+        else:
+            # Process each chunk
+            for i, (start_pos, end_pos, docstring) in enumerate(docstring_positions):
+                chunk_lines = []
+
+                # Add docstring lines
+                chunk_lines.extend(lines[start_pos:end_pos + 1])
+
+                # Add code lines until next docstring or end
+                if i < len(docstring_positions) - 1:
+                    next_start = docstring_positions[i + 1][0]
+                    chunk_lines.extend(lines[end_pos + 1:next_start])
+                else:
+                    # For last chunk, add all remaining lines
+                    chunk_lines.extend(lines[end_pos + 1:])
+
+                # Create program for this chunk
+                if chunk_lines:
+                    chunks.append(Program(
+                        code='\n'.join(chunk_lines),
+                        conversation=Conversation(messages=[])
+                    ))
 
         return chunks
 
@@ -86,6 +108,12 @@ class ChunkedMCTS(MCTS):
             - List of entity lists (one per chunk)
         """
         current_state = start_state
+        try:
+            vars = pickle.loads(current_state.namespace)
+        except Exception as e:
+            # This is good - the current state should be wiped.
+            pass
+
         holdout_values = []
         entity_list = []
         achievement_list = []
@@ -116,6 +144,7 @@ class ChunkedMCTS(MCTS):
                     instance
                 )
 
+                new_namespace = pickle.loads(state.namespace)
 
                 # Get holdout value after this chunk
                 holdout_score, _ = self.evaluator.holdout.score()
@@ -160,10 +189,10 @@ class ChunkedMCTS(MCTS):
 
     async def search(self, n_iterations: int, samples_per_iteration: int, skip_failures: bool = False):
         for iteration in range(n_iterations):
-            self.run_iteration(samples_per_iteration, skip_failures)
+            await self.run_iteration(samples_per_iteration, skip_failures, iteration)
             self.evaluator.logger.update_progress()
 
-    async def run_iteration(self, samples_per_iteration, skip_failures):
+    async def run_iteration(self, samples_per_iteration, skip_failures, iteration, n_iterations):
         parent = await self.sampler.sample_parent(version=self.version)
         start_state = parent.state if parent else self.initial_state
         if not parent:
@@ -171,7 +200,7 @@ class ChunkedMCTS(MCTS):
             entities = self.evaluator.instances[0].get_entities()
             conversation = Conversation(messages=[
                 Message(role="system", content=self.system_prompt),
-                Message(role="user", content=PLANNING_ADDITION_PROMPT),
+                #Message(role="user", content=PLANNING_ADDITION_PROMPT),
                 Message(role="assistant", content="print(f'Inventory: {inspect_inventory()}')\n"
                                                   "print(f'Entities: {get_entities()}')\n"),
                 Message(role="user", content=f"1: ('Inventory: {start_state.inventory.__dict__}')\n"
@@ -180,11 +209,16 @@ class ChunkedMCTS(MCTS):
         else:
             conversation = parent.conversation
 
-        if len(conversation.messages) > (self.db.max_conversation_length*2)+1:
-            difference = (len(conversation.messages) - ((self.db.max_conversation_length*2)+1)) // 2
-            conversation.messages = conversation.messages[difference:]
+        # if len(conversation.messages) > (self.db.max_conversation_length*2)+1:
+        #     difference = (len(conversation.messages) - ((self.db.max_conversation_length*2)+1)) // 2
+        #     conversation.messages = conversation.messages[difference:]
+
+        # verify that the system message exists
+        if not any(msg.role == "system" for msg in conversation.messages):
+            raise RuntimeError("System message has been lost somehow...")
 
         self.evaluator.set_sampling_status()
+        self.evaluator.set_iteration(iteration, n_iterations)
         raw_programs = await self._generate_programs_batch(conversation, samples_per_iteration)
 
         # Process programs in parallel
@@ -192,7 +226,7 @@ class ChunkedMCTS(MCTS):
         for i, (program, chunks) in enumerate(raw_programs):
             instance_id = i % (len(self.evaluator.instances))
             self.evaluator.instances[instance_id].reset(start_state)
-            self.evaluator.logger.update_instance(self.evaluator.instances[i].tcp_port, program_id=program.id, status="resetting")
+            self.evaluator.logger.update_instance(self.evaluator.instances[i].tcp_port, program_id=program.id, status="resetting", n_iterations=n_iterations)
 
             # Create evaluation future for this program's chunks
             eval_futures.append(self._process_program_chunks(
@@ -207,6 +241,9 @@ class ChunkedMCTS(MCTS):
         # Wait for all programs to complete
         await asyncio.gather(*eval_futures)
 
+        # Visit parent
+        await self.sampler.visit(parent.id, len(eval_futures))
+
     async def _process_program_chunks(self, program: Program, chunks: List[Program],
                                       start_state: GameState, instance_id: int,
                                       parent_id: Optional[int], skip_failures: bool):
@@ -219,12 +256,13 @@ class ChunkedMCTS(MCTS):
             last_chunk_id = parent_id
             last_conversation_stage = program.conversation
 
+            depth = program.depth
             for chunk, holdout_value, entities, achievements in zip(evaluated_chunks, holdout_values, entity_list, achievement_list):
                 try:
                     chunk_program = Program(
                         code=chunk.code,
                         conversation=program.conversation,
-                        value=chunk.value - holdout_value,  # Use per-chunk holdout value
+                        value=chunk.value - holdout_value - (abs(self.error_penalty) if 'error' in chunk.response.lower() else 0),  # Use per-chunk holdout value
                         raw_reward=chunk.value,
                         holdout_value=holdout_value,
                         state=chunk.state,
@@ -235,15 +273,17 @@ class ChunkedMCTS(MCTS):
                         token_usage=program.token_usage // len(evaluated_chunks),
                         completion_token_usage=program.completion_token_usage // len(evaluated_chunks),
                         prompt_token_usage=program.prompt_token_usage // len(evaluated_chunks),
-                        achievements=achievements
+                        achievements=achievements,
+                        instance=instance_id,
+                        depth=depth+2
                     )
+                    depth += 1
 
                     last_conversation_stage.add_result(
                         chunk.code,
                         chunk.response,
                         score=chunk.value,
                         advantage=chunk.value - holdout_value,
-
                     )
 
                     chunk_program.id = hash(

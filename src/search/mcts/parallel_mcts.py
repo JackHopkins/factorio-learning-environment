@@ -8,7 +8,7 @@ from rich.console import Console
 from search.mcts.db_client import DBClient
 from search.mcts.factorio_evaluator import FactorioEvaluator
 from search.mcts.grouped_logger import GroupedFactorioLogger
-from search.mcts.model.instance_group import InstanceGroup
+from search.model.instance_group import InstanceGroup
 from search.mcts.parallel_mcts_config import ParallelMCTSConfig
 from factorio_instance import FactorioInstance
 
@@ -95,7 +95,8 @@ class ParallelMCTS:
                 db_client=self.db_client,
                 instances=group_instances,
                 value_accrual_time=3,
-                logger=self.logger
+                logger=self.logger,
+                error_penalty=self.config.mcts_kwargs['error_penalty']
             )
 
             # Create MCTS instance
@@ -151,7 +152,9 @@ class ParallelMCTS:
             for iteration in range(n_iterations):
                 await group.mcts.run_iteration(
                     len(group.active_instances),
-                    skip_failures
+                    skip_failures,
+                    iteration,
+                    n_iterations
                 )
                 self.logger.update_progress()
 

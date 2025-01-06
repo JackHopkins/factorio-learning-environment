@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from rich.console import Console
@@ -38,6 +38,8 @@ class InstanceMetrics:
     final_inventory_count: int = 0
     version: int = 0
     version_description: str = "N/A"
+    iteration: int = 0
+    n_iterations: int = 0
 
 
 class GroupedFactorioLogger:
@@ -126,15 +128,27 @@ class GroupedFactorioLogger:
         if instance.total_programs > 0:
             avg_time = f"{((datetime.now() - self.start_time).total_seconds() / instance.total_programs):.2f} sec"
 
+        # Calculate ETA
+        eta = "N/A"
+        if instance.iteration > 0:
+            elapsed_time = (datetime.now() - self.start_time).total_seconds()
+            time_per_iteration = elapsed_time / instance.iteration
+            remaining_iterations = instance.n_iterations - instance.iteration
+            estimated_remaining_seconds = time_per_iteration * remaining_iterations
+            eta_time = datetime.now() + timedelta(seconds=estimated_remaining_seconds)
+            eta = eta_time.strftime("%H:%M:%S")
+
         # Left column data
         left_table.add_row("Program ID:", str(instance.program_id or "None"))
         left_table.add_row("Status:",
                            Text(instance.status, style="green" if instance.status == "running" else "yellow"))
-        left_table.add_row("Action Reward:", f"{instance.current_reward:.2f}")
-        left_table.add_row("Holdout Reward:", f"{instance.holdout_value:.2f}")
+        left_table.add_row("Reward:", f"{instance.current_reward:.2f}")
+        left_table.add_row("Holdout:", f"{instance.holdout_value:.2f}")
         left_table.add_row("Advantage:", f"{instance.relative_reward:.2f}")
         left_table.add_row("Error Count:",
                            Text(str(instance.error_count), style="red" if instance.error_count > 0 else "white"))
+        left_table.add_row("ETA:", Text(eta, style="cyan"))
+
 
         # Right column data
         right_table.add_row("Total Programs:", str(instance.total_programs))
@@ -144,7 +158,7 @@ class GroupedFactorioLogger:
                                               style="red" if instance.start_entities != instance.final_entities else "cyan"))
         right_table.add_row("Inventory:", Text(f"{instance.start_inventory_count} → {instance.final_inventory_count}"))
         right_table.add_row("Version:", Text(f"v{instance.version}"))
-
+        right_table.add_row("Iteration:", Text(f"{instance.iteration}/{instance.n_iterations}"))
         # Create a container table to hold both columns
         container = Table.grid(padding=(0, 2))
         container.add_row(left_table, right_table)
@@ -204,3 +218,4 @@ class GroupedFactorioLogger:
             return final_layout
 
         return main_layout
+

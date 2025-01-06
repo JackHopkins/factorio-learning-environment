@@ -4,9 +4,9 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from search.mcts.model.conversation import Conversation
-from search.mcts.model.program import Program
-from search.mcts.model.game_state import GameState
+from search.model.conversation import Conversation
+from search.model.program import Program
+from search.model.game_state import GameState
 
 
 class LanguageOutput(BaseModel):

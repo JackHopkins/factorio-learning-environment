@@ -1,6 +1,6 @@
 from typing import Any, Dict, Type
 
-from search.mcts.model.game_state import GameState
+from search.model.game_state import GameState
 from search.mcts.mcts import MCTS
 from search.mcts.samplers.db_sampler import DBSampler
 

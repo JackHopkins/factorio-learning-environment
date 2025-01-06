@@ -6,9 +6,9 @@ import psycopg2
 from dotenv import load_dotenv
 from psycopg2.extras import DictCursor
 
-from search.mcts.model.conversation import Conversation, Message
+from search.model.conversation import Conversation, Message
 from search.mcts.db_client import DBClient
-from search.mcts.model.program import Program
+from search.model.program import Program
 from factorio_instance import FactorioInstance
 
 load_dotenv()

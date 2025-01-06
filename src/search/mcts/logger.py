@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from rich.console import Console
@@ -34,6 +34,9 @@ class InstanceMetrics:
 
     version: int = 0
     version_description: str = "N/A"
+
+    iteration: int = 0
+    n_iterations: int = 0
 
 
 class FactorioLogger:
@@ -94,6 +97,16 @@ class FactorioLogger:
         if instance.total_programs > 0:
             avg_time = f"{((datetime.now() - self.start_time).total_seconds() / instance.total_programs):.2f} sec"
 
+        # Calculate ETA
+        eta = "N/A"
+        if instance.iteration > 0:
+            elapsed_time = (datetime.now() - self.start_time).total_seconds()
+            time_per_iteration = elapsed_time / instance.iteration
+            remaining_iterations = instance.n_iterations - instance.iteration
+            estimated_remaining_seconds = time_per_iteration * remaining_iterations
+            eta_time = datetime.now() + timedelta(seconds=estimated_remaining_seconds)
+            eta = eta_time.strftime("%H:%M:%S")
+
         # Add metrics rows
         table.add_row("Program ID:", str(instance.program_id or "None"))
         table.add_row("Status:", Text(instance.status, style="green" if instance.status == "running" else "yellow"))
@@ -106,6 +119,8 @@ class FactorioLogger:
         table.add_row("Avg Time / Program:", Text(avg_time))
         table.add_row("# Entities:", Text(f"{instance.start_entities} -> {instance.final_entities}", style="red" if instance.start_entities != instance.final_entities else "cyan"))
         table.add_row("# Inventory:", Text(f"{instance.start_inventory_count} -> {instance.final_inventory_count}"))
+        table.add_row("Iteration:", Text(f"{instance.iteration}/{instance.n_iterations}"))
+        table.add_row("ETA:", Text(eta, style="cyan"))
 
         return Panel(
             table,

@@ -12,13 +12,13 @@ from rich import print
 from search.auto_curriculum.plan_sampler import PlanSampler
 from search.mcts.blueprint_scenario_sampler import BlueprintScenarioSampler
 from search.mcts.chunked_mcts import ChunkedMCTS
-from search.mcts.model.conversation import Conversation, Message
+from search.model.conversation import Conversation, Message
 from search.mcts.parallel_mcts import ParallelMCTS
 from search.mcts.parallel_mcts_config import ParallelMCTSConfig
 from search.mcts.conversation_formatter import StructurePreservingFormatter, PLANNING_ADDITION_PROMPT
 from search.mcts.db_client import DBClient
-from search.mcts.model.game_state import GameState
-from search.mcts.model.program import Program
+from search.model.game_state import GameState
+from search.model.program import Program
 from search.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
 from factorio_instance import FactorioInstance
 from llm_factory import LLMFactory

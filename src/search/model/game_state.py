@@ -8,12 +8,28 @@ from typing import List, Dict, Any
 def is_serializable(obj: Any) -> bool:
     """Test if an object can be serialized with pickle"""
     try:
+        if obj == True or obj == False:
+            return True
+
+
+        # Skip type objects
         if isinstance(obj, type):
             return False
+
+        # Skip builtin types
+        if obj.__module__ == 'builtins':
+            return False
+
+        if isinstance(obj, Enum):
+            return True
+
+        if isinstance(obj, (list, dict)):
+            return all(is_serializable(item) for item in obj)
 
         # Common built-in types that are always serializable
         if isinstance(obj, (int, float, str, bool, list, dict, tuple, set)):
             return True
+
 
         pickle.dumps(obj)
         return True
@@ -54,6 +70,12 @@ class GameState:
             inventory=instance.inspect_inventory(),
             namespace=namespace
         )
+
+    def __repr__(self):
+        readable_namespace=pickle.loads(self.namespace)
+        return f"GameState(entities={self.entities}, inventory={self.inventory}, timestamp={self.timestamp}, namespace={{{readable_namespace}}})"
+
+
 
     @classmethod
     def parse_raw(cls, json_str: str) -> 'GameState':

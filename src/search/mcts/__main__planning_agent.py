@@ -2,11 +2,11 @@ import json
 import os
 
 from search.auto_curriculum.plan_sampler import PlanSampler
-from search.mcts.model.conversation import Conversation, Message
+from search.model.conversation import Conversation, Message
 from search.mcts.parallel_mcts_config import ParallelMCTSConfig
 from search.mcts.parallel_planning_mcts import ParallelPlanningMCTS
 from search.mcts.planning_mcts import PlanningMCTS
-from search.mcts.model.program import Program
+from search.model.program import Program
 from search.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
 
 os.environ["FORCE_COLOR"] = "1"
@@ -21,7 +21,7 @@ from rich import print
 from cluster.local.cluster_ips import get_local_container_ips
 from search.mcts.conversation_formatter import PLANNING_ADDITION_PROMPT
 from search.mcts.db_client import DBClient
-from search.mcts.model.game_state import GameState
+from search.model.game_state import GameState
 from factorio_instance import FactorioInstance
 from llm_factory import LLMFactory
 

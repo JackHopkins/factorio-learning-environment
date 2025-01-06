@@ -81,7 +81,7 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
 
     if event.path then
         -- Path found successfully
-        player.print("Path found with " .. #event.path .. " waypoints")
+        --player.print("Path found with " .. #event.path .. " waypoints")
         global.paths[event.id] = event.path
         log("Path found for request ID: " .. event.id)
     elseif event.try_again_later then

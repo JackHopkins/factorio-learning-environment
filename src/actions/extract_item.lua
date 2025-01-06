@@ -51,5 +51,5 @@ global.actions.extract_item = function(player_index, extract_item, count, x, y)
     -- Insert the extracted items directly into the player's inventory
     player.insert(stack)
 
-    return 1
+    return number_extracted
 end

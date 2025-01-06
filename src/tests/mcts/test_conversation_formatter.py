@@ -1,5 +1,5 @@
 import unittest
-from search.mcts.model.conversation import Message, Conversation
+from search.model.conversation import Message, Conversation
 
 from search.mcts.conversation_formatter import StructurePreservingFormatter, CodeProcessor
 

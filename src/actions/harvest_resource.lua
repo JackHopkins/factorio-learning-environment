@@ -98,67 +98,107 @@ local function add_entities_to_queue(queue, entities, count)
 end
 
 script.on_nth_tick(15, function(event)
-   if global.harvest_queues then
-       for player_index, queue in pairs(global.harvest_queues) do
-           local player = game.get_player(player_index)
-           if not player then goto continue end
+    -- If no queues at all, just return
+    if not global.harvest_queues then return end
 
-           if queue.current_mining then
+    for player_index, queue in pairs(global.harvest_queues) do
+        local player = game.get_player(player_index)
+        -- Skip if player not valid
+        if not player or not player.valid then goto continue end
 
-               if not player.mining_state.mining then
-                   player.update_selected_entity(queue.mining_position)
-                   player.mining_state = {
-                       mining = true,
-                       position = queue.mining_position
-                   }
-               end
+        -- Already reached or exceeded our target?
+        if queue.total_yield >= queue.target_yield then
+            -- Remove this player's queue
+            global.harvest_queues[player_index] = nil
+            goto continue
+        end
 
-               local mining_duration = game.tick - queue.current_mining.start_tick
+        -- Check if player is still in resource reach distance
+        local dist_x = player.position.x - queue.mining_position.x
+        local dist_y = player.position.y - queue.mining_position.y
+        local sq_dist = (dist_x * dist_x) + (dist_y * dist_y)
+        local sq_reach = (player.resource_reach_distance * player.resource_reach_distance)
+        if sq_dist > sq_reach then
+            -- Too far away; do nothing for now
+            goto continue
+        end
 
-               if mining_duration >= 30 then
-                   if queue.current_mining.entity.valid and queue.current_mining.entity.minable then
-                       local inventory_before = player.get_main_inventory().get_contents()
-                       player.mine_entity(queue.current_mining.entity)
-                       local inventory_after = player.get_main_inventory().get_contents()
+        -- If there's no current mining, pick up the next entity
+        if not queue.current_mining then
+            local next_entity = table.remove(queue.entities, 1)
+            if not next_entity then
+                -- No more entities left
+                global.harvest_queues[player_index] = nil
+                goto continue
+            end
 
-                       -- Calculate items added
-                       local items_added = 0
-                       for item, count in pairs(inventory_after) do
-                           items_added = items_added + (count - (inventory_before[item] or 0))
-                       end
+            -- Start mining
+            queue.current_mining = {
+                entity = next_entity,
+                start_tick = game.tick
+            }
+        else
+            -- We have a current entity being mined
+            local entity = queue.current_mining.entity
+            if not entity or not entity.valid or not entity.minable then
+                -- Entity no longer valid, skip
+                queue.current_mining = nil
+                goto continue
+            end
 
-                       queue.total_yield = (queue.total_yield or 0) + items_added
-                   end
+            local ticks_mining = game.tick - queue.current_mining.start_tick
+            if ticks_mining >= 30 then
+                -- Time to finish mining
+                local inv_before = player.get_main_inventory().get_contents()
+                local mined_ok = player.mine_entity(entity)  -- Instantly mines & adds items
+                if mined_ok then
+                    local inv_after = player.get_main_inventory().get_contents()
 
-                   queue.current_mining = nil
+                    -- Figure out how many items we actually gained
+                    local items_added = 0
+                    for name, after_count in pairs(inv_after) do
+                        local before_count = inv_before[name] or 0
+                        items_added = items_added + (after_count - before_count)
+                    end
 
-                   if queue.total_yield < queue.target_yield then
-                       local more_entities = player.surface.find_entities_filtered{
-                           position = queue.mining_position,
-                           radius = player.resource_reach_distance,
-                           type = {"tree", "resource"}
-                       }
-                       if #more_entities > 0 then
-                           add_entities_to_queue(queue, more_entities, queue.target_yield - queue.total_yield)
-                       end
-                   end
+                    if items_added > 0 then
+                        -- Add to our queue's total_yield
+                        local new_total = queue.total_yield + items_added
 
-                   if #queue.entities > 0 then
-                       local next_entity = table.remove(queue.entities, 1)
-                       queue.current_mining = start_mining_entity(player, next_entity)
-                   else
-                       --player.mining_state = { mining = false }
-                       local final_yield = queue.total_yield
-                       global.harvest_queues[player_index] = nil
-                       return final_yield
-                   end
-               end
-           end
+                        if new_total > queue.target_yield then
+                            -- We overshot. Remove the extras from the player's inventory.
+                            local overshoot = new_total - queue.target_yield
+                            -- We'll try to remove it from whatever items were gained.
+                            -- If multiple resource types might drop, you'd handle them individually.
 
-           ::continue::
-       end
-   end
+                            local overshoot_left = overshoot
+                            for name, after_count in pairs(inv_after) do
+                                local before_count = inv_before[name] or 0
+                                local gained_this_item = (after_count - before_count)
+                                if gained_this_item > 0 then
+                                    local to_remove = math.min(overshoot_left, gained_this_item)
+                                    local actually_removed = player.remove_item({name = name, count = to_remove})
+                                    overshoot_left = overshoot_left - actually_removed
+                                    if overshoot_left <= 0 then
+                                        break
+                                    end
+                                end
+                            end
+                            new_total = queue.target_yield
+                        end
+
+                        queue.total_yield = new_total
+                    end
+                end
+
+                -- Clear current mining
+                queue.current_mining = nil
+            end
+        end
+        ::continue::
+    end
 end)
+
 
 
 local function find_entity_type_at_position(surface, position)
@@ -169,7 +209,7 @@ local function find_entity_type_at_position(surface, position)
     }
 
     if #exact_entities > 0 then
-        game.print("Found type ".. exact_entities[1].name)
+        -- game.print("Found type ".. exact_entities[1].name)
         return exact_entities[1].type, exact_entities[1].name
     end
     return nil, nil
@@ -254,6 +294,7 @@ local function harvest_resource_slow(player, player_index, surface, position, co
 
    local queue = initialize_harvest_queue(player_index, position, count)
    local expected_yield = add_entities_to_queue(queue, radius_entities, count)
+   game.print("expected "..expected_yield)
    begin_mining(queue, player)
    return expected_yield
 end
@@ -323,12 +364,16 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
     local position = {x=x, y=y}
     local surface = player.surface
 
+    -- Check what's under the player first
+    local target_type, target_name = find_entity_type_at_position(surface, position)
+    if not target_type then
+        error("Nothing within reach to harvest")
+    end
     if not global.fast then
         return harvest_resource_slow(player, player_index, surface, position, count, radius)
     end
 
-    -- Check what's under the player first
-    local target_type, target_name = find_entity_type_at_position(surface, position)
+
     local total_yield = 0
     if target_type then
         -- If we found something at the exact position, harvest that specific type

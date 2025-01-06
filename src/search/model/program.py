@@ -5,8 +5,8 @@ from typing import Optional
 import numpy as np
 from pydantic import BaseModel, Field
 
-from search.mcts.model.conversation import Conversation
-from search.mcts.model.game_state import GameState
+from search.model.conversation import Conversation
+from search.model.game_state import GameState
 
 
 class Program(BaseModel):
@@ -29,6 +29,8 @@ class Program(BaseModel):
     model: str = "gpt-4o"
     meta: dict = {}
     achievements: dict ={}
+    instance: int = -1
+    depth: int = 0
 
     def __repr__(self):
         return self.code
@@ -64,5 +66,7 @@ class Program(BaseModel):
             version=row['version'],
             version_description=row['version_description'],
             meta=row['meta'] if row['meta'] else {},
-            achievements=row['achievements_json'] if row['achievements_json'] else {}
+            achievements=row['achievements_json'] if row['achievements_json'] else {},
+            instance=row['instance'],
+            depth=row['depth']
         )

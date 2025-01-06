@@ -9,7 +9,7 @@ from psycopg2.extras import DictCursor
 from tenacity import retry_if_exception_type, wait_exponential
 
 from search.mcts.db_client import DBClient
-from search.mcts.model.program import Program
+from search.model.program import Program
 from search.mcts.samplers.db_sampler import DBSampler
 
 
@@ -19,17 +19,22 @@ class DynamicRewardWeightedSampler(DBSampler):
     adjusted by a dynamic scaling factor that changes over time to balance exploration and exploitation.
 
     The adaptive compression strength acts like a dynamic temperature parameter that automatically cycles
-    between exploration (low compression) and exploitation (high compression) phases.
+    between exploration (high compression) and exploitation (low compression) phases.
 
     Args:
         db_client: Database client to get programs
         compression_strength: Fixed compression strength between 0 and 1.
-                                    If None, uses adaptive compression. Higher values mean more exploitation. Lower means more exploration.
+                                    If None, uses adaptive compression. Lower values mean more exploitation. Higher means more exploration.
         adaptive_period: Number of steps for a full sine wave cycle when using adaptive compression.
     """
 
-    def __init__(self, db_client: DBClient, compression_strength = None, max_conversation_length=20, adaptive_period=200):
-        super().__init__(db_client)
+    def __init__(self,
+                 db_client: DBClient,
+                 compression_strength = None,
+                 max_conversation_length=20,
+                 adaptive_period=200,
+                 maximum_lookback=20):
+        super().__init__(db_client, maximum_lookback)
         self.max_conversation_length = max_conversation_length
         self.db_client = db_client
         self.compression_strength = compression_strength
@@ -50,7 +55,6 @@ class DynamicRewardWeightedSampler(DBSampler):
                                 adaptive compression.
             """
             max_assistant_length = (self.max_conversation_length * 2) + 1
-
             try:
                 with self.db_client.get_connection() as conn:
                     with conn.cursor(cursor_factory=DictCursor) as cur:
@@ -64,19 +68,25 @@ class DynamicRewardWeightedSampler(DBSampler):
                         else:
                             compression_strength = self.compression_strength
 
+                        cur.execute(f"""select max(depth) from programs where version = {version}""")
+                        max_depth = cur.fetchone()['max']
+                        if not max_depth:
+                            max_depth = 0
+                        min_depth = max(0, max_depth - self.maximum_lookback)
+
                         cur.execute("""
                                 WITH recent AS (
                                     SELECT id, value, conversation_json
                                     FROM programs
                                     WHERE version = %s 
                                     AND value IS NOT NULL
-                                    AND jsonb_array_length(conversation_json->'messages') < %s
+                                    AND depth > %s
                                     ORDER BY created_at DESC
                                     LIMIT 300
                                 )
                                 SELECT id, value 
                                 FROM recent
-                                """, (version, max_assistant_length))
+                                """, (version, min_depth))
 
                         results = cur.fetchall()
                         if not results:
@@ -128,7 +138,11 @@ class DynamicRewardWeightedSampler(DBSampler):
                                 """, (sampled_id,))
 
                         row = cur.fetchone()
-                        return Program.from_row(dict(row)) if row else None
+                        if row:
+                            program = Program.from_row(dict(row))
+                            return program
+                        return None
+
             except Exception as e:
                 print(f"Error sampling parent: {e}")
                 raise e

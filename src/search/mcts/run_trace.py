@@ -36,10 +36,10 @@ async def evaluate_program_trace(version: int = 330) -> None:
                 bounding_box=200,
                 tcp_port=27015,
                 cache_scripts=False,
-                fast=True,
+                fast=False,
                 inventory={}
             )
-            instance.speed(10)
+            instance.speed(20)
             return instance
         except Exception as e:
             raise e
@@ -47,6 +47,9 @@ async def evaluate_program_trace(version: int = 330) -> None:
     # Get the instance
     instance = game_instance()
     instance.reset()
+
+    # 96269 (potentially okay)
+    # 100778 (same)
 
     # Execute SQL query to get program trace
     with db_client.get_connection() as conn:
@@ -65,7 +68,7 @@ async def evaluate_program_trace(version: int = 330) -> None:
                     FROM (
                         SELECT value, code, response, id, parent_id, created_at, instance
                         FROM programs
-                        WHERE id = 81479
+                        WHERE id = 96269
                     ) latest
 
                     UNION ALL

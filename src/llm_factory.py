@@ -82,7 +82,7 @@ class LLMFactory:
             client = AsyncOpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
             response = await client.chat.completions.create(
                 model=model_to_use,
-                max_tokens=kwargs.get('max_tokens', 2048),
+                max_tokens=kwargs.get('max_tokens', 256),
                 temperature=kwargs.get('temperature', 0.3),
                 messages=kwargs.get('messages', None),
                 logit_bias=kwargs.get('logit_bias', None),
@@ -98,7 +98,7 @@ class LLMFactory:
             client = AsyncOpenAI(api_key=os.getenv("GEMINI_API_KEY"), base_url="https://generativelanguage.googleapis.com/v1beta/openai/")
             response = await client.chat.completions.create(
                 model=model_to_use,
-                max_tokens=kwargs.get('max_tokens', 2048),
+                max_tokens=kwargs.get('max_tokens', 256),
                 temperature=kwargs.get('temperature', 0.3),
                 messages=kwargs.get('messages', None),
                 #logit_bias=kwargs.get('logit_bias', None),
@@ -114,7 +114,7 @@ class LLMFactory:
             client = AsyncOpenAI(api_key=os.getenv("TOGETHER_API_KEY"), base_url="https://api.together.xyz/v1")
             return await client.chat.completions.create(
                 model=model_to_use,
-                max_tokens=kwargs.get('max_tokens', 2048),
+                max_tokens=kwargs.get('max_tokens', 256),
                 temperature=kwargs.get('temperature', 0.3),
                 messages=kwargs.get('messages', None),
                 logit_bias=kwargs.get('logit_bias', None),
@@ -140,7 +140,7 @@ class LLMFactory:
             assert "messages" in kwargs, "You must provide a list of messages to the model."
             return await client.chat.completions.create(
                 model=model_to_use,
-                max_tokens=kwargs.get('max_tokens', 2048),
+                max_tokens=kwargs.get('max_tokens', 256),
                 temperature=kwargs.get('temperature', 0.3),
                 messages=kwargs.get('messages', None),
                 logit_bias=kwargs.get('logit_bias', None),
@@ -223,7 +223,7 @@ class LLMFactory:
             client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             assert "messages" in kwargs, "You must provide a list of messages to the model."
             return client.chat.completions.create(model = model_to_use,
-                                                  max_tokens = kwargs.get('max_tokens', 2048),
+                                                  max_tokens = kwargs.get('max_tokens', 256),
                                                   temperature=kwargs.get('temperature', 0.3),
                                                   messages=kwargs.get('messages', None),
                                                   logit_bias=kwargs.get('logit_bias', None),

@@ -87,8 +87,8 @@ class ParallelMCTS:
             group_instances = instances[start_idx:end_idx]
 
             # Split into active and holdout instances
-            active_instances = group_instances[:-1]
-            holdout_instance = group_instances[-1]
+            #active_instances = group_instances
+            #holdout_instance = group_instances[-1]
 
             # Create evaluator for this group
             evaluator = FactorioEvaluator(
@@ -114,8 +114,8 @@ class ParallelMCTS:
                 group_id=group_id,
                 mcts=mcts,
                 evaluator=evaluator,
-                active_instances=active_instances,
-                holdout_instance=holdout_instance
+                active_instances=group_instances,
+                #holdout_instance=holdout_instance
             ))
 
         return groups

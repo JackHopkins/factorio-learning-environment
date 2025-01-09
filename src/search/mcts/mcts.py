@@ -61,6 +61,7 @@ class MCTS:
             # Take the last line off and try again
             code = code.rsplit('\n', 1)[0] + '\n'
             ast = compile(code, filename="<ast>", mode="exec")
+            #return self._verify_response_is_python(code)
 
         return code
 
@@ -86,9 +87,9 @@ class MCTS:
                 return code, content
             except Exception as e1:
                 # Sometimes it samples a leading line, before writing unblocked python code.
-                content = "\n".join(content.split("\n")[1:])
+                code = "\n".join(content.split("\n")[1:])
                 try:
-                    code = self._verify_response_is_python(content)
+                    code = self._verify_response_is_python(code)
                     return code, content
                 except Exception as e2:
                     try:
@@ -97,12 +98,18 @@ class MCTS:
                         text_response = content_split[0].strip()
                         code = self._verify_response_is_python(code)
                         return code, text_response
-                    except Exception as e2:
-                        #print(f"Failed to extract code from choice after removing leading line and factorio_instance import: {str(e2)} \n\n`{content}`")
-                        chain_of_thoughts = '"""\n'+content.strip().strip("\"")+'\n"""'
-                        return chain_of_thoughts, content.strip()
+                    except Exception as e3:
+                        code = content.strip().replace('```python',"").replace('```', '')
+                        docstring_delimiters = code.count('"""')
+                        if docstring_delimiters < 2:
+                            code = code.replace('"""', '')
+                        code = self._verify_response_is_python(code)
+                        if code.count('```') == 1:
+                            code = code.replace('```', '')
+                        return code, content.strip()
                     #print(f"Failed to extract code from choice after removing leading line: {str(e2)}")
                 print(f"Failed to extract code from choice: {str(e1)}")
+                return None
 
     def _is_model_compatible_with_n_samples(self, model):
         """Check if the model is compatible with generating n samples in a single call"""

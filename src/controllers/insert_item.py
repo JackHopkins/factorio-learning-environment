@@ -23,7 +23,7 @@ class InsertItem(Action):
         """
         assert quantity is not None, "Quantity cannot be None"
         assert isinstance(entity, Prototype), "The first argument must be a Prototype"
-        assert isinstance(target, Entity) or isinstance(target, EntityGroup), "The second argument must be an Entity or EntityGroup"
+        assert isinstance(target, Entity) or isinstance(target, EntityGroup), "The second argument must be an Entity or EntityGroup, you passed in a {0}".format(type(target))
 
         if isinstance(target, Position):
             x, y = target.x, target.y

@@ -123,6 +123,20 @@ y = 2
         self.assertTrue("x = 1\ny = 2" in chunks[0].code.strip())
         self.assertTrue("# This is a comment" in chunks[0].code.strip())
 
+    def test_comment_with_gap(self):
+        code = '''
+"""First task"""
+# This is a comment
+
+x = 1
+'''
+        chunks = self.splitter._split_into_chunks(code)
+        self.assertEqual(len(chunks), 2)
+        self.assertTrue("First task" in chunks[0].code)
+        self.assertTrue("x = 1" in chunks[1].code.strip())
+        self.assertTrue("# This is a comment" in chunks[0].code.strip())
+
+
     def test_multiple_chunks(self):
         code = '''
 """First task"""

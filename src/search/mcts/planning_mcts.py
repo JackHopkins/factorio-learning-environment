@@ -114,8 +114,8 @@ class PlanningMCTS(MCTS):
 
     async def _evaluate_step(self, step: Step, start_state: GameState, instance_id: int, parent_id) \
             -> Tuple[List[Program], float]:
-        self.evaluator.holdout.reset(start_state)
-        holdout_future = asyncio.create_task(self.evaluator._run_holdout())
+        #self.evaluator.holdout.reset(start_state)
+        #holdout_future = asyncio.create_task(self.evaluator._run_holdout())
         entity_list = []
         try:
             instance = self.evaluator.instances[instance_id]
@@ -135,16 +135,16 @@ class PlanningMCTS(MCTS):
             print(f"Error during evaluation: {e}")
             raise e  # Propagate the exception to handle it elsewhere if needed.
 
-        holdout_value = await holdout_future
-        step.program.value=step.reward - holdout_value - (abs(self.error_penalty) if 'error' in response else 0)
+        #holdout_value = await holdout_future
+        step.program.value=step.reward - (abs(self.error_penalty) if 'error' in response else 0)
         step.program.achievements = achievements
         step.program.raw_reward=step.reward
-        step.program.holdout_value=holdout_value
+        step.program.holdout_value=step.program.value
         step.program.state = step.end_state
         step.program.response = response
         step.program.parent_id = parent_id
-        step.program.conversation.add_result(step.program.code, response, score=step.reward, advantage=step.reward - holdout_value)
-        return step, holdout_value, entity_list
+        step.program.conversation.add_result(step.program.code, response, score=step.reward, advantage=step.reward)
+        return step, step.program.value, entity_list
 
     def get_inventory_dict(self, inventory):
         inventory_dict = {}
@@ -437,7 +437,7 @@ class PlanningMCTS(MCTS):
                                       skip_failures: bool):
         try:
             step_to_process = plan.steps[-1]
-            step_to_process, holdout, entity_list = await self._evaluate_step(step_to_process, start_state, instance_id, parent_id)
+            step_to_process, _, entity_list = await self._evaluate_step(step_to_process, start_state, instance_id, parent_id)
             plan.steps[-1] = step_to_process
             log_str = f"Step {len(plan.steps)}: {step_to_process.final_step}\n{step_to_process.program.response}"
             plan.logs.append(log_str)

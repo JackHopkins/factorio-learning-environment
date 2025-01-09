@@ -19,8 +19,8 @@ class FactorioEvaluator:
                  error_penalty=10,
                  logger=None):
         self.db = db_client
-        self.instances = instances[:-1]  # Main instances
-        self.holdout = instances[-1]  # Holdout instance
+        self.instances = instances  # Main instances
+        #self.holdout = instances[-1]  # Holdout instance
         self.value_accrual_time = value_accrual_time  # Time to accrue value before evaluating
         self.error_penalty = error_penalty  # Penalty for errors during evaluation
 
@@ -37,13 +37,13 @@ class FactorioEvaluator:
             i: instance.tcp_port
             for i, instance in enumerate(self.instances)
         }
-        self.instance_to_port[len(self.instances)] = self.holdout.tcp_port  # Add holdout mapping
+        #self.instance_to_port[len(self.instances)] = self.holdout.tcp_port  # Add holdout mapping
 
 
         if logger:
             self.port_to_group = logger.port_to_group
             # Find the group ID for the holdout instance
-            self.holdout_group_id = self.port_to_group[self.holdout.tcp_port]
+            #self.holdout_group_id = self.port_to_group[self.holdout.tcp_port]
 
     def set_status(self, status):
         for instance in self.instances:
@@ -55,7 +55,7 @@ class FactorioEvaluator:
             for instance in self.instances:
                 self.logger.update_instance(instance.tcp_port, status="sampling")
             # Also update holdout status
-            self.logger.update_instance(self.holdout.tcp_port, status="sampling")
+            #self.logger.update_instance(self.holdout.tcp_port, status="sampling")
 
     def set_iteration(self, iteration, n_iterations):
         """Update iteration number for all instances in this evaluator's group"""
@@ -63,15 +63,15 @@ class FactorioEvaluator:
             for instance in self.instances:
                 self.logger.update_instance(instance.tcp_port, iteration=iteration, n_iterations=n_iterations)
             # Also update holdout status
-            self.logger.update_instance(self.holdout.tcp_port, iteration=iteration, n_iterations=n_iterations)
+            # self.logger.update_instance(self.holdout.tcp_port, iteration=iteration, n_iterations=n_iterations)
 
     async def evaluate_batch(self, programs: List[Program], start_state: GameState) -> List[Program]:
         try:
             # Reset holdout and start its baseline run
-            self.holdout.reset(start_state)
-            if self.logger:
-                self.logger.update_instance(self.holdout.tcp_port, status="running", program_id=None)
-            holdout_future = asyncio.create_task(self._run_holdout())
+            #self.holdout.reset(start_state)
+            #if self.logger:
+            #    self.logger.update_instance(self.holdout.tcp_port, status="running", program_id=None)
+            #holdout_future = asyncio.create_task(self._run_holdout())
 
             # Evaluate programs in parallel
             eval_futures = []
@@ -83,26 +83,26 @@ class FactorioEvaluator:
 
             # Wait for all evaluations and holdout
             eval_results = await asyncio.gather(*eval_futures)
-            holdout_value = await holdout_future
+            #holdout_value = await holdout_future
 
             # Update metrics for this group's holdout
-            if self.logger:
-                self.logger.update_instance(
-                    self.holdout.tcp_port,
-                    status="completed",
-                    current_reward=holdout_value
-                )
+            # if self.logger:
+            #     self.logger.update_instance(
+            #         self.holdout.tcp_port,
+            #         status="completed",
+            #         current_reward=holdout_value
+            #     )
 
             # Update program results
             for i, (program, (raw_reward, state, response, entities, achievements)) in enumerate(zip(programs, eval_results)):
-                relative_reward = raw_reward - holdout_value
+                relative_reward = raw_reward# - holdout_value
 
                 if self.logger:
                     self.logger.update_instance(
                         self.instances[i].tcp_port,
                         status="completed",
                         raw_reward=raw_reward,
-                        holdout_value=holdout_value,
+                        holdout_value=raw_reward,
                         relative_reward=relative_reward,
                         total_programs=self.logger.groups[
                                            self.port_to_group[self.instances[i].tcp_port]
@@ -112,7 +112,7 @@ class FactorioEvaluator:
                 program.value = relative_reward
                 program.state = state
                 program.raw_reward = raw_reward
-                program.holdout_value = holdout_value
+                #program.holdout_value = holdout_value
                 program.conversation.add_result(program.code, response, score=raw_reward, advantage=relative_reward, objectives=program.meta['objectives'] if 'objectives' in program.meta else [])
                 program.response = response
                 program.achievements = achievements
@@ -232,47 +232,47 @@ class FactorioEvaluator:
                 )
             raise e
 
-    async def _run_holdout(self) -> float:
-        """Run holdout instance for same duration as programs"""
-        try:
-            initial_entities = self.holdout.get_entities()
-            start_inventory = self.holdout.inspect_inventory()
-
-            initial_value, _ = self.holdout.score()
-            if self.logger:
-                self.logger.update_instance(self.holdout.tcp_port, status=f"accruing value ({self.value_accrual_time}s)")
-            await asyncio.sleep(self.value_accrual_time)
-            entities = self.holdout.get_entities()
-            reward, _ = self.holdout.score()
-            final_inventory = self.holdout.inspect_inventory()
-
-            if self.logger:
-                # Get the metrics for this holdout instance from the correct group
-                group = self.logger.groups[self.holdout_group_id]
-                holdout_metrics = group.instances[self.holdout.tcp_port]
-
-                self.logger.update_instance(
-                    self.holdout.tcp_port,
-                    status="accrued value",
-                    final_entities=len(entities),
-                    start_entities=len(initial_entities),
-                    total_programs=holdout_metrics.total_programs + 1,
-                    start_inventory_count=sum([v for k, v in start_inventory.__dict__.items() if v > 0]),
-                    final_inventory_count=sum([v for k, v in final_inventory.__dict__.items() if v > 0])
-                )
-
-            return reward - initial_value
-        except Exception as e:
-            if self.logger:
-                # Update error count using the grouped structure
-                group = self.logger.groups[self.holdout_group_id]
-                holdout_metrics = group.instances[self.holdout.tcp_port]
-                self.logger.update_instance(
-                    self.holdout.tcp_port,
-                    status="error",
-                    error_count=holdout_metrics.error_count + 1
-                )
-            raise e
+    # async def _run_holdout(self) -> float:
+    #     """Run holdout instance for same duration as programs"""
+    #     try:
+    #         initial_entities = self.holdout.get_entities()
+    #         start_inventory = self.holdout.inspect_inventory()
+    #
+    #         initial_value, _ = self.holdout.score()
+    #         if self.logger:
+    #             self.logger.update_instance(self.holdout.tcp_port, status=f"accruing value ({self.value_accrual_time}s)")
+    #         await asyncio.sleep(self.value_accrual_time)
+    #         entities = self.holdout.get_entities()
+    #         reward, _ = self.holdout.score()
+    #         final_inventory = self.holdout.inspect_inventory()
+    #
+    #         if self.logger:
+    #             # Get the metrics for this holdout instance from the correct group
+    #             group = self.logger.groups[self.holdout_group_id]
+    #             holdout_metrics = group.instances[self.holdout.tcp_port]
+    #
+    #             self.logger.update_instance(
+    #                 self.holdout.tcp_port,
+    #                 status="accrued value",
+    #                 final_entities=len(entities),
+    #                 start_entities=len(initial_entities),
+    #                 total_programs=holdout_metrics.total_programs + 1,
+    #                 start_inventory_count=sum([v for k, v in start_inventory.__dict__.items() if v > 0]),
+    #                 final_inventory_count=sum([v for k, v in final_inventory.__dict__.items() if v > 0])
+    #             )
+    #
+    #         return reward - initial_value
+    #     except Exception as e:
+    #         if self.logger:
+    #             # Update error count using the grouped structure
+    #             group = self.logger.groups[self.holdout_group_id]
+    #             holdout_metrics = group.instances[self.holdout.tcp_port]
+    #             self.logger.update_instance(
+    #                 self.holdout.tcp_port,
+    #                 status="error",
+    #                 error_count=holdout_metrics.error_count + 1
+    #             )
+    #         raise e
 
     def __del__(self):
         """Clean up logger on deletion"""

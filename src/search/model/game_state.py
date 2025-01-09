@@ -1,9 +1,47 @@
+import builtins
 import json
+import marshal
 import pickle
 import time
+import types
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Dict, Any
+
+
+class SerializableFunction:
+    """Wrapper to make function objects serializable"""
+
+    def __init__(self, func):
+        self.code_bytes = marshal.dumps(func.__code__)
+        self.name = func.__name__
+        self.defaults = func.__defaults__
+        # We can't serialize closure so store None
+        self.closure = None
+
+    @staticmethod
+    def reconstruct(instance, func_data):
+        """Reconstruct a function with proper globals from the instance"""
+        globals_dict = {}
+        # Add instance attributes
+        for name in dir(instance):
+            if not name.startswith('_'):
+                globals_dict[name] = getattr(instance, name)
+        # Add builtins
+        for name in dir(builtins):
+            if not name.startswith('_'):
+                globals_dict[name] = getattr(builtins, name)
+
+        code = marshal.loads(func_data.code_bytes)
+
+        new_func = types.FunctionType(
+            code,
+            globals_dict,
+            func_data.name,
+            func_data.defaults,
+            func_data.closure
+        )
+        return new_func
 
 def is_serializable(obj: Any) -> bool:
     """Test if an object can be serialized with pickle"""
@@ -33,8 +71,21 @@ def is_serializable(obj: Any) -> bool:
 
         pickle.dumps(obj)
         return True
-    except (pickle.PicklingError, TypeError, AttributeError):
+    except (pickle.PicklingError, TypeError, AttributeError) as e:
+        v = obj
         return False
+
+def wrap_for_serialization(value):
+    """Wrap values that need special serialization handling"""
+    if isinstance(value, types.FunctionType):
+        return SerializableFunction(value)
+    return value
+
+def unwrap_after_deserialization(instance, value):
+    """Unwrap serialized values back to their original form"""
+    if isinstance(value, SerializableFunction):
+        return SerializableFunction.reconstruct(instance, value)
+    return value
 
 def filter_serializable_vars(vars_dict: Dict[str, Any]) -> Dict[str, Any]:
     """Filter dictionary to only include serializable items"""

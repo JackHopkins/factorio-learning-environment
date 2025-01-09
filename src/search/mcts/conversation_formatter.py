@@ -180,12 +180,12 @@ class StructurePreservingFormatter(ConversationFormatter):
         self.code_processor = CodeProcessor()
         self.planning = planning
 
-    def format_message(self, message: Message, is_last: bool = False) -> Optional[Message]:
+    def format_message(self, message: Message, should_format: bool = True) -> Optional[Message]:
         if message.role == "system":
             return Message(role="system", content=message.content)
 
         elif message.role == "assistant":
-            if not is_last:  # Summarize all but the last program
+            if should_format:  # Summarize all but the last program
                 content = self.code_processor.summarize_code_block(message.content)
                 return Message(
                     role="assistant",
@@ -237,9 +237,9 @@ class StructurePreservingFormatter(ConversationFormatter):
         # Format each message
         for i, msg in enumerate(messages):
             if last_message_role == 'assistant':
-                formatted_msg = self.format_message(msg, is_last=(i == len(messages) - 1))
+                formatted_msg = self.format_message(msg, should_format=(i != len(messages) - 1))
             elif last_message_role == 'user':
-                formatted_msg = self.format_message(msg, is_last=(i == len(messages) - 2))
+                formatted_msg = self.format_message(msg, should_format=(i != len(messages) - 2))
             if formatted_msg:
                 formatted.append(formatted_msg)
 

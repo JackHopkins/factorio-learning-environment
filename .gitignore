@@ -42,3 +42,4 @@ client/__pycache__/
 /data/plans/factorio_guides/raw/
 /data/plans/factorio_guides/visited/
 /src/datasetgen/mcts/plots/
+/src/search/mcts/runs/

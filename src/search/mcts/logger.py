@@ -111,7 +111,7 @@ class FactorioLogger:
         table.add_row("Program ID:", str(instance.program_id or "None"))
         table.add_row("Status:", Text(instance.status, style="green" if instance.status == "running" else "yellow"))
         table.add_row("Action Reward:", f"{instance.current_reward:.2f}")
-        table.add_row("Holdout Reward:", f"{instance.holdout_value:.2f}")
+        #table.add_row("Holdout Reward:", f"{instance.holdout_value:.2f}")
         table.add_row("Advantage:", f"{instance.relative_reward:.2f}")
         table.add_row("Error Count:", Text(str(instance.error_count), style="red" if instance.error_count > 0 else "white"))
         table.add_row("Total Programs:", str(instance.total_programs))
@@ -124,7 +124,7 @@ class FactorioLogger:
 
         return Panel(
             table,
-            title=f"Instance {instance.instance_id} (Port: {instance.port})" if instance.instance_id != len(self.instances)-1 else f"Holdout Instance (Port: {instance.port})",
+            title=f"Instance {instance.instance_id} (Port: {instance.port})",
             border_style="blue"
         )
 

@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from cluster.local.cluster_ips import get_local_container_ips
 from search.mcts.db_client import DBClient
 from search.mcts.mcts_factory import MCTSFactory
-from search.model.run_results import RunResults
+from search.mcts.plots.run_results import RunResults
 from factorio_instance import FactorioInstance
 import concurrent.futures
 from typing import List, Tuple
@@ -42,6 +42,8 @@ Your reward in the environment is proportional to the resources you create. This
 Always consider the most profitable next task, what entities are needed for the task, what entities exist in the game (in different entity inventories or in your inventory), what entities are you missing for the task. Fix errors as they occur, and set yourself NEW objectives when you finish your existing one.
 
 Don't repeat your previous steps - just continue from where you left off to build the largest automated system possible.
+
+Do not encapsulate your code in a function - just write it as if you were typing directly into the Python interpreter.
 
 You are now ready to begin playing FactoryEnv! Good luck!
 """

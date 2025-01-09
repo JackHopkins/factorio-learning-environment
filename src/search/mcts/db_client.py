@@ -70,8 +70,8 @@ class DBClient:
                         INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, 
                                            completion_token_usage, prompt_token_usage, token_usage, response, 
                                            holdout_value, raw_reward, version, version_description, model, meta, 
-                                           achievements_json, instance, depth)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                           achievements_json, instance, depth, advantage)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id, created_at
                     """, (program.code, program.value, 0, program.parent_id,
                           program.state.to_raw() if program.state else None,
@@ -88,7 +88,8 @@ class DBClient:
                           json.dumps(program.meta),
                           json.dumps(program.achievements),
                           program.instance,
-                          program.depth/2
+                          program.depth/2,
+                          program.advantage
                           ))
 
                     id, created_at = cur.fetchone()
@@ -174,12 +175,12 @@ class DBClient:
                             SELECT id, value, conversation_json
                             FROM programs
                             WHERE version = %s 
-                            AND value IS NOT NULL
+                            AND advantage IS NOT NULL
                             -- AND jsonb_array_length(conversation_json->'messages') < %s
                             ORDER BY created_at DESC
                             LIMIT 300
                         )
-                        SELECT id, value 
+                        SELECT id, advantage 
                         FROM recent
                         """, (version)) #, max_assistant_length))
 
@@ -188,7 +189,7 @@ class DBClient:
                         return None
 
                     # Get statistics of the value distribution
-                    values = [row['value'] for row in results]
+                    values = [row['advantage'] for row in results]
                     mean_value = statistics.mean(values)
                     std_value = statistics.stdev(values) if len(values) > 1 else 1.0
 
@@ -209,7 +210,7 @@ class DBClient:
 
                     # Calculate transformed weights
                     weights = [
-                        (row['id'], transform_reward(row['value']))
+                        (row['id'], transform_reward(row['advantage']))
                         for row in results
                     ]
 

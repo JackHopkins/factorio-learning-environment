@@ -312,7 +312,7 @@ class ParallelPlanningMCTS:
                              parent_id) -> Tuple[Step, float, List]:
         """Modified to work with instance groups"""
         group.holdout_instance.reset(start_state)
-        holdout_future = asyncio.create_task(group.evaluator._run_holdout())
+        #holdout_future = asyncio.create_task(group.evaluator._run_holdout())
         entity_list = []
 
         try:
@@ -333,16 +333,16 @@ class ParallelPlanningMCTS:
             print(f"Error during evaluation in group {group.group_id}, instance {instance_id}: {e}")
             raise e
 
-        holdout_value = await holdout_future
-        step.program.value = step.reward - holdout_value
+        #holdout_value = await holdout_future
+        step.program.value = step.reward
         step.program.raw_reward = step.reward
-        step.program.holdout_value = holdout_value
+        step.program.holdout_value = step.reward
         step.program.state = step.end_state
         step.program.response = response
         step.program.parent_id = parent_id
         step.program.achievements = achievements
 
-        return step, holdout_value, entity_list
+        return step, step.reward, entity_list
 
     async def save_step(self, plan: PlanOutput, step: Step):
         candidate_step_meta = []
@@ -417,7 +417,7 @@ class ParallelPlanningMCTS:
                                  skip_failures: bool) -> PlanOutput:
         try:
             step_to_process = plan.steps[-1]
-            step_to_process, holdout, entity_list = await self._evaluate_step(step_to_process, start_state, group, instance_id,
+            step_to_process, _, entity_list = await self._evaluate_step(step_to_process, start_state, group, instance_id,
                                                                               parent_id)
 
             if skip_failures and "error" in step_to_process.program.response.lower():

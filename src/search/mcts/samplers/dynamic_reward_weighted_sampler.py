@@ -76,15 +76,15 @@ class DynamicRewardWeightedSampler(DBSampler):
 
                         cur.execute("""
                                 WITH recent AS (
-                                    SELECT id, value, conversation_json
+                                    SELECT id, advantage, conversation_json
                                     FROM programs
                                     WHERE version = %s 
-                                    AND value IS NOT NULL
+                                    AND advantage IS NOT NULL
                                     AND depth > %s
                                     ORDER BY created_at DESC
                                     LIMIT 300
                                 )
-                                SELECT id, value 
+                                SELECT id, advantage 
                                 FROM recent
                                 """, (version, min_depth))
 
@@ -93,7 +93,7 @@ class DynamicRewardWeightedSampler(DBSampler):
                             return None
 
                         # Get statistics of the value distribution
-                        values = [row['value'] for row in results]
+                        values = [row['advantage'] for row in results]
                         mean_value = statistics.mean(values)
                         std_value = statistics.stdev(values) if len(values) > 1 else 1.0
 
@@ -116,7 +116,7 @@ class DynamicRewardWeightedSampler(DBSampler):
 
                         # Calculate transformed weights
                         weights = [
-                            (row['id'], transform_reward(row['value']))
+                            (row['id'], transform_reward(row['advantage']))
                             for row in results
                         ]
 

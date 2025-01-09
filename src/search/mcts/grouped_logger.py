@@ -70,10 +70,10 @@ class GroupedFactorioLogger:
         for group_id in range(n_groups):
             group_instances = {}
             for i in range(instances_per_group):
-                is_holdout = (i == instances_per_group - 1)  # Last instance in group is holdout
+                #is_holdout = (i == instances_per_group - 1)  # Last instance in group is holdout
                 group_instances[current_port] = InstanceMetrics(
                     tcp_port=current_port,
-                    is_holdout=is_holdout
+                    is_holdout=False
                 )
                 self.port_to_group[current_port] = group_id
                 current_port += 1
@@ -143,7 +143,7 @@ class GroupedFactorioLogger:
         left_table.add_row("Status:",
                            Text(instance.status, style="green" if instance.status == "running" else "yellow"))
         left_table.add_row("Reward:", f"{instance.current_reward:.2f}")
-        left_table.add_row("Holdout:", f"{instance.holdout_value:.2f}")
+        #left_table.add_row("Holdout:", f"{instance.holdout_value:.2f}")
         left_table.add_row("Advantage:", f"{instance.relative_reward:.2f}")
         left_table.add_row("Error Count:",
                            Text(str(instance.error_count), style="red" if instance.error_count > 0 else "white"))
@@ -163,28 +163,26 @@ class GroupedFactorioLogger:
         container = Table.grid(padding=(0, 2))
         container.add_row(left_table, right_table)
 
-        title = (f"Holdout (Port: {instance.tcp_port})"  # Shortened titles for more space
-                 if instance.is_holdout
-                 else f"Instance (Port: {instance.tcp_port})")
+        title = f"Instance (Port: {instance.tcp_port})"
 
         return Panel(
             container,
             title=title,
-            border_style="blue" if not instance.is_holdout else "red",
+            border_style="blue",
             padding=(0, 1)
         )
 
-    def _generate_group_layout(self, group: InstanceGroupMetrics) -> Layout:
+    def _generate_group_layout(self, group: InstanceGroupMetrics) -> Panel:
         """Generate layout for a single group of instances"""
         group_layout = Layout()
 
         # Create panels for active instances and holdout
         active_instances = [inst for inst in group.instances.values() if not inst.is_holdout]
-        holdout_instance = next(inst for inst in group.instances.values() if inst.is_holdout)
+        #holdout_instance = next(inst for inst in group.instances.values() if inst.is_holdout)
 
         # Create the instance panels
         instance_panels = [self._generate_instance_panel(inst, group.group_id) for inst in active_instances]
-        instance_panels.append(self._generate_instance_panel(holdout_instance, group.group_id))
+        #instance_panels.append(self._generate_instance_panel(holdout_instance, group.group_id))
 
         # Split the layout horizontally for all instances in the group
         group_layout.split_row(*[Layout(panel, ratio=1) for panel in instance_panels])

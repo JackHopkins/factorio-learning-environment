@@ -12,7 +12,7 @@ class InstanceGroup:
     mcts: MCTS
     evaluator: FactorioEvaluator
     active_instances: List['FactorioInstance']
-    holdout_instance: 'FactorioInstance'
+    #holdout_instance: 'FactorioInstance'
 
     @property
     def total_instances(self) -> int:

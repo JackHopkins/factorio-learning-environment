@@ -32,7 +32,11 @@ class InspectInventory(Action):
         response, execution_time = self.execute(PLAYER, entity == None, x, y)
 
         if not isinstance(response, dict):
-            raise Exception(f"Could not inspect inventory of {entity}.", response)
+            if entity:
+                raise Exception(f"Could not inspect inventory of {entity}.", response)
+            else:
+                #raise Exception("Could not inspect None inventory.", response)
+                return Inventory()
 
         return Inventory(**response)
 

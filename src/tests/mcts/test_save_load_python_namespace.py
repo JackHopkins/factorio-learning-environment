@@ -74,6 +74,22 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
         resp2 = self.instance.eval('print(boiler)')
         assert 'error' not in resp2
 
+    def test_declare_load_function_definition(self):
+        resp = self.instance.eval('def myfunc():\n  return "hello world"')
+
+        test_function = self.instance.eval('myfunc()')
+        game_state = GameState.from_instance(self.instance)
+
+        self.instance = FactorioInstance(address='localhost',
+                                         bounding_box=200,
+                                         tcp_port=27015,
+                                         fast=True,
+                                         inventory={})
+        self.instance.reset()
+        self.instance.reset(game_state)
+        _, _, resp2 = self.instance.eval('print(myfunc())')
+        assert 'hello world' in resp2
+
 
 if __name__ == '__main__':
     unittest.main()

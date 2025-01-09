@@ -31,6 +31,7 @@ class Program(BaseModel):
     achievements: dict ={}
     instance: int = -1
     depth: int = 0
+    advantage: float = 0
 
     def __repr__(self):
         return self.code
@@ -68,5 +69,6 @@ class Program(BaseModel):
             meta=row['meta'] if row['meta'] else {},
             achievements=row['achievements_json'] if row['achievements_json'] else {},
             instance=row['instance'],
-            depth=row['depth']
+            depth=row['depth'],
+            advantage=row['advantage']
         )

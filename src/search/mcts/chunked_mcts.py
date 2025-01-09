@@ -2,15 +2,14 @@ import ast
 import asyncio
 import json
 import pickle
+from typing import Tuple, Optional, Union, List
 
-from search.model.conversation import GenerationParameters
-from typing import List, Tuple, Optional, Union
-
-from search.model.conversation import Conversation, Message
-from search.model.game_state import GameState
-from search.mcts.mcts import MCTS
-from search.model.program import Program
 from factorio_entities import Entity, EntityGroup
+from search.mcts.mcts import MCTS
+from search.model.conversation import Conversation, Message
+from search.model.conversation import GenerationParameters
+from search.model.game_state import GameState
+from search.model.program import Program
 
 
 class ChunkedMCTS(MCTS):
@@ -19,16 +18,17 @@ class ChunkedMCTS(MCTS):
         super().__init__(*args, **kwargs)
         self.logit_bias = logit_bias
 
-    import ast
     from typing import List
 
     def _split_into_chunks(self, program_code: str) -> List[Program]:
-        """Split the program code into chunks based on docstrings."""
-
+        """Split the program code into chunks based on docstrings and blank lines."""
         program_code = program_code.replace("from factorio_instance import *", "").strip()
-        lines = program_code.splitlines()
-        chunks = []
+        if not program_code:
+            return []
+
+        # Parse the AST to find docstring positions
         module = ast.parse(program_code)
+        lines = program_code.splitlines()
 
         # Find all docstrings and their positions
         docstring_positions = []
@@ -39,50 +39,64 @@ class ChunkedMCTS(MCTS):
         if not docstring_positions:
             return []
 
-        # Handle everything before first docstring
-        first_docstring_start = docstring_positions[0][0]
-        if first_docstring_start > 0:
-            preamble = lines[:first_docstring_start]
-            if any(line.strip() for line in preamble):  # If there's any non-empty content
+        chunks = []
+
+        # If there's content before the first docstring, add it as a chunk
+        if docstring_positions[0][0] > 0:
+            content = '\n'.join(lines[:docstring_positions[0][0]]).strip()
+            if content:
                 chunks.append(Program(
-                    code='\n'.join(preamble),
+                    code=content,
                     conversation=Conversation(messages=[])
                 ))
 
+        # Process chunks based on number of docstrings
         if len(docstring_positions) == 1:
-            # Process each chunk
+            # Get the docstring and all following content
             start_pos, end_pos, docstring = docstring_positions[0]
-            chunk_lines = program_code.splitlines()
-            chunk_lines = chunk_lines[end_pos+1:]
-            remainder = '\n'.join(chunk_lines)
+            docstring_lines = lines[start_pos:end_pos + 1]
+            remaining_lines = lines[end_pos + 1:]
 
-            chunk_strings = remainder.split("\n\n")
-            chunk_strings[0] = f'"""\n{docstring.strip()}\n"""'+'\n'+chunk_strings[0]
-            # Create program for this chunk
-            for chunk in chunk_strings:
-                if chunk.strip():
-                    chunks.append(Program(
-                        code=chunk,
-                        conversation=Conversation(messages=[])
-                    ))
+            # Split remaining content on blank lines
+            current_chunk = docstring_lines[:]
+            for line in remaining_lines:
+                if not line.strip():
+                    if current_chunk:
+                        chunks.append(Program(
+                            code='\n'.join(current_chunk),
+                            conversation=Conversation(messages=[])
+                        ))
+                        current_chunk = []
+                else:
+                    current_chunk.append(line)
+
+            # Add final chunk if it exists
+            if current_chunk:
+                chunks.append(Program(
+                    code='\n'.join(current_chunk),
+                    conversation=Conversation(messages=[])
+                ))
 
         else:
-            # Process each chunk
+            # Multiple docstrings - process each section
             for i, (start_pos, end_pos, docstring) in enumerate(docstring_positions):
                 chunk_lines = []
 
-                # Add docstring lines
+                # Add the docstring
                 chunk_lines.extend(lines[start_pos:end_pos + 1])
 
-                # Add code lines until next docstring or end
+                # Add code until next docstring
                 if i < len(docstring_positions) - 1:
                     next_start = docstring_positions[i + 1][0]
-                    chunk_lines.extend(lines[end_pos + 1:next_start])
+                    code_lines = lines[end_pos + 1:next_start]
                 else:
-                    # For last chunk, add all remaining lines
-                    chunk_lines.extend(lines[end_pos + 1:])
+                    code_lines = lines[end_pos + 1:]
 
-                # Create program for this chunk
+                # Add non-empty lines
+                for line in code_lines:
+                    if line.strip():
+                        chunk_lines.append(line)
+
                 if chunk_lines:
                     chunks.append(Program(
                         code='\n'.join(chunk_lines),
@@ -91,8 +105,9 @@ class ChunkedMCTS(MCTS):
 
         return chunks
 
+
     async def _evaluate_chunks(self, chunks: List[Program], start_state: GameState, instance_id: int) \
-            -> Tuple[List[Program], List[float], List[List[Union[Entity, EntityGroup]]]]:
+            -> Tuple[List[Program], List[List[Union[Entity, EntityGroup]]]]:
         """
         Evaluate chunks sequentially while computing holdout values for each chunk.
 
@@ -114,14 +129,13 @@ class ChunkedMCTS(MCTS):
             # This is good - the current state should be wiped.
             pass
 
-        holdout_values = []
         entity_list = []
         achievement_list = []
 
         try:
             # Initialize holdout instance
-            self.evaluator.holdout.reset(start_state)
-            initial_holdout_value, _ = self.evaluator.holdout.score()
+            #self.evaluator.holdout.reset(start_state)
+            initial_holdout_value = 0 #self.evaluator.holdout.score()
 
             executed_chunks = []
             # Evaluate each chunk while tracking holdout
@@ -147,36 +161,37 @@ class ChunkedMCTS(MCTS):
                 new_namespace = pickle.loads(state.namespace)
 
                 # Get holdout value after this chunk
-                holdout_score, _ = self.evaluator.holdout.score()
-                holdout_value = holdout_score - initial_holdout_value
+                #holdout_score, _ = self.evaluator.holdout.score()
+                #holdout_value = holdout_score - initial_holdout_value
 
                 # Store results
                 executed_chunks.append(chunk)
                 achievement_list.append(achievements)
                 entity_list.append(entities)
-                holdout_values.append(holdout_value)
+                #holdout_values.append(holdout_value)
 
                 # Update chunk with results
                 chunk.state = state
                 chunk.value = reward
+                chunk.advantage = reward
                 chunk.response = response
 
                 # Update state for next chunk
                 current_state = state
 
-                if self.evaluator.logger:
-                    self.evaluator.logger.update_instance(
-                        self.evaluator.holdout.tcp_port,
-                        status="completed",
-                        current_reward=holdout_value
-                    )
+                # if self.evaluator.logger:
+                #     self.evaluator.logger.update_instance(
+                #         self.evaluator.holdout.tcp_port,
+                #         status="completed",
+                #         current_reward=holdout_value
+                #     )
 
                 # If there was an error in the chunk, do not continue evaluating. We need to reflect on the issue
                 # and determine how to proceed.
                 if 'error' in response.lower():
                     break
 
-            return executed_chunks, holdout_values, entity_list, achievement_list
+            return executed_chunks, entity_list, achievement_list
 
         except Exception as e:
             print(f"Error during chunk evaluation:")
@@ -242,14 +257,15 @@ class ChunkedMCTS(MCTS):
         await asyncio.gather(*eval_futures)
 
         # Visit parent
-        await self.sampler.visit(parent.id, len(eval_futures))
+        if parent:
+            await self.sampler.visit(parent.id, len(eval_futures))
 
     async def _process_program_chunks(self, program: Program, chunks: List[Program],
                                       start_state: GameState, instance_id: int,
                                       parent_id: Optional[int], skip_failures: bool):
         """Process and evaluate a program's chunks with updated holdout calculation"""
         try:
-            evaluated_chunks, holdout_values, entity_list, achievement_list = await self._evaluate_chunks(
+            evaluated_chunks, entity_list, achievement_list = await self._evaluate_chunks(
                 chunks, start_state, instance_id
             )
 
@@ -257,14 +273,15 @@ class ChunkedMCTS(MCTS):
             last_conversation_stage = program.conversation
 
             depth = program.depth
-            for chunk, holdout_value, entities, achievements in zip(evaluated_chunks, holdout_values, entity_list, achievement_list):
+            for chunk, entities, achievements in zip(evaluated_chunks, entity_list, achievement_list):
                 try:
                     chunk_program = Program(
                         code=chunk.code,
                         conversation=program.conversation,
-                        value=chunk.value - holdout_value - (abs(self.error_penalty) if 'error' in chunk.response.lower() else 0),  # Use per-chunk holdout value
+                        value=chunk.value - (abs(self.error_penalty) if 'error' in chunk.response.lower() else 0),  # Use per-chunk holdout value
                         raw_reward=chunk.value,
-                        holdout_value=holdout_value,
+                        advantage=chunk.advantage - (abs(self.error_penalty) if 'error' in chunk.response.lower() else 0),
+                        holdout_value=0,
                         state=chunk.state,
                         response=chunk.response,
                         version=self.version,
@@ -283,7 +300,7 @@ class ChunkedMCTS(MCTS):
                         chunk.code,
                         chunk.response,
                         score=chunk.value,
-                        advantage=chunk.value - holdout_value,
+                        advantage=chunk.value,
                     )
 
                     chunk_program.id = hash(
@@ -318,7 +335,7 @@ class ChunkedMCTS(MCTS):
             raise
 
     async def _generate_programs_batch(self, conversation: Conversation, n_samples: int) -> List[Tuple[Program, List[Program]]]:
-        generation_parameters = GenerationParameters(n = n_samples+1,
+        generation_parameters = GenerationParameters(n = n_samples,
                                                      model = self.llm.model,
                                                      logit_bias=self.logit_bias,)
         # We generate one extra program in case there is an error in parsing one. This way we can always return n_samples programs to keep the servers occupied.
@@ -329,7 +346,7 @@ class ChunkedMCTS(MCTS):
             try:
                 chunks = self._split_into_chunks(program.code)
                 if not chunks:
-                    continue
+                    chunks = [program]
 
                 chunked_programs.append((program, chunks))
 

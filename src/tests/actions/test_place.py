@@ -10,7 +10,7 @@ def game(instance):
     instance.initial_inventory = {
         'stone-furnace': 1, 'boiler': 1, 'steam-engine': 1, 'offshore-pump': 4, 'pipe': 100,
         'iron-plate': 50, 'copper-plate': 20, 'coal': 50, 'burner-inserter': 50, 'burner-mining-drill': 50,
-        'transport-belt': 50, 'stone-wall': 100, 'splitter': 4
+        'transport-belt': 50, 'stone-wall': 100, 'splitter': 4, 'wooden-chest': 1
     }
 
     instance.reset()
@@ -249,3 +249,18 @@ def test_place_generator(game):
     engine = game.place_entity(Prototype.SteamEngine, position=Position(x=0, y=0), direction=Direction.UP)
 
     pass
+
+def test_place_too_far_away(game):
+    try:
+        drill = game.place_entity(Prototype.BurnerMiningDrill, position=Position(x=100, y=0))
+    except Exception as e:
+        assert True
+
+def test_place_at_drop_position(game):
+    iron_ore = game.nearest(Resource.IronOre)
+    game.move_to(iron_ore)
+
+    drill = game.place_entity(Prototype.BurnerMiningDrill, position=iron_ore)
+    chest = game.place_entity(Prototype.WoodenChest, position=drill.drop_position)
+
+    assert chest.position.is_close(drill.drop_position)

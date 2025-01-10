@@ -45,11 +45,11 @@ def test_craft_automation_packs_and_research(game):
     # Create iron and copper plates
     game.insert_item(Prototype.IronOre, furnace, quantity=10)
     game.insert_item(Prototype.Coal, furnace, quantity=10)
-    game.sleep(10)  # Wait for smelting
+    game.sleep(35)  # Wait for smelting
     iron_plates = game.extract_item(Prototype.IronPlate, furnace.position, 10)
 
     game.insert_item(Prototype.CopperOre, furnace, quantity=10)
-    game.sleep(10)  # Wait for smelting
+    game.sleep(35)  # Wait for smelting
     copper_plates = game.extract_item(Prototype.CopperPlate, furnace.position, 10)
     assert iron_plates and copper_plates, "Failed to create iron or copper plates"
 

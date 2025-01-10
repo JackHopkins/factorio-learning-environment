@@ -468,7 +468,7 @@ class MCTSFactory:
                     'gpt-4o',
                     'claude-3-5-sonnet-20241022',
                     'meta-llama/Llama-3.3-70B-Instruct-Turbo',
-                    'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+                    'meta-llama/Meta-Llama-3.3-8B-Instruct-Turbo',
                     'Qwen/Qwen2.5-7B-Instruct-Turbo',
                     'Qwen/Qwen2.5-72B-Instruct-Turbo',
                     'ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-masked:AYIViDdb'

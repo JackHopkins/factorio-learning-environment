@@ -28,7 +28,7 @@ class Program(BaseModel):
     version_description: Optional[str] = ""
     model: str = "gpt-4o"
     meta: dict = {}
-    achievements: dict ={}
+    achievements: dict = {}
     instance: int = -1
     depth: int = 0
     advantage: float = 0

@@ -2,7 +2,7 @@ import os
 import asyncio
 from dotenv import load_dotenv
 from cluster.local.cluster_ips import get_local_container_ips
-from search.mcts.db_client import DBClient
+from search.db_client import DBClient
 from search.mcts.mcts_factory import MCTSFactory
 from search.mcts.plots.run_results import RunResults
 from factorio_instance import FactorioInstance
@@ -35,6 +35,14 @@ To play the game, consider the conversation history to better understand the cha
 
 Think extensively step-by-step (in Python docstrings / comments ONLY) to first plan your algorithm, reasoning over available entities and your inventory, before writing clean code to execute it. Everything you write MUST be valid Python - either as code or as docstring comments. Any text that is not syntactically valid Python will be rejected.
 
+Leave empty spaces (double \\n) between steps in your program:
+```
+# comment goes here
+code_goes_here...
+
+...
+```
+ 
 Use assert statements to self-verify your beliefs against the environment, with specific and parameterised assertion messages.
 
 Your reward in the environment is proportional to the resources you create. This means you should focus on generating items through automation, as this allows greater scale than getting them manually.
@@ -43,12 +51,12 @@ Always consider the most profitable next task, what entities are needed for the 
 
 Don't repeat your previous steps - just continue from where you left off to build the largest automated system possible.
 
-Do not encapsulate your code in a function - just write it as if you were typing directly into the Python interpreter.
+Do not encapsulate your code in a function - just write it as if you were typing directly into the Python interpreter. NEVER write <LINES X-Y CUT/> - as this is a processing step applied to the conversational history - it represents code.
 
 You are now ready to begin playing FactoryEnv! Good luck!
 """
 
-with open("TEST_PROMPT.md", "r") as f:
+with open("../TEST_PROMPT.md", "r") as f:
     TEST_PROMPT = f.read()
 
 async def main():

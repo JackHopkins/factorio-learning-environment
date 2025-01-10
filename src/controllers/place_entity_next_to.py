@@ -38,7 +38,7 @@ class PlaceEntityNextTo(Action):
 
 
             if not isinstance(response, dict) or response == {}:
-                raise Exception(f"Could not place {name} at {reference_position}.", response)
+                raise Exception(f"Could not place {name} at {reference_position}.", str(response).replace("\\\'", "").replace("\'", ""))
 
             cleaned_response = self.clean_response(response)
 

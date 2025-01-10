@@ -5,7 +5,9 @@ from typing import Optional, Tuple
 
 from controllers.get_entity import GetEntity
 from factorio_entities import Position, Entity
-from factorio_instance import PLAYER, Direction
+from factorio_instance import PLAYER
+from factorio_instance import Direction
+from factorio_entities import Direction as DirectionEntities
 from factorio_types import Prototype
 
 
@@ -33,10 +35,8 @@ class PlaceObject(Action):
         :return: Entity object
         """
 
-        if not isinstance(entity, Prototype):
-            raise ValueError("The first argument must be a Prototype object")
-        #if not isinstance(direction, Direction):
-        #    raise ValueError("The second argument must be a Direction object")
+        #if not isinstance(entity, Prototype):
+        #    raise ValueError("The first argument must be a Prototype object")
 
         # If position is a tuple, cast it to a Position object:
         if isinstance(position, tuple):
@@ -44,6 +44,9 @@ class PlaceObject(Action):
 
         if not isinstance(position, Position):
             raise ValueError("The first argument must be a Prototype object")
+
+        if not isinstance(direction, (Direction, DirectionEntities)):
+            raise ValueError("The second argument must be a Direction object")
 
         x, y = self.get_position(position)
         try:
@@ -59,7 +62,11 @@ class PlaceObject(Action):
             # If we are in `fast` mode, this is synchronous
             response, elapsed = self.execute(PLAYER, name, factorio_direction, x, y, exact)
         except Exception as e:
-            raise Exception(f"Could not place {name} at ({x}, {y})", e)
+            try:
+                msg = str(e).split(':')[-1].replace('"', '')
+                raise Exception(f"Could not place {name} at ({x}, {y}), {msg}")
+            except Exception:
+                raise Exception(f"Could not place {name} at ({x}, {y})", e)
 
 
         # If we are in `slow` mode, there is a delay between placing the entity and the entity being created
@@ -68,8 +75,11 @@ class PlaceObject(Action):
             return self.get_entity(entity, position)
         else:
             if not isinstance(response, dict):
-                message = response.split(":")[-1]
-                raise Exception(f"Could not place {name} at ({x}, {y})", response.lstrip())
+                try:
+                    msg = str(response).split(':')[-1].replace('"', '').replace("'", '').strip()
+                except:
+                    msg = str(response).lstrip()
+                raise Exception(f"Could not place {name} at ({x}, {y}), {msg}")
 
             cleaned_response = self.clean_response(response)
 

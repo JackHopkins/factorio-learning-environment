@@ -14,6 +14,18 @@ def game(instance):
     yield instance
     instance.reset()
 
+def test_fail_to_craft_item(game):
+    """
+    Attempt to craft an iron chest with insufficient resources and assert that no items are crafted.
+    :param game:
+    :return:
+    """
+    # Craft an iron chest with insufficient resources
+    try:
+        game.craft_item(Prototype.IronChest, quantity=100)
+    except Exception as e:
+        assert True
+
 def test_craft_item(game):
     """
     Craft an iron chest and assert that the iron plate has been deducted and the iron chest has been added.

@@ -10,8 +10,8 @@ from tenacity import retry, wait_exponential
 
 from search.model.conversation import Conversation, GenerationParameters, Message
 from search.mcts.conversation_formatter import ConversationFormatter, StructurePreservingFormatter
-from search.mcts.db_client import DBClient
-from search.mcts.factorio_evaluator import FactorioEvaluator
+from search.db_client import DBClient
+from search.factorio_evaluator import FactorioEvaluator
 from search.mcts.grouped_logger import GroupedFactorioLogger
 from search.mcts.parallel_mcts_config import ParallelMCTSConfig
 from search.mcts.planning_mcts import get_mining_setup

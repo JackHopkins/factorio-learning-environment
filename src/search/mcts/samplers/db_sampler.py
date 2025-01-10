@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from fontTools.ttLib.ttVisitor import visit
 from psycopg2.extras import DictCursor
 
-from search.mcts.db_client import DBClient
+from search.db_client import DBClient
 from search.model.program import Program
 
 

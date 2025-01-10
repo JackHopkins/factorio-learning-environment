@@ -1,8 +1,95 @@
 import pickle
 import unittest
 
+from search.mcts.chunked_mcts import ChunkedMCTS
 from search.model.game_state import GameState
 from factorio_instance import FactorioInstance
+from tests.mcts.test_mcts_chunker import FULL_PROGRAM3
+
+FULL_PROGRAM = \
+'''
+# First, let's gather some basic resources to start building our factory
+# We'll need to find and mine iron ore and coal to get started
+
+# Find the nearest iron ore patch
+iron_ore_position = nearest(Resource.IronOre)
+move_to(iron_ore_position)
+
+# Harvest some iron ore
+iron_ore_harvested = 0
+while iron_ore_harvested < 50:
+    iron_ore_harvested += harvest_resource(iron_ore_position, 10)
+
+# Find the nearest coal patch
+coal_position = nearest(Resource.Coal)
+move_to(coal_position)
+
+# Harvest some coal
+coal_harvested = 0
+while coal_harvested < 20:
+    coal_harvested += harvest_resource(coal_position, 10)
+
+# Now that we have some resources, let's craft a burner mining drill
+# Check if we have enough iron plates and iron gear wheels
+inventory = inspect_inventory()
+if inventory.get(Prototype.IronPlate, 0) < 3:
+    # Craft iron plates from iron ore
+    craft_item(Prototype.IronPlate, 3 - inventory.get(Prototype.IronPlate, 0))
+
+if inventory.get(Prototype.IronGearWheel, 0) < 1:
+    # Craft iron gear wheels from iron plates
+    craft_item(Prototype.IronGearWheel, 1 - inventory.get(Prototype.IronGearWheel, 0))
+
+# Craft the burner mining drill
+craft_item(Prototype.BurnerMiningDrill)
+
+# Place the burner mining drill on the iron ore patch
+burner_mining_drill = place_entity(Prototype.BurnerMiningDrill, direction=Direction.DOWN, position=iron_ore_position)
+
+# Fuel the burner mining drill with coal
+insert_item(Prototype.Coal, burner_mining_drill, quantity=5)
+
+# Now let's set up a basic smelting setup
+# Place a stone furnace next to the burner mining drill
+furnace_position = Position(x=burner_mining_drill.position.x + 2, y=burner_mining_drill.position.y)
+stone_furnace = place_entity(Prototype.StoneFurnace, direction=Direction.DOWN, position=furnace_position)
+
+# Fuel the stone furnace with coal
+insert_item(Prototype.Coal, stone_furnace, quantity=5)
+
+# Place an inserter to move iron ore from the burner mining drill to the stone furnace
+inserter_position = Position(x=burner_mining_drill.position.x + 1, y=burner_mining_drill.position.y)
+burner_inserter = place_entity(Prototype.BurnerInserter, direction=Direction.RIGHT, position=inserter_position)
+
+# Fuel the inserter with coal
+insert_item(Prototype.Coal, burner_inserter, quantity=2)
+
+# Place a transport belt to move iron plates from the stone furnace to a chest
+belt_position = Position(x=stone_furnace.position.x + 1, y=stone_furnace.position.y)
+transport_belt = place_entity(Prototype.TransportBelt, direction=Direction.RIGHT, position=belt_position)
+
+# Place a chest to store the iron plates
+chest_position = Position(x=transport_belt.position.x + 1, y=transport_belt.position.y)
+iron_chest = place_entity(Prototype.IronChest, direction=Direction.RIGHT, position=chest_position)
+
+# Place an inserter to move iron plates from the stone furnace to the transport belt
+inserter2_position = Position(x=stone_furnace.position.x, y=stone_furnace.position.y + 1)
+burner_inserter2 = place_entity(Prototype.BurnerInserter, direction=Direction.DOWN, position=inserter2_position)
+
+# Fuel the second inserter with coal
+insert_item(Prototype.Coal, burner_inserter2, quantity=2)
+
+# Wait for the system to produce some iron plates
+sleep(30)
+
+# Check the chest to see if iron plates have been produced
+chest_inventory = inspect_inventory(iron_chest)
+iron_plates_in_chest = chest_inventory.get(Prototype.IronPlate, 0)
+
+# Verify that the system is working
+assert iron_plates_in_chest > 0, "No iron plates were produced in the chest"
+print(f"Successfully produced {iron_plates_in_chest} iron plates and stored them in the chest")
+'''
 
 class TestSaveLoadPythonNamespace(unittest.TestCase):
     """
@@ -56,7 +143,9 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
                                          inventory={})
 
         self.instance.reset(game_state)
-        response = self.instance.eval('move_to(boiler.position)')
+        response = self.instance.eval('print(boiler.position)')
+
+        assert 'Error' not in response
         pass
 
     def test_save_load_simple_variable_namespace2(self):
@@ -77,7 +166,9 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
     def test_declare_load_function_definition(self):
         resp = self.instance.eval('def myfunc():\n  return "hello world"')
 
-        test_function = self.instance.eval('myfunc()')
+        _, _, resp2 = self.instance.eval('print(myfunc())')
+        assert 'hello world' in resp2
+
         game_state = GameState.from_instance(self.instance)
 
         self.instance = FactorioInstance(address='localhost',
@@ -87,8 +178,29 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
                                          inventory={})
         self.instance.reset()
         self.instance.reset(game_state)
-        _, _, resp2 = self.instance.eval('print(myfunc())')
-        assert 'hello world' in resp2
+        _, _, resp3 = self.instance.eval('print(myfunc())')
+        assert 'hello world' in resp3
+
+    def test_full_program(self):
+        splitter = ChunkedMCTS(None, None, None, "", None, initial_state=None)
+        parts = splitter._split_into_chunks(FULL_PROGRAM)
+
+        for part in parts:
+            resp = self.instance.eval(part.code)
+
+            game_state = GameState.from_instance(self.instance)
+
+            self.instance = FactorioInstance(address='localhost',
+                                             bounding_box=200,
+                                             tcp_port=27015,
+                                             fast=True,
+                                             inventory={})
+            self.instance.reset()
+            self.instance.reset(game_state)
+
+            print(resp)
+
+
 
 
 if __name__ == '__main__':

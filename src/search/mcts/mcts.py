@@ -11,8 +11,8 @@ from tenacity import wait_exponential, retry, retry_if_exception_type
 
 from search.model.conversation import Conversation, Message, GenerationParameters
 from search.mcts.conversation_formatter import ConversationFormatter, DefaultFormatter
-from search.mcts.db_client import DBClient
-from search.mcts.factorio_evaluator import FactorioEvaluator
+from search.db_client import DBClient
+from search.factorio_evaluator import FactorioEvaluator
 from search.model.game_state import GameState
 from search.model.program import Program
 from search.mcts.samplers.db_sampler import DBSampler
@@ -185,7 +185,7 @@ class MCTS:
                     frequency_penalty=self.frequency_penalty
                 )
                 if 'sonnet' in generation_params.model or 'gemini' in generation_params.model:
-                    await sleep(5 + random()*5) # Sleep with jitter to avoid rate limiting issues
+                    await sleep(8 + random()*5) # Sleep with jitter to avoid rate limiting issues
                 return response
             except Exception as e:
                 print(f"Single generation failed: {str(e)}")

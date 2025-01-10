@@ -8,7 +8,7 @@ from factorio_types import Prototype, Resource
 @pytest.fixture()
 def game(instance):
     instance.initial_inventory = {
-        'boiler': 1,
+        'boiler': 3,
         'transport-belt': 1,
         'stone-furnace': 1,
         'burner-mining-drill': 1,
@@ -197,7 +197,7 @@ def test_place_entity_next_to(game, entity_prototype, surrounding_entity_prototy
                 print(f"  Spacing: {spacing}")
                 raise
 
-
+    game.reset()
     # Specific test for boiler and transport belt
     boiler = game.place_entity(Prototype.Boiler, position=Position(x=0, y=0))
     print(f"\nBoiler position: {boiler.position}")

@@ -82,20 +82,6 @@ def test_defence():
     print("Objective completed: Built a defensive line of gun turrets and manually supplied them with ammunition")
 
 
-def test_collect_iron_ore():
-    """
-    Collect 10 iron ore
-    :return:
-    """
-    iron_ore = nearest(Resource.IronOre)
-    # move to the iron ore
-    move_to(iron_ore)
-    harvest_resource(iron_ore)
-
-    assert inspect_inventory()[Prototype.IronOre] == 1
-    reset()
-
-
 def test_place_ore_in_furnace():
     """
     Collect 10 iron ore and place it in a furnace
@@ -118,12 +104,10 @@ def test_place_ore_in_furnace():
     insert_item(Prototype.IronOre, furnace, quantity=10)
     insert_item(Prototype.Coal, furnace, quantity=10)
 
-    reset()
-
 
 def test_connect_steam_engines_to_boilers_using_pipes():
     """
-    Place a boiler and a steam engine next to each other in 3 cardinal directions.
+    Place a boiler and a steam engine next to each other and connect them using pipes.
     :return:
     """
     boilers_in_inventory = inspect_inventory()[Prototype.Boiler]
@@ -131,37 +115,21 @@ def test_connect_steam_engines_to_boilers_using_pipes():
     pipes_in_inventory = inspect_inventory()[Prototype.Pipe]
 
     boiler: Entity = place_entity(Prototype.Boiler, position=Position(x=0, y=0))
-    move_to(Position(x=0, y=10))
-    steam_engine: Entity = place_entity(Prototype.SteamEngine, position=Position(x=0, y=10))
+    move_to(Position(x=10, y=0))
+
+    steam_engine: Entity = place_entity(Prototype.SteamEngine, position=Position(x=10, y=0))
 
     try:
-        connection: List[Entity] = connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
-        assert False
+        connection: List[Union[EntityGroup, Entity]] = connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
     except Exception as e:
         print(e)
-        assert True
-    reset()
+        assert False
+    assert boilers_in_inventory - 1 == inspect_inventory()[Prototype.Boiler]
+    assert steam_engines_in_inventory - 1 == inspect_inventory()[Prototype.SteamEngine]
 
-    # Define the offsets for the four cardinal directions
-    offsets = [Position(x=10, y=0), Position(x=0, y=-10), Position(x=-10, y=0)]  # Up, Right, Down, Left  (0, -10),
-
-    for offset in offsets:
-        boiler: Entity = place_entity(Prototype.Boiler, position=Position(x=0, y=0))
-        move_to(offset)
-
-        steam_engine: Entity = place_entity(Prototype.SteamEngine, position=offset)
-
-        try:
-            connection: List[Union[EntityGroup, Entity]] = connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
-        except Exception as e:
-            print(e)
-            assert False
-        assert boilers_in_inventory - 1 == inspect_inventory()[Prototype.Boiler]
-        assert steam_engines_in_inventory - 1 == inspect_inventory()[Prototype.SteamEngine]
-
-        current_pipes_in_inventory = inspect_inventory()[Prototype.Pipe]
-        spent_pipes = (pipes_in_inventory - current_pipes_in_inventory)
-        assert spent_pipes == len(connection[0].pipes)
+    current_pipes_in_inventory = inspect_inventory()[Prototype.Pipe]
+    spent_pipes = (pipes_in_inventory - current_pipes_in_inventory)
+    assert spent_pipes == len(connection[0].pipes)
 
 
 
@@ -647,7 +615,7 @@ def test_build_iron_gear_factory():
                                              direction=Direction.LEFT,
                                              spacing=2)
 
-    # connect the steam engine and assembly machine with power poles
+    """connect the steam engine and assembly machine with power poles"""
 
     # harvest nearby trees for wood
     tree_patch = get_resource_patch(Resource.Wood, nearest(Resource.Wood))

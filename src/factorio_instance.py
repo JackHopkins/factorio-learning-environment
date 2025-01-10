@@ -22,7 +22,8 @@ from dotenv import load_dotenv
 from slpp import slpp as lua
 from typing_extensions import deprecated
 
-from search.model.game_state import GameState, wrap_for_serialization, unwrap_after_deserialization
+from search.model.game_state import GameState, wrap_for_serialization, unwrap_after_deserialization, \
+    SerializableFunction
 from factorio_entities import *
 from factorio_lua_script_manager import FactorioLuaScriptManager
 from factorio_transaction import FactorioTransaction
@@ -537,11 +538,35 @@ class FactorioInstance:
                     compiled = compile(wrapped_node, 'file', 'exec')
                     exec(compiled, eval_dict)
 
-                    # Get the function from eval_dict and store it
+                    # Get the newly defined function
                     func = eval_dict[node.name]
-                    # Update persistent vars and instance
-                    self.persistent_vars[node.name] = wrap_for_serialization(func)
-                    setattr(self, node.name, func)
+
+                    # Create SerializableFunction and bind it immediately
+                    serialized_func = SerializableFunction(func, self)
+
+                    # Store in persistent vars and as instance attribute
+                    self.persistent_vars[node.name] = serialized_func
+                    setattr(self, node.name, serialized_func)
+
+                    # Update eval_dict with bound serializable function
+                    eval_dict[node.name] = serialized_func
+
+                    last_successful_state = dict(self.persistent_vars)
+
+                elif isinstance(node, ast.Assign):
+                    # Store assignments in persistent vars
+                    compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
+                    exec(compiled, eval_dict)
+
+                    # Get variable names from the assignment
+                    targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
+                    for name in targets:
+                        if name in eval_dict:
+                            value = eval_dict[name]
+                            # Store both original and wrapped version
+                            self.persistent_vars[name] = wrap_for_serialization(value)
+                            setattr(self, name, value)
+                            print(f"{self.tcp_port}: Stored variable {name} - {type(value)}")
 
                     last_successful_state = dict(self.persistent_vars)
 

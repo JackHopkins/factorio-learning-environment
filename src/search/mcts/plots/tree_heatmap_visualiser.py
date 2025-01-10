@@ -4,12 +4,12 @@ import os
 import numpy as np
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import List, Dict, Optional
+from typing import List
 import json
 
 from dotenv import load_dotenv
 
-from search.mcts.db_client import DBClient
+from search.db_client import DBClient
 from search.mcts.plots.run_results import RunResults, Node
 
 load_dotenv()
@@ -399,18 +399,20 @@ async def main():
     visualizer = MCTSVisualizer(db_client)
 
     # Load multiple versions
-    versions = [331, 332, 334, 335, 336]
+    versions = [331, 332, 334, 335, 336, 344]
     labels={
         331: 'claude-3-5-sonnet-20241022',
         332: 'gpt-4o',
         334: 'gemini-2.0-flash-exp',
         335: 'Llama-3.3-70B-Instruct-Turbo',
-        336: 'Llama-3.1-8B-Instruct-Turbo'
+        336: 'Llama-3.1-8B-Instruct-Turbo',
+        344: 'Qwen/Qwen2.5-72B-Instruct-Turbo',
+        346: 'gemini-2.0-flash-exp (2)'
     }
     visualizer.load_versions(versions)
 
     # Generate heatmap data
-    heatmap_data = visualizer.generate_heatmap_data(metric='value', max_depth=60)
+    heatmap_data = visualizer.generate_heatmap_data(metric='value', max_depth=100)
 
     # Export as LaTeX
     visualizer.export_distribution_latex(heatmap_data, output_file='mcts_mean_heatmap.tex', labels=labels, cumulative=True)

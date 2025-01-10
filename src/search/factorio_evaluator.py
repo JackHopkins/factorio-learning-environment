@@ -2,7 +2,7 @@ import asyncio
 import pickle
 from typing import List, Tuple, Union, Dict
 
-from search.mcts.db_client import DBClient
+from search.db_client import DBClient
 from search.model.game_state import GameState
 from search.mcts.logger import FactorioLogger
 from search.model.program import Program
@@ -121,7 +121,7 @@ class FactorioEvaluator:
 
         except Exception as e:
             if self.logger:
-                for instance in self.instances + [self.holdout]:
+                for instance in self.instances:
                     self.logger.update_instance(
                         instance.tcp_port,
                         status="error",
@@ -164,14 +164,19 @@ class FactorioEvaluator:
             # Check to see if the inventories are different
             # If so, we put a hint in the code and result
             get_inventory_code = 'print(f"Inventory changed to {inspect_inventory()}")'
-            if start_inventory.__dict__ != final_inventory.__dict__ and 'error' not in result.lower() and get_inventory_code not in program.code:
+            if (start_inventory.__dict__ != final_inventory.__dict__
+                    and 'error' not in result.lower()
+                    and get_inventory_code not in program.code
+                    and 'inspect_inventory()' not in program.code):
                 program.code += f'\n{get_inventory_code}'
                 result += f'\n'+str(len(program.code.split('\n')))+f': (\'Inventory changed to {final_inventory}\',)'
 
             # Check to see if the entities are different
             # If so, we put a hint in the code and result
             get_entities_code = 'print(f"Entities on the map: {get_entities()}")'
-            if start_entities != entities and 'error' not in result.lower() and get_entities_code not in program.code:
+            if (start_entities != entities and 'error' not in result.lower()
+                    and get_entities_code not in program.code
+                    and 'get_entities()' not in program.code):
                 program.code += f'\n{get_entities_code}\n'
                 result += "\n"+str(len(program.code.split('\n')))+f': (\'Entities on the map: {entities}\',)'
 

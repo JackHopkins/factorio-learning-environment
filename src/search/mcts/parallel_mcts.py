@@ -5,8 +5,8 @@ from typing import List, Dict, Any
 
 from rich.console import Console
 
-from search.mcts.db_client import DBClient
-from search.mcts.factorio_evaluator import FactorioEvaluator
+from search.db_client import DBClient
+from search.factorio_evaluator import FactorioEvaluator
 from search.mcts.grouped_logger import GroupedFactorioLogger
 from search.model.instance_group import InstanceGroup
 from search.mcts.parallel_mcts_config import ParallelMCTSConfig

@@ -1,10 +1,8 @@
 import asyncio
-from typing import List, Optional
-import pytest
 import os
 from dotenv import load_dotenv
 
-from search.mcts.db_client import DBClient
+from search.db_client import DBClient
 
 # Load environment variables
 load_dotenv()

@@ -2,6 +2,7 @@ import ast
 import asyncio
 import json
 import pickle
+import re
 from typing import Tuple, Optional, Union, List
 
 from factorio_entities import Entity, EntityGroup
@@ -21,89 +22,305 @@ class ChunkedMCTS(MCTS):
     from typing import List
 
     def _split_into_chunks(self, program_code: str) -> List[Program]:
-        """Split the program code into chunks based on docstrings and blank lines."""
+        """Split the program code into chunks based on docstrings and comments."""
         program_code = program_code.replace("from factorio_instance import *", "").strip()
         if not program_code:
             return []
 
-        # Parse the AST to find docstring positions
-        module = ast.parse(program_code)
-        lines = program_code.splitlines()
+        # Try to parse AST to find docstrings
+        try:
+            module = ast.parse(program_code)
+            # Get all nodes that look like docstrings
+            docstring_nodes = [
+                node for node in module.body
+                if isinstance(node, ast.Expr) and
+                   isinstance(node.value, ast.Constant) and
+                   isinstance(node.value.value, str) and
+                   node.value.value.strip().startswith('"""')
+            ]
 
-        # Find all docstrings and their positions
-        docstring_positions = []
-        for node in module.body:
-            if isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant):
-                docstring_positions.append((node.lineno - 1, node.end_lineno - 1, node.value.s))
+            if docstring_nodes:
+                # If we have docstrings, split based on their line numbers
+                chunks = []
+                lines = program_code.splitlines()
+                last_end = 0
 
-        if not docstring_positions:
-            return []
+                for node in docstring_nodes:
+                    # Get the start line (1-based in AST)
+                    start_line = node.lineno - 1  # Convert to 0-based
 
-        chunks = []
+                    # Get the chunk from last_end to this docstring
+                    if start_line > last_end:
+                        chunk_lines = lines[last_end:start_line]
+                        chunk_content = '\n'.join(chunk_lines).strip()
+                        if chunk_content:
+                            chunks.append(Program(
+                                code=chunk_content,
+                                conversation=Conversation(messages=[])
+                            ))
 
-        # If there's content before the first docstring, add it as a chunk
-        if docstring_positions[0][0] > 0:
-            content = '\n'.join(lines[:docstring_positions[0][0]]).strip()
-            if content:
-                chunks.append(Program(
-                    code=content,
-                    conversation=Conversation(messages=[])
-                ))
+                    # Add all lines until we find the closing docstring
+                    current_chunk = []
+                    in_docstring = True
+                    docstring_quotes = 1
 
-        # Process chunks based on number of docstrings
-        if len(docstring_positions) == 1:
-            # Get the docstring and all following content
-            start_pos, end_pos, docstring = docstring_positions[0]
-            docstring_lines = lines[start_pos:end_pos + 1]
-            remaining_lines = lines[end_pos + 1:]
+                    for line in lines[start_line:]:
+                        current_chunk.append(line)
+                        docstring_quotes += line.strip().count('"""')
+                        if docstring_quotes % 2 == 0:
+                            in_docstring = False
+                            break
 
-            # Split remaining content on blank lines
-            current_chunk = docstring_lines[:]
-            for line in remaining_lines:
-                if not line.strip():
-                    if current_chunk:
+                    last_end = start_line + len(current_chunk)
+
+                    # Continue collecting lines until next docstring or end
+                    while last_end < len(lines):
+                        line = lines[last_end]
+                        if line.strip().startswith('"""'):
+                            break
+                        current_chunk.append(line)
+                        last_end += 1
+
+                    chunk_content = '\n'.join(current_chunk).strip()
+                    if chunk_content:
                         chunks.append(Program(
-                            code='\n'.join(current_chunk),
+                            code=chunk_content,
                             conversation=Conversation(messages=[])
                         ))
-                        current_chunk = []
+
+                # Add any remaining code as final chunk
+                if last_end < len(lines):
+                    chunk_content = '\n'.join(lines[last_end:]).strip()
+                    if chunk_content:
+                        chunks.append(Program(
+                            code=chunk_content,
+                            conversation=Conversation(messages=[])
+                        ))
+
+                return chunks
+
+        except SyntaxError:
+            pass  # Fall through to line-based approach
+
+        # Split the code into lines
+        lines = program_code.splitlines()
+
+        # Check for numbered comments (e.g., "# 1. Do something")
+        has_numbered_comments = any(re.match(r'^#\s*\d+\.', line.strip()) for line in lines)
+
+        if has_numbered_comments:
+            # Handle code with numbered comments
+            chunks = []
+            current_chunk = None
+            current_lines = []
+
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    if current_lines:
+                        current_lines.append('')
+                    continue
+
+                comment_match = re.match(r'^#\s*(\d+)\.\s*(.+)$', line)
+                if comment_match:
+                    if current_chunk and current_lines:
+                        current_chunk.code = '\n'.join(current_lines).strip()
+                        chunks.append(current_chunk)
+                        current_lines = []
+
+                    current_chunk = Program(
+                        code='',
+                        conversation=Conversation(messages=[])
+                    )
+                    current_lines = [line]
+                elif current_chunk is not None:
+                    current_lines.append(line)
                 else:
-                    current_chunk.append(line)
+                    # First content, start a chunk
+                    current_chunk = Program(
+                        code='',
+                        conversation=Conversation(messages=[])
+                    )
+                    current_lines = [line]
 
-            # Add final chunk if it exists
-            if current_chunk:
-                chunks.append(Program(
-                    code='\n'.join(current_chunk),
-                    conversation=Conversation(messages=[])
-                ))
+            if current_chunk and current_lines:
+                current_chunk.code = '\n'.join(current_lines).strip()
+                chunks.append(current_chunk)
 
+            return chunks
         else:
-            # Multiple docstrings - process each section
-            for i, (start_pos, end_pos, docstring) in enumerate(docstring_positions):
-                chunk_lines = []
+            # Split on task comment boundaries
+            chunks = []
+            current_chunk = []
 
-                # Add the docstring
-                chunk_lines.extend(lines[start_pos:end_pos + 1])
+            for i, line in enumerate(lines):
+                line_stripped = line.strip()
+                if not line_stripped:
+                    if current_chunk:
+                        current_chunk.append('')
+                    continue
 
-                # Add code until next docstring
-                if i < len(docstring_positions) - 1:
-                    next_start = docstring_positions[i + 1][0]
-                    code_lines = lines[end_pos + 1:next_start]
-                else:
-                    code_lines = lines[end_pos + 1:]
+                # Start new chunk if this line is a task-starting comment
+                if (line_stripped.startswith('#') and
+                        (i == 0 or not lines[i - 1].strip()) and
+                        i + 1 < len(lines) and
+                        lines[i + 1].strip() and
+                        not lines[i + 1].strip().startswith('#')):
 
-                # Add non-empty lines
-                for line in code_lines:
-                    if line.strip():
-                        chunk_lines.append(line)
+                    if current_chunk:
+                        chunk_content = '\n'.join(current_chunk).strip()
+                        if chunk_content:
+                            chunks.append(Program(
+                                code=chunk_content,
+                                conversation=Conversation(messages=[])
+                            ))
+                    current_chunk = []
 
-                if chunk_lines:
+                current_chunk.append(line)
+
+            if current_chunk:
+                chunk_content = '\n'.join(current_chunk).strip()
+                if chunk_content:
                     chunks.append(Program(
-                        code='\n'.join(chunk_lines),
+                        code=chunk_content,
                         conversation=Conversation(messages=[])
                     ))
 
-        return chunks
+            return chunks if chunks else [Program(
+                code=program_code.strip(),
+                conversation=Conversation(messages=[])
+            )]
+
+    # def _split_into_chunks(self, program_code: str) -> List[Program]:
+    #     """Split the program code into chunks based on docstrings and blank lines."""
+    #     program_code = program_code.replace("from factorio_instance import *", "").strip()
+    #     if not program_code:
+    #         return []
+    #
+    #     # Parse the AST to find docstring positions
+    #     module = ast.parse(program_code)
+    #     lines = program_code.splitlines()
+    #
+    #     # Find all docstrings and their positions
+    #     docstring_positions = []
+    #     for node in module.body:
+    #         if isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant):
+    #             docstring_positions.append((node.lineno - 1, node.end_lineno - 1, node.value.s))
+    #
+    #     #if not docstring_positions:
+    #     #    return []
+    #
+    #     chunks = []
+    #
+    #     # If there's content before the first docstring, add it as a chunk
+    #     if docstring_positions and docstring_positions[0][0] > 0:
+    #         content = '\n'.join(lines[:docstring_positions[0][0]]).strip()
+    #         if content:
+    #             chunks.append(Program(
+    #                 code=content,
+    #                 conversation=Conversation(messages=[])
+    #             ))
+    #
+    #     # Process chunks based on number of docstrings
+    #     if len(docstring_positions) == 1:
+    #         # Get the docstring and all following content
+    #         start_pos, end_pos, docstring = docstring_positions[0]
+    #         docstring_lines = lines[start_pos:end_pos + 1]
+    #         remaining_lines = lines[end_pos + 1:]
+    #
+    #         # Split remaining content on blank lines
+    #         current_chunk = docstring_lines[:]
+    #         for line in remaining_lines:
+    #             if not line.strip():
+    #                 if current_chunk:
+    #                     chunks.append(Program(
+    #                         code='\n'.join(current_chunk),
+    #                         conversation=Conversation(messages=[])
+    #                     ))
+    #                     current_chunk = []
+    #             else:
+    #                 current_chunk.append(line)
+    #
+    #         # Add final chunk if it exists
+    #         if current_chunk:
+    #             chunks.append(Program(
+    #                 code='\n'.join(current_chunk),
+    #                 conversation=Conversation(messages=[])
+    #             ))
+    #
+    #     elif len(docstring_positions) == 0:
+    #         chunk_list = program_code.split('\n\n')
+    #         chunks = [Program(
+    #             code=chunk.strip(),
+    #             conversation=Conversation(messages=[])
+    #         ) for chunk in chunk_list if chunk.strip()]
+    #
+    #     else:
+    #         # Multiple docstrings - process each section
+    #         for i, (start_pos, end_pos, docstring) in enumerate(docstring_positions):
+    #             chunk_lines = []
+    #
+    #             # Add the docstring
+    #             chunk_lines.extend(lines[start_pos:end_pos + 1])
+    #
+    #             # Add code until next docstring
+    #             if i < len(docstring_positions) - 1:
+    #                 next_start = docstring_positions[i + 1][0]
+    #                 code_lines = lines[end_pos + 1:next_start]
+    #             else:
+    #                 code_lines = lines[end_pos + 1:]
+    #
+    #             # Add non-empty lines
+    #             for line in code_lines:
+    #                 if line.strip():
+    #                     chunk_lines.append(line)
+    #
+    #             if chunk_lines:
+    #                 chunks.append(Program(
+    #                     code='\n'.join(chunk_lines),
+    #                     conversation=Conversation(messages=[])
+    #                 ))
+    #
+    #     if len(chunks) == 1:
+    #         # If the chunking didn't work, we try a different strategy.
+    #         # Split the code into lines
+    #         lines = program_code.strip().split('\n')
+    #
+    #         chunks = []
+    #         current_chunk = None
+    #         current_code = []
+    #
+    #         for line in lines:
+    #             # Skip empty lines
+    #             if not line.strip():
+    #                 continue
+    #
+    #             # Check if line starts with a comment
+    #             comment_match = re.match(r'^#\s*(\d+)\.\s*(.+)$', line)
+    #             if comment_match:
+    #                 # If we have a previous chunk with code, save it
+    #                 if current_chunk and current_code:
+    #                     current_chunk.code = '\n'.join(current_code).strip()
+    #                     chunks.append(current_chunk)
+    #
+    #                 # Start a new chunk
+    #                 number = int(comment_match.group(1))
+    #                 comment_text = comment_match.group(2)
+    #                 current_chunk = Program(
+    #                     code='# '+comment_text,
+    #                     conversation=Conversation(messages=[])
+    #                 )
+    #                 current_code = [line]
+    #             elif current_chunk is not None:
+    #                 # Add code line to current chunk
+    #                 current_code.append(line)
+    #
+    #         # Add the last chunk if it exists and has code
+    #         if current_chunk and current_code:
+    #             current_chunk.code = '\n'.join(current_code).strip()
+    #             chunks.append(current_chunk)
+    #
+    #     return chunks
 
 
     async def _evaluate_chunks(self, chunks: List[Program], start_state: GameState, instance_id: int) \

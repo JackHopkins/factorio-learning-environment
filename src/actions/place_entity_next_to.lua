@@ -79,65 +79,65 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         return new_pos
     end
 
-    local function calculate_position2(direction, ref_pos, ref_entity, gap, is_belt, entity_to_place)
-        local new_pos = {x = ref_pos.x, y = ref_pos.y}
-        local effective_gap = gap
-
-        local ref_size = {x = 1, y = 1}
-        if ref_entity then
-            local ref_orientation = ref_entity.direction  -- Convert to 0-7 system
-            game.print("ref_orientation: " .. ref_orientation)
-            local is_rotated = (ref_orientation == 2 or ref_orientation == 6)  -- East or West
-            ref_size = {
-                x = is_rotated and ref_entity.prototype.tile_height or ref_entity.prototype.tile_width,
-                y = is_rotated and ref_entity.prototype.tile_width or ref_entity.prototype.tile_height
-            }
-        end
-
-        local entity_size = {x = 1, y = 1}
-        local entity_prototype = game.entity_prototypes[entity_to_place]
-        if entity_prototype then
-            local entity_bounding_box = entity_prototype.collision_box
-            --entity_size = {
-            --    x = entity_bounding_box.right_bottom.x - entity_bounding_box.left_top.x,
-            --    y = entity_bounding_box.right_bottom.y - entity_bounding_box.left_top.y
-            --}
-            --entity_size = {
-            --    x = entity_prototype.tile_width,
-            --    y = entity_prototype.tile_height
-            --}
-            local is_rotated = (direction == 1 or direction == 3)  -- East or West
-            entity_size = {
-                x = is_rotated and entity_prototype.tile_height or entity_prototype.tile_width,
-                y = is_rotated and entity_prototype.tile_width or entity_prototype.tile_height
-            }
-        end
-
-        -- Ensure we have valid sizes
-        ref_size.x = math.max(ref_size.x, 1)
-        ref_size.y = math.max(ref_size.y, 1)
-        entity_size.x = math.max(entity_size.x, 1)
-        entity_size.y = math.max(entity_size.y, 1)
-
-        if direction == 0 then     -- North
-            new_pos.y = new_pos.y - ref_size.y / 2 - entity_size.y / 2 - effective_gap
-            --new_pos.x = new_pos.x - 0.5
-        elseif direction == 1 then -- East
-            new_pos.x = new_pos.x + ref_size.x / 2 + entity_size.x / 2 + effective_gap
-            --new_pos.y = new_pos.y - 0.5
-        elseif direction == 2 then -- South
-            new_pos.y = new_pos.y + ref_size.y / 2 + entity_size.y / 2 + effective_gap
-            --new_pos.x = new_pos.x - 0.5
-        else  -- West
-            new_pos.x = new_pos.x - ref_size.x / 2 - entity_size.x / 2 - effective_gap
-        end
-
-        -- Round the position to the nearest 0.5 to align with Factorio's grid
-        new_pos.x = math.ceil(new_pos.x * 2) / 2
-        new_pos.y = math.ceil(new_pos.y * 2) / 2
-
-        return new_pos
-    end
+    --local function calculate_position2(direction, ref_pos, ref_entity, gap, is_belt, entity_to_place)
+    --    local new_pos = {x = ref_pos.x, y = ref_pos.y}
+    --    local effective_gap = gap
+    --
+    --    local ref_size = {x = 1, y = 1}
+    --    if ref_entity then
+    --        local ref_orientation = ref_entity.direction  -- Convert to 0-7 system
+    --        game.print("ref_orientation: " .. ref_orientation)
+    --        local is_rotated = (ref_orientation == 2 or ref_orientation == 6)  -- East or West
+    --        ref_size = {
+    --            x = is_rotated and ref_entity.prototype.tile_height or ref_entity.prototype.tile_width,
+    --            y = is_rotated and ref_entity.prototype.tile_width or ref_entity.prototype.tile_height
+    --        }
+    --    end
+    --
+    --    local entity_size = {x = 1, y = 1}
+    --    local entity_prototype = game.entity_prototypes[entity_to_place]
+    --    if entity_prototype then
+    --        local entity_bounding_box = entity_prototype.collision_box
+    --        --entity_size = {
+    --        --    x = entity_bounding_box.right_bottom.x - entity_bounding_box.left_top.x,
+    --        --    y = entity_bounding_box.right_bottom.y - entity_bounding_box.left_top.y
+    --        --}
+    --        --entity_size = {
+    --        --    x = entity_prototype.tile_width,
+    --        --    y = entity_prototype.tile_height
+    --        --}
+    --        local is_rotated = (direction == 1 or direction == 3)  -- East or West
+    --        entity_size = {
+    --            x = is_rotated and entity_prototype.tile_height or entity_prototype.tile_width,
+    --            y = is_rotated and entity_prototype.tile_width or entity_prototype.tile_height
+    --        }
+    --    end
+    --
+    --    -- Ensure we have valid sizes
+    --    ref_size.x = math.max(ref_size.x, 1)
+    --    ref_size.y = math.max(ref_size.y, 1)
+    --    entity_size.x = math.max(entity_size.x, 1)
+    --    entity_size.y = math.max(entity_size.y, 1)
+    --
+    --    if direction == 0 then     -- North
+    --        new_pos.y = new_pos.y - ref_size.y / 2 - entity_size.y / 2 - effective_gap
+    --        --new_pos.x = new_pos.x - 0.5
+    --    elseif direction == 1 then -- East
+    --        new_pos.x = new_pos.x + ref_size.x / 2 + entity_size.x / 2 + effective_gap
+    --        --new_pos.y = new_pos.y - 0.5
+    --    elseif direction == 2 then -- South
+    --        new_pos.y = new_pos.y + ref_size.y / 2 + entity_size.y / 2 + effective_gap
+    --        --new_pos.x = new_pos.x - 0.5
+    --    else  -- West
+    --        new_pos.x = new_pos.x - ref_size.x / 2 - entity_size.x / 2 - effective_gap
+    --    end
+    --
+    --    -- Round the position to the nearest 0.5 to align with Factorio's grid
+    --    new_pos.x = math.ceil(new_pos.x * 2) / 2
+    --    new_pos.y = math.ceil(new_pos.y * 2) / 2
+    --
+    --    return new_pos
+    --end
 
     local is_belt = is_transport_belt(entity)
 
@@ -229,6 +229,16 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             y = player.position.y + move_direction.y * move_distance
         }
         player.teleport(new_player_position, player.surface)
+    end
+
+    -- First clean up any items-on-ground at the target position
+    local area = {{new_position.x - 1, new_position.y - 1}, {new_position.x + 1, new_position.y + 1}}
+    local items = player.surface.find_entities_filtered{
+        area = area,
+        type = "item-on-ground"
+    }
+    for _, item in ipairs(items) do
+        item.destroy()
     end
 
     local can_build = player.surface.can_place_entity({

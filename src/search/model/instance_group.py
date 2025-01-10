@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from search.mcts.factorio_evaluator import FactorioEvaluator
+from search.factorio_evaluator import FactorioEvaluator
 from search.mcts.mcts import MCTS
 
 

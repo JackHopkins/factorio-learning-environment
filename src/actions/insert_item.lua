@@ -198,6 +198,25 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
         game.print("Successfully inserted " .. inserted .. " items.")
         return global.utils.serialize_entity(closest_entity)
     else
-        error("Failed to insert any items into the target entity.")
+        local inventory_full = false
+        -- Check if the entity has an inventory and if it's full
+        if closest_entity.get_inventory then
+            local inv = closest_entity.get_inventory(defines.inventory.chest)
+            if inv and inv.is_full() then
+                inventory_full = true
+            end
+        end
+
+        local error_msg = string.format(
+            "\"Failed to insert %s into %s (type: %s) at position %s. " ..
+            "Attempted to insert: %d items. %s\"",
+            insert_item,
+            closest_entity.name,
+            closest_entity.type,
+            serpent.line(closest_entity.position),
+            insertable_count,
+            inventory_full and "Reason: Inventory is full." or "Entity might not accept this item or has no available space."
+        )
+        error(error_msg)
     end
 end

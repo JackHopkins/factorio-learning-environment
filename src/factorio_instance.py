@@ -237,7 +237,10 @@ class FactorioInstance:
             self.logging_results[self.line_value] = []
         self.logging_results[self.line_value].append(repr(arg))
 
-        print(f"{self.tcp_port}: {repr(arg)}")
+        if 'error' in repr(arg).lower():
+            print(f"\033[93m{self.tcp_port}: {repr(arg)}")
+        else:
+            print(f"{self.tcp_port}: {repr(arg)}")
         return arg
 
     def get_system_prompt(self) -> str:

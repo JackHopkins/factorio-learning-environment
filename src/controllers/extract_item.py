@@ -43,6 +43,7 @@ class ExtractItem(Action):
             raise Exception(response)
 
         if not response or response < 1:
-            raise Exception("Could not extract.", response)
+            msg = str(response).split(':')[-1]
+            raise Exception("Could not extract.", msg)
 
         return response

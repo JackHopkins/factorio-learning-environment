@@ -66,7 +66,7 @@ class SetEntityRecipe(Action):
         #                     response[key].append(sub_value)
         #     except AttributeError as e:
         #         pass
-        entity = metaclass(**cleaned_response)
+        entity = metaclass(**cleaned_response, prototype=matching_prototype)
         #entity = entity.__class__.construct(**response)
         entity.recipe = name
 

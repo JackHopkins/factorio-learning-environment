@@ -181,7 +181,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             else
                 colliding_entity_name = table.concat(colliding_entity_names, ", ", 1, #colliding_entity_names - 1) .. ", and " .. colliding_entity_names[#colliding_entity_names]
             end
-            error("\"A " .. colliding_entity_name .. " already exists at the new position " .. serpent.line(new_position) .. ".\"")
+            error("\"A " .. colliding_entity_name .. " already exists at the new position " .. serpent.line(new_position) .. ". Consider increasing the spacing (".. gap..") or changing the reference position (" .. serpent.line(ref_position) .. ")\"")
         end
     end
 
@@ -258,7 +258,8 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             table.insert(entity_names, e.name)
         end
         error("\'Cannot place entity at the position " .. serpent.line(new_position) .. " with direction " ..
-              serpent.line(orientation) .. ". Attempting to place next to: "..ref_entity.name..". Nearby entities: " .. serpent.line(entity_names).."\'")
+              serpent.line(orientation) .. ". Attempting to place next to: "..ref_entity.name..". Nearby entities: " .. serpent.line(entity_names)..
+                ". Consider increasing the spacing (".. gap..") or changing the reference position (" .. serpent.line(ref_position) .. ")\'")
     end
 
     local new_entity = player.surface.create_entity({

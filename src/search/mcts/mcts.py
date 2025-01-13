@@ -116,7 +116,7 @@ class MCTS:
         return "gpt" in model or 'o1' in model or 'gemini' in model
 
 
-    @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
+    @retry(wait=wait_exponential(multiplier=1, min=6, max=60))
     async def _generate_programs_batch(self, conversation: Conversation,
                                        generation_params: GenerationParameters,
                                        meta={}
@@ -185,7 +185,7 @@ class MCTS:
                     frequency_penalty=self.frequency_penalty
                 )
                 if 'sonnet' in generation_params.model or 'gemini' in generation_params.model:
-                    await sleep(8 + random()*5) # Sleep with jitter to avoid rate limiting issues
+                    await sleep(20 + random()*5) # Sleep with jitter to avoid rate limiting issues
                 return response
             except Exception as e:
                 print(f"Single generation failed: {str(e)}")

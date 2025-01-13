@@ -896,7 +896,39 @@ global.utils.serialize_entity = function(entity)
 		end
 		--create_beam_point_with_direction(game.players[1], entity.direction , {x = x, y = y})
 		serialized.output_position = {x = x, y = y}
-		serialized.inventory = entity.get_transport_line(1).get_contents()
+		--serialized.inventory = entity.get_transport_line(1).get_contents()
+			-- Get contents from both lines
+		local line1 = entity.get_transport_line(1)
+		local line2 = entity.get_transport_line(2)
+
+		-- Calculate if belt is full at the end (can't insert more items)
+		local is_full = not line1.can_insert_at_back() and not line2.can_insert_at_back()
+
+		serialized.belt_status = {
+			status = is_full and "full_output" or "normal"
+		}
+
+		-- Get and merge contents from both lines
+		serialized.inventory = {}
+		local line1_contents = line1.get_contents()
+		local line2_contents = line2.get_contents()
+
+		for item_name, count in pairs(line1_contents) do
+			serialized.inventory[item_name] = (serialized.inventory[item_name] or 0) + count
+		end
+		for item_name, count in pairs(line2_contents) do
+			serialized.inventory[item_name] = (serialized.inventory[item_name] or 0) + count
+		end
+
+		-- Add warning if belt is full
+		if not serialized.warnings then
+			serialized.warnings = {}
+		end
+		if is_full then
+			table.insert(serialized.warnings, "Belt output is full")
+		end
+
+
 	end
 
 	-- Add input and output positions if the entity is a splitter

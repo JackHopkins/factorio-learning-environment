@@ -1,5 +1,3 @@
-from time import sleep
-
 import pytest
 
 from factorio_entities import Position, EntityStatus
@@ -11,11 +9,11 @@ from factorio_types import Prototype, Resource
 def game(instance):
     instance.initial_inventory = {
         'iron-chest': 1,
-        'iron-ore': 10,
+        'iron-ore': 500,
         'copper-ore': 10,
         'iron-plate': 10,
         'iron-gear-wheel': 10,
-        'coal': 10,
+        'coal': 100,
         'stone-furnace': 1,
         'transport-belt': 10,
         'burner-inserter': 1,
@@ -27,12 +25,12 @@ def game(instance):
 
 def test_insert_and_fuel_furnace(game):
     furnace = game.place_entity(Prototype.StoneFurnace, direction=Direction.UP, position=Position(x=0, y=0))
-    furnace = game.insert_item(Prototype.IronOre, furnace, quantity=10)
-    furnace = game.insert_item(Prototype.Coal, furnace, quantity=10)
+    furnace = game.insert_item(Prototype.IronOre, furnace, quantity=100)
+    furnace = game.insert_item(Prototype.Coal, furnace, quantity=100)
 
     assert furnace.status == EntityStatus.WORKING
-    assert furnace.fuel[Prototype.Coal] == 10
-    assert furnace.furnace_source[Prototype.IronOre] == 10
+    assert furnace.fuel[Prototype.Coal] == 50
+    assert furnace.furnace_source[Prototype.IronOre] == 50
 
 def test_insert_iron_ore_into_stone_furnace(game):
     furnace = game.place_entity(Prototype.StoneFurnace, direction=Direction.UP, position=Position(x=0, y=0))
@@ -66,15 +64,22 @@ def test_insert_into_assembler(game):
     assert assembler.assembling_machine_input[Prototype.IronPlate] == 10
 
 
-def test_insert_coal_onto_belt(game):
-    #belt = game.place_entity(Prototype.TransportBelt, direction=Direction.UP, position=Position(x=0, y=0))
+def test_insert_ore_onto_belt(game):
     belt = game.connect_entities(Position(x=0.5, y=0.5), Position(x=0.5, y=8.5), Prototype.TransportBelt)
-    game.insert_item(Prototype.IronOre, belt[0], quantity=5)
+    belt = game.insert_item(Prototype.IronOre, belt[0], quantity=5)[0]
 
-    inspected_results = game.inspect_entities(Position(x=0, y=0), radius=10)
+    assert belt.inventory[Prototype.IronOre] == 5
 
-    assert belt.inventory[Prototype.Coal] == 10
-    pass
+def test_blocked_belt(game):
+    belt = game.connect_entities(Position(x=0.5, y=0.5), Position(x=0.5, y=8.5), Prototype.TransportBelt)
+    try:
+        belt = game.insert_item(Prototype.IronOre, belt[0], quantity=500)[0]
+    except:
+        pass
+
+    belt = game.get_entities({Prototype.TransportBelt}, position=Position(x=0.5, y=0.5))
+
+    assert belt[0].status == EntityStatus.FULL_OUTPUT
 
 def test_insert_into_two_furnaces(game):
     furnace_pos = Position(x=-12, y=-12)

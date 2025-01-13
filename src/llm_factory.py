@@ -67,7 +67,6 @@ class LLMFactory:
                 # Use asyncio.to_thread for CPU-bound operations
                 response = await asyncio.to_thread(
                     client.messages.create,
-                    
                     temperature=kwargs.get('temperature', 0.7),
                     max_tokens=max_tokens,
                     model=model_to_use,
@@ -84,14 +83,32 @@ class LLMFactory:
         elif "deepseek" in model_to_use:
             client = AsyncOpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
             response = await client.chat.completions.create(
-                *args,
-                **kwargs,
-                temperature=1,
                 model=model_to_use,
-                stop=["```END"],
-                presence_penalty=0.5,
-                frequency_penalty=0.8,
+                max_tokens=kwargs.get('max_tokens', 2048),
+                temperature=kwargs.get('temperature', 0.3),
+                messages=kwargs.get('messages', None),
+                logit_bias=kwargs.get('logit_bias', None),
+                n=kwargs.get('n_samples', None),
+                stop=kwargs.get('stop_sequences', None),
+                stream=False,
+                presence_penalty=kwargs.get('presence_penalty', None),
+                frequency_penalty=kwargs.get('frequency_penalty', None),
+            )
+            return response
+
+        elif "gemini" in model_to_use:
+            client = AsyncOpenAI(api_key=os.getenv("GEMINI_API_KEY"), base_url="https://generativelanguage.googleapis.com/v1beta/openai/")
+            response = await client.chat.completions.create(
+                model=model_to_use,
+                max_tokens=kwargs.get('max_tokens', 2048),
+                temperature=kwargs.get('temperature', 0.3),
+                messages=kwargs.get('messages', None),
+                #logit_bias=kwargs.get('logit_bias', None),
+                n=kwargs.get('n_samples', None),
+                #stop=kwargs.get('stop_sequences', None),
                 stream=False
+                #presence_penalty=kwargs.get('presence_penalty', None),
+                #frequency_penalty=kwargs.get('frequency_penalty', None),
             )
             return response
 
@@ -131,7 +148,9 @@ class LLMFactory:
                 logit_bias=kwargs.get('logit_bias', None),
                 n=kwargs.get('n_samples', None),
                 stop=kwargs.get('stop_sequences', None),
-                stream=False
+                stream=False,
+                presence_penalty=kwargs.get('presence_penalty', None),
+                frequency_penalty=kwargs.get('frequency_penalty', None),
             )
 
     def call(self, *args, **kwargs):
@@ -180,13 +199,12 @@ class LLMFactory:
             client = OpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
             response = client.chat.completions.create(*args,
                                                   **kwargs,
-                                                  temperature=1,
                                                   model=model_to_use,
-                                                  #stop=["\n\n"],
-                                                  stop=["```END"],
-                                                  #top_p=1,
-                                                  presence_penalty=0.5,
-                                                  frequency_penalty=0.8,
+                                                  presence_penalty=kwargs.get('presence_penalty', None),
+                                                  frequency_penalty=kwargs.get('frequency_penalty', None),
+                                                  logit_bias=kwargs.get('logit_bias', None),
+                                                  n=kwargs.get('n_samples', None),
+                                                  stop=kwargs.get('stop_sequences', None),
                                                   stream=False)
             return response
 

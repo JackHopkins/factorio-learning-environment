@@ -32,7 +32,8 @@ class GetEntity(Action):
             response, elapsed = self.execute(PLAYER, name, x, y)
 
             if response is None or response == {} or isinstance(response, str):
-                raise Exception("Could not get entity, does it exist at the specified position?", response)
+                msg = response.split(':')[-1]
+                raise Exception(msg)
 
             cleaned_response = self.clean_response(response)
             try:
@@ -42,5 +43,5 @@ class GetEntity(Action):
 
             return object
         except Exception as e:
-            raise Exception(f"Could not get entity {entity} at position {position}", e)
+            raise Exception(f"Could not get {entity} at position {position}", e)
 

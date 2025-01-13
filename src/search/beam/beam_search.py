@@ -187,7 +187,7 @@ class BeamSearch(MCTS):
             presence_penalty=self.presence_penalty,
             frequency_penalty=self.frequency_penalty,
             logit_bias=self.logit_bias,
-            max_tokens=768
+            max_tokens=2048
         )
 
         programs = await self._generate_programs_batch(
@@ -218,7 +218,8 @@ class ParallelBeamSearch:
                  llm_factory: 'LLMFactory',
                  config: ParallelBeamConfig,
                  version: int,
-                 version_description: str):
+                 version_description: str,
+                 current_depth=0):
 
         self.console = Console()
         self.config = config
@@ -226,7 +227,7 @@ class ParallelBeamSearch:
         self.llm_factory = llm_factory
         self.version = version
         self.version_description = version_description
-
+        self.current_depth = current_depth
         # Validate instance count
         self._validate_instance_count(len(instances), config.beam_width)
 
@@ -304,7 +305,7 @@ class ParallelBeamSearch:
     async def _run_beam_iteration(self, n_iterations: int):
         """Run one iteration of parallel beam search"""
         try:
-            for iteration in range(n_iterations):
+            for iteration in range(n_iterations*2):
                 logger.info(f"Starting iteration {iteration}")
 
                 # Generate and evaluate candidates in parallel
@@ -356,10 +357,14 @@ class ParallelBeamSearch:
 
                     # We need to double it, because in the DBClient, we halve it
                     # in expectation of depth being the full conversation length in the MCTS implementation
-                    program.depth = iteration * 2
+                    program.depth = self.current_depth * 2
+
 
                     # Save program to database
                     await self.db_client.create_program(program)
+
+                if best_programs:
+                    self.current_depth += 1
 
                 self.logger.update_progress()
 
@@ -368,6 +373,9 @@ class ParallelBeamSearch:
                     best_score = best_programs[0].value
                     print(f"Best score at iteration {iteration}: {best_score}")
                     logger.info(f"Best score at iteration {iteration}: {best_score}")
+
+                if self.current_depth > n_iterations:
+                    return
 
         except Exception as e:
             logger.error(f"Error during beam search: {str(e)}", exc_info=True)

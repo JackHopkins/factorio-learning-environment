@@ -6,7 +6,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
     -- Check if player has enough items
     local item_count = player.get_item_count(insert_item)
     if item_count == 0 then
-        error('\"No '..insert_item..' to place\"')
+        error('\"No '..insert_item..' to insert\"')
     end
 
     local closest_distance = math.huge
@@ -119,8 +119,29 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
         error('Entity too far away. Move closer.')
     end
 
-    -- Function to insert items onto a transport belt
-    local function insert_on_belt(belt, item_name, count)
+    -- Function to insert items onto a transport belt - one at a time
+    local function insert_on_belt(belt, item_name)
+        local line1 = belt.get_transport_line(1)
+        local line2 = belt.get_transport_line(2)
+
+        -- Try first line
+        if line1.can_insert_at_back() then
+            if line1.insert_at_back({name = item_name, count = 1}) then
+                return 1
+            end
+        end
+
+        -- If first line failed, try second line
+        if line2.can_insert_at_back() then
+            if line2.insert_at_back({name = item_name, count = 1}) then
+                return 1
+            end
+        end
+
+        return 0  -- Could not insert on either line
+    end
+
+    local function insert_on_belt2(belt, item_name, count)
         local inserted = 0
         local transport_line = belt.get_transport_line(1)
 
@@ -164,7 +185,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
     if closest_entity.type == "transport-belt" then
         -- For transport belts, we need to use a different method
         game.print("Inserting ".. insertable_count.. " items onto transport belt...")
-        inserted = insert_on_belt(closest_entity, insert_item, insertable_count)
+        inserted = insert_on_belt(closest_entity, insert_item)
     elseif closest_entity.type == "assembling-machine" then
         local recipe = closest_entity.get_recipe()
         if recipe then
@@ -208,14 +229,14 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
         end
 
         local error_msg = string.format(
-            "\"Failed to insert %s into %s (type: %s) at position %s. " ..
-            "Attempted to insert: %d items. %s\"",
+            "\"Failed to insert %s into %s (type %s) at position %s. " ..
+            "Attempted to insert %d items. %s\"",
             insert_item,
             closest_entity.name,
             closest_entity.type,
             serpent.line(closest_entity.position),
             insertable_count,
-            inventory_full and "Reason: Inventory is full." or "Entity might not accept this item or has no available space."
+            inventory_full and "Inventory is full." or "Entity might not accept this item or has no available space."
         )
         error(error_msg)
     end

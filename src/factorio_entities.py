@@ -11,6 +11,7 @@ class EntityStatus(Enum):
     NO_POWER = "no_power"
     LOW_POWER = "low_power"
     NO_FUEL = "no_fuel"
+    EMPTY = "empty"
     #DISABLED_BY_CONTROL_BEHAVIOR = "disabled_by_control_behavior"
     #OPENED_BY_CIRCUIT_NETWORK = "opened_by_circuit_network"
     #CLOSED_BY_CIRCUIT_NETWORK = "closed_by_circuit_network"
@@ -132,6 +133,17 @@ class Position(BaseModel):
         if isinstance(v, tuple) and len(v) == 2:
             return {'x': v[0], 'y': v[1]}
         return v
+
+    def __init__(self, *args, **kwargs):
+        if args and kwargs:
+            raise ValueError("Cannot mix positional and keyword arguments")
+
+        if args:
+            if len(args) != 2:
+                raise ValueError("Position requires exactly 2 positional arguments")
+            kwargs = {'x': args[0], 'y': args[1]}
+
+        super().__init__(**kwargs)
 
     @root_validator(pre=True)
     def parse_args(cls, values):
@@ -268,7 +280,12 @@ class Entity(BaseModel):
             # Remove the '_' prefix that pydantic adds to fields
             clean_key = key.lstrip('_')
             if clean_key not in excluded_fields and not clean_key.startswith('__'):
-                repr_dict[clean_key] = value
+                # Handle enum values specially
+                if isinstance(value, Enum):
+                    repr_dict[clean_key] = value.name
+                else:
+                    if (clean_key == 'warnings' and value) or clean_key != 'warnings': # Don't show empty warnings list
+                        repr_dict[clean_key] = value
 
         # Convert to string format
         items = [f"{k}={v!r}" for k, v in repr_dict.items()]
@@ -366,13 +383,16 @@ class EntityGroup(BaseModel):
 class BeltGroup(EntityGroup):
     belts: List[TransportBelt]
     output_positions: List[Position]
+    inventory: Inventory = Inventory()
+    name: str = 'belt-group'
 
     def __repr__(self) -> str:
         belt_summary = f"[{len(self.belts)} belts]"
-        return f"BeltGroup(position={self.position}, input_positions={self.input_positions}, output_positions={self.output_positions}, status={self.status}, belts={belt_summary})"
+        return f"BeltGroup(position={self.position}, input_positions={self.input_positions}, output_positions={self.output_positions}, inventory={self.inventory}, status={self.status}, belts={belt_summary})"
 
 class PipeGroup(EntityGroup):
     pipes: List[Pipe]
+    name: str = 'pipe-group'
 
     def __repr__(self) -> str:
         pipe_summary = f"[{len(self.pipes)} pipes]"

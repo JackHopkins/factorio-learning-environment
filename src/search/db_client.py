@@ -142,6 +142,22 @@ class DBClient:
         except Exception as e:
             print(f"Error fetching largest version: {e}")
 
+    async def get_largest_depth_in_version(self, version):
+        query = f"""
+                    SELECT MAX(depth)
+                    FROM programs
+                    WHERE version = {version}
+                """
+
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(query)
+                    result = cur.fetchone()
+                    return result[0] if result else 0
+        except Exception as e:
+            print(f"Error fetching largest version: {e}")
+
 
     @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
                     wait=wait_random_exponential(multiplier=1, min=4, max=10))

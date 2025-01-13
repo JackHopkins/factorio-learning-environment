@@ -453,7 +453,7 @@ Creating reusable utility functions is essential for maintaining clean and relia
 
 ### 1. Resource Processing Functions
 ```python
-def smelt_ore(ore_type: Prototype, quantity: int, timeout: int = 30) -> int:
+def smelt_ore(ore_type: Prototype, position: Position, quantity: int, timeout: int = 30) -> int:
     """
     Smelt ore into plates with timeout protection.
     Returns number of plates produced.
@@ -465,7 +465,7 @@ def smelt_ore(ore_type: Prototype, quantity: int, timeout: int = 30) -> int:
     }[ore_type]
     
     # Place and fuel furnace
-    furnace = place_entity(Prototype.StoneFurnace, position=get_current_position())
+    furnace = place_entity(Prototype.StoneFurnace, position=position)
     insert_item(Prototype.Coal, furnace, quantity=max(5, quantity // 2))
     insert_item(ore_type, furnace, quantity=quantity)
     
@@ -534,8 +534,7 @@ def setup_smelting_array(ore_position: Position, num_furnaces: int = 5) -> List[
 ### Best Practices for Utility Functions
 
 1. **Safety First**
-- Always include timeouts for waiting operations
-- Validate inputs and entity states
+- Validate inputs and** entity states
 - Clean up partially built structures on failure
 - Return meaningful values or raise specific exceptions
 
@@ -562,5 +561,3 @@ def setup_smelting_array(ore_position: Position, num_furnaces: int = 5) -> List[
 - Use reasonable defaults
 - Document parameter impacts
 - Include validation for parameter ranges
-
-These utility functions help maintain clean, reliable code while encapsulating common patterns and avoiding repetition.

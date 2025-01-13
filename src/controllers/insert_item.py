@@ -1,9 +1,10 @@
-from typing import Tuple, Union
-
-import pydantic
+from time import sleep
+from typing import Union
 
 from controllers.__action import Action
-from factorio_entities import Entity, EntityGroup, Position
+from controllers.get_entities import GetEntities
+from controllers.get_entity import GetEntity
+from factorio_entities import Entity, EntityGroup, Position, BeltGroup, PipeGroup
 from factorio_instance import PLAYER
 from factorio_types import Prototype
 
@@ -11,6 +12,7 @@ from factorio_types import Prototype
 class InsertItem(Action):
 
     def __init__(self, connection, game_state):
+        self.get_entities = GetEntities(connection, game_state)
         super().__init__(connection, game_state)
     def __call__(self, entity: Prototype, target: Union[Entity, EntityGroup, Position], quantity=5) -> Entity:
         """
@@ -32,14 +34,57 @@ class InsertItem(Action):
 
         name, _ = entity.value
 
+        # For belt groups, insert items one at a time
+        if isinstance(target, BeltGroup):
+            items_inserted = 0
+            last_response = None
+
+            while items_inserted < quantity:
+                response, elapsed = self.execute(PLAYER, name, 1, x, y)
+
+                if isinstance(response, str):
+                    if "Could not find" not in response:  # Don't raise if belt is just full
+                        raise Exception("Could not insert", response.split(":")[-1].strip())
+                    break
+
+                items_inserted += 1
+                last_response = response
+                sleep(0.05)
+
+            if last_response:
+                group = self.get_entities(
+                    {Prototype.TransportBelt, Prototype.FastTransportBelt, Prototype.ExpressTransportBelt},
+                    position=target.position
+                )
+                if not group:
+                    raise Exception("Could not find transport belt at position", target.position)
+                return [group[0]]
+
+            return target
+
         response, elapsed = self.execute(PLAYER, name, quantity, x, y)
 
         if isinstance(response, str):
-            raise Exception("Could not insert", response)
+            raise Exception("Could not insert", response.split(":")[-1].strip())
 
         cleaned_response = self.clean_response(response)
         if isinstance(cleaned_response, dict):
-            prototype = Prototype._value2member_map_[(target.name, type(target))]
-            target = type(target)(prototype=prototype, **cleaned_response)
-
+            if not isinstance(target, (BeltGroup, PipeGroup)):
+                _type = type(target)
+                prototype = Prototype._value2member_map_[(target.name, type(target))]
+                target = _type(prototype=prototype, **cleaned_response)
+            elif isinstance(target, BeltGroup):
+                group = self.get_entities({Prototype.TransportBelt, Prototype.FastTransportBelt, Prototype.ExpressTransportBelt}, position=target.position)
+                if not group:
+                    raise Exception("Could not find transport belt at position", target.position)
+                return [group[0]]
+            elif isinstance(target, PipeGroup):
+                group = self.get_entities(
+                    {Prototype.Pipe},
+                    position=target.position)
+                if not group:
+                    raise Exception("Could not find pipes at position", target.position)
+                return [group[0]]
+            else:
+               raise Exception("Unknown Entity Group type")
         return target

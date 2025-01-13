@@ -1,0 +1,702 @@
+\begin{tikzpicture}
+\begin{axis}[
+    name=mainplot,
+    width=\textwidth,
+    height=0.6\textwidth,
+    xlabel=Search Depth,
+    ylabel=Cumulative Value,
+    grid style={line width=.1pt, draw=gray!10},
+    major grid style={line width=.2pt,draw=gray!50},
+    grid=both,
+    minor tick num=1,
+    clip=false,
+    xmode=log,
+    log basis x=2,
+    ymode=log,
+    log basis y=2,
+    enlarge x limits=false,
+    xmin=1,
+    xmax=32,
+    xtick={1,2,4,8,16,32},
+    xticklabels={$2^0$,$2^1$,$2^2$,$2^3$,$2^4$,$2^5$},
+    ymin=64,
+    ymax=16384,
+    ytick={64,128,256,512,1024,2048,4096,8192,16384},
+    yticklabels={$2^6$,$2^7$,$2^8$,$2^9$,$2^{10}$,$2^{11}$,$2^{12}$,$2^{13}$,$2^{14}$},
+    legend pos=north west,
+    legend style={font=\small},
+    legend cell align={left},
+    legend entries={claude-3-5-sonnet-20241022,gpt-4o,Llama-3.3-70B-Instruct-Turbo,gpt-4o-mini,Qwen/Qwen2.5-72B-Instruct-Turbo,Llama-3.1-8B-Instruct-Turbo}
+]
+\node at (axis cs:1,391.75) {
+    \includegraphics[width=1em]{icons/coal.png}
+};
+\node at (axis cs:1,423.75) {
+    \includegraphics[width=1em]{icons/stone.png}
+};
+\node at (axis cs:1,455.75) {
+    \includegraphics[width=1em]{icons/iron-ore.png}
+};
+\node at (axis cs:1,487.75) {
+    \includegraphics[width=1em]{icons/stone-furnace.png}
+};
+\node at (axis cs:1,519.75) {
+    \includegraphics[width=1em]{icons/iron-plate.png}
+};
+\node at (axis cs:2,1318.75) {
+    \includegraphics[width=1em]{icons/iron-gear-wheel.png}
+};
+\node at (axis cs:7,2579.3625) {
+    \includegraphics[width=1em]{icons/wood.png}
+};
+\node at (axis cs:7,2711.6375) {
+    \includegraphics[width=1em]{icons/wooden-chest.png}
+};
+\node at (axis cs:9,3047.0) {
+    \includegraphics[width=1em]{icons/burner-inserter.png}
+};
+\node at (axis cs:12,3951.75) {
+    \includegraphics[width=1em]{icons/transport-belt.png}
+};
+\node at (axis cs:21,5813.75) {
+    \includegraphics[width=1em]{icons/burner-mining-drill.png}
+};
+\addplot[blue!80!red, dotted, name path=series_0_upper, forget plot] coordinates {
+(0,505.5464607176052)
+(1,1130.7662111899358)
+(2,1402.4081585979516)
+(3,1951.6058732475399)
+(4,2346.3712658611407)
+(5,2485.755370868389)
+(6,2553.8514321848356)
+(7,2659.896180048888)
+(8,2935.5680415257807)
+(9,3067.8206628136572)
+(10,3408.79612497651)
+(11,3763.9023615181045)
+(12,4062.0889663718126)
+(13,4191.518914692166)
+(14,4201.081167647662)
+(15,4147.61803398875)
+(16,4272.95778063328)
+(17,4585.077924342993)
+(18,4821.08054277059)
+(19,5141.560141085828)
+(20,5402.468011357288)
+(21,6028.9886756603)
+(22,6731.636071520627)
+(23,7115.735545569184)
+(24,7389.234982301745)
+(25,7782.393473354603)
+(26,7988.537869130834)
+(27,8178.257701234411)
+(28,8662.51952529317)
+(29,8838.628082789173)
+(30,9074.101504081475)
+(31,9342.013946828205)
+};
+\addplot[blue!80!red, dotted, name path=series_0_lower, forget plot] coordinates {
+(0,405.9535392823948)
+(1,1011.2337888100643)
+(2,1235.0918414020484)
+(3,1689.3941267524601)
+(4,2091.1287341388593)
+(5,2357.744629131611)
+(6,2534.6485678151644)
+(7,2631.103819951112)
+(8,2902.4319584742193)
+(9,3026.1793371863428)
+(10,3301.70387502349)
+(11,3641.0976384818955)
+(12,3841.4110336281874)
+(13,3946.9810853078347)
+(14,4120.918832352338)
+(15,4145.38196601125)
+(16,4119.04221936672)
+(17,4398.922075657007)
+(18,4639.41945722941)
+(19,4954.439858914172)
+(20,5316.531988642712)
+(21,5598.5113243397)
+(22,6123.363928479373)
+(23,6955.764454430816)
+(24,7235.265017698255)
+(25,7685.106526645397)
+(26,7839.962130869166)
+(27,7861.742298765589)
+(28,8598.48047470683)
+(29,8782.871917210827)
+(30,8964.398495918525)
+(31,9225.486053171795)
+};
+\addplot[blue!80!red, opacity=0.2, forget plot] fill between[of=series_0_upper and series_0_lower];
+\addplot[blue!80!red, thick] coordinates {
+(0,455.75)
+(1,1071.0)
+(2,1318.75)
+(3,1820.5)
+(4,2218.75)
+(5,2421.75)
+(6,2544.25)
+(7,2645.5)
+(8,2919.0)
+(9,3047.0)
+(10,3355.25)
+(11,3702.5)
+(12,3951.75)
+(13,4069.25)
+(14,4161.0)
+(15,4146.5)
+(16,4196.0)
+(17,4492.0)
+(18,4730.25)
+(19,5048.0)
+(20,5359.5)
+(21,5813.75)
+(22,6427.5)
+(23,7035.75)
+(24,7312.25)
+(25,7733.75)
+(26,7914.25)
+(27,8020.0)
+(28,8630.5)
+(29,8810.75)
+(30,9019.25)
+(31,9283.75)
+};
+\node at (axis cs:1,301.6666666666667) {
+    \includegraphics[width=1em]{icons/coal.png}
+};
+\node at (axis cs:1,333.6666666666667) {
+    \includegraphics[width=1em]{icons/stone.png}
+};
+\node at (axis cs:1,365.6666666666667) {
+    \includegraphics[width=1em]{icons/iron-ore.png}
+};
+\node at (axis cs:1,397.6666666666667) {
+    \includegraphics[width=1em]{icons/copper-ore.png}
+};
+\node at (axis cs:1,429.6666666666667) {
+    \includegraphics[width=1em]{icons/stone-furnace.png}
+};
+\node at (axis cs:1,461.6666666666667) {
+    \includegraphics[width=1em]{icons/iron-plate.png}
+};
+\node at (axis cs:1,493.6666666666667) {
+    \includegraphics[width=1em]{icons/copper-plate.png}
+};
+\node at (axis cs:1,555.5) {
+    \includegraphics[width=1em]{icons/iron-gear-wheel.png}
+};
+\node at (axis cs:1,587.5) {
+    \includegraphics[width=1em]{icons/burner-mining-drill.png}
+};
+\node at (axis cs:1,619.5) {
+    \includegraphics[width=1em]{icons/copper-cable.png}
+};
+\node at (axis cs:1,651.5) {
+    \includegraphics[width=1em]{icons/electronic-circuit.png}
+};
+\node at (axis cs:9,1279.65) {
+    \includegraphics[width=1em]{icons/wood.png}
+};
+\node at (axis cs:9,1347.0) {
+    \includegraphics[width=1em]{icons/wooden-chest.png}
+};
+\node at (axis cs:9,1414.35) {
+    \includegraphics[width=1em]{icons/iron-chest.png}
+};
+\node at (axis cs:28,3254.75) {
+    \includegraphics[width=1em]{icons/inserter.png}
+};
+\node at (axis cs:29,3727.5) {
+    \includegraphics[width=1em]{icons/assembling-machine-1.png}
+};
+\addplot[red!90!black, dotted, name path=series_1_upper, forget plot] coordinates {
+(0,561.7440535573924)
+(1,969.8301106925283)
+(2,400.0)
+(3,430.07387196049825)
+(4,654.8165118717553)
+(5,701.2052983965949)
+(6,913.0702435991177)
+(7,1210.0289160095856)
+(8,1274.7895089600424)
+(9,1378.8433666561814)
+(10,1399.5429760729073)
+(11,1512.0789560996034)
+(12,1544.0)
+(13,1625.2870664399695)
+(14,1732.988851920004)
+(15,1778.1705970470723)
+(16,1836.4756532253905)
+(17,1922.2350320557837)
+(18,2045.132096331752)
+(19,2120.746018906381)
+(20,2174.0)
+(21,2263.4296035471543)
+(22,2342.6111582719564)
+(23,2439.9609136289937)
+(24,2509.612486080161)
+(25,2627.732050807569)
+(26,2759.281745773866)
+(27,2898.94134295109)
+(28,3446.147981964283)
+(29,4107.295010499085)
+(30,4357.850111471373)
+};
+\addplot[red!90!black, dotted, name path=series_1_lower, forget plot] coordinates {
+(0,233.589279775941)
+(1,237.16988930747175)
+(2,370.0)
+(3,402.92612803950175)
+(4,437.6834881282446)
+(5,515.2947016034051)
+(6,727.9297564008823)
+(7,1015.4710839904144)
+(8,1225.7104910399576)
+(9,1315.1566333438186)
+(10,1384.9570239270927)
+(11,1472.4210439003966)
+(12,1541.0)
+(13,1593.2129335600305)
+(14,1654.511148079996)
+(15,1742.8294029529277)
+(16,1780.0243467746095)
+(17,1851.2649679442163)
+(18,1976.867903668248)
+(19,2042.2539810936191)
+(20,2114.0)
+(21,2251.0703964528457)
+(22,2309.8888417280436)
+(23,2376.0390863710063)
+(24,2498.387513919839)
+(25,2624.267949192431)
+(26,2698.218254226134)
+(27,2875.55865704891)
+(28,3063.352018035717)
+(29,3347.704989500915)
+(30,4111.149888528627)
+};
+\addplot[red!90!black, opacity=0.2, forget plot] fill between[of=series_1_upper and series_1_lower];
+\addplot[red!90!black, thick] coordinates {
+(0,397.6666666666667)
+(1,603.5)
+(2,385.0)
+(3,416.5)
+(4,546.25)
+(5,608.25)
+(6,820.5)
+(7,1112.75)
+(8,1250.25)
+(9,1347.0)
+(10,1392.25)
+(11,1492.25)
+(12,1542.5)
+(13,1609.25)
+(14,1693.75)
+(15,1760.5)
+(16,1808.25)
+(17,1886.75)
+(18,2011.0)
+(19,2081.5)
+(20,2144.0)
+(21,2257.25)
+(22,2326.25)
+(23,2408.0)
+(24,2504.0)
+(25,2626.0)
+(26,2728.75)
+(27,2887.25)
+(28,3254.75)
+(29,3727.5)
+(30,4234.5)
+};
+\node at (axis cs:1,1133.825) {
+    \includegraphics[width=1em]{icons/coal.png}
+};
+\node at (axis cs:1,1193.5) {
+    \includegraphics[width=1em]{icons/stone.png}
+};
+\node at (axis cs:1,1253.175) {
+    \includegraphics[width=1em]{icons/iron-ore.png}
+};
+\node at (axis cs:1,327.75) {
+    \includegraphics[width=1em]{icons/stone-furnace.png}
+};
+\node at (axis cs:3,489.0) {
+    \includegraphics[width=1em]{icons/iron-plate.png}
+};
+\node at (axis cs:9,859.0) {
+    \includegraphics[width=1em]{icons/copper-ore.png}
+};
+\node at (axis cs:25,2396.25) {
+    \includegraphics[width=1em]{icons/iron-gear-wheel.png}
+};
+\node at (axis cs:32,3504.0) {
+    \includegraphics[width=1em]{icons/transport-belt.png}
+};
+\addplot[green!70!blue, dotted, name path=series_2_upper, forget plot] coordinates {
+(0,2912.5707518889385)
+(1,417.83711062077634)
+(2,443.9523449046331)
+(3,515.4669605357321)
+(4,591.3348082018374)
+(5,665.0)
+(6,708.0663729752108)
+(7,762.038348415311)
+(8,819.8939445440113)
+(9,870.8110118110177)
+(10,905.4069840025493)
+(11,945.3890145789044)
+(12,973.8432667397366)
+(13,1208.863970026942)
+(14,1270.0)
+(15,1306.0)
+(16,1363.0262794416287)
+(17,1365.0552167895721)
+(18,1546.8893926280148)
+(19,1708.9533610103579)
+(20,1939.7867052792844)
+(21,2067.6472458725216)
+(22,2184.248348009606)
+(23,2239.551785695146)
+(24,2387.438831321317)
+(25,2474.6635670659102)
+(26,2692.5166604983956)
+(27,2844.230249470758)
+(28,3043.5832233947076)
+(29,3281.7842151546006)
+(30,3319.475787540542)
+(31,3438.0948100502087)
+(32,3512.124038404636)
+};
+\addplot[green!70!blue, dotted, name path=series_2_lower, forget plot] coordinates {
+(0,64)
+(1,237.66288937922363)
+(2,381.0476550953669)
+(3,462.5330394642679)
+(4,553.6651917981626)
+(5,653.0)
+(6,692.9336270247892)
+(7,748.961651584689)
+(8,797.6060554559887)
+(9,847.1889881889823)
+(10,896.0930159974507)
+(11,933.1109854210956)
+(12,955.6567332602634)
+(13,992.1360299730579)
+(14,1270.0)
+(15,1306.0)
+(16,1343.9737205583713)
+(17,1355.9447832104279)
+(18,1461.1106073719852)
+(19,1486.5466389896421)
+(20,1607.7132947207156)
+(21,1750.8527541274786)
+(22,1843.7516519903938)
+(23,2072.948214304854)
+(24,2226.061168678683)
+(25,2317.8364329340898)
+(26,2647.4833395016044)
+(27,2815.769750529242)
+(28,2980.4167766052924)
+(29,3108.2157848453994)
+(30,3288.524212459458)
+(31,3416.9051899497913)
+(32,3495.875961595364)
+};
+\addplot[green!70!blue, opacity=0.2, forget plot] fill between[of=series_2_upper and series_2_lower];
+\addplot[green!70!blue, thick] coordinates {
+(0,1193.5)
+(1,327.75)
+(2,412.5)
+(3,489.0)
+(4,572.5)
+(5,659.0)
+(6,700.5)
+(7,755.5)
+(8,808.75)
+(9,859.0)
+(10,900.75)
+(11,939.25)
+(12,964.75)
+(13,1100.5)
+(14,1270.0)
+(15,1306.0)
+(16,1353.5)
+(17,1360.5)
+(18,1504.0)
+(19,1597.75)
+(20,1773.75)
+(21,1909.25)
+(22,2014.0)
+(23,2156.25)
+(24,2306.75)
+(25,2396.25)
+(26,2670.0)
+(27,2830.0)
+(28,3012.0)
+(29,3195.0)
+(30,3304.0)
+(31,3427.5)
+(32,3504.0)
+};
+\node at (axis cs:1,72.25) {
+    \includegraphics[width=1em]{icons/coal.png}
+};
+\node at (axis cs:1,104.25) {
+    \includegraphics[width=1em]{icons/stone-furnace.png}
+};
+\node at (axis cs:3,120.0) {
+    \includegraphics[width=1em]{icons/iron-ore.png}
+};
+\node at (axis cs:4,160.0) {
+    \includegraphics[width=1em]{icons/iron-plate.png}
+};
+\addplot[orange!90!red, dotted, name path=series_3_upper, forget plot] coordinates {
+(1,95.33431365765237)
+(2,94.54903810567666)
+(3,125.0)
+(4,166.9282032302755)
+(5,198.0)
+(6,248.211102550928)
+(7,293.80919976936536)
+(8,349.30509139248716)
+(9,403.0)
+(10,453.398763196831)
+(11,497.0)
+(12,578.5479883506999)
+(13,678.6183928893037)
+(14,750.2291505667085)
+(15,837.4903810567666)
+(16,873.0490381056767)
+(17,927.0)
+(18,981.0490381056767)
+(19,1035.0490381056766)
+(20,1090.0)
+(21,1148.2430501889028)
+(22,1202.8541019662496)
+(23,1252.839724735885)
+(24,1306.5039677541881)
+(25,1361.0)
+(26,1418.0)
+(27,1479.4903810567666)
+(28,1535.8910616009514)
+(29,1604.5461386095342)
+(30,1654.5591901453988)
+(31,1730.4268604418767)
+(32,1850.1068463340494)
+};
+\addplot[orange!90!red, dotted, name path=series_3_lower, forget plot] coordinates {
+(1,81.16568634234763)
+(2,91.95096189432334)
+(3,115.0)
+(4,153.0717967697245)
+(5,195.0)
+(6,233.788897449072)
+(7,273.69080023063464)
+(8,327.69490860751284)
+(9,399.0)
+(10,425.101236803169)
+(11,472.0)
+(12,552.4520116493001)
+(13,647.8816071106963)
+(14,723.2708494332915)
+(15,811.5096189432334)
+(16,870.4509618943233)
+(17,924.0)
+(18,978.4509618943233)
+(19,1032.4509618943234)
+(20,1087.0)
+(21,1139.2569498110972)
+(22,1196.1458980337504)
+(23,1250.660275264115)
+(24,1274.9960322458119)
+(25,1301.0)
+(26,1327.0)
+(27,1453.5096189432334)
+(28,1509.6089383990486)
+(29,1590.9538613904658)
+(30,1643.9408098546012)
+(31,1706.5731395581233)
+(32,1811.3931536659506)
+};
+\addplot[orange!90!red, opacity=0.2, forget plot] fill between[of=series_3_upper and series_3_lower];
+\addplot[orange!90!red, thick] coordinates {
+(1,88.25)
+(2,93.25)
+(3,120.0)
+(4,160.0)
+(5,196.5)
+(6,241.0)
+(7,283.75)
+(8,338.5)
+(9,401.0)
+(10,439.25)
+(11,484.5)
+(12,565.5)
+(13,663.25)
+(14,736.75)
+(15,824.5)
+(16,871.75)
+(17,925.5)
+(18,979.75)
+(19,1033.75)
+(20,1088.5)
+(21,1143.75)
+(22,1199.5)
+(23,1251.75)
+(24,1290.75)
+(25,1331.0)
+(26,1372.5)
+(27,1466.5)
+(28,1522.75)
+(29,1597.75)
+(30,1649.25)
+(31,1718.5)
+(32,1830.75)
+};
+\node at (axis cs:1,349.25) {
+    \includegraphics[width=1em]{icons/coal.png}
+};
+\node at (axis cs:1,381.25) {
+    \includegraphics[width=1em]{icons/iron-ore.png}
+};
+\node at (axis cs:1,413.25) {
+    \includegraphics[width=1em]{icons/copper-ore.png}
+};
+\node at (axis cs:6,480.0) {
+    \includegraphics[width=1em]{icons/stone.png}
+};
+\node at (axis cs:6,512.0) {
+    \includegraphics[width=1em]{icons/stone-furnace.png}
+};
+\node at (axis cs:7,569.5) {
+    \includegraphics[width=1em]{icons/iron-gear-wheel.png}
+};
+\node at (axis cs:7,601.5) {
+    \includegraphics[width=1em]{icons/iron-plate.png}
+};
+\node at (axis cs:8,847.0) {
+    \includegraphics[width=1em]{icons/burner-mining-drill.png}
+};
+\addplot[blue!80!red, dotted, name path=series_4_upper, forget plot] coordinates {
+(0,458.0105855892202)
+(1,485.0)
+(2,485.0)
+(3,485.0)
+(4,485.0)
+(5,485.0)
+(6,498.0)
+(7,605.5686322403894)
+(8,851.0)
+(9,1167.2078745306999)
+(10,1189.1895440801297)
+(11,1275.6353652618266)
+(12,1655.385041349153)
+(13,1768.5209649062756)
+(14,2001.890170350293)
+(15,2190.262676128848)
+(16,2275.22749774955)
+(17,2140.8814597615833)
+(18,2213.0)
+(19,2255.0490381056766)
+(20,2298.0)
+(21,2341.0490381056766)
+(22,2381.0490381056766)
+(23,2421.0490381056766)
+(24,2496.0490381056766)
+(25,2537.0)
+(26,2613.0191742076554)
+(27,2795.1245154965973)
+(28,2904.147344063956)
+(29,3060.2071414560332)
+(30,3161.398087231766)
+(31,3268.202678251204)
+(32,3390.24837655492)
+};
+\addplot[blue!80!red, dotted, name path=series_4_lower, forget plot] coordinates {
+(0,304.4894144107798)
+(1,485.0)
+(2,485.0)
+(3,485.0)
+(4,485.0)
+(5,485.0)
+(6,494.0)
+(7,565.4313677596106)
+(8,843.0)
+(9,981.7921254693001)
+(10,1175.8104559198703)
+(11,1222.8646347381734)
+(12,1370.614958650847)
+(13,1613.4790350937244)
+(14,1838.109829649707)
+(15,1978.237323871152)
+(16,2050.27250225045)
+(17,2133.6185402384167)
+(18,2213.0)
+(19,2252.4509618943234)
+(20,2296.0)
+(21,2338.4509618943234)
+(22,2378.4509618943234)
+(23,2418.4509618943234)
+(24,2493.4509618943234)
+(25,2534.0)
+(26,2606.4808257923446)
+(27,2762.8754845034027)
+(28,2876.852655936044)
+(29,3023.7928585439668)
+(30,3143.101912768234)
+(31,3245.797321748796)
+(32,3351.75162344508)
+};
+\addplot[blue!80!red, opacity=0.2, forget plot] fill between[of=series_4_upper and series_4_lower];
+\addplot[blue!80!red, thick] coordinates {
+(0,381.25)
+(1,485.0)
+(2,485.0)
+(3,485.0)
+(4,485.0)
+(5,485.0)
+(6,496.0)
+(7,585.5)
+(8,847.0)
+(9,1074.5)
+(10,1182.5)
+(11,1249.25)
+(12,1513.0)
+(13,1691.0)
+(14,1920.0)
+(15,2084.25)
+(16,2162.75)
+(17,2137.25)
+(18,2213.0)
+(19,2253.75)
+(20,2297.0)
+(21,2339.75)
+(22,2379.75)
+(23,2419.75)
+(24,2494.75)
+(25,2535.5)
+(26,2609.75)
+(27,2779.0)
+(28,2890.5)
+(29,3042.0)
+(30,3152.25)
+(31,3257.0)
+(32,3371.0)
+};
+\end{axis}
+\node[below=2.0cm of mainplot, anchor=north, align=left] {
+    \vspace{0.2cm}
+    \begin{tabular}{l@{\hspace{0.5cm}}l@{\hspace{0.5cm}}l}
+    \raisebox{0.5ex}{\tikz\draw[red!90!black, thick] (0,0) -- (1em,0);} & \textbf{gpt-4o} & \includegraphics[width=1em]{icons/burner-mining-drill.png} \includegraphics[width=1em]{icons/coal.png} \includegraphics[width=1em]{icons/copper-cable.png} \includegraphics[width=1em]{icons/copper-ore.png} \includegraphics[width=1em]{icons/copper-plate.png} \includegraphics[width=1em]{icons/electronic-circuit.png} \includegraphics[width=1em]{icons/iron-gear-wheel.png} \includegraphics[width=1em]{icons/iron-ore.png} \includegraphics[width=1em]{icons/iron-plate.png} \includegraphics[width=1em]{icons/stone.png} \includegraphics[width=1em]{icons/stone-furnace.png} \\[0.2cm]
+    \raisebox{0.5ex}{\tikz\draw[blue!80!red, thick] (0,0) -- (1em,0);} & \textbf{claude-3-5-sonnet-20241022} & \includegraphics[width=1em]{icons/coal.png} \includegraphics[width=1em]{icons/iron-ore.png} \includegraphics[width=1em]{icons/iron-plate.png} \includegraphics[width=1em]{icons/stone.png} \includegraphics[width=1em]{icons/stone-furnace.png} \\[0.2cm]
+    \raisebox{0.5ex}{\tikz\draw[green!70!blue, thick] (0,0) -- (1em,0);} & \textbf{Llama-3.3-70B-Instruct-Turbo} & \includegraphics[width=1em]{icons/coal.png} \includegraphics[width=1em]{icons/iron-ore.png} \includegraphics[width=1em]{icons/stone.png} \includegraphics[width=1em]{icons/stone-furnace.png} \\[0.2cm]
+    \raisebox{0.5ex}{\tikz\draw[orange!90!red, thick] (0,0) -- (1em,0);} & \textbf{gpt-4o-mini} & \includegraphics[width=1em]{icons/coal.png} \includegraphics[width=1em]{icons/stone.png} \includegraphics[width=1em]{icons/stone-furnace.png} \includegraphics[width=1em]{icons/wood.png} \\[0.2cm]
+    \raisebox{0.5ex}{\tikz\draw[blue!80!red, thick] (0,0) -- (1em,0);} & \textbf{Qwen/Qwen2.5-72B-Instruct-Turbo} & \includegraphics[width=1em]{icons/coal.png} \includegraphics[width=1em]{icons/copper-ore.png} \includegraphics[width=1em]{icons/iron-ore.png} \\[0.2cm]
+    \raisebox{0.5ex}{\tikz\draw[red!90!black, thick] (0,0) -- (1em,0);} & \textbf{Llama-3.1-8B-Instruct-Turbo} & None \\[0.2cm]
+    \end{tabular}
+};
+\end{tikzpicture}

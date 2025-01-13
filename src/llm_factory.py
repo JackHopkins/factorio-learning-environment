@@ -6,6 +6,8 @@ import openai
 from dotenv import load_dotenv
 from openai import OpenAI, AsyncOpenAI
 import anthropic
+from tenacity import wait_exponential, retry
+
 load_dotenv()
 
 
@@ -34,6 +36,7 @@ class LLMFactory:
             if message['content'].strip()
         ]
 
+    @retry(wait=wait_exponential(multiplier=1, min=6, max=60))
     async def acall(self, *args, **kwargs):
         max_tokens = kwargs.get('max_tokens', 1500)
         model_to_use = kwargs.get('model', self.model)

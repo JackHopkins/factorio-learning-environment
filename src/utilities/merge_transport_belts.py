@@ -1,7 +1,8 @@
 from collections import defaultdict
 from typing import List
 
-from factorio_entities import TransportBelt, BeltGroup, Position, Entity, EntityGroup, PipeGroup
+from factorio_entities import TransportBelt, BeltGroup, Position, Entity, EntityGroup, PipeGroup, Inventory, \
+    EntityStatus
 from factorio_types import Prototype
 
 
@@ -11,9 +12,27 @@ def _construct_group(entities: List[Entity],
                      output_positions: List[Position],
                      position: Position) -> EntityGroup:
     if prototype == Prototype.TransportBelt:
+        inventory = Inventory()
+        for entity in entities:
+            if hasattr(entity, 'inventory') and entity.inventory:  # Check if inventory exists and is not empty
+                entity_inventory = entity.inventory
+                for item, value in entity_inventory.items():
+                    current_value = inventory.get(item, 0)  # Get current value or 0 if not exists
+                    inventory[item] = current_value + value  # Add new value
+
+        if any(entity.warnings and entity.warnings[0] == 'full' for entity in entities):
+            status = EntityStatus.FULL_OUTPUT
+        else:
+            status = EntityStatus.WORKING
+
+        if not inventory:
+            status = EntityStatus.EMPTY
+
         return BeltGroup(belts=entities,
+                         inventory=inventory,
                          input_positions=input_positions,
                          output_positions=output_positions,
+                         status = status,
                          position=position)
     elif prototype == Prototype.Pipe:
         return PipeGroup(pipes=entities,

@@ -45,7 +45,7 @@ SYSTEM_PROMPT = \
     
     Always consider the most profitable next task, what entities are needed for the task, what entities exist in the game (in different entity inventories or in your inventory), what entities are you missing for the task. Fix errors as they occur, and set yourself NEW objectives when you finish your existing one.
     
-    Don't repeat your previous steps - just continue from where you left off to build the largest automated system possible.
+    DON'T REPEAT YOUR PREVIOUS STEPS - just continue from where you left off to build the largest automated system possible. If there was a error previously, do not repeat your last lines - as this will alter the game state unnecessarily.
     
     Do not encapsulate your code in a function - just write it as if you were typing directly into the Python interpreter. NEVER write <LINES X-Y CUT/> - as this is a processing step applied to the conversational history - it represents code.
     
@@ -59,7 +59,7 @@ OBSERVATION_SPACE = \
     10: ("Error occurred in the following lines:  Line 51: insert_item(Prototype.Coal, pos, 25) AssertionError: The second argument must be an Entity or EntityGroup, you passed in a <class 'factorio_entities.Position'>",)
     ```
     
-    This response indicates that an error has occurred at line 10, and that all preceding lines executed successfully. 
+    This response indicates that an error has occurred at line 10, and that all preceding lines executed successfully. Attempt to fix the error at line 10, and continue with the next step.
     
     ```entities
     23: ('Resource collection, smelting, and crafting completed successfully.',)
@@ -103,7 +103,7 @@ async def main():
     prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\nObservations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
     initial_state = GameState.from_instance(instances[0])
 
-    for model in ['claude-3-5-sonnet-20241022']:
+    for model in ['gemini-2.0-flash-exp']: #['gpt-4o-mini']:#['deepseek-chat']:#['gemini-2.0-flash-exp']: #['meta-llama/Llama-3.3-70B-Instruct-Turbo']:#['gemini-2.0-flash-exp']:#['gpt-4o']:#['claude-3-5-sonnet-20241022']:
         # Get largest version from DB for initialisation purposes. If no versions exist, start at 0.
         largest_version_to_date = await db_client.get_largest_version()
 
@@ -112,21 +112,16 @@ async def main():
             expansion_factor=4,  # Generate 4 candidates per position
             system_prompt=prompt,
             initial_state=initial_state,
-            model=model,  # Claude model
+            model=model,
             beam_kwargs={
                 'error_penalty': 10,
-                'logit_bias': {
-                    "15714": -100,  # 'LINE'
-                    "193595": -100,  # 'LINES'
-                    "145968": -100,  # ' CUT'
-                    "27": -100,  # '<'
-                    "20225": -100,  # '/>'
-                    "7032": -100  # 'while'
-                }
+                'frequency_penalty': 0.25
             }
         )
         #model = 'claude-3-5-sonnet-20241022'
         #model = 'gpt-4o'
+        current_depth = 0#await db_client.get_largest_depth_in_version(largest_version_to_date)
+
         llm_factory = LLMFactory(model=model)
         parallel_beam = ParallelBeamSearch(
             instances=instances,
@@ -134,7 +129,8 @@ async def main():
             llm_factory=llm_factory,
             config=config,
             version=largest_version_to_date+1,
-            version_description=f"model:{model}\ntype:beam"
+            version_description=f"model:{model}\ntype:beam",
+            current_depth=current_depth
         )
 
         # Run search

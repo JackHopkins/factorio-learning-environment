@@ -22,6 +22,7 @@ from dotenv import load_dotenv
 from slpp import slpp as lua
 from typing_extensions import deprecated
 
+from models.research_state import ResearchState
 from search.model.game_state import GameState, wrap_for_serialization, unwrap_after_deserialization, \
     SerializableFunction
 from factorio_entities import *
@@ -79,14 +80,15 @@ class FactorioInstance:
                  fast=False,
                  tcp_port=27015,
                  inventory={},
-                 cache_scripts=True
+                 cache_scripts=True,
+                 all_technologies_researched=True
                  ):
 
         self.persistent_vars = {}
 
         self.tcp_port = tcp_port
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
-
+        self.all_technologies_researched = all_technologies_researched
         self.game_state = ObservationState().with_default(vocabulary)
         self.game_state.fast = fast
         self._speed = 1
@@ -141,36 +143,6 @@ class FactorioInstance:
 
         # Register the cleanup method to be called on exit
         atexit.register(self.cleanup)
-    # def reset(self, game_state: Optional[GameState]=None):
-    #     for attr in dir(self):
-    #         if not callable(getattr(self, attr)) and attr[0] != "_" and attr not in self._static_members:
-    #             self[attr] = None
-    #
-    #     if not game_state:
-    #         self._reset(**self.initial_inventory if isinstance(self.initial_inventory, dict) else self.initial_inventory.__dict__)
-    #     else:
-    #         self._reset(**dict(game_state.inventory))
-    #         self._load_entity_state(game_state.entities, decompress=True)
-    #         try:
-    #             if game_state.namespace:
-    #                 env = pickle.loads(game_state.namespace)
-    #                 for key, value in env.items():
-    #                     if not hasattr(self, key) or not self[key]:
-    #                         setattr(self, key, value)
-    #
-    #         except Exception as e:
-    #             pass
-    #
-    #     try:
-    #         self.observe_all()
-    #     except Exception as e:
-    #         print(e)
-    #         pass
-    #
-    #     try:
-    #         self.game_state.initial_score, goal = self.score()
-    #     except Exception as e:
-    #         self.game_state.initial_score, goal = 0, None
 
     def reset(self, game_state: Optional[GameState] = None):
         # Clear non-static attributes
@@ -181,9 +153,17 @@ class FactorioInstance:
         if not game_state:
             self._reset(**self.initial_inventory if isinstance(self.initial_inventory,
                                                                dict) else self.initial_inventory.__dict__)
+            if not self.all_technologies_researched:
+                self._load_research_state(ResearchState(
+                    technologies={},
+                    research_progress=0,
+                    current_research=None,
+                    research_queue=[]
+                ))
         else:
             self._reset(**dict(game_state.inventory))
             self._load_entity_state(game_state.entities, decompress=True)
+            self._load_research_state(game_state.research)
             try:
                 if game_state.namespace:
                     env = pickle.loads(game_state.namespace)
@@ -842,7 +822,8 @@ class FactorioInstance:
         inventory_items_json = json.dumps(inventory_items)
         self.add_command(f"/c global.actions.initialise_inventory({PLAYER}, '{inventory_items_json}')", raw=True)
 
-        self.add_command("/c game.players[1].force.research_all_technologies()", raw=True)
+        if self.all_technologies_researched:
+            self.add_command("/c game.players[1].force.research_all_technologies()", raw=True)
         self.execute_transaction()
         #self.clear_entities()
         self._reset_static_achievement_counters()

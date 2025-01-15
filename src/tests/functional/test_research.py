@@ -2,7 +2,7 @@ import pytest
 
 from factorio_entities import Position
 from factorio_instance import Direction
-from factorio_types import Resource, Prototype, PrototypeName
+from factorio_types import Resource, Prototype, PrototypeName, Technology
 
 
 @pytest.fixture()
@@ -25,6 +25,7 @@ def game(instance):
         'lab': 1,
         'assembling-machine': 10,
     }
+    instance.all_technologies_researched = False
     instance.reset()
     yield instance
 
@@ -80,14 +81,13 @@ def test_craft_automation_packs_and_research(game):
         Prototype.AutomationSciencePack) == 10, f"Failed to insert science packs into Lab. Current count: {lab_inventory.get(Prototype.AutomationSciencePack)}"
 
     # Start researching (assuming a function to start research exists)
-    initial_research = game.get_research_progress("automation")  # Get initial research progress
-    game.start_research("automation")  # Start researching automation technology
+    #initial_research = game.get_research_progress(Technology.Automation)  # Get initial research progress
+    ingredients1 = game.set_research(Technology.Automation)  # Start researching automation technology
 
     # Wait for some time to allow research to progress
     game.sleep(30)
 
     # Check if research has progressed
-    current_research = game.get_research_progress("automation")
-    assert current_research > initial_research, f"Research did not progress. Initial: {initial_research}, Current: {current_research}"
+    ingredients2 = game.get_research_progress(Technology.Automation)
+    assert ingredients1[0].count > ingredients2[0].count, f"Research did not progress. Initial: {len(ingredients1[0].count)}, Current: {len(ingredients2[0].count)}"
 
-    print(f"Successfully started research. Progress: {current_research}")

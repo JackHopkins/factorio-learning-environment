@@ -312,6 +312,7 @@ async def main():
         392: 'gpt-4o',
         400: 'gpt-4o-mini',
         405: 'claude-3-5-sonnet-20241022',
+        416: 'claude-new'
     }
     versions = list(labels.keys())
     visualizer.load_versions(versions, labels)

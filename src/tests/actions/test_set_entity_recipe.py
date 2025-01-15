@@ -1,5 +1,6 @@
 import pytest
 
+from factorio_entities import Position
 from factorio_types import Prototype
 
 @pytest.fixture()
@@ -11,7 +12,7 @@ def game(instance):
 
 def test_set_entity_recipe(game):
     # Place an assembling machine
-    assembling_machine = game.place_entity(Prototype.AssemblingMachine1, position=(0, 0))
+    assembling_machine = game.place_entity(Prototype.AssemblingMachine1, position=Position(x=0, y=0))
 
     # Set a recipe for the assembling machine
     assembling_machine = game.set_entity_recipe(assembling_machine, Prototype.IronGearWheel)

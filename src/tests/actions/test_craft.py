@@ -8,7 +8,7 @@ def game(instance):
     instance.reset()
     instance.set_inventory(**{'iron-plate': 40,
                               'iron-gear-wheel': 1,
-                              #'electronic-circuit': 2,
+                              'electronic-circuit': 3,
                               'pipe': 1,
                               'copper-plate': 10})
     yield instance
@@ -104,3 +104,14 @@ def test_craft_uncraftable_entity(game):
     print("Crafting iron gear wheels...")
     response = game.craft_item(Prototype.IronGearWheel, quantity=3)
     print(f"Crafted iron gear wheels. Current inventory: {game.inspect_inventory()}")
+
+def test_craft_no_technology(game):
+    game.all_technologies_researched = False
+    game.reset()
+
+    try:
+        response = game.craft_item(Prototype.AssemblingMachine1, quantity=1)
+    except:
+        assert True
+        return
+    assert False, "Should not be able to craft without technology."

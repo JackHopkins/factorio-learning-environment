@@ -168,27 +168,27 @@ class RunVisualizer:
             r"    width=\textwidth,",
             r"    height=0.55\textwidth,",
             r"    anchor=north west,",
-            r"    at={(0,0.85\textwidth)},",  # Adjusted position to be closer to legend
+            r"    at={(0,0.85\textwidth)},",
             r"    xlabel=Environment Steps,",
             r"    ylabel=Total GDP,",
             r"    grid style={line width=.1pt, draw=gray!10},",
             r"    major grid style={line width=.2pt,draw=gray!50},",
             r"    grid=both,",
-            r"    minor tick num=1,",
+            r"    minor tick num=9,",  # Changed to show all minor ticks between powers of 10
             r"    clip=false,",
             r"    xmode=log,",
-            r"    log basis x=2,",
+            r"    log basis x=2,",  # Keep base 2 for x-axis
             r"    ymode=log,",
-            r"    log basis y=2,",
+            r"    log basis y=10,",  # Changed to base 10
             r"    enlarge x limits=false,",
             r"    xmin=1,",
             r"    xmax=128,",
             r"    xtick={1,2,4,8,16,32,64,128},",
             r"    xticklabels={$2^0$,$2^1$,$2^2$,$2^3$,$2^4$,$2^5$,$2^6$,$2^7$},",
-            r"    ymin=128,",
-            r"    ymax=65536,",
-            r"    ytick={128,256,512,1024,2048,4096,8192,16384,32768,65536},",
-            r"    yticklabels={$2^7$,$2^8$,$2^9$,$2^{10}$,$2^{11}$,$2^{12}$,$2^{13}$,$2^{14}$,$2^{15}$,$2^{16}$,$2^{17}$,$2^{18}$},",
+            r"    ymin=100,",  # Adjusted for base 10
+            r"    ymax=100000,",  # Adjusted for base 10
+            r"    ytick={100,1000,10000,100000},",  # Powers of 10
+            r"    yticklabels={$10^2$,$10^3$,$10^4$,$10^5$},",
             r"    clip=false",
             r"]"
         ])

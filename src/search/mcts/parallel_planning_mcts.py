@@ -9,7 +9,7 @@ from rich.console import Console
 from tenacity import retry, wait_exponential
 
 from search.model.conversation import Conversation, GenerationParameters, Message
-from search.mcts.conversation_formatter import ConversationFormatter, StructurePreservingFormatter
+from search.mcts.formatters.conversation_formatter import ConversationFormatter, StructurePreservingFormatter
 from search.db_client import DBClient
 from search.factorio_evaluator import FactorioEvaluator
 from search.mcts.grouped_logger import GroupedFactorioLogger

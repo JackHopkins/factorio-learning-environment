@@ -10,6 +10,7 @@ from factorio_instance import FactorioInstance
 import concurrent.futures
 from typing import List, Tuple
 
+from search.mcts.formatters.recursive_formatter import RecursiveFormatter
 from search.model.game_state import GameState
 
 os.environ.update({"FORCE_COLOR": "1", "TERM": "xterm-256color"})
@@ -54,21 +55,30 @@ SYSTEM_PROMPT = \
 
 OBSERVATION_SPACE = \
    """
-    ```errors
+   You observe the STDOUT and STDERR of your program.
+   
+    ```stderr
     Error: 1: ("Initial Inventory: {'stone-furnace': 2, 'coal': 50, 'stone': 1610, 'iron-ore': 50, 'iron-gear-wheel': 31}",)
     10: ("Error occurred in the following lines:  Line 51: insert_item(Prototype.Coal, pos, 25) AssertionError: The second argument must be an Entity or EntityGroup, you passed in a <class 'factorio_entities.Position'>",)
     ```
-    
     This response indicates that an error has occurred at line 10, and that all preceding lines executed successfully. Attempt to fix the error at line 10, and continue with the next step.
     
-    ```entities
+    ```stdout
     23: ('Resource collection, smelting, and crafting completed successfully.',)
     78: ('Entities on the map: [Furnace(fuel={'coal': 49}, name='stone-furnace', position=Position(x=0.0, y=0.0), direction=<Direction.UP: 0>, energy=1600.0, tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), health=200.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, furnace_source={'iron-ore': 12}, furnace_result={'iron-plate': 27}), Furnace(fuel={'coal': 49}, name='stone-furnace', position=Position(x=2.0, y=0.0), direction=<Direction.UP: 0>, energy=1600.0, tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), health=200.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, furnace_source={'iron-ore': 12}, furnace_result={'iron-plate': 25}), Furnace(fuel={'coal': 23}, name='stone-furnace', position=Position(x=4.0, y=4.0), direction=<Direction.UP: 0>, energy=1600.0, tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), health=200.0, warnings=['no ingredients to smelt'], status=<EntityStatus.NO_INGREDIENTS: 'no_ingredients'>, furnace_source={}, furnace_result={'iron-plate': 20}), Furnace(fuel={'coal': 23}, name='stone-furnace', position=Position(x=6.0, y=4.0), direction=<Direction.UP: 0>, energy=1600.0, tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), health=200.0, warnings=['no ingredients to smelt'], status=<EntityStatus.NO_INGREDIENTS: 'no_ingredients'>, furnace_source={}, furnace_result={'iron-plate': 20})]',)
     ```
     
     This response indicates that `print(get_entities())` was called at line 78 to get state of the entities on the map. There are four stone furnaces, two of which are working and two of which have no ingredients to smelt. Non-working entities can be determined by checking the `warnings` and `status` fields.
-    
    """
+
+HISTORY_SUMMARIZATION_INSTRUCTIONS = \
+"""
+Analyze the interaction you have made with the Factorio AI and provide a report. 
+
+Focus on what you attempted to achieve, any errors that occurred, and the outcomes of your actions.
+
+Provide tips and successful patterns that you could use in future, based on your experience of interacting with the API.
+"""
 
 with open("../MANUAL.md", "r") as f:
     MANUAL = f.read()
@@ -103,7 +113,9 @@ async def main():
     prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\nObservations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
     initial_state = GameState.from_instance(instances[0])
 
-    for model in ['gemini-2.0-flash-exp']: #['gpt-4o-mini']:#['deepseek-chat']:#['gemini-2.0-flash-exp']: #['meta-llama/Llama-3.3-70B-Instruct-Turbo']:#['gemini-2.0-flash-exp']:#['gpt-4o']:#['claude-3-5-sonnet-20241022']:
+
+
+    for model in ['claude-3-5-sonnet-20241022']:#['gemini-2.0-flash-exp']: #['gpt-4o-mini']:#['deepseek-chat']:#['gemini-2.0-flash-exp']: #['meta-llama/Llama-3.3-70B-Instruct-Turbo']:#['gemini-2.0-flash-exp']:#['gpt-4o']:#['claude-3-5-sonnet-20241022']:
         # Get largest version from DB for initialisation purposes. If no versions exist, start at 0.
         largest_version_to_date = await db_client.get_largest_version()
 
@@ -123,6 +135,14 @@ async def main():
         current_depth = 0#await db_client.get_largest_depth_in_version(largest_version_to_date)
 
         llm_factory = LLMFactory(model=model)
+
+        formatter = RecursiveFormatter(
+            chunk_size=16,
+            llm_factory=llm_factory,
+            cache_dir='./summary_cache',
+            summary_instructions=HISTORY_SUMMARIZATION_INSTRUCTIONS
+        )
+
         parallel_beam = ParallelBeamSearch(
             instances=instances,
             db_client=db_client,
@@ -130,11 +150,12 @@ async def main():
             config=config,
             version=largest_version_to_date+1,
             version_description=f"model:{model}\ntype:beam",
-            current_depth=current_depth
+            current_depth=current_depth,
+            formatter=formatter
         )
 
         # Run search
-        await parallel_beam.search(n_iterations=32)
+        await parallel_beam.search(n_iterations=128)
 
 
 if __name__ == '__main__':

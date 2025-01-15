@@ -4,7 +4,7 @@ from controllers.__action import Action
 from factorio_entities import Position, Entity, BeltGroup, TransportBelt
 from factorio_instance import PLAYER
 from factorio_types import Prototype
-from utilities.merge_transport_belts import agglomerate_groupable_entities
+from utilities.groupable_entities import agglomerate_groupable_entities
 
 
 class GetEntities(Action):
@@ -71,7 +71,7 @@ class GetEntities(Action):
 
                 try:
                     entity = metaclass(**entity_data)
-                    if entity.prototype == Prototype.TransportBelt:
+                    if entity.prototype == Prototype.TransportBelt or entity.prototype == Prototype.Pipe:
                         belt_list.append(entity)
                     else:
                         entities_list.append(entity)

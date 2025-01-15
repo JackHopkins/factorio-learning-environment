@@ -6,6 +6,21 @@ from factorio_entities import TransportBelt, BeltGroup, Position, Entity, Entity
 from factorio_types import Prototype
 
 
+def _deduplicate_entities(entities: List[Entity]) -> List[Entity]:
+    """
+    Remove duplicate entities while maintaining the original order.
+    Later entities with the same position override earlier ones.
+    """
+    unique_entities = []
+    seen = set()
+    for entity in reversed(entities):
+        position = (entity.position.x, entity.position.y)
+        if position not in seen:
+            unique_entities.append(entity)
+            seen.add(position)
+    return list(reversed(unique_entities))
+
+
 def _construct_group(entities: List[Entity],
                      prototype: Prototype,
                      input_positions: List[Position],

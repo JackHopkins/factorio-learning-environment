@@ -16,7 +16,7 @@ from search.model.instance_group import InstanceGroup
 from search.model.conversation import Conversation, Message, GenerationParameters
 from search.model.game_state import GameState
 from search.model.program import Program
-from search.mcts.conversation_formatter import ConversationFormatter, DefaultFormatter
+from search.mcts.formatters.conversation_formatter import ConversationFormatter, DefaultFormatter
 from factorio_instance import FactorioInstance
 
 # Configure logging
@@ -219,7 +219,9 @@ class ParallelBeamSearch:
                  config: ParallelBeamConfig,
                  version: int,
                  version_description: str,
-                 current_depth=0):
+                 current_depth=0,
+                 formatter: ConversationFormatter = DefaultFormatter(),):
+
 
         self.console = Console()
         self.config = config
@@ -228,6 +230,7 @@ class ParallelBeamSearch:
         self.version = version
         self.version_description = version_description
         self.current_depth = current_depth
+        self.formatter = formatter
         # Validate instance count
         self._validate_instance_count(len(instances), config.beam_width)
 
@@ -277,6 +280,7 @@ class ParallelBeamSearch:
                 llm_factory=self.llm_factory,
                 db_client=self.db_client,
                 evaluator=evaluator,
+                formatter=self.formatter,
                 system_prompt=self.config.system_prompt,
                 initial_state=self.config.initial_state,
                 version=self.version,
@@ -305,7 +309,7 @@ class ParallelBeamSearch:
     async def _run_beam_iteration(self, n_iterations: int):
         """Run one iteration of parallel beam search"""
         try:
-            for iteration in range(n_iterations*2):
+            for iteration in range(n_iterations*5):
                 logger.info(f"Starting iteration {iteration}")
 
                 # Generate and evaluate candidates in parallel

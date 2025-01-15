@@ -36,7 +36,7 @@ class LLMFactory:
             if message['content'].strip()
         ]
 
-    @retry(wait=wait_exponential(multiplier=1, min=6, max=60))
+    @retry(wait=wait_exponential(multiplier=1, min=2, max=15))
     async def acall(self, *args, **kwargs):
         max_tokens = kwargs.get('max_tokens', 1500)
         model_to_use = kwargs.get('model', self.model)

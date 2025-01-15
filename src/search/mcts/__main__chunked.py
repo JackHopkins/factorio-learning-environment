@@ -15,7 +15,7 @@ from search.mcts.chunked_mcts import ChunkedMCTS
 from search.model.conversation import Conversation, Message
 from search.mcts.parallel_mcts import ParallelMCTS
 from search.mcts.parallel_mcts_config import ParallelMCTSConfig
-from search.mcts.conversation_formatter import StructurePreservingFormatter, PLANNING_ADDITION_PROMPT
+from search.mcts.formatters.conversation_formatter import StructurePreservingFormatter, PLANNING_ADDITION_PROMPT
 from search.db_client import DBClient
 from search.model.game_state import GameState
 from search.model.program import Program

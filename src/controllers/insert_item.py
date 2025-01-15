@@ -25,7 +25,9 @@ class InsertItem(Action):
         """
         assert quantity is not None, "Quantity cannot be None"
         assert isinstance(entity, Prototype), "The first argument must be a Prototype"
-        assert isinstance(target, Entity) or isinstance(target, EntityGroup), "The second argument must be an Entity or EntityGroup, you passed in a {0}".format(type(target))
+        assert (isinstance(target, Entity)
+                or isinstance(target, EntityGroup)
+                or isinstance(target, Position)), "The second argument must be an Entity, EntityGroup or Position, you passed in a {0}".format(type(target))
 
         if isinstance(target, Position):
             x, y = target.x, target.y
@@ -44,7 +46,7 @@ class InsertItem(Action):
 
                 if isinstance(response, str):
                     if "Could not find" not in response:  # Don't raise if belt is just full
-                        raise Exception("Could not insert", response.split(":")[-1].strip())
+                        raise Exception("Could not insert: "+response.split(":")[-1].strip())
                     break
 
                 items_inserted += 1
@@ -65,7 +67,7 @@ class InsertItem(Action):
         response, elapsed = self.execute(PLAYER, name, quantity, x, y)
 
         if isinstance(response, str):
-            raise Exception("Could not insert", response.split(":")[-1].strip())
+            raise Exception(f"Could not insert: {response.split(':')[-1].strip()}")
 
         cleaned_response = self.clean_response(response)
         if isinstance(cleaned_response, dict):

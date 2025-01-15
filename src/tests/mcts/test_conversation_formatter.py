@@ -1,7 +1,7 @@
 import unittest
 from search.model.conversation import Message, Conversation
 
-from search.mcts.conversation_formatter import StructurePreservingFormatter, CodeProcessor
+from search.mcts.formatters.conversation_formatter import StructurePreservingFormatter, CodeProcessor
 
 
 class TestStructurePreservingFormatter(unittest.TestCase):
@@ -56,7 +56,7 @@ class TestStructurePreservingFormatter(unittest.TestCase):
         summarized2 = CodeProcessor.summarize_code_block(
             "# Gather iron ore\n# Gather more iron ore\nprint(0)\nprint(1)\n# Construct stone furnace", preserve_comments=True)
 
-        self.assertEqual(summarized2, "# Gather iron ore\n# Gather more iron ore\n<LINES 3-4 OMITTED>\n# Construct stone furnace")
+        self.assertEqual(summarized2, "# Gather iron ore\n# Gather more iron ore\n<LINES 3-4 CUT/>\n# Construct stone furnace")
 
     def test_format_conversation(self):
         formatted = self.formatter.format_conversation(self.conversation)
@@ -105,7 +105,7 @@ class TestStructurePreservingFormatter(unittest.TestCase):
             role="assistant",
             content="# First task\nprint(1)\n# Second task\nprint(2)\n"
         )
-        formatted = self.formatter.format_message(message, is_last=False)
+        formatted = self.formatter.format_message(message, should_format=True)
         expected = (
             "# First task\n"
             "<LINE 2 CUT/>\n"
@@ -116,7 +116,7 @@ class TestStructurePreservingFormatter(unittest.TestCase):
         self.assertEqual(formatted.metadata, {"summarized": True})
 
         # Test formatting of a last assistant message (should preserve everything)
-        formatted_last = self.formatter.format_message(message, is_last=True)
+        formatted_last = self.formatter.format_message(message, should_format=False)
         self.assertEqual(
             formatted_last.content,
             "# First task\nprint(1)\n# Second task\nprint(2)\n"
@@ -129,7 +129,7 @@ class TestStructurePreservingFormatter(unittest.TestCase):
             role="assistant",
             content="print(1)\nprint(2)\n"
         )
-        formatted = self.formatter.format_message(message, is_last=False)
+        formatted = self.formatter.format_message(message, should_format=True)
         self.assertEqual(
             formatted.content,
             "<LINES 1-2 CUT/>"

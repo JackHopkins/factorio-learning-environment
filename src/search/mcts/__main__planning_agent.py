@@ -19,7 +19,7 @@ from typing import Tuple, List
 from dotenv import load_dotenv
 from rich import print
 from cluster.local.cluster_ips import get_local_container_ips
-from search.mcts.conversation_formatter import PLANNING_ADDITION_PROMPT
+from search.mcts.formatters.conversation_formatter import PLANNING_ADDITION_PROMPT
 from search.db_client import DBClient
 from search.model.game_state import GameState
 from factorio_instance import FactorioInstance

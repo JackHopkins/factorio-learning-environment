@@ -44,3 +44,4 @@ client/__pycache__/
 /src/datasetgen/mcts/plots/
 /src/search/mcts/runs/
 /data/icons/
+/src/search/beam/summary_cache/

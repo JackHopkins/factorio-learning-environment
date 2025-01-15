@@ -1,12 +1,12 @@
 import asyncio
-import os
-from dataclasses import dataclass
-from typing import Dict, List, Optional
 import json
-from PIL import Image
-import numpy as np
+import os
 from collections import defaultdict
+from dataclasses import dataclass
+from typing import Dict, List
 
+import numpy as np
+from PIL import Image
 from dotenv import load_dotenv
 
 from search.db_client import DBClient
@@ -20,14 +20,15 @@ class Achievement:
     item_name: str
     quantity: int
     is_dynamic: bool
+    ingredients: int
 
 
-class MultiVersionMCTSVisualizer:
+class RunVisualizer:
     def __init__(self, db_client, icons_path: str):
         self.db_client = db_client
         self.icons_path = icons_path
-        self.version_data = {}  # Store data for multiple versions
-        self.achievements = defaultdict(list)  # Achievements per version
+        self.version_data = {}
+        self.achievements = defaultdict(list)
 
     def load_versions(self, versions: List[int], labels: Dict[int, str]):
         """Load data for multiple MCTS versions"""
@@ -39,8 +40,31 @@ class MultiVersionMCTSVisualizer:
                 'label': labels[version]
             }
 
+    def count_total_ingredients(self, recipe_dict):
+        """Count total unique ingredients in recipe tree"""
+        seen = set()
+
+        def traverse_ingredients(item):
+            # Add current ingredient
+            seen.add(item['name'])
+            # Recursively process sub-ingredients
+            for ingredient in item.get('ingredients', []):
+                traverse_ingredients(ingredient)
+
+        traverse_ingredients(recipe_dict)
+        # Subtract 1 to not count the item itself
+        return len(seen) - 1
+
     def process_achievements(self, max_depth: int = 100):
         """Process achievements for all versions"""
+
+        # Write to file
+        recipes = {}
+        with open('./recipes.jsonl', 'r') as f:
+            for line in f:
+                recipe = json.loads(line)
+                recipes[recipe['name']] = recipe
+
         for version, data in self.version_data.items():
             seen_items = set()
 
@@ -57,6 +81,7 @@ class MultiVersionMCTSVisualizer:
                                     depth=depth,
                                     item_name=item_name,
                                     quantity=quantity,
+                                    ingredients=self.count_total_ingredients(recipes[item_name]) if item_name in recipes else 0,
                                     is_dynamic=(category == 'dynamic')
                                 ))
                                 seen_items.add(item_name)
@@ -67,7 +92,7 @@ class MultiVersionMCTSVisualizer:
             for root in data['nodes']:
                 traverse_tree(root)
 
-            self.achievements[version].sort(key=lambda x: x.depth)
+            self.achievements[version].sort(key=lambda x: (x.ingredients, x.item_name))
 
     def process_icons(self):
         """Process icons for all achievements"""
@@ -87,6 +112,153 @@ class MultiVersionMCTSVisualizer:
                     tile_size = img.height
                     first_tile = img.crop((0, 0, tile_size, tile_size))
                     first_tile.save(output_path)
+
+    def export_latex_progression(self, output_file: str = 'mcts_progression.tex', max_depth: int = 100):
+        """Export multi-version visualization as optimized LaTeX"""
+        self.process_icons()
+
+        colors = ['blue!80!red', 'red!90!black', 'green!70!blue', 'orange!90!red', 'blue!80!red', 'red!90!black']
+
+        latex_code = []
+
+        # Start the main tikzpicture
+        latex_code.append(r"\begin{tikzpicture}")
+
+        # Sort versions by achievement count for legend
+        version_achievements = []
+        for version in self.version_data:
+            label = self.version_data[version]['label'].replace('_', '\\_')
+            achievements = self.achievements[version]
+            color = colors[list(self.version_data.keys()).index(version) % len(colors)]
+            version_achievements.append((version, label, achievements, color))
+
+        version_achievements.sort(key=lambda x: len(x[2]), reverse=True)
+
+        # Create legend node
+        latex_code.append(
+            r"\node[anchor=south,draw=black!50,thin,fill=white,inner sep=4pt] at (0.45\textwidth,0.9\textwidth) {")
+        latex_code.append(r"    \begin{tabular}{@{}l@{\hspace{0.75cm}}l@{\hspace{0.75cm}}l@{}}")
+
+        # Add legend entries
+        for version, label, achievements, color in version_achievements:
+            line_indicator = f"\\raisebox{{0.5ex}}{{\\tikz\\draw[{color}, thick] (0,0) -- (1em,0);}}"
+
+            if not achievements:
+                latex_code.append(f"    {line_indicator} & \\textbf{{{label}}} & $\\varnothing$ \\\\")
+                continue
+
+            icons = " ".join([
+                f"\\includegraphics[width=1em]{{icons/{ach.item_name}.png}}"
+                for ach in sorted(achievements, key=lambda x: x.ingredients)
+            ])
+
+            latex_code.append(f"    {line_indicator} & \\textit{{{label}}} & {icons} \\\\")
+
+        latex_code.extend([
+            r"    \end{tabular}",
+            r"}",
+        ])
+
+        # Add the axis environment with adjusted positioning
+        latex_code.extend([
+            r"\begin{axis}[",
+            r"    name=mainplot,",
+            r"    set layers=standard,",
+            r"    every axis plot/.style={on layer=main},",
+            r"    width=\textwidth,",
+            r"    height=0.55\textwidth,",
+            r"    anchor=north west,",
+            r"    at={(0,0.85\textwidth)},",  # Adjusted position to be closer to legend
+            r"    xlabel=Environment Steps,",
+            r"    ylabel=Total GDP,",
+            r"    grid style={line width=.1pt, draw=gray!10},",
+            r"    major grid style={line width=.2pt,draw=gray!50},",
+            r"    grid=both,",
+            r"    minor tick num=1,",
+            r"    clip=false,",
+            r"    xmode=log,",
+            r"    log basis x=2,",
+            r"    ymode=log,",
+            r"    log basis y=2,",
+            r"    enlarge x limits=false,",
+            r"    xmin=1,",
+            r"    xmax=128,",
+            r"    xtick={1,2,4,8,16,32,64,128},",
+            r"    xticklabels={$2^0$,$2^1$,$2^2$,$2^3$,$2^4$,$2^5$,$2^6$,$2^7$},",
+            r"    ymin=128,",
+            r"    ymax=65536,",
+            r"    ytick={128,256,512,1024,2048,4096,8192,16384,32768,65536},",
+            r"    yticklabels={$2^7$,$2^8$,$2^9$,$2^{10}$,$2^{11}$,$2^{12}$,$2^{13}$,$2^{14}$,$2^{15}$,$2^{16}$,$2^{17}$,$2^{18}$},",
+            r"    clip=false",
+            r"]"
+        ])
+
+        # Plot all series data with chunking for memory optimization
+        for i, version in enumerate(self.version_data):
+            depth_stats, achievements_by_depth = self.calculate_version_stats(version, max_depth)
+            if not depth_stats:
+                continue
+
+            color = colors[i % len(colors)]
+
+            # Split coordinates into chunks
+            chunk_size = 50
+            valid_stats = {d: s for d, s in depth_stats.items() if s['mean'] > 64}
+            coords = [(d, max(s['mean'], 64)) for d, s in valid_stats.items()]
+
+            for chunk_start in range(0, len(coords), chunk_size):
+                chunk = coords[chunk_start:chunk_start + chunk_size]
+                latex_code.append(f"\\addplot[{color}, thick] coordinates {{")
+                latex_code.extend(f"({x},{y})" for x, y in chunk)
+                latex_code.append("};")
+
+        # Add achievement markers with optimizations
+        latex_code.append(r"\pgfonlayer{axis foreground}")
+
+        # Process achievements with batching
+        for i, version in enumerate(self.version_data):
+            depth_stats, achievements_by_depth = self.calculate_version_stats(version, max_depth)
+            if not depth_stats:
+                continue
+
+            color = colors[i % len(colors)]
+
+            for depth, achievements in achievements_by_depth.items():
+                if depth == 0:
+                    continue
+
+                value = depth_stats[depth]['mean']
+                if value <= 64:
+                    continue
+
+                base_position = max(value, 64)
+
+                # Process achievements in smaller batches
+                for j, achievement in enumerate(achievements):
+                    icon_output = f"icons/{achievement.item_name}.png"
+                    if not os.path.exists(icon_output):
+                        continue
+
+                    position = base_position + (j * base_position * 0.08 if len(achievements) > 1 else 0)
+
+                    latex_code.extend([
+                        f"\\node[circle, fill=white, draw={color}, line width=0.5pt, minimum size=1.1em] "
+                        f"at (axis cs:{depth},{position}) {{}};",
+                        f"\\node[above delimiter] at (axis cs:{depth},{position}) {{",
+                        f"    \\includegraphics[width=0.8em]{{{icon_output}}}",
+                        "};"
+                    ])
+
+        # Close environments
+        latex_code.extend([
+            r"\endpgfonlayer",
+            r"\end{axis}",
+            r"\end{tikzpicture}"
+        ])
+
+        # Write to file
+        with open(output_file, 'w') as f:
+            f.write('\n'.join(latex_code))
 
     def calculate_version_stats(self, version: int, max_depth: int):
         """Calculate statistics for a specific version"""
@@ -110,7 +282,6 @@ class MultiVersionMCTSVisualizer:
         for root in self.version_data[version]['nodes']:
             traverse_tree(root)
 
-        # Calculate statistics for each depth
         depth_stats = {}
         for depth in range(max_depth + 1):
             values = values_by_depth.get(depth, [0])
@@ -120,157 +291,6 @@ class MultiVersionMCTSVisualizer:
             }
 
         return depth_stats, achievements_by_depth
-
-    def export_latex_progression(self, output_file: str = 'mcts_progression.tex', max_depth: int = 100):
-        """Export multi-version visualization as LaTeX"""
-        self.process_icons()
-
-        # Collect first-step achievements for each model
-        initial_achievements = {}
-        for version, data in self.version_data.items():
-            initial_achievements[version] = [
-                achievement for achievement in self.achievements[version]
-                if achievement.depth == 0 or achievement.depth == 1
-            ]
-
-        # Define colors for different versions
-        colors = ['blue!80!red', 'red!90!black', 'green!70!blue', 'orange!90!red', 'blue!80!red', 'red!90!black']
-
-        # Generate LaTeX code
-        latex_code = []
-
-        # Start the tikzpicture environment
-        latex_code.append(r"\begin{tikzpicture}")
-
-        # Main plot axis settings
-        latex_code.append(r"\begin{axis}[")
-        latex_code.append(r"    name=mainplot,")
-        latex_code.append(r"    width=\textwidth,")
-        latex_code.append(r"    height=0.6\textwidth,")
-        latex_code.append(r"    xlabel=Search Depth,")
-        latex_code.append(r"    ylabel=Cumulative Value,")
-        latex_code.append(r"    grid style={line width=.1pt, draw=gray!10},")
-        latex_code.append(r"    major grid style={line width=.2pt,draw=gray!50},")
-        latex_code.append(r"    grid=both,")
-        latex_code.append(r"    minor tick num=1,")
-        latex_code.append(r"    clip=false,")
-        latex_code.append(r"    xmode=log,")
-        latex_code.append(r"    log basis x=2,")
-        latex_code.append(r"    ymode=log,")
-        latex_code.append(r"    log basis y=2,")
-        latex_code.append(r"    enlarge x limits=false,")
-        latex_code.append(r"    xmin=1,")
-        latex_code.append(r"    xmax=32,")
-        latex_code.append(r"    xtick={1,2,4,8,16,32},")
-        latex_code.append(r"    xticklabels={$2^0$,$2^1$,$2^2$,$2^3$,$2^4$,$2^5$},")
-        latex_code.append(r"    ymin=64,")
-        latex_code.append(r"    ymax=16384,")
-        latex_code.append(r"    ytick={64,128,256,512,1024,2048,4096,8192,16384},")
-        latex_code.append(r"    yticklabels={$2^6$,$2^7$,$2^8$,$2^9$,$2^{10}$,$2^{11}$,$2^{12}$,$2^{13}$,$2^{14}$},")
-        latex_code.append(r"    legend pos=north west,")
-        latex_code.append(r"    legend style={font=\small},")
-        latex_code.append(r"    legend cell align={left},")
-        # Escape model names for LaTeX
-        legend_entries = [data['label'].replace('_', '\\_') for data in self.version_data.values()]
-        latex_code.append(r"    legend entries={" + ",".join(legend_entries) + "}")
-        latex_code.append(r"]")
-
-        # Plot data for each version
-        for i, version in enumerate(self.version_data):
-            depth_stats, achievements_by_depth = self.calculate_version_stats(version, max_depth)
-            if not depth_stats:  # Skip if no data
-                continue
-
-            color = colors[i % len(colors)]
-
-            # Add achievement markers and icons
-            for depth, achievements in achievements_by_depth.items():
-                value = depth_stats[depth]['mean']
-                if value <= 64:  # Skip if below y-axis minimum
-                    continue
-
-                # Calculate vertical offsets for stacking icons
-                num_achievements = len(achievements)
-                spacing = max(value * 0.05, 32)  # Minimum spacing of 64 (ymin)
-                total_height = num_achievements * spacing
-                start_offset = -(total_height - spacing) / 2
-
-                # Add icons with vertical offsets
-                for j, achievement in enumerate(achievements):
-                    icon_output = f"icons/{achievement.item_name}.png"
-                    if os.path.exists(icon_output):
-                        vertical_offset = start_offset + (j * spacing)
-                        position = max(value + vertical_offset, 64)  # Ensure position is above ymin
-                        latex_code.append(f"\\node at (axis cs:{depth + 1 if depth == 0 else depth},{position}) {{")
-                        latex_code.append(f"    \\includegraphics[width=1em]{{{icon_output}}}")
-                        latex_code.append("};")
-
-            # Only add plots if we have valid data
-            valid_stats = {d: s for d, s in depth_stats.items() if s['mean'] > 64}
-            if valid_stats:
-                # Add confidence bounds
-                latex_code.append(f"\\addplot[{color}, dotted, name path=series_{i}_upper, forget plot] coordinates {{")
-                latex_code.extend(f"({d},{max(s['mean'] + s['std'], 64)})" for d, s in valid_stats.items())
-                latex_code.append("};")
-
-                latex_code.append(f"\\addplot[{color}, dotted, name path=series_{i}_lower, forget plot] coordinates {{")
-                latex_code.extend(f"({d},{max(s['mean'] - s['std'], 64)})" for d, s in valid_stats.items())
-                latex_code.append("};")
-
-                # Add filled area between bounds
-                latex_code.append(
-                    f"\\addplot[{color}, opacity=0.2, forget plot] fill between[of=series_{i}_upper and series_{i}_lower];")
-
-                # Add mean line
-                latex_code.append(f"\\addplot[{color}, thick] coordinates {{")
-                latex_code.extend(f"({d},{max(s['mean'], 64)})" for d, s in valid_stats.items())
-                latex_code.append("};")
-
-        latex_code.append(r"\end{axis}")
-
-        # Add achievement legend below
-        latex_code.append(r"\node[below=2.0cm of mainplot, anchor=north, align=left] {")
-        latex_code.append(r"    \vspace{0.2cm}")
-        latex_code.append(r"    \begin{tabular}{l@{\hspace{0.5cm}}l@{\hspace{0.5cm}}l}")
-
-        # Sort versions by achievement count
-        version_achievements = []
-        for version in self.version_data:
-            label = self.version_data[version]['label'].replace('_', '\\_')  # Escape underscores
-            achievements = initial_achievements[version]
-            color = colors[list(self.version_data.keys()).index(version) % len(colors)]
-            version_achievements.append((version, label, achievements, color))
-
-        # Sort by achievement count in descending order
-        version_achievements.sort(key=lambda x: len(x[2]), reverse=True)
-
-        # Add each model's achievements with color indicator line
-        for version, label, achievements, color in version_achievements:
-            # Create a small line plot indicator
-            line_indicator = f"\\raisebox{{0.5ex}}{{\\tikz\\draw[{color}, thick] (0,0) -- (1em,0);}}"
-
-            if not achievements:
-                latex_code.append(f"    {line_indicator} & \\textbf{{{label}}} & $\\varnothing$ \\\\[0.2cm]")
-                continue
-
-            icons = " ".join([
-                f"\\includegraphics[width=1em]{{icons/{ach.item_name}.png}}"
-                for ach in sorted(achievements, key=lambda x: x.item_name)
-            ])
-
-            # Add line indicator before the label
-            latex_code.append(
-                f"    {line_indicator} & \\textbf{{{label}}} & {icons} \\\\[0.2cm]"
-            )
-
-        latex_code.append(r"    \end{tabular}")
-        latex_code.append(r"};")
-        latex_code.append(r"\end{tikzpicture}")
-
-        # Write to file
-        with open(output_file, 'w') as f:
-            f.write('\n'.join(latex_code))
-
 
 async def main():
     # Initialize database client
@@ -285,28 +305,18 @@ async def main():
 
     # Initialize visualizer
     icons_path = "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/data/icons/early_icons"
-    visualizer = MultiVersionMCTSVisualizer(db_client, icons_path)
+    visualizer = RunVisualizer(db_client, icons_path)
 
-    # Load multiple versions
-   # versions = [361]#, 332, 334, 335, 336, 344]
     labels = {
-        361: 'claude-3-5-sonnet-20241022',
-        366: 'gpt-4o',
-        #375: 'gemini-2.0-flash-exp',
-        374: 'Llama-3.3-70B-Instruct-Turbo',
-        381: 'gpt-4o-mini',
-        382: 'Qwen/Qwen2.5-72B-Instruct-Turbo',
-        # 332: 'gpt-4o',
-        # 334: 'gemini-2.0-flash-exp',
-        # 335: 'Llama-3.3-70B-Instruct-Turbo',
-        336: 'Llama-3.1-8B-Instruct-Turbo',
-        # 344: 'Qwen/Qwen2.5-72B-Instruct-Turbo'
+        #391: 'claude-3-5-sonnet-20241022',
+        392: 'gpt-4o',
+        400: 'gpt-4o-mini',
+        405: 'claude-3-5-sonnet-20241022',
     }
     versions = list(labels.keys())
-    # Process data and generate visualization
     visualizer.load_versions(versions, labels)
-    visualizer.process_achievements(max_depth=32)
-    visualizer.export_latex_progression('mcts_progression_content.tex', max_depth=32)
+    visualizer.process_achievements(max_depth=128)
+    visualizer.export_latex_progression('mcts_progression_content.tex', max_depth=128)
 
 
 if __name__ == '__main__':

@@ -23,6 +23,8 @@ def game(instance):
         'gun-turret': 1,
         'firearm-magazine': 5,
         'transport-belt': 50,
+        'boiler': 1,
+        'pipe': 20,
     }
     instance.reset()
     yield instance
@@ -178,4 +180,20 @@ def test_get_assembling_machine_1(game):
     retrieved_machine = game.get_entities({Prototype.AssemblingMachine1})[0]
 
     assert retrieved_machine is not None, "Failed to retrieve assembling machine"
+
+def test_get_pipe_groups(game):
+    #game.craft_item(Prototype.OffshorePump)
+
+    water_patch = game.get_resource_patch(Resource.Water, game.nearest(Resource.Water))
+    game.move_to(water_patch.bounding_box.left_top)
+    offshore_pump = game.place_entity(Prototype.OffshorePump,
+                                      position=game.nearest(Resource.Water))
+    boiler = game.place_entity_next_to(Prototype.Boiler,
+                                       reference_position=offshore_pump.position,
+                                       direction=offshore_pump.direction,
+                                       spacing=5)
+    water_pipes = game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
+
+    pipes = game.get_entities()
+    assert len(pipes) == 3
 

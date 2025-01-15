@@ -241,7 +241,7 @@ class MCTSFactory:
         from search.mcts.chunked_mcts import ChunkedMCTS
         from search.mcts.parallel_mcts import ParallelMCTS
         from search.mcts.parallel_mcts_config import ParallelMCTSConfig
-        from search.mcts.conversation_formatter import StructurePreservingFormatter
+        from search.mcts.formatters.conversation_formatter import StructurePreservingFormatter
 
         mcts_config = ParallelMCTSConfig(
             n_parallel=config.n_parallel,
@@ -273,7 +273,7 @@ class MCTSFactory:
         from search.mcts.objective_mcts import ObjectiveMCTS
         from search.mcts.parallel_mcts import ParallelMCTS
         from search.mcts.parallel_mcts_config import ParallelMCTSConfig
-        from search.mcts.conversation_formatter import StructurePreservingFormatter
+        from search.mcts.formatters.conversation_formatter import StructurePreservingFormatter
 
         mcts_config = ParallelMCTSConfig(
             n_parallel=config.n_parallel,

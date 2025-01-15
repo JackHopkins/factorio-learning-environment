@@ -15,7 +15,7 @@ from factorio_entities import Entity, Boiler, FluidHandler, Position, Generator,
     OffshorePump, PumpJack, BeltGroup, EntityGroup, PipeGroup
 from factorio_instance import PLAYER, Direction
 from factorio_types import Prototype
-from utilities.merge_transport_belts import agglomerate_groupable_entities
+from utilities.groupable_entities import agglomerate_groupable_entities, _deduplicate_entities
 
 
 class ConnectEntities(Action):
@@ -113,19 +113,6 @@ class ConnectEntities(Action):
     def _round_position(self, position: Position):
         return Position(x=math.floor(position.x), y=math.floor(position.y))
 
-    def _deduplicate_entities(self, entities: List[Entity]) -> List[Entity]:
-        """
-        Remove duplicate entities while maintaining the original order.
-        Later entities with the same position override earlier ones.
-        """
-        unique_entities = []
-        seen = set()
-        for entity in reversed(entities):
-            position = (entity.position.x, entity.position.y)
-            if position not in seen:
-                unique_entities.append(entity)
-                seen.add(position)
-        return list(reversed(unique_entities))
 
     def __call__(self,
                  source: Union[Position, Entity, EntityGroup],
@@ -367,7 +354,7 @@ class ConnectEntities(Action):
             if isinstance(source_entity, BeltGroup) and isinstance(target_entity, BeltGroup):
                 self.rotate_final_belt_when_connecting_groups(groupable_entities, source_entity)
 
-            deduplicated_path = self._deduplicate_entities(path)
+            deduplicated_path = _deduplicate_entities(path)
 
             entity_groups = []
             # If we are connecting to an existing belt group, we need to agglomerate them all together
@@ -382,7 +369,7 @@ class ConnectEntities(Action):
                     entity_groups = agglomerate_groupable_entities(groupable_entities)
 
                 for entity_group in entity_groups:
-                    entity_group.belts = self._deduplicate_entities(entity_group.belts)
+                    entity_group.belts = _deduplicate_entities(entity_group.belts)
             elif connection_type == Prototype.Pipe:
                 if isinstance(source_entity, PipeGroup):
                     entity_groups = agglomerate_groupable_entities(source_entity.pipes + groupable_entities)
@@ -394,7 +381,7 @@ class ConnectEntities(Action):
                     entity_groups = agglomerate_groupable_entities(groupable_entities)
 
                 for entity_group in entity_groups:
-                    entity_group.pipes = self._deduplicate_entities(entity_group.pipes)
+                    entity_group.pipes = _deduplicate_entities(entity_group.pipes)
 
             # if we have more than one entity group - but one of them only has one entity (i.e it is dangling) we
             # should pick it up back into the inventory, as the connect entities routine should not have created it

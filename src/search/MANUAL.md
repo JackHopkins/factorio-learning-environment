@@ -378,6 +378,207 @@ if can_place_entity(Prototype.StoneFurnace, position=position):
     furnace = place_entity(Prototype.StoneFurnace, position=position)
 ```
 
+# Manual
+
+[Previous sections remain the same...]
+
+### 8. Self-Fueling Mining Systems
+
+Self-fueling mining systems are essential for automating resource collection, particularly for coal mining. These systems use the mined coal to power themselves, creating a sustainable loop.
+
+#### Basic Self-Fueling Mine Pattern
+```python
+# 1. Find suitable coal patch
+coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
+move_to(coal_patch.bounding_box.center)
+
+# 2. Place mining drill
+drill = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, coal_patch.bounding_box.center)
+
+# 3. Place inserter to feed coal back into drill
+inserter = place_entity_next_to(
+    Prototype.BurnerInserter, 
+    drill.position,
+    direction=Direction.UP,
+    spacing=0
+)
+rotate_entity(inserter, Direction.DOWN)  # Face inserter toward drill
+
+# 4. Connect with transport belt
+belts = connect_entities(
+    drill.drop_position,
+    inserter.pickup_position,
+    Prototype.TransportBelt
+)
+
+# 5. Bootstrap system with initial fuel
+insert_item(Prototype.Coal, drill, quantity=5)
+```
+
+#### Multi-Drill Self-Fueling Systems
+
+For larger operations, you can create systems with multiple drills sharing a common fuel belt:
+
+```python
+    """
+    Build a self-fueling coal mining system with multiple drills.
+    """
+    num_drills = 5
+    drills = []
+    inserters = []
+    
+    # 1. Place drills and their inserters
+    for i in range(num_drills):
+        # Calculate positions with proper spacing
+        drill_position = Position(
+            x=coal_patch.bounding_box.left_top.x + i * 2,
+            y=coal_patch.bounding_box.center.y
+        )
+        
+        # Place and configure each drill
+        drill = place_entity(
+            Prototype.BurnerMiningDrill,
+            Direction.DOWN,
+            drill_position
+        )
+        
+        # Place and configure inserter for fuel
+        inserter = place_entity_next_to(
+            Prototype.BurnerInserter,
+            drill_position,
+            direction=Direction.UP,
+            spacing=0
+        )
+        inserter = rotate_entity(inserter, Direction.DOWN)
+        
+        drills.append(drill)
+        inserters.append(inserter)
+    
+    # 2. Create main transport belt
+    belt_start = Position(
+        x=drills[0].drop_position.x,
+        y=drills[0].drop_position.y
+    )
+    belt_end = Position(
+        x=drills[-1].drop_position.x,
+        y=drills[0].drop_position.y
+    )
+    
+    # 3. Connect belt in a loop
+    main_belt = connect_entities(
+        belt_start,
+        belt_end,
+        Prototype.TransportBelt
+    )
+    
+    # Connect to last inserter
+    connect_entities(
+        belt_end,
+        inserters[-1].pickup_position,
+        Prototype.TransportBelt
+    )
+    
+    # Connect between inserters
+    connect_entities(
+        inserters[-1].pickup_position,
+        inserters[0].pickup_position,
+        Prototype.TransportBelt
+    )
+    
+    # Close the loop
+    connect_entities(
+        inserters[0].pickup_position,
+        belt_start,
+        Prototype.TransportBelt
+    )
+    
+    # 4. Bootstrap the system
+    insert_item(Prototype.Coal, drills[0], quantity=10)
+```
+
+#### Best Practices for Self-Fueling Systems
+
+1. **Resource Verification**
+   - Always verify coal patch size before building
+   - Ensure patch is large enough for planned number of drills
+   ```python
+   assert coal_patch.size >= num_drills * 5, "Coal patch too small"
+   ```
+
+2. **Proper Belt Loops**
+   - Create complete loops without gaps
+   - Verify belt connections after placement
+   - Use proper belt directions at corners
+
+3. **System Bootstrap**
+   - Add initial fuel to at least one drill
+   - Verify fuel reaches all drills
+   - Monitor system startup to ensure proper operation
+
+4. **Error Handling**
+   ```python
+   try:
+       drill = place_entity(Prototype.BurnerMiningDrill, position)
+       inserter = place_entity_next_to(
+           Prototype.BurnerInserter,
+           drill.position,
+           direction=Direction.UP
+       )
+   except Exception as e:
+       print(f"Failed to build mining system: {e}")
+       # Clean up partial construction
+   ```
+
+5. **Alternative Designs**
+   ```python
+   # Using chest as buffer
+   chest = place_entity(
+       Prototype.IronChest,
+       Direction.RIGHT,
+       drill.drop_position
+   )
+   inserter = place_entity_next_to(
+       Prototype.BurnerInserter,
+       chest.position,
+       direction=Direction.UP
+   )
+   ```
+
+#### Common Patterns
+
+1. **Linear Mining Array**
+   - Place drills in a straight line
+   - Use shared belt system
+   - Single fuel distribution loop
+
+2. **Compact Design**
+   - Minimal spacing between components
+   - Direct inserter connections
+   - Efficient belt routing
+
+3. **Redundant Systems**
+   - Multiple fuel paths
+   - Backup inserters
+   - Buffer chests for stability
+
+#### Troubleshooting
+
+1. **System Stalls**
+   - Check belt continuity
+   - Verify inserter directions
+   - Ensure adequate initial fuel
+
+2. **Inefficient Operation**
+   - Optimize belt paths
+   - Balance drill placement
+   - Adjust inserter positions
+
+3. **Startup Issues**
+   - Add more initial fuel
+   - Verify all connections
+   - Check entity rotation
+
+
 ## Common Antipatterns to Avoid
 
 1. **Missing Movement**

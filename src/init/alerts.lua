@@ -260,21 +260,21 @@ function get_issues(entity)
     local issues = {}
 
     if not can_mine(entity) then
-        table.insert(issues, "\"nothing to mine\"")
+        table.insert(issues, "\'nothing to mine\'")
     end
     if not has_fuel(entity) then
-        table.insert(issues, "\"out of fuel\"")
+        table.insert(issues, "\'out of fuel\'")
     end
     if not has_ingredients(entity) then
-        table.insert(issues, "\"no ingredients to smelt\"")
+        table.insert(issues, "\'no ingredients to smelt\'")
     end
     if is_inserter_waiting_for_source(entity) then
-        table.insert(issues, "\"inserter waiting for source items\"")
+        table.insert(issues, "\'inserter waiting for source items\'")
     end
 
     local full_inventories = is_full(entity)
     for _, full_inventory in ipairs(full_inventories) do
-        table.insert(issues, "\""..full_inventory.."\"")
+        table.insert(issues, "\'"..full_inventory.."\'")
     end
 
     --if not has_output_space(entity) then
@@ -299,23 +299,23 @@ function get_issues(entity)
 
             if destination_entity then
                 if destination_entity.type == "container" then
-                    table.insert(issues, "\"chest at drop position is full. Empty the chest at (" .. rounded_x .. ", " .. rounded_y .. ") to continue mining.\"")
+                    table.insert(issues, "\'chest at drop position is full. Empty the chest at (" .. rounded_x .. ", " .. rounded_y .. ") to continue mining.\'")
                 else
-                    table.insert(issues, "\"transport belt at drop position is blocked. Clear the belt at (" .. rounded_x .. ", " .. rounded_y .. ") to continue mining.\"")
+                    table.insert(issues, "\'transport belt at drop position is blocked. Clear the belt at (" .. rounded_x .. ", " .. rounded_y .. ") to continue mining.\'")
                 end
             else
-                table.insert(issues, "\"waiting for space in destination as the output is full. Place a sink object at (" .. rounded_x .. ", " .. rounded_y .. ") to unblock.\"")
+                table.insert(issues, "\'waiting for space in destination as the output is full. Place a sink object at (" .. rounded_x .. ", " .. rounded_y .. ") to unblock.\'")
             end
         else
-            table.insert(issues, "\"waiting for space in destination\"")
+            table.insert(issues, "\'waiting for space in destination\'")
         end
     end
 
     if not has_electricity(entity) then
         if entity.electric_network_id then
-            table.insert(issues, "\"not receiving electricity\"")
+            table.insert(issues, "\'not receiving electricity\'")
         else
-            table.insert(issues, "\"not connected to power network\"")
+            table.insert(issues, "\'not connected to power network\'")
         end
     end
 
@@ -325,11 +325,11 @@ function get_issues(entity)
     end
 
     if is_transport_belt_blocked(entity) then
-        table.insert(issues, "\"transport belt blocked. Place an inserter to drain entities from it.\"")
+        table.insert(issues, "\'transport belt blocked. Place an inserter to drain entities from it.\'")
     end
 
     if not has_input_liquid(entity) then
-        table.insert(issues, "\"no input liquid\"")
+        table.insert(issues, "\'no input liquid\'")
     end
     return issues
 end
@@ -355,7 +355,7 @@ function lacks_assembler_resources(entity)
             end
 
             if #missing_resources > 0 then
-                return "\"cannot create " .. recipe.name .. " due to missing resources: " .. table.concat(missing_resources, ",_").."\""
+                return "\'cannot create " .. recipe.name .. " due to missing resources: " .. table.concat(missing_resources, ",_").."\'"
 
             end
         end

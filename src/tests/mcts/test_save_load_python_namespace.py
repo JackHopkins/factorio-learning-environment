@@ -214,8 +214,10 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
 
         # Verify that there are no technologies here
         n_game_state = GameState.from_instance(self.instance)
-        game_state_techs = game_state.research.technologies.values()
-        n_game_state_techs = n_game_state.research.technologies.values()
+
+
+        game_state_techs = game_state.research.technologies.values() # Has everything researched
+        n_game_state_techs = n_game_state.research.technologies.values() # Has nothing researched
 
         for i, j in zip(game_state_techs, n_game_state_techs):
             assert i.name == j.name

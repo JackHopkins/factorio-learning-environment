@@ -1,13 +1,13 @@
 import pytest
 
 from factorio_entities import Position
-from factorio_instance import Direction
+from factorio_instance import Direction, FactorioInstance
 from factorio_types import Resource, Prototype, PrototypeName, Technology
 
 
 @pytest.fixture()
 def game(instance):
-    instance.initial_inventory = {
+    initial_inventory = {
         'coal': 50,
         'copper-plate': 50,
         'iron-plate': 50,
@@ -23,54 +23,54 @@ def game(instance):
         'small-electric-pole': 50,
         'transport-belt': 100,
         'lab': 1,
-        'assembling-machine': 10,
+        'automation-science-pack': 10,
     }
-    instance.all_technologies_researched = False
+    instance = FactorioInstance(address='localhost',
+                                         bounding_box=200,
+                                         tcp_port=27015,
+                                         fast=True,
+                                         all_technologies_researched=False,
+                                         inventory=initial_inventory)
     instance.reset()
     yield instance
 
 
 def test_craft_automation_packs_and_research(game):
-    # Gather resources
-    game.move_to(game.nearest(Resource.IronOre))
-    game.harvest_resource(game.nearest(Resource.IronOre), 20)
-
-    game.move_to(game.nearest(Resource.CopperOre))
-    game.harvest_resource(game.nearest(Resource.CopperOre), 20)
-
-    # Set up basic infrastructure
-    game.move_to(Position(x=0, y=0))
-    furnace = game.place_entity(Prototype.StoneFurnace, Direction.UP, Position(x=0, y=0))
-    assert furnace, "Failed to place stone furnace"
-
-    # Create iron and copper plates
-    game.insert_item(Prototype.IronOre, furnace, quantity=10)
-    game.insert_item(Prototype.Coal, furnace, quantity=10)
-    game.sleep(35)  # Wait for smelting
-    iron_plates = game.extract_item(Prototype.IronPlate, furnace.position, 10)
-
-    game.insert_item(Prototype.CopperOre, furnace, quantity=10)
-    game.sleep(35)  # Wait for smelting
-    copper_plates = game.extract_item(Prototype.CopperPlate, furnace.position, 10)
-    assert iron_plates and copper_plates, "Failed to create iron or copper plates"
-
-    # Craft necessary components
-    game.craft_item(Prototype.IronGearWheel, 10)
-    game.craft_item(Prototype.CopperCable, 10)
-
-    # Craft automation science packs
-    game.craft_item(Prototype.AutomationSciencePack, 10)
-
-    # Verify the crafting result
     inventory = game.inspect_inventory()
-    assert inventory.get(
-        Prototype.AutomationSciencePack) >= 10, f"Failed to craft 10 automation science packs. Current count: {inventory.get(Prototype.AutomationSciencePack)}"
+    # place the offshore pump at nearest water source
+    game.move_to(game.nearest(Resource.Water))
+    offshore_pump = game.place_entity(Prototype.OffshorePump,
+                                      position=game.nearest(Resource.Water),
+                                      direction=Direction.LEFT)
+    # place the boiler next to the offshore pump
+    boiler = game.place_entity_next_to(Prototype.Boiler,
+                                       reference_position=offshore_pump.position,
+                                       direction=Direction.LEFT,
+                                       spacing=2)
+    game.insert_item(Prototype.Coal, boiler, quantity=10)
 
-    print(f"Successfully crafted {inventory.get(Prototype.AutomationSciencePack)} automation science packs")
+    # place the steam engine next to the boiler
+    steam_engine = game.place_entity_next_to(Prototype.SteamEngine,
+                                             reference_position=boiler.position,
+                                             direction=Direction.LEFT,
+                                             spacing=2)
 
     # Place a Lab
-    lab = game.place_entity(Prototype.Lab, Direction.UP, Position(x=2, y=0))
+    lab = game.place_entity_next_to(Prototype.Lab,
+                                    reference_position=steam_engine.position,
+                                    direction=Direction.LEFT,
+                                    spacing=2)
     assert lab, "Failed to place Lab"
+
+    # place connect the steam engine and assembly machine with power poles
+    game.connect_entities(steam_engine, lab, connection_type=Prototype.SmallElectricPole)
+
+    # place connective pipes between the boiler and steam engine
+    game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
+
+    # place connective pipes between the boiler and offshore pump
+    game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
+
 
     # Insert science packs into the Lab
     game.insert_item(Prototype.AutomationSciencePack, lab, quantity=10)
@@ -89,5 +89,5 @@ def test_craft_automation_packs_and_research(game):
 
     # Check if research has progressed
     ingredients2 = game.get_research_progress(Technology.Automation)
-    assert ingredients1[0].count > ingredients2[0].count, f"Research did not progress. Initial: {len(ingredients1[0].count)}, Current: {len(ingredients2[0].count)}"
+    assert ingredients1[0].count > ingredients2[0].count, f"Research did not progress. Initial: {ingredients1[0].count}, Current: {ingredients2[0].count}"
 

@@ -48,7 +48,8 @@ class LLMFactory:
             # Remove the 'system' role from the first message and replace it with 'user'
             messages = kwargs.get('messages', [])
             if messages[0]['role'] == "system":
-                messages[0]['role'] = "user"
+                system_message = messages.pop(0)
+                system_message = system_message['content'].strip()
 
             # Remove final assistant content that ends with trailing whitespace
             if messages[-1]['role'] == "assistant":
@@ -73,6 +74,7 @@ class LLMFactory:
                     max_tokens=max_tokens,
                     model=model_to_use,
                     messages=messages,
+                    system = system_message,
                     stop_sequences=["```END"],
                 )
             except Exception as e:

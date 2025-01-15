@@ -349,7 +349,7 @@ class PumpJack(MiningDrill, FluidHandler):
     pass
 
 class Boiler(FluidHandler, BurnerType):
-    steam_output_point: Position
+    steam_output_point: Optional[Position]
 
 
 class Generator(FluidHandler):

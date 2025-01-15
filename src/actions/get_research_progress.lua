@@ -16,28 +16,32 @@ global.actions.get_research_progress = function(player_index, technology_name)
         error(string.format("\"Technology %s doesn't exist\"", technology_name))
     end
 
-    -- Get progress info
+    -- Get progress info and calculate remaining work
     local is_current = force.current_research and force.current_research.name == technology_name
     local progress = 0
+    local remaining_units = 0
 
-    if is_current then
+    if tech.researched then
+        -- Already researched technologies need no resources
+        return {}
+    elseif is_current then
         progress = force.research_progress
-    elseif tech.researched then
-        progress = 1
+        -- Calculate remaining research units based on progress
+        remaining_units = math.ceil(tech.research_unit_count * (1 - progress))
+    else
+        -- Not started technologies need all resources
+        remaining_units = tech.research_unit_count
     end
 
-    -- Collect ingredients info
+    -- Collect remaining ingredients info
     local ingredients = {}
-    local units_required = tech.research_unit_count
-
     for _, ingredient in pairs(tech.research_unit_ingredients) do
         table.insert(ingredients, {
             name = "\""..ingredient.name.."\"",
-            count = ingredient.amount * units_required,
+            count = ingredient.amount * remaining_units,
             type = ingredient.type
         })
     end
 
-    -- Return structured response
     return ingredients
 end

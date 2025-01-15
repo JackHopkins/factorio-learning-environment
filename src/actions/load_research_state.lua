@@ -6,7 +6,7 @@ global.actions.load_research_state = function(player_index, research_state)
     -- Reset all research first
     for _, tech in pairs(force.technologies) do
         tech.researched = false
-        tech.enabled = false
+        --tech.enabled = false
     end
 
     -- Apply saved research states

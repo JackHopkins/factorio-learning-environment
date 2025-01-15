@@ -116,8 +116,6 @@ class Controller:
         try:
             start = time.time()
             parameters = [lua.encode(arg) for arg in args]
-            #parameters.append(lua.encode(arg.dict()))
-            #parameters = [lua.encode(arg) for arg in args]
             invocation = f"pcall(global.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
             wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
             lua_response = self.connection.send_command(wrapped)

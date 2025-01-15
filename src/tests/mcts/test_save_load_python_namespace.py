@@ -200,6 +200,51 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
 
             print(resp)
 
+    def test_save_load_research_new_instance(self):
+        # Save game state including research
+        game_state = GameState.from_instance(self.instance)
+
+        self.instance = FactorioInstance(address='localhost',
+                                         bounding_box=200,
+                                         tcp_port=27015,
+                                         fast=True,
+                                         all_technologies_researched=False,
+                                         inventory={})
+        self.instance.reset()
+
+        # Verify that there are no technologies here
+        n_game_state = GameState.from_instance(self.instance)
+        game_state_techs = game_state.research.technologies.values()
+        n_game_state_techs = n_game_state.research.technologies.values()
+
+        for i, j in zip(game_state_techs, n_game_state_techs):
+            assert i.name == j.name
+
+            # Late game techs may be infinite and therefore are always not yet researched
+            skip = False
+            for k in i.prerequisites.values():
+                if k == 'space-science-pack':
+                    skip = True
+
+            if not skip:
+                assert i.researched == True, f"Technology {i.name} should be researched"
+                assert j.researched == False, f"Technology {j.name} should not be researched"
+
+        self.instance.reset(game_state)
+        k_game_state = GameState.from_instance(self.instance)
+        k_game_state_techs = k_game_state.research.technologies.values()
+
+        for tech in k_game_state_techs:
+            skip = False
+            for k in tech.prerequisites.values():
+                if k == 'space-science-pack':
+                    skip = True
+            if not skip:
+                assert tech.researched == True
+
+
+
+
 
 
 

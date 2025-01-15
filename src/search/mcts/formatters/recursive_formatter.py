@@ -1,6 +1,7 @@
 import os
 import json
 import hashlib
+import re
 from typing import List, Dict, Optional, Tuple
 
 from llm_factory import LLMFactory
@@ -8,7 +9,8 @@ from search.mcts.formatters.conversation_formatter import ConversationFormatter
 from search.model.conversation import Message, Conversation
 
 DEFAULT_INSTRUCTIONS = \
-"Summarize the following conversation chunk maintaining key information and context. Focus on decisions made, actions taken, and important outcomes."
+    "Summarize the following conversation chunk maintaining key information and context. Focus on decisions made, actions taken, and important outcomes."
+
 
 class RecursiveFormatter(ConversationFormatter):
     """
@@ -20,11 +22,22 @@ class RecursiveFormatter(ConversationFormatter):
                  chunk_size: int = 16,
                  llm_factory: Optional[LLMFactory] = None,
                  cache_dir: str = ".conversation_cache",
-                 summary_instructions: str = DEFAULT_INSTRUCTIONS):
+                 summary_instructions: str = DEFAULT_INSTRUCTIONS,
+                 truncate_entity_data: bool = True):
+        """
+
+        @param chunk_size:
+        @param llm_factory:
+        @param cache_dir:
+        @param summary_instructions:
+        @param truncate_entity_data: Whether we should truncate historical (stale) entity observations when summarizing.
+        """
         self.chunk_size = chunk_size
         self.llm_factory = llm_factory
         self.cache_dir = cache_dir
         self.summary_instructions = summary_instructions
+        self.truncate_entity_data = truncate_entity_data
+        self.entity_data_pattern = re.compile(r': \[((.|[\n])+)]",\)')
         os.makedirs(cache_dir, exist_ok=True)
 
     def _get_chunk_hash(self, messages: List[Message]) -> str:
@@ -69,7 +82,27 @@ class RecursiveFormatter(ConversationFormatter):
         except Exception as e:
             print(f"Error saving summary cache: {e}")
 
-    async def _generate_summary(self, messages: List[Message], start_idx: int, end_idx: int, system_message: Message) -> Message:
+    def _truncate_entity_data(self, message: Message, is_recent: bool = False) -> Message:
+        """
+        Truncate entity data in message content if enabled and message is not recent.
+        Returns a new Message instance with modified content if truncation occurred.
+        """
+        if not self.truncate_entity_data or is_recent or message.role in ('assistant', 'system'):
+            return message
+
+        if isinstance(message.content, str):
+            new_content = self.entity_data_pattern.sub(': <STALE_ENTITY_DATA_OMITTED/>', message.content)
+            if new_content != message.content:
+                return Message(
+                    role=message.role,
+                    content=new_content,
+                    metadata=message.metadata
+                )
+
+        return message
+
+    async def _generate_summary(self, messages: List[Message], start_idx: int, end_idx: int,
+                                system_message: Message) -> Message:
         """Generate a summary of messages using the LLM."""
         if not self.llm_factory:
             raise ValueError("LLM factory required for summary generation")
@@ -99,7 +132,7 @@ class RecursiveFormatter(ConversationFormatter):
             content = response.content[0].text
 
         return Message(
-            role="assistant",
+            role="user",
             content=content,
             metadata={
                 "summarized": True,
@@ -107,8 +140,11 @@ class RecursiveFormatter(ConversationFormatter):
             }
         )
 
-    async def _summarize_chunk(self, messages: List[Message], start_idx: int, end_idx: int, system_message: Message) -> Message:
+    async def _summarize_chunk(self, messages: List[Message], start_idx: int, end_idx: int,
+                               system_message: Message) -> Message:
         """Summarize a chunk of messages, using cache if available."""
+        # Truncate entity data before generating cache hash
+        #truncated_messages = [self._truncate_entity_data(msg) for msg in messages]
         chunk_hash = self._get_chunk_hash(messages)
 
         cached_summary = self._load_cached_summary(chunk_hash)
@@ -166,7 +202,8 @@ class RecursiveFormatter(ConversationFormatter):
 
         # Handle base cases
         if len(messages) <= self.chunk_size:
-            return messages
+            return [self._truncate_entity_data(msg, is_recent=(i >= len(messages) - 1))
+                    for i, msg in enumerate(messages)]
 
         # Keep system message separate if present
         system_message = None
@@ -181,9 +218,15 @@ class RecursiveFormatter(ConversationFormatter):
         if historical_messages:
             # Recursively summarize historical messages from left to right
             historical_summary = await self._recursive_summarize_left(historical_messages, system_message)
-            formatted = [historical_summary] + recent_messages
+            formatted = [historical_summary] + [
+                self._truncate_entity_data(msg, is_recent=(i >= len(recent_messages) - 1))
+                for i, msg in enumerate(recent_messages)
+            ]
         else:
-            formatted = recent_messages
+            formatted = [
+                self._truncate_entity_data(msg, is_recent=(i >= len(recent_messages) - 1))
+                for i, msg in enumerate(recent_messages)
+            ]
 
         # Add back system message if present
         if system_message:
@@ -192,5 +235,5 @@ class RecursiveFormatter(ConversationFormatter):
         return formatted
 
     def format_message(self, message: Message) -> Message:
-        """Format a single message - no special formatting needed."""
-        return message
+        """Format a single message - apply entity data truncation if enabled."""
+        return self._truncate_entity_data(message, is_recent=True)

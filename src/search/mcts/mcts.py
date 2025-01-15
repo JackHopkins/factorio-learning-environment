@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import json
 import re
 from asyncio import sleep
@@ -122,17 +123,19 @@ class MCTS:
                                        meta={}
                                        ) -> List[Program]:
         """Generate multiple programs either through OpenAI's n parameter or parallel calls"""
+        conversation = copy.deepcopy(conversation)
+
         formatted = await self.formatter.format_conversation(conversation)
         formatted_messages = self.formatter.to_llm_messages(
             formatted
         )
-        system_message = formatted_messages[0]
+        #system_message = formatted_messages[0]
 
         # Take the most recent messages up to maximum_lookback, excluding the system message
-        recent_messages = formatted_messages[1:][-self.db.max_conversation_length:]
+        # recent_messages = formatted_messages[1:][-self.db.max_conversation_length:]
 
         # Combine system message with recent messages
-        formatted_messages = [system_message, *recent_messages]
+        #formatted_messages = [system_message, *recent_messages]
 
         try:
             messages = conversation.model_dump()['messages']

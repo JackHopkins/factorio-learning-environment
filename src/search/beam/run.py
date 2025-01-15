@@ -73,11 +73,11 @@ OBSERVATION_SPACE = \
 
 HISTORY_SUMMARIZATION_INSTRUCTIONS = \
 """
-Analyze the interaction you have made with the Factorio AI and provide a report. 
+Review the code interaction an agent has written with the Factorio REPL Environment and provide a report. 
 
-Focus on what you attempted to achieve, any errors that occurred, and the outcomes of your actions.
+Focus on what they attempted to achieve, any errors that occurred, and the outcomes of their actions.
 
-Provide tips and successful patterns that you could use in future, based on your experience of interacting with the API.
+Provide specific tips and successful patterns that you see in the code, and any examples that you can provide.
 """
 
 with open("../MANUAL.md", "r") as f:

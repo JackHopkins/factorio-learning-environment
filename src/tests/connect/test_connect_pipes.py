@@ -132,7 +132,7 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
         assert spent_pipes == len(connection[0].pipes)
 
         # check to see if the steam engine has water
-        inspection = game.inspect_entities(position=steam_engine.position)
+        entities = game.get_entities(position=steam_engine.position)
         #assert inspection.get_entity(Prototype.SteamEngine).warning == 'not receiving electricity'
 
         game.reset()  # Reset the game state after each iteration

@@ -26,7 +26,7 @@ def _construct_group(entities: List[Entity],
                      input_positions: List[Position],
                      output_positions: List[Position],
                      position: Position) -> EntityGroup:
-    if prototype == Prototype.TransportBelt:
+    if prototype == Prototype.TransportBelt or entities[0].prototype == Prototype.TransportBelt:
         inventory = Inventory()
         for entity in entities:
             if hasattr(entity, 'inventory') and entity.inventory:  # Check if inventory exists and is not empty
@@ -49,7 +49,7 @@ def _construct_group(entities: List[Entity],
                          output_positions=output_positions,
                          status = status,
                          position=position)
-    elif prototype == Prototype.Pipe:
+    elif prototype == Prototype.Pipe or entities[0].prototype == Prototype.Pipe:
         return PipeGroup(pipes=entities,
                          input_positions=input_positions,
                          position=position)

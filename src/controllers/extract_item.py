@@ -14,7 +14,6 @@ class ExtractItem(Action):
         #self.game_state = game_state
 
     def __call__(self, entity: Prototype, position: Position, quantity=5,
-                 #relative=False
                  ) -> bool:
         """
         Extract an item from an entity's inventory at position (x, y) if it exists on the world.
@@ -28,10 +27,6 @@ class ExtractItem(Action):
 
         x, y = self.get_position(position)
         name, _ = entity.value
-
-        #if not relative:
-        #    x -= self.game_state.last_observed_player_location[0]
-        #    y -= self.game_state.last_observed_player_location[1]
 
         response, elapsed = self.execute(
                                        PLAYER,

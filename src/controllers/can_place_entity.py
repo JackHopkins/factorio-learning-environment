@@ -43,9 +43,6 @@ class CanPlaceEntity(Action):
         if not isinstance(response, dict):
             if isinstance(response, bool):
                 return response
-
-            if "cannot" not in response.lower():
-                return True
-            return True
-
+            if isinstance(response, str) and "cannot" in response.lower():
+                return False
         return True

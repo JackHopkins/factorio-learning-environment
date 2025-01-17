@@ -19,7 +19,7 @@ class GetConnectionAmount(Action):
                  source: Union[Position, Entity, EntityGroup],
                  target: Union[Position, Entity, EntityGroup],
                  connection_type: Prototype = Prototype.Pipe
-                 ) -> List[Union[Entity, EntityGroup]]:
+                 ) -> int:
         """
         Connect two entities or positions.
         :param source: First entity or position

@@ -17,24 +17,29 @@ class SaveResearchState(Action):
         """
         state, _ = self.execute(PLAYER)
 
-        # Convert the raw state into our dataclass structure
-        technologies = {
-            name: TechnologyState(
-                name=tech["name"],
-                researched=tech["researched"],
-                enabled=tech["enabled"],
-                level=tech["level"],
-                research_unit_count=tech["research_unit_count"],
-                research_unit_energy=tech["research_unit_energy"],
-                prerequisites=tech["prerequisites"],
-                ingredients=tech["ingredients"]
+        try:
+            # Convert the raw state into our dataclass structure
+            technologies = {
+                name: TechnologyState(
+                    name=tech["name"],
+                    researched=tech["researched"],
+                    enabled=tech["enabled"],
+                    level=tech["level"],
+                    research_unit_count=tech["research_unit_count"],
+                    research_unit_energy=tech["research_unit_energy"],
+                    prerequisites=tech["prerequisites"],
+                    ingredients=tech["ingredients"]
+                )
+                for name, tech in state["technologies"].items()
+            }
+            return ResearchState(
+                technologies=technologies,
+                current_research=state["current_research"] if "current_research" in state else None,
+                research_progress=state["research_progress"],
+                research_queue=state["research_queue"]
             )
-            for name, tech in state["technologies"].items()
-        }
 
-        return ResearchState(
-            technologies=technologies,
-            current_research=state["current_research"] if "current_research" in state else None,
-            research_progress=state["research_progress"],
-            research_queue=state["research_queue"]
-        )
+        except Exception as e:
+            print(f"Could not save technologies: {e}")
+            raise e
+

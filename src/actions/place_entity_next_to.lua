@@ -232,7 +232,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     end
 
     -- First clean up any items-on-ground at the target position
-    local area = {{new_position.x - 1, new_position.y - 1}, {new_position.x + 1, new_position.y + 1}}
+    local area = {{new_position.x - entity_width / 2, new_position.y - entity_height / 2}, {new_position.x + entity_width / 2, new_position.y + entity_height / 2}}
     local items = player.surface.find_entities_filtered{
         area = area,
         type = "item-on-ground"
@@ -250,12 +250,12 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
 
     -- Modify the error message in the can_build check
     if not can_build then
-        local area = {{new_position.x - 1, new_position.y - 1}, {new_position.x + 1, new_position.y + 1}}
+        --local area = {{new_position.x - 0.5, new_position.y - 0.5}, {new_position.x + 0.5, new_position.y + 0.5}}
         local entities = player.surface.find_entities_filtered{area = area, type = {"beam", "resource", "player"}, invert=true}
         local entity_names = {}
         for _, e in ipairs(entities) do
             game.print(e.type)
-            table.insert(entity_names, e.name)
+            table.insert(entity_names, e.name.."("..serpent.line(e.position)..")")
         end
         error("\'Cannot place entity at the position " .. serpent.line(new_position) .. " with direction " ..
               serpent.line(orientation) .. ". Attempting to place next to: "..ref_entity.name..". Nearby entities: " .. serpent.line(entity_names)..

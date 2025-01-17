@@ -42,5 +42,5 @@ class PickupEntity(Action):
 
         response, elapsed = self.execute(PLAYER, x, y, name)
         if response != 1 and response != {}:
-            raise Exception("Could not pickup, did you intend to harvest?", response)
+            raise Exception(f"Could not pickup: {response}")
         return True

@@ -22,7 +22,7 @@ class PlaceObject(Action):
                  entity: Prototype,
                  direction: Direction = Direction.UP,
                  position: Position = Position(x=0, y=0),
-                 exact: bool = False,
+                 exact: bool = True,
                  #relative=False
                  ) -> Entity:
         """

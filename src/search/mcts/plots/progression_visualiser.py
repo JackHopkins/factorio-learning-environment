@@ -332,8 +332,9 @@ async def main():
         #391: 'claude-3-5-sonnet-20241022',
         392: 'gpt-4o',
         #400: 'gpt-4o-mini',
-        405: 'claude-3-5-sonnet-20241022',
+        #405: 'claude-3-5-sonnet-20241022',
         416: 'claude-new',
+        434: 'claude-2@4',
         #424: 'gpt-4o-mini-2',
         #425: 'gpt-4o-mini-3'
         427: 'gpt-4o-mini',

@@ -3,6 +3,8 @@ import pytest
 from factorio_entities import Position
 from factorio_instance import Direction
 from factorio_types import Prototype
+from utils import eval_program_with_achievements
+
 
 @pytest.fixture()
 def game(instance):

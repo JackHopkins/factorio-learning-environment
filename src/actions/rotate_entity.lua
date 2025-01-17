@@ -1,4 +1,4 @@
-global.actions.rotate_entity = function(player_index, x, y, direction)
+global.actions.rotate_entity = function(player_index, x, y, direction, entity)
     local player = game.get_player(player_index)
     local position = {x=math.floor(x + 0.5), y=math.floor(y + 0.5)}  -- Round to nearest tile
     local surface = player.surface
@@ -15,7 +15,7 @@ global.actions.rotate_entity = function(player_index, x, y, direction)
     local closest_distance = math.huge
     local closest_entity = nil
     local area = {{position.x - 0.5, position.y - 0.5}, {position.x + 0.5, position.y + 0.5}}
-    local buildings = surface.find_entities_filtered{area = area, force = "player"}
+    local buildings = surface.find_entities_filtered{area = area, force = "player", name=entity}
 
     -- Find the closest building
     for _, building in ipairs(buildings) do

@@ -1,7 +1,10 @@
+from xmlrpc.client import Transport
+
 import pytest
 
 from factorio_entities import Position
 from factorio_types import Prototype
+from utils import eval_program_with_achievements
 
 
 @pytest.fixture()
@@ -35,3 +38,9 @@ def test_place_pickup_inventory(game):
     game.insert_item(Prototype.IronPlate, chest, quantity=5)
     game.pickup_entity(Prototype.WoodenChest, position=chest.position)
     assert game.inspect_inventory()[Prototype.IronPlate] == iron_plate_in_inventory
+
+def test_pickup_belts(game):
+    belts = game.connect_entities(Position(x=0.5, y=0.5), Position(x=0.5, y=8.5), Prototype.TransportBelt)
+    belt = belts[0]
+    pickup_belts = game.pickup_entity(Prototype.BeltGroup, belt.position)
+    pass

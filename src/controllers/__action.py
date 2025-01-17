@@ -28,6 +28,13 @@ class Action(Controller):
 
         return x, y
 
+    def get_error_message(self, response):
+        try:
+            msg = response.split(':')[-1].replace('"', '').strip().replace("\\\'", "").replace("\'", "")
+            return msg
+        except Exception as e:
+            return response
+
     def load(self):
         self.lua_script_manager.load_action_into_game(self.name)
         # script = _load_action(self.name)

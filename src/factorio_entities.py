@@ -337,7 +337,6 @@ class MiningDrill(Entity):
 class BurnerInserter(Inserter, BurnerType):
     pass
 
-
 class BurnerMiningDrill(MiningDrill, BurnerType):
     pass
 

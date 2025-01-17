@@ -372,8 +372,8 @@ function find_passable_tiles(player, localBoundingBox)
     return impassable_tiles
 end
 
-function get_locality(player, surface, localBoundingBox)
-    local origin = player.position
+function get_locality(position, surface, localBoundingBox)
+    local origin = position
     local offset = localBoundingBox / 2
 
     local left = origin.x - offset
@@ -433,12 +433,12 @@ function has_value(tbl, val)
     return false
 end
 
-function get_local_environment (player, surface, localBoundingBox, field_x, field_y, debug)
+function get_local_environment (position, surface, localBoundingBox, field_x, field_y, debug)
 
-    local top = player.position.y-localBoundingBox/2
-    local left = player.position.x-localBoundingBox/2
-    local bottom = player.position.y+localBoundingBox/2
-    local right = player.position.x+localBoundingBox/2
+    local top = position.y-localBoundingBox/2
+    local left = position.x-localBoundingBox/2
+    local bottom = position.y+localBoundingBox/2
+    local right = position.x+localBoundingBox/2
 
     if field_x > 0 then
         right = right + field_x

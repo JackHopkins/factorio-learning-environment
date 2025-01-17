@@ -36,7 +36,7 @@ class RotateEntity(Action):
             response, elapsed = self.execute(PLAYER, x, y, factorio_direction, entity.name)
 
             if not response:
-                raise Exception("Could not rotate.", response)
+                raise Exception(f"Could not rotate: {response}")
 
         except Exception as e:
             raise e

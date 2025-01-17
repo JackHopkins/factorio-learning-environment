@@ -39,8 +39,27 @@ def test_place_pickup_inventory(game):
     game.pickup_entity(Prototype.WoodenChest, position=chest.position)
     assert game.inspect_inventory()[Prototype.IronPlate] == iron_plate_in_inventory
 
+def test_place_pickup_inventory2(game):
+    chest = game.place_entity(Prototype.WoodenChest, position=Position(x=0,y=0))
+    iron_plate_in_inventory = game.inspect_inventory()[Prototype.IronPlate]
+    game.insert_item(Prototype.IronPlate, chest, quantity=5)
+    game.pickup_entity(chest)
+    assert game.inspect_inventory()[Prototype.IronPlate] == iron_plate_in_inventory
+
 def test_pickup_belts(game):
     belts = game.connect_entities(Position(x=0.5, y=0.5), Position(x=0.5, y=8.5), Prototype.TransportBelt)
     belt = belts[0]
-    pickup_belts = game.pickup_entity(Prototype.BeltGroup, belt.position)
-    pass
+    nbelts = game.get_entity(Prototype.BeltGroup, belt.position)
+    pickup_belts = game.pickup_entity(belt)
+    assert pickup_belts
+
+def test_pickup_belts_that_dont_exist(game):
+    belts = game.connect_entities(Position(x=0.5, y=0.5), Position(x=0.5, y=8.5), Prototype.TransportBelt)
+    belt = belts[0]
+    nbelts = game.get_entity(Prototype.BeltGroup, belt.position)
+    pickup_belts = game.pickup_entity(belt)
+    assert pickup_belts
+    try:
+        game.pickup_entity(nbelts)
+    except Exception as e:
+        assert True, "Should not be able to pick up a non-existent belt"

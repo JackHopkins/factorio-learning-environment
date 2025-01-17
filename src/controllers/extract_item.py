@@ -35,7 +35,7 @@ class ExtractItem(Action):
                                        x,
                                        y)
         if isinstance(response, str):
-            msg = str(response).split(':')[-1].strip()
+            msg = self.get_error_message(response)
             raise Exception(f"Could not extract: {msg}")
 
         if not response or response < 1:

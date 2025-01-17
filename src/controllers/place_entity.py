@@ -63,7 +63,7 @@ class PlaceObject(Action):
             response, elapsed = self.execute(PLAYER, name, factorio_direction, x, y, exact)
         except Exception as e:
             try:
-                msg = str(e).split(':')[-1].replace('"', '')
+                msg = self.get_error_message(str(e))
                 raise Exception(f"Could not place {name} at ({x}, {y}), {msg}")
             except Exception:
                 raise Exception(f"Could not place {name} at ({x}, {y})", e)

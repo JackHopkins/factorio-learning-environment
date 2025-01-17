@@ -1,6 +1,6 @@
 import pytest
 
-from factorio_entities import Position, Direction
+from factorio_entities import Position, Direction, BeltGroup, PipeGroup
 from factorio_types import Prototype, Resource
 
 @pytest.fixture()
@@ -11,6 +11,7 @@ def game(instance):
                                 "iron-ore": 62, "stone": 50, "electric-mining-drill": 10, "small-electric-pole": 200, "pipe": 100,
                                 "assembling-machine-1": 5}
     instance.reset()
+    instance.speed(10)
     yield instance
 
 def test_multi_drill_multi_furnace(game):
@@ -135,8 +136,11 @@ def test_multi_drill_multi_furnace(game):
     output_inserter3 = game.rotate_entity(output_inserter3, Direction.LEFT)
     output_inserter3 = game.insert_item(Prototype.Coal, output_inserter3, quantity=10)
 
+    entities = game.get_entities()
     game.sleep(30)
 
     production_stats = game.production_stats()
     assert production_stats['output']['copper-plate'] > 10
+
+
 

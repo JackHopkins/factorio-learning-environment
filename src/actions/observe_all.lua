@@ -26,7 +26,7 @@ global.actions.observe_all = function(player_index,
 
     if include['local_environment'] == nil or include['local_environment'] then
         --response['local_environment'] = get_local_environment(player,  surface, localBoundingBox, field_x, field_y, debug)
-        response['local_environment'] = get_locality(player, surface, localBoundingBox)
+        response['local_environment'] = get_locality(player.position, surface, localBoundingBox)
     end
 
     if include['buildable'] == nil or include['buildable'] then

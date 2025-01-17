@@ -55,6 +55,128 @@ def _construct_group(entities: List[Entity],
                          position=position)
 
 
+
+# def agglomerate_groupable_entities(belts: List[Entity]) -> List[BeltGroup]:
+#     """
+#     Group contiguous transport belts into BeltGroup objects by finding end belts
+#     and tracing backwards through their inputs.
+#
+#     Args:
+#         belts: List of TransportBelt objects to group
+#
+#     Returns:
+#         List of BeltGroup objects, each containing connected belts
+#     """
+#     if not belts:
+#         return []
+#
+#     prototype = belts[0].prototype if isinstance(belts[0], Entity) else Prototype.TransportBelt
+#
+#     # Create position-to-belt mapping for quick lookups
+#     position_to_belt = {(belt.position.x, belt.position.y): belt for belt in belts}
+#     processed_belts = set()
+#     belt_groups = []
+#
+#     def trace_belt_chain(start_belt: TransportBelt) -> List[TransportBelt]:
+#         """
+#         Trace both backwards and forwards from a belt to find all connected belts
+#         """
+#         chain = []
+#         to_process = [start_belt]
+#         seen_positions = set()
+#
+#         while to_process:
+#             current_belt = to_process.pop(0)
+#             current_pos = (current_belt.position.x, current_belt.position.y)
+#
+#             if current_pos in seen_positions:
+#                 continue
+#
+#             chain.append(current_belt)
+#             seen_positions.add(current_pos)
+#
+#             # Look for belts that output to current belt's input
+#             input_pos = (current_belt.input_position.x, current_belt.input_position.y)
+#             if input_pos in position_to_belt:
+#                 feeding_belt = position_to_belt[input_pos]
+#                 # Verify it actually connects
+#                 if (feeding_belt.output_position.x == current_belt.position.x and
+#                         feeding_belt.output_position.y == current_belt.position.y):
+#                     to_process.append(feeding_belt)
+#
+#             # Look for belts that take input from current belt's output
+#             output_pos = (current_belt.output_position.x, current_belt.output_position.y)
+#             if output_pos in position_to_belt:
+#                 receiving_belt = position_to_belt[output_pos]
+#                 # Verify it actually connects
+#                 if (receiving_belt.input_position.x == current_belt.output_position.x and
+#                         receiving_belt.input_position.y == current_belt.output_position.y):
+#                     to_process.append(receiving_belt)
+#
+#         return chain
+#
+#     def find_end_belts(belts_dict: dict) -> List[TransportBelt]:
+#         """Find all belts that don't output to another belt"""
+#         end_belts = []
+#         for belt in belts_dict.values():
+#             output_pos = (belt.output_position.x, belt.output_position.y)
+#             # If output position isn't another belt's position, it's an end belt
+#             if output_pos not in position_to_belt:
+#                 end_belts.append(belt)
+#         return end_belts
+#
+#     if prototype == Prototype.TransportBelt or prototype == Prototype.TransportBelt.name:
+#         # Find all end belts
+#         end_belts = find_end_belts(position_to_belt)
+#
+#         # Process each end belt that hasn't been handled yet
+#         for end_belt in end_belts:
+#             if (end_belt.position.x, end_belt.position.y) in processed_belts:
+#                 continue
+#
+#             # Trace back through the chain of belts
+#             belt_chain = trace_belt_chain(end_belt)
+#
+#             # Mark all these belts as processed
+#             processed_belts.update((belt.position.x, belt.position.y) for belt in belt_chain)
+#
+#             # Calculate input/output positions for the group
+#             input_pos = belt_chain[0].input_position
+#             output_pos = belt_chain[-1].output_position
+#
+#             # Create inventory for the group
+#             inventory = Inventory()
+#             for belt in belt_chain:
+#                 if hasattr(belt, 'inventory') and belt.inventory:
+#                     for item, value in belt.inventory.items():
+#                         current_value = inventory.get(item, 0)
+#                         inventory[item] = current_value + value
+#
+#             # Determine status
+#             if any(belt.warnings and belt.warnings[0] == 'full' for belt in belt_chain):
+#                 status = EntityStatus.FULL_OUTPUT
+#             elif not inventory:
+#                 status = EntityStatus.EMPTY
+#             else:
+#                 status = EntityStatus.WORKING
+#
+#             # Create the belt group
+#             group = BeltGroup(
+#                 belts=belt_chain,
+#                 inventory=inventory,
+#                 input_positions=[input_pos],
+#                 output_positions=[output_pos],
+#                 status=status,
+#                 position=belt_chain[0].position
+#             )
+#             belt_groups.append(group)
+#
+#     elif prototype == Prototype.Pipe:
+#         # Handle pipe grouping using existing logic
+#         return [] #_construct_pipe_groups(belts)
+#
+#     return belt_groups
+
 def agglomerate_groupable_entities(belts: List[Entity]) -> List[BeltGroup]:
     """
     Group contiguous transport belts into BeltGroup objects.

@@ -87,6 +87,9 @@ class Prototype(enum.Enum):
     MilitarySciencePack = "military-science-pack", None # Crafting requires 1 piercing round magazine, 1 grenade, 1 gun turret
     EngineUnit = "engine-unit", None # Crafting requires 1 iron gear wheel, 1 pipe, 2 engine units
 
+    BeltGroup = "belt-group", BeltGroup
+    PipeGroup = "pipe-group", PipeGroup
+
 prototype_by_name = {prototype.value[0]: prototype for prototype in Prototype}
 
 import enum

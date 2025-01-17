@@ -178,22 +178,36 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         }
 
         if have_built then
+
             player.remove_item{name = entity, count = 1}
             game.print("Placed " .. entity .. " at " .. position.x .. ", " .. position.y)
 
+
             -- Find and return the placed entity
-            local width = 0.5
-            local height = 0.5
+            local width = 1
+            local height = 1
             local target_area = {
                 {position.x - width, position.y - height},
                 {position.x + width, position.y + height}
             }
             local entities = player.surface.find_entities_filtered{area = target_area, name = entity}
 
-            if #entities > 0 then
-                return global.utils.serialize_entity(entities[1])
+            local closest = nil
+            local closest_distance = 100000
+
+            if #entities == 0 then
+                error("\"Could not find placed entity\"")
             end
-            error("\"Could not find placed entity\"")
+            -- Order entities by distance to the position
+            for _, _entity in ipairs(entities) do
+                local distance = ((position.x - (_entity.position.x-0.5)) ^ 2 + (position.y - (_entity.position.y-0.5)) ^ 2) ^ 0.5
+                if distance < closest_distance then
+                    closest_distance = distance
+                    closest = _entity
+                end
+            end
+            game.print(serpent.line(closest.position)..","..serpent.line(position))
+            return global.utils.serialize_entity(closest)
         end
     end
 

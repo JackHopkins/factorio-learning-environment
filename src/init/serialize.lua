@@ -896,6 +896,7 @@ global.utils.serialize_entity = function(entity)
 		end
 		--create_beam_point_with_direction(game.players[1], entity.direction , {x = x, y = y})
 		serialized.output_position = {x = x, y = y}
+		serialized.position = {x = entity.position.x, y = entity.position.y}
 		--serialized.inventory = entity.get_transport_line(1).get_contents()
 			-- Get contents from both lines
 		local line1 = entity.get_transport_line(1)

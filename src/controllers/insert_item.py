@@ -59,7 +59,7 @@ class InsertItem(Action):
                     position=target.position
                 )
                 if not group:
-                    raise Exception("Could not find transport belt at position", target.position)
+                    raise Exception(f"Could not find transport belt at position: {target.position}")
                 return [group[0]]
 
             return target
@@ -78,14 +78,14 @@ class InsertItem(Action):
             elif isinstance(target, BeltGroup):
                 group = self.get_entities({Prototype.TransportBelt, Prototype.FastTransportBelt, Prototype.ExpressTransportBelt}, position=target.position)
                 if not group:
-                    raise Exception("Could not find transport belt at position", target.position)
+                    raise Exception(f"Could not find transport belt at position: {target.position}")
                 return [group[0]]
             elif isinstance(target, PipeGroup):
                 group = self.get_entities(
                     {Prototype.Pipe},
                     position=target.position)
                 if not group:
-                    raise Exception("Could not find pipes at position", target.position)
+                    raise Exception(f"Could not find pipes at position: {target.position}")
                 return [group[0]]
             else:
                raise Exception("Unknown Entity Group type")

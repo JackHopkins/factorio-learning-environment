@@ -32,7 +32,8 @@ class GetResourcePatch(Action):
         response, time_elapsed = self.execute(PLAYER, resource[0], position.x, position.y, radius)
 
         if not isinstance(response, dict) or response == {}:
-            raise Exception(f"Could not get {resource[0]} at {position}.", response)
+            top_level_message = str(response).split(":")[-1].strip()
+            raise Exception(f"Could not get {resource[0]} at {position}: {top_level_message}")
 
         left_top = Position(x=response['bounding_box']['left_top']['x'], y=response['bounding_box']['left_top']['y'])
         right_bottom = Position(x=response['bounding_box']['right_bottom']['x'], y=response['bounding_box']['right_bottom']['y'])

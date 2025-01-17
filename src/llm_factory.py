@@ -65,7 +65,10 @@ class LLMFactory:
             messages = self.remove_whitespace_blocks(messages)
             messages = self.merge_contiguous_messages(messages)
 
+            if not system_message:
+                raise RuntimeError("No system message!!")
             try:
+
                 client = anthropic.Anthropic()
                 # Use asyncio.to_thread for CPU-bound operations
                 response = await asyncio.to_thread(

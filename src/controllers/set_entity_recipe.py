@@ -35,7 +35,7 @@ class SetEntityRecipe(Action):
         response, elapsed = self.execute(PLAYER, name, x, y)
 
         if not isinstance(response, dict):
-            raise Exception(f"Could not set recipe to {name}", response)
+            raise Exception(f"Could not set recipe to {name}"+str(response).split(":")[-1].strip())
 
         cleaned_response = self.clean_response(response)
 

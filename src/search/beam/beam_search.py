@@ -307,7 +307,8 @@ class ParallelBeamSearch:
                  version: int,
                  version_description: str,
                  current_depth=0,
-                 formatter: ConversationFormatter = DefaultFormatter(),):
+                 formatter: ConversationFormatter = DefaultFormatter(),
+                 base_port=27015):
 
 
         self.console = Console()
@@ -325,7 +326,8 @@ class ParallelBeamSearch:
         instances_per_group = floor(len(instances) / config.beam_width)
         self.logger = GroupedFactorioLogger(
             n_groups=config.beam_width,
-            instances_per_group=instances_per_group
+            instances_per_group=instances_per_group,
+            base_port = base_port
         )
         self.logger.start()
 

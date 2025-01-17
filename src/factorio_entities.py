@@ -117,6 +117,12 @@ class Inventory(BaseModel):
     def __len__(self) -> int:
         return len(self.__dict__)
 
+    def keys(self):
+        return self.__dict__.keys()
+
+    def values(self):
+        return self.__dict__.values()
+
 
 class Direction(Enum):
     UP = NORTH = 0
@@ -231,7 +237,6 @@ class TileDimensions(BaseModel):
     tile_width: float
     tile_height: float
 
-
 class Ingredient(BaseModel):
     name: str
     count: Optional[int] = 1
@@ -272,20 +277,25 @@ class Entity(BaseModel):
         # Only includes the fields we  want to present to the agent
         # Get all instance attributes
         all_fields = self.__dict__
+
         # Filter out private attributes and excluded fields
-        excluded_fields = {'dimensions', 'prototype', 'type'}
+        excluded_fields = {'dimensions', 'prototype', 'type', 'health'}
+        rename_fields = {}#'tile_dimensions': 'size'}
         repr_dict = {}
 
         for key, value in all_fields.items():
             # Remove the '_' prefix that pydantic adds to fields
             clean_key = key.lstrip('_')
             if clean_key not in excluded_fields and not clean_key.startswith('__'):
+                if clean_key in rename_fields.keys():
+                    clean_key = rename_fields[clean_key]
                 # Handle enum values specially
                 if isinstance(value, Enum):
                     repr_dict[clean_key] = value.name
                 else:
                     if (clean_key == 'warnings' and value) or clean_key != 'warnings': # Don't show empty warnings list
                         repr_dict[clean_key] = value
+
 
         # Convert to string format
         items = [f"{k}={v!r}" for k, v in repr_dict.items()]

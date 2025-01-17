@@ -1076,6 +1076,8 @@ global.utils.serialize_entity = function(entity)
 			x = entity.drop_position.x,
 			y = entity.drop_position.y
 		}
+		serialized.drop_position.x = math.round(serialized.drop_position.x * 2 ) / 2
+		serialized.drop_position.y = math.round(serialized.drop_position.y * 2 ) / 2
 		game.print("Mining drill drop position: " .. serpent.line(serialized.drop_position))
 		local burner = entity.burner
 		if burner then

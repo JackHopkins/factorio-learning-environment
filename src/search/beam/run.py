@@ -71,17 +71,25 @@ OBSERVATION_SPACE = \
     This response indicates that `print(get_entities())` was called at line 78 to get state of the entities on the map. There are four stone furnaces, two of which are working and two of which have no ingredients to smelt. Non-working entities can be determined by checking the `warnings` and `status` fields.
    """
 
-HISTORY_SUMMARIZATION_INSTRUCTIONS = \
-"""
-Review the code interaction an agent has written with the Factorio REPL Environment and provide a report. 
-
-Focus on what they attempted to achieve, any errors that occurred, and the outcomes of their actions.
-
-Provide specific tips and successful patterns that you see in the code, and any examples that you can provide.
-"""
-
 with open("../MANUAL.md", "r") as f:
     MANUAL = f.read()
+
+HISTORY_SUMMARIZATION_INSTRUCTIONS = \
+f"""
+{MANUAL}
+
+# Instructions
+
+We are refreshing the context now.
+
+Review the code interactions you have had with the Factorio REPL Environment, and the responses returned by the environment which are in the user messages.
+ 
+Summarize what you _attempted_ to achieve, any errors that occurred, and the outcomes of your actions.
+
+Provide specific tips and logic patterns (and antipatterns) you think would help you avoid these specific errors in future, using the above manual and API schema as a reference. 
+ 
+Write in markdown. Do NOT include any code snippets in your response.
+"""
 
 
 async def main():
@@ -109,25 +117,26 @@ async def main():
         print(
             "\033[91mError initialising Factorio instances. Are the docker containers running, and have they been activated?\033[91m")
         return
+    instances = instances[-4:]
     API_SCHEMA = instances[0].get_system_prompt()
     prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\nObservations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
     initial_state = GameState.from_instance(instances[0])
 
 
 
-    for model in ['claude-3-5-sonnet-20241022']:#['gemini-2.0-flash-exp']: #['gpt-4o-mini']:#['deepseek-chat']:#['gemini-2.0-flash-exp']: #['meta-llama/Llama-3.3-70B-Instruct-Turbo']:#['gemini-2.0-flash-exp']:#['gpt-4o']:#['claude-3-5-sonnet-20241022']:
+    for model in ['gpt-4o-mini']:#['claude-3-5-sonnet-20241022']:#['gemini-2.0-flash-exp']: #['gpt-4o-mini']:#['deepseek-chat']:#['gemini-2.0-flash-exp']: #['meta-llama/Llama-3.3-70B-Instruct-Turbo']:#['gemini-2.0-flash-exp']:#['gpt-4o']:#['claude-3-5-sonnet-20241022']:
         # Get largest version from DB for initialisation purposes. If no versions exist, start at 0.
         largest_version_to_date = await db_client.get_largest_version()
 
         config = ParallelBeamConfig(
             beam_width=4,  # 4 parallel groups = beam width of 4
-            expansion_factor=4,  # Generate 4 candidates per position
+            expansion_factor=1,  # Generate 4 candidates per position
             system_prompt=prompt,
             initial_state=initial_state,
             model=model,
             beam_kwargs={
                 'error_penalty': 10,
-                'frequency_penalty': 0.25
+                #'frequency_penalty': 0.25
             }
         )
         #model = 'claude-3-5-sonnet-20241022'
@@ -137,10 +146,11 @@ async def main():
         llm_factory = LLMFactory(model=model)
 
         formatter = RecursiveFormatter(
-            chunk_size=16,
+            chunk_size=32,
             llm_factory=llm_factory,
             cache_dir='./summary_cache',
-            summary_instructions=HISTORY_SUMMARIZATION_INSTRUCTIONS
+            summary_instructions=API_SCHEMA + HISTORY_SUMMARIZATION_INSTRUCTIONS,
+            summarize_history=False # See if summarizing history makes it worse.
         )
 
         parallel_beam = ParallelBeamSearch(
@@ -151,11 +161,12 @@ async def main():
             version=largest_version_to_date+1,
             version_description=f"model:{model}\ntype:beam",
             current_depth=current_depth,
-            formatter=formatter
+            formatter=formatter,
+            base_port=instances[0].tcp_port
         )
 
         # Run search
-        await parallel_beam.search(n_iterations=128)
+        await parallel_beam.search(n_iterations=256)
 
 
 if __name__ == '__main__':

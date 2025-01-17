@@ -43,7 +43,8 @@ class HarvestResource(Action):
         response, elapsed = self.execute(PLAYER, x, y, quantity, radius)
 
         if response != {} and response == 0 or isinstance(response, str):
-            raise Exception("Could not harvest.", response)
+            msg = response.split(":")[-1].strip()
+            raise Exception(f"Could not harvest. {msg}")
 
         # If `fast` is turned off - we need to long poll the game state to ensure the player has moved
         if not self.game_state.fast:

@@ -25,8 +25,8 @@ def game(instance):
 
 def test_insert_and_fuel_furnace(game):
     furnace = game.place_entity(Prototype.StoneFurnace, direction=Direction.UP, position=Position(x=0, y=0))
-    furnace = game.insert_item(Prototype.IronOre, furnace, quantity=100)
-    furnace = game.insert_item(Prototype.Coal, furnace, quantity=100)
+    furnace = game.insert_item(Prototype.IronOre, furnace, quantity=50)
+    furnace = game.insert_item(Prototype.Coal, furnace, quantity=50)
 
     assert furnace.status == EntityStatus.WORKING
     assert furnace.fuel[Prototype.Coal] == 50

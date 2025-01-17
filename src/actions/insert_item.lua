@@ -6,13 +6,24 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
     -- Check if player has enough items
     local item_count = player.get_item_count(insert_item)
     if item_count == 0 then
-        error('\"No '..insert_item..' to insert\"')
+        error('\"No '..insert_item..' to insert from your inventory\"')
     end
 
     local closest_distance = math.huge
     local closest_entity = nil
     local area = {{position.x - 1, position.y - 1}, {position.x + 1, position.y + 1}}
     local buildings = surface.find_entities_filtered{area = area}
+
+    -- Function to get inventory fullness information
+    local function get_inventory_info(entity)
+        if entity.get_inventory then
+            local inv = entity.get_inventory(defines.inventory.chest)
+            if inv then
+                return string.format("(%d/%d)", #inv, #inv.get_bar())
+            end
+        end
+        return ""
+    end
 
     -- Function to check if an item can be inserted into an entity
     local function can_insert_item(entity, item_name)
@@ -141,42 +152,6 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
         return 0  -- Could not insert on either line
     end
 
-    local function insert_on_belt2(belt, item_name, count)
-        local inserted = 0
-        local transport_line = belt.get_transport_line(1)
-
-        local function try_insert()
-            if transport_line.can_insert_at_back() then
-                local inserted_on_belt = transport_line.insert_at_back({name = item_name, count = 1})
-                if inserted_on_belt then
-                    inserted = inserted + 1
-                    player.remove_item{name=item_name, count=1}
-                    return true
-                end
-            end
-            return false
-        end
-
-        -- Initial insertion attempt
-        try_insert()
-
-        -- Schedule repeated insertion attempts
-        for i = 2, count do
-            local ticks_to_wait = 5
-            script.on_nth_tick(ticks_to_wait, function(event)
-                if try_insert() then
-                    if inserted == count then
-                        script.on_nth_tick(ticks_to_wait, nil)  -- Stop the scheduled insertions
-                    end
-                else
-                    script.on_nth_tick(ticks_to_wait, nil)  -- Stop if insertion fails
-                end
-            end)
-        end
-
-        return inserted
-    end
-
     -- Determine how many items can be inserted
     local insertable_count = math.min(count, item_count)
 
@@ -219,24 +194,17 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
         game.print("Successfully inserted " .. inserted .. " items.")
         return global.utils.serialize_entity(closest_entity)
     else
-        local inventory_full = false
-        -- Check if the entity has an inventory and if it's full
-        if closest_entity.get_inventory then
-            local inv = closest_entity.get_inventory(defines.inventory.chest)
-            if inv and inv.is_full() then
-                inventory_full = true
-            end
-        end
-
+        local inventory_info = get_inventory_info(closest_entity)
         local error_msg = string.format(
             "\"Failed to insert %s into %s (type %s) at position %s. " ..
-            "Attempted to insert %d items. %s\"",
+            "Attempted to insert %d items. %s %s\"",
             insert_item,
             closest_entity.name,
             closest_entity.type,
             serpent.line(closest_entity.position),
             insertable_count,
-            inventory_full and "Inventory is full." or "Entity might not accept this item or has no available space."
+            inventory_info ~= "" and "Inventory is full " .. inventory_info or "Entity might not accept this item or has no available space.",
+            inventory_info
         )
         error(error_msg)
     end

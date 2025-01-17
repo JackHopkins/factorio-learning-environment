@@ -160,38 +160,59 @@ class RunVisualizer:
         ])
 
         # Add the axis environment with adjusted positioning
+        # latex_code.extend([
+        #     r"\begin{axis}[",
+        #     r"    name=mainplot,",
+        #     r"    set layers=standard,",
+        #     r"    every axis plot/.style={on layer=main},",
+        #     r"    width=\textwidth,",
+        #     r"    height=0.55\textwidth,",
+        #     r"    anchor=north west,",
+        #     r"    at={(0,0.85\textwidth)},",  # Adjusted position to be closer to legend
+        #     r"    xlabel=Environment Steps,",
+        #     r"    ylabel=Total GDP,",
+        #     r"    grid style={line width=.1pt, draw=gray!10},",
+        #     r"    major grid style={line width=.2pt,draw=gray!50},",
+        #     r"    grid=both,",
+        #     r"    minor tick num=1,",
+        #     r"    clip=false,",
+        #     r"    xmode=log,",
+        #     r"    log basis x=2,",
+        #     r"    ymode=log,",
+        #     r"    log basis y=2,",
+        #     r"    enlarge x limits=false,",
+        #     r"    xmin=1,",
+        #     r"    xmax=256,",
+        #     r"    xtick={1,2,4,8,16,32,64,128,256},",
+        #     r"    xticklabels={$2^0$,$2^1$,$2^2$,$2^3$,$2^4$,$2^5$,$2^6$,$2^7$,$2^8$},",
+        #     r"    ymin=16,",
+        #     r"    ymax=65536,",
+        #     r"    ytick={16, 32, 64,128,256,512,1024,2048,4096,8192,16384,32768,65536},",
+        #     r"    yticklabels={$2^4$,$2^5$,$2^6$,$2^7$,$2^8$,$2^9$,$2^{10}$,$2^{11}$,$2^{12}$,$2^{13}$,$2^{14}$,$2^{15}$,$2^{16}$,$2^{17}$,$2^{18}$},",
+        #     r"    clip=false",
+        #     r"]"
+        # ])
+
         latex_code.extend([
             r"\begin{axis}[",
-            r"    name=mainplot,",
-            r"    set layers=standard,",
-            r"    every axis plot/.style={on layer=main},",
-            r"    width=\textwidth,",
-            r"    height=0.55\textwidth,",
-            r"    anchor=north west,",
-            r"    at={(0,0.85\textwidth)},",
-            r"    xlabel=Environment Steps,",
-            r"    ylabel=Total GDP,",
-            r"    grid style={line width=.1pt, draw=gray!10},",
-            r"    major grid style={line width=.2pt,draw=gray!50},",
-            r"    grid=both,",
-            r"    minor tick num=9,",  # Changed to show all minor ticks between powers of 10
-            r"    clip=false,",
-            r"    xmode=log,",
-            r"    log basis x=2,",  # Keep base 2 for x-axis
-            r"    ymode=log,",
-            r"    log basis y=10,",  # Changed to base 10
-            r"    enlarge x limits=false,",
-            r"    xmin=1,",
-            r"    xmax=128,",
-            r"    xtick={1,2,4,8,16,32,64,128},",
-            r"    xticklabels={$2^0$,$2^1$,$2^2$,$2^3$,$2^4$,$2^5$,$2^6$,$2^7$},",
-            r"    ymin=100,",  # Adjusted for base 10
-            r"    ymax=100000,",  # Adjusted for base 10
-            r"    ytick={100,1000,10000,100000},",  # Powers of 10
-            r"    yticklabels={$10^2$,$10^3$,$10^4$,$10^5$},",
-            r"    clip=false",
+            r"   name=mainplot,",
+            r"   set layers=standard,",
+            r"   every axis plot/.style={on layer=main},",
+            r"   width=\textwidth,",
+            r"   height=0.55\textwidth,",
+            r"   anchor=north west,",
+            r"   at={(0,0.85\textwidth)},",
+            r"   xlabel=Steps,",
+            r"   ylabel=Total GDP,",
+            r"   xmode=log, ymode=log,",
+            r"   xmin=1, xmax=1e3,",
+            r"   ymin=10, ymax=1e5,",
+            r"   grid=both,",
+            r"   major grid style={gray!10}",
             r"]"
         ])
+
+
 
         # Plot all series data with chunking for memory optimization
         for i, version in enumerate(self.version_data):
@@ -202,9 +223,9 @@ class RunVisualizer:
             color = colors[i % len(colors)]
 
             # Split coordinates into chunks
-            chunk_size = 50
-            valid_stats = {d: s for d, s in depth_stats.items() if s['mean'] > 64}
-            coords = [(d, max(s['mean'], 64)) for d, s in valid_stats.items()]
+            chunk_size = 250
+            valid_stats = {d: s for d, s in depth_stats.items() if s['mean'] > 4}
+            coords = [(d, max(s['mean'], 4)) for d, s in valid_stats.items()]
 
             for chunk_start in range(0, len(coords), chunk_size):
                 chunk = coords[chunk_start:chunk_start + chunk_size]
@@ -228,10 +249,10 @@ class RunVisualizer:
                     continue
 
                 value = depth_stats[depth]['mean']
-                if value <= 64:
+                if value <= 4:
                     continue
 
-                base_position = max(value, 64)
+                base_position = max(value, 4)
 
                 # Process achievements in smaller batches
                 for j, achievement in enumerate(achievements):
@@ -310,14 +331,18 @@ async def main():
     labels = {
         #391: 'claude-3-5-sonnet-20241022',
         392: 'gpt-4o',
-        400: 'gpt-4o-mini',
+        #400: 'gpt-4o-mini',
         405: 'claude-3-5-sonnet-20241022',
-        416: 'claude-new'
+        416: 'claude-new',
+        #424: 'gpt-4o-mini-2',
+        #425: 'gpt-4o-mini-3'
+        427: 'gpt-4o-mini',
+        429: 'gpt-4o-mini@4'
     }
     versions = list(labels.keys())
     visualizer.load_versions(versions, labels)
-    visualizer.process_achievements(max_depth=128)
-    visualizer.export_latex_progression('mcts_progression_content.tex', max_depth=128)
+    visualizer.process_achievements(max_depth=256)
+    visualizer.export_latex_progression('mcts_progression_content.tex', max_depth=256)
 
 
 if __name__ == '__main__':

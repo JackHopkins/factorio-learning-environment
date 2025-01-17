@@ -28,7 +28,7 @@ from search.model.game_state import GameState, wrap_for_serialization, unwrap_af
 from factorio_entities import *
 from factorio_lua_script_manager import FactorioLuaScriptManager
 from factorio_transaction import FactorioTransaction
-from factorio_types import Prototype, Resource, prototype_by_name
+from factorio_types import Prototype, Resource, prototype_by_name, Technology
 from models.observation_state import ObservationState
 from src.factorio_rcon_utils import _lua2python
 from src.rcon.factorio_rcon import RCONClient
@@ -126,6 +126,8 @@ class FactorioInstance:
         self.EntityStatus = EntityStatus
         self.BoundingBox = BoundingBox
         self.BeltGroup = BeltGroup
+        self.Technology = Technology
+        self.Recipe = Recipe
 
         #
         self.prototype_by_name = prototype_by_name

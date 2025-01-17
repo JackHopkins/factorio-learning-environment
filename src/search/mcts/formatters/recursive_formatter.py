@@ -23,7 +23,8 @@ class RecursiveFormatter(ConversationFormatter):
                  llm_factory: Optional[LLMFactory] = None,
                  cache_dir: str = ".conversation_cache",
                  summary_instructions: str = DEFAULT_INSTRUCTIONS,
-                 truncate_entity_data: bool = True):
+                 truncate_entity_data: bool = True,
+                 summarize_history: bool = True):
         """
 
         @param chunk_size:
@@ -38,6 +39,9 @@ class RecursiveFormatter(ConversationFormatter):
         self.summary_instructions = summary_instructions
         self.truncate_entity_data = truncate_entity_data
         self.entity_data_pattern = re.compile(r': \[((.|[\n])+)]",\)')
+        self.summarize_history = summarize_history
+
+        # Ensure cache directory exists.
         os.makedirs(cache_dir, exist_ok=True)
 
     def _get_chunk_hash(self, messages: List[Message]) -> str:
@@ -213,7 +217,12 @@ class RecursiveFormatter(ConversationFormatter):
 
         # Keep the most recent chunk as-is
         recent_messages = messages[-self.chunk_size:]
-        historical_messages = messages[:-self.chunk_size]
+
+        # We turn this off
+        if self.summarize_history:
+            historical_messages = messages[:-self.chunk_size]
+        else:
+            historical_messages = []
 
         if historical_messages:
             # Recursively summarize historical messages from left to right

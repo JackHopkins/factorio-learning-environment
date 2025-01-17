@@ -247,7 +247,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         direction = orientation,
         force = player.force
     })
-
+    can_build = true
     -- Modify the error message in the can_build check
     if not can_build then
         --local area = {{new_position.x - 0.5, new_position.y - 0.5}, {new_position.x + 0.5, new_position.y + 0.5}}

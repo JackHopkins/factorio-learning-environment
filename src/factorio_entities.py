@@ -168,18 +168,22 @@ class Position(BaseModel):
     def is_close(self, a: 'Position', tolerance: float = 0.5) -> bool:
         return abs(self.x - a.x) < tolerance and abs(self.y - a.y) < tolerance
 
-    def above(self) -> 'Position':
-        return Position(x=self.x, y=self.y - 1)
-    def up(self) -> 'Position':
-        return self.above()
-    def below(self) -> 'Position':
-        return Position(x=self.x, y=self.y + 1)
-    def down(self) -> 'Position':
-        return self.below()
-    def left(self) -> 'Position':
-        return Position(x=self.x - 1, y=self.y)
-    def right(self) -> 'Position':
-        return Position(x=self.x + 1, y=self.y)
+    def _modifier(self, args):
+        if len(args) > 0 and isinstance(args[0], int):
+            return args[0]
+        return 1
+    def above(self, *args) -> 'Position':
+        return Position(x=self.x, y=self.y - self._modifier(args))
+    def up(self, *args) -> 'Position':
+        return self.above(args)
+    def below(self, *args) -> 'Position':
+        return Position(x=self.x, y=self.y + self._modifier(args))
+    def down(self, *args) -> 'Position':
+        return self.below(args)
+    def left(self, *args) -> 'Position':
+        return Position(x=self.x - self._modifier(args), y=self.y)
+    def right(self, *args) -> 'Position':
+        return Position(x=self.x + self._modifier(args), y=self.y)
     def __eq__(self, other) -> bool:
         if not isinstance(other, Position):
             return NotImplemented

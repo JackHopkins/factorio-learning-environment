@@ -1,6 +1,17 @@
+import pytest
+
 from factorio_entities import Position, Direction
 from factorio_types import Prototype, Resource
 
+@pytest.fixture()
+def game(instance):
+    instance.initial_inventory = {"coal": 200, "burner-mining-drill": 10, "wooden-chest": 10, "burner-inserter": 10, "transport-belt": 200,
+                                "stone-furnace": 5, "boiler": 4, "offshore-pump": 3, "steam-engine": 2,
+                                "iron-gear-wheel": 22, "iron-plate": 19, "copper-plate": 52, "electronic-circuit": 99,
+                                "iron-ore": 62, "stone": 50, "electric-mining-drill": 10, "small-electric-pole": 200, "pipe": 100,
+                                "assembling-machine-1": 5}
+    instance.reset()
+    yield instance
 
 def test_multi_drill_multi_furnace(game):
 
@@ -31,14 +42,14 @@ def test_multi_drill_multi_furnace(game):
     # Log the positions for next step
     print(f"Drill positions: {drill1.position}, {drill2.position}, {drill3.position}")
     # Place first furnace north of middle drill
-    furnace1_pos = Position(x=22.0, y=10.0)
+    furnace1_pos = Position(x=22.0, y=15.0)
     game.move_to(furnace1_pos)
     furnace1 = game.place_entity(Prototype.StoneFurnace, position=furnace1_pos)
     furnace1 = game.insert_item(Prototype.Coal, furnace1, quantity=5)
     print(f"Placed first furnace at {furnace1.position}")
 
     # Place second furnace next to first
-    furnace2_pos = Position(x=24.0, y=10.0)
+    furnace2_pos = Position(x=24.0, y=15.0)
     game.move_to(furnace2_pos)
     furnace2 = game.place_entity(Prototype.StoneFurnace, position=furnace2_pos)
     furnace2 = game.insert_item(Prototype.Coal, furnace2, quantity=5)
@@ -74,25 +85,20 @@ def test_multi_drill_multi_furnace(game):
     inserter2 = game.insert_item(Prototype.Coal, inserter2, quantity=1)
     print(f"Placed second inserter at {inserter2.position}")
 
-    # Connect collection line to furnace inserters
-    game.connect_entities(drill2.drop_position, inserter1.pickup_position, Prototype.TransportBelt)
-    game.connect_entities(drill3.drop_position, inserter2.pickup_position, Prototype.TransportBelt)
-
-    # Log current state
-    # Get existing inserters
-    inserter1 = game.get_entity(Prototype.BurnerInserter, Position(x=22.5, y=11.5))
-    inserter2 = game.get_entity(Prototype.BurnerInserter, Position(x=24.5, y=11.5))
-
     # Rotate input inserters to pick up from belts and insert into furnaces
     inserter1 = game.rotate_entity(inserter1, Direction.UP)
     inserter2 = game.rotate_entity(inserter2, Direction.UP)
+
+    # Connect collection line to furnace inserters
+    game.connect_entities(drill2.drop_position, inserter1.pickup_position, Prototype.TransportBelt)
+    game.connect_entities(drill3.drop_position, inserter2.pickup_position, Prototype.TransportBelt)
 
     # Add output inserters for furnaces
     # First furnace output inserter
     output_inserter1 = game.place_entity_next_to(
         Prototype.BurnerInserter,
-        reference_position=Position(x=22.0, y=16.0),  # first furnace position
-        direction=Direction.RIGHT,
+        reference_position=furnace1_pos,  # first furnace position
+        direction=Direction.UP,
         spacing=0
         )
     output_inserter1 = game.insert_item(Prototype.Coal, output_inserter1, quantity=1)
@@ -101,20 +107,36 @@ def test_multi_drill_multi_furnace(game):
     # Second furnace output inserter
     output_inserter2 = game.place_entity_next_to(
         Prototype.BurnerInserter,
-        reference_position=Position(x=24.0, y=16.0),  # second furnace position
-        direction=Direction.RIGHT,
+        reference_position=furnace2_pos,  # second furnace position
+        direction=Direction.UP,
         spacing=0
         )
     output_inserter2 = game.insert_item(Prototype.Coal, output_inserter2, quantity=1)
     print(f"Placed second output inserter at {output_inserter2.position}")
 
     # Place a chest to collect copper plates
-    collection_chest = game.place_entity(
+    collection_chest = game.place_entity_next_to(
         Prototype.WoodenChest,
-        position=Position(x=26.0, y=16.0)  # Right of second furnace
+        reference_position=furnace2_pos,  # Right of second furnace
+        spacing=2
         )
     print(f"Placed collection chest at {collection_chest.position}")
 
     # Connect output inserters to chest with belts
-    game.connect_entities(output_inserter1.drop_position, collection_chest.position, Prototype.TransportBelt)
-    game.connect_entities(output_inserter2.drop_position, collection_chest.position, Prototype.TransportBelt)
+    game.connect_entities(output_inserter1.drop_position, output_inserter2.drop_position, Prototype.TransportBelt)
+    game.connect_entities(output_inserter2.drop_position, collection_chest.position.right(2), Prototype.TransportBelt)
+
+    output_inserter3 = game.place_entity_next_to(
+        Prototype.BurnerInserter,
+        reference_position=collection_chest.position,  # second furnace position
+        direction=Direction.RIGHT,
+        spacing=0
+    )
+    output_inserter3 = game.rotate_entity(output_inserter3, Direction.LEFT)
+    output_inserter3 = game.insert_item(Prototype.Coal, output_inserter3, quantity=10)
+
+    game.sleep(30)
+
+    production_stats = game.production_stats()
+    assert production_stats['output']['copper-plate'] > 10
+

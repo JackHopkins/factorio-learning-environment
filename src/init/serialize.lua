@@ -1168,7 +1168,7 @@ global.utils.serialize_entity = function(entity)
 	end
 
 	serialized.direction = get_inverse_entity_direction(entity.name, entity.direction) --api_direction_map[entity.direction]
-
+	serialized.electric_network_id = entity.electric_network_id
     -- Post-process connection points if they exist
     if serialized.connection_points then
         local filtered_points = {}

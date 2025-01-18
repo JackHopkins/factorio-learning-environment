@@ -90,6 +90,22 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             end
         end
 
+        if entity == 'offshore-pump' then
+            -- check each direction, as the the pump can only be at one orientation to the water
+            for i=0,8,2 do
+                if player.surface.can_place_entity{
+                    name = entity,
+                    force = player.force,
+                    position = position,
+                    direction = global.utils.get_entity_direction(entity, i)
+                } then
+                    game.print("Found new direction for offshore pump - "..i)
+                    direction=i
+                    exact = false
+                    break
+                end
+            end
+        end
         local can_build = player.can_place_entity{
             name = entity,
             force = player.force,
@@ -165,7 +181,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             }
 
             if not can_build then
-                --error("Cannot place " .. entity .. " at the target location.")
+                error("Cannot place " .. entity .. " at the target location.")
             end
         end
 

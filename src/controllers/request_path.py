@@ -10,7 +10,7 @@ class RequestPath(Action):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
-    def __call__(self, start: Position, finish: Position, max_attempts: int = 10, allow_paths_through_own_entities=False) -> int:
+    def __call__(self, start: Position, finish: Position, max_attempts: int = 10, allow_paths_through_own_entities=False, radius=0) -> int:
         """
         Asynchronously request a path from start to finish from the game.
         """
@@ -23,7 +23,7 @@ class RequestPath(Action):
 
 
             walltime_start = time.time()
-            response, elapsed = self.execute(PLAYER, start_x, start_y, goal_x, goal_y, 0, allow_paths_through_own_entities)
+            response, elapsed = self.execute(PLAYER, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities)
 
             if response is None or response == {} or isinstance(response, str):
                 raise Exception("Could not request path", response)

@@ -63,9 +63,9 @@ class Prototype(enum.Enum):
     IronPlate = "iron-plate", None # Crafting requires smelting 1 iron ore, smelts for 0.5 seconds per ore
     SteelPlate = "steel-plate", None # Crafting requires smelting 5 iron plates, smelts for 4 seconds per ore
     CopperPlate = "copper-plate", None # Crafting requires smelting 1 copper ore, smelts for 0.5 seconds per ore
-    SmallElectricPole = "small-electric-pole", Entity
-    MediumElectricPole = "medium-electric-pole", Entity
-    BigElectricPole = "big-electric-pole", Entity
+    SmallElectricPole = "small-electric-pole", ElectricityPole
+    MediumElectricPole = "medium-electric-pole", ElectricityPole
+    BigElectricPole = "big-electric-pole", ElectricityPole
     IronOre = "iron-ore", None
     CopperOre = "copper-ore", None
     Stone = "stone", None

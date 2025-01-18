@@ -372,7 +372,11 @@ class Generator(FluidHandler):
 class OffshorePump(FluidHandler):
     pass
     #fluid_box: Optional[Union[dict,list]] = []
+class ElectricityPole(Entity):
+    electric_network_id: int
 
+    def __hash__(self):
+        return self.electric_network_id
 
 class Furnace(Entity, BurnerType):
     furnace_source: Inventory = Inventory()
@@ -389,11 +393,13 @@ class Pipe(Entity):
     pass
 
 class EntityGroup(BaseModel):
-    input_positions: List[Position]
-    position: Position
     status: EntityStatus = EntityStatus.NORMAL
 
-class BeltGroup(EntityGroup):
+class DirectedEntityGroup(EntityGroup):
+    position: Position
+    input_positions: List[Position]
+
+class BeltGroup(DirectedEntityGroup):
     belts: List[TransportBelt]
     output_positions: List[Position]
     inventory: Inventory = Inventory()
@@ -403,10 +409,25 @@ class BeltGroup(EntityGroup):
         belt_summary = f"[{len(self.belts)} belts]"
         return f"BeltGroup(position={self.position}, input_positions={self.input_positions}, output_positions={self.output_positions}, inventory={self.inventory}, status={self.status}, belts={belt_summary})"
 
-class PipeGroup(EntityGroup):
+class PipeGroup(DirectedEntityGroup):
     pipes: List[Pipe]
     name: str = 'pipe-group'
 
     def __repr__(self) -> str:
         pipe_summary = f"[{len(self.pipes)} pipes]"
         return f"PipeGroup(position={self.position}, input_positions={self.input_positions}, status={self.status}, pipes={pipe_summary})"
+
+class ElectricityGroup(EntityGroup):
+    name: str = 'electricity-group'
+    poles: List[ElectricityPole]
+    electric_network_id: int
+
+    def __repr__(self) -> str:
+        positions = [f"(x={p.position.x},y={p.position.y})" for p in self.poles]
+        if len(positions) > 6:
+            positions = positions[:3] + ['...'] + positions[-3:]
+        pole_summary = f"[{','.join(positions)}]"
+        return f"ElectricityGroup(id={self.electric_network_id}, poles={pole_summary})"
+
+    def __hash__(self):
+        return self.name+str(self.electric_network_id)

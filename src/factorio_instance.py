@@ -92,6 +92,7 @@ class FactorioInstance:
         self.game_state = ObservationState().with_default(vocabulary)
         self.game_state.fast = fast
         self._speed = 1
+        self._ticks_elapsed = 0
 
         self.max_sequential_exception_count = 1
         self._sequential_exception_count = 0
@@ -129,7 +130,6 @@ class FactorioInstance:
         self.Technology = Technology
         self.Recipe = Recipe
 
-        #
         self.prototype_by_name = prototype_by_name
 
         # Statically named directions
@@ -208,6 +208,14 @@ class FactorioInstance:
     def speed(self, speed):
         response = self.rcon_client.send_command(f'/c game.speed = {speed}')
         self.game_state._speed = speed
+
+    def get_elapsed_ticks(self):
+        response = self.rcon_client.send_command(f'/c rcon.print(game.elapsed_ticks or 0)')
+        if not response: return 0
+        return int(response)
+
+    def reset_game_state(self):
+        self.rcon_client.send_command(f'/c game.elapsed_ticks = 0')
 
     def log(self, *arg):
         """
@@ -356,131 +364,6 @@ class FactorioInstance:
                 node.body[subnode_idx] = self._change_print_to_log(subnode)
         return node
 
-    # def _eval_with_timeout(self, expr):
-    #     """
-    #     Executes a Python expression with a timeout and returns the result
-    #     :param expr:
-    #     :return:
-    #     """
-    #
-    #     def parse_result_into_str(data):
-    #         result = []
-    #         for key, values in data.items():
-    #             for value in values:
-    #                 result.append(f"{key}: {value}")
-    #         return "\n".join(result)
-    #
-    #     tree = ast.parse(expr)
-    #     self.logging_results = {}
-    #     self.line_value = 0
-    #
-    #     class PersistentEnvironment(dict):
-    #         def __init__(self, instance, *args, **kwargs):
-    #             self.instance = instance
-    #             if not hasattr(self.instance, 'persistent_vars') or self.instance.persistent_vars is None:
-    #                 self.instance.persistent_vars = {}
-    #             super().__init__(*args, **kwargs)
-    #
-    #         def __getitem__(self, key):
-    #             if key in self.instance.persistent_vars:
-    #                 val = self.instance.persistent_vars[key]
-    #                 return val
-    #             if key in self:
-    #                 return super().__getitem__(key)
-    #             if hasattr(builtins, key):
-    #                 return getattr(builtins, key)
-    #             return getattr(self.instance, key)
-    #
-    #         def __setitem__(self, key, value):
-    #             if not hasattr(self.instance, 'persistent_vars') or self.instance.persistent_vars is None:
-    #                 self.instance.persistent_vars = {}
-    #             # Update the persistent vars dictionary
-    #             self.instance.persistent_vars[key] = value
-    #             # Also update the dict itself to ensure immediate availability
-    #             super().__setitem__(key, value)
-    #
-    #     # Create the custom dictionary
-    #     eval_dict = PersistentEnvironment(self)
-    #
-    #     # Add bound methods to the dictionary
-    #     #for name, method in self.__class__.__dict__.items():
-    #     #    if callable(method) and not name.startswith('_'):
-    #     #        eval_dict[name] = types.MethodType(method, self)
-    #
-    #     # Add built-in functions to the dictionary
-    #     for name in dir(builtins):
-    #         if not name.startswith('_'):
-    #             eval_dict[name] = getattr(builtins, name)
-    #
-    #     last_successful_state = None
-    #     had_error = False
-    #
-    #     # Execute the expression
-    #     for index, node in enumerate(tree.body):
-    #         self.line_value = index
-    #         try:
-    #             node = self._change_print_to_log(node)
-    #
-    #             if isinstance(node, ast.FunctionDef):
-    #                 # For function definitions, compile and exec
-    #                 # We wrap it in a Module to ensure proper context
-    #                 wrapped_node = ast.Module([node], type_ignores=[])
-    #                 compiled = compile(wrapped_node, 'file', 'exec')
-    #                 exec(compiled, eval_dict)
-    #                 # Save successful state after function definition
-    #                 last_successful_state = dict(eval_dict.instance.persistent_vars)
-    #
-    #             elif isinstance(node, ast.Expr):
-    #                 # For expressions (including function calls)
-    #                 compiled = compile(ast.Expression(node.value), 'file', 'eval')
-    #                 response = eval(compiled, eval_dict)
-    #                 if response is not True and response is not None and not isinstance(node.value, ast.Constant):
-    #                     self._sequential_exception_count = 0
-    #                 self.log(response)
-    #                 # Save successful state
-    #                 last_successful_state = dict(eval_dict.instance.persistent_vars)
-    #
-    #             else:
-    #                 # For other statements
-    #                 compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
-    #                 exec(compiled, eval_dict)
-    #                 # Save successful state
-    #                 last_successful_state = dict(eval_dict.instance.persistent_vars)
-    #
-    #         except Exception as e:
-    #             had_error = True
-    #             self._sequential_exception_count += 1
-    #             error_traceback = traceback.format_exc()
-    #             error_lines = self._extract_error_lines(expr, error_traceback)
-    #
-    #             error_message = ""
-    #             if error_lines:
-    #                 error_message += "Error occurred in the following lines:\n"
-    #                 for line_num, line_content in error_lines:
-    #                     error_message += f"  Line {line_num}: {line_content}\n"
-    #             error_type = error_traceback.strip().split('\n')[-1]
-    #             error_message += f"\n{error_type}"
-    #
-    #             self.log(error_message)
-    #
-    #             # Restore the last successful state if available
-    #             if last_successful_state is not None:
-    #                 eval_dict.instance.persistent_vars = last_successful_state
-    #
-    #             if self._sequential_exception_count >= self.max_sequential_exception_count:
-    #                 # Even if we hit max exceptions, we still want to preserve state
-    #                 break
-    #
-    #     # Get final results
-    #     score, goal = self.score()
-    #     result_output = parse_result_into_str(self.logging_results)
-    #
-    #     # If we had an error, raise the exception with the output
-    #     # but only after we've preserved the state
-    #     if had_error:
-    #         raise Exception(result_output)
-    #
-    #     return score, goal, result_output
 
     def _eval_with_timeout(self, expr):
         """
@@ -604,133 +487,6 @@ class FactorioInstance:
             raise Exception(result_output)
 
         return score, goal, result_output
-
-    # def _eval_with_timeout_old(self, expr):
-    #     """
-    #     Executes a Python expression with a timeout and returns the result
-    #     :param expr:
-    #     :return:
-    #     """
-    #     def parse_result_into_str(data):
-    #         result = []
-    #
-    #         # Iterate over the dictionary items
-    #         for key, values in data.items():
-    #             # Iterate over each item in the list of values
-    #             for value in values:
-    #                 # Append the formatted string to the result list
-    #                 result.append(f"{key}: {value}")
-    #
-    #         # Join the list into a single string with '\n' as the separator
-    #         output_string = "\n".join(result)
-    #         return output_string
-    #
-    #     tree = ast.parse(expr)
-    #     self.logging_results = {}
-    #     self.line_value = 0
-    #
-    #     # Create a persistent environment dictionary that includes both instance methods and allows attribute access
-    #     # This is for creating and retrieving session variables that persist between eval calls.
-    #     class PersistentEnvironment(dict):
-    #         def __init__(self, instance, *args, **kwargs):
-    #             self.instance = instance
-    #             if not hasattr(self.instance, 'persistent_vars') or self.instance.persistent_vars is None:
-    #                 self.instance.persistent_vars = {}
-    #             super().__init__(*args, **kwargs)
-    #
-    #         def __getitem__(self, key):
-    #             if key in self.instance.persistent_vars:
-    #                 return self.instance.persistent_vars[key]
-    #             if key in self:
-    #                 return super().__getitem__(key)
-    #             if hasattr(builtins, key):
-    #                 return getattr(builtins, key)
-    #             return getattr(self.instance, key)
-    #
-    #         def __setitem__(self, key, value):
-    #             if not hasattr(self.instance, 'persistent_vars') or self.instance.persistent_vars is None:
-    #                 self.instance.persistent_vars = {}
-    #             if isinstance(value, types.FunctionType):
-    #                 # Create a new function with the persistent environment as globals
-    #                 value.__globals__.update(self)
-    #             self.instance.persistent_vars[key] = value
-    #
-    #     # Create the custom dictionary
-    #     eval_dict = PersistentEnvironment(self)
-    #
-    #     # Add bound methods to the dictionary
-    #     for name, method in self.__class__.__dict__.items():
-    #         if callable(method) and not name.startswith('_'):
-    #             eval_dict[name] = types.MethodType(method, self)
-    #
-    #     # Add built-in functions to the dictionary
-    #     for name in dir(builtins):
-    #         if not name.startswith('_'):
-    #             eval_dict[name] = getattr(builtins, name)
-    #
-    #     last_successful_state = None
-    #     had_error = False
-    #
-    #     # Execute the expression
-    #     for index, node in enumerate(tree.body):
-    #         self.line_value = index
-    #         try:
-    #             node = self._change_print_to_log(node)
-    #             if isinstance(node, ast.FunctionDef):
-    #                 # For function definitions, compile and exec
-    #                 # We wrap it in a Module to ensure proper context
-    #                 wrapped_node = ast.Module([node], type_ignores=[])
-    #                 compiled = compile(wrapped_node, 'file', 'exec')
-    #                 exec(compiled, eval_dict)
-    #                 # Save successful state after function definition
-    #                 last_successful_state = dict(eval_dict.instance.persistent_vars)
-    #
-    #             elif isinstance(node, ast.Expr):
-    #                 # For expressions (including function calls)
-    #                 compiled = compile(ast.Expression(node.value), 'file', 'eval')
-    #                 response = eval(compiled, eval_dict)
-    #                 if response is not True and response is not None and not isinstance(node.value, ast.Constant):
-    #                     self._sequential_exception_count = 0
-    #                 # Save successful state
-    #                 last_successful_state = dict(eval_dict.instance.persistent_vars)
-    #
-    #             else:
-    #                 # For other statements
-    #                 compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
-    #                 exec(compiled, eval_dict)
-    #                 # Save successful state
-    #                 last_successful_state = dict(eval_dict.instance.persistent_vars)
-    #
-    #
-    #         except Exception as e:
-    #             self._sequential_exception_count += 1
-    #             error_traceback = traceback.format_exc()
-    #             error_lines = self._extract_error_lines(expr, error_traceback)
-    #
-    #             error_message = f""
-    #             if error_lines:
-    #                 error_message += "Error occurred in the following lines:\n"
-    #                 for line_num, line_content in error_lines:
-    #                     error_message += f"  Line {line_num}: {line_content}\n"
-    #             error_type = error_traceback.strip().split('\n')[-1]
-    #             error_message += f"\n{error_type}"
-    #
-    #             self.log(error_message)#"\n".join(error_traceback.split("\n")[3:])
-    #
-    #             # Restore the last successful state if available
-    #             if last_successful_state is not None:
-    #                 eval_dict.instance.persistent_vars = last_successful_state
-    #
-    #             if self._sequential_exception_count == self.max_sequential_exception_count:
-    #                 pass
-    #
-    #             result_output = parse_result_into_str(self.logging_results)
-    #             raise Exception(result_output)
-    #                     #break
-    #
-    #     score, goal = self.score()
-    #     result_output = parse_result_into_str(self.logging_results)
-    #     return score, goal, result_output
     
     def eval_with_error(self, expr, timeout=60):
         """ Evaluate an expression with a timeout, and return the result without error handling"""
@@ -887,8 +643,6 @@ class FactorioInstance:
         self.lua_script_manager.load_init_into_game('set_white_background')
 
         self._reset(**kwargs)
-
-
 
     def get_warnings(self, seconds=10):
         """

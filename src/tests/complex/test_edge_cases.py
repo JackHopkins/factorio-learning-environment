@@ -163,6 +163,84 @@ def test_blueprint_functionality(game):
     assert any(e.prototype == Prototype.BurnerInserter for e in placed_entities.entities)
     assert any(e.prototype == Prototype.IronChest for e in placed_entities.entities)
 
+def test_break_7(game):
+    game.initial_inventory = {"coal": 200, "burner-mining-drill": 10, "wooden-chest": 10,
+                                    "burner-inserter": 10, "transport-belt": 200,
+                                    "stone-furnace": 5, "pipe": 10, "boiler": 4, "offshore-pump": 3,
+                                    "steam-engine": 2,
+                                    "iron-gear-wheel": 22, "iron-plate": 19, "copper-plate": 52,
+                                    "electronic-circuit": 99,
+                                    "iron-ore": 62, "stone": 50, "electric-mining-drill": 10,
+                                    "small-electric-pole": 200, "pipe": 100,
+                                    "assembling-machine-1": 5}
+    game.reset()
+
+    # Find water and place offshore pump
+    water_pos = game.nearest(Resource.Water)
+    print(f"Found water at {water_pos}")
+    game.move_to(water_pos)
+    offshore_pump = game.place_entity(Prototype.OffshorePump, position=water_pos)
+    print(f"Placed offshore pump at {offshore_pump.position}")
+
+    # Place boiler with spacing for pipes
+    boiler = game.place_entity_next_to(
+        Prototype.Boiler,
+        reference_position=offshore_pump.position,
+        direction=Direction.RIGHT,
+        spacing=3
+    )
+    print(f"Placed boiler at {boiler.position}")
+
+    # Add steam engine with spacing
+    steam_engine = game.place_entity_next_to(
+        Prototype.SteamEngine,
+        reference_position=boiler.position,
+        direction=Direction.RIGHT,
+        spacing=3
+    )
+    print(f"Placed steam engine at {steam_engine.position}")
+
+    # Connect with pipes
+    pipes = game.connect_entities(offshore_pump, boiler, Prototype.Pipe)
+    steam_pipes = game.connect_entities(boiler, steam_engine, Prototype.Pipe)
+
+    # Fuel the boiler
+    boiler = game.insert_item(Prototype.Coal, boiler, quantity=50)
+
+    # Log positions for future reference
+    print( f"Power system positions - Pump: {offshore_pump.position}, Boiler: {boiler.position}, Engine: {steam_engine.position}")
+
+    iron_pos = game.nearest(Resource.IronOre)
+    print(f"Found iron ore at {iron_pos}")
+
+    # Get steam engine position for power connection
+    steam_engine = game.get_entity(Prototype.SteamEngine, Position(x=-2.5, y=-1.5))
+
+    # Place drills individually with smaller building boxes
+    drills = []
+    game.move_to(Position(x=-13.5, y=25.5))
+    drill = game.place_entity(Prototype.ElectricMiningDrill, position=Position(x=-13.5, y=25.5))
+    drills.append(drill)
+    game.move_to(Position(x=-14.5, y=21.5))
+    drill = game.place_entity(Prototype.ElectricMiningDrill, position=Position(x=-14.5, y=21.5))
+    drills.append(drill)
+    drill = game.place_entity(Prototype.ElectricMiningDrill, position=Position(x=-17.5, y=26.5))
+    drills.append(drill)
+    # Connect power from steam engine to drills
+    # First place pole near steam engine
+    game.move_to(steam_engine.position)
+    first_pole = game.place_entity(Prototype.SmallElectricPole,
+                              position=Position(x=steam_engine.position.x, y=steam_engine.position.y - 3))
+    print(f"Placed first power pole at {first_pole.position}")
+
+
+    # Connect power to all drills using small electric poles
+    for drill in drills:
+        pole_group = game.connect_entities(drill, first_pole, Prototype.SmallElectricPole)
+        print(f"Connected power to drill at {drill.position}")
+
+    pass
+
 # Run the tests
 if __name__ == "__main__":
     pytest.main([__file__])

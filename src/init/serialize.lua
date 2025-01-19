@@ -636,7 +636,7 @@ function get_inverse_entity_direction(entity, factorio_direction)
 			return -1
 		end
 	else
-		game.print("Returning direction: " .. math.floor(factorio_direction / 2) .. ', '.. factorio_direction)
+		--game.print("Returning direction: " .. math.floor(factorio_direction / 2) .. ', '.. factorio_direction)
 		-- For other entity types, convert Factorio's direction to 0-3 range
 		return factorio_direction
 	end

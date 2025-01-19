@@ -15,11 +15,12 @@ class Sleep(Action):
         :return: True if sleep was successful.
         """
         # Get initial tick
-        start_tick, _ = self.execute()
+        ticks_elapsed = 0
+        start_tick, _ = self.execute(-1)
         target_ticks = seconds * 60  # Convert seconds to ticks (60 ticks = 1 second)
 
         while True:
-            current_tick, _ = self.execute()
+            current_tick, _ = self.execute(ticks_elapsed)
             ticks_elapsed = current_tick - start_tick
 
             if ticks_elapsed >= target_ticks:

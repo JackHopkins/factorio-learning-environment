@@ -20,7 +20,7 @@ def game(instance):
         'small-electric-pole': 50,
         'transport-belt': 200,
         'coal': 100,
-        'wooden-chest': 1,
+        'wooden-chest': 5,
         'assembling-machine': 10,
     }
     instance.speed(10)
@@ -460,4 +460,36 @@ def test_belt_group(game):
     entities = game.get_entities()
     print(entities)
     belt_groups = [entity for entity in game.get_entities() if isinstance(entity, BeltGroup)]
+    pass
+
+def test_connect_belts_with_end_rotation(game):
+    iron_pos = game.nearest(Resource.IronOre)
+    game.move_to(Position(x=-13, y=23))
+    # Place drills individually with smaller building boxes
+    drill2 = game.place_entity(Prototype.BurnerMiningDrill, position=Position(x=-13, y=23), direction=Direction.LEFT)
+    # Place chest about 10 spaces away from the middle drill
+    game.move_to(Position(x=-3.5, y=22.5))
+    collection_chest = game.place_entity(Prototype.WoodenChest, position=Position(x=-9, y=22.5))
+    print(f"Placed collection chest at {collection_chest.position}")
+
+    # Place inserter next to chest
+    chest_inserter = game.place_entity_next_to(Prototype.BurnerInserter, reference_position=collection_chest.position,
+                                          direction=Direction.LEFT, spacing=0)
+    # Rotate inserter to put items into chest
+    chest_inserter = game.rotate_entity(chest_inserter, Direction.RIGHT)
+    print(f"Placed chest inserter at {chest_inserter.position}")
+
+    collection_chest2 = game.place_entity(Prototype.WoodenChest, position=Position(x=-3, y=20))
+    print(f"Placed collection chest at {collection_chest2.position}")
+
+    # Place inserter next to chest
+    chest_inserter2 = game.place_entity_next_to(Prototype.BurnerInserter, reference_position=collection_chest2.position,
+                                           direction=Direction.LEFT, spacing=0)
+    # Rotate inserter to put items into chest
+    chest_inserter2 = game.rotate_entity(chest_inserter2, Direction.RIGHT)
+    print(f"Placed chest inserter at {chest_inserter2.position}")
+    # connect the first drill to the connection system
+    main_connection = game.connect_entities(drill2.drop_position, chest_inserter2.pickup_position, Prototype.TransportBelt)
+    # extend connection
+    main_connection = game.connect_entities(main_connection[0], chest_inserter.pickup_position, Prototype.TransportBelt)
     pass

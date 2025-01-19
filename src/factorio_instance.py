@@ -210,12 +210,9 @@ class FactorioInstance:
         self.game_state._speed = speed
 
     def get_elapsed_ticks(self):
-        response = self.rcon_client.send_command(f'/c rcon.print(game.elapsed_ticks or 0)')
+        response = self.rcon_client.send_command(f'/c rcon.print(global.elapsed_ticks or 0)')
         if not response: return 0
         return int(response)
-
-    def reset_game_state(self):
-        self.rcon_client.send_command(f'/c game.elapsed_ticks = 0')
 
     def log(self, *arg):
         """
@@ -557,7 +554,13 @@ class FactorioInstance:
         self.add_command('/c global.crafted_items = {}', raw=True)
         self.add_command('/c global.harvested_items = {}', raw=True)
         self.execute_transaction()
-        
+
+    def _reset_elapsed_ticks(self):
+        """
+        This resets the cached production flows that we track for achievements and diversity sampling.
+        """
+        self.add_command('/c global.elapsed_ticks = 0', raw=True)
+        self.execute_transaction()
 
     def _reset(self, **kwargs):
 
@@ -585,6 +588,7 @@ class FactorioInstance:
         self.execute_transaction()
         #self.clear_entities()
         self._reset_static_achievement_counters()
+        self._reset_elapsed_ticks()
 
     def _execute_transaction(self) -> Dict[str, Any]:
         start = timer()
@@ -625,6 +629,7 @@ class FactorioInstance:
 
         self.begin_transaction()
         self.add_command('/c global.alerts = {}', raw=True)
+        self.add_command('/c global.elapsed_ticks = 0}', raw=True)
         self.add_command('/c global.fast = {}'.format('true' if fast else 'false'), raw=True)
         #self.add_command('/c script.on_nth_tick(nil)', raw=True)
         self.add_command('/c game.map_settings.enemy_expansion.enabled = false', raw=True)
@@ -787,38 +792,3 @@ class FactorioInstance:
                     print(f"Error joining thread {thread.name}: {e}")
 
         sys.exit(0)
-
-    def _set_walking(self, walking: bool):
-        if walking:
-            lua_response = self.rcon_client.send_command(
-                '/c game.players[1].character.walking_state = {walking = true, direction = defines.direction.north}')
-        else:
-            lua_response = self.rcon_client.send_command(
-                '/c game.players[1].character.walking_state = {walking = false, direction = defines.direction.north}')
-        return lua_response
-
-    @deprecated("This was from the previous tensor-based observation model")
-    def observe_statistics(self):
-        """
-        At each time t, statistics on the factory are returned
-        :return:
-        """
-        response, execution_time = self._send('observe_performance', PLAYER)
-        return response, execution_time
-
-    @deprecated("This was from the previous tensor-based observation model")
-    def observe_position(self):
-        """
-        At each time t, the agent receives the agent’s current absolute position p.
-        :return:
-        """
-        return self._send('observe_position', PLAYER)
-
-    @deprecated("This was from the previous tensor-based observation model")
-    def observe_nearest_points_of_interest(self):
-        """
-        At each time t, the agent receives the positions of the nearest points of interest.
-        :return:
-        """
-        return self._send('observe_points_of_interest', PLAYER, 200)
-

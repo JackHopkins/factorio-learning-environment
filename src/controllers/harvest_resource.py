@@ -30,6 +30,8 @@ class HarvestResource(Action):
         :example harvest_resource(nearest(Resource.Stone), 5)
         :return: The quantity of the resource harvested
         """
+        assert isinstance(position, Position), f"First argument must be a Position object"
+
         x, y = self.get_position(position)
 
         # If not fast mode, we need to identify what resource is at the x, y position

@@ -45,6 +45,11 @@ local function is_placeable(position)
         position = position,
         collision_mask = "player-layer"
     }
+    if #entities == 1 then
+        if entities[1].name == "character" then
+            return not invalid_tiles[game.surfaces[1].get_tile(position.x, position.y).name]
+        end
+    end
     return #entities == 0 and not invalid_tiles[game.surfaces[1].get_tile(position.x, position.y).name]
 end
 
@@ -174,6 +179,7 @@ end
 local function place_at_position(player, connection_type, current_position, dir, serialized_entities, dry_run, counter_state)
     counter_state.place_counter = counter_state.place_counter + 1
     if dry_run then return end
+    game.print("Placing at position: "..current_position.x..", "..current_position.y)
 
     local is_electric_pole = wire_reach[connection_type] ~= nil
     local placement_position = current_position
@@ -187,6 +193,7 @@ local function place_at_position(player, connection_type, current_position, dir,
     else
         local entities = game.surfaces[1].find_entities_filtered{
             position = current_position,
+            type = {"beam", "resource", "player"}, invert=true,
             force = "player"
         }
         for _, entity in pairs(entities) do
@@ -226,13 +233,16 @@ local function place_at_position(player, connection_type, current_position, dir,
         error("Player does not have the required item in their inventory.")
     end
 
-    -- Place entity
-    if game.surfaces[1].can_place_entity{
+    local can_place = game.surfaces[1].can_place_entity{
         name = connection_type,
         position = placement_position,
         direction = dir,
         force = player.force
-    } then
+    }
+    game.print("can place?: "..serpent.line(can_place).." - "..current_position.x..", "..current_position.y)
+
+    -- Place entity
+    if can_place then
         local placed_entity = game.surfaces[1].create_entity({
             name = connection_type,
             position = placement_position,
@@ -246,7 +256,27 @@ local function place_at_position(player, connection_type, current_position, dir,
             return placed_entity
         end
     else
+        game.print("Avoiding entity at " .. placement_position.x.. ", " .. placement_position.y)
         global.actions.avoid_entity(player.index, connection_type, placement_position)
+        --if player.surface.can_place_entity{
+        --    name = connection_type,
+        --    position = placement_position,
+        --    direction = dir,
+        --    force = player.force
+        --} then
+        local placed_entity = player.surface.create_entity({
+            name = connection_type,
+            position = placement_position,
+            direction = dir,
+            force = player.force
+        })
+
+        if placed_entity then
+            player.remove_item({name = connection_type, count = 1})
+            table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
+            return placed_entity
+        end
+        --end
     end
 end
 
@@ -364,6 +394,71 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         connected = is_connected, 
         number_of_entities = counter_state.place_counter
     }
+end
+
+global.actions.normalise_path = function(original_path, start_position, end_position)
+    --- This function interpolates the path to ensure that all positions are placeable and within 1 tile of each other
+
+    local path = {}
+    local seen = {}  -- To track seen positions
+
+    -- Helper function to add unique positions
+    local function add_unique(pos)
+        local key = pos.x .. "," .. pos.y
+        if not seen[key] then
+            if is_placeable(pos) then
+                table.insert(path, {position = pos})
+                seen[key] = true
+                return pos
+            else
+                local alt_pos = find_placeable_neighbor(pos, previous_pos)
+                if alt_pos then
+                    local alt_key = alt_pos.x .. "," .. alt_pos.y
+                    if not seen[alt_key] then
+                        table.insert(path, {position = alt_pos})
+                        seen[alt_key] = true
+                        return alt_pos
+                    end
+                end
+            end
+        end
+        return nil
+    end
+
+
+    -- Add start position first
+    local previous_pos = nil
+    previous_pos = add_unique(start_position) or start_position
+
+    -- Interpolate the start to the second position in the original path.
+    if #original_path > 2 then
+        local interpolated = interpolate_manhattan(start_position, original_path[2].position)
+        for _, point in ipairs(interpolated) do
+            local new_pos = add_unique(point.position, previous_pos)
+            if new_pos then previous_pos = new_pos end
+        end
+    end
+
+    for i = 1, #original_path - 1 do
+        local current_pos = add_unique(original_path[i].position, previous_pos)
+        if current_pos then
+            previous_pos = current_pos
+            local interpolated = interpolate_manhattan(current_pos, original_path[i+1].position)
+            for _, point in ipairs(interpolated) do
+                local new_pos = add_unique(point.position, previous_pos)
+                if new_pos then previous_pos = new_pos end
+            end
+        end
+    end
+
+    local interpolated = interpolate_manhattan(path[#path].position, end_position)
+    for _, point in ipairs(interpolated) do
+        add_unique(point.position)
+    end
+
+    add_unique(end_position)
+
+    return path
 end
 
 -- Using the new shortest_path function.

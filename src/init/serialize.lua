@@ -1,7 +1,9 @@
 -- Library for serializing items in Factorio
 -- Based on code from playerManager and trainTeleports
 
-global.utils = {}
+if not global.utils then
+    global.utils = {}
+end
 
 local function version_to_table(version)
 	local t = {}

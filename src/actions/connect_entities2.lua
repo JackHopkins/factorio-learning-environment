@@ -146,7 +146,7 @@ local function interpolate_manhattan(pos1, pos2)
 end
 
 
-global.actions.normalise_path = function(original_path, start_position, end_position)
+global.utils.normalise_path = function(original_path, start_position, end_position)
     --- This function interpolates the path to ensure that all positions are placeable and within 1 tile of each other
 
     local path = {}
@@ -394,7 +394,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
     end
 
     --- This invocation interpolates the path to ensure that all positions are placeable and within 1 tile of each other
-    local path = global.actions.normalise_path(raw_path, start_position, end_position) --{x = source_x, y = source_y})
+    local path = global.utils.normalise_path(raw_path, start_position, end_position) --{x = source_x, y = source_y})
 
     rendering.clear()
     for i = 1, #path - 1 do

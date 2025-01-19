@@ -154,32 +154,11 @@ local function get_direction(from_position, to_position)
     end
 end
 
-local function get_closest_entity(player, position)
-    local closest_distance = math.huge
-    local closest_entity = nil
-    local entities = player.surface.find_entities_filtered{
-        position = position,
-        force = "player",
-        radius = 3
-    }
 
-    for _, entity in ipairs(entities) do
-        if entity.name ~= 'character' and entity.name ~= 'laser-beam' then
-            local distance = ((position.x - entity.position.x) ^ 2 + (position.y - entity.position.y) ^ 2) ^ 0.5
-            if distance < closest_distance then
-                closest_distance = distance
-                closest_entity = entity
-            end
-        end
-    end
-
-    return closest_entity
-end
 
 local function place_at_position(player, connection_type, current_position, dir, serialized_entities, dry_run, counter_state)
     counter_state.place_counter = counter_state.place_counter + 1
     if dry_run then return end
-    game.print("Placing at position: "..current_position.x..", "..current_position.y)
 
     local is_electric_pole = wire_reach[connection_type] ~= nil
     local placement_position = current_position
@@ -239,7 +218,6 @@ local function place_at_position(player, connection_type, current_position, dir,
         direction = dir,
         force = player.force
     }
-    game.print("can place?: "..serpent.line(can_place).." - "..current_position.x..", "..current_position.y)
 
     -- Place entity
     if can_place then
@@ -292,19 +270,27 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         error("Invalid path: " .. serpent.line(path))
     end
 
-    local path = global.actions.normalise_path(raw_path, start_position, end_position)
+    local path = global.utils.normalise_path(raw_path, start_position, end_position)
+
+    local last_position = start_position
+    local step_size = wire_reach[connection_type] or 1
+
+    for i = 1, #path-1, step_size do
+        global.elapsed_ticks = global.elapsed_ticks + global.utils.calculate_movement_ticks(player, last_position, path[i].position)
+        last_position = path[i].position
+    end
+
     local serialized_entities = {}
 
     -- Get source and target entities
-    local source_entity = get_closest_entity(player, {x = source_x, y = source_y})
-    local target_entity = get_closest_entity(player, {x = target_x, y = target_y})
+    local source_entity = global.utils.get_closest_entity(player, {x = source_x, y = source_y})
+    local target_entity = global.utils.get_closest_entity(player, {x = target_x, y = target_y})
 
     local is_electric_pole = wire_reach[connection_type] ~= nil
 
     if is_electric_pole then
         -- Place poles until we achieve connectivity
         local last_pole = source_entity
-        local step_size = get_step_size(connection_type)
 
         for i = 1, #path-1, step_size do
             local current_pos = path[i].position
@@ -316,7 +302,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
             if not dry_run then
                 -- Get the newly placed pole
-                local current_pole = placed_entity or get_closest_entity(player, current_pos)
+                local current_pole = placed_entity or global.utils.get_closest_entity(player, current_pos)
 
                 -- Check if we've achieved connectivity to the target
                 if are_poles_connected(current_pole, target_entity) then
@@ -335,9 +321,6 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
                 serialized_entities, dry_run, counter_state)
         end
     else
-        -- For pipes and belts
-        local step_size = get_step_size(connection_type)
-
         if connection_type == 'pipe' then
             place_at_position(player, connection_type, start_position, 0, serialized_entities, dry_run, counter_state)
         end
@@ -396,7 +379,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
     }
 end
 
-global.actions.normalise_path = function(original_path, start_position, end_position)
+global.utils.normalise_path = function(original_path, start_position, end_position)
     --- This function interpolates the path to ensure that all positions are placeable and within 1 tile of each other
 
     local path = {}

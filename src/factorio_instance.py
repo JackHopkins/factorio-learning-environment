@@ -645,7 +645,6 @@ class FactorioInstance:
         self.lua_script_manager.load_init_into_game('serialize')
         self.lua_script_manager.load_init_into_game('production_score')
         self.lua_script_manager.load_init_into_game('initialise_inventory')
-        self.lua_script_manager.load_init_into_game('set_white_background')
 
         self._reset(**kwargs)
 

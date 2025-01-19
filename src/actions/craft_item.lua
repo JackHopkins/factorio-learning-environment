@@ -1,6 +1,12 @@
 global.actions.craft_item = function(player_index, entity, count)
     local player = game.get_player(player_index)
 
+    local function calculate_crafting_ticks(recipe, crafts_count)
+        -- energy_required is in seconds, multiply by 60 to get ticks
+        local ticks_per_craft = (recipe.energy or 0.5) * 60
+        return math.ceil(ticks_per_craft * crafts_count)
+    end
+
     local function get_missing_ingredients(player, recipe, count)
         local missing_ingredients = {}
         local crafts_needed = math.ceil(count / recipe.products[1].amount)
@@ -91,8 +97,15 @@ global.actions.craft_item = function(player_index, entity, count)
             end
         end
 
+        -- Calculate total ticks needed for this craft
+        local crafting_ticks = calculate_crafting_ticks(recipe, crafts_needed)
+
+
         -- After potentially crafting intermediates, check if we can now craft the original item
         if global.fast then
+            -- Only add ticks in fast mode since in slow mode they are added naturally
+            global.elapsed_ticks = global.elapsed_ticks + crafting_ticks
+
             -- Fast crafting implementation
             local missing = get_missing_ingredients(player, recipe, actual_craft_count)
             if next(missing) then

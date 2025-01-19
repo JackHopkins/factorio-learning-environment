@@ -337,8 +337,9 @@ async def main():
         434: 'claude-2@4',
         #424: 'gpt-4o-mini-2',
         #425: 'gpt-4o-mini-3'
-        427: 'gpt-4o-mini',
-        429: 'gpt-4o-mini@4'
+        #427: 'gpt-4o-mini',
+        429: 'gpt-4o-mini@4',
+        436: 'claude-2@4-2'
     }
     versions = list(labels.keys())
     visualizer.load_versions(versions, labels)

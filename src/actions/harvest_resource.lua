@@ -1,4 +1,9 @@
 --- global.actions.harvest_resource(player_index, x, y, count, radius)
+local function calculate_mining_ticks(entity)
+    local mining_time = entity.prototype.mineable_properties.mining_time or 1
+    -- Convert mining time (in seconds) to ticks (60 ticks per second)
+    return math.ceil(mining_time * 60)
+end
 
 local function update_production_stats(force, entity_name, amount)
         local stats = force.item_production_statistics
@@ -303,10 +308,17 @@ function harvest(entities, count, from_position, player)
     if count == 0 then return 0 end
     local yield = 0
     entities = sort_entities_by_distance(entities, from_position)
+
     ::start::
     local has_mined = false
     for _, entity in ipairs(entities) do
         if entity.valid and entity.minable then
+
+            -- Calculate mining ticks before mining the entity
+            if global.fast then
+                global.elapsed_ticks = global.elapsed_ticks + calculate_mining_ticks(entity)
+            end
+
             local products = entity.prototype.mineable_properties.products
             for _, product in pairs(products) do
                 local amount = product.amount or 1
@@ -335,6 +347,12 @@ function harvest_trees(entities, count, from_position, player)
     for _, entity in ipairs(entities) do
         if yield >= count then break end
         if entity.valid and entity.type == "tree" then
+
+            -- Calculate mining ticks before mining the tree
+            if global.fast then
+                global.elapsed_ticks = global.elapsed_ticks + calculate_mining_ticks(entity)
+            end
+
             local products = entity.prototype.mineable_properties.products
             for _, product in pairs(products) do
                 if product.name == "wood" then
@@ -361,7 +379,14 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
     if not player then
         error("Player not found")
     end
+
+    local player_position = player.position
     local position = {x=x, y=y}
+
+    local distance = math.sqrt((position.x - player_position.x)^2 + (position.y - player_position.y)^2)
+    if distance > player.resource_reach_distance then
+        error("Nothing within reach to harvest")
+    end
     local surface = player.surface
 
     -- Check what's under the player first

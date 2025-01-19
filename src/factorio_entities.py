@@ -314,6 +314,8 @@ class TransportBelt(Entity):
     input_position: Position
     output_position: Position
     inventory: Inventory = Inventory()
+    is_terminus: bool = False
+    is_source: bool = False
 
 class EnergySource(BaseModel):
     buffer_capacity: str
@@ -397,17 +399,17 @@ class EntityGroup(BaseModel):
 
 class DirectedEntityGroup(EntityGroup):
     position: Position
-    input_positions: List[Position]
 
 class BeltGroup(DirectedEntityGroup):
     belts: List[TransportBelt]
-    output_positions: List[Position]
+    inputs: List[Entity]
+    outputs: List[Entity]
     inventory: Inventory = Inventory()
     name: str = 'belt-group'
 
     def __repr__(self) -> str:
         belt_summary = f"[{len(self.belts)} belts]"
-        return f"BeltGroup(position={self.position}, input_positions={self.input_positions}, output_positions={self.output_positions}, inventory={self.inventory}, status={self.status}, belts={belt_summary})"
+        return f"BeltGroup(position={self.position}, input_positions={self.inputs}, output_positions={self.outputs}, inventory={self.inventory}, status={self.status}, belts={belt_summary})"
 
 class PipeGroup(DirectedEntityGroup):
     pipes: List[Pipe]
@@ -415,7 +417,7 @@ class PipeGroup(DirectedEntityGroup):
 
     def __repr__(self) -> str:
         pipe_summary = f"[{len(self.pipes)} pipes]"
-        return f"PipeGroup(position={self.position}, input_positions={self.input_positions}, status={self.status}, pipes={pipe_summary})"
+        return f"PipeGroup(position={self.position}, status={self.status}, pipes={pipe_summary})"
 
 class ElectricityGroup(EntityGroup):
     name: str = 'electricity-group'

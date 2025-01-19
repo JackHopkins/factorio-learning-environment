@@ -4,6 +4,8 @@ from controllers.__action import Action
 from typing import Optional, Tuple
 
 from controllers.get_entity import GetEntity
+from controllers.pickup_entity import PickupEntity
+from controllers.rotate_entity import RotateEntity
 from factorio_entities import Position, Entity
 from factorio_instance import PLAYER
 from factorio_instance import Direction
@@ -17,6 +19,7 @@ class PlaceObject(Action):
         super().__init__(*args)
         self.name = "place_entity"
         self.get_entity = GetEntity(*args)
+        self.pickup_entity = PickupEntity(*args)
 
     def __call__(self,
                  entity: Prototype,
@@ -88,7 +91,7 @@ class PlaceObject(Action):
             except Exception as e:
                 raise Exception(f"Could not create {name} object from response: {cleaned_response}", e)
 
-            # if object is a burner insert, and is missing a pickup_position, calculate it from the position and direction
+                        # if object is a burner insert, and is missing a pickup_position, calculate it from the position and direction
             # TODO: Remove and move to
             # if entity.name == Prototype.BurnerInserter.name:
             #     if not object.pickup_position:

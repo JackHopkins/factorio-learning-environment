@@ -527,12 +527,13 @@ function add_burner_inventory(serialized, burner)
 end
 
 function get_entity_direction(entity, direction)
-	game.print("Getting direction: " .. entity .. " with direction: " .. direction)
 
 	-- If direction is nil then return north
 	if direction == nil then
 		return defines.direction.north
 	end
+	game.print("Getting direction: " .. entity .. " with direction: " .. direction)
+
 
 	local prototype = game.entity_prototypes[entity]
 	-- if prototype is nil (e.g because the entity is a ghost or player character) then return the direction as is
@@ -900,7 +901,8 @@ global.utils.serialize_entity = function(entity)
 		serialized.output_position = {x = x, y = y}
 		serialized.position = {x = entity.position.x, y = entity.position.y}
 		--serialized.inventory = entity.get_transport_line(1).get_contents()
-			-- Get contents from both lines
+
+		-- Get contents from both lines
 		local line1 = entity.get_transport_line(1)
 		local line2 = entity.get_transport_line(2)
 
@@ -915,6 +917,9 @@ global.utils.serialize_entity = function(entity)
 		serialized.inventory = {}
 		local line1_contents = line1.get_contents()
 		local line2_contents = line2.get_contents()
+
+		serialized.is_terminus = #entity.belt_neighbours["outputs"] == 0
+		serialized.is_source = #entity.belt_neighbours["inputs"] == 0
 
 		for item_name, count in pairs(line1_contents) do
 			serialized.inventory[item_name] = (serialized.inventory[item_name] or 0) + count

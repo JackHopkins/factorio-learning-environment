@@ -52,6 +52,53 @@ local function check_player_inventory_empty(player)
     return inventory.is_empty()
 end
 
+global.utils.get_direction = function(from_position, to_position)
+    local dx = to_position.x - from_position.x
+    local dy = to_position.y - from_position.y
+    local adx = math.abs(dx)
+    local ady = math.abs(dy)
+    local diagonal_threshold = 0.5
+
+    if adx > ady then
+        if dx > 0 then
+            return (ady / adx > diagonal_threshold) and (dy > 0 and 3 or 1) or 2
+        else
+            return (ady / adx > diagonal_threshold) and (dy > 0 and 5 or 7) or 6
+        end
+    else
+        if dy > 0 then
+            return (adx / ady > diagonal_threshold) and (dx > 0 and 3 or 5) or 4
+        else
+            return (adx / ady > diagonal_threshold) and (dx > 0 and 1 or 7) or 0
+        end
+    end
+end
+
+global.utils.get_direction_with_diagonals = function(from_pos, to_pos)
+    local dx = to_pos.x - from_pos.x
+    local dy = to_pos.y - from_pos.y
+
+    if dx == 0 and dy == 0 then
+        return nil
+    end
+
+    -- Check for cardinal directions first
+    local cardinal_margin = 0.25
+    if math.abs(dx) < cardinal_margin then
+        return dy > 0 and defines.direction.south or defines.direction.north
+    elseif math.abs(dy) < cardinal_margin then
+        return dx > 0 and defines.direction.east or defines.direction.west
+    end
+
+    -- Handle diagonal directions
+    if dx > 0 then
+        return dy > 0 and defines.direction.southeast or defines.direction.northeast
+    else
+        return dy > 0 and defines.direction.southwest or defines.direction.northwest
+    end
+end
+
+
 global.utils.get_closest_entity = function(player, position)
     local closest_distance = math.huge
     local closest_entity = nil
@@ -103,7 +150,159 @@ global.actions.can_reach = function(player, x, y)
     return true
 end
 
-global.actions.avoid_entity = function(player_index, entity, position)
+global.utils.get_placement_issues = function(player, entity_name, position, direction)
+    local reasons = {}
+
+    -- Check if entity prototype exists
+    local prototype = game.entity_prototypes[entity_name]
+    if not prototype then
+        table.insert(reasons, "invalid entity name " .. entity_name)
+        return reasons
+    end
+
+    -- Check if player has required technology
+    if not player.force.recipes[entity_name] then
+        table.insert(reasons, "required technology not researched")
+    end
+
+    -- Get rotated collision box
+    local collision_box = prototype.collision_box
+    local box_width = collision_box.right_bottom.x - collision_box.left_top.x
+    local box_height = collision_box.right_bottom.y - collision_box.left_top.y
+
+    local rotated_box
+    if direction and (direction == defines.direction.east or direction == defines.direction.west) then
+        -- Swap width and height for east/west orientations
+        rotated_box = {
+            left_top = {x = position.x - box_height/2, y = position.y - box_width/2},
+            right_bottom = {x = position.x + box_height/2, y = position.y + box_width/2}
+        }
+    else
+        rotated_box = {
+            left_top = {x = position.x - box_width/2, y = position.y - box_height/2},
+            right_bottom = {x = position.x + box_width/2, y = position.y + box_height/2}
+        }
+    end
+
+    -- Check for collisions with existing entities using rotated box
+    local entities = player.surface.find_entities_filtered{area = rotated_box}
+    if #entities > 0 then
+        local colliding = {}
+        for _, entity in pairs(entities) do
+            if entity.valid and entity.name ~= 'character' then
+                local entity_prototype = game.entity_prototypes[entity.name]
+                if entity_prototype and entity_prototype.collision_mask and prototype.collision_mask then
+                    -- Check if collision masks overlap
+                    for mask_type in pairs(prototype.collision_mask) do
+                        if entity_prototype.collision_mask[mask_type] then
+                            table.insert(colliding, entity.name)
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        if #colliding > 0 then
+            table.insert(reasons, "colliding with " .. table.concat(colliding, ", "))
+        end
+    end
+
+    -- Check all tiles in the rotated area for collision and water
+    local left = math.floor(rotated_box.left_top.x)
+    local right = math.ceil(rotated_box.right_bottom.x)
+    local top = math.floor(rotated_box.left_top.y)
+    local bottom = math.ceil(rotated_box.right_bottom.y)
+
+    local water_tiles = 0
+    local total_tiles = 0
+    local problematic_tiles = {}
+
+    for x = left, right do
+        for y = top, bottom do
+            local tile = player.surface.get_tile(x, y)
+            if tile then
+                total_tiles = total_tiles + 1
+
+                -- Water checks
+                if tile.prototype.collision_mask["water-tile"] then
+                    water_tiles = water_tiles + 1
+                end
+
+                -- General tile collision check
+                if prototype.collision_mask then
+                    for mask_type in pairs(prototype.collision_mask) do
+                        if mask_type ~= "water-tile" and tile.prototype.collision_mask[mask_type] then
+                            if not problematic_tiles[tile.name] then
+                                problematic_tiles[tile.name] = true
+                            end
+                            break
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Water placement logic
+    if not prototype.collision_mask["water-tile"] and water_tiles == 0 then
+        table.insert(reasons, "must be placed on water")
+    elseif prototype.collision_mask["water-tile"] and water_tiles > 0 then
+        table.insert(reasons, "cannot build on water")
+    end
+
+    -- Add problematic tiles to reasons
+    for tile_name, _ in pairs(problematic_tiles) do
+        table.insert(reasons, "cannot build on " .. tile_name)
+    end
+
+    -- Check if outside map bounds
+    local map_bounds = {{-1000000, -1000000}, {1000000, 1000000}} -- Adjust as needed
+    if rotated_box.left_top.x < map_bounds[1][1] or rotated_box.right_bottom.x > map_bounds[2][1] or
+            rotated_box.left_top.y < map_bounds[1][2] or rotated_box.right_bottom.y > map_bounds[2][2] then
+        table.insert(reasons, "position outside map bounds")
+    end
+
+    -- Check if player has required items in inventory
+    if prototype.items_to_place_this then
+        for _, stack in ipairs(prototype.items_to_place_this) do
+            local count = stack.count or 1
+            local inventory_count = player.get_item_count(stack.name)
+            if inventory_count < count then
+                table.insert(reasons, string.format("missing %d %s", count - inventory_count, stack.name))
+            end
+        end
+    end
+
+    return reasons
+end
+
+global.utils.describe_placement_issues = function(player, entity_name, position, direction)
+    local issues = global.utils.get_placement_issues(player, entity_name, position, direction)
+    if #issues > 0 then
+        return "Cannot build because: " .. table.concat(issues, "; ")
+    end
+    return ""
+end
+
+global.utils.avoid_entity = function(player_index, entity, position, direction)
+    local player = game.get_player(player_index)
+    local player_position = player.position
+    for i=0, 10 do
+        local can_place = player.can_place_entity{
+            name = entity,
+            force = player.force,
+            position = position,
+            direction = global.utils.get_entity_direction(entity, direction)
+        }
+        if can_place then
+            return true
+        end
+        player.teleport({player.position.x + 1, player.position.y + 1}, player.surface)
+    end
+    player.teleport(player_position)
+    return false
+end
+global.actions.avoid_entity2 = function(player_index, entity, position)
     local player = game.get_player(player_index)
     local prototype = game.entity_prototypes[entity]
     local character_prototype = game.entity_prototypes["character"]

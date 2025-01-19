@@ -25,6 +25,73 @@ local function are_fluidboxes_connected(entity1, entity2)
     return false
 end
 
+-- Helper function to serialize a belt group
+local function serialize_belt_group(entity)
+    if not entity or not entity.valid or entity.type ~= "transport-belt" then
+        return nil
+    end
+
+    local serialized = {}
+    local seen = {}
+
+    local function get_connected_belt_entities(belt, is_output)
+        local connected_entities = {}
+        local seen_owners = {}
+
+        -- Get connected lines
+        local connected_lines = {}
+        if is_output then
+            if #belt.belt_neighbours['outputs'] then
+                for _, line in pairs(belt.belt_neighbours['outputs']) do
+                    table.insert(connected_lines, line)
+                end
+            end
+        else
+            if #belt.belt_neighbours['inputs'] then
+                for _, line in pairs(belt.belt_neighbours['inputs']) do
+                    table.insert(connected_lines, line)
+                end
+            end
+        end
+
+        game.print("connected lines "..#connected_lines)
+        -- Convert lines to unique belt entities
+        for _, line in pairs(connected_lines) do
+            if line and line.valid and not seen_owners[line.unit_number] then
+                seen_owners[line.unit_number] = true
+                table.insert(connected_entities, line)
+            end
+        end
+        game.print("connected entities "..#connected_entities)
+        return connected_entities
+    end
+
+    local function serialize_connected_belts(belt, is_output)
+        if not belt or not belt.valid or seen[belt.unit_number] then
+            return
+        end
+
+        seen[belt.unit_number] = true
+        local belt_data = global.utils.serialize_entity(belt)
+        table.insert(serialized, belt_data)
+
+        -- Get connected belt entities
+        local next_belts = get_connected_belt_entities(belt, is_output)
+        for _, connected_belt in pairs(next_belts) do
+            if connected_belt.valid and not seen[connected_belt.unit_number] then
+                serialize_connected_belts(connected_belt, is_output)
+            end
+        end
+    end
+
+    -- Start serialization from the given entity
+    serialize_connected_belts(entity, false) -- Follow input direction
+    serialize_connected_belts(entity, true)  -- Follow output direction
+
+    return serialized
+end
+
+
 local function are_poles_connected(entity1, entity2)
     if not (entity1 and entity2) then return false end
     if not (entity1.electric_network_id and entity2.electric_network_id) then return false end
@@ -80,16 +147,17 @@ local function find_placeable_neighbor(pos, previous_pos)
     return nil
 end
 
+
 local function interpolate_manhattan(pos1, pos2)
     local interpolated = {}
     local dx = pos2.x - pos1.x
     local dy = pos2.y - pos1.y
     local manhattan_distance = math.abs(dx) + math.abs(dy)
-
+    game.print("Distance2 "..manhattan_distance)
     if manhattan_distance > 2 then
         local steps = math.max(math.abs(dx), math.abs(dy))
-        local x_step = dx / steps
-        local y_step = dy / steps
+        local x_step = math.floor((dx / steps)*2)/2
+        local y_step = math.floor((dy / steps)*2)/2
 
         for i = 1, steps - 1 do
             local new_pos_x = {x = pos1.x + math.round(x_step * i), y = pos1.y}
@@ -112,47 +180,67 @@ local function interpolate_manhattan(pos1, pos2)
                 end
             end
         end
-    elseif math.abs(dx) == 1 and math.abs(dy) == 1 then
-        local mid_pos = {x = pos2.x, y = pos1.y}
-        if is_placeable(mid_pos) then
-            table.insert(interpolated, {position = mid_pos})
-        else
-            mid_pos = {x = pos1.x, y = pos2.y}
+        --elseif math.abs(dx) == 1 and math.abs(dy) == 1 then
+        --    local mid_pos = {x = pos2.x, y = pos1.y}
+        --    if is_placeable(mid_pos) then
+        --        table.insert(interpolated, {position = mid_pos})
+        --    else
+        --        mid_pos = {x = pos1.x, y = pos2.y}
+        --        if is_placeable(mid_pos) then
+        --            table.insert(interpolated, {position = mid_pos})
+        --        else
+        --            mid_pos = find_placeable_neighbor(mid_pos, pos1)
+        --            if mid_pos then
+        --                table.insert(interpolated, {position = mid_pos})
+        --            end
+        --        end
+        --    end
+        --end
+        elseif math.abs(dx) == 1 and math.abs(dy) == 1 then --and math.abs(dx) <= 1.5 and math.abs(dy) <= 1.5 then
+            -- Try first horizontal then vertical movement
+            local mid_pos = {x = pos2.x, y = pos1.y}
             if is_placeable(mid_pos) then
                 table.insert(interpolated, {position = mid_pos})
             else
-                mid_pos = find_placeable_neighbor(mid_pos, pos1)
-                if mid_pos then
+                -- Try vertical then horizontal movement
+                mid_pos = {x = pos1.x, y = pos2.y}
+                if is_placeable(mid_pos) then
                     table.insert(interpolated, {position = mid_pos})
+                else
+                    -- If neither orthogonal position works, try to find a neighbor
+                    local neighbor = find_placeable_neighbor(mid_pos, pos1)
+                    if neighbor then
+                        table.insert(interpolated, {position = neighbor})
+                    end
                 end
             end
-        end
+
     end
 
     return interpolated
 end
 
-local function get_direction(from_position, to_position)
-    local dx = to_position.x - from_position.x
-    local dy = to_position.y - from_position.y
-    local adx = math.abs(dx)
-    local ady = math.abs(dy)
-    local diagonal_threshold = 0.5
-
-    if adx > ady then
-        if dx > 0 then
-            return (ady / adx > diagonal_threshold) and (dy > 0 and 3 or 1) or 2
-        else
-            return (ady / adx > diagonal_threshold) and (dy > 0 and 5 or 7) or 6
-        end
-    else
-        if dy > 0 then
-            return (adx / ady > diagonal_threshold) and (dx > 0 and 3 or 5) or 4
-        else
-            return (adx / ady > diagonal_threshold) and (dx > 0 and 1 or 7) or 0
-        end
-    end
-end
+--local function get_direction(from_position, to_position)
+--    local dx = to_position.x - from_position.x
+--    local dy = to_position.y - from_position.y
+--    local adx = math.abs(dx)
+--    local ady = math.abs(dy)
+--    local diagonal_threshold = 0.5
+--
+--    if adx > ady then
+--        if dx > 0 then
+--            return (ady / adx > diagonal_threshold) and (dy > 0 and 3 or 1) or 2
+--        else
+--            return (ady / adx > diagonal_threshold) and (dy > 0 and 5 or 7) or 6
+--        end
+--    else
+--        if dy > 0 then
+--            return (adx / ady > diagonal_threshold) and (dx > 0 and 3 or 5) or 4
+--        else
+--            return (adx / ady > diagonal_threshold) and (dx > 0 and 1 or 7) or 0
+--        end
+--    end
+--end
 
 
 
@@ -163,6 +251,12 @@ local function place_at_position(player, connection_type, current_position, dir,
     local is_electric_pole = wire_reach[connection_type] ~= nil
     local placement_position = current_position
     local existing_entity = nil
+
+    for _, entity in pairs(serialized_entities) do
+        if entity.position.x == placement_position.x and entity.position.y == placement_position.y then
+            return
+        end
+    end
 
     if is_electric_pole then
         placement_position = game.surfaces[1].find_non_colliding_position(connection_type, current_position, 3, 0.1)
@@ -235,13 +329,7 @@ local function place_at_position(player, connection_type, current_position, dir,
         end
     else
         game.print("Avoiding entity at " .. placement_position.x.. ", " .. placement_position.y)
-        global.actions.avoid_entity(player.index, connection_type, placement_position)
-        --if player.surface.can_place_entity{
-        --    name = connection_type,
-        --    position = placement_position,
-        --    direction = dir,
-        --    force = player.force
-        --} then
+        global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
         local placed_entity = player.surface.create_entity({
             name = connection_type,
             position = placement_position,
@@ -254,23 +342,37 @@ local function place_at_position(player, connection_type, current_position, dir,
             table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
             return placed_entity
         end
-        --end
     end
 end
 
 local function connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run)
     local counter_state = {place_counter = 0}
     local player = game.get_player(player_index)
+    local last_placed_entity = nil
 
     local start_position = {x = math.floor(source_x*2)/2, y = math.floor(source_y*2)/2}
     local end_position = {x = target_x, y = target_y}
 
     local raw_path = global.paths[path_handle]
+    game.print("Path length "..#raw_path)
+    game.print(serpent.line(start_position).." - "..serpent.line(end_position))
+
     if not raw_path or type(raw_path) ~= "table" or #raw_path == 0 then
         error("Invalid path: " .. serpent.line(path))
     end
 
+    game.print("Normalising", {print_skip=defines.print_skip.never})
     local path = global.utils.normalise_path(raw_path, start_position, end_position)
+
+    rendering.clear()
+    for i = 1, #path - 1 do
+        rendering.draw_line{surface = game.players[1].surface, from = path[i].position, to =  path[i + 1].position, color = {1, 0, 1}, width = 2,  dash_length=0.25, gap_length = 0.25}
+    end
+    for i = 1, #raw_path - 1 do
+        rendering.draw_line{surface = game.players[1].surface, from = raw_path[i].position, to =  raw_path[i + 1].position, color = {1, 1, 0}, width = 0,  dash_length=0.2, gap_length = 0.2}
+    end
+
+    game.print("Norm path length "..#path)
 
     local last_position = start_position
     local step_size = wire_reach[connection_type] or 1
@@ -288,13 +390,36 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
     local is_electric_pole = wire_reach[connection_type] ~= nil
 
+    -- Handle source belt orientation if it exists
+    if not is_electric_pole and connection_type ~= 'pipe' then
+        local source_pos = {x = source_x, y = source_y}
+        local entities = game.surfaces[1].find_entities_filtered{
+            position = source_pos,
+            name = connection_type,
+            force = "player"
+        }
+
+        if #entities > 0 and #path > 1 then
+            -- Calculate initial direction based on first two points in path
+            local initial_dir = global.utils.get_direction(path[1].position, path[2].position)
+            local entity_dir = global.utils.get_entity_direction(connection_type, initial_dir/2)
+
+            -- Update source belt direction if needed
+            local source_belt = entities[1]
+            if source_belt and source_belt.valid and source_belt.direction ~= initial_dir then
+                source_belt.direction = initial_dir
+                table.insert(serialized_entities, global.utils.serialize_entity(source_belt))
+            end
+        end
+    end
+
     if is_electric_pole then
         -- Place poles until we achieve connectivity
         local last_pole = source_entity
 
         for i = 1, #path-1, step_size do
             local current_pos = path[i].position
-            local dir = get_direction(current_pos, path[math.min(i + step_size, #path)].position)
+            local dir = global.utils.get_direction(current_pos, path[math.min(i + step_size, #path)].position)
             local entity_dir = global.utils.get_entity_direction(connection_type, dir/2)
 
             -- Place the pole
@@ -315,7 +440,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
         -- If we haven't achieved connectivity yet, place one final pole at the target
         if not dry_run and last_pole and target_entity and not are_poles_connected(last_pole, target_entity) then
-            local final_dir = get_direction(path[#path].position, end_position)
+            local final_dir = global.utils.get_direction(path[#path].position, end_position)
             place_at_position(player, connection_type, end_position,
                 global.utils.get_entity_direction(connection_type, final_dir/2),
                 serialized_entities, dry_run, counter_state)
@@ -326,10 +451,13 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         end
 
         for i = 1, #path-1, step_size do
-            local dir = get_direction(path[i].position, path[math.min(i + step_size, #path)].position)
-            place_at_position(player, connection_type, path[i].position,
+            local dir = global.utils.get_direction(path[i].position, path[math.min(i + step_size, #path)].position)
+            local placed = place_at_position(player, connection_type, path[i].position,
                 global.utils.get_entity_direction(connection_type, dir/2),
                 serialized_entities, dry_run, counter_state)
+            if placed then
+                last_placed_entity = placed
+            end
         end
 
         -- Handle final placement
@@ -341,22 +469,45 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
             -- Place intermediate and final pipes
             place_at_position(player, connection_type, path[#path].position,
-                get_direction(path[#path].position, preemptive_target),
+                global.utils.get_direction(path[#path].position, preemptive_target),
                 serialized_entities, dry_run, counter_state)
 
             place_at_position(player, connection_type, preemptive_target,
-                get_direction(path[#path].position, preemptive_target),
+                global.utils.get_direction(path[#path].position, preemptive_target),
                 serialized_entities, dry_run, counter_state)
 
             place_at_position(player, connection_type, end_position,
-                get_direction(preemptive_target, end_position),
+                global.utils.get_direction(preemptive_target, end_position),
                 serialized_entities, dry_run, counter_state)
         else
-            -- For belts, just place the final entity
-            local final_dir = get_direction(path[#path].position, end_position)
-            place_at_position(player, connection_type, end_position,
+            local last_path_index = #path
+            local second_to_last_index = math.max(1, last_path_index - 1)
+            local final_dir = global.utils.get_direction(
+                path[second_to_last_index].position,
+                path[last_path_index].position
+            )
+
+            local final_entity = place_at_position(player, connection_type, end_position,
                 global.utils.get_entity_direction(connection_type, final_dir/2),
                 serialized_entities, dry_run, counter_state)
+
+            if final_entity then
+                last_placed_entity = final_entity
+            end
+
+            -- After all belts are placed, serialize the entire belt group if we're not in dry run
+            if not dry_run and last_placed_entity and last_placed_entity.valid then
+                -- Clear the existing serialized entities (which only contain individual placements)
+
+                --serialized_entities = {}
+                ---- Serialize the entire connected belt group
+                --local group_data = serialize_belt_group(last_placed_entity)
+                --if group_data then
+                --    for _, serialized in ipairs(group_data) do
+                --        table.insert(serialized_entities, serialized)
+                --    end
+                --end
+            end
         end
     end
 
@@ -372,6 +523,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
     game.print("Connection status: " .. tostring(is_connected))
 
+
     return {
         entities = serialized_entities,
         connected = is_connected, 
@@ -379,14 +531,30 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
     }
 end
 
-global.utils.normalise_path = function(original_path, start_position, end_position)
-    --- This function interpolates the path to ensure that all positions are placeable and within 1 tile of each other
-
+global.utils.normalise_path3 = function(original_path, start_position, end_position)
     local path = {}
     local seen = {}  -- To track seen positions
 
+     if math.ceil(start_position.x) == start_position.x or math.ceil(start_position.y) == start_position.y then
+        start_position.x = start_position.x + 0.5
+        start_position.y = start_position.y + 0.5
+    end
+
+    if math.ceil(end_position.x) == end_position.x or math.ceil(end_position.y) == end_position.y then
+        end_position.x = end_position.x + 0.5
+        end_position.y = end_position.y + 0.5
+    end
+
+    for i = 1, #original_path do
+        game.print(serpent.line(original_path[i]))
+    end
+    if math.ceil(original_path[1].position.x) == original_path[1].position.x or math.ceil(original_path[1].position.y) == original_path[1].position.y then
+        original_path[1].position.x = original_path[1].position.x + 0.5
+        original_path[1].position.y = original_path[1].position.y + 0.5
+    end
+
     -- Helper function to add unique positions
-    local function add_unique(pos)
+    local function add_unique(pos, prev_pos)
         local key = pos.x .. "," .. pos.y
         if not seen[key] then
             if is_placeable(pos) then
@@ -394,7 +562,7 @@ global.utils.normalise_path = function(original_path, start_position, end_positi
                 seen[key] = true
                 return pos
             else
-                local alt_pos = find_placeable_neighbor(pos, previous_pos)
+                local alt_pos = find_placeable_neighbor(pos, prev_pos)
                 if alt_pos then
                     local alt_key = alt_pos.x .. "," .. alt_pos.y
                     if not seen[alt_key] then
@@ -408,47 +576,240 @@ global.utils.normalise_path = function(original_path, start_position, end_positi
         return nil
     end
 
-
     -- Add start position first
-    local previous_pos = nil
-    previous_pos = add_unique(start_position) or start_position
+    local previous_pos = add_unique(start_position, nil) or start_position
+    local current_pos = previous_pos
 
-    -- Interpolate the start to the second position in the original path.
-    if #original_path > 2 then
-        local interpolated = interpolate_manhattan(start_position, original_path[2].position)
-        for _, point in ipairs(interpolated) do
-            local new_pos = add_unique(point.position, previous_pos)
-            if new_pos then previous_pos = new_pos end
-        end
-    end
+    -- Handle first segment explicitly if there's a path
+    if #original_path > 0 then
+        local first_target = original_path[1].position
+        -- Force orthogonal movement for first segment
+        local dx = first_target.x - current_pos.x
+        local dy = first_target.y - current_pos.y
 
-    for i = 1, #original_path - 1 do
-        local current_pos = add_unique(original_path[i].position, previous_pos)
-        if current_pos then
-            previous_pos = current_pos
-            local interpolated = interpolate_manhattan(current_pos, original_path[i+1].position)
-            for _, point in ipairs(interpolated) do
-                local new_pos = add_unique(point.position, previous_pos)
-                if new_pos then previous_pos = new_pos end
+        -- Try horizontal movement first
+        if dx ~= 0 then
+            local mid_pos = {x = first_target.x, y = current_pos.y}
+            local new_pos = add_unique(mid_pos, current_pos)
+            if new_pos then
+                current_pos = new_pos
             end
         end
+        -- Then vertical movement
+        if dy ~= 0 then
+            local mid_pos = {x = current_pos.x, y = first_target.y}
+            local new_pos = add_unique(mid_pos, current_pos)
+            if new_pos then
+                current_pos = new_pos
+            end
+        end
+        -- Add the target position
+        local new_pos = add_unique(first_target, current_pos)
+        if new_pos then
+            current_pos = new_pos
+        end
     end
 
-    local interpolated = interpolate_manhattan(path[#path].position, end_position)
-    for _, point in ipairs(interpolated) do
-        add_unique(point.position)
+    -- Process rest of the path
+    for i = 2, #original_path do
+        local target_pos = original_path[i].position
+        local interpolated = interpolate_manhattan(current_pos, target_pos)
+
+        -- Add interpolated positions
+        for _, point in ipairs(interpolated) do
+            local new_pos = add_unique(point.position, current_pos)
+            if new_pos then
+                current_pos = new_pos
+            end
+        end
+
+        -- Add the target position
+        local new_pos = add_unique(target_pos, current_pos)
+        if new_pos then
+            current_pos = new_pos
+        end
     end
 
-    add_unique(end_position)
+    -- Finally interpolate to end position if it's different from the last position
+    if current_pos.x ~= end_position.x or current_pos.y ~= end_position.y then
+        local dx = end_position.x - current_pos.x
+        local dy = end_position.y - current_pos.y
+
+        -- Force orthogonal movement for final segment
+        if dx ~= 0 then
+            local mid_pos = {x = end_position.x, y = current_pos.y}
+            local new_pos = add_unique(mid_pos, current_pos)
+            if new_pos then
+                current_pos = new_pos
+            end
+        end
+        if dy ~= 0 then
+            local mid_pos = {x = current_pos.x, y = end_position.y}
+            local new_pos = add_unique(mid_pos, current_pos)
+            if new_pos then
+                current_pos = new_pos
+            end
+        end
+        add_unique(end_position, current_pos)
+    end
 
     return path
 end
 
+global.utils.normalise_path = function(original_path, start_position, end_position)
+    local path = {}
+    local seen = {}  -- To track seen positions
+
+    if math.ceil(start_position.x) == start_position.x or math.ceil(start_position.y) == start_position.y then
+        start_position.x = start_position.x + 0.5
+        start_position.y = start_position.y + 0.5
+    end
+
+    if math.ceil(end_position.x) == end_position.x or math.ceil(end_position.y) == end_position.y then
+        end_position.x = end_position.x + 0.5
+        end_position.y = end_position.y + 0.5
+    end
+
+    for i = 1, #original_path do
+        game.print(serpent.line(original_path[i]))
+    end
+
+    if math.ceil(original_path[1].position.x) == original_path[1].position.x or math.ceil(original_path[1].position.y) == original_path[1].position.y then
+        original_path[1].position.x = original_path[1].position.x + 0.5
+        original_path[1].position.y = original_path[1].position.y + 0.5
+    end
+
+    -- Helper function to add unique positions
+    local function add_unique(pos, prev_pos)
+        local key = pos.x .. "," .. pos.y
+        if not seen[key] then
+            if is_placeable(pos) then
+                table.insert(path, {position = pos})
+                seen[key] = true
+                return pos
+            else
+                local alt_pos = find_placeable_neighbor(pos, prev_pos)
+                if alt_pos then
+                    local alt_key = alt_pos.x .. "," .. alt_pos.y
+                    if not seen[alt_key] then
+                        table.insert(path, {position = alt_pos})
+                        seen[alt_key] = true
+                        return alt_pos
+                    end
+                end
+            end
+        end
+        return nil
+    end
+
+    -- Add start position first
+    local previous_pos = add_unique(start_position, nil) or start_position
+
+    -- Process each segment of the path
+    local current_pos = previous_pos
+    for i = 1, #original_path do
+        local target_pos = original_path[i].position
+        local interpolated = interpolate_manhattan(current_pos, target_pos)
+
+        -- Add interpolated positions
+        for _, point in ipairs(interpolated) do
+            local new_pos = add_unique(point.position, current_pos)
+            if new_pos then
+                current_pos = new_pos
+            end
+        end
+
+        -- Add the target position
+        local new_pos = add_unique(target_pos, current_pos)
+        if new_pos then
+            current_pos = new_pos
+        end
+    end
+
+    -- Finally interpolate to end position if it's different from the last position
+    if current_pos.x ~= end_position.x or current_pos.y ~= end_position.y then
+        local interpolated = interpolate_manhattan(current_pos, end_position)
+        for _, point in ipairs(interpolated) do
+            local new_pos = add_unique(point.position, current_pos)
+            if new_pos then
+                current_pos = new_pos
+            end
+        end
+        add_unique(end_position, current_pos)
+    end
+
+    return path
+end
+--global.utils.normalise_path = function(original_path, start_position, end_position)
+--    --- This function interpolates the path to ensure that all positions are placeable and within 1 tile of each other
+--
+--    local path = {}
+--    local seen = {}  -- To track seen positions
+--    game.print("Normalising path")
+--    -- Helper function to add unique positions
+--    local function add_unique(pos)
+--        local key = pos.x .. "," .. pos.y
+--        if not seen[key] then
+--            if is_placeable(pos) then
+--                table.insert(path, {position = pos})
+--                seen[key] = true
+--                return pos
+--            else
+--                local alt_pos = find_placeable_neighbor(pos, previous_pos)
+--                if alt_pos then
+--                    local alt_key = alt_pos.x .. "," .. alt_pos.y
+--                    if not seen[alt_key] then
+--                        table.insert(path, {position = alt_pos})
+--                        seen[alt_key] = true
+--                        return alt_pos
+--                    end
+--                end
+--            end
+--        end
+--        return nil
+--    end
+--
+--
+--    -- Add start position first
+--    local previous_pos = nil
+--    previous_pos = add_unique(start_position) or start_position
+--
+--    -- Interpolate the start to the second position in the original path.
+--    if #original_path > 2 then
+--        local interpolated = interpolate_manhattan(start_position, original_path[2].position)
+--        for _, point in ipairs(interpolated) do
+--            local new_pos = add_unique(point.position, previous_pos)
+--            if new_pos then previous_pos = new_pos end
+--        end
+--    end
+--
+--    for i = 1, #original_path - 1 do
+--        local current_pos = add_unique(original_path[i].position, previous_pos)
+--        if current_pos then
+--            previous_pos = current_pos
+--            local interpolated = interpolate_manhattan(current_pos, original_path[i+1].position)
+--            for _, point in ipairs(interpolated) do
+--                local new_pos = add_unique(point.position, previous_pos)
+--                if new_pos then previous_pos = new_pos end
+--            end
+--        end
+--    end
+--
+--    local interpolated = interpolate_manhattan(path[#path].position, end_position)
+--    for _, point in ipairs(interpolated) do
+--        add_unique(point.position)
+--    end
+--
+--    add_unique(end_position)
+--
+--    return path
+--end
+
 -- Using the new shortest_path function.
 global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run, number_of_connection_entities)
     --First do a dry run
+    game.print("haha")
     local result = connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, true)
-    
     -- then do an actual run if dry run is false
     if not dry_run then
         -- Check if the player has enough entities in their inventory

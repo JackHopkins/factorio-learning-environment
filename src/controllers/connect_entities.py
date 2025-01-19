@@ -8,6 +8,7 @@ from controllers.__action import Action
 from typing import Tuple, List, Union
 
 from controllers.get_entities import GetEntities
+from controllers.get_entity import GetEntity
 from controllers.get_path import GetPath
 from controllers.pickup_entity import PickupEntity
 from controllers.request_path import RequestPath
@@ -31,6 +32,7 @@ class ConnectEntities(Action):
         self.pickup_entity = PickupEntity(connection, game_state)
         self.inspect_inventory = InspectInventory(connection, game_state)
         self.get_entities = GetEntities(connection, game_state)
+        self.get_entity = GetEntity(connection, game_state)
 
 
     def _get_nearest_connection_point(self,
@@ -167,7 +169,7 @@ class ConnectEntities(Action):
                 y_sign = numpy.sign(source_position.y - target_position.y)
 
             if isinstance(source_entity, BeltGroup):
-                source_position = source_entity.output_positions[0]
+                source_position = source_entity.outputs[0].position # TODO This should be the nearest output to the source position
             elif source_entity and isinstance(source, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
                 if isinstance(source_entity, PumpJack) and connection_type.name == Prototype.Pipe.name:
                     source_position = source_entity.connection_points[0]
@@ -224,7 +226,7 @@ class ConnectEntities(Action):
 
 
             if isinstance(target_entity, BeltGroup):
-                target_position = target_entity.input_positions[0]
+                target_position = target_entity.inputs[0].input_position
             elif isinstance(target, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
                 if isinstance(target_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
                     if isinstance(target_entity, Boiler):
@@ -263,22 +265,24 @@ class ConnectEntities(Action):
                 # If the source_entity and the target_entity is the same object, ensure there are only 2 input_positions
                 # And set them.
                 if source_entity.pipes[0].position == target_entity.pipes[0].position:
-                    if len(source_entity.input_positions) == 2:
-                        source_position = source_entity.input_positions[0]
-                        target_position = target_entity.input_positions[1]
+                    if len(source_entity.input) == 2:
+                        source_position = source_entity.inputs[0].position
+                        target_position = target_entity.inputs[1].position
                     else:
                         raise Exception("PipeGroup must have only 2 input_position if connecting to itself.")
                 else:
-                    # check each input_position from the source_entity, and each output_position from the target_entity
+                    # check each output_position from the source_entity, and each input_position from the target_entity
                     # determine which pair is the closest, and connect them
                     shortest_distance = 1000000
-                    for source_input_position in source_entity.input_positions:
-                        for target_output_position in target_entity.input_positions:
-                            distance = abs(source_input_position.x - target_output_position.x) + abs(source_input_position.y - target_output_position.y)
+                    for source_output in source_entity.outputs:
+                        source_output_position = source_output.output_position
+                        for target_input in target_entity.inputs:
+                            target_input_position = target_input.input_position
+                            distance = abs(source_output_position.x - target_input_position.x) + abs(source_output_position.y - target_input_position.y)
                             if distance < shortest_distance:
                                 shortest_distance = distance
-                                source_position = source_input_position
-                                target_position = target_output_position
+                                source_position = source_output_position
+                                target_position = target_input_position
 
 
             # Move the source and target positions to the center of the tile
@@ -365,10 +369,6 @@ class ConnectEntities(Action):
                             continue
                         raise Exception(f"Could not create {connection_prototype} object from response: {response}", e)
 
-            # If the source and target entities are both BeltGroups, we need to make sure that the final belt is rotated
-            # to face the first belt of the source entity group.
-            if isinstance(source_entity, BeltGroup) and isinstance(target_entity, BeltGroup):
-                self.rotate_final_belt_when_connecting_groups(groupable_entities, source_entity)
 
             deduplicated_path = _deduplicate_entities(path)
 
@@ -376,11 +376,12 @@ class ConnectEntities(Action):
             # If we are connecting to an existing belt group, we need to agglomerate them all together
             if connection_type == Prototype.TransportBelt:
                 if isinstance(source_entity, BeltGroup):
-                    entity_groups = agglomerate_groupable_entities(source_entity.belts + groupable_entities)
-                    entity_groups[0].input_positions = source_entity.input_positions
+                    #entity_groups = agglomerate_groupable_entities(source_entity.belts + groupable_entities)
+                    entity_groups = agglomerate_groupable_entities(groupable_entities)
+                    #entity_groups[0].inputs = source_entity.inputs
                 elif isinstance(target_entity, BeltGroup):
                     entity_groups = agglomerate_groupable_entities(groupable_entities + target_entity.belts)
-                    entity_groups[0].output_positions = target_entity.output_positions
+                    #entity_groups[0].outputs = target_entity.outputs
                 else:
                     entity_groups = agglomerate_groupable_entities(groupable_entities)
 
@@ -409,6 +410,10 @@ class ConnectEntities(Action):
                         electricity_ids[entity.electric_network_id].append(entity)
                 entity_groups = [ElectricityGroup(electric_network_id=id, poles=list(set(entities))) for id, entities in electricity_ids.items()]
 
+            # If the source and target entities are both BeltGroups, we need to make sure that the final belt is rotated
+            # to face the first belt of the source entity group.
+            if isinstance(source_entity, BeltGroup) and isinstance(target_entity, BeltGroup):
+                self.rotate_final_belt_when_connecting_groups(entity_groups[0], source_entity)
 
             # if we have more than one entity group - but one of them only has one entity (i.e it is dangling) we
             # should pick it up back into the inventory, as the connect entities routine should not have created it
@@ -429,8 +434,10 @@ class ConnectEntities(Action):
             raise e
 
     def rotate_final_belt_when_connecting_groups(self, new_belt: BeltGroup, target: BeltGroup) -> BeltGroup:
-        source_belt = new_belt[-1]
-        target_belt = target.belts[0]
+        if not new_belt.outputs:
+            return new_belt
+        source_belt = new_belt.outputs[0]
+        target_belt = target.inputs[0]
         if source_belt.position.x < target_belt.position.x:
             # It is necessary to use the direction enums from the game state
             source_belt = self.rotate_entity(source_belt, Direction.RIGHT)
@@ -441,5 +448,30 @@ class ConnectEntities(Action):
         elif source_belt.position.y > target_belt.position.y:
             source_belt = self.rotate_entity(source_belt, Direction.UP)
 
-        new_belt[-1] = source_belt
+        # Check to see if this is still a source / terminus
+        target_belt = self.get_entity(target_belt.prototype, target_belt.position)
+
+        new_belt.outputs[0] = source_belt
+        for belt in new_belt.belts:
+            if belt.position == source_belt.position:
+                belt.input_position = source_belt.input_position
+                belt.output_position = source_belt.output_position
+                belt.direction = source_belt.direction
+                belt.is_source = source_belt.is_source
+                belt.is_terminus = source_belt.is_terminus
+
+                if not belt.is_terminus and belt in new_belt.outputs:
+                    new_belt.outputs.remove(belt)
+                if not belt.is_source and belt in new_belt.inputs:
+                    new_belt.inputs.remove(belt)
+
+            if belt.position == target_belt.position:
+                belt.is_source = target_belt.is_source
+                belt.is_terminus = target_belt.is_terminus
+
+                if not belt.is_terminus and belt in new_belt.outputs:
+                    new_belt.outputs.remove(belt)
+                if not belt.is_source and belt in new_belt.inputs:
+                    new_belt.inputs.remove(belt)
+
         return new_belt

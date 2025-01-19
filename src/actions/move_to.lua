@@ -9,41 +9,18 @@ if not global.fast then
     end)
 end
 
-local function get_direction(from_pos, to_pos)
-    local dx = to_pos.x - from_pos.x
-    local dy = to_pos.y - from_pos.y
-    if dx == 0 and dy == 0 then
-        return nil
-    elseif math.abs(dx) > math.abs(dy) then
-        return dx > 0 and defines.direction.east or defines.direction.west
-    else
-        return dy > 0 and defines.direction.south or defines.direction.north
-    end
-end
+--local function get_direction(from_pos, to_pos)
+--    local dx = to_pos.x - from_pos.x
+--    local dy = to_pos.y - from_pos.y
+--    if dx == 0 and dy == 0 then
+--        return nil
+--    elseif math.abs(dx) > math.abs(dy) then
+--        return dx > 0 and defines.direction.east or defines.direction.west
+--    else
+--        return dy > 0 and defines.direction.south or defines.direction.north
+--    end
+--end
 
-local function get_direction_with_diagonals(from_pos, to_pos)
-    local dx = to_pos.x - from_pos.x
-    local dy = to_pos.y - from_pos.y
-
-    if dx == 0 and dy == 0 then
-        return nil
-    end
-
-    -- Check for cardinal directions first
-    local cardinal_margin = 0.25
-    if math.abs(dx) < cardinal_margin then
-        return dy > 0 and defines.direction.south or defines.direction.north
-    elseif math.abs(dy) < cardinal_margin then
-        return dx > 0 and defines.direction.east or defines.direction.west
-    end
-
-    -- Handle diagonal directions
-    if dx > 0 then
-        return dy > 0 and defines.direction.southeast or defines.direction.northeast
-    else
-        return dy > 0 and defines.direction.southwest or defines.direction.northwest
-    end
-end
 
 global.actions.move_to = function(player_index, path_handle, trailing_entity, is_trailing)
     local player = game.get_player(player_index)
@@ -88,21 +65,19 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
             global.walking_queues[player_index].current_target = target
             player.walking_state = {
                 walking = true,
-                direction = get_direction(player.position, target)
+                direction = global.utils.get_direction(player.position, target)
             }
         end
 
         return player.position
     end
 
-    -- Rest of the original fast-mode code...
     local function rotate_entity(entity, direction)
         local direction_map = {defines.direction.north, defines.direction.east, defines.direction.south, defines.direction.west}
         local inserter_direction_map = {defines.direction.south, defines.direction.west, defines.direction.north, defines.direction.east}
 
         if entity.type == "inserter" then
             orientation = inserter_direction_map[direction/2+1]
-            game.print("orientation: " .. orientation .. " direction: " .. direction)
         else
             orientation = direction_map[direction/2+1]
         end
@@ -190,7 +165,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
         global.elapsed_ticks = global.elapsed_ticks + global.utils.calculate_movement_ticks(player, prev_pos, target_position)
 
 
-        local direction = get_direction(prev_pos, target_position)
+        local direction = global.utils.get_direction(prev_pos, target_position)
 
         if not direction then
             goto continue
@@ -205,7 +180,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
                 --game.print("Placing at direction: " .. direction .. " Current position: " .. serpent.line(prev_pos) .. " Target position: " .. serpent.line(target_position))
                 new_belt = place(prev_pos, direction)
                 if prev_belt then
-                    rotate_entity(prev_belt, get_direction(prev_belt.position, prev_pos))
+                    rotate_entity(prev_belt, global.utils.get_direction(prev_belt.position, prev_pos))
                 end
             end
             player.teleport(target_position)
@@ -219,7 +194,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
                 new_direction = opposite_direction[direction/2+1]
                 new_belt = place(target_position, new_direction)
                 if prev_belt then
-                    rotate_entity(prev_belt, get_direction(prev_belt.position, current_position))
+                    rotate_entity(prev_belt, global.utils.get_direction(prev_belt.position, current_position))
                 end
             end
             player.teleport(target_position)
@@ -256,7 +231,7 @@ global.actions.update_walking_queues = function()
                 queue.current_target = queue.positions[1]
                 player.walking_state = {
                     walking = true,
-                    direction = get_direction_with_diagonals(player.position, queue.current_target)
+                    direction = global.utils.get_direction_with_diagonals(player.position, queue.current_target)
                 }
             else
                 -- Queue is empty, stop walking
@@ -267,7 +242,7 @@ global.actions.update_walking_queues = function()
             -- Update walking direction to current target
             player.walking_state = {
                 walking = true,
-                direction = get_direction_with_diagonals(player.position, queue.current_target)
+                direction = global.utils.get_direction_with_diagonals(player.position, queue.current_target)
             }
         end
 

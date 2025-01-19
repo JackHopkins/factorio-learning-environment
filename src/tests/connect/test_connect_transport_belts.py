@@ -492,4 +492,6 @@ def test_connect_belts_with_end_rotation(game):
     main_connection = game.connect_entities(drill2.drop_position, chest_inserter2.pickup_position, Prototype.TransportBelt)
     # extend connection
     main_connection = game.connect_entities(main_connection[0], chest_inserter.pickup_position, Prototype.TransportBelt)
+
+    ticks_elapsed = game.get_elapsed_ticks()
     pass

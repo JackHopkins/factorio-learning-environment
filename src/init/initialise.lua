@@ -4,6 +4,9 @@
 if not global.actions then
     global.actions = {}
 end
+if not global.utils then
+    global.utils = {}
+end
 --local player = game.players[arg1]
 player.surface.always_day=true
 --game.players[1].character_collision_mask = "not-colliding-with-itself"
@@ -48,6 +51,46 @@ local function check_player_inventory_empty(player)
     local inventory = player.get_main_inventory()
     return inventory.is_empty()
 end
+
+global.utils.get_closest_entity = function(player, position)
+    local closest_distance = math.huge
+    local closest_entity = nil
+    local entities = player.surface.find_entities_filtered{
+        position = position,
+        force = "player",
+        radius = 3
+    }
+
+    for _, entity in ipairs(entities) do
+        if entity.name ~= 'character' and entity.name ~= 'laser-beam' then
+            local distance = ((position.x - entity.position.x) ^ 2 + (position.y - entity.position.y) ^ 2) ^ 0.5
+            if distance < closest_distance then
+                closest_distance = distance
+                closest_entity = entity
+            end
+        end
+    end
+
+    return closest_entity
+end
+
+global.utils.calculate_movement_ticks = function(player, from_pos, to_pos)
+    -- Calculate distance between points
+    local dx = to_pos.x - from_pos.x
+    local dy = to_pos.y - from_pos.y
+    local distance = math.sqrt(dx * dx + dy * dy)
+
+    -- Get player's walking speed (tiles per tick)
+    -- Character base speed is 0.15 tiles/tick
+    local walking_speed = player.character_running_speed
+    if not walking_speed or walking_speed == 0 then
+        walking_speed = 0.15  -- Default walking speed
+    end
+
+    -- Calculate ticks needed for movement
+    return math.ceil(distance / walking_speed)
+end
+
 
 global.actions.can_reach = function(player, x, y)
     local dx = player.position.x - x

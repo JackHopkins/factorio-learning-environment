@@ -1,27 +1,12 @@
 -- move_to
 
 -- Register the tick handler when the module is loaded
-script.on_nth_tick(5, function(event)
-    if global.walking_queues then
-        global.actions.update_walking_queues()
-    end
-end)
-
-local function calculate_movement_ticks(player, from_pos, to_pos)
-    -- Calculate distance between points
-    local dx = to_pos.x - from_pos.x
-    local dy = to_pos.y - from_pos.y
-    local distance = math.sqrt(dx * dx + dy * dy)
-
-    -- Get player's walking speed (tiles per tick)
-    -- Character base speed is 0.15 tiles/tick
-    local walking_speed = player.character_running_speed
-    if not walking_speed or walking_speed == 0 then
-        walking_speed = 0.15  -- Default walking speed
-    end
-
-    -- Calculate ticks needed for movement
-    return math.ceil(distance / walking_speed)
+if not global.fast then
+    script.on_nth_tick(5, function(event)
+        if global.walking_queues then
+            global.actions.update_walking_queues()
+        end
+    end)
 end
 
 local function get_direction(from_pos, to_pos)
@@ -202,7 +187,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
         local target_position = path[i].position
 
         -- Calculate and accumulate movement ticks before teleporting
-        global.elapsed_ticks = global.elapsed_ticks + calculate_movement_ticks(player, prev_pos, target_position)
+        global.elapsed_ticks = global.elapsed_ticks + global.utils.calculate_movement_ticks(player, prev_pos, target_position)
 
 
         local direction = get_direction(prev_pos, target_position)
@@ -214,10 +199,10 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
         local new_belt
         if is_trailing == 1 then
              if math.abs(prev_pos.x - target_position.x) == 1 and math.abs(prev_pos.y - target_position.y) == 1 then
-                game.print("Placing diagonal belt at " .. serpent.line(prev_pos) .. " to " .. serpent.line(target_position))
+                --game.print("Placing diagonal belt at " .. serpent.line(prev_pos) .. " to " .. serpent.line(target_position))
                 place_diagonal(prev_pos, target_position, false)
             else
-                game.print("Placing at direction: " .. direction .. " Current position: " .. serpent.line(prev_pos) .. " Target position: " .. serpent.line(target_position))
+                --game.print("Placing at direction: " .. direction .. " Current position: " .. serpent.line(prev_pos) .. " Target position: " .. serpent.line(target_position))
                 new_belt = place(prev_pos, direction)
                 if prev_belt then
                     rotate_entity(prev_belt, get_direction(prev_belt.position, prev_pos))

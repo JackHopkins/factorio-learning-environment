@@ -629,12 +629,16 @@ class FactorioInstance:
 
         self.begin_transaction()
         self.add_command('/c global.alerts = {}', raw=True)
-        self.add_command('/c global.elapsed_ticks = 0}', raw=True)
+        self.add_command('/c global.elapsed_ticks = 0', raw=True)
         self.add_command('/c global.fast = {}'.format('true' if fast else 'false'), raw=True)
         #self.add_command('/c script.on_nth_tick(nil)', raw=True)
+
+        # Peaceful mode
         self.add_command('/c game.map_settings.enemy_expansion.enabled = false', raw=True)
         self.add_command('/c game.map_settings.enemy_evolution.enabled = false', raw=True)
         self.add_command('/c game.forces.enemy.kill_all_units()', raw=True)
+
+
         self.add_command(f'/c player = game.players[{PLAYER}]', raw=True)
         self.execute_transaction()
 

@@ -36,11 +36,10 @@ def test_connect_steam_engine_to_assembler_with_electricity_poles(game):
     diagonal_assembler = game.place_entity(Prototype.AssemblingMachine1, position=Position(x=10, y=10))
 
     # check to see if the assemblers are connected to the electricity network
-    inspected_assemblers = game.inspect_entities(position=diagonal_assembler.position, radius=50).get_entities(
-        Prototype.AssemblingMachine1)
+    inspected_assemblers = game.get_entities({Prototype.AssemblingMachine1}, position=diagonal_assembler.position)
 
     for a in inspected_assemblers:
-        assert a.warning == 'not connected to power network'
+        assert a.warnings == ['not connected to power network']
 
     poles_in_inventory = game.inspect_inventory()[Prototype.SmallElectricPole]
 
@@ -50,7 +49,7 @@ def test_connect_steam_engine_to_assembler_with_electricity_poles(game):
     current_poles_in_inventory = game.inspect_inventory()[Prototype.SmallElectricPole]
     spent_poles = (poles_in_inventory - current_poles_in_inventory)
 
-    assert spent_poles == len(poles + poles2)
+    assert spent_poles == len(poles2[0].poles)
 
     # check to see if the assemblers are connected to the electricity network
     assemblers = game.get_entities({Prototype.AssemblingMachine1})
@@ -109,13 +108,15 @@ def test_connect_power_poles_without_blocking_mining_drill(game):
     # Get the mining drill status
     drill = game.get_entity(Prototype.ElectricMiningDrill, miner.position)
     assert drill, "Failed to get mining drill"
-    assert not drill.warnings, f"Drill has warnings: {drill.warnings}"
+    assert drill.status.value == EntityStatus.WORKING.value
 
 def test_pole_to_generator(game):
     game.move_to(Position(x=1, y=1))
 
     # Place offshore pump near water
-    water_position = game.nearest(Resource.Water)
+    water = game.get_resource_patch(Resource.Water, game.nearest(Resource.Water))
+    water_position = water.bounding_box.right_bottom
+
     assert water_position, "No water source found nearby"
     game.move_to(water_position)
     offshore_pump = game.place_entity(Prototype.OffshorePump, Direction.DOWN, water_position)
@@ -146,9 +147,8 @@ def test_pole_to_generator(game):
     # check if the boiler is receiving electricity
     # if it says not connected to power network, then it is working
     # it just isn't connected to any power poles
-    inspected_steam_engine = game.inspect_entities(position=steam_engine.position, radius=1).get_entity(
-        Prototype.SteamEngine)
-    assert inspected_steam_engine.warning == 'not connected to power network'
+    inspected_steam_engine = game.get_entities({Prototype.SteamEngine}, position=steam_engine.position)[0]
+    assert inspected_steam_engine.status == EntityStatus.NOT_PLUGGED_IN_ELECTRIC_NETWORK
 
     """
     Step 1: Place electric mining drill. We need to find a stone patch and place the electric mining drill on it.

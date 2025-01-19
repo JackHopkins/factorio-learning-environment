@@ -328,7 +328,7 @@ local function place_at_position(player, connection_type, current_position, dir,
         direction = dir,
         force = player.force
     } then
-        global.actions.avoid_entity(player.index, connection_type, placement_position)
+        global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
     end
 
     if game.surfaces[1].can_place_entity{
@@ -485,7 +485,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 end
 
 -- Using the new shortest_path function.
-global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run, number_of_connection_entities)
+global.actions.connect_entities2 = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run, number_of_connection_entities)
     --First do a dry run
     local result = connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, true)
     

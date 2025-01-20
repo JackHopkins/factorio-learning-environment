@@ -1,7 +1,7 @@
-from typing import Tuple
+from typing import Tuple, Union
 
 from controllers.__action import Action
-from factorio_entities import Position
+from factorio_entities import Position, Entity
 from factorio_instance import PLAYER
 from factorio_types import Prototype
 
@@ -13,7 +13,7 @@ class ExtractItem(Action):
         #self.connection = connection
         #self.game_state = game_state
 
-    def __call__(self, entity: Prototype, position: Position, quantity=5,
+    def __call__(self, entity: Prototype, source: Union[Position, Entity], quantity=5,
                  ) -> bool:
         """
         Extract an item from an entity's inventory at position (x, y) if it exists on the world.
@@ -25,7 +25,11 @@ class ExtractItem(Action):
         :return True if extraction was successful
         """
 
-        x, y = self.get_position(position)
+        if isinstance(source, Position):
+            x, y = self.get_position(source)
+
+        elif isinstance(source, Entity):
+            x, y = self.get_position(source.position)
         name, _ = entity.value
 
         response, elapsed = self.execute(

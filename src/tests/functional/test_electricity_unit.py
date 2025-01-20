@@ -277,8 +277,7 @@ def test_build_iron_gear_factory_from_scratch(game):
 
     # extract the iron gears from the assembly machine
     game.move_to(assembly_machine.position)
-    game.extract_item(Prototype.IronGearWheel, assembly_machine, quantity=3)
+    extracted = game.extract_item(Prototype.IronGearWheel, assembly_machine, quantity=3)
 
     inventory = game.inspect_inventory(entity=assembly_machine)
-
-    assert inventory.get(Prototype.IronGearWheel) >= 0
+    assert inventory.get(Prototype.IronGearWheel) == 0 and extracted == 3

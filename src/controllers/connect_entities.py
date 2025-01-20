@@ -434,9 +434,9 @@ class ConnectEntities(Action):
             source_belt = self.rotate_entity(source_belt, Direction.RIGHT)
         elif source_belt.position.x > target_belt.position.x and not source_belt.direction.value == Direction.RIGHT.value:
             source_belt = self.rotate_entity(source_belt, Direction.LEFT)
-        elif source_belt.position.y > target_belt.position.y and not source_belt.direction.value == Direction.UP.value:
+        elif source_belt.position.y < target_belt.position.y and not source_belt.direction.value == Direction.UP.value:
             source_belt = self.rotate_entity(source_belt, Direction.DOWN)
-        elif source_belt.position.y < target_belt.position.y and not source_belt.direction.value == Direction.DOWN.value:
+        elif source_belt.position.y > target_belt.position.y and not source_belt.direction.value == Direction.DOWN.value:
             source_belt = self.rotate_entity(source_belt, Direction.UP)
 
         # Check to see if this is still a source / terminus

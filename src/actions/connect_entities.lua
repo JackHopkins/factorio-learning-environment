@@ -496,7 +496,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
             end
 
             -- After all belts are placed, serialize the entire belt group if we're not in dry run
-            if not dry_run and last_placed_entity and last_placed_entity.valid then
+            if not dry_run and last_placed_entity and last_placed_entity.valid and connection_type:find("belt") then
                 -- Clear the existing serialized entities (which only contain individual placements)
 
                 serialized_entities = {}

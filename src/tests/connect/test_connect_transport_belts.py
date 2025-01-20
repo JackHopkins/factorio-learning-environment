@@ -109,7 +109,7 @@ def test_multiple_inserter_connections(game):
         )
 
         # Clean up for next iteration
-        game.reset()
+        game.instance.reset()
 
 def test_inserter_pickup_positions(game):
 
@@ -385,7 +385,7 @@ def test_connecting_transport_belts_around_sharp_edges2(game):
 
         assert len(belts) == 1, "Failed to connect transport belts around the water patch"
 
-        game.reset()
+        game.instance.reset()
 
 
 def test_connect_belt_groups_horizontally(game):
@@ -511,7 +511,7 @@ def test_connect_belts_with_end_rotation(game):
     # extend connection
     main_connection2 = game.connect_entities(main_connection[0], chest_inserter.pickup_position, Prototype.TransportBelt)
 
-    ticks_elapsed = game.get_elapsed_ticks()
+    ticks_elapsed = game.instance.get_elapsed_ticks()
     assert len(main_connection2[0].belts) == 24
 
 def test_connect_belt_small(game):

@@ -95,7 +95,7 @@ class FactorioInstance:
         self._speed = 1
         self._ticks_elapsed = 0
 
-        self.namespace = FactorioNamespace(tcp_port=tcp_port)
+        self.namespace = FactorioNamespace(self)
 
         # self.max_sequential_exception_count = 1
         # self._sequential_exception_count = 0

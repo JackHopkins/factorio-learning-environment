@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import List
 
 from factorio_entities import TransportBelt, BeltGroup, Position, Entity, EntityGroup, PipeGroup, Inventory, \
-    EntityStatus
+    EntityStatus, Pipe
 from factorio_instance import Direction
 from factorio_types import Prototype
 
@@ -25,7 +25,7 @@ def _deduplicate_entities(entities: List[Entity]) -> List[Entity]:
 def _construct_group(entities: List[Entity],
                      prototype: Prototype,
                      position: Position) -> EntityGroup:
-    if prototype == Prototype.TransportBelt or entities[0].prototype == Prototype.TransportBelt:
+    if prototype == Prototype.TransportBelt or isinstance(entities[0], TransportBelt):
         inputs = [c for c in entities if c.is_source]
         outputs = [c for c in entities if c.is_terminus]
         inventory = Inventory()
@@ -50,7 +50,7 @@ def _construct_group(entities: List[Entity],
                          outputs=outputs,
                          status = status,
                          position=position)
-    elif prototype == Prototype.Pipe or entities[0].prototype == Prototype.Pipe:
+    elif prototype == Prototype.Pipe or isinstance(entities[0], Pipe):
         entities = _deduplicate_entities(entities)
         return PipeGroup(pipes=entities,
                          position=position)

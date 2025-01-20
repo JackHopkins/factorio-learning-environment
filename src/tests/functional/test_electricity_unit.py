@@ -14,7 +14,7 @@ def game(instance):
     #instance.rcon_client.send_command('game.reset_game_state()')
     #instance.rcon_client.send_command('game.reload_script()')
     instance.reset()
-    yield instance
+    yield instance.namespace
 
 def test_create_offshore_pump_to_steam_engine(game):
     """

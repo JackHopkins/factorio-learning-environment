@@ -16,7 +16,7 @@ def game(instance):
     }
     instance.reset()
     instance.execute_transaction()
-    yield instance
+    yield instance.namespace
 
 def test_basic_iron_smelting_chain(game):
     # Place iron ore patch

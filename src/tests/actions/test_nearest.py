@@ -6,7 +6,7 @@ from factorio_types import Resource
 @pytest.fixture()
 def game(instance):
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 def test_nearest_resource(game):

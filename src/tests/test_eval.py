@@ -1,15 +1,15 @@
 import unittest
 
 from factorio_instance import FactorioInstance
-#
-#embedded_function = """
-#def inspect_inventory_wrapper():
-#    return inspect_inventory()
-#    
-#inspect_inventory_wrapper()
-#"""
-#
-#expected_result = "{'iron-chest': 2, 'transport-belt': 50, 'burner-inserter': 32, 'small-electric-pole': 10, 'pipe': 15, 'boiler': 1, 'steam-engine': 1, 'burner-mining-drill': 3, 'electric-mining-drill': 1, 'stone-furnace': 9, 'assembling-machine-1': 1, 'coal': 50, 'iron-plate': 50, 'copper-plate': 50}"
+
+embedded_function = """
+def inspect_inventory_wrapper():
+   return inspect_inventory()
+
+inspect_inventory_wrapper()
+"""
+
+expected_result = "{'iron-chest': 2, 'transport-belt': 50, 'burner-inserter': 32, 'small-electric-pole': 10, 'pipe': 15, 'boiler': 1, 'steam-engine': 1, 'burner-mining-drill': 3, 'electric-mining-drill': 1, 'stone-furnace': 9, 'assembling-machine-1': 1, 'coal': 50, 'iron-plate': 50, 'copper-plate': 50}"
 #
 #inventory = {
 #    'iron-plate': 50,
@@ -162,7 +162,7 @@ print(chests)
     pass
 
 
-def test_chest_inventory():
+def test_try_catch():
     inventory = {
         'iron-plate': 50,
         'coal': 100,
@@ -202,5 +202,133 @@ except Exception as e:
     score, goal, result = instance.eval_with_error(test_string, timeout=60)
 
     pass
+
+def test_type_annotations_mixed_depth_prints():
+    inventory = {
+        'iron-plate': 50,
+        'coal': 100,
+        'copper-plate': 50,
+        'iron-chest': 2,
+        'burner-mining-drill': 3,
+        'electric-mining-drill': 1,
+        'assembling-machine-1': 1,
+        'stone-furnace': 9,
+        'transport-belt': 500,
+        'boiler': 1,
+        'burner-inserter': 32,
+        'pipe': 15,
+        'steam-engine': 1,
+        'small-electric-pole': 10,
+        'iron-ore': 10
+    }
+
+    instance = FactorioInstance(address='localhost',
+                                bounding_box=200,
+                                tcp_port=27015,
+                                fast=True)
+                                # cache_scripts=False,
+    test_string = \
+"""
+print("Re-evaluating precise point harvest attempts.")
+
+# Attempt narrower search positions, targeting manual adaptability requirements:
+for dx in [-1, 0, 1]:
+    for dy in [-1, 0, 1]:
+        trial_position: Position = Position(x=-15.5 + dx, y=24.5 + dy)
+        move_to(trial_position)
+        print(f"Testing move and harvest at location: {trial_position}")
+        try:
+            harvested_iron_ore: int = harvest_resource(trial_position, quantity=5, radius=3)
+            print(f"Collected iron ore: {harvested_iron_ore} at {trial_position}.")
+            raise Exception("Oh no")
+        except Exception as e:
+            print(f"Failed at {trial_position}: {e}")
+
+"""
+    score, goal, result = instance.eval_with_error(test_string, timeout=60)
+
+    pass
+
+def test_mixed_hard():
+    inventory = {
+        'iron-plate': 50,
+        'coal': 100,
+        'copper-plate': 50,
+        'iron-chest': 2,
+        'burner-mining-drill': 3,
+        'electric-mining-drill': 1,
+        'assembling-machine-1': 1,
+        'stone-furnace': 9,
+        'transport-belt': 500,
+        'boiler': 1,
+        'burner-inserter': 32,
+        'pipe': 15,
+        'steam-engine': 1,
+        'small-electric-pole': 10,
+        'iron-ore': 10
+    }
+
+    instance = FactorioInstance(address='localhost',
+                                bounding_box=200,
+                                tcp_port=27015,
+                                fast=True,
+                                inventory=inventory)
+                                # cache_scripts=False,
+    test_string = \
+"""
+# Move to the center of the valid stone patch
+move_to(Position(x=-15.5, y=-15.5))
+
+# Initialize the amount of stone collected
+current_stone = 0
+
+# Attempt to harvest stone
+for _ in range(3):  # Only try harvesting three times
+    if current_stone < 10:
+        stone_to_harvest = 10 - current_stone
+        harvested = harvest_resource(Position(x=-15.5, y=-15.5), quantity=stone_to_harvest, radius=10)
+        current_stone += harvested
+        if current_stone >= 10:
+            break  # Exit the loop once enough stone is gathered
+    sleep(1)
+else:
+    # If the loop completes without gathering enough stone
+    raise Exception("Failed to gather enough stone within the expected timeframe.")
+
+# With enough stones gathered, attempt to craft a Stone Furnace
+crafted_furnaces = craft_item(Prototype.StoneFurnace, quantity=1)
+assert crafted_furnaces == 1, "Failed to craft a Stone Furnace after gathering stones."
+
+# Move to a suitable location to place and use the furnace
+furnace_position = Position(x=0.0, y=0.0)
+move_to(furnace_position)
+
+# Place the Stone Furnace
+furnace = place_entity(Prototype.StoneFurnace, position=furnace_position)
+assert furnace, "Failed to place the Stone Furnace."
+
+# Insert coal and iron ore to begin smelting
+insert_item(Prototype.Coal, furnace, quantity=5)
+insert_item(Prototype.IronOre, furnace, quantity=10)
+
+# Monitor the smelting process
+for _ in range(30):
+    furnace_inventory = inspect_inventory(furnace)
+    if furnace_inventory.get(Prototype.IronPlate, 0) >= 10:
+        break
+    print("Sleeping")
+    sleep(100)
+else:
+    raise Exception("Smelting did not complete in the expected timeframe.")
+
+# Extract and verify the production of iron plates
+produced_iron_plates = extract_item(Prototype.IronPlate, furnace.position, quantity=10)
+assert produced_iron_plates == 10, f"Expected 10 iron plates, but got {produced_iron_plates}."
+"""
+    score, goal, result = instance.eval_with_error(test_string, timeout=60)
+
+    pass
+
+
 if __name__ == '__main__':
     unittest.main()

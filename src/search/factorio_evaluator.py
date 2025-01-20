@@ -146,10 +146,10 @@ class FactorioEvaluator:
         try:
             # Get initial state information
             self.logger.update_instance(tcp_port, status="starting value")
-            start_entities = instance.get_entities()
-            start_inventory = instance.inspect_inventory()
-            start_production_flows = instance.get_production_stats()
-            initial_value, start_time = instance.score()
+            start_entities = instance.namespace.get_entities()
+            start_inventory = instance.namespace.inspect_inventory()
+            start_production_flows = instance.namespace.get_production_stats()
+            initial_value, start_time = instance.namespace.score()
 
             # Executing code
             self.logger.update_instance(tcp_port, status="executing")
@@ -165,8 +165,8 @@ class FactorioEvaluator:
             self.logger.update_instance(tcp_port, status=f"accruing value ({self.value_accrual_time}s)")
             await asyncio.sleep(self.value_accrual_time)
 
-            entities = instance.get_entities()
-            final_inventory = instance.inspect_inventory()
+            entities = instance.namespace.get_entities()
+            final_inventory = instance.namespace.inspect_inventory()
 
             # Check to see if the inventories are different
             # If so, we manually put a hint in the generated code and result from the game
@@ -188,11 +188,11 @@ class FactorioEvaluator:
                 result += "\n"+str(len(program.code.split('\n')))+f': (\'Entities on the map: {entities}\',)'
 
 
-            score, _ = instance.score()
+            score, _ = instance.namespace.score()
             final_reward = score - initial_value
             ticks = instance.get_elapsed_ticks()
 
-            post_production_flows = instance.get_production_stats()
+            post_production_flows = instance.namespace.get_production_stats()
             achievements = get_achievements(start_production_flows, post_production_flows)
 
             group_id = self.port_to_group[tcp_port]

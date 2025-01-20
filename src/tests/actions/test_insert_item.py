@@ -20,7 +20,7 @@ def game(instance):
         'assembling-machine-1': 1,
     }
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 def test_insert_and_fuel_furnace(game):

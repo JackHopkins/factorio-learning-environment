@@ -20,7 +20,7 @@ def game(instance):
         'assembling-machine-1': 10,
     }
     instance.reset()
-    yield instance
+    yield instance.namespace
     #instance.reset()
 def test_connect_steam_engine_to_assembler_with_electricity_poles(game):
     """

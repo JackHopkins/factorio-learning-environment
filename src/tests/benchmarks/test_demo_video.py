@@ -22,7 +22,7 @@ def game():
         'iron-plate': 10,
         'coal': 50,
     })
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 

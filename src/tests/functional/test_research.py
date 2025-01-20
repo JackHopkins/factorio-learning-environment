@@ -32,7 +32,7 @@ def game(instance):
                                          all_technologies_researched=False,
                                          inventory=initial_inventory)
     instance.reset()
-    yield instance
+    yield instance.namespace
 
 
 def test_craft_automation_packs_and_research(game):

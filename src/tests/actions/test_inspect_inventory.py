@@ -13,7 +13,7 @@ def game(instance):
         'iron-plate': 5,
     }
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 def test_inspect_inventory(game):

@@ -21,7 +21,7 @@ def game(instance):
         'wooden-chest': 3,
     }
     instance.reset()
-    yield instance
+    yield instance.namespace
     #instance.reset()
 
 @pytest.fixture

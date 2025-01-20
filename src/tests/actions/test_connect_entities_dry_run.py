@@ -7,7 +7,7 @@ from factorio_types import Prototype
 def game(instance):
     instance.initial_inventory = {'transport-belt': 12,}
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 def test_dry_run(game):

@@ -9,7 +9,7 @@ from factorio_types import Prototype
 @pytest.fixture()
 def game(instance):
     instance.reset()
-    yield instance
+    yield instance.namespace
 
 def _test_save_load(game):
 

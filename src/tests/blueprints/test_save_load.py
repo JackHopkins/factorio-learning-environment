@@ -29,7 +29,7 @@ def game(instance):
         'inserter': 10
     }
     instance.reset()
-    yield instance
+    yield instance.namespace
 
 def decode_blueprint(encoded_data):
     """

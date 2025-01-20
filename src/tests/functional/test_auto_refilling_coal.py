@@ -15,7 +15,7 @@ def game(instance):
                                   'burner-mining-drill': 5}
     instance.reset()
     instance.speed(10)
-    yield instance
+    yield instance.namespace
     #instance.reset()
     #instance.speed(1)
 

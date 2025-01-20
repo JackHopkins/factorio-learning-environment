@@ -25,7 +25,7 @@ def game(instance):
     }
     instance.speed(10)
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.speed(10)
     #instance.reset()
 

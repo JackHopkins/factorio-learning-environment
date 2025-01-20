@@ -17,7 +17,7 @@ def game(instance):
         'coal': 50,
     }
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 

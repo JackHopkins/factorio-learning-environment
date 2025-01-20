@@ -16,7 +16,7 @@ def game(instance):
     }
 
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 def test_place_pickup(game):

@@ -12,7 +12,7 @@ def game(instance):
                                 "assembling-machine-1": 5}
     instance.reset()
     instance.speed(10)
-    yield instance
+    yield instance.namespace
 
 def test_multi_drill_multi_furnace(game):
 

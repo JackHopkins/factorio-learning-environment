@@ -8,7 +8,7 @@ from factorio_types import Prototype, Resource
 @pytest.fixture()
 def game(instance):
     instance.reset()
-    yield instance
+    yield instance.namespace
 
 def test_syntax_error(game):
     functions = \

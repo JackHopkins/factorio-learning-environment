@@ -8,37 +8,90 @@ local function is_water_tile(tile_name)
            tile_name == "water-mud"
 end
 
-function find_offshore_pump_position(surface, center_pos)
-    -- Search in an expanding square pattern
-    local max_radius = 20  -- Adjust this value based on your needs
+-- Helper to convert surface direction to entity direction
+local function surface_to_entity_direction(surface_dir)
+    -- In Factorio, offshore pumps face opposite to placement direction
+    local direction_map = {
+        [defines.direction.north] = defines.direction.north,  -- 0 -> 4
+        [defines.direction.east] = defines.direction.east,    -- 2 -> 6
+        [defines.direction.south] = defines.direction.south,  -- 4 -> 0
+        [defines.direction.west] = defines.direction.west     -- 6 -> 2
+    }
+    return direction_map[surface_dir]
+end
 
-    for radius = 1, max_radius, 0.25 do
-        -- Check positions in a square pattern around the center
-        for x = -radius, radius do
-            for y = -radius, radius do
-                -- Only check positions on the edge of the current square
+-- Apply position offset based on direction
+local function apply_position_offset(position, direction)
+    local pos = {x = position.x, y = position.y}
+
+    -- Apply offsets based on pump direction
+    if direction == defines.direction.north then  -- Pump faces south
+        pos.y = pos.y + 1  -- Move one tile down when placing at top of water
+    elseif direction == defines.direction.west then  -- Pump faces east
+        pos.x = pos.x + 1  -- Move one tile right when placing at left of water
+    end
+
+    return pos
+end
+
+local function find_offshore_pump_position(surface, center_pos)
+    -- Search in an expanding spiral pattern for better coverage
+    local max_radius = 20
+    local search_positions = {
+        {dx = 0, dy = 1, dir = defines.direction.north},   -- Check south of water
+        {dx = 1, dy = 0, dir = defines.direction.west},    -- Check east of water
+        {dx = 0, dy = -1, dir = defines.direction.south},  -- Check north of water
+        {dx = -1, dy = 0, dir = defines.direction.east}    -- Check west of water
+    }
+    game.print("Searching")
+
+    for radius = 1, max_radius do
+        -- Search in a spiral pattern from center_pos
+        for y = -radius, radius do
+            for x = -radius, radius do
+                -- Only process points on the edge of the current square
                 if math.abs(x) == radius or math.abs(y) == radius then
-                    local check_pos = {x = center_pos.x + x, y = center_pos.y + y}
+                    local check_pos = {
+                        x = center_pos.x + x,
+                        y = center_pos.y + y
+                    }
 
-                    -- Check all four possible orientations
-                    for _, direction in pairs({defines.direction.north,
-                                            defines.direction.east,
-                                            defines.direction.south,
-                                            defines.direction.west}) do
-                        -- Create a placement check prototype
-                        local placement = {
-                            name = "offshore-pump",
-                            position = check_pos,
-                            direction = direction,
-                        }
+                    -- Check tile at current position
+                    local current_tile = surface.get_tile(check_pos.x, check_pos.y)
 
-                        -- Check if we can place the offshore pump here
-                        if surface.can_place_entity(placement) then
-                            -- Return both position and direction if valid
-                            return {
-                                position = check_pos,
-                                direction = direction
+                    -- Skip if current position is water
+                    if not is_water_tile(current_tile.name) then
+                        -- Check all adjacent positions for water
+                        for _, search in ipairs(search_positions) do
+                            local water_pos = {
+                                x = check_pos.x + search.dx,
+                                y = check_pos.y + search.dy
                             }
+
+                            local adjacent_tile = surface.get_tile(water_pos.x, water_pos.y)
+
+                            if is_water_tile(adjacent_tile.name) then
+                                -- Create placement prototype
+                                local entity_dir = surface_to_entity_direction(search.dir)
+                                -- Apply position offset based on direction
+                                local adjusted_pos = check_pos --apply_position_offset(check_pos, search.dir)
+
+                                local placement = {
+                                    name = "offshore-pump",
+                                    position = adjusted_pos,
+                                    direction = entity_dir,
+                                    force = "player"
+                                }
+                                game.print("test")
+
+                                -- Verify placement is valid
+                                if surface.can_place_entity(placement) then
+                                    return {
+                                        position = adjusted_pos,
+                                        direction = entity_dir
+                                    }
+                                end
+                            end
                         end
                     end
                 end
@@ -46,7 +99,6 @@ function find_offshore_pump_position(surface, center_pos)
         end
     end
 
-    -- Return nil if no valid position found within radius
     return nil
 end
 
@@ -149,11 +201,10 @@ global.actions.place_entity2 = function(player_index, entity, direction, x, y, e
         end
 
         local can_build = global.utils.avoid_entity(player_index, entity, position, entity_direction)
-
+        game.print("Can build: " .. tostring(can_build))
         if not can_build then
             if not exact then
-                local new_position = player.surface.find_non_colliding_position(entity, position, 15, 0.5, false)
-
+                local new_position = nil
                 -- special logic for orienting offshore pumps correctly.
                 if entity == 'offshore-pump' then
                     if new_position then
@@ -161,12 +212,9 @@ global.actions.place_entity2 = function(player_index, entity, direction, x, y, e
                         game.print(serpent.line(pos_dir))
                         entity_direction = global.utils.get_entity_direction(entity, pos_dir['direction']/2)
                         new_position = pos_dir['position']
-                        --if pump_direction ~= nil then
-                        --    entity_direction = global.utils.get_entity_direction(entity, pump_direction/2)  -- Override the requested direction
-                        --else
-                        --    error("Cannot place offshore pump in any direction at the found position ("..serpent.line(new_position)..")")
-                        --end
                     end
+                else
+                    new_position = player.surface.find_non_colliding_position(entity, position, 15, 0.5, false)
                 end
 
                 if new_position ~= nil then
@@ -406,35 +454,48 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             position = position,
             direction = entity_direction
         }
+        if entity == 'offshore-pump' then
+            exact = false
+        end
 
         if not can_build then
             if not exact then
-                -- Existing search logic for nearby valid position
-                local radius = 1
-                local max_radius = 10
-                local found_position = false
                 local new_position
+                local new_position = nil
+                local found_position = false
+                -- special logic for orienting offshore pumps correctly.
+                if entity == 'offshore-pump' then
+                    local pos_dir = find_offshore_pump_position(player.surface, position)
+                    game.print(serpent.line(pos_dir))
+                    entity_direction = global.utils.get_entity_direction(entity, pos_dir['direction']/2)
+                    new_position = pos_dir['position']
+                    found_position = true
+                else
+                    -- Existing search logic for nearby valid position
+                    local radius = 1
+                    local max_radius = 10
 
-                while not found_position and radius <= max_radius do
-                    for dx = -radius, radius do
-                        for dy = -radius, radius do
-                            if dx == -radius or dx == radius or dy == -radius or dy == radius then
-                                new_position = {x = position.x + dx, y = position.y + dy}
-                                can_build = player.can_place_entity{
-                                    name = entity,
-                                    force = player.force,
-                                    position = new_position,
-                                    direction = entity_direction
-                                }
-                                if can_build then
-                                    found_position = true
-                                    break
+                    while not found_position and radius <= max_radius do
+                        for dx = -radius, radius do
+                            for dy = -radius, radius do
+                                if dx == -radius or dx == radius or dy == -radius or dy == radius then
+                                    new_position = {x = position.x + dx, y = position.y + dy}
+                                    can_build = player.can_place_entity{
+                                        name = entity,
+                                        force = player.force,
+                                        position = new_position,
+                                        direction = entity_direction
+                                    }
+                                    if can_build then
+                                        found_position = true
+                                        break
+                                    end
                                 end
                             end
+                            if found_position then break end
                         end
-                        if found_position then break end
+                        radius = radius + 1
                     end
-                    radius = radius + 1
                 end
 
                 if found_position then

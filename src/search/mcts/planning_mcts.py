@@ -122,7 +122,7 @@ class PlanningMCTS(MCTS):
             step.start_state = GameState.from_instance(instance)
             self.evaluator.logger.update_instance(instance_id, status="executing")
 
-            reward, state, response, entities, achievements = await self.evaluator._evaluate_single(
+            reward, state, response, entities, achievements, ticks = await self.evaluator._evaluate_single(
                 instance_id,
                 step.program,
                 instance

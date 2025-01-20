@@ -38,6 +38,7 @@ class MoveTo(Action):
         path_handle = self.request_path(start=Position(x=self.game_state.player_location[0],
                                                        y=self.game_state.player_location[1]), finish=nposition,
                                         allow_paths_through_own_entities=True)
+        sleep(0.05) # Let the pathing complete in the game.
         try:
             if laying is not None:
                 entity_name = laying.value[0]

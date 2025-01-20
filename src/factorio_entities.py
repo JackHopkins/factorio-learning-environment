@@ -317,6 +317,9 @@ class TransportBelt(Entity):
     is_terminus: bool = False
     is_source: bool = False
 
+    def __repr__(self):
+        return f"Belt(({self.input_position}) -> ({self.output_position}), direction={self.direction})"
+
 class EnergySource(BaseModel):
     buffer_capacity: str
     input_flow_limit: str
@@ -409,7 +412,7 @@ class BeltGroup(DirectedEntityGroup):
 
     def __repr__(self) -> str:
         belt_summary = f"[{len(self.belts)} belts]"
-        return f"BeltGroup(position={self.position}, input_positions={self.inputs}, output_positions={self.outputs}, inventory={self.inventory}, status={self.status}, belts={belt_summary})"
+        return f"BeltGroup(inputs={self.inputs}, outputs={self.outputs}, inventory={self.inventory}, status={self.status}, belts={belt_summary})"
 
 class PipeGroup(DirectedEntityGroup):
     pipes: List[Pipe]

@@ -320,7 +320,7 @@ class ParallelPlanningMCTS:
             step.start_state = GameState.from_instance(instance)
             group.evaluator.logger.update_instance(instance_id, status="executing")
 
-            reward, state, response, entities, achievements = await group.evaluator._evaluate_single(
+            reward, state, response, entities, achievements, ticks = await group.evaluator._evaluate_single(
                 instance_id,
                 step.program,
                 instance

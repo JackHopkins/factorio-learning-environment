@@ -1,5 +1,6 @@
 import ast
 import builtins
+import math
 import pickle
 import traceback
 
@@ -77,6 +78,17 @@ class FactorioNamespace:
         self.LEFT, self.WEST = [Direction.LEFT] * 2
         self.DOWN, self.BELOW, self.BOTTOM = [Direction.DOWN] * 3
 
+        # Math tools
+        self.sqrt = math.sqrt
+        self.sin = math.sin
+        self.cos = math.cos
+        self.tan = math.tan
+        self.pi = math.pi
+        self.floor = math.floor
+        self.ceil = math.ceil
+        self.abs = abs  # built-in abs function
+        self.pow = pow  # built-in pow function
+
         # Add all the members of this class as static members so they can be accessed by the agent program.
         self._static_members = [attr for attr in dir(self)
                                 if not callable(getattr(self, attr))
@@ -96,6 +108,23 @@ class FactorioNamespace:
         except Exception as e:
             print(f"Error restoring namespace: {e}")
             pass
+
+    def _assign_target(self, target, value, eval_dict):
+        """Helper function to handle different types of assignment targets"""
+        if isinstance(target, ast.Name):
+            eval_dict[target.id] = value
+        elif isinstance(target, ast.Tuple):
+            if not isinstance(value, (tuple, list)) or len(target.elts) != len(value):
+                raise ValueError("Cannot unpack - length mismatch")
+            for t, v in zip(target.elts, value):
+                self._assign_target(t, v, eval_dict)
+        elif isinstance(target, ast.List):
+            if not isinstance(value, (tuple, list)) or len(target.elts) != len(value):
+                raise ValueError("Cannot unpack - length mismatch")
+            for t, v in zip(target.elts, value):
+                self._assign_target(t, v, eval_dict)
+        else:
+            raise SyntaxError(f"Unsupported target type: {type(target)}")
 
     def reset(self):
         """
@@ -144,10 +173,13 @@ class FactorioNamespace:
     def _change_print_to_log(self, node):
         if isinstance(node, ast.Expr):
             # check if its print, if it is, then we route to log
-            if isinstance(node.value, ast.Call) and isinstance(node.value.func,
-                                                               ast.Name) and node.value.func.id == 'print':
+            if isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) and node.value.func.id == 'print':
                 # change print to log function
                 node.value.func.id = 'log'
+
+            elif isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) and node.value.func.id == 'time.sleep':
+                # change print to log function
+                node.value.func.id = 'sleep'
 
         elif isinstance(node, ast.If) or isinstance(node, ast.For) or isinstance(node, ast.While):
             for subnode_idx, subnode in enumerate(node.body):
@@ -221,7 +253,7 @@ class FactorioNamespace:
                 self.loop_context.enter_loop(node)
                 iter_obj = eval(compile(ast.Expression(node.iter), 'file', 'eval'), eval_dict)
                 for item in iter_obj:
-                    eval_dict[node.target.id] = item
+                    self._assign_target(node.target, item, eval_dict)
                     result = self.execute_body(node.body, eval_dict, node)
 
                     if self.loop_context.state == "BREAK":

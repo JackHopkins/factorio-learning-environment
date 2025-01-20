@@ -1,4 +1,31 @@
-global.actions.insert_item = function(player_index, insert_item, count, x, y)
+-- Function to get inventory fullness information
+local function get_inventory_info(entity)
+    if entity.get_inventory then
+        -- Try common inventory types
+        local inv = entity.get_inventory(defines.inventory.chest) or          -- For chests
+                   entity.get_inventory(defines.inventory.furnace_source) or  -- For furnaces
+                   entity.get_inventory(defines.inventory.assembling_machine_input) -- For assemblers
+
+        if inv then
+            -- Get actual item count and inventory capacity
+            local item_count = 0
+            for i = 1, #inv do
+                local stack = inv[i]
+                if stack and stack.valid_for_read then
+                    item_count = item_count + stack.count
+                end
+            end
+
+            -- Calculate total capacity (slots * stack size)
+            local capacity = #inv * game.item_prototypes[inv[1].name or "iron-plate"].stack_size
+
+            return string.format("(%d/%d items)", item_count, capacity)
+        end
+    end
+    return ""
+end
+
+global.actions.insert_item = function(player_index, insert_item, count, x, y, target_name)
     local player = game.get_player(player_index)
     local position = {x=x, y=y}
     local surface = player.surface
@@ -12,18 +39,24 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
     local closest_distance = math.huge
     local closest_entity = nil
     local area = {{position.x - 1, position.y - 1}, {position.x + 1, position.y + 1}}
-    local buildings = surface.find_entities_filtered{area = area}
+    local buildings = nil
+
+    if target_name then
+        buildings = surface.find_entities_filtered{area = area, name=target_name}
+    else
+        buildings = surface.find_entities_filtered{area = area}
+    end
 
     -- Function to get inventory fullness information
-    local function get_inventory_info(entity)
-        if entity.get_inventory then
-            local inv = entity.get_inventory(defines.inventory.chest)
-            if inv then
-                return string.format("(%d/%d)", #inv, #inv.get_bar())
-            end
-        end
-        return ""
-    end
+    --local function get_inventory_info(entity)
+    --    if entity.get_inventory then
+    --        local inv = entity.get_inventory(defines.inventory.chest)
+    --        if inv then
+    --            return string.format("(%d/%d)", #inv, #inv.get_bar())
+    --        end
+    --    end
+    --    return ""
+    --end
 
     -- Function to check if an item can be inserted into an entity
     local function can_insert_item(entity, item_name)
@@ -71,7 +104,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
                     end
                 end
                 if existing_item and existing_item ~= item_name then
-                    error("\"Cannot insert " .. item_name .. " - furnace already contains " .. existing_item.."\"")
+                    error("\"furnace already contains " .. existing_item.." so cannot insert " .. item_name .."\"")
                 end
             end
             -- Check if it's a valid ingredient for any furnace recipe
@@ -127,7 +160,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y)
 
     -- Throw an error if the entity is too far away from the player
     if closest_distance > 10 then
-        error('Entity too far away. Move closer.')
+        error("\"Entity at ("..closest_entity.position.x..", "..closest_entity.position.y..") is too far away from your position of ("..player.character.position.x..", "..player.character.position.y.."), move closer.\"")
     end
 
     -- Function to insert items onto a transport belt - one at a time

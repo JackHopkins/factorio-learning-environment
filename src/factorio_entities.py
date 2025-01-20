@@ -131,6 +131,10 @@ class Direction(Enum):
     DOWN = SOUTH = 4
     LEFT = WEST = 6
 
+    def __repr__(self):
+        return f"Direction.{self.name}"
+
+
 class Position(BaseModel):
     x: float
     y: float
@@ -400,6 +404,7 @@ class Pipe(Entity):
 
 class EntityGroup(BaseModel):
     status: EntityStatus = EntityStatus.NORMAL
+    name: str = "entity-group"
 
 class DirectedEntityGroup(EntityGroup):
     position: Position

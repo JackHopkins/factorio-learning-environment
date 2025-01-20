@@ -96,7 +96,7 @@ local function remove_items_from_entity(entity, stack)
     return total_removed
 end
 
-global.actions.extract_item = function(player_index, extract_item, count, x, y)
+global.actions.extract_item = function(player_index, extract_item, count, x, y, source_name)
     local player = game.get_player(player_index)
     local position = {x=x, y=y}
     local surface = player.surface
@@ -110,10 +110,18 @@ global.actions.extract_item = function(player_index, extract_item, count, x, y)
     local search_radius = 10
     local area = {{position.x - search_radius, position.y - search_radius},
                   {position.x + search_radius, position.y + search_radius}}
+    local buildings = nil
 
-    local buildings = surface.find_entities_filtered{
-        area = area
-    }
+    if source_name ~= nil then
+        buildings = surface.find_entities_filtered{
+            area = area,
+            name = source_name
+        }
+    else
+        buildings = surface.find_entities_filtered{
+            area = area
+        }
+    end
 
     -- Find the closest building with the item we want
     local closest_distance = math.huge
@@ -141,7 +149,7 @@ global.actions.extract_item = function(player_index, extract_item, count, x, y)
     end
 
     if closest_distance > search_radius then
-        error("\"Entity too far away. Move closer.\"")
+        error("\"Entity at ("..closest_entity.position.x..", "..closest_entity.position.y..") is too far away from your position of ("..player.character.position.x..","..player.character.position.y.."), move closer.\"")
     end
 
     if not found_any_items then

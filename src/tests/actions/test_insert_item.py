@@ -11,8 +11,8 @@ def game(instance):
         'iron-chest': 1,
         'iron-ore': 500,
         'copper-ore': 10,
-        'iron-plate': 10,
-        'iron-gear-wheel': 10,
+        'iron-plate': 1000,
+        'iron-gear-wheel': 1000,
         'coal': 100,
         'stone-furnace': 1,
         'transport-belt': 10,
@@ -39,6 +39,15 @@ def test_insert_iron_ore_into_stone_furnace(game):
     assert furnace.status == EntityStatus.NO_FUEL
     assert furnace.furnace_source[Prototype.IronOre] == 10
 
+def test_insert_iron_ore_into_stone_furnace2(game):
+    furnace = game.place_entity(Prototype.StoneFurnace, direction=Direction.UP, position=Position(x=0, y=0))
+    try:
+        furnace = game.insert_item(Prototype.IronOre, furnace, quantity=500)
+        furnace = game.insert_item(Prototype.IronPlate, furnace, quantity=10)
+    except Exception as e:
+        assert True, f"Cannot insert incorrect item into a stone furnace: {e}"
+
+
 def test_insert_copper_ore_and_iron_ore_into_stone_furnace(game):
     furnace = game.place_entity(Prototype.StoneFurnace, direction=Direction.UP, position=Position(x=0, y=0))
     try:
@@ -53,11 +62,18 @@ def test_insert_coal_into_burner_inserter(game):
 
     assert inserter.fuel[Prototype.Coal] == 10
 
+
+def test_invalid_insert_ore_into_burner_inserter(game):
+    inserter = game.place_entity(Prototype.BurnerInserter, direction=Direction.UP, position=Position(x=0, y=0))
+    inserter = game.insert_item(Prototype.IronOre, inserter, quantity=10)
+
+    assert inserter.fuel[Prototype.Coal] == 10
+
 def test_insert_into_assembler(game):
     assembler = game.place_entity(Prototype.AssemblingMachine1, direction=Direction.UP, position=Position(x=0, y=0))
     assembler = game.set_entity_recipe(assembler, Prototype.IronGearWheel)
-    assembler = game.insert_item(Prototype.IronGearWheel, assembler, quantity=10)
-    assembler = game.insert_item(Prototype.IronPlate, assembler, quantity=10)
+    assembler = game.insert_item(Prototype.IronGearWheel, assembler, quantity=1000)
+    assembler = game.insert_item(Prototype.IronPlate, assembler, quantity=1000)
 
     assert assembler.status == EntityStatus.NO_POWER
     assert assembler.assembling_machine_output[Prototype.IronGearWheel] == 10
@@ -74,7 +90,7 @@ def test_blocked_belt(game):
     belt = game.connect_entities(Position(x=0.5, y=0.5), Position(x=0.5, y=8.5), Prototype.TransportBelt)
     try:
         belt = game.insert_item(Prototype.IronOre, belt[0], quantity=500)[0]
-    except:
+    except Exception as e:
         pass
 
     belt = game.get_entities({Prototype.TransportBelt}, position=Position(x=0.5, y=0.5))

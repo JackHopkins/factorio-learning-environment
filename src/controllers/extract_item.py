@@ -24,20 +24,17 @@ class ExtractItem(Action):
         :example extract_item(Prototype.CopperWire, Position(x=0, y=0), 5)
         :return True if extraction was successful
         """
-
+        source_name = None
         if isinstance(source, Position):
             x, y = self.get_position(source)
 
         elif isinstance(source, Entity):
             x, y = self.get_position(source.position)
+            source_name = source.name
+
         name, _ = entity.value
 
-        response, elapsed = self.execute(
-                                       PLAYER,
-                                       name,
-                                       quantity,
-                                       x,
-                                       y)
+        response, elapsed = self.execute(PLAYER, name, quantity, x, y, source_name)
         if isinstance(response, str):
             msg = self.get_error_message(response)
             raise Exception(f"Could not extract: {msg}")

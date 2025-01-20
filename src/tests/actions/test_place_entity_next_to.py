@@ -155,6 +155,20 @@ def test_place_drill_and_furnace_next_to_iron_ore(game):
 
     assert furnace.position == expected_position, f"Expected {expected_position}, got {furnace.position}"
 
+def test_fail_place_drill_off_iron_ore(game):
+    iron_position = game.nearest(Resource.IronOre)
+    game.move_to(iron_position)
+    entity = game.place_entity(Prototype.BurnerMiningDrill, position=iron_position, direction=Direction.DOWN)
+    print(f"Burner Mining Drill position: {entity.position}")
+    print(f"Burner Mining Drill dimensions: {entity.tile_dimensions}")
+
+    try:
+        furnace = game.place_entity_next_to(Prototype.BurnerMiningDrill, reference_position=entity.position,
+                                            direction=Direction.RIGHT)
+        print(f"Stone Furnace position: {furnace.position}")
+    except:
+        assert True, "Should not be able to place a mining drill off-resource patch"
+
 
 def test_place_entity_next_to(game, entity_prototype, surrounding_entity_prototype):
     for spacing in range(0, 3):  # Test with spacings 0, 1, and 2

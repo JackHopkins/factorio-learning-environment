@@ -1,4 +1,5 @@
 from collections import defaultdict
+from time import sleep
 from typing import List, Set, Union
 from controllers.__action import Action
 from factorio_entities import Position, Entity, BeltGroup, TransportBelt
@@ -26,6 +27,9 @@ class GetEntities(Action):
                 # Serialize entity_names as a string
             entity_names = "[" + ",".join(
                     [f'"{entity.value[0]}"' for entity in entities]) + "]" if entities else "[]"
+
+            # We need to add a small 50ms sleep to ensure that the entities have updated after previous actions
+            sleep(0.05)
 
             if position is None:
                 response, time_elapsed = self.execute(PLAYER, radius, entity_names)

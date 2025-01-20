@@ -26,7 +26,7 @@ class InsertItem(Action):
         assert quantity is not None, "Quantity cannot be None"
         assert isinstance(entity, Prototype), "The first argument must be a Prototype"
         assert (isinstance(target, Entity)
-                or isinstance(target, EntityGroup)), "The second argument must be an Entity, EntityGroup or Position, you passed in a {0}".format(type(target))
+                or isinstance(target, EntityGroup)), "The second argument must be an Entity or EntityGroup, you passed in a {0}".format(type(target))
 
         if isinstance(target, Position):
             x, y = target.x, target.y
@@ -34,14 +34,19 @@ class InsertItem(Action):
             x, y = self.get_position(target.position)
 
         name, _ = entity.value
+        target_name = target.name
 
         # For belt groups, insert items one at a time
         if isinstance(target, BeltGroup):
             items_inserted = 0
             last_response = None
+            pos = target.inputs[0].position if len(target.inputs) > 0 else target.outputs[0].position if len(target.outputs) > 0 else (None, None)
+            x, y = pos.x, pos.y
+            if not x or not y:
+                x, y = target.belts[0].position.x, target.belts[0].position.y
 
             while items_inserted < quantity:
-                response, elapsed = self.execute(PLAYER, name, 1, x, y)
+                response, elapsed = self.execute(PLAYER, name, 1, x, y, None)
 
                 if isinstance(response, str):
                     if "Could not find" not in response:  # Don't raise if belt is just full
@@ -63,7 +68,7 @@ class InsertItem(Action):
 
             return target
 
-        response, elapsed = self.execute(PLAYER, name, quantity, x, y)
+        response, elapsed = self.execute(PLAYER, name, quantity, x, y, target_name)
 
         if isinstance(response, str):
             raise Exception(f"Could not insert: {response.split(':')[-1].strip()}")

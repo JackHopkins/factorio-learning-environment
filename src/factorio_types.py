@@ -1,4 +1,6 @@
 import enum
+from difflib import get_close_matches
+
 from factorio_entities import *
 
 
@@ -29,7 +31,24 @@ class ResourceName(enum.Enum):
     UraniumOre = "uranium-ore"
 
 
-class Prototype(enum.Enum):
+class PrototypeMetaclass(enum.EnumMeta):
+    def __getattr__(cls, name):
+        try:
+            return super().__getattr__(name)
+        except AttributeError:
+            # Get all valid prototype names
+            valid_names = [member.name for member in cls]
+
+            # Find closest matches
+            matches = get_close_matches(name, valid_names, n=3, cutoff=0.6)
+
+            suggestion_msg = ""
+            if matches:
+                suggestion_msg = f". Did you mean: {', '.join(matches)}?"
+
+            raise AttributeError(f"'{cls.__name__}' has no attribute '{name}'{suggestion_msg}")
+
+class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     AssemblingMachine1 = "assembling-machine-1", AssemblingMachine
     AssemblingMachine2 = "assembling-machine-2", AssemblingMachine
     AssemblingMachine3 = "assembling-machine-3", AssemblingMachine
@@ -89,6 +108,10 @@ class Prototype(enum.Enum):
 
     BeltGroup = "belt-group", BeltGroup
     PipeGroup = "pipe-group", PipeGroup
+
+    def __init__(self, prototype_name, entity_class):
+        self.prototype_name = prototype_name
+        self.entity_class = entity_class
 
 prototype_by_name = {prototype.value[0]: prototype for prototype in Prototype}
 

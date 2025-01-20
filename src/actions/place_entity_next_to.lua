@@ -1,3 +1,28 @@
+local function validate_mining_drill_placement(surface, position, entity_name)
+    -- Check if the entity is a mining drill
+    local prototype = game.entity_prototypes[entity_name]
+    if prototype.type ~= "mining-drill" then
+        return true
+    end
+
+    -- Get the mining area
+    local mining_area = prototype.collision_box
+    local area = {
+        {position.x + mining_area.left_top.x, position.y + mining_area.left_top.y},
+        {position.x + mining_area.right_bottom.x, position.y + mining_area.right_bottom.y}
+    }
+
+    -- Check for resources in the mining area
+    local resources = surface.find_entities_filtered({
+        area = area,
+        type = "resource"
+    })
+
+    -- For mining drills, we need at least one valid resource
+    return #resources > 0
+end
+
+
 global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_y, direction, gap)
     local player = game.get_player(player_index)
     local ref_position = {x = ref_x, y = ref_y}
@@ -241,15 +266,19 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         item.destroy()
     end
 
+    global.utils.avoid_entity(player_index, entity, new_position, orientation)
     local can_build = player.surface.can_place_entity({
         name = entity,
         position = new_position,
         direction = orientation,
         force = player.force
     })
-    can_build = true
-    -- Modify the error message in the can_build check
-    if not can_build then
+    if can_build then
+        can_build = validate_mining_drill_placement(player.surface, new_position, entity)
+        if not can_build then
+            error("Cannot place mining drill - no resources found in mining area")
+        end
+    else
         --local area = {{new_position.x - 0.5, new_position.y - 0.5}, {new_position.x + 0.5, new_position.y + 0.5}}
         local entities = player.surface.find_entities_filtered{area = area, type = {"beam", "resource", "player"}, invert=true}
         local entity_names = {}

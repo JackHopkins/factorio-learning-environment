@@ -499,14 +499,14 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
             if not dry_run and last_placed_entity and last_placed_entity.valid then
                 -- Clear the existing serialized entities (which only contain individual placements)
 
-                --serialized_entities = {}
-                ---- Serialize the entire connected belt group
-                --local group_data = serialize_belt_group(last_placed_entity)
-                --if group_data then
-                --    for _, serialized in ipairs(group_data) do
-                --        table.insert(serialized_entities, serialized)
-                --    end
-                --end
+                serialized_entities = {}
+                -- Serialize the entire connected belt group
+                local group_data = serialize_belt_group(last_placed_entity)
+                if group_data then
+                    for _, serialized in ipairs(group_data) do
+                        table.insert(serialized_entities, serialized)
+                    end
+                end
             end
         end
     end
@@ -529,131 +529,6 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         connected = is_connected, 
         number_of_entities = counter_state.place_counter
     }
-end
-
-global.utils.normalise_path3 = function(original_path, start_position, end_position)
-    local path = {}
-    local seen = {}  -- To track seen positions
-
-     if math.ceil(start_position.x) == start_position.x or math.ceil(start_position.y) == start_position.y then
-        start_position.x = start_position.x + 0.5
-        start_position.y = start_position.y + 0.5
-    end
-
-    if math.ceil(end_position.x) == end_position.x or math.ceil(end_position.y) == end_position.y then
-        end_position.x = end_position.x + 0.5
-        end_position.y = end_position.y + 0.5
-    end
-
-    for i = 1, #original_path do
-        game.print(serpent.line(original_path[i]))
-    end
-    if math.ceil(original_path[1].position.x) == original_path[1].position.x or math.ceil(original_path[1].position.y) == original_path[1].position.y then
-        original_path[1].position.x = original_path[1].position.x + 0.5
-        original_path[1].position.y = original_path[1].position.y + 0.5
-    end
-
-    -- Helper function to add unique positions
-    local function add_unique(pos, prev_pos)
-        local key = pos.x .. "," .. pos.y
-        if not seen[key] then
-            if is_placeable(pos) then
-                table.insert(path, {position = pos})
-                seen[key] = true
-                return pos
-            else
-                local alt_pos = find_placeable_neighbor(pos, prev_pos)
-                if alt_pos then
-                    local alt_key = alt_pos.x .. "," .. alt_pos.y
-                    if not seen[alt_key] then
-                        table.insert(path, {position = alt_pos})
-                        seen[alt_key] = true
-                        return alt_pos
-                    end
-                end
-            end
-        end
-        return nil
-    end
-
-    -- Add start position first
-    local previous_pos = add_unique(start_position, nil) or start_position
-    local current_pos = previous_pos
-
-    -- Handle first segment explicitly if there's a path
-    if #original_path > 0 then
-        local first_target = original_path[1].position
-        -- Force orthogonal movement for first segment
-        local dx = first_target.x - current_pos.x
-        local dy = first_target.y - current_pos.y
-
-        -- Try horizontal movement first
-        if dx ~= 0 then
-            local mid_pos = {x = first_target.x, y = current_pos.y}
-            local new_pos = add_unique(mid_pos, current_pos)
-            if new_pos then
-                current_pos = new_pos
-            end
-        end
-        -- Then vertical movement
-        if dy ~= 0 then
-            local mid_pos = {x = current_pos.x, y = first_target.y}
-            local new_pos = add_unique(mid_pos, current_pos)
-            if new_pos then
-                current_pos = new_pos
-            end
-        end
-        -- Add the target position
-        local new_pos = add_unique(first_target, current_pos)
-        if new_pos then
-            current_pos = new_pos
-        end
-    end
-
-    -- Process rest of the path
-    for i = 2, #original_path do
-        local target_pos = original_path[i].position
-        local interpolated = interpolate_manhattan(current_pos, target_pos)
-
-        -- Add interpolated positions
-        for _, point in ipairs(interpolated) do
-            local new_pos = add_unique(point.position, current_pos)
-            if new_pos then
-                current_pos = new_pos
-            end
-        end
-
-        -- Add the target position
-        local new_pos = add_unique(target_pos, current_pos)
-        if new_pos then
-            current_pos = new_pos
-        end
-    end
-
-    -- Finally interpolate to end position if it's different from the last position
-    if current_pos.x ~= end_position.x or current_pos.y ~= end_position.y then
-        local dx = end_position.x - current_pos.x
-        local dy = end_position.y - current_pos.y
-
-        -- Force orthogonal movement for final segment
-        if dx ~= 0 then
-            local mid_pos = {x = end_position.x, y = current_pos.y}
-            local new_pos = add_unique(mid_pos, current_pos)
-            if new_pos then
-                current_pos = new_pos
-            end
-        end
-        if dy ~= 0 then
-            local mid_pos = {x = current_pos.x, y = end_position.y}
-            local new_pos = add_unique(mid_pos, current_pos)
-            if new_pos then
-                current_pos = new_pos
-            end
-        end
-        add_unique(end_position, current_pos)
-    end
-
-    return path
 end
 
 global.utils.normalise_path = function(original_path, start_position, end_position)
@@ -740,70 +615,6 @@ global.utils.normalise_path = function(original_path, start_position, end_positi
 
     return path
 end
---global.utils.normalise_path = function(original_path, start_position, end_position)
---    --- This function interpolates the path to ensure that all positions are placeable and within 1 tile of each other
---
---    local path = {}
---    local seen = {}  -- To track seen positions
---    game.print("Normalising path")
---    -- Helper function to add unique positions
---    local function add_unique(pos)
---        local key = pos.x .. "," .. pos.y
---        if not seen[key] then
---            if is_placeable(pos) then
---                table.insert(path, {position = pos})
---                seen[key] = true
---                return pos
---            else
---                local alt_pos = find_placeable_neighbor(pos, previous_pos)
---                if alt_pos then
---                    local alt_key = alt_pos.x .. "," .. alt_pos.y
---                    if not seen[alt_key] then
---                        table.insert(path, {position = alt_pos})
---                        seen[alt_key] = true
---                        return alt_pos
---                    end
---                end
---            end
---        end
---        return nil
---    end
---
---
---    -- Add start position first
---    local previous_pos = nil
---    previous_pos = add_unique(start_position) or start_position
---
---    -- Interpolate the start to the second position in the original path.
---    if #original_path > 2 then
---        local interpolated = interpolate_manhattan(start_position, original_path[2].position)
---        for _, point in ipairs(interpolated) do
---            local new_pos = add_unique(point.position, previous_pos)
---            if new_pos then previous_pos = new_pos end
---        end
---    end
---
---    for i = 1, #original_path - 1 do
---        local current_pos = add_unique(original_path[i].position, previous_pos)
---        if current_pos then
---            previous_pos = current_pos
---            local interpolated = interpolate_manhattan(current_pos, original_path[i+1].position)
---            for _, point in ipairs(interpolated) do
---                local new_pos = add_unique(point.position, previous_pos)
---                if new_pos then previous_pos = new_pos end
---            end
---        end
---    end
---
---    local interpolated = interpolate_manhattan(path[#path].position, end_position)
---    for _, point in ipairs(interpolated) do
---        add_unique(point.position)
---    end
---
---    add_unique(end_position)
---
---    return path
---end
 
 -- Using the new shortest_path function.
 global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run, number_of_connection_entities)

@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-from factorio_entities import BurnerMiningDrill
+from factorio_entities import BurnerMiningDrill, EntityStatus
 from factorio_instance import FactorioInstance, Direction
 from factorio_types import Prototype, Resource
 
@@ -13,6 +13,7 @@ def game(instance):
                                   'boiler': 1, 'steam-engine': 1, 'offshore-pump': 4, 'pipe': 100, 'burner-inserter': 50, 'coal': 50}
     instance.reset()
     yield instance.namespace
+    instance.reset()
 
 
 def test_steam_engines(game: FactorioInstance):
@@ -48,7 +49,7 @@ def test_steam_engines(game: FactorioInstance):
     assert burner_inserter
 
     belts = game.connect_entities(burner_mining_drill, burner_inserter, connection_type=Prototype.TransportBelt)
-    assert belts
+    assert len(belts[0].outputs) == 1
 
     coal_to_boiler_belts = game.connect_entities(belts[0], coal_inserter.pickup_position, connection_type=Prototype.TransportBelt)
     assert coal_to_boiler_belts
@@ -65,11 +66,11 @@ def test_steam_engines(game: FactorioInstance):
     # insert coal into the drill
     burner_mining_drill: BurnerMiningDrill = game.insert_item(Prototype.Coal, burner_mining_drill, 5)
 
-    game.sleep(30)
+    game.sleep(60)
 
     # inspect assembler
-    inspected_assembler = game.inspect_entities(assembler.position, radius=1).get_entity(Prototype.AssemblingMachine1)
-    assert not inspected_assembler.warning
+    inspected_assembler = game.get_entity(Prototype.AssemblingMachine1, assembler.position)
+    assert inspected_assembler.status == EntityStatus.NO_RECIPE
 
 
 

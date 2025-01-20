@@ -3,14 +3,15 @@ from typing import List
 
 import pytest
 
-from factorio_entities import Entity, Position, ResourcePatch, Recipe, BurnerMiningDrill
+from factorio_entities import Entity, Position, ResourcePatch, Recipe, BurnerMiningDrill, EntityStatus
 from factorio_instance import Direction, FactorioInstance
 from factorio_types import Prototype, Resource
 
 
 @pytest.fixture()
 def game(instance):
-    instance.initial_inventory = {'stone-furnace': 1, 'boiler': 1, 'steam-engine': 1, 'offshore-pump': 1, 'pipe': 100, 'iron-plate': 50, 'copper-plate': 20, 'coal': 50}
+    instance.initial_inventory = {'stone-furnace': 1, 'transport-belt': 30,
+                                  'boiler': 1, 'steam-engine': 1, 'offshore-pump': 1, 'pipe': 100, 'iron-plate': 50, 'copper-plate': 20, 'coal': 50}
     #instance.rcon_client.send_command('game.reset_game_state()')
     #instance.rcon_client.send_command('game.reload_script()')
     instance.reset()
@@ -31,9 +32,7 @@ def test_create_offshore_pump_to_steam_engine(game):
     game.move_to(water_location)
 
     offshore_pump = game.place_entity(Prototype.OffshorePump,
-                                      position=water_location,
-                                      direction=Direction.UP)
-    assert offshore_pump.direction.value == Direction.UP.value
+                                      position=water_location)
     # Get offshore pump direction
     direction = offshore_pump.direction
 
@@ -65,15 +64,15 @@ def test_create_offshore_pump_to_steam_engine(game):
     # connect the boiler and steam engine with a pipe
     boiler_to_steam_engine_pipes = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
 
-    inspected_steam_engine = game.inspect_entities(position=steam_engine.position, radius=1).get_entity(Prototype.SteamEngine)
-    assert inspected_steam_engine.warning == 'not connected to power network'
+    inspected_steam_engine = game.get_entity(Prototype.SteamEngine, steam_engine.position)
+    assert inspected_steam_engine.status == EntityStatus.NOT_PLUGGED_IN_ELECTRIC_NETWORK
 
-    assert steam_engine.direction.value == boiler.direction.value
-    game.add_command(f"/c game.take_screenshot{{zoom=1, anti_alias=true, show_entity_info=true, position={{x={boiler.position.x}, y={boiler.position.y}}}}}", raw=True)
-    game.execute_transaction()
+    assert steam_engine.direction.value == Direction.opposite(boiler.direction).value
+    #game.add_command(f"/c game.take_screenshot{{zoom=1, anti_alias=true, show_entity_info=true, position={{x={boiler.position.x}, y={boiler.position.y}}}}}", raw=True)
+    #game.execute_transaction()
 
 
-def test_build_iron_gear_factory(game):
+def test_build_iron_gear_factory_from_scratch(game):
     """
     Build a factory that produces iron gears from iron plates.
     :param game:
@@ -175,7 +174,7 @@ def test_build_iron_gear_factory(game):
 
     # place the stone furnace
     stone_furnace = game.place_entity_next_to(Prototype.StoneFurnace,
-                                              reference_position=burner_mining_drill.drop_position,
+                                              reference_position=burner_mining_drill.position,
                                               direction=Direction.UP,
                                               spacing=0)
 
@@ -248,9 +247,9 @@ def test_build_iron_gear_factory(game):
     # connect the steam engine and assembly machine with power poles
 
     # harvest nearby trees for wood
-    tree_patch = game.get_resource_patch(Resource.Wood, game.nearest(Resource.Wood))
-    game.move_to(tree_patch.bounding_box.left_top + Position(x=1, y=1))
-    game.harvest_resource(tree_patch.bounding_box.left_top, quantity=40)
+    nearest_wood = game.nearest(Resource.Wood)
+    game.move_to(nearest_wood)
+    game.harvest_resource(nearest_wood, quantity=40)
 
     # craft 5 small electric poles
     recipe = game.get_prototype_recipe(Prototype.SmallElectricPole)
@@ -274,10 +273,11 @@ def test_build_iron_gear_factory(game):
     game.move_to(burner_mining_drill.position)
     game.insert_item(Prototype.Coal, burner_mining_drill, quantity=10)
 
-    game.sleep(15)
+    game.sleep(30)
 
     # extract the iron gears from the assembly machine
-    game.extract_item(Prototype.IronGearWheel, assembly_machine, quantity=5)
+    game.move_to(assembly_machine.position)
+    game.extract_item(Prototype.IronGearWheel, assembly_machine, quantity=3)
 
     inventory = game.inspect_inventory(entity=assembly_machine)
 

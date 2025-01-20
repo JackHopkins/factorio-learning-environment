@@ -30,6 +30,11 @@ class PlaceEntityNextTo(Action):
         try:
             name, metaclass = entity.value
 
+            assert isinstance(reference_position,
+                              Position) and reference_position, "reference_position must be a Position object"
+            assert isinstance(entity,
+                              Prototype) and entity, "entity must be a Prototype object"
+
             x, y = reference_position.x, reference_position.y
 
             factorio_direction = Direction.to_factorio_direction(direction)

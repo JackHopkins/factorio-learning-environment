@@ -52,6 +52,9 @@ class EntityStatus(Enum):
     NOT_CONNECTED_TO_RAIL = "not_connected_to_rail"
     #CANT_DIVIDE_SEGMENTS = "cant_divide_segments"
 
+    def __repr__(self):
+        return f"EntityStatus.{self.name}"
+
     @classmethod
     def from_string(cls, status_string):
         for status in cls:
@@ -65,8 +68,6 @@ class EntityStatus(Enum):
             if index == status_int:
                 return status
         return None
-
-
 
 
 class Inventory(BaseModel):
@@ -284,7 +285,7 @@ class Entity(BaseModel):
 
         # Filter out private attributes and excluded fields
         excluded_fields = {'dimensions', 'prototype', 'type', 'health'}
-        rename_fields = {}#'tile_dimensions': 'size'}
+        rename_fields = {}
         repr_dict = {}
 
         for key, value in all_fields.items():
@@ -295,7 +296,7 @@ class Entity(BaseModel):
                     clean_key = rename_fields[clean_key]
                 # Handle enum values specially
                 if isinstance(value, Enum):
-                    repr_dict[clean_key] = value.name
+                    repr_dict[clean_key] = value
                 else:
                     if (clean_key == 'warnings' and value) or clean_key != 'warnings': # Don't show empty warnings list
                         repr_dict[clean_key] = value

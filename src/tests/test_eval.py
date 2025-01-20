@@ -64,6 +64,28 @@ class TestEval(unittest.TestCase):
 
         assert result[3:] == '5'
 
+def test_math():
+    instance = FactorioInstance(address='localhost',
+                                bounding_box=200,
+                                tcp_port=27015,
+                                fast=True,
+                                # cache_scripts=False,
+                                inventory={})
+
+    score, goal, result = instance.eval_with_error("print(sqrt(100))", timeout=60)
+    assert "10" in result
+
+def test_sleep():
+    instance = FactorioInstance(address='localhost',
+                                bounding_box=200,
+                                tcp_port=27015,
+                                fast=True,
+                                # cache_scripts=False,
+                                inventory={})
+
+    score, goal, result = instance.eval_with_error("time.sleep(10)", timeout=60)
+    assert "10" in result
+
 
 def test_exceptions():
     inventory = {
@@ -249,6 +271,8 @@ for dx in [-1, 0, 1]:
 
     pass
 
+
+
 def test_mixed_hard():
     inventory = {
         'iron-plate': 50,
@@ -324,6 +348,76 @@ else:
 # Extract and verify the production of iron plates
 produced_iron_plates = extract_item(Prototype.IronPlate, furnace.position, quantity=10)
 assert produced_iron_plates == 10, f"Expected 10 iron plates, but got {produced_iron_plates}."
+"""
+    score, goal, result = instance.eval_with_error(test_string, timeout=60)
+
+    pass
+
+def test_mixed_hard2():
+    inventory = {
+        'iron-plate': 50,
+        'coal': 100,
+        'copper-plate': 50,
+        'iron-chest': 2,
+        'burner-mining-drill': 3,
+        'electric-mining-drill': 1,
+        'assembling-machine-1': 1,
+        'stone-furnace': 9,
+        'transport-belt': 500,
+        'boiler': 1,
+        'burner-inserter': 32,
+        'pipe': 15,
+        'steam-engine': 1,
+        'small-electric-pole': 10,
+        'iron-ore': 10
+    }
+
+    instance = FactorioInstance(address='localhost',
+                                bounding_box=200,
+                                tcp_port=27015,
+                                fast=True,
+                                inventory=inventory)
+                                # cache_scripts=False,
+    test_string = \
+"""
+# Specify the drill drop position
+drill_drop_position = Position(x=20.5, y=21.5)
+
+# Define the offsets for the adjacent positions
+offsets = [(0, -1), (0, 1), (-1, 0), (1, 0)]
+
+for dx, dy in offsets:
+    candidate_position = Position(x=drill_drop_position.x + dx, y=drill_drop_position.y + dy)
+    print(f"Trying to place Iron Chest at {candidate_position}")
+    
+    try:
+        # Check if we can place the Iron Chest at the candidate position
+        if can_place_entity(Prototype.IronChest, position=candidate_position):
+            move_to(candidate_position)
+            # Attempt to place the Iron Chest
+            # Note: The function itself simply places, no attribute checks here
+            placed_chest = place_entity(Prototype.IronChest, position=candidate_position)
+            print(f"Iron Chest placed at {candidate_position}")
+            # Exit loop on success
+            break
+        else:
+            print(f"Cannot place Iron Chest at {candidate_position}")
+    except AttributeError as attr_err:
+        print(f"AttributeError: {attr_err}")
+        print("Verify API call structure and returned result expectations.")
+    except Exception as e:
+        print(f"An error occurred during placement at {candidate_position}: {e}")
+
+# Perform final check for the inventory state
+inventory_after_attempt = inspect_inventory()
+print("Final inventory state:", inventory_after_attempt)
+
+# Evaluate entities on the map
+try:
+    entities_on_map = get_entities()
+    print("Entities presently on the map:", entities_on_map)
+except Exception as e_map_error:
+    print(f"Error verifying map entities: {e_map_error}")
 """
     score, goal, result = instance.eval_with_error(test_string, timeout=60)
 

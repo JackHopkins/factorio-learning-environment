@@ -40,11 +40,12 @@ class LoopContext:
 
 class FactorioNamespace:
 
-    def __init__(self, tcp_port):
+    def __init__(self, instance):
         self.logging_results = {}
         self.line_value = 0
         self.persistent_vars = {}
-        self.tcp_port = tcp_port
+        self.instance = instance
+        self.tcp_port = instance.tcp_port
         self.max_sequential_exception_count = 1
         self._sequential_exception_count = 0
         self.log_counter = 0

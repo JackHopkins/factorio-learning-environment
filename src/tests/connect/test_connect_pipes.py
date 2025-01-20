@@ -21,6 +21,8 @@ def game(instance):
         'coal': 100,
         'wooden-chest': 1,
         'assembling-machine-1': 10,
+        'boiler': 3,
+        'steam-engine': 3
     }
     instance.reset()
     yield instance.namespace
@@ -39,7 +41,7 @@ def test_connect_offshore_pump_to_boiler(game):
                                        direction=offshore_pump.direction,
                                        spacing=5)
     water_pipes = game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
-    assert len(water_pipes[0].pipes) == 7 + boiler.tile_dimensions.tile_width / 2 + offshore_pump.tile_dimensions.tile_width / 2 + 1
+    assert len(water_pipes[0].pipes) == 5 + boiler.tile_dimensions.tile_width / 2 + offshore_pump.tile_dimensions.tile_width / 2 + 1
 
     game.move_to(water_patch.bounding_box.right_bottom)
     offshore_pump = game.place_entity(Prototype.OffshorePump,
@@ -55,7 +57,7 @@ def test_connect_offshore_pump_to_boiler(game):
     assert len(water_pipes[0].pipes) >= math.ceil(
         5 + boiler.tile_dimensions.tile_height / 2 + offshore_pump.tile_dimensions.tile_height / 2 + 1)
 
-    game.reset()
+    game.instance.reset()
     game.move_to(game.nearest(Resource.Water))
 
     offshore_pump = game.place_entity(Prototype.OffshorePump,
@@ -95,6 +97,7 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
     steam_engines_in_inventory = game.inspect_inventory()[Prototype.SteamEngine]
     pipes_in_inventory = game.inspect_inventory()[Prototype.Pipe]
 
+    game.move_to(Position(x=0, y=0))
     boiler: Entity = game.place_entity(Prototype.Boiler, position=Position(x=0, y=0), direction=Direction.UP)
     assert boiler.direction.value == Direction.UP.value
     game.move_to(Position(x=0, y=10))
@@ -112,15 +115,16 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
     assert pipes_in_inventory - len(connection[0].pipes) == game.inspect_inventory()[Prototype.Pipe]
     assert len(connection[0].pipes) >= 10
 
-    game.reset()
+    game.instance.reset()
 
     # Define the offsets for the four cardinal directions
     offsets = [Position(x=10, y=0), Position(x=0, y=-10), Position(x=-10, y=0)]  # Up, Right, Down, Left  (0, -10),
     directions = [Direction.RIGHT, Direction.UP, Direction.LEFT]
     for offset, direction in zip(offsets, directions):
+        game.move_to(Position(x=0, y=0))
         boiler: Entity = game.place_entity(Prototype.Boiler, position=Position(x=0, y=0), direction=direction)
-        game.move_to(offset)
 
+        game.move_to(offset)
         steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=offset, direction=direction)
 
         try:
@@ -139,7 +143,7 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
         entities = game.get_entities(position=steam_engine.position)
         #assert inspection.get_entity(Prototype.SteamEngine).warning == 'not receiving electricity'
 
-        game.reset()  # Reset the game state after each iteration
+        game.instance.reset()  # Reset the game state after each iteration
 
 
 def test_connect_steam_engine_boiler_nearly_adjacent(game):

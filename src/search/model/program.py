@@ -32,6 +32,7 @@ class Program(BaseModel):
     instance: int = -1
     depth: int = 0
     advantage: float = 0
+    ticks: int = 0
 
     def __repr__(self):
         return self.code
@@ -70,5 +71,6 @@ class Program(BaseModel):
             achievements=row['achievements_json'] if row['achievements_json'] else {},
             instance=row['instance'],
             depth=row['depth'],
-            advantage=row['advantage']
+            advantage=row['advantage'],
+            ticks=row['ticks']
         )

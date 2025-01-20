@@ -369,7 +369,7 @@ class ChunkedMCTS(MCTS):
                     )
 
                 # Evaluate chunk
-                reward, state, response, entities, achievements = await self.evaluator._evaluate_single(
+                reward, state, response, entities, achievements, ticks = await self.evaluator._evaluate_single(
                     instance_id,
                     chunk,
                     instance

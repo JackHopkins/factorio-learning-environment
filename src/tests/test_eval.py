@@ -161,5 +161,46 @@ print(chests)
 
     pass
 
+
+def test_chest_inventory():
+    inventory = {
+        'iron-plate': 50,
+        'coal': 100,
+        'copper-plate': 50,
+        'iron-chest': 2,
+        'burner-mining-drill': 3,
+        'electric-mining-drill': 1,
+        'assembling-machine-1': 1,
+        'stone-furnace': 9,
+        'transport-belt': 500,
+        'boiler': 1,
+        'burner-inserter': 32,
+        'pipe': 15,
+        'steam-engine': 1,
+        'small-electric-pole': 10,
+        'iron-ore': 10
+    }
+
+    instance = FactorioInstance(address='localhost',
+                                bounding_box=200,
+                                tcp_port=27015,
+                                fast=True,
+                                # cache_scripts=False,
+                                inventory=inventory)
+    test_string = \
+"""
+try:
+    if inspect_inventory().get(Prototype.AssemblingMachine1, 0) > 0:
+        assembling_machine_position = Position(x=2, y=1)
+        assembling_machine = place_entity(Prototype.AssemblingMachine1, position=assembling_machine_position)
+        print(f"Assembling Machine placed at {assembling_machine_position}.")
+    else:
+        print("Assembling Machine not available in inventory, cannot place.")
+except Exception as e:
+    print(f"Failed placing Assembling Machine: {e}")
+    """
+    score, goal, result = instance.eval_with_error(test_string, timeout=60)
+
+    pass
 if __name__ == '__main__':
     unittest.main()

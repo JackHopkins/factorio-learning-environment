@@ -64,6 +64,7 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
 
     ---- Check if the entity can be placed
     ---  force = player.force,
+    global.utils.avoid_entity(player_index, entity, position, direction_enum)
     local can_build = player.can_place_entity{name = entity, position = position, direction = direction_enum}
     if not can_build then
         error("Cannot place the entity at the specified position: x="..position.x..", y="..position.y)

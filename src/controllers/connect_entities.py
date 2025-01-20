@@ -398,17 +398,8 @@ class ConnectEntities(Action):
                 for entity_group in entity_groups:
                     entity_group.pipes = _deduplicate_entities(entity_group.pipes)
             elif connection_type in (Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole):
-                electricity_ids = {}
-                for entity in groupable_entities:
-                    if entity.electric_network_id in electricity_ids:
-                        electricity_ids[entity.electric_network_id].append(entity)
-                    else:
-                        electricity_ids[entity.electric_network_id] = [entity]
-                other_poles = self.get_entities({Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole}, source_position)
-                for entity in other_poles:
-                    if entity.electric_network_id in electricity_ids:
-                        electricity_ids[entity.electric_network_id].append(entity)
-                entity_groups = [ElectricityGroup(electric_network_id=id, poles=list(set(entities))) for id, entities in electricity_ids.items()]
+                entity_groups = self.get_entities({Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole}, source_position)
+
 
             # If the source and target entities are both BeltGroups, we need to make sure that the final belt is rotated
             # to face the first belt of the source entity group.
@@ -438,14 +429,14 @@ class ConnectEntities(Action):
             return new_belt
         source_belt = new_belt.outputs[0]
         target_belt = target.inputs[0]
-        if source_belt.position.x < target_belt.position.x:
+        if source_belt.position.x < target_belt.position.x and not source_belt.direction.value == Direction.LEFT.value: # We only want to curve the belt, not invert it
             # It is necessary to use the direction enums from the game state
             source_belt = self.rotate_entity(source_belt, Direction.RIGHT)
-        elif source_belt.position.x > target_belt.position.x:
+        elif source_belt.position.x > target_belt.position.x and not source_belt.direction.value == Direction.RIGHT.value:
             source_belt = self.rotate_entity(source_belt, Direction.LEFT)
-        elif source_belt.position.y < target_belt.position.y:
+        elif source_belt.position.y > target_belt.position.y and not source_belt.direction.value == Direction.UP.value:
             source_belt = self.rotate_entity(source_belt, Direction.DOWN)
-        elif source_belt.position.y > target_belt.position.y:
+        elif source_belt.position.y < target_belt.position.y and not source_belt.direction.value == Direction.DOWN.value:
             source_belt = self.rotate_entity(source_belt, Direction.UP)
 
         # Check to see if this is still a source / terminus

@@ -219,3 +219,20 @@ def test_connect_steam_engine_mining_drill(game):
 
     drill = game.get_entity(Prototype.ElectricMiningDrill, position=pos)
     assert drill.status == EntityStatus.WORKING
+
+def test_pole_groups(game):
+    water_position = game.nearest(Resource.Water)
+    game.move_to(water_position)
+    offshore_pump = game.place_entity(Prototype.OffshorePump, position=water_position)
+    print(offshore_pump)
+    boiler = game.place_entity_next_to(Prototype.Boiler, reference_position=offshore_pump.position, spacing=3)
+    boiler = game.insert_item(Prototype.Coal, boiler, 10)
+    steam_engine = game.place_entity_next_to(Prototype.SteamEngine, reference_position=boiler.position, spacing=3)
+    print(f"Placed steam_engine at {steam_engine.position}")  # Position(x=4, y = -21)
+    water_pipes = game.connect_entities(offshore_pump, boiler, Prototype.Pipe)
+    steam_pipes = game.connect_entities(boiler, steam_engine, Prototype.Pipe)
+    game.sleep(5)
+    print(steam_engine)
+    outp = game.connect_entities(steam_engine.position, Position(x=4, y=-20), Prototype.SmallElectricPole)
+    entities = game.get_entities()
+    assert len(entities) == 5

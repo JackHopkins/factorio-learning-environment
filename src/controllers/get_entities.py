@@ -71,15 +71,25 @@ class GetEntities(Action):
 
                 try:
                     entity = metaclass(**entity_data)
-                    if entity.prototype == Prototype.TransportBelt or entity.prototype == Prototype.Pipe:
-                        belt_list.append(entity)
-                    else:
-                        entities_list.append(entity)
+                    entities_list.append(entity)
                 except Exception as e1:
                     print(f"Could not create {entity_data['name']} object: {e1}")
 
-            belt_groups = agglomerate_groupable_entities(belt_list)
-            entities_list.extend(belt_groups)
+            # get all pipes into a list
+            pipes = [entity for entity in entities_list if hasattr(entity, 'prototype') and entity.prototype == Prototype.Pipe]
+            group = agglomerate_groupable_entities(pipes)
+            [entities_list.remove(pipe) for pipe in pipes]
+            entities_list.extend(group)
+
+            poles = [entity for entity in entities_list if hasattr(entity, 'prototype') and entity.prototype in (Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole)]
+            group = agglomerate_groupable_entities(poles)
+            [entities_list.remove(pole) for pole in poles]
+            entities_list.extend(group)
+
+            belts = [entity for entity in entities_list if hasattr(entity, 'prototype') and entity.prototype in (Prototype.TransportBelt, Prototype.FastTransportBelt, Prototype.ExpressTransportBelt)]
+            group = agglomerate_groupable_entities(belts)
+            [entities_list.remove(belt) for belt in belts]
+            entities_list.extend(group)
 
             return entities_list
 

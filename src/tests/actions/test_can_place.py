@@ -1,6 +1,7 @@
 import pytest
 
-from factorio_types import Prototype
+from factorio_types import Prototype, Resource
+
 
 @pytest.fixture()
 def game(instance):
@@ -26,3 +27,11 @@ def test_can_place(game):
     can_place = game.can_place_entity(Prototype.Pipe, position=(5, 0))
     assert can_place == False
 
+def test_can_place_over_resources(game):
+    copper_ore = game.nearest(Resource.CopperOre)
+    game.move_to(copper_ore)
+    can_build = game.can_place_entity(
+        Prototype.BurnerMiningDrill,
+        position=copper_ore
+    )
+    assert can_build

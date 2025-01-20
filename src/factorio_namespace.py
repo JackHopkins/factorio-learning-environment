@@ -80,6 +80,7 @@ class FactorioNamespace:
         self._static_members = [attr for attr in dir(self)
                                 if not callable(getattr(self, attr))
                                 and not attr.startswith("__")]
+        pass
 
     def load(self, game_state: GameState):
         try:

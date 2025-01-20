@@ -12,7 +12,7 @@ def game(instance):
     instance.initial_inventory = {'stone-furnace': 1, 'burner-mining-drill': 3, 'transport-belt': 100, 'small-electric-pole': 50,
                                   'boiler': 1, 'steam-engine': 1, 'offshore-pump': 4, 'pipe': 100, 'burner-inserter': 50, 'coal': 50}
     instance.reset()
-    yield instance
+    yield instance.namespace
 
 
 def test_steam_engines(game: FactorioInstance):

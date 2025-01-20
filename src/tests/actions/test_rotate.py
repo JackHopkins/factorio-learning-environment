@@ -9,7 +9,7 @@ from utils import eval_program_with_achievements
 @pytest.fixture()
 def game(instance):
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 def test_rotate_boiler(game):

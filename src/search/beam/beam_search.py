@@ -408,7 +408,7 @@ class ParallelBeamSearch:
                         # Initialize with starting state
                         state = self.config.initial_state
                         group.evaluator.instances[0].reset(state)
-                        entities = group.evaluator.instances[0].get_entities()
+                        entities = group.evaluator.instances[0].namespace.get_entities()
                         conversation = Conversation(messages=[
                             Message(role="system", content=self.config.system_prompt),
                             Message(role="assistant", content="print(f'Inventory: {inspect_inventory()}')\n"

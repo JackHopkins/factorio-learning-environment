@@ -10,7 +10,7 @@ def game(instance):
         'wooden-chest': 100,
         'electric-mining-drill': 10
     })
-    yield instance
+    yield instance.namespace
 
 
 def test_nearest_buildable_simple(game):

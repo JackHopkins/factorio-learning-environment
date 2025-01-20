@@ -24,7 +24,7 @@ def game(instance):
         'offshore-pump': 1,
     }
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 def test_get_offshore_pump(game):

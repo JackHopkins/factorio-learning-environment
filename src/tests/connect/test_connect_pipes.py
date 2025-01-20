@@ -23,7 +23,7 @@ def game(instance):
         'assembling-machine-1': 10,
     }
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 

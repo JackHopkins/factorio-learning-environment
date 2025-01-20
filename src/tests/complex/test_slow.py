@@ -14,7 +14,7 @@ def game():
                                inventory={})
     instance.speed(1)
     instance.reset()
-    yield instance
+    yield instance.namespace
 
 
 def test_slow_harvest(game):

@@ -33,7 +33,7 @@ def game(instance):
     instance.reset()
     instance.add_command('/c game.surfaces[1].create_entity{name="crude-oil", position={x=0, y=0}}', raw=True)
     instance.execute_transaction()
-    yield instance
+    yield instance.namespace
 
 
 def test_place_pump_jack(game):

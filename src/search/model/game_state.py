@@ -148,21 +148,21 @@ class GameState:
     def from_instance(cls, instance: 'FactorioInstance') -> 'GameState':
 
         """Capture current game state from Factorio instance"""
-        entities = instance._save_entity_state(compress=True, encode=True)
+        entities = instance.namespace._save_entity_state(compress=True, encode=True)
 
         # Get research state
-        research_state = instance._save_research_state()
+        research_state = instance.namespace._save_research_state()
 
         # Filter and pickle only serializable variables
-        if hasattr(instance, 'persistent_vars'):
-            serializable_vars = filter_serializable_vars(instance.persistent_vars)
+        if hasattr(instance.namespace, 'persistent_vars'):
+            serializable_vars = filter_serializable_vars(instance.namespace.persistent_vars)
             namespace = pickle.dumps(serializable_vars)
         else:
             namespace = bytes()
 
         return cls(
             entities=entities,
-            inventory=instance.inspect_inventory(),
+            inventory=instance.namespace.inspect_inventory(),
             namespace=namespace,
             research=research_state,
         )

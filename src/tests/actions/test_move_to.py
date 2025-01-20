@@ -10,7 +10,7 @@ from factorio_types import Prototype, Resource
 @pytest.fixture()
 def game(instance):
     instance.reset()
-    yield instance
+    yield instance.namespace
     #instance.reset()
 
 

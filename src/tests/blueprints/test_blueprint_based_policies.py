@@ -22,7 +22,7 @@ def game(instance):
         'inserter': 10
     }
     instance.reset()
-    yield instance
+    yield instance.namespace
 
 def test_mining_blueprint_1(game):
     # Calculate bounding box

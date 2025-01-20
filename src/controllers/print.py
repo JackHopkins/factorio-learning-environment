@@ -14,7 +14,7 @@ class Print(Action):
 
     def __call__(self, *args) -> bool:
         """
-        Recursively print the
+        Adds a string to stdout
         :param args:
         :return:
         """

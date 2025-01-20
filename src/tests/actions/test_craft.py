@@ -11,7 +11,7 @@ def game(instance):
                               'electronic-circuit': 3,
                               'pipe': 1,
                               'copper-plate': 10})
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 def test_fail_to_craft_item(game):

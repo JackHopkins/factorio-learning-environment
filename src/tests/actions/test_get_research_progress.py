@@ -14,7 +14,7 @@ def game(instance):
                                  fast=True,
                                  inventory={})
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 def test_get_research_progress_automation(game):

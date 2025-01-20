@@ -22,6 +22,7 @@ from dotenv import load_dotenv
 from slpp import slpp as lua
 from typing_extensions import deprecated
 
+from factorio_namespace import FactorioNamespace
 from models.research_state import ResearchState
 from search.model.game_state import GameState, wrap_for_serialization, unwrap_after_deserialization, \
     SerializableFunction
@@ -94,8 +95,10 @@ class FactorioInstance:
         self._speed = 1
         self._ticks_elapsed = 0
 
-        self.max_sequential_exception_count = 1
-        self._sequential_exception_count = 0
+        self.namespace = FactorioNamespace(tcp_port=tcp_port)
+
+        # self.max_sequential_exception_count = 1
+        # self._sequential_exception_count = 0
 
         self.lua_script_manager = FactorioLuaScriptManager(self.rcon_client, cache_scripts)
         self.script_dict = {**self.lua_script_manager.action_scripts, **self.lua_script_manager.init_scripts}
@@ -106,7 +109,7 @@ class FactorioInstance:
         self.initial_inventory = inventory
         self.initialise(fast, **inventory)
         try:
-            self.observe_all()
+            self.namespace.observe_all()
         except Exception as e:
             # Invalidate cache if there is an error
             self.lua_script_manager = FactorioLuaScriptManager(self.rcon_client, False)
@@ -117,44 +120,44 @@ class FactorioInstance:
 
         self._tasks = []
 
-        self._initial_score, goal = self.score()
+        self._initial_score, goal = self.namespace.score()
 
-        # Available objects that the agent can interact with
-        self.Prototype = Prototype
-        self.Resource = Resource
-        self.Direction = Direction
-        self.Position = Position
-        self.EntityStatus = EntityStatus
-        self.BoundingBox = BoundingBox
-        self.BeltGroup = BeltGroup
-        self.Technology = Technology
-        self.Recipe = Recipe
-
-        self.prototype_by_name = prototype_by_name
-
-        # Statically named directions
-        self.UP, self.ABOVE, self.TOP = [Direction.UP]*3
-        self.RIGHT, self.EAST = [Direction.RIGHT]*2
-        self.LEFT, self.WEST = [Direction.LEFT]*2
-        self.DOWN, self.BELOW, self.BOTTOM = [Direction.DOWN]*3
+        # # Available objects that the agent can interact with
+        # self.Prototype = Prototype
+        # self.Resource = Resource
+        # self.Direction = Direction
+        # self.Position = Position
+        # self.EntityStatus = EntityStatus
+        # self.BoundingBox = BoundingBox
+        # self.BeltGroup = BeltGroup
+        # self.Technology = Technology
+        # self.Recipe = Recipe
+        #
+        # self.prototype_by_name = prototype_by_name
+        #
+        # # Statically named directions
+        # self.UP, self.ABOVE, self.TOP = [Direction.UP]*3
+        # self.RIGHT, self.EAST = [Direction.RIGHT]*2
+        # self.LEFT, self.WEST = [Direction.LEFT]*2
+        # self.DOWN, self.BELOW, self.BOTTOM = [Direction.DOWN]*3
 
         # Available actions that the agent can perform
-        self._static_members = [attr for attr in dir(self)
-                                if not callable(getattr(self, attr))
-                                and not attr.startswith("__")]
+        # self._static_members = [attr for attr in dir(self)
+        #                         if not callable(getattr(self, attr))
+        #                         and not attr.startswith("__")]
 
         # Register the cleanup method to be called on exit
         atexit.register(self.cleanup)
 
     def reset(self, game_state: Optional[GameState] = None):
-        # Clear non-static attributes
-        for attr in dir(self):
-            if not callable(getattr(self, attr)) and attr[0] != "_" and attr not in self._static_members:
-                self[attr] = None
+        # Reset the namespace (clear variables, functions etc)
+        self.namespace.reset()
 
         if not game_state:
+            # Reset the game instance
             self._reset(**self.initial_inventory if isinstance(self.initial_inventory,
                                                                dict) else self.initial_inventory.__dict__)
+            # Reset the technologies
             if not self.all_technologies_researched:
                 self._load_research_state(ResearchState(
                     technologies={},
@@ -163,31 +166,29 @@ class FactorioInstance:
                     research_queue=[]
                 ))
         else:
+            # Reset the game instance
             self._reset(**dict(game_state.inventory))
-            self._load_entity_state(game_state.entities, decompress=True)
-            self._load_research_state(game_state.research)
-            self._reset_elapsed_ticks()
-            try:
-                if game_state.namespace:
-                    env = pickle.loads(game_state.namespace)
-                    for key, value in env.items():
-                        # Unwrap any serialized values (like functions)
-                        restored_value = unwrap_after_deserialization(self, value)
-                        self.persistent_vars[key] = restored_value
-                        setattr(self, key, restored_value)
 
-            except Exception as e:
-                print(f"Error restoring namespace: {e}")
-                pass
+            # Load entities into the game
+            self.namespace._load_entity_state(game_state.entities, decompress=True)
+
+            # Load research state into the game
+            self.namespace._load_research_state(game_state.research)
+
+            # Reset elapsed ticks
+            self._reset_elapsed_ticks()
+
+            # Load variables / functions from game state
+            self.namespace.load(game_state)
 
         try:
-            self.observe_all()
+            self.namespace.observe_all()
         except Exception as e:
             print(e)
             pass
 
         try:
-            self.game_state.initial_score, goal = self.score()
+            self.game_state.initial_score, goal = self.namespace.score()
         except Exception as e:
             self.game_state.initial_score, goal = 0, None
 
@@ -215,21 +216,21 @@ class FactorioInstance:
         if not response: return 0
         return int(response)
 
-    def log(self, *arg):
-        """
-        Shadows the builtin print function,and ensures that whatever is printed is logged in agent memory
-        """
-        #if self.memory:
-        #    self.memory.log_observation(str(arg))
-        if self.line_value not in self.logging_results:
-            self.logging_results[self.line_value] = []
-        self.logging_results[self.line_value].append(repr(arg))
-
-        if 'error' in repr(arg).lower():
-            print(f"\033[93m{self.tcp_port}: {repr(arg)}")
-        else:
-            print(f"{self.tcp_port}: {repr(arg)}")
-        return arg
+    # def log(self, *arg):
+    #     """
+    #     Shadows the builtin print function,and ensures that whatever is printed is logged in agent memory
+    #     """
+    #     #if self.memory:
+    #     #    self.memory.log_observation(str(arg))
+    #     if self.line_value not in self.logging_results:
+    #         self.logging_results[self.line_value] = []
+    #     self.logging_results[self.line_value].append(repr(arg))
+    #
+    #     if 'error' in repr(arg).lower():
+    #         print(f"\033[93m{self.tcp_port}: {repr(arg)}")
+    #     else:
+    #         print(f"{self.tcp_port}: {repr(arg)}")
+    #     return arg
 
     def get_system_prompt(self) -> str:
         """
@@ -283,6 +284,12 @@ class FactorioInstance:
         return rcon_client, address
 
     def setup_controllers(self, lua_script_manager, game_state):
+        """
+        Here we load all the Python controllers into the namespace, e.g `inspect_inventory(), nearest(), ect`
+        @param lua_script_manager:
+        @param game_state:
+        @return:
+        """
         # Define the directory containing the callable class files
         callable_classes_directory = "controllers"
 
@@ -323,357 +330,357 @@ class FactorioInstance:
                 except Exception as e:
                     raise Exception(f"Could not instantiate {class_name}. {e}")
                 # Add the instance as a member method
-                setattr(self, module_name.lower(), callable_instance)
+                setattr(self.namespace, module_name.lower(), callable_instance)
         pass
 
-    def __getitem__(self, key):
-        if key not in dir(self) or key.startswith('__'):
-            raise KeyError(key)
-        return getattr(self, key)
+    # def __getitem__(self, key):
+    #     if key not in dir(self) or key.startswith('__'):
+    #         raise KeyError(key)
+    #     return getattr(self, key)
+    #
+    # def __setitem__(self, key, value):
+    #     setattr(self, key, value)
 
-    def __setitem__(self, key, value):
-        setattr(self, key, value)
+    # def _extract_error_lines(self, expr, traceback_str):
+    #     lines = expr.splitlines()
+    #     error_lines = []
+    #     for line in traceback_str.splitlines():
+    #         if 'File "file", line' in line:
+    #             line_num = int(line.split(", line")[1].split(",")[0])
+    #             if 1 <= line_num <= len(lines):
+    #                 error_lines.append((line_num, lines[line_num - 1].strip()))
+    #     return error_lines
 
-    def _extract_error_lines(self, expr, traceback_str):
-        lines = expr.splitlines()
-        error_lines = []
-        for line in traceback_str.splitlines():
-            if 'File "file", line' in line:
-                line_num = int(line.split(", line")[1].split(",")[0])
-                if 1 <= line_num <= len(lines):
-                    error_lines.append((line_num, lines[line_num - 1].strip()))
-        return error_lines
+    # def _change_print_to_log(self, node):
+    #     if isinstance(node, ast.Expr):
+    #         # check if its print, if it is, then we route to log
+    #         if isinstance(node.value, ast.Call) and isinstance(node.value.func,
+    #                                                            ast.Name) and node.value.func.id == 'print':
+    #             # change print to log
+    #             node.value.func.id = 'log'
+    #
+    #     elif isinstance(node, ast.If) or isinstance(node, ast.For) or isinstance(node, ast.While):
+    #         for subnode_idx, subnode in enumerate(node.body):
+    #             node.body[subnode_idx] = self._change_print_to_log(subnode)
+    #         for subnode_idx, subnode in enumerate(node.orelse):
+    #             node.orelse[subnode_idx] = self._change_print_to_log(subnode)
+    #     elif isinstance(node, ast.FunctionDef):
+    #         for subnode_idx, subnode in enumerate(node.body):
+    #             node.body[subnode_idx] = self._change_print_to_log(subnode)
+    #     return node
 
-    def _change_print_to_log(self, node):
-        if isinstance(node, ast.Expr):
-            # check if its print, if it is, then we route to log
-            if isinstance(node.value, ast.Call) and isinstance(node.value.func,
-                                                               ast.Name) and node.value.func.id == 'print':
-                # change print to log
-                node.value.func.id = 'log'
+    # def _eval_with_timeout(self, expr):
+    #     """
+    #     Executes a Python expression with a timeout and returns the result.
+    #     Supports try-except blocks and other compound statements.
+    #     """
+    #
+    #     def parse_result_into_str(data):
+    #         result = []
+    #         for key, values in data.items():
+    #             for value in values:
+    #                 result.append(f"{key}: {value}")
+    #         return "\n".join(result)
+    #
+    #     def find_actual_line_number(node, code_lines):
+    #         """Find the actual line number in the source code for a given node"""
+    #         if not hasattr(node, 'lineno'):
+    #             return 0
+    #
+    #         # Get the node's source code
+    #         if isinstance(node, ast.AST):
+    #             # For print calls specifically
+    #             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'print':
+    #                 return node.lineno
+    #             # For expressions containing print calls
+    #             if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call) and \
+    #                     isinstance(node.value.func, ast.Name) and node.value.func.id == 'print':
+    #                 return node.lineno
+    #
+    #         return node.lineno
+    #
+    #     def execute_node(node, eval_dict, parent_node=None):
+    #         """
+    #         Helper function to execute a single AST node
+    #         parent_node: The parent AST node, used for context in line number calculation
+    #         """
+    #         # Set the line number based on the actual position in code
+    #         if hasattr(node, 'lineno'):
+    #             self.line_value = find_actual_line_number(node, expr.splitlines())
+    #
+    #         if isinstance(node, ast.FunctionDef):
+    #             # For function definitions
+    #             wrapped_node = ast.Module([node], type_ignores=[])
+    #             compiled = compile(wrapped_node, 'file', 'exec')
+    #             exec(compiled, eval_dict)
+    #
+    #             # Get the newly defined function
+    #             func = eval_dict[node.name]
+    #
+    #             # Create SerializableFunction and bind it immediately
+    #             serialized_func = SerializableFunction(func, self)
+    #
+    #             # Store in persistent vars and as instance attribute
+    #             self.persistent_vars[node.name] = serialized_func
+    #             setattr(self, node.name, serialized_func)
+    #
+    #             # Update eval_dict with bound serializable function
+    #             eval_dict[node.name] = serialized_func
+    #
+    #             return True
+    #
+    #         elif isinstance(node, ast.Assign):
+    #             # Store assignments in persistent vars
+    #             compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
+    #             exec(compiled, eval_dict)
+    #
+    #             # Get variable names from the assignment
+    #             targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
+    #             for name in targets:
+    #                 if name in eval_dict:
+    #                     value = eval_dict[name]
+    #                     # Store both original and wrapped version
+    #                     self.persistent_vars[name] = wrap_for_serialization(value)
+    #                     setattr(self, name, value)
+    #                     print(f"{self.tcp_port}: Stored variable {name} - {type(value)}")
+    #
+    #             return True
+    #
+    #         elif isinstance(node, ast.Expr):
+    #             # For expressions (including function calls)
+    #             compiled = compile(ast.Expression(node.value), 'file', 'eval')
+    #             response = eval(compiled, eval_dict)
+    #             if response is not True and response is not None and not isinstance(node.value, ast.Constant):
+    #                 self._sequential_exception_count = 0
+    #             self.log(response)
+    #             return True
+    #
+    #         elif isinstance(node, ast.Try):
+    #             # Handle try-except blocks
+    #             try:
+    #                 # Execute the body of the try block
+    #                 for n in node.body:
+    #                     n = self._change_print_to_log(n)
+    #                     execute_node(n, eval_dict, node)
+    #             except Exception as e:
+    #                 # Find matching except handler
+    #                 handled = False
+    #                 for handler in node.handlers:
+    #                     if handler.type is None or isinstance(e, eval(compile(ast.Expression(handler.type), 'file',
+    #                                                                           'eval'), eval_dict)):
+    #                         if handler.name:
+    #                             eval_dict[handler.name] = e
+    #                         # Transform prints to logs in except block
+    #                         for n in handler.body:
+    #                             n = self._change_print_to_log(n)
+    #                             execute_node(n, eval_dict, handler)
+    #                         handled = True
+    #                         break
+    #
+    #                 if not handled:
+    #                     raise
+    #             else:
+    #                 # If no exception occurred, execute else block if it exists
+    #                 if node.orelse:
+    #                     for n in node.orelse:
+    #                         n = self._change_print_to_log(n)
+    #                         execute_node(n, eval_dict, node)
+    #             finally:
+    #                 # Execute finally block if it exists
+    #                 if node.finalbody:
+    #                     for n in node.finalbody:
+    #                         n = self._change_print_to_log(n)
+    #                         execute_node(n, eval_dict, node)
+    #             return True
+    #
+    #         else:
+    #             # For other statements
+    #             compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
+    #             exec(compiled, eval_dict)
+    #             return True
+    #
+    #     tree = ast.parse(expr)
+    #     self.logging_results = {}
+    #     self.line_value = 0
+    #
+    #     # Create the custom dictionary that will also serve as globals
+    #     eval_dict = {
+    #         # Add built-ins
+    #         **{name: getattr(builtins, name) for name in dir(builtins) if not name.startswith('_')},
+    #         # Add instance attributes
+    #         **{name: getattr(self, name) for name in dir(self) if not name.startswith('_')},
+    #         # Add persistent vars
+    #         **self.persistent_vars
+    #     }
+    #
+    #     last_successful_state = None
+    #     had_error = False
+    #
+    #     # Execute the expression
+    #     for index, node in enumerate(tree.body):
+    #         try:
+    #             node = self._change_print_to_log(node)
+    #             execute_node(node, eval_dict)
+    #             last_successful_state = dict(self.persistent_vars)
+    #
+    #         except Exception as e:
+    #             had_error = True
+    #             self._sequential_exception_count += 1
+    #             error_traceback = traceback.format_exc()
+    #             error_lines = self._extract_error_lines(expr, error_traceback)
+    #
+    #             error_message = ""
+    #             if error_lines:
+    #                 error_message += "Error occurred in the following lines:\n"
+    #                 for line_num, line_content in error_lines:
+    #                     error_message += f"  Line {line_num}: {line_content}\n"
+    #             error_type = error_traceback.strip().split('\n')[-1]
+    #             error_message += f"\n{error_type}"
+    #
+    #             self.log(error_message)
+    #
+    #             # Restore the last successful state if available
+    #             if last_successful_state is not None:
+    #                 self.persistent_vars = last_successful_state.copy()
+    #
+    #             if self._sequential_exception_count >= self.max_sequential_exception_count:
+    #                 break
+    #
+    #         # Update eval_dict with any new persistent vars
+    #         eval_dict.update(self.persistent_vars)
+    #
+    #     # Get final results
+    #     score, goal = self.score()
+    #     result_output = parse_result_into_str(self.logging_results)
+    #
+    #     if had_error:
+    #         raise Exception(result_output)
+    #
+    #     return score, goal, result_output
+    #
+    # def _eval_with_timeout2(self, expr):
+    #     """
+    #     Executes a Python expression with a timeout and returns the result
+    #     """
+    #
+    #     def parse_result_into_str(data):
+    #         result = []
+    #         for key, values in data.items():
+    #             for value in values:
+    #                 result.append(f"{key}: {value}")
+    #         return "\n".join(result)
+    #
+    #     tree = ast.parse(expr)
+    #     self.logging_results = {}
+    #     self.line_value = 0
+    #
+    #     # Create the custom dictionary that will also serve as globals
+    #     eval_dict = {
+    #         # Add built-ins
+    #         **{name: getattr(builtins, name) for name in dir(builtins) if not name.startswith('_')},
+    #         # Add instance attributes
+    #         **{name: getattr(self, name) for name in dir(self) if not name.startswith('_')},
+    #         # Add persistent vars
+    #         **self.persistent_vars
+    #     }
+    #
+    #     last_successful_state = None
+    #     had_error = False
+    #
+    #     # Execute the expression
+    #     for index, node in enumerate(tree.body):
+    #         self.line_value = index
+    #         try:
+    #             node = self._change_print_to_log(node)
+    #
+    #             if isinstance(node, ast.FunctionDef):
+    #                 # For function definitions
+    #                 wrapped_node = ast.Module([node], type_ignores=[])
+    #                 compiled = compile(wrapped_node, 'file', 'exec')
+    #                 exec(compiled, eval_dict)
+    #
+    #                 # Get the newly defined function
+    #                 func = eval_dict[node.name]
+    #
+    #                 # Create SerializableFunction and bind it immediately
+    #                 serialized_func = SerializableFunction(func, self)
+    #
+    #                 # Store in persistent vars and as instance attribute
+    #                 self.persistent_vars[node.name] = serialized_func
+    #                 setattr(self, node.name, serialized_func)
+    #
+    #                 # Update eval_dict with bound serializable function
+    #                 eval_dict[node.name] = serialized_func
+    #
+    #                 last_successful_state = dict(self.persistent_vars)
+    #
+    #             elif isinstance(node, ast.Assign):
+    #                 # Store assignments in persistent vars
+    #                 compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
+    #                 exec(compiled, eval_dict)
+    #
+    #                 # Get variable names from the assignment
+    #                 targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
+    #                 for name in targets:
+    #                     if name in eval_dict:
+    #                         value = eval_dict[name]
+    #                         # Store both original and wrapped version
+    #                         self.persistent_vars[name] = wrap_for_serialization(value)
+    #                         setattr(self, name, value)
+    #                         print(f"{self.tcp_port}: Stored variable {name} - {type(value)}")
+    #
+    #                 last_successful_state = dict(self.persistent_vars)
+    #
+    #             elif isinstance(node, ast.Expr):
+    #                 # For expressions (including function calls)
+    #                 compiled = compile(ast.Expression(node.value), 'file', 'eval')
+    #                 response = eval(compiled, eval_dict)
+    #                 if response is not True and response is not None and not isinstance(node.value, ast.Constant):
+    #                     self._sequential_exception_count = 0
+    #                 #self.log(response)
+    #                 last_successful_state = dict(self.persistent_vars)
+    #
+    #             else:
+    #                 # For other statements
+    #                 compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
+    #                 exec(compiled, eval_dict)
+    #                 last_successful_state = dict(self.persistent_vars)
+    #
+    #         except Exception as e:
+    #             had_error = True
+    #             self._sequential_exception_count += 1
+    #             error_traceback = traceback.format_exc()
+    #             error_lines = self._extract_error_lines(expr, error_traceback)
+    #
+    #             error_message = ""
+    #             if error_lines:
+    #                 error_message += "Error occurred in the following lines:\n"
+    #                 for line_num, line_content in error_lines:
+    #                     error_message += f"  Line {line_num}: {line_content}\n"
+    #             error_type = error_traceback.strip().split('\n')[-1]
+    #             error_message += f"\n{error_type}"
+    #
+    #             self.log(error_message)
+    #
+    #             # Restore the last successful state if available
+    #             if last_successful_state is not None:
+    #                 self.persistent_vars = last_successful_state.copy()
+    #
+    #             if self._sequential_exception_count >= self.max_sequential_exception_count:
+    #                 break
+    #
+    #         # Update eval_dict with any new persistent vars
+    #         eval_dict.update(self.persistent_vars)
+    #
+    #     # Get final results
+    #     score, goal = self.score()
+    #     result_output = parse_result_into_str(self.logging_results)
+    #
+    #     if had_error:
+    #         raise Exception(result_output)
+    #
+    #     return score, goal, result_output
 
-        elif isinstance(node, ast.If) or isinstance(node, ast.For) or isinstance(node, ast.While):
-            for subnode_idx, subnode in enumerate(node.body):
-                node.body[subnode_idx] = self._change_print_to_log(subnode)
-            for subnode_idx, subnode in enumerate(node.orelse):
-                node.orelse[subnode_idx] = self._change_print_to_log(subnode)
-        elif isinstance(node, ast.FunctionDef):
-            for subnode_idx, subnode in enumerate(node.body):
-                node.body[subnode_idx] = self._change_print_to_log(subnode)
-        return node
-
-    def _eval_with_timeout(self, expr):
-        """
-        Executes a Python expression with a timeout and returns the result.
-        Supports try-except blocks and other compound statements.
-        """
-
-        def parse_result_into_str(data):
-            result = []
-            for key, values in data.items():
-                for value in values:
-                    result.append(f"{key}: {value}")
-            return "\n".join(result)
-
-        def find_actual_line_number(node, code_lines):
-            """Find the actual line number in the source code for a given node"""
-            if not hasattr(node, 'lineno'):
-                return 0
-
-            # Get the node's source code
-            if isinstance(node, ast.AST):
-                # For print calls specifically
-                if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'print':
-                    return node.lineno
-                # For expressions containing print calls
-                if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call) and \
-                        isinstance(node.value.func, ast.Name) and node.value.func.id == 'print':
-                    return node.lineno
-
-            return node.lineno
-
-        def execute_node(node, eval_dict, parent_node=None):
-            """
-            Helper function to execute a single AST node
-            parent_node: The parent AST node, used for context in line number calculation
-            """
-            # Set the line number based on the actual position in code
-            if hasattr(node, 'lineno'):
-                self.line_value = find_actual_line_number(node, expr.splitlines())
-
-            if isinstance(node, ast.FunctionDef):
-                # For function definitions
-                wrapped_node = ast.Module([node], type_ignores=[])
-                compiled = compile(wrapped_node, 'file', 'exec')
-                exec(compiled, eval_dict)
-
-                # Get the newly defined function
-                func = eval_dict[node.name]
-
-                # Create SerializableFunction and bind it immediately
-                serialized_func = SerializableFunction(func, self)
-
-                # Store in persistent vars and as instance attribute
-                self.persistent_vars[node.name] = serialized_func
-                setattr(self, node.name, serialized_func)
-
-                # Update eval_dict with bound serializable function
-                eval_dict[node.name] = serialized_func
-
-                return True
-
-            elif isinstance(node, ast.Assign):
-                # Store assignments in persistent vars
-                compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
-                exec(compiled, eval_dict)
-
-                # Get variable names from the assignment
-                targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
-                for name in targets:
-                    if name in eval_dict:
-                        value = eval_dict[name]
-                        # Store both original and wrapped version
-                        self.persistent_vars[name] = wrap_for_serialization(value)
-                        setattr(self, name, value)
-                        print(f"{self.tcp_port}: Stored variable {name} - {type(value)}")
-
-                return True
-
-            elif isinstance(node, ast.Expr):
-                # For expressions (including function calls)
-                compiled = compile(ast.Expression(node.value), 'file', 'eval')
-                response = eval(compiled, eval_dict)
-                if response is not True and response is not None and not isinstance(node.value, ast.Constant):
-                    self._sequential_exception_count = 0
-                self.log(response)
-                return True
-
-            elif isinstance(node, ast.Try):
-                # Handle try-except blocks
-                try:
-                    # Execute the body of the try block
-                    for n in node.body:
-                        n = self._change_print_to_log(n)
-                        execute_node(n, eval_dict, node)
-                except Exception as e:
-                    # Find matching except handler
-                    handled = False
-                    for handler in node.handlers:
-                        if handler.type is None or isinstance(e, eval(compile(ast.Expression(handler.type), 'file',
-                                                                              'eval'), eval_dict)):
-                            if handler.name:
-                                eval_dict[handler.name] = e
-                            # Transform prints to logs in except block
-                            for n in handler.body:
-                                n = self._change_print_to_log(n)
-                                execute_node(n, eval_dict, handler)
-                            handled = True
-                            break
-
-                    if not handled:
-                        raise
-                else:
-                    # If no exception occurred, execute else block if it exists
-                    if node.orelse:
-                        for n in node.orelse:
-                            n = self._change_print_to_log(n)
-                            execute_node(n, eval_dict, node)
-                finally:
-                    # Execute finally block if it exists
-                    if node.finalbody:
-                        for n in node.finalbody:
-                            n = self._change_print_to_log(n)
-                            execute_node(n, eval_dict, node)
-                return True
-
-            else:
-                # For other statements
-                compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
-                exec(compiled, eval_dict)
-                return True
-
-        tree = ast.parse(expr)
-        self.logging_results = {}
-        self.line_value = 0
-
-        # Create the custom dictionary that will also serve as globals
-        eval_dict = {
-            # Add built-ins
-            **{name: getattr(builtins, name) for name in dir(builtins) if not name.startswith('_')},
-            # Add instance attributes
-            **{name: getattr(self, name) for name in dir(self) if not name.startswith('_')},
-            # Add persistent vars
-            **self.persistent_vars
-        }
-
-        last_successful_state = None
-        had_error = False
-
-        # Execute the expression
-        for index, node in enumerate(tree.body):
-            try:
-                node = self._change_print_to_log(node)
-                execute_node(node, eval_dict)
-                last_successful_state = dict(self.persistent_vars)
-
-            except Exception as e:
-                had_error = True
-                self._sequential_exception_count += 1
-                error_traceback = traceback.format_exc()
-                error_lines = self._extract_error_lines(expr, error_traceback)
-
-                error_message = ""
-                if error_lines:
-                    error_message += "Error occurred in the following lines:\n"
-                    for line_num, line_content in error_lines:
-                        error_message += f"  Line {line_num}: {line_content}\n"
-                error_type = error_traceback.strip().split('\n')[-1]
-                error_message += f"\n{error_type}"
-
-                self.log(error_message)
-
-                # Restore the last successful state if available
-                if last_successful_state is not None:
-                    self.persistent_vars = last_successful_state.copy()
-
-                if self._sequential_exception_count >= self.max_sequential_exception_count:
-                    break
-
-            # Update eval_dict with any new persistent vars
-            eval_dict.update(self.persistent_vars)
-
-        # Get final results
-        score, goal = self.score()
-        result_output = parse_result_into_str(self.logging_results)
-
-        if had_error:
-            raise Exception(result_output)
-
-        return score, goal, result_output
-
-    def _eval_with_timeout2(self, expr):
-        """
-        Executes a Python expression with a timeout and returns the result
-        """
-
-        def parse_result_into_str(data):
-            result = []
-            for key, values in data.items():
-                for value in values:
-                    result.append(f"{key}: {value}")
-            return "\n".join(result)
-
-        tree = ast.parse(expr)
-        self.logging_results = {}
-        self.line_value = 0
-
-        # Create the custom dictionary that will also serve as globals
-        eval_dict = {
-            # Add built-ins
-            **{name: getattr(builtins, name) for name in dir(builtins) if not name.startswith('_')},
-            # Add instance attributes
-            **{name: getattr(self, name) for name in dir(self) if not name.startswith('_')},
-            # Add persistent vars
-            **self.persistent_vars
-        }
-
-        last_successful_state = None
-        had_error = False
-
-        # Execute the expression
-        for index, node in enumerate(tree.body):
-            self.line_value = index
-            try:
-                node = self._change_print_to_log(node)
-
-                if isinstance(node, ast.FunctionDef):
-                    # For function definitions
-                    wrapped_node = ast.Module([node], type_ignores=[])
-                    compiled = compile(wrapped_node, 'file', 'exec')
-                    exec(compiled, eval_dict)
-
-                    # Get the newly defined function
-                    func = eval_dict[node.name]
-
-                    # Create SerializableFunction and bind it immediately
-                    serialized_func = SerializableFunction(func, self)
-
-                    # Store in persistent vars and as instance attribute
-                    self.persistent_vars[node.name] = serialized_func
-                    setattr(self, node.name, serialized_func)
-
-                    # Update eval_dict with bound serializable function
-                    eval_dict[node.name] = serialized_func
-
-                    last_successful_state = dict(self.persistent_vars)
-
-                elif isinstance(node, ast.Assign):
-                    # Store assignments in persistent vars
-                    compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
-                    exec(compiled, eval_dict)
-
-                    # Get variable names from the assignment
-                    targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
-                    for name in targets:
-                        if name in eval_dict:
-                            value = eval_dict[name]
-                            # Store both original and wrapped version
-                            self.persistent_vars[name] = wrap_for_serialization(value)
-                            setattr(self, name, value)
-                            print(f"{self.tcp_port}: Stored variable {name} - {type(value)}")
-
-                    last_successful_state = dict(self.persistent_vars)
-
-                elif isinstance(node, ast.Expr):
-                    # For expressions (including function calls)
-                    compiled = compile(ast.Expression(node.value), 'file', 'eval')
-                    response = eval(compiled, eval_dict)
-                    if response is not True and response is not None and not isinstance(node.value, ast.Constant):
-                        self._sequential_exception_count = 0
-                    #self.log(response)
-                    last_successful_state = dict(self.persistent_vars)
-
-                else:
-                    # For other statements
-                    compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
-                    exec(compiled, eval_dict)
-                    last_successful_state = dict(self.persistent_vars)
-
-            except Exception as e:
-                had_error = True
-                self._sequential_exception_count += 1
-                error_traceback = traceback.format_exc()
-                error_lines = self._extract_error_lines(expr, error_traceback)
-
-                error_message = ""
-                if error_lines:
-                    error_message += "Error occurred in the following lines:\n"
-                    for line_num, line_content in error_lines:
-                        error_message += f"  Line {line_num}: {line_content}\n"
-                error_type = error_traceback.strip().split('\n')[-1]
-                error_message += f"\n{error_type}"
-
-                self.log(error_message)
-
-                # Restore the last successful state if available
-                if last_successful_state is not None:
-                    self.persistent_vars = last_successful_state.copy()
-
-                if self._sequential_exception_count >= self.max_sequential_exception_count:
-                    break
-
-            # Update eval_dict with any new persistent vars
-            eval_dict.update(self.persistent_vars)
-
-        # Get final results
-        score, goal = self.score()
-        result_output = parse_result_into_str(self.logging_results)
-
-        if had_error:
-            raise Exception(result_output)
-
-        return score, goal, result_output
-    
     def eval_with_error(self, expr, timeout=60):
         """ Evaluate an expression with a timeout, and return the result without error handling"""
         # with ThreadPoolExecutor(max_workers=1) as executor:
@@ -687,7 +694,7 @@ class FactorioInstance:
         signal.alarm(timeout)
 
         try:
-            return self._eval_with_timeout(expr)
+            return self.namespace.eval_with_timeout(expr)
         finally:
             signal.alarm(0)
 

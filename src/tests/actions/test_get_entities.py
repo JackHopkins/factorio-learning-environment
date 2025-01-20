@@ -27,7 +27,7 @@ def game(instance):
         'pipe': 20,
     }
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.reset()
 def test_get_stone_furnace(game):
     """

@@ -19,7 +19,7 @@ def game(instance):
         'offshore-pump': 1,
     }
     instance.reset()
-    yield instance
+    yield instance.namespace
 
 def calculate_expected_position(ref_pos, direction, spacing, ref_entity, entity_to_place):
     ref_dimensions = ref_entity.tile_dimensions

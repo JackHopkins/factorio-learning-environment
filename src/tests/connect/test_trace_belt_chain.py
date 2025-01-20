@@ -12,7 +12,7 @@ def game(instance):
         'transport-belt': 100,
     }
     instance.reset()
-    yield instance
+    yield instance.namespace
     #instance.reset()
 
 

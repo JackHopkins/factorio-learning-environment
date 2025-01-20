@@ -7,7 +7,7 @@ from factorio_types import Prototype
 def game(instance):
     instance.initial_inventory = {'iron-chest': 1, 'iron-plate': 10}
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 def test_extract(game):

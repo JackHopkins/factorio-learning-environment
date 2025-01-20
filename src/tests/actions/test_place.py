@@ -14,7 +14,7 @@ def game(instance):
     }
 
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 
@@ -152,6 +152,45 @@ def test_place_offshore_pumps(game):
                                       position=below_water_patch,
                                       direction=Direction.DOWN)
     assert offshore_pump.direction.value == Direction.DOWN.value
+
+def test_place_offshore_pumps_no_default_direction(game):
+    """
+    Place offshore pumps at each cardinal direction
+    :param game:
+    :return:
+    """
+    # move to the nearest water source
+    entity = Prototype.OffshorePump
+    water_location = game.nearest(Resource.Water)
+    water_patch = game.get_resource_patch(Resource.Water, water_location)
+
+    left_of_water_patch = Position(x=water_patch.bounding_box.left_top.x, y=water_patch.bounding_box.center.y)
+    game.move_to(left_of_water_patch)
+    offshore_pump = game.place_entity(entity,
+                                      position=left_of_water_patch)
+    assert offshore_pump.direction.value == Direction.LEFT.value
+    assert offshore_pump.connection_points
+
+    right_of_water_patch = Position(x=water_patch.bounding_box.right_bottom.x, y=water_patch.bounding_box.center.y)
+    game.move_to(right_of_water_patch)
+    offshore_pump = game.place_entity(entity,
+                                      position=right_of_water_patch)
+    assert offshore_pump.direction.value == Direction.RIGHT.value
+    assert offshore_pump.connection_points
+
+    above_water_patch = Position(x=water_patch.bounding_box.center.x, y=water_patch.bounding_box.left_top.y)
+    game.move_to(above_water_patch)
+    offshore_pump = game.place_entity(entity,
+                                      position=above_water_patch)
+    assert offshore_pump.direction.value == Direction.UP.value
+    assert offshore_pump.connection_points
+
+    below_water_patch = Position(x=water_patch.bounding_box.center.x, y=water_patch.bounding_box.right_bottom.y)
+    game.move_to(below_water_patch)
+    offshore_pump = game.place_entity(entity,
+                                      position=below_water_patch)
+    assert offshore_pump.direction.value == Direction.DOWN.value
+    assert offshore_pump.connection_points
 
 
 def test_place_burner_inserters(game):

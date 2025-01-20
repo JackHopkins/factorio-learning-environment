@@ -30,7 +30,7 @@ def game(instance):
         'copper-plate': 200,
     }
     instance.reset()
-    yield instance
+    yield instance.namespace
 
 
 def test_edge_case_entity_placement(game):

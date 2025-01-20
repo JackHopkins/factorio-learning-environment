@@ -15,7 +15,7 @@ def game(instance):
         'iron-ore': 10
     }
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 def test_inspect_entities(game):

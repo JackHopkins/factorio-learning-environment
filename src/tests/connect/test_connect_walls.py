@@ -11,7 +11,7 @@ def game(instance):
         'stone-wall': 100,
     }
     instance.reset()
-    yield instance
+    yield instance.namespace
     #instance.reset()
 
 

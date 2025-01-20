@@ -6,7 +6,7 @@ from factorio_types import Prototype
 def game(instance):
     instance.initial_inventory = {'assembling-machine-1': 1}
     instance.reset()
-    yield instance
+    yield instance.namespace
     instance.reset()
 
 def test_get_recipe(game):

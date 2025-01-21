@@ -282,9 +282,9 @@ function get_issues(entity)
     --        local rounded_x = round_to_half(entity.drop_position.x)
     --        local rounded_y = round_to_half(entity.drop_position.y)
     --
-    --        table.insert(issues, "\"waiting for space in destination as the output is full. Place a sink object at (" .. entity.drop_position.x .. ", ".. entity.drop_position.y .. ") to unblock.\"")
+    --        table.insert(issues, "\'waiting for space in destination as the output is full. Place a sink object at (" .. entity.drop_position.x .. ", ".. entity.drop_position.y .. ") to unblock.\'")
     --    else
-    --        table.insert(issues, "\"waiting for space in destination\"")
+    --        table.insert(issues, "\'waiting for space in destination\'")
     --    end
     --end
     if not has_output_space(entity) then

@@ -25,7 +25,7 @@ class LanguageOutput(BaseModel):
 
 class TaskOutput(BaseModel):
     task: str
-    language_output: LanguageOutput
+    language_output: Optional[LanguageOutput]
 
 class InitialPlanOutput(BaseModel):
     initial_plan: str
@@ -34,8 +34,9 @@ class InitialPlanOutput(BaseModel):
 class Step(BaseModel):
     candidate_language_outputs: list[LanguageOutput] = []
     judge_step_str: str = ""
-    final_step: str = ""
+    chosen_step: str = ""
     judge_language_output_step: LanguageOutput = None
+    sampled_programs: list[Program] = []
     program: Program = None
     start_state: GameState = None
     end_state: GameState = None
@@ -45,7 +46,7 @@ class Step(BaseModel):
 
 class PlanOutput(BaseModel):
     task: TaskOutput
-    initial_plan: InitialPlanOutput
+    initial_plan: Optional[InitialPlanOutput]
     final_output: str = ""
     steps : list[Step] = []
     logs: Optional[list] = []

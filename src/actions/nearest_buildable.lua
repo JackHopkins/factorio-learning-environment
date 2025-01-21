@@ -4,11 +4,12 @@ local ceil = math.ceil
 local max = math.max
 local abs = math.abs
 
-global.actions.nearest_buildable = function(player_index, entity_name, bounding_box)
+global.actions.nearest_buildable = function(player_index, entity_name, bounding_box, center_position)
     local player = game.get_player(player_index)
     local surface = player.surface
     local entity_prototype = game.entity_prototypes[entity_name]
     local needs_resources = entity_prototype.resource_categories ~= nil
+    local start_pos = center_position or player.position
 
     -- Cache for chunk resources
     local chunk_cache = {}
@@ -119,12 +120,11 @@ global.actions.nearest_buildable = function(player_index, entity_name, bounding_
     end
 
     local function spiral_search()
-        local start_pos = player.position
         local dx, dy = 0, 0
         local segment_length = 1
         local segment_passed = 0
         local direction = 0  -- 0: right, 1: down, 2: left, 3: up
-        local MAX_RADIUS = 50
+        local MAX_RADIUS = 30
 
         while max(abs(dx), abs(dy)) <= MAX_RADIUS do
             local current_pos = {

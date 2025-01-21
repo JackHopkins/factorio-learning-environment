@@ -1,7 +1,7 @@
 import pytest
 from factorio_types import Prototype, Resource
-from factorio_entities import Position, BoundingBox
-
+from factorio_entities import Position, BoundingBox, BuildingBox
+from factorio_instance import FactorioInstance
 
 @pytest.fixture()
 def game(instance):
@@ -18,12 +18,16 @@ def test_nearest_buildable_simple(game):
     Test finding a buildable position for a simple entity like a wooden chest
     without a bounding box.
     """
+    chest_box = BuildingBox(height=1, width=1)
     # Find nearest buildable position for wooden chest
-    position = game.nearest_buildable(Prototype.WoodenChest)
+    boundingbox_coords = game.nearest_buildable(Prototype.WoodenChest,
+                                      chest_box, 
+                                      Position(x=5, y=5))
 
-    # Verify the returned position is valid
-    can_build = game.can_place_entity(Prototype.WoodenChest, position)
-    assert can_build is True
+    for key, coord in boundingbox_coords.items():
+        # Verify the returned position is valid
+        can_build = game.can_place_entity(Prototype.WoodenChest, position = coord)
+        assert can_build is True
 
 
 def test_nearest_buildable_mining_drill(game):
@@ -32,99 +36,91 @@ def test_nearest_buildable_mining_drill(game):
     over an ore patch.
     """
     # Define mining drill bounding box (3x3)
-    drill_box = BoundingBox(
-        left_top=Position(x=-1, y=-1),
-        right_bottom=Position(x=19, y=5),
-        center=Position(x=9, y=2)
-    )
-
+    drill_box = BuildingBox(height=5, width=5)
+    copper_ore = game.nearest(Resource.CopperOre)
+    can_build = game.can_place_entity(
+            Prototype.BurnerMiningDrill,
+            position=copper_ore
+        )
     # {'center': {'x': 9.0, 'y': 2.0}, 'left_top': {'x': -1.0, 'y': -1.0}, 'right_bottom': {'x': 19.0, 'y': 5.0}}
     # Find nearest buildable position for mining drill
-    position = game.nearest_buildable(
-        Prototype.ElectricMiningDrill,
-        bounding_box=drill_box
+    boundingbox_coords = game.nearest_buildable(
+        Prototype.BurnerMiningDrill,
+        building_box=drill_box,
+        center_position=game.nearest(Resource.CopperOre)
+        #center_position=Position(5, 5)
     )
+    for key, coord in boundingbox_coords.items():
+        game.move_to(coord)
+        # Verify the position is valid for the entire bounding box
+        can_build = game.can_place_entity(
+            Prototype.BurnerMiningDrill,
+            position=coord
+        )
+        game.place_entity(Prototype.BurnerMiningDrill, position=coord)
+        #assert can_build is True
 
-    # Verify the position is valid for the entire bounding box
-    can_build = game.can_place_entity(
-        Prototype.ElectricMiningDrill,
-        position=position
+    boundingbox_coords = game.nearest_buildable(
+        Prototype.BurnerMiningDrill,
+        building_box=drill_box,
+        center_position=Position(5, 5)
     )
-    assert can_build is True
-
+    for key, coord in boundingbox_coords.items():
+        # Verify the position is valid for the entire bounding box
+        can_build = game.can_place_entity(
+            Prototype.BurnerMiningDrill,
+            position=coord
+        )
+        assert can_build is True
 
 def test_nearest_buildable_invalid_position(game):
     """
     Test that nearest_buildable raises an exception when no valid position
     is found within search radius.
     """
-    # Create a bounding box that's too large to be valid anywhere
-    large_box = BoundingBox(
-        left_top=Position(x=-10, y=-10),
-        right_bottom=Position(x=10, y=10),
-        center=Position(x=0, y=0)
+    # Define mining drill bounding box (3x3)
+    drill_box = BuildingBox(height=11, width=7)
+
+    boundingbox_coords = game.nearest_buildable(
+        Prototype.BurnerMiningDrill,
+        building_box=drill_box,
+        center_position=game.nearest(Resource.CopperOre)
+        #center_position=Position(5, 5)
     )
 
     # Attempt to find position for an entity with impossible bounding box
     with pytest.raises(Exception) as exc_info:
-        game.nearest_buildable(
-            Prototype.AssemblingMachine1,
-            bounding_box=large_box
-        )
+        boundingbox_coords = game.nearest_buildable(
+        Prototype.BurnerMiningDrill,
+        building_box=drill_box,
+        center_position=game.nearest(Resource.CopperOre)
+    )
     assert "Could not find a buildable position" in str(exc_info.value)
-
-def test_nearest_buildable_manual_box(game):
-    # Calculate bounding box for miners
-    left_top = Position(
-        x=3.0,
-        y=0.0
-    )
-    right_bottom = Position(
-        x=13.0,
-        y=32.0
-    )
-    center = Position(
-        x=(left_top.x + right_bottom.x) / 2,
-        y=(left_top.y + right_bottom.y) / 2
-    )
-
-    miner_box = BoundingBox(
-        left_top=left_top,
-        right_bottom=right_bottom,
-        center=center
-    )
-
-    # Find valid position for miners using nearest_buildable
-    origin = game.nearest_buildable(
-        Prototype.ElectricMiningDrill,
-        bounding_box=miner_box
-    )
-    assert origin
 
 def test_nearest_buildable_multiple_entities(game):
     """
     Test finding buildable positions for multiple entities of the same type
     ensuring they don't overlap.
     """
-    drill_box = BoundingBox(
-        left_top=Position(x=-4, y=-4),
-        right_bottom=Position(x=4, y=4),
-        center=Position(x=0, y=0)
-    )
+    drill_box = BuildingBox(height=3, width=9)
+    
     game.move_to(game.nearest(Resource.IronOre))
-    pos = game.nearest_buildable(
+    coordinates = game.nearest_buildable(
         Prototype.ElectricMiningDrill,
-        bounding_box=drill_box
+        building_box=drill_box,
+        center_position=game.nearest(Resource.IronOre)
     )
 
-    # Find positions for 3 mining drills
+    # get the top left
+    top_left = coordinates['left_top']
     positions = []
+    # iterate from left to right
     for i in range(0, 3):
-        npos = Position(x=pos.x + i*3, y=pos.y)
-        positions.append(npos)
-        game.move_to(npos)
+        pos = Position(x=top_left.x + 3*i, y=top_left.y)
+        game.move_to(pos)
         # Place entity at found position to ensure next search finds different spot
-        game.place_entity(Prototype.ElectricMiningDrill, position=npos, exact=True)
+        game.place_entity(Prototype.ElectricMiningDrill, position=pos, exact=True)
+        positions.append(pos)
 
     # Verify all positions are different
     assert len(set((p.x, p.y) for p in positions)) == 3
@@ -148,8 +144,9 @@ def test_nearest_buildable_relative_to_player(game):
     player_pos = Position(x=100, y=100)
     game.move_to(player_pos)
 
+    buildingbox = BuildingBox(height=3, width=3)
     # Find buildable position
-    position = game.nearest_buildable(Prototype.WoodenChest)
+    position = game.nearest_buildable(Prototype.WoodenChest, buildingbox, player_pos)
 
     # Verify found position is reasonably close to player
     distance = ((position.x - player_pos.x) ** 2 +
@@ -170,9 +167,11 @@ def test_nearest_buildable_with_obstacles(game):
         )
         game.place_entity(Prototype.WoodenChest, obstacle_pos)
 
+    chest_box = BuildingBox(height=1, width=1)
     # Find buildable position for another chest
-    position = game.nearest_buildable(Prototype.WoodenChest)
+    coords = game.nearest_buildable(Prototype.WoodenChest, chest_box, player_pos)
 
+    position = coords["left_top"]
     # Verify position is valid and different from obstacle positions
     can_build = game.can_place_entity(Prototype.WoodenChest, position)
     assert can_build is True

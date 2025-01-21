@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Union, Optional
 
 import numpy as np
 from scipy import ndimage
@@ -20,14 +20,15 @@ class GetResourcePatch(Action):
                  position: Position,
                  radius: int = 10,
                  #relative=False
-                 ) -> ResourcePatch:
+                 ) -> Optional[ResourcePatch]:
         """
-        Get the resource patch at position (x, y) if it exists on the world.
+        Get the resource patch at position (x, y) if it exists in the radius.
+        if radius is set to 0, it will only check the exact position for this resource patch.
         :param resource: Resource to get, e.g Resource.Coal
         :param position: Position to get resource patch
         :param radius: Radius to search for resource patch
         :example coal_patch_at_origin = get_resource_patch(Resource.Coal, Position(x=0, y=0))
-        :return: ResourcePatch
+        :return: ResourcePatch if found, else None
         """
         response, time_elapsed = self.execute(PLAYER, resource[0], position.x, position.y, radius)
 

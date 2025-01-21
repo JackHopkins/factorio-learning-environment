@@ -145,7 +145,10 @@ class ConnectEntities(Action):
             # get the number of the connection_prototype in the inventory
             number_of_connection_prototype = inventory.get(connection_prototype, 0)
 
-            if isinstance(source, Entity) or isinstance(source, EntityGroup):
+            if isinstance(source, BeltGroup):
+                source_entity = source
+                source_position = Position(x=source_entity.output_position.x, y=source_entity.output_position.y)
+            elif isinstance(source, Entity) or isinstance(source, EntityGroup):
                 source_entity = source
                 source_position = Position(x=source_entity.position.x, y=source_entity.position.y)
             elif isinstance(source, Position):
@@ -226,7 +229,15 @@ class ConnectEntities(Action):
 
 
             if isinstance(target_entity, BeltGroup):
-                target_position = target_entity.inputs[0].input_position
+                belts = target_entity.belts
+                belt_positions = [belt.position for belt in belts]
+                # get the nearest belt to the source entity
+                min_belt_position = min(belt_positions, key=lambda x: source_position.distance(x))
+                if min_belt_position.distance(source_position) < 0.5:
+                    return [target]
+                # get the belt with the target_position
+                target_belt = [belt for belt in belts if belt.position == min_belt_position][0]
+                target_position = target_belt.input_position
             elif isinstance(target, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
                 if isinstance(target_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
                     if isinstance(target_entity, Boiler):
@@ -307,7 +318,7 @@ class ConnectEntities(Action):
                                                      number_of_connection_prototype)
                     if not isinstance(response, dict) and response != "Passed":
                         raise Exception(
-                            f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}. {self.get_error_message(response.lstrip())}")
+                            f"Error with connecting entities - Could not fully connect {connection_prototype} from {(source_position)} to {(target_position)}. {self.get_error_message(response.lstrip())}")
 
                 except Exception as e:
                     # But accept allowing paths through own entities if it fails
@@ -341,7 +352,7 @@ class ConnectEntities(Action):
                                                  dry_run,
                                                  number_of_connection_prototype)
             if not isinstance(response, dict) and response != "Passed":
-                raise Exception(f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}. {self.get_error_message(response.lstrip())}")
+                raise Exception(f"Error with connecting entities - Could not connect {connection_prototype} from {(source_position)} to {(target_position)}. {self.get_error_message(response.lstrip())}")
 
             if dry_run:
                 return {"number_of_entities_required": response["number_of_entities"],
@@ -357,6 +368,13 @@ class ConnectEntities(Action):
                         if not value['warnings']:
                             del value['warnings']
                             value['warnings'] = []
+                        else:
+                            warnings = value['warnings']
+                            if isinstance(warnings, dict):
+                                warnings = list(warnings.values())
+                            else:
+                                warnings = [warnings]
+                            value['warnings'] = warnings
                         entity = metaclass(prototype=connection_type, **value)
 
                         if entity.prototype in (Prototype.TransportBelt, Prototype.Pipe, Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole):

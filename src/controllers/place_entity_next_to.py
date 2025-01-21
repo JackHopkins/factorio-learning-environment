@@ -44,7 +44,8 @@ class PlaceEntityNextTo(Action):
 
             if not isinstance(response, dict) or response == {}:
                 msg = self.get_error_message(str(response))
-                raise Exception(f"Could not place {name} to the {direction.value.lower()} of {reference_position}. {msg}")
+                raise Exception(f"Could not place {name} next to {reference_position} with spacing {spacing} and direction {direction}. {msg}")
+
 
             cleaned_response = self.clean_response(response)
 

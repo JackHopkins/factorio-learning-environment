@@ -45,6 +45,7 @@ global.actions.craft_item = function(player_index, entity, count)
             return false, "recipe not unlocked" .. tech_message
         end
         if recipe.category ~= "crafting" then
+
             return false, "recipe "..recipe_name.." requires specific crafting or smelting machine"
         end
         return true, recipe
@@ -92,7 +93,7 @@ global.actions.craft_item = function(player_index, entity, count)
             for ingredient_name, needed_amount in pairs(missing_ingredients) do
                 local crafted_amount, error_msg = attempt_craft(player, ingredient_name, needed_amount, attempted_recipes)
                 if crafted_amount == 0 then
-                    return 0, "couldn't craft intermediate " .. ingredient_name .. " - " .. error_msg
+                    return 0, "couldn't craft a required sub-ingredient " .. ingredient_name .. " - " .. error_msg .. ". Missing amount " .. needed_amount .. ")"
                 end
             end
         end

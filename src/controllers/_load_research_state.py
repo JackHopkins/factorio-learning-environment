@@ -17,6 +17,10 @@ class LoadResearchState(Action):
         Returns:
             bool: True if successful
         """
+
+        if not state:
+            return False
+
         # Convert our dataclass structure back to raw dict for Lua
         raw_state = {
             "technologies": {

@@ -2,7 +2,7 @@ import math
 from time import sleep
 
 from controllers.__action import Action
-from controllers.get_path import GetPath
+from controllers._get_path import GetPath
 from controllers.observe_all import ObserveAll
 from controllers.request_path import RequestPath
 from factorio_entities import Position

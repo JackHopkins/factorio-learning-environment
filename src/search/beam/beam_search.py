@@ -121,7 +121,8 @@ class BeamGroup(InstanceGroup):
                  group_id: int,
                  beam: 'BeamSearch',
                  evaluator: FactorioEvaluator,
-                 active_instances: List['FactorioInstance']):
+                 active_instances: List['FactorioInstance'],
+                 resume_head: Optional[Program] = None):
         super().__init__(
             group_id=group_id,
             mcts=beam,  # For compatibility with existing code
@@ -129,9 +130,9 @@ class BeamGroup(InstanceGroup):
             active_instances=active_instances
         )
         self.beam = beam
-        self.current_program: Optional[Program] = None
-        self.current_state: Optional[GameState] = None
-        self.current_conversation: Optional[Conversation] = None
+        self.current_program: Optional[Program] = resume_head  # Initialize with resume head if available
+        self.current_state: Optional[GameState] = resume_head.state if resume_head else None
+        self.current_conversation: Optional[Conversation] = resume_head.conversation if resume_head else None
 
 
 class BeamSearch(MCTS):
@@ -167,101 +168,6 @@ class BeamSearch(MCTS):
 
         super().__init__(llm_factory, db_client, evaluator, None, system_prompt, initial_state, formatter, version, version_description)
 
-        # Reuse necessary methods from MCTS
-        # self._verify_response_is_python = MCTS._verify_response_is_python
-        # self._extract_code_from_choice = MCTS._extract_code_from_choice
-        # self._is_model_compatible_with_n_samples = MCTS._is_model_compatible_with_n_samples
-        # self._generate_programs_batch = MCTS._generate_programs_batch
-        # self._process_openai_response = MCTS._process_openai_response
-        # self._generate_parallel = MCTS._generate_parallel
-        # self._create_program = MCTS._create_program
-
-    # async def _generate_programs_batch(self,
-    #                                    conversation: Conversation,
-    #                                    generation_params: GenerationParameters,
-    #                                    meta={}) -> List[Program]:
-    #     """Modified to handle multiple conversations for batch generation"""
-    #     programs = []
-    #     n = generation_params.n
-    #
-    #
-    #     if self._is_model_compatible_with_n_samples(generation_params.model) and hasattr(self.llm, "acall"):
-    #         conversation = copy.deepcopy(conversation)
-    #         formatted = await self.formatter.format_conversation(conversation)
-    #         formatted_messages = self.formatter.to_llm_messages(
-    #             formatted
-    #         )
-    #         try:
-    #             messages = conversation.model_dump()['messages']
-    #         except Exception:
-    #             messages = conversation.dict()['messages']
-    #         # Use OpenAI's native n parameter support
-    #         response = await self.llm.acall(
-    #             messages=formatted_messages,
-    #             n_samples=generation_params.n,
-    #             temperature=generation_params.temperature,
-    #             max_tokens=generation_params.max_tokens,
-    #             logit_bias=generation_params.logit_bias,
-    #             stop_sequences=generation_params.stop_sequences,
-    #             model=generation_params.model,
-    #             presence_penalty=self.presence_penalty,
-    #             frequency_penalty=self.frequency_penalty
-    #         )
-    #         return await self._process_openai_response(response, conversation, generation_params, messages, meta)
-    #     else:
-    #         # Create a separate conversation copy for each potential program
-    #         conversations = [copy.deepcopy(conversation) for _ in range(n)]
-    #         # Process each conversation independently
-    #         for i, conversation in enumerate(conversations[:n]):  # Limit to requested n samples
-    #             formatted = await self.formatter.format_conversation(conversation)
-    #             formatted_messages = self.formatter.to_llm_messages(
-    #                 formatted
-    #             )
-    #             try:
-    #                 messages = conversation.model_dump()['messages']
-    #             except Exception:
-    #                 messages = conversation.dict()['messages']
-    #
-    #             if self._is_model_compatible_with_n_samples(generation_params.model) and hasattr(self.llm, "acall"):
-    #                 # Use OpenAI's native n parameter support
-    #                 response = await self.llm.acall(
-    #                     messages=formatted_messages,
-    #                     n_samples=generation_params.n,
-    #                     temperature=generation_params.temperature,
-    #                     max_tokens=generation_params.max_tokens,
-    #                     logit_bias=generation_params.logit_bias,
-    #                     stop_sequences=generation_params.stop_sequences,
-    #                     model=generation_params.model,
-    #                     presence_penalty=self.presence_penalty,
-    #                     frequency_penalty=self.frequency_penalty
-    #                 )
-    #                 return await self._process_openai_response(response, conversation, generation_params, messages, meta)
-    #             else:
-    #                 # Make parallel calls for other providers
-    #                 #conversation.messages = formatted_messages
-    #                 responses =  await self._generate_parallel(
-    #                     conversation,
-    #                     generation_params,
-    #                     formatted_messages,
-    #                     messages,
-    #                     meta
-    #                 )
-    #
-    #                 for response in responses:
-    #                     if response and self._verify_response_is_python(response):
-    #                         code = self._extract_code_from_choice(response)
-    #                         if code:
-    #                             # Create program with its independent conversation copy
-    #                             program = await self._create_program(
-    #                                 code=code,
-    #                                 conversation=conversation,  # Use the independent conversation for this program
-    #                                 response=response
-    #                             )
-    #                             if program:
-    #                                 programs.append(program)
-    #
-    #         return programs
-    #
     async def evaluate_candidates(self,
                                   state: GameState,
                                   conversation: Conversation,
@@ -308,7 +214,10 @@ class ParallelBeamSearch:
                  version_description: str,
                  current_depth=0,
                  formatter: ConversationFormatter = DefaultFormatter(),
-                 base_port=27015):
+                 base_port=27015,
+                 resume_version=False,
+                 resume_heads: Optional[List[Program]] = None
+                 ):
 
 
         self.console = Console()
@@ -319,6 +228,14 @@ class ParallelBeamSearch:
         self.version_description = version_description
         self.current_depth = current_depth
         self.formatter = formatter
+        self.resume_version = resume_version
+        self.resume_heads = resume_heads
+
+        if self.resume_version:
+            if not self.resume_heads or len(self.resume_heads) != config.beam_width:
+                raise ValueError(f"Number of resume heads ({len(self.resume_heads) if self.resume_heads else 0}) "
+                                 f"doesn't match beam width ({config.beam_width})")
+
         # Validate instance count
         self._validate_instance_count(len(instances), config.beam_width)
 
@@ -327,12 +244,29 @@ class ParallelBeamSearch:
         self.logger = GroupedFactorioLogger(
             n_groups=config.beam_width,
             instances_per_group=instances_per_group,
-            base_port = base_port
+            base_port = base_port,
+            resume_version=resume_version
         )
         self.logger.start()
 
         # Create beam groups
         self.beam_groups = self._create_beam_groups(instances)
+
+
+    async def _verify_version_compatibility(self):
+        """Verify that resuming version is compatible with current configuration"""
+        metadata = await self.db_client.get_version_metadata(self.version)
+        if not metadata:
+            raise ValueError(f"No metadata found for version {self.version}")
+
+        # Check model compatibility
+        if metadata.get('model') != self.llm_factory.model:
+            raise ValueError(f"Model mismatch: Version uses {metadata.get('model')}, "
+                             f"but current config uses {self.llm_factory.model}")
+
+        # Check other relevant configuration parameters
+        if 'beam' not in metadata.get('version_description', '').lower():
+            raise ValueError(f"Version {self.version} is not from a beam search run")
 
     def _validate_instance_count(self, total_instances: int, beam_width: int):
         """Validate we have enough instances for the requested beam width"""
@@ -345,7 +279,7 @@ class ParallelBeamSearch:
             )
 
     def _create_beam_groups(self, instances: List['FactorioInstance']) -> List[BeamGroup]:
-        """Create groups for parallel beam search"""
+        """Create groups for parallel beam search, optionally using resume states"""
         instances_per_group = floor(len(instances) / self.config.beam_width)
         groups = []
 
@@ -376,13 +310,22 @@ class ParallelBeamSearch:
                 version_description=self.version_description,
                 **self.config.beam_kwargs
             )
+            # Pass resume head directly to BeamGroup if available
+            resume_head = self.resume_heads[group_id] if self.resume_version and self.resume_heads else None
 
-            groups.append(BeamGroup(
+            group = BeamGroup(
                 group_id=group_id,
                 beam=beam,
                 evaluator=evaluator,
-                active_instances=group_instances
-            ))
+                active_instances=group_instances,
+                resume_head=resume_head
+            )
+
+            # Reset instance to resumed state if available
+            if resume_head:
+                group.evaluator.instances[0].reset(resume_head.state)
+
+            groups.append(group)
 
         return groups
 
@@ -396,38 +339,41 @@ class ParallelBeamSearch:
         return sorted_programs[:k]
 
     async def _run_beam_iteration(self, n_iterations: int):
-        """Run one iteration of parallel beam search"""
+        """Run beam search iterations"""
         try:
-            for iteration in range(n_iterations*5):
+            for iteration in range(n_iterations * 5):
                 logger.info(f"Starting iteration {iteration}")
 
                 # Generate and evaluate candidates in parallel
                 generation_tasks = []
                 for group in self.beam_groups:
-                    if iteration == 0:
-                        # Initialize with starting state
+                    if iteration == 0 and not self.resume_version:
+                        # Initialize with starting state for new runs only
                         state = self.config.initial_state
                         group.evaluator.instances[0].reset(state)
                         entities = group.evaluator.instances[0].namespace.get_entities()
                         conversation = Conversation(messages=[
                             Message(role="system", content=self.config.system_prompt),
                             Message(role="assistant", content="print(f'Inventory: {inspect_inventory()}')\n"
-                                                              "print(f'Entities: {get_entities()}')\n"),
+                                                           "print(f'Entities: {get_entities()}')\n"),
                             Message(role="user", content=f"1: ('Inventory: {state.inventory.__dict__}')\n"
-                                                         f"2: ('Entities: {entities}')"),
+                                                       f"2: ('Entities: {entities}')"),
                         ])
                         parent_id = None
                     else:
+                        # Use current state/conversation with proper parent linkage
+                        if not group.current_program:
+                            raise ValueError("No current program available for beam group")
+
                         state = group.current_state
                         conversation = copy.deepcopy(group.current_conversation)
-                        parent_id = group.current_program.id if group.current_program else None
+                        parent_id = group.current_program.id  # This maintains the correct lineage
 
                     task = group.beam.evaluate_candidates(
                         state=state,
                         conversation=conversation,
                         parent_id=parent_id,
-                        n_samples=self.config.expansion_factor,
-
+                        n_samples=self.config.expansion_factor
                     )
                     generation_tasks.append(task)
 
@@ -475,12 +421,13 @@ class ParallelBeamSearch:
             raise
 
     async def search(self, n_iterations: int):
-        """Run parallel beam search"""
+        """Run parallel beam search with resume support"""
         try:
-            await self._run_beam_iteration(n_iterations)
+            if self.resume_version:
+                print(f"Resuming search from version {self.version} at depth {self.current_depth}")
+            await self._run_beam_iteration(n_iterations - self.current_depth if self.resume_version else n_iterations)
         finally:
             self.cleanup()
-
     def cleanup(self):
         """Clean up resources"""
         self.logger.stop()

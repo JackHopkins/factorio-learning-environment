@@ -102,6 +102,7 @@ class MCTS:
                     except Exception as e3:
                         code = content.strip().replace('```python',"").replace('```', '')
                         docstring_delimiters = code.count('"""')
+                        print(f"Failed to extract code from choice: {str(code)}")
                         if docstring_delimiters < 2:
                             code = code.replace('"""', '')
                         code = self._verify_response_is_python(code)

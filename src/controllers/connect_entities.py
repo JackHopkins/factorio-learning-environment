@@ -9,7 +9,7 @@ from typing import Tuple, List, Union
 
 from controllers.get_entities import GetEntities
 from controllers.get_entity import GetEntity
-from controllers.get_path import GetPath
+from controllers._get_path import GetPath
 from controllers.pickup_entity import PickupEntity
 from controllers.request_path import RequestPath
 from controllers.rotate_entity import RotateEntity
@@ -307,8 +307,7 @@ class ConnectEntities(Action):
                                                      number_of_connection_prototype)
                     if not isinstance(response, dict) and response != "Passed":
                         raise Exception(
-                            f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}.",
-                            response.lstrip())
+                            f"Could not connect {connection_prototype} from {(source_position)} to {(target_position)}. {self.get_error_message(response.lstrip())}")
 
                 except Exception as e:
                     # But accept allowing paths through own entities if it fails

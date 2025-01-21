@@ -1,5 +1,7 @@
 import pytest
+from scipy.optimize import direct
 
+from factorio_entities import Position, Direction
 from factorio_types import Prototype, Resource
 
 
@@ -35,3 +37,10 @@ def test_can_place_over_resources(game):
         position=copper_ore
     )
     assert can_build
+
+def test_can_place_over_player_large(game):
+    game.move_to(Position(x=0, y=0))
+    assert game.can_place_entity(Prototype.SteamEngine, position=Position(x=0, y=0))
+
+    game.place_entity(Prototype.SteamEngine, position=Position(x=0, y=0), direction=Direction.UP)
+    pass

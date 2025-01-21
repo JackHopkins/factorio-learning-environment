@@ -281,13 +281,23 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     else
         --local area = {{new_position.x - 0.5, new_position.y - 0.5}, {new_position.x + 0.5, new_position.y + 0.5}}
         local entities = player.surface.find_entities_filtered{area = area, type = {"beam", "resource", "player"}, invert=true}
-        local entity_names = {}
+        local blocker_names = {}
         for _, e in ipairs(entities) do
             game.print(e.type)
-            table.insert(entity_names, e.name.."("..serpent.line(e.position)..")")
+            table.insert(blocker_names, e.name.."("..serpent.line(e.position)..")")
         end
+        local tiles = player.surface.find_tiles_filtered{area = area, name={"water", "deepwater", "water-green", "deepwater-green", "water-shallow", "water-mud"}}
+        if #tiles > 0 then
+            for _, e in ipairs(tiles) do
+                -- if e.name is not in blocker_names, we should add item
+                if not table_contains(blocker_names, e.name.."("..serpent.line(e.position)..")") then
+                    table.insert(blocker_names, e.name.."("..serpent.line(e.position)..")")
+                end
+            end
+        end
+
         error("\'Cannot place entity at the position " .. serpent.line(new_position) .. " with direction " ..
-              serpent.line(orientation) .. ". Attempting to place next to: "..ref_entity.name..". Nearby entities: " .. serpent.line(entity_names)..
+              serpent.line(orientation) .. ". Attempting to place next to: "..ref_entity.name..". Nearby entities: " .. serpent.line(blocker_names)..
                 ". Consider increasing the spacing (".. gap..") or changing the reference position (" .. serpent.line(ref_position) .. ")\'")
     end
 

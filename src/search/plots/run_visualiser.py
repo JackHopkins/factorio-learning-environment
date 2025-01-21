@@ -667,6 +667,7 @@ class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
 
 # Example usage:
 async def main():
+    type = "ticks" # or 'steps'
     db_client = DBClient(
         max_conversation_length=40,
         host=os.getenv("SKILLS_DB_HOST"),
@@ -682,22 +683,22 @@ async def main():
     visualizer = BootstrappedRunVisualizer(
         db_client,
         icons_path,
-        x_axis_type='steps',  # or 'steps'
-        n_bootstrap=4
+        x_axis_type=type,
+        n_bootstrap=100
     )
 
     labels = {
         # 416: 'claude-new',
         434: 'claude-2@4',
         448: 'gpt-4o-mini@4',
-        449: 'gpt-4o@4',
+        450: 'gpt-4o@4',
         436: 'claude-2@4-2'
     }
 
     versions = list(labels.keys())
     visualizer.load_versions(versions, labels)
     visualizer.process_achievements(max_depth=1024)
-    visualizer.export_visualization('mcts_progression.png', max_depth=1024)
+    visualizer.export_visualization(f'mcts_progression_{type}.png', max_depth=1024)
 
 if __name__ == '__main__':
     asyncio.run(main())

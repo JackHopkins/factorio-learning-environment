@@ -1,6 +1,8 @@
 from collections import defaultdict
 from typing import List
 
+from neptune.cli import status
+
 from factorio_entities import TransportBelt, BeltGroup, Position, Entity, EntityGroup, PipeGroup, Inventory, \
     EntityStatus, Pipe, ElectricityGroup
 from factorio_instance import Direction
@@ -22,7 +24,8 @@ def _deduplicate_entities(entities: List[Entity]) -> List[Entity]:
     return list(reversed(unique_entities))
 
 
-def _construct_group(entities: List[Entity],
+def _construct_group(id: int,
+                     entities: List[Entity],
                      prototype: Prototype,
                      position: Position) -> EntityGroup:
     if prototype == Prototype.TransportBelt or isinstance(entities[0], TransportBelt):
@@ -52,10 +55,25 @@ def _construct_group(entities: List[Entity],
                          position=position)
     elif prototype == Prototype.Pipe or isinstance(entities[0], Pipe):
         entities = _deduplicate_entities(entities)
+        if any([pipe.contents > 0 and pipe.flow_rate > 0 for pipe in entities]):
+            status = EntityStatus.WORKING
+        elif all([pipe.contents == 0 for pipe in entities]):
+            status = EntityStatus.EMPTY
+        elif all([pipe.flow_rate == 0 for pipe in entities]):
+            status = EntityStatus.FULL_OUTPUT
+
         return PipeGroup(pipes=entities,
+                         id=id,
+                         status=status,
                          position=position)
     elif prototype in (Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole):
-        return ElectricityGroup(electric_network_id=entities[0].electric_network_id, poles=list(set(entities)))
+
+        if any([pole.flow_rate > 0 for pole in entities]):
+            status = EntityStatus.WORKING
+        else:
+            status = EntityStatus.NOT_PLUGGED_IN_ELECTRIC_NETWORK
+
+        return ElectricityGroup(id=entities[0].electric_network_id, poles=list(set(entities)), status=status)
 
 
 
@@ -245,7 +263,6 @@ def agglomerate_groupable_entities(connected_entities: List[Entity]) -> List[Ent
 
     if prototype in (Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole):
         electricity_ids = {}
-
         for entity in connected_entities:
             if entity.electric_network_id in electricity_ids:
                 electricity_ids[entity.electric_network_id].append(entity)
@@ -253,12 +270,28 @@ def agglomerate_groupable_entities(connected_entities: List[Entity]) -> List[Ent
                 electricity_ids[entity.electric_network_id] = [entity]
 
         return [_construct_group(
+            id=id,
             entities=entities,
             prototype=prototype,
             position=entities[0].position
-        ) for entities in electricity_ids.values()]
+        ) for id, entities in electricity_ids.items()]
+    elif prototype == Prototype.Pipe:
+        fluidbox_ids = {}
+        for entity in connected_entities:
+            if entity.fluidbox_id in fluidbox_ids:
+                fluidbox_ids[entity.fluidbox_id].append(entity)
+            else:
+                fluidbox_ids[entity.fluidbox_id] = [entity]
+
+        return [_construct_group(
+            id=id,
+            entities=entities,
+            prototype=prototype,
+            position=entities[0].position
+        ) for id, entities in fluidbox_ids.items()]
 
     return [_construct_group(
+        id=0,
         entities=connected_entities,
         prototype=prototype,
         position=connected_entities[0].position

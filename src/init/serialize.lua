@@ -42,6 +42,16 @@ end
 
 local has_create_grid = version_ge("1.1.7")
 
+-- Add this helper function at the top level
+local function is_fluid_handler(entity_type)
+    return entity_type == "boiler" or
+           entity_type == "offshore-pump" or
+           entity_type == "pump" or
+           entity_type == "generator" --or
+           --entity_type == "pipe" or
+           --entity_type == "pipe-to-ground"
+end
+
 
 -- Equipment Grids are serialized into an array of equipment entries
 -- where ench entry is a table with the following fields:
@@ -218,70 +228,70 @@ global.utils.deserialize_item_stack = function(slot, entry)
 	end
 end
 
---- DEPRECATED
-global.utils.serialize_inventory = function(inventory)
-    local serialized = {}
-    for i = 1, #inventory do
-        local slot = inventory[i]
-        if slot.valid_for_read then
-            local item_name = "\"" .. slot.name .. "\""
-            if serialized[item_name] then
-                serialized[item_name] = serialized[item_name] + slot.count
-            else
-                serialized[item_name] = slot.count
-            end
-        end
-    end
-    return serialized
-end
+----- DEPRECATED
+--global.utils.serialize_inventory = function(inventory)
+--    local serialized = {}
+--    for i = 1, #inventory do
+--        local slot = inventory[i]
+--        if slot.valid_for_read then
+--            local item_name = "\"" .. slot.name .. "\""
+--            if serialized[item_name] then
+--                serialized[item_name] = serialized[item_name] + slot.count
+--            else
+--                serialized[item_name] = slot.count
+--            end
+--        end
+--    end
+--    return serialized
+--end
 
---- DEPRECATED
-global.utils.serialize_inventory_old = function(inventory)
-	local serialized = {}
-	if inventory[supports_bar]() and inventory[get_bar]() <= #inventory then
-		serialized.b = inventory[get_bar]()
-	end
-
-	serialized.i = {}
-	local previous_index = 0
-	local previous_serialized = nil
-	for i = 1, #inventory do
-		local item = {}
-		local slot = inventory[i]
-		if inventory.supports_filters() then
-			item.f = inventory.get_filter(i)
-		end
-
-		if slot.valid_for_read then
-			global.utils.serialize_item_stack(slot, item)
-		end
-
-		if item.n or item.f or item.e then
-			local item_serialized = game.table_to_json(item)
-			if item_serialized == previous_serialized then
-				local previous_item = serialized.i[#serialized.i]
-				previous_item.r = (previous_item.r or 0) + 1
-				previous_index = i
-
-			else
-				if i ~= previous_index + 1 then
-					item.s = i
-				end
-
-				previous_index = i
-				previous_serialized = item_serialized
-				table.insert(serialized.i, item)
-			end
-
-		else
-			-- Either an empty slot or serilization failed
-			previous_index = 0
-			previous_serialized = nil
-		end
-	end
-
-	return serialized
-end
+----- DEPRECATED
+--global.utils.serialize_inventory_old = function(inventory)
+--	local serialized = {}
+--	if inventory[supports_bar]() and inventory[get_bar]() <= #inventory then
+--		serialized.b = inventory[get_bar]()
+--	end
+--
+--	serialized.i = {}
+--	local previous_index = 0
+--	local previous_serialized = nil
+--	for i = 1, #inventory do
+--		local item = {}
+--		local slot = inventory[i]
+--		if inventory.supports_filters() then
+--			item.f = inventory.get_filter(i)
+--		end
+--
+--		if slot.valid_for_read then
+--			global.utils.serialize_item_stack(slot, item)
+--		end
+--
+--		if item.n or item.f or item.e then
+--			local item_serialized = game.table_to_json(item)
+--			if item_serialized == previous_serialized then
+--				local previous_item = serialized.i[#serialized.i]
+--				previous_item.r = (previous_item.r or 0) + 1
+--				previous_index = i
+--
+--			else
+--				if i ~= previous_index + 1 then
+--					item.s = i
+--				end
+--
+--				previous_index = i
+--				previous_serialized = item_serialized
+--				table.insert(serialized.i, item)
+--			end
+--
+--		else
+--			-- Either an empty slot or serilization failed
+--			previous_index = 0
+--			previous_serialized = nil
+--		end
+--	end
+--
+--	return serialized
+--end
 
 global.utils.deserialize_inventory = function(inventory, serialized)
 	if serialized.b and inventory[supports_bar]() then
@@ -363,7 +373,7 @@ global.utils.serialize_fluidbox = function(fluidbox)
         local fluid_system_id = fluidbox.get_fluid_system_id(i)
 
         local serialized_box = {
-            prototype = prototype and prototype.name or nil,
+            prototype = prototype and prototype.object_name or nil,
             capacity = fluidbox.get_capacity(i),
             connections = {},
             filter = filter,
@@ -782,6 +792,7 @@ global.utils.serialize_entity = function(entity)
 		direction = 0
 	end
 
+
 	--game.print("Serialized direction: ", {skip=defines.print_skip.never})
 	local serialized = {
 		name = "\""..entity.name.."\"",
@@ -939,6 +950,17 @@ global.utils.serialize_entity = function(entity)
 
 	end
 
+	-- Special handling for power poles
+	if entity.type == "electric-pole" then
+		local stats = entity.electric_network_statistics
+		local contents_count = 0
+		for name, count in pairs(stats.input_counts) do
+			contents_count = contents_count + count
+		end
+
+		serialized.flow_rate = contents_count --stats.get_flow_count{name=…, input=…, precision_index=}
+	end
+
 	-- Add input and output positions if the entity is a splitter
 	if entity.type == "splitter" then
 		-- Initialize positions based on entity center
@@ -1044,8 +1066,13 @@ global.utils.serialize_entity = function(entity)
 		for _, connection in pairs(entity.fluidbox.get_pipe_connections(1)) do
 			table.insert(serialized.connections, connection.position)
 		end
-
-		--serialized.fluidbox = global.utils.serialize_fluidbox(entity.fluidbox)
+		local contents_count = 0
+		for name, count in pairs(entity.fluidbox.get_fluid_system_contents(1)) do
+			contents_count = contents_count + count
+		end
+		serialized.contents = contents_count
+		serialized.fluidbox_id = entity.fluidbox.get_fluid_system_id(1)
+		serialized.flow_rate = entity.fluidbox.get_flow(1)
 	end
 
 	-- Add input and output locations if the entity is a pipe-to-ground
@@ -1174,6 +1201,36 @@ global.utils.serialize_entity = function(entity)
 		end
 	end
 
+	-- Add fluid handler status check
+    if is_fluid_handler(entity.type) then
+        -- Check if the entity has a fluidbox
+        if not entity.fluidbox or #entity.fluidbox == 0 then
+            serialized.status = "not_connected"
+            if not serialized.warnings then
+                serialized.warnings = {}
+            end
+            table.insert(serialized.warnings, "\"Missing fluid connection\"")
+        else
+            -- Additional fluid-specific checks
+            local has_fluid = false
+            for i = 1, #entity.fluidbox do
+                if entity.fluidbox[i] then
+                    has_fluid = true
+                    break
+                end
+            end
+
+            if not has_fluid then
+                serialized.status = "not_connected"
+                if not serialized.warnings then
+                    serialized.warnings = {}
+                end
+                table.insert(serialized.warnings, "\"No fluid present in connections\"")
+            end
+			serialized.fluidbox = global.utils.serialize_fluidbox(entity.fluidbox)
+        end
+    end
+
 	serialized.direction = get_inverse_entity_direction(entity.name, entity.direction) --api_direction_map[entity.direction]
 	serialized.electric_network_id = entity.electric_network_id
     -- Post-process connection points if they exist
@@ -1199,7 +1256,7 @@ global.utils.serialize_entity = function(entity)
 
         if serialized.connection_points ~= nil then
             if #filtered_points < #serialized.connection_points then
-                table.insert(serialized.warnings, "Some connection points were filtered due to distance from entity center")
+                table.insert(serialized.warnings, "\"Some connection points were filtered due to being blocked by water\"")
             end
         end
     end
@@ -1211,7 +1268,7 @@ global.utils.serialize_entity = function(entity)
             if not serialized.warnings then
                 serialized.warnings = {}
             end
-            table.insert(serialized.warnings, "Steam output point was filtered due to distance from entity center")
+            table.insert(serialized.warnings, "\"Steam output point was filtered due to being blocked by water\"")
         end
     end
 

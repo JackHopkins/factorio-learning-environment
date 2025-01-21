@@ -144,8 +144,17 @@ global.actions.extract_item = function(player_index, extract_item, count, x, y, 
     end
 
     -- Error handling in priority order
+
     if #buildings == 0 then
         error("\"Could not find any entities in range\"")
+    end
+
+    if not closest_entity then
+        if source_name then
+            error("\"Could not find a valid "..source_name.." entity containing " .. extract_item .. " at ("..x..", "..y..")\"")
+        else
+            error("\"Could not find a valid entity containing " .. extract_item .. " at ("..x..", "..y..")\"")
+        end
     end
 
     if closest_distance > search_radius then
@@ -154,10 +163,6 @@ global.actions.extract_item = function(player_index, extract_item, count, x, y, 
 
     if not found_any_items then
         error("\"No " .. extract_item .. " found in any nearby entities\"")
-    end
-
-    if not closest_entity then
-        error("\"Could not find a valid entity with " .. extract_item .. "\"")
     end
 
     -- Calculate how many items we can actually extract

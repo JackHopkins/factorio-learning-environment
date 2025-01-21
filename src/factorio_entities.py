@@ -26,6 +26,7 @@ class EntityStatus(Enum):
     #OUT_OF_LOGISTIC_NETWORK = "out_of_logistic_network"
     NO_RECIPE = "no_recipe"
     NO_INGREDIENTS = "no_ingredients"
+    NOT_CONNECTED = "not_connected"
     NO_INPUT_FLUID = "no_input_fluid"
     NO_RESEARCH_IN_PROGRESS = "no_research_in_progress"
     NO_MINABLE_RESOURCES = "no_minable_resources"
@@ -372,7 +373,7 @@ class PumpJack(MiningDrill, FluidHandler):
     pass
 
 class Boiler(FluidHandler, BurnerType):
-    steam_output_point: Optional[Position]
+    steam_output_point: Optional[Position] = None
 
 
 class Generator(FluidHandler):
@@ -382,8 +383,10 @@ class Generator(FluidHandler):
 class OffshorePump(FluidHandler):
     pass
     #fluid_box: Optional[Union[dict,list]] = []
+
 class ElectricityPole(Entity):
     electric_network_id: int
+    flow_rate: float
 
     def __hash__(self):
         return self.electric_network_id
@@ -400,9 +403,12 @@ class Lab(Entity):
     lab_modules: Inventory = Inventory()
 
 class Pipe(Entity):
-    pass
+    fluidbox_id: int
+    flow_rate: float
+    contents: float
 
 class EntityGroup(BaseModel):
+    id: int
     status: EntityStatus = EntityStatus.NORMAL
     name: str = "entity-group"
 
@@ -431,14 +437,14 @@ class PipeGroup(DirectedEntityGroup):
 class ElectricityGroup(EntityGroup):
     name: str = 'electricity-group'
     poles: List[ElectricityPole]
-    electric_network_id: int
+    #electric_network_id: int
 
     def __repr__(self) -> str:
         positions = [f"(x={p.position.x},y={p.position.y})" for p in self.poles]
         if len(positions) > 6:
             positions = positions[:3] + ['...'] + positions[-3:]
         pole_summary = f"[{','.join(positions)}]"
-        return f"ElectricityGroup(id={self.electric_network_id}, poles={pole_summary})"
+        return f"ElectricityGroup(id={self.id}, poles={pole_summary})"
 
     def __hash__(self):
-        return self.name+str(self.electric_network_id)
+        return self.name+str(self.id)

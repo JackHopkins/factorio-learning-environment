@@ -108,6 +108,7 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
 
     BeltGroup = "belt-group", BeltGroup
     PipeGroup = "pipe-group", PipeGroup
+    ElectricityGroup = "electricity-group", ElectricityGroup
 
     def __init__(self, prototype_name, entity_class):
         self.prototype_name = prototype_name

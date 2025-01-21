@@ -318,7 +318,7 @@ local function place_at_position(player, connection_type, current_position, dir,
         end
     end
     if not has_item then
-        error("Player does not have the required item in their inventory.")
+        error("You do not have the required item in your inventory.")
     end
 
     -- Check if the entity can be placed at the given position
@@ -496,7 +496,7 @@ global.actions.connect_entities2 = function(player_index, source_x, source_y, ta
         game.print("Required count: " .. required_count)
         game.print("Available count: " .. number_of_connection_entities)
         if number_of_connection_entities < required_count then
-            error("\"Player does not have enough " .. connection_type .. " in their inventory to complete this connection. Required number: " .. required_count .. ", Available in inventory: " .. number_of_connection_entities.."\"")
+            error("\"You do not have enough " .. connection_type .. " in your inventory to complete this connection. Required number -" .. required_count .. ", Available in inventory -" .. number_of_connection_entities.."\"")
         end
         result = connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, false)
     end

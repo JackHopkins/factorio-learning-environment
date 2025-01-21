@@ -10,6 +10,7 @@ import psycopg2
 import tenacity
 from tenacity import wait_exponential, retry, retry_if_exception_type
 
+from search.mcts.python_parser import PythonParser
 from search.model.conversation import Conversation, Message, GenerationParameters
 from search.mcts.formatters.conversation_formatter import ConversationFormatter, DefaultFormatter
 from search.db_client import DBClient
@@ -51,67 +52,74 @@ class MCTS:
         self.frequency_penalty = frequency_penalty
         self.error_penalty = error_penalty
         self.maximum_lookback = maximum_lookback
+        self.parser = PythonParser()
 
 
-    def _verify_response_is_python(self, content):
-        code = content
-        # Parse into an AST to verify that this is a program
-        try:
-            ast = compile(code, filename="<ast>", mode="exec")
-        except SyntaxError:
-            # Take the last line off and try again
-            code = code.rsplit('\n', 1)[0] + '\n'
-            ast = compile(code, filename="<ast>", mode="exec")
-            #return self._verify_response_is_python(code)
-
-        return code
-
-    def _extract_code_from_choice(self, choice) -> Optional[str]:
-        """Extract code from a single completion choice"""
-        if hasattr(choice, 'message') and hasattr(choice.message, 'content'):
-            content = choice.message.content
-        elif hasattr(choice, 'text'):
-            content = choice.text
-        else:
-            raise RuntimeError('Incorrect message format')
-
-        try:
-            code = self._verify_response_is_python(content)
-            return code, content
-        except Exception as e:
-            try:
-                # Get all text between triple backticks with regex: ```\n?python(.+\n?)```
-                code = re.findall(r'(?s)```(python)?\s*(.*?)\s*```', content)[0][1]
-
-                #code = content.replace("```python", "").replace('```', '')
-                code = self._verify_response_is_python(code)
-                return code, content
-            except Exception as e1:
-                # Sometimes it samples a leading line, before writing unblocked python code.
-                code = "\n".join(content.split("\n")[1:])
-                try:
-                    code = self._verify_response_is_python(code)
-                    return code, content
-                except Exception as e2:
-                    try:
-                        content_split = content.split('from factorio_instance import *')
-                        code = content_split[1].strip()
-                        text_response = content_split[0].strip()
-                        code = self._verify_response_is_python(code)
-                        return code, text_response
-                    except Exception as e3:
-                        code = content.strip().replace('```python',"").replace('```', '')
-                        docstring_delimiters = code.count('"""')
-                        print(f"Failed to extract code from choice: {str(code)}")
-                        if docstring_delimiters < 2:
-                            code = code.replace('"""', '')
-                        code = self._verify_response_is_python(code)
-                        if code.count('```') == 1:
-                            code = code.replace('```', '')
-                        return code, content.strip()
-                    #print(f"Failed to extract code from choice after removing leading line: {str(e2)}")
-                print(f"Failed to extract code from choice: {str(e1)}")
-                return None
+    # def _verify_response_is_python(self, content):
+    #     code = content
+    #     # Parse into an AST to verify that this is a program
+    #     try:
+    #         ast = compile(code, filename="<ast>", mode="exec")
+    #     except SyntaxError:
+    #         # Take the last line off and try again
+    #         code = code.rsplit('\n', 1)[0] + '\n'
+    #         ast = compile(code, filename="<ast>", mode="exec")
+    #         #return self._verify_response_is_python(code)
+    #
+    #     return code
+    #
+    # def _extract_code_from_choice(self, choice) -> Optional[str]:
+    #     """Extract code from a single completion choice"""
+    #     if hasattr(choice, 'message') and hasattr(choice.message, 'content'):
+    #         content = choice.message.content
+    #     elif hasattr(choice, 'text'):
+    #         content = choice.text
+    #     else:
+    #         raise RuntimeError('Incorrect message format')
+    #
+    #     try:
+    #         code = self._verify_response_is_python(content)
+    #         return code, content
+    #     except Exception as e:
+    #         try:
+    #             # Get all text between triple backticks with regex: ```\n?python(.+\n?)```
+    #             code = re.findall(r'(?s)```(python)?\s*(.*?)\s*```', content)[0][1]
+    #
+    #             #code = content.replace("```python", "").replace('```', '')
+    #             code = self._verify_response_is_python(code)
+    #             return code, content
+    #         except Exception as e1:
+    #             # Sometimes it samples a leading line, before writing unblocked python code.
+    #             code = "\n".join(content.split("\n")[1:])
+    #             try:
+    #                 code = self._verify_response_is_python(code)
+    #                 return code, content
+    #             except Exception as e2:
+    #                 try:
+    #                     content_split = content.split('from factorio_instance import *')
+    #                     code = content_split[1].strip()
+    #                     text_response = content_split[0].strip()
+    #                     code = self._verify_response_is_python(code)
+    #                     return code, text_response
+    #                 except Exception as e3:
+    #                     code = content.strip().replace('```python',"").replace('```', '')
+    #                     docstring_delimiters = code.count('"""')
+    #                     print(f"Failed to extract code from choice: {str(code)}")
+    #                     if docstring_delimiters < 2:
+    #                         code = code.replace('"""', '')
+    #                     if code.count('```') == 1:
+    #                         code = code.replace('```', '')
+    #                     try:
+    #                         code = self._verify_response_is_python(code)
+    #                     except Exception as e4:
+    #                         # As a last ditch, just wrap in docstrings
+    #                         code = code.replace('"""', "").replace("#", "")
+    #                         code = f'"""\n{code}\n"""'
+    #
+    #                     return code, content.strip()
+    #                 #print(f"Failed to extract code from choice after removing leading line: {str(e2)}")
+    #             print(f"Failed to extract code from choice: {str(e1)}")
+    #             return None
 
     def _is_model_compatible_with_n_samples(self, model):
         """Check if the model is compatible with generating n samples in a single call"""
@@ -229,7 +237,7 @@ class MCTS:
             output_tokens = response.usage.output_tokens if hasattr(response, 'usage') else 0
             total_tokens = input_tokens + output_tokens
 
-        code, text_response = self._extract_code_from_choice(choice)
+        code, text_response = self.parser.extract_code(choice)
         if not code:
             return None
 
@@ -264,7 +272,7 @@ class MCTS:
             prompt_tokens = response.usage.prompt_tokens if response.usage.prompt_tokens else response.usage.promptTokens
 
         for choice in response.choices:
-            code, text_response = self._extract_code_from_choice(choice)
+            code, text_response = self.parser.extract_code(choice)
             if code:
                 programs.append(Program(
                     id=hash((code, json.dumps(messages))),

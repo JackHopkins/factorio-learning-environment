@@ -303,7 +303,7 @@ local function place_at_position(player, connection_type, current_position, dir,
         end
     end
     if not has_item then
-        error("Player does not have the required item in their inventory.")
+        error("You do not have the required item in their inventory.")
     end
 
     local can_place = game.surfaces[1].can_place_entity{
@@ -372,7 +372,6 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         rendering.draw_line{surface = game.players[1].surface, from = raw_path[i].position, to =  raw_path[i + 1].position, color = {1, 1, 0}, width = 0,  dash_length=0.2, gap_length = 0.2}
     end
 
-    game.print("Norm path length "..#path)
 
     local last_position = start_position
     local step_size = wire_reach[connection_type] or 1
@@ -628,7 +627,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
         game.print("Required count: " .. required_count)
         game.print("Available count: " .. number_of_connection_entities)
         if number_of_connection_entities < required_count then
-            error("\"Player does not have enough " .. connection_type .. " in their inventory to complete this connection. Required number: " .. required_count .. ", Available in inventory: " .. number_of_connection_entities.."\"")
+            error("\"You do not have enough " .. connection_type .. " in you inventory to complete this connection. Required number - " .. required_count .. ", Available in inventory - " .. number_of_connection_entities.."\"")
         end
         result = connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, false)
     end

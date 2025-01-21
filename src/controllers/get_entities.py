@@ -12,7 +12,7 @@ class GetEntities(Action):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
-    def __call__(self, entities: Set[Prototype] = set(), position: Position = None, radius: int = 1000) -> List[Entity]:
+    def __call__(self, entities: Union[Set[Prototype], Prototype] = set(), position: Position = None, radius: int = 1000) -> List[Entity]:
         """
         Get entities within a radius of a given position.
         :param position: Position to search around. Can be a Position object or "player" for player's position.
@@ -24,9 +24,14 @@ class GetEntities(Action):
             if not isinstance(position, Position) and position is not None:
                 raise ValueError("The second argument must be a Position object")
 
+
+            if not isinstance(entities, Set):
+                entities = set([entities])
+
                 # Serialize entity_names as a string
             entity_names = "[" + ",".join(
                     [f'"{entity.value[0]}"' for entity in entities]) + "]" if entities else "[]"
+
 
             # We need to add a small 50ms sleep to ensure that the entities have updated after previous actions
             sleep(0.05)

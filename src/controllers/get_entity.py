@@ -1,3 +1,4 @@
+from time import sleep
 from typing import Tuple
 
 from controllers.__action import Action
@@ -30,6 +31,9 @@ class GetEntity(Action):
         elif entity == Prototype.PipeGroup:
             entities = self.get_entities({Prototype.Pipe}, position=position)
             return entities[0] if len(entities) > 0 else None
+        elif entity == Prototype.ElectricityGroup:
+            entities = self.get_entities({Prototype.SmallElectricPole, Prototype.MediumElectricPole, Prototype.BigElectricPole}, position=position)
+            return entities[0] if len(entities) > 0 else None
         else:
             try:
                 x, y = self.get_position(position)
@@ -37,6 +41,7 @@ class GetEntity(Action):
                 while isinstance(metaclass, tuple):
                     metaclass = metaclass[1]
 
+                sleep(0.05)
                 response, elapsed = self.execute(PLAYER, name, x, y)
 
                 if response is None or response == {} or isinstance(response, str):

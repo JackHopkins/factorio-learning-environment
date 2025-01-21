@@ -237,7 +237,12 @@ class MCTS:
             output_tokens = response.usage.output_tokens if hasattr(response, 'usage') else 0
             total_tokens = input_tokens + output_tokens
 
-        code, text_response = self.parser.extract_code(choice)
+        try:
+            code, text_response = self.parser.extract_code(choice)
+        except Exception as e:
+            print(f"Failed to extract code from choice: {str(e)}")
+            code = None
+
         if not code:
             return None
 

@@ -134,7 +134,17 @@ class FactorioEvaluator:
                                     ].instances[instance.tcp_port].error_count + 1
                     )
             raise e
+    def _evaluate_for_achievements(self, code: str, instance: FactorioInstance) \
+            -> Tuple[float, GameState, str, List[Union[Entity, EntityGroup]], Dict[str, Dict[str, int]]]:
+        # Get initial state information
+        start_production_flows = instance.namespace.get_production_stats()
+        # Executing code
+        reward, time, result = instance.eval(code, timeout=120)
+        post_production_flows = instance.namespace.get_production_stats()
+        achievements = get_achievements(start_production_flows, copy.deepcopy(post_production_flows))
 
+        return result, achievements, post_production_flows
+    
     async def _evaluate_single(self, instance_id: int, program: Program, instance: FactorioInstance) \
             -> Tuple[float, GameState, str, List[Union[Entity, EntityGroup]], Dict[str, Dict[str, int]], int]:
         try:
@@ -170,13 +180,13 @@ class FactorioEvaluator:
 
             # Check to see if the inventories are different
             # If so, we manually put a hint in the generated code and result from the game
-            get_inventory_code = 'print(f"Inventory changed to {inspect_inventory()}")'
+            get_inventory_code = 'print(f"Current inventory {inspect_inventory()}")'
             if (start_inventory.__dict__ != final_inventory.__dict__
                     and 'error' not in result.lower()
                     and get_inventory_code not in program.code
                     and 'inspect_inventory()' not in program.code):
                 program.code += f'\n{get_inventory_code}'
-                result += f'\n'+str(len(program.code.split('\n')))+f': (\'Inventory changed to {final_inventory}\',)'
+                result += f'\n'+str(len(program.code.split('\n')))+f': (\'Current inventory {final_inventory}\',)'
 
             # Check to see if the entities are different
             # If so, we put a hint in the code and result
@@ -187,6 +197,9 @@ class FactorioEvaluator:
                 program.code += f'\n{get_entities_code}\n'
                 result += "\n"+str(len(program.code.split('\n')))+f': (\'Entities on the map: {entities}\',)'
 
+            if "error" in result.lower():
+                result += f'(\'Current inventory: {final_inventory}\',)'
+                result += f'(\'Entities on the map after the current step: {entities}\',)'
 
             score, _ = instance.namespace.score()
             final_reward = score - initial_value

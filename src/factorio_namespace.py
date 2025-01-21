@@ -7,7 +7,8 @@ from difflib import get_close_matches
 from typing import Optional, Union, List, Dict, Tuple, Set
 
 from exceptions.hinting_name_error import HintingNameError, get_value_type_str
-from factorio_entities import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe
+from factorio_entities import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe, BuildingBox
+
 from factorio_types import Prototype, Resource, Technology, prototype_by_name
 from search.model.game_state import SerializableFunction, wrap_for_serialization, GameState, \
     unwrap_after_deserialization
@@ -69,6 +70,7 @@ class FactorioNamespace:
         self.Position = Position
         self.EntityStatus = EntityStatus
         self.BoundingBox = BoundingBox
+        self.BuildingBox = BuildingBox
         self.BeltGroup = BeltGroup
         self.Technology = Technology
         self.Recipe = Recipe

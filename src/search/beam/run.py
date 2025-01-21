@@ -124,7 +124,7 @@ async def main():
 
 
 
-    for model in ['gpt-4o-mini', 'gpt-4o', 'claude-3-5-sonnet-20241022']:#['gemini-2.0-flash-exp']: #['gpt-4o-mini']:#['deepseek-chat']:#['gemini-2.0-flash-exp']: #['meta-llama/Llama-3.3-70B-Instruct-Turbo']:#['gemini-2.0-flash-exp']:#['gpt-4o']:#['claude-3-5-sonnet-20241022']:
+    for model in [ 'gpt-4o', 'claude-3-5-sonnet-20241022', 'gpt-4o-mini']:#['gemini-2.0-flash-exp']: #['gpt-4o-mini']:#['deepseek-chat']:#['gemini-2.0-flash-exp']: #['meta-llama/Llama-3.3-70B-Instruct-Turbo']:#['gemini-2.0-flash-exp']:#['gpt-4o']:#['claude-3-5-sonnet-20241022']:
         # Get largest version from DB for initialisation purposes. If no versions exist, start at 0.
         largest_version_to_date = await db_client.get_largest_version()
 
@@ -135,7 +135,7 @@ async def main():
             initial_state=initial_state,
             model=model,
             beam_kwargs={
-                'error_penalty': 10,
+                'error_penalty': 0,
                 #'frequency_penalty': 0.25
             }
         )

@@ -10,7 +10,7 @@ from PIL import Image
 from dotenv import load_dotenv
 
 from search.db_client import DBClient
-from search.mcts.plots.run_results import RunResults
+from search.plots.run_results import RunResults
 
 load_dotenv()
 
@@ -60,7 +60,7 @@ class RunVisualizer:
 
         # Write to file
         recipes = {}
-        with open('./recipes.jsonl', 'r') as f:
+        with open('recipes.jsonl', 'r') as f:
             for line in f:
                 recipe = json.loads(line)
                 recipes[recipe['name']] = recipe
@@ -325,7 +325,7 @@ async def main():
     )
 
     # Initialize visualizer
-    icons_path = "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/data/icons/early_icons"
+    icons_path = "/data/icons/early_icons"
     visualizer = RunVisualizer(db_client, icons_path)
 
     labels = {
@@ -343,8 +343,8 @@ async def main():
     }
     versions = list(labels.keys())
     visualizer.load_versions(versions, labels)
-    visualizer.process_achievements(max_depth=256)
-    visualizer.export_latex_progression('mcts_progression_content.tex', max_depth=256)
+    visualizer.process_achievements(max_depth=512)
+    visualizer.export_latex_progression('mcts_progression_content.tex', max_depth=512)
 
 
 if __name__ == '__main__':

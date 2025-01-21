@@ -10,7 +10,7 @@ import json
 from dotenv import load_dotenv
 
 from search.db_client import DBClient
-from search.mcts.plots.run_results import RunResults, Node
+from search.plots.run_results import RunResults, Node
 
 load_dotenv()
 

@@ -2,7 +2,7 @@ import os
 import asyncio
 from dotenv import load_dotenv
 from search.db_client import DBClient
-from search.mcts.plots.run_results import RunResults
+from search.plots.run_results import RunResults
 import questionary
 import neptune
 

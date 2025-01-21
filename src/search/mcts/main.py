@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from cluster.local.cluster_ips import get_local_container_ips
 from search.db_client import DBClient
 from search.mcts.mcts_factory import MCTSFactory
-from search.mcts.plots.run_results import RunResults
+from search.plots.run_results import RunResults
 from factorio_instance import FactorioInstance
 import concurrent.futures
 from typing import List, Tuple

@@ -117,7 +117,7 @@ class MCTS:
         return "gpt" in model or 'o1' in model or 'gemini' in model
 
 
-    @retry(wait=wait_exponential(multiplier=1, min=6, max=60))
+    @retry(wait=wait_exponential(multiplier=1, min=3, max=30))
     async def _generate_programs_batch(self, conversation: Conversation,
                                        generation_params: GenerationParameters,
                                        meta={}
@@ -169,7 +169,8 @@ class MCTS:
                 )
         except Exception as e:
             print(f"Batch program generation failed: {str(e)}")
-            return []
+            raise e
+
 
     async def _generate_parallel(self, conversation, generation_params, formatted_messages,
                                  messages, meta) -> List[Program]:

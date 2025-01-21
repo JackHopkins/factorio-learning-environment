@@ -482,7 +482,7 @@ class RunResults:
         # Get all nodes for this version
         with self.db_client.get_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute(f"""SELECT id, parent_id, code, response, achievements_json, value, raw_reward FROM programs WHERE version = {self.version}""")
+                cur.execute(f"""SELECT id, parent_id, code, response, achievements_json, value, raw_reward, ticks FROM programs WHERE version = {self.version}""")
                 nodes = cur.fetchall()
 
 
@@ -493,7 +493,7 @@ class RunResults:
 
         # Create Node objects
         for node in nodes:
-            id, parent_id, source_code, response, achievements_json, value, raw_reward = node
+            id, parent_id, source_code, response, achievements_json, value, raw_reward, ticks = node
             processed_ids.add(id)
 
             try:
@@ -510,7 +510,8 @@ class RunResults:
                 'static_achievement_count': len(static_achievements),
                 'dynamic_achievements': set(dynamic_achievements.keys()),
                 'static_achievements': set(static_achievements.keys()),
-                'achievements': set(static_achievements.keys()).union(set(dynamic_achievements.keys()))
+                'achievements': set(static_achievements.keys()).union(set(dynamic_achievements.keys())),
+                'ticks': ticks
             }
 
             # Create node

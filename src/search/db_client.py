@@ -126,29 +126,6 @@ class DBClient:
             print(f"Error fetching program rewards: {e}")
             return []
 
-    # @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
-    #                 wait=wait_exponential(multiplier=1, min=4, max=10))
-    # async def get_best_trace(self, version: int = None) -> List[float]:
-    #     """Get all program rewards with proper connection management"""
-    #     query = """
-    #             SELECT value
-    #             FROM programs
-    #             WHERE value IS NOT NULL
-    #         """
-    #     if version is not None:
-    #         query += " AND version = %s"
-    #
-    #     params = (version,) if version is not None else ()
-    #
-    #     try:
-    #         with self.get_connection() as conn:
-    #             with conn.cursor() as cur:
-    #                 cur.execute(query.strip(), params)
-    #                 results = cur.fetchall()
-    #                 return [row[0] for row in results]
-    #     except Exception as e:
-    #         print(f"Error fetching program rewards: {e}")
-    #         return []
 
 
     @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),

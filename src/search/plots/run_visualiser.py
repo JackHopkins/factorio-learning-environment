@@ -667,7 +667,7 @@ class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
 
 # Example usage:
 async def main():
-    type = "ticks" # or 'steps'
+    type = "steps" # or 'steps'
     db_client = DBClient(
         max_conversation_length=40,
         host=os.getenv("SKILLS_DB_HOST"),

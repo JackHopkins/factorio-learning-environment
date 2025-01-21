@@ -71,6 +71,10 @@ class PythonParser:
         # Combine processed chunks
         if processed_chunks:
             final_code = '\n\n'.join(processed_chunks)
-            return final_code, content
+
+            if self._is_valid_python(final_code):
+                return final_code, content
+            else:
+                raise Exception("Not valid python code")
 
         return None

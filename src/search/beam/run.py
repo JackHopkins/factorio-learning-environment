@@ -1,3 +1,5 @@
+import argparse
+
 from llm_factory import LLMFactory
 from search.beam.beam_search import ParallelBeamSearch, ParallelBeamConfig
 
@@ -122,6 +124,41 @@ async def main():
     prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\nObservations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
     initial_state = GameState.from_instance(instances[0])
 
+    # Add argument parsing for version
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--resume-version', type=int, help='Version to resume from')
+    args = parser.parse_args()
+    resume_version = 450 #args.resume_version
+
+    # Get version to use
+    # Get version to use
+    if resume_version is not None:
+        version_to_use = resume_version
+        if not await db_client.version_exists(version_to_use):
+            print(f"Version {version_to_use} does not exist in database")
+            return
+
+        # Get beam heads for resuming
+        beam_width = 4  # Should match config
+        resume_heads = await db_client.get_beam_heads(version_to_use, beam_width)
+        if not resume_heads:
+            print(f"No valid beam heads found for version {version_to_use}")
+            return
+
+        # Use states from beam heads
+        resume_states = [prog.state for prog in resume_heads]
+
+        # Ensure all depths are the same for the beam heads
+        depth = resume_heads[0].depth
+        for prog in resume_heads:
+            assert prog.depth == depth, "All beam head depths must be the same in order to resume."
+
+        current_depth = depth
+    else:
+        version_to_use = await db_client.get_largest_version() + 1
+        resume_states = None
+        resume_heads = None
+        current_depth = 0
 
 
     for model in [ 'gpt-4o', 'claude-3-5-sonnet-20241022', 'gpt-4o-mini']:#['gemini-2.0-flash-exp']: #['gpt-4o-mini']:#['deepseek-chat']:#['gemini-2.0-flash-exp']: #['meta-llama/Llama-3.3-70B-Instruct-Turbo']:#['gemini-2.0-flash-exp']:#['gpt-4o']:#['claude-3-5-sonnet-20241022']:
@@ -141,7 +178,7 @@ async def main():
         )
         #model = 'claude-3-5-sonnet-20241022'
         #model = 'gpt-4o'
-        current_depth = 0#await db_client.get_largest_depth_in_version(largest_version_to_date)
+        #current_depth = 0#await db_client.get_largest_depth_in_version(largest_version_to_date)
 
         llm_factory = LLMFactory(model=model)
 
@@ -158,12 +195,17 @@ async def main():
             db_client=db_client,
             llm_factory=llm_factory,
             config=config,
-            version=largest_version_to_date+1,
+            version=version_to_use,
             version_description=f"model:{model}\ntype:beam",
             current_depth=current_depth,
             formatter=formatter,
-            base_port=instances[0].tcp_port
+            base_port=instances[0].tcp_port,
+            resume_version=resume_version,
+            resume_heads=resume_heads
         )
+
+        if resume_version:
+            await parallel_beam._verify_version_compatibility()
 
         # Run search
         await parallel_beam.search(n_iterations=512)

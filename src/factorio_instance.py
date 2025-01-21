@@ -159,7 +159,7 @@ class FactorioInstance:
                                                                dict) else self.initial_inventory.__dict__)
             # Reset the technologies
             if not self.all_technologies_researched:
-                self._load_research_state(ResearchState(
+                self.namespace._load_research_state(ResearchState(
                     technologies={},
                     research_progress=0,
                     current_research=None,

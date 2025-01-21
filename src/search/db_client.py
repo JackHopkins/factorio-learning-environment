@@ -58,6 +58,69 @@ class DBClient:
                 conn.close()
             raise e
 
+    async def get_beam_heads(self, version: int, beam_width: int) -> List[Program]:
+        """Get the highest value programs at max depth for a given version"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=DictCursor) as cur:
+                    # Get max depth for version
+                    cur.execute("""
+                        SELECT MAX(depth) as max_depth
+                        FROM programs
+                        WHERE version = %s
+                    """, (version,))
+                    result = cur.fetchone()
+                    max_depth = result['max_depth'] if result else 0
+
+                    # Get top programs at max depth
+                    cur.execute("""
+                        SELECT *
+                        FROM programs
+                        WHERE version = %s
+                        AND depth = %s
+                        AND state_json IS NOT NULL
+                        ORDER BY value DESC
+                        LIMIT %s
+                    """, (version, max_depth, beam_width))
+
+                    results = cur.fetchall()
+                    return [Program.from_row(dict(row)) for row in results]
+        except Exception as e:
+            print(f"Error fetching beam heads: {e}")
+            return []
+
+    async def version_exists(self, version: int) -> bool:
+        """Check if a version exists in the database"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT EXISTS(
+                            SELECT 1 FROM programs WHERE version = %s
+                        )
+                    """, (version,))
+                    return cur.fetchone()[0]
+        except Exception as e:
+            print(f"Error checking version existence: {e}")
+            return False
+
+    async def get_version_metadata(self, version: int) -> dict:
+        """Get metadata for a specific version"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=DictCursor) as cur:
+                    cur.execute("""
+                        SELECT DISTINCT version_description, model
+                        FROM programs 
+                        WHERE version = %s
+                        LIMIT 1
+                    """, (version,))
+                    result = cur.fetchone()
+                    return dict(result) if result else {}
+        except Exception as e:
+            print(f"Error fetching version metadata: {e}")
+            return {}
+
     @tenacity.retry(
         retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.DatabaseError)),
         wait=wait_random_exponential(multiplier=1, min=4, max=10))

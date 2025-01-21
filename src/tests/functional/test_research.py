@@ -3,6 +3,7 @@ import pytest
 from factorio_entities import Position
 from factorio_instance import Direction, FactorioInstance
 from factorio_types import Resource, Prototype, PrototypeName, Technology
+from search.model.game_state import GameState
 
 
 @pytest.fixture()
@@ -45,20 +46,20 @@ def test_craft_automation_packs_and_research(game):
     # place the boiler next to the offshore pump
     boiler = game.place_entity_next_to(Prototype.Boiler,
                                        reference_position=offshore_pump.position,
-                                       direction=Direction.LEFT,
-                                       spacing=2)
+                                       direction=offshore_pump.direction,
+                                       spacing=3)
     game.insert_item(Prototype.Coal, boiler, quantity=10)
 
     # place the steam engine next to the boiler
     steam_engine = game.place_entity_next_to(Prototype.SteamEngine,
                                              reference_position=boiler.position,
-                                             direction=Direction.LEFT,
+                                             direction=boiler.direction,
                                              spacing=2)
 
     # Place a Lab
     lab = game.place_entity_next_to(Prototype.Lab,
                                     reference_position=steam_engine.position,
-                                    direction=Direction.LEFT,
+                                    direction=steam_engine.direction,
                                     spacing=2)
     assert lab, "Failed to place Lab"
 
@@ -91,3 +92,10 @@ def test_craft_automation_packs_and_research(game):
     ingredients2 = game.get_research_progress(Technology.Automation)
     assert ingredients1[0].count > ingredients2[0].count, f"Research did not progress. Initial: {ingredients1[0].count}, Current: {ingredients2[0].count}"
 
+    # Save gamestate with research progress
+    # Verify that there are no technologies here
+    n_game_state = GameState.from_instance(game.instance)
+
+    game.instance.reset(n_game_state)
+
+    pass

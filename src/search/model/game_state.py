@@ -257,12 +257,12 @@ class GameState:
 
     def to_instance(self, instance: 'FactorioInstance'):
         """Restore game state to Factorio instance"""
-        instance._load_entity_state(self.entities, decode=True)
+        instance.namespace._load_entity_state(self.entities, decode=True)
         instance.set_inventory(**self.inventory)
 
         # Restore research state if present
         if self.research:
-            instance._load_research_state(self.research)
+            instance.namespace._load_research_state(self.research)
 
         # Merge pickled namespace with existing persistent_vars
         if self.namespace:

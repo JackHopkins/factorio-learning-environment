@@ -462,6 +462,209 @@ class MatplotlibRunVisualizer(BaseRunVisualizer):
         plt.close()
 
 
+class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
+    def __init__(self, db_client, icons_path: str, x_axis_type: str = 'steps', n_bootstrap: int = 1000):
+        super().__init__(db_client, icons_path, x_axis_type)
+        self.n_bootstrap = n_bootstrap
+
+    def bootstrap_statistics(self, values, n_bootstrap=1000):
+        """Compute bootstrapped statistics for a set of values"""
+        if not values:
+            return None
+
+        values = np.array(values)
+        bootstrap_means = []
+
+        for _ in range(n_bootstrap):
+            # Sample with replacement
+            sample_idx = np.random.randint(0, len(values), size=len(values))
+            bootstrap_sample = values[sample_idx]
+            bootstrap_means.append(np.mean(bootstrap_sample))
+
+        bootstrap_means = np.array(bootstrap_means)
+
+        return {
+            'mean': np.mean(values),
+            'ci_lower': np.percentile(bootstrap_means, 5),
+            'ci_upper': np.percentile(bootstrap_means, 95),
+            'std': np.std(values)  # Keep std for achievement positioning
+        }
+
+    def calculate_version_stats(self, version: int, max_depth: int):
+        """Calculate bootstrapped statistics for a specific version"""
+        values_by_x = defaultdict(list)
+        ticks_by_depth = {}  # Store cumulative ticks for each depth
+
+        def traverse_tree(node, depth=0, cumulative_value=0):
+            if depth > max_depth:
+                return
+
+            current_value = node.metrics.get('value', 0) or 0
+            total_value = cumulative_value + current_value
+
+            # Calculate cumulative ticks if needed
+            if self.x_axis == "ticks":
+                x_coord = self._calculate_cumulative_ticks(self.version_data[version]['nodes'][0], depth)
+                ticks_by_depth[depth] = x_coord
+            else:
+                x_coord = depth
+
+            values_by_x[x_coord].append(total_value)
+
+            for child in node.children:
+                traverse_tree(child, depth + 1, total_value)
+
+        achievements_by_x = defaultdict(list)
+        for achievement in self.achievements[version]:
+            x_coord = achievement.ticks if self.x_axis == "ticks" else achievement.depth
+            achievements_by_x[x_coord].append(achievement)
+
+        for root in self.version_data[version]['nodes']:
+            traverse_tree(root)
+
+        # Calculate bootstrapped statistics for each x coordinate
+        stats = {}
+        x_values = values_by_x.keys() if self.x_axis == "steps" else sorted(ticks_by_depth.values())
+
+        for x in x_values:
+            values = values_by_x.get(x, [0])
+            bootstrap_stats = self.bootstrap_statistics(values, self.n_bootstrap)
+            if bootstrap_stats:
+                stats[x] = bootstrap_stats
+
+        return stats, achievements_by_x
+
+    def export_visualization(self, output_file: str, max_depth: int = 100):
+        """Export visualization with bootstrapped confidence intervals and achievement icons"""
+        self.process_icons()
+
+        plt.figure(figsize=(12, 8), dpi=100)
+        ax = plt.gca()
+
+        # Set up log scale axes
+        ax.set_xscale('log', base=10)
+        ax.set_yscale('log', base=10)
+
+        ax.set_xlabel('Cumulative Ticks' if self.x_axis == "ticks" else 'Steps')
+        ax.set_ylabel('Total GDP')
+
+        # Configure axis limits based on x_axis type
+        if self.x_axis == "ticks":
+            ax.set_xlim(2 * 10 ** 3, 10 ** 6)
+            ax.set_ylim(10 ** 0, 10 ** 5)
+        else:
+            ax.set_xlim(10 ** 0, 10 ** 3)
+            ax.set_ylim(10 ** 1, 10 ** 5)
+
+        ax.grid(True, which='both', linestyle='--', alpha=0.3)
+
+        # Sort versions by GDP
+        version_achievements = []
+        for version in self.version_data:
+            label = self.version_data[version]['label']
+            achievements = self.achievements[version]
+            color = self.colors[list(self.version_data.keys()).index(version) % len(self.colors)]
+            final_gdp = self._calculate_final_gdp(self.version_data[version]['nodes'][0])
+            version_achievements.append((version, label, achievements, color, final_gdp))
+
+        version_achievements.sort(key=lambda x: x[4], reverse=True)
+
+        used_positions = {}
+
+        # Plot data for each version
+        for i, (version, label, achievements, color, gdp) in enumerate(version_achievements):
+            stats, achievements_by_x = self.calculate_version_stats(version, max_depth)
+            if not stats:
+                continue
+
+            # Filter and sort x coordinates
+            valid_stats = {x: s for x, s in stats.items() if s['mean'] > 4}
+            x_coords = sorted(valid_stats.keys())
+
+            # Extract statistics
+            means = [valid_stats[x]['mean'] for x in x_coords]
+            ci_lower = [valid_stats[x]['ci_lower'] for x in x_coords]
+            ci_upper = [valid_stats[x]['ci_upper'] for x in x_coords]
+
+            # Plot main line
+            ax.plot(x_coords, means, color=color, label=f"{label}", linewidth=2)
+
+            # Plot confidence intervals
+            ax.fill_between(x_coords, ci_lower, ci_upper, color=color, alpha=0.2)
+
+            # Calculate achievement positions using parent class method
+            achievement_positions = self.organize_achievement_positions(
+                achievements_by_x,
+                stats,  # Now contains bootstrapped stats
+                ax,
+                i,
+                used_positions
+            )
+
+            # Collect and sort achievements
+            achievement_data = []
+            for x_coord, achievements_list in achievements_by_x.items():
+                if x_coord == 0 or stats[x_coord]['mean'] <= 4:
+                    continue
+
+                for achievement in achievements_list:
+                    achievement_key = (achievement.item_name, achievement.depth)
+                    if achievement_key in achievement_positions:
+                        x_pos, y_pos = achievement_positions[achievement_key]
+                        achievement_data.append({
+                            'achievement': achievement,
+                            'x_pos': x_pos,
+                            'y_pos': y_pos,
+                            'color': color
+                        })
+
+            achievement_data.sort(key=lambda x: x['y_pos'])
+
+            # Draw achievements using parent class methods
+            for data in achievement_data:
+                circle_img = self.create_circle_background(data['color'])
+                circle_box = OffsetImage(circle_img, zoom=0.3)
+                circle_box.image.axes = ax
+
+                ab_circle = AnnotationBbox(
+                    circle_box,
+                    (data['x_pos'], data['y_pos']),
+                    frameon=False,
+                    box_alignment=(0.5, 0.5),
+                    pad=0,
+                    xycoords='data'
+                )
+                ax.add_artist(ab_circle)
+
+                icon_path = f"icons/{data['achievement'].item_name}.png"
+                if os.path.exists(icon_path):
+                    try:
+                        icon = plt.imread(icon_path)
+                        icon_box = OffsetImage(icon, zoom=0.16)
+                        icon_box.image.axes = ax
+
+                        ab_icon = AnnotationBbox(
+                            icon_box,
+                            (data['x_pos'], data['y_pos']),
+                            frameon=False,
+                            box_alignment=(0.5, 0.5),
+                            pad=0,
+                            xycoords='data'
+                        )
+                        ax.add_artist(ab_icon)
+                    except Exception as e:
+                        print(f"Failed to add icon for {data['achievement'].item_name}: {e}")
+                else:
+                    print(f"Icon not found: {icon_path}")
+
+        # Add legend
+        ax.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+
+        # Adjust layout and save
+        plt.tight_layout()
+        plt.savefig(output_file, bbox_inches='tight', dpi=300)
+        plt.close()
+
 # Example usage:
 async def main():
     db_client = DBClient(
@@ -476,10 +679,11 @@ async def main():
     icons_path = "/data/icons/early_icons"
 
     # Create visualizer with specified x-axis type
-    visualizer = MatplotlibRunVisualizer(
+    visualizer = BootstrappedRunVisualizer(
         db_client,
         icons_path,
-        x_axis_type='steps'  # or 'steps'
+        x_axis_type='steps',  # or 'steps'
+        n_bootstrap=4
     )
 
     labels = {

@@ -118,21 +118,6 @@ class ConnectEntities(Action):
 
         nearest_connection_point = Position(x=nearest_connection_point_x, y=nearest_connection_point_y)
 
-
-        # # If the connection point is to the left of the source position, and a 0.5 x offset
-        # if nearest_connection_point.x < fluid_handler_source.position.x:
-        #     nearest_connection_point = Position(x=nearest_connection_point.x + 0.5, y=nearest_connection_point.y)
-        # # If the connection point is to the right of the source position, and a -0.5 x offset
-        # elif nearest_connection_point.x > fluid_handler_source.position.x:
-        #     nearest_connection_point = Position(x=nearest_connection_point.x - 0.5, y=nearest_connection_point.y)
-        #
-        # # If the connection point is above the source position, and a 0.5 y offset
-        # if nearest_connection_point.y < fluid_handler_source.position.y:
-        #     nearest_connection_point = Position(x=nearest_connection_point.x, y=nearest_connection_point.y - 0.5)
-        # # If the connection point is below the source position, and a -0.5 y offset
-        # elif nearest_connection_point.y > fluid_handler_source.position.y:
-        #     nearest_connection_point = Position(x=nearest_connection_point.x, y=nearest_connection_point.y + 0.5)
-
         return nearest_connection_point
 
     def _round_position(self, position: Position):
@@ -294,14 +279,23 @@ class ConnectEntities(Action):
                 elif isinstance(target_entity, MiningDrill):
                     target_position = target_entity.drop_position
                 elif isinstance(target_entity, TransportBelt):
-                    target_position = target_entity.position
+                    #target_position = target_entity.position
+                    x_sign = numpy.sign(math.floor(source_position.x) - math.floor(target_position.x))
+                    y_sign = numpy.sign(math.floor(source_position.y) - math.floor(target_position.y))
+
+                    target_position = Position(
+                        x=(target_entity.position.x) + (x_sign * target_entity.tile_dimensions.tile_width),
+                        y=(target_entity.position.y) + (y_sign * target_entity.tile_dimensions.tile_height))
                 else:
                     target_position = Position(x=target_entity.position.x + x_sign*source_entity.tile_dimensions.tile_width/2,
                                                y=target_entity.position.y + y_sign*source_entity.tile_dimensions.tile_height/2)
-            elif connection_type.name == Prototype.TransportBelt.name:# or connection_type.name == Prototype.Pipe.name:
-                # If we are connecting a position with a transport belt / pipe, we need to add 0.5 to the position to prevent
+            elif connection_type.name == Prototype.TransportBelt.name:
+                # If we are connecting a position with a transport belt, we need to add 0.5 to the position to prevent
                 # Weird behaviour from the pathfinding
-                target_position = Position(x=math.floor(target_position.x) + 0.5, y=math.floor(target_position.y) + 0.5)
+                x_offset, y_offset = 0.5, 0.5
+
+                #x_offset, y_offset = 0.25, 0.25
+                target_position = Position(x=math.floor(target_position.x) + x_offset, y=math.floor(target_position.y) + y_offset)
                 pass
 
             if isinstance(source_entity, PipeGroup) and isinstance(target_entity, PipeGroup):
@@ -460,26 +454,7 @@ class ConnectEntities(Action):
         except Exception as e:
             raise e
 
-    def rotate_final_belt_when_connecting_groups(self, new_belt: BeltGroup, target: BeltGroup) -> BeltGroup:
-        if not new_belt.outputs:
-            return new_belt
-        source_belt = new_belt.outputs[0]
-        target_belt = target.inputs[0]
-        source_belt_position = new_belt.outputs[0].position
-        target_belt_position = target.inputs[0].input_position
-        if source_belt_position.x > target_belt_position.x and not source_belt.direction.value == Direction.LEFT.value: # We only want to curve the belt, not invert it
-            # It is necessary to use the direction enums from the game state
-            source_belt = self.rotate_entity(source_belt, Direction.RIGHT)
-        elif source_belt_position.x < target_belt_position.x and not source_belt.direction.value == Direction.RIGHT.value:
-            source_belt = self.rotate_entity(source_belt, Direction.LEFT)
-        elif source_belt_position.y > target_belt_position.y and not source_belt.direction.value == Direction.UP.value:
-            source_belt = self.rotate_entity(source_belt, Direction.DOWN)
-        elif source_belt_position.y < target_belt_position.y and not source_belt.direction.value == Direction.DOWN.value:
-            source_belt = self.rotate_entity(source_belt, Direction.UP)
-
-        # Check to see if this is still a source / terminus
-        target_belt = self.get_entity(target_belt.prototype, target_belt.position)
-
+    def _update_belt_group(self, new_belt: BeltGroup, source_belt: TransportBelt, target_belt: TransportBelt):
         new_belt.outputs[0] = source_belt
         for belt in new_belt.belts:
             if belt.position == source_belt.position:
@@ -502,5 +477,26 @@ class ConnectEntities(Action):
                     new_belt.outputs.remove(belt)
                 if not belt.is_source and belt in new_belt.inputs:
                     new_belt.inputs.remove(belt)
+
+    def rotate_final_belt_when_connecting_groups(self, new_belt: BeltGroup, target: BeltGroup) -> BeltGroup:
+        if not new_belt.outputs:
+            return new_belt
+        source_belt = new_belt.outputs[0]
+        target_belt = target.inputs[0]
+        source_belt_position = new_belt.outputs[0].position
+        target_belt_position = target.inputs[0].input_position
+        if source_belt_position.x > target_belt_position.x and not source_belt.direction.value == Direction.LEFT.value: # We only want to curve the belt, not invert it
+            # It is necessary to use the direction enums from the game state
+            source_belt = self.rotate_entity(source_belt, Direction.RIGHT)
+        elif source_belt_position.x < target_belt_position.x and not source_belt.direction.value == Direction.RIGHT.value:
+            source_belt = self.rotate_entity(source_belt, Direction.LEFT)
+        elif source_belt_position.y > target_belt_position.y and not source_belt.direction.value == Direction.UP.value:
+            source_belt = self.rotate_entity(source_belt, Direction.DOWN)
+        elif source_belt_position.y < target_belt_position.y and not source_belt.direction.value == Direction.DOWN.value:
+            source_belt = self.rotate_entity(source_belt, Direction.UP)
+
+        # Check to see if this is still a source / terminus
+        target_belt = self.get_entity(target_belt.prototype, target_belt.position)
+        self._update_belt_group(new_belt, source_belt, target_belt)  # Update the belt group with the new direction of the source belt.)
 
         return new_belt

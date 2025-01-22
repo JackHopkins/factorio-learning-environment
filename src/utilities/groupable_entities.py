@@ -246,12 +246,13 @@ def should_merge_groups(group1, group2, prototype):
 
     return False
 
+
 def construct_belt_groups(belts: List[TransportBelt], prototype):
     belts_by_position = {}
     source_belts = []
     terminal_belts = []
     visited = {}
-    groups = []
+    initial_groups = []
 
     for belt in belts:
         belts_by_position[(belt.position.x, belt.position.y)] = belt
@@ -287,11 +288,9 @@ def construct_belt_groups(belts: List[TransportBelt], prototype):
     def walk_backward(belt, group):
         if (belt.position.x, belt.position.y) in visited:
             return group
-
         if not group:
             belt.is_terminus = True
             group.append(belt)
-
         visited[(belt.position.x, belt.position.y)] = True
         input = belt.input_position
         if (input.x, input.y) in belts_by_position:
@@ -305,19 +304,38 @@ def construct_belt_groups(belts: List[TransportBelt], prototype):
     for source in source_belts:
         group = walk_forward(source, [])
         if group:
-            groups.append(group)
+            initial_groups.append(group)
 
     for terminal in terminal_belts:
         group = walk_backward(terminal, [])
         if group:
-            groups.append(group)
+            initial_groups.append(group)
+
+    final_groups = []
+    while initial_groups:
+        current = initial_groups.pop(0)
+        restart = True
+
+        while restart:
+            restart = False
+            i = 0
+            while i < len(initial_groups):
+                if any(belt in current for belt in initial_groups[i]):
+                    current.extend([b for b in initial_groups[i] if b not in current])
+                    initial_groups.pop(i)
+                    restart = True
+                else:
+                    i += 1
+
+        final_groups.append(current)
 
     return [_construct_group(
-        id=0,
+        id=i,
         entities=group,
         prototype=prototype,
         position=group[0].position
-    ) for group in groups]
+    ) for i, group in enumerate(final_groups)]
+
 
 
 def agglomerate_groupable_entities(connected_entities: List[Entity]) -> List[EntityGroup]:

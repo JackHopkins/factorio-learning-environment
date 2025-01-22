@@ -283,8 +283,10 @@ local function place_at_position(player, connection_type, current_position, dir,
         local existing_network_id = has_valid_fluidbox(existing_entity) and existing_entity.fluidbox[1].get_fluid_system_id()
 
         -- Update direction if needed
-        if existing_entity.direction ~= dir then
-            existing_entity.direction = dir
+        if existing_entity.name ~= connection_type then
+            if existing_entity.direction ~= dir then
+                existing_entity.direction = dir
+            end
         end
 
         -- For pipes, merge networks

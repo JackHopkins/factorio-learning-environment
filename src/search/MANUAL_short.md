@@ -33,7 +33,7 @@ print(f"Harvested 10 iron ore")
 # move to the position to place the entity
 move_to(position)
 furnace = place_entity(Prototype.StoneFurnace, position=position)
-print(f"Placed the furnace at {furnace.position}")
+print(f"Placed the furnace to smelt plates at {furnace.position}")
 
 # we also update the furnace variable by returning it from the function
 # This ensures it doesnt get stale and the inventory updates are represented in the variable
@@ -61,7 +61,7 @@ extract_item(Prototype.IronPlate, furnace.position, 10)
 assert inspect_inventory()[Prototype.IronPlate] >=10, f"Not enough plates in inventory"
 # 4. Now you can craft
 craft_item(Prototype.IronGearWheel)
-print(f"Crafted on gear wheels")
+print(f"Crafted iron gear wheels")
 ```
 
 ### 2. Inventory Requirements
@@ -77,7 +77,7 @@ assert burner_drills_in_inventry > 0, "No drills in inventory
 # move to the position to place the entity
 move_to(position)
 drill = place_entity(Prototype.BurnerMiningDrill, position=position)
-print(f"Placed drill at {drill.position}")
+print(f"Placed drill to mine stone at {drill.position}")
 ```
 
 You can inspect your own inventory, or the inventory of an entity:
@@ -108,11 +108,12 @@ move_to(resource_position)  # Must move before placing/interacting
 
 #### Basic Entity Placement
 Entities must be placed in a valid location after moving there:
+Include logs for what the entity is placed for
 ```python
 # Basic placement pattern
 move_to(target_position) 
 entity = place_entity(Prototype.Entity, position=target_position)
-print(f"Placed entity at {entity.position}")
+print(f"Placed entity at {entity.position} to do X")
 ```
 
 #### Using place_entity_next_to
@@ -138,7 +139,7 @@ connected_entity = place_entity_next_to(
     direction=Direction.UP,
     spacing=0
 )
-print(f"Placed entity at {connected_entity.position}")
+print(f"Placed inserter at {connected_entity.position} next to ref_entity at position {ref_entity.position} to input X into the ref_entity")
 ```
 
 #### Common Patterns and Use Cases
@@ -155,6 +156,8 @@ print(f"Placed entity at {connected_entity.position}")
 
 Example: Iron ore mine
 ```python
+# log your general idea what you will do next
+print(f"I will create a iron ore mine with burner minng drill into a collection chest")
 # move to the position to place the entity
 move_to(iron_ore_position)
 # define the BuildingBox for the drills.
@@ -168,11 +171,11 @@ drill_pos = buildable_coordinates["left_top"]
 move_to(drill_pos)
 # Place the drill facing down as we start from top coordinate
 drill = place_entity(Prototype.BurnerMiningDrill, position=drill_pos, position = Position.DOWN) 
-print(f"Placed drill at {drill.position}") # Position(x = 0, y = 10)
+print(f"Placed burner mining drill to mine iron ore at {drill.position}") # Position(x = 0, y = 10)
 
 # place a chest at the drop position of the drill to catch the ore
 collection_chest = place_entity(Prototype.WoodenChest, position = drill.position)
-print(f"Put a collection chest at {collection_chest.position}")
+print(f"Put a collection chest at {collection_chest.position} that catches and stores iron ore from the burner mining drill at {drill.position}")
 # wait 10 seconds to check if the construct works and chest has ore
 sleep(10)
 
@@ -192,23 +195,25 @@ Power typically involves:
 -> Water Source + OffshorePump
 -> Boiler (burning coal)
 -> SteamEngine
-NB: Use atleast spacing of 3 to ensure there is enough room for pipes
+NB: Use atleast spacing of 4 to ensure there is enough room for pipes
 IMPORTANT: We also need to be very careful and check where we can place boiler and steam engine as they cannot be on water
 ```python
+# log your general idea what you will do next
+print(f"I will create a power generation setup with a steam engine")
 # Power system pattern
 move_to(water_position)
 # first place offshore pump on the water system
 offshore_pump = place_entity(Prototype.OffshorePump, position=water_position)
-print(f"Placed offshore pump at {offshore_pump.position}")
+print(f"Placed offshore pump to get water at {offshore_pump.position}")
 # Then place the boiler close to the offshore pump
 # IMPORTANT: We need to be careful as there is water nearby which is unplaceable,
 # We do not know where the water is so we will use can_place_entity for safety
-# We will also need to be atleast 3 tiles away as the entities are large and otherwise won't have room for connections
-# construct 4 potential positions for the boiler, each 3 tiles away from offshore pump
-potential_positions = [Position(x = offshore_pump.x+3, y = offshore_pump.y),
-                        Position(x = offshore_pump.x-3, y = offshore_pump.y),
-                        Position(x = offshore_pump.x, y = offshore_pump.y+3),
-                        Position(x = offshore_pump.x, y = offshore_pump.y-3)]
+# We will also need to be atleast 4 tiles away as the entities are large and otherwise won't have room for connections
+# construct 4 potential positions for the boiler, each 4 tiles away from offshore pump
+potential_positions = [Position(x = offshore_pump.position.x+4, y = offshore_pump.position.y),
+                        Position(x = offshore_pump.position.x-4, y = offshore_pump.position.y),
+                        Position(x = offshore_pump.position.x, y = offshore_pump.position.y+4),
+                        Position(x = offshore_pump.position.x, y = offshore_pump.position.y-4)]
 boiler_placed = False # variable to check if boiler was placed
 for boiler_position in potential_positions:
     if can_place_entity(Prototype.Boiler, position=boiler_position):
@@ -217,18 +222,18 @@ for boiler_position in potential_positions:
             position=boiler_position)
             # update the variable
             boiler_placed = True
-            print(f"Placed boiler at {boiler_position.position}")
+            print(f"Placed boiler to generate steam at {boiler.position}. This will be connected to the offshore pump at {offshore_pump.position}")
             break
-assert boiler_placed, f"Could not find a safe tile to place boiler close to offshore pump 3 spaces away. Consider enlargening the grid"
+assert boiler_placed, f"Could not find a safe tile to place boiler close to offshore pump at {offshore_pump.position} 4 spaces away. Consider enlargening the grid"
 # add coal to boiler to start the power generation
 boiler = insert_item(Prototype.Coal, boiler, 10)
 # Finally we need to place the steam engine close to the boiler
-# IMPORTANT: We again need to be safe and use can_place_entity with a tile size of 3
+# IMPORTANT: We again need to be safe and use can_place_entity with a tile size of 4
 
-potential_positions = [Position(x = boiler.x+3, y = boiler.y),
-                        Position(x = boiler.x-3, y = boiler.y),
-                        Position(x = boiler.x, y = boiler.y+3),
-                        Position(x = boiler.x, y = boiler.y-3)]
+potential_positions = [Position(x = boiler.position.x+4, y = boiler.position.y),
+                        Position(x = boiler.position.x-4, y = boiler.position.y),
+                        Position(x = boiler.position.x, y = boiler.position.y+4),
+                        Position(x = boiler.position.x, y = boiler.position.y-4)]
 steam_engine_placed = False # variable to check if boiler was placed
 for steam_engine_position in potential_positions:
     if can_place_entity(Prototype.SteamEngine, position=steam_engine_position):
@@ -237,13 +242,15 @@ for steam_engine_position in potential_positions:
             position=steam_engine_position)
             # update the variable
             steam_engine_placed = True
-            print(f"Placed steam_engine at {steam_engine.position}")
+            print(f"Placed steam_engine to generate electricity at {steam_engine.position}. This will be connected to the boiler at {boiler.position} to generate electricity")
             break
-assert steam_engine_placed, f"Could not find a safe tile to place steam_engine 3 spaces away from boiler. Consider enlargening the grid"
+assert steam_engine_placed, f"Could not find a safe tile to place steam_engine 4 spaces away from boiler at position {boiler.position}. Consider enlargening the grid"
 
 # Connect entities in order
 water_pipes = connect_entities(offshore_pump, boiler, Prototype.Pipe)
+print(f"Connected offshore pump at {offshore_pump.position} to boiler at {boiler.position} with pipes {water_pipes}")
 steam_pipes = connect_entities(boiler, steam_engine, Prototype.Pipe)
+print(f"Connected boiler at {boiler.position} to steam_engine at {steam_engine.position} with pipes {water_pipes}")
 
 # check that it has power
 # sleep for 5 seconds to ensure flow
@@ -290,7 +297,7 @@ belts = connect_entities(
     inserter_2.pickup_position,
     Prototype.TransportBelt
 )
-print(f"Connected inserters with {belts}")
+print(f"Connected inserters at {inserter_1.position} and {inserter_2.position} with {belts}")
 ```
 
 4. **Spacing Guidelines**
@@ -318,6 +325,8 @@ Example:
 Create a assembling machine and connect it to a existing furnace 
 Assume a furnace exists at Position(x = 9, y = -10)
 ```python
+# log your general idea what you will do next
+print(f"I will create a assembling machine for copper cables and connect it to the copper plate furnace at Position(x = 9, y = -10)")
 # get the existing furnace
 furnace = get_entity(Prototype.StoneFurnace, position = Position(x = 9, y = -10))
 # place a inserter taking plates out of the furnace
@@ -340,7 +349,7 @@ buildable_coordinates = nearest_buildable(Prototype.AssemblingMachine1, building
 assembly_pos = buildable_coordinates["left_top"]
 move_to(assembly_pos)
 target_machine = place_entity(Prototype.AssemblingMachine1, position=assembly_pos)
-print(f"Placed target_machine at {target_machine.position}")
+print(f"Placed AssemblingMachine1 at {target_machine.position} to automatically create copper cables")
 
 # put a inserter next to the assembly machine
 # always use 0 spacing for inserters
@@ -352,6 +361,7 @@ machine_input_inserter = place_entity_next_to(Prototype.BurnerInserter,
 
 # rotate the inserter as we need to put items into the chest
 machine_input_inserter = rotate_entity(machine_input_inserter, direction = Direction.LEFT)
+print(f"Placed a inserter at {machine_input_inserter.position} to put copper plates into assembling machine at {target_machine.position}")
 # fuel the inserter
 # we also update the inserter variable by returning it from the function
 # This ensures it doesnt get stale and the inventory updates are represented in the variable
@@ -360,7 +370,7 @@ machine_input_inserter = insert_item(Prototype.Coal, machine_input_inserter, qua
 # connect the furnace output inserter to chest input inserter
 # IMPORTANT: ALWAYS NEED TO CONNECT TRANSPORT BELTS TO A INSERTER, NEVER DIRECTLY CONNECT TO A CHEST OR FURNACE
 connection = connect_entities(furnace_output_inserter.drop_position, machine_input_inserter.pickup_position Prototype.TransportBelt)
-print(f"Connected furnace to assembling machine with {connection}")
+print(f"Connected furnace at {furnace.position} to assembling machine at {target_machine.position} with {connection}. This will move copper plates to assembling machine to create copper cables")
 ```
 
 ### 5. Power Systems
@@ -372,6 +382,8 @@ NB: Always use connect_entities when connecting power source to target
 
 EXAMPLE
 ```python
+# log your general idea what you will do next
+print(f"I will power the assembling machine at Position(x = 1, y = 19) with power from steam engine at Position(x=4, y = -21)")
 # get the steam engine. In this example, there is a steam engine at Position(x=4, y = -21)
 steam_engine = get_entity(Prototype.SteamEngine, position = Position(x=4, y = -21))
 
@@ -401,6 +413,8 @@ Only difference are drills as they have a drop_position that automatically drops
 Example
 Move items from a chest to a furnace
 ```python
+# log your general idea what you will do next
+print("I will create a chest that transports items to a furnace")
 source_position = Position(0, 0)
 # Belt system pattern
 move_to(source_position)
@@ -420,10 +434,10 @@ print(f"Placed chest at {source.position}")
 # direction is DOWN as we put 2 at the height of the buildable coordinates and put chest at the top of the buildable box
 # we do not need to rotate the inserter as it takes from the chest not puts to it
 source_inserter = place_entity_next_to(Prototype.BurnerInserter, 
-    reference_position=destination_chest.position,
+    reference_position=source.position,
     direction=Direction.DOWN,
     spacing = 0)
-
+print(f"Placed a inserter at {source_inserter.position} that will take items from the chest at {source.position}")
 # Place a furnace 10 spaces away
 target_position = Position(x = source.position.x, y = source.position.y)
 # move to the position to place the entity
@@ -437,7 +451,7 @@ buildable_coordinates = nearest_buildable(Prototype.StoneFurnace, building_box, 
 furnace_pos = buildable_coordinates["left_top"]
 move_to(furnace_pos)
 destination_furnace = place_entity(Prototype.WoodenChest, position=furnace_pos)
-print(f"Placed destination_furnace at {destination_furnace.position}")
+print(f"Placed destination_furnace at {destination_furnace.position}. This will start getting items from chest at {source.position}")
 # add inserter
 # always use 0 spacing for inserters
 # direction is RIGHT as we put 2 at the width of the buildable coordinates and the furnace is at top left
@@ -449,10 +463,12 @@ print(f"Placed destination_inserter at {destination_inserter.position}")
 # VERY IMPORTANT: rotate inserter as by default the inserter takes items from the entity it is placed next to
 # We want it to put items into the destination furnace
 destination_inserter = rotate_entity(destination_inserter, Direction.LEFT)  # Face inserter toward furnace
+
+print(f"Placed a inserter at {destination_inserter.position} that will put items into the furnace at {destination_furnace.position}")
 # IMPORTANT: ALWAYS NEED TO CONNECT TRANSPORT BELTS TO A INSERTER, NEVER DIRECTLY CONNECT TO A CHEST OR FURNACE
-belt = connect_entities(source.drop_position, destination_inserter.pickup_position, 
+belt = connect_entities(source_inserter.drop_position, destination_inserter.pickup_position, 
     Prototype.TransportBelt)
-print(f"connected source and destionation with {belt}")
+print(f"connected chest inserter at {source_inserter.position} to the destination_inserter at {destination_inserter.position} with {belt}. This will move items from chest at {soruce.position} to the furnace at {destination_furnace.position}")
 ```
 ### 7. Many-to-One Connections
 When you need to connect multiple sources to a single target with transport belts
@@ -463,16 +479,23 @@ NB: NEVER CONNECT MULTIPLE ENTITIES DIRECTLY TO THE SAME TARGET
 You always need to create one main connection and then connect additional entities to the main connection line with transport belts
 
 Example: Connecting multiple source inserters to one target inserter
-Assume we have source_inserter_1, source_inserter_2, source_inserter_3 burner inserter variables as sources
-Also assume we have target_inserter burner inserter variable as the target
+Assume we have source_inserter_1, source_inserter_2, source_inserter_3 burner inserter variables as sources on the map at positions Position(x = 1, y = 2), Position(x = 3, y = 2) and Position(x = 5, y = 2)
+Also assume we have target_inserter burner inserter variable as the target on the map at Position(x = 10, y = 28)
 ```python
+# get the inserter variables
+source_inserter_1 = get_entity(Prototype.BurnerInserter, Position(x = 1, y = 2))
+source_inserter_2 = get_entity(Prototype.BurnerInserter, Position(x = 3, y = 2))
+source_inserter_3 = get_entity(Prototype.BurnerInserter, Position(x = 5, y = 2))
+target_inserter = get_entity(Prototype.BurnerInserter, Position(x = 10, y = 28))
+# log your general idea what you will do next
+print(f"I will create a connection from the inserters at [{source_inserter_1.position}, {source_inserter_2.position}, {source_inserter_3.position}] to the inserter at {target_inserter.position}")
 # create the main connection
 main_connection = connect_entities(source_inserter_1.drop_position, 
                                     target_inserter.pickup_position,
                                     Prototype.TransportBelt)
 # Print out the whole connection for logs
 # as main_connection is a list of beltgroups, we print out the whole list
-print(f"Created the main connection: {main_connection}")
+print(f"Created the main connection between inserter at {source_inserter_1.position} to inserter at {target_inserterposition}: {main_connection}")
 
 # Connect source_inserter_2 and source_inserter_3 to the main connection
 secondary_sources = [source_inserter_2, source_inserter_3]
@@ -483,19 +506,23 @@ for source in secondary_sources:
     main_connection = connect_entities(source.drop_position, 
                                     main_connection[0],
                                     Prototype.TransportBelt)
-    print(f"Extended main connection: {main_connection}")
-print(f"Final connection after connecting all sources to target: {main_connection}")
+    print(f"Extended main connection to include inserter at {source.position}: {main_connection}")
+print(f"Final connection after connecting all inserters to target: {main_connection}")
 ```
 
 When you want to connect entities to existing power pole groups, similar rules apply
+Assume in this example there is a steam engine at Position(x = 1, y = 2) and the drill is at Position(x = 10, y = 28)
 ```python
+# get the variables
+steam_engine = get_entity(Prototype.SteamEngine, Position(x = 1, y = 2))
+drill_1 = get_entity(Prototype.ElectricMiningDrill, Position(x = 10, y = 28))
 # create the main connection
 main_power_connection = connect_entities(steam_engine, 
                                     drill_1,
                                     Prototype.SmallElectricPole)
 # Print out the whole connection for logs
 # as main_connection is a list of ElectricityGroup, we print out the whole list
-print(f"Created the main connection: {main_connection}")
+print(f"Created the main connection to power drill at {drill_1.position} with steam engine at {steam_engine.position}: {main_connection}")
 
 # connect the secondary source to the main power connection
 # Use the first ElectricityGroup from the main connection to connect to
@@ -514,7 +541,8 @@ You also need to add inserters that input crafting ingredients into the machine 
 
 ```python
 # Assume there's an assembling machine at Position(x = 2, y = -19) and a steam engine generating power at Position(x = -10, y = 0)
-
+# log your general idea what you will do next
+print(f"I will create a assembling machine for copper cables")
 # first get the assembling machine and steam engine entities
 assembling_machine = get_entity(Prototype.AssemblingMachine1, position = Position(x = 2, y = -19))
 steam_engine = get_entity(Prototype.SteamEngine, position = Position(x = -10, y = 0))
@@ -530,7 +558,7 @@ assert assembling_machine.energy>0, "Assembling machine is not powered"
 
 # set the recipe for assembling machine to iron gear wheels
 set_entity_recipe(entity = assembly_machine, prototype = Prototype.CopperCable)
-print(f"Set the recipe of assembly machine at {{assembly_machine.position}} to Prototype.CopperCable")
+print(f"Set the recipe of assembly machine at {assembly_machine.position} to Prototype.CopperCable")
 
 # add inserter that inputs ingredients that will be crafted to the target entity
 # always use 0 spacing for inserters
@@ -540,6 +568,7 @@ ingredient_input_inserter = place_entity_next_to(
     direction=Direction.UP,
     spacing = 0
 )
+print(f"Placed a inserter at {ingredient_input_inserter.position} that puts copper ore into the assembling machine at {assembly_machine.position}")
 #VERY IMPORTANT:  Need to rotate the inserter as it needs to put itms into assembling machine
 ingredient_input_inserter = rotate_entity(ingredient_input_inserter, Direction.DOWN)  # Face inserter towards the assembling machine
 
@@ -551,6 +580,7 @@ output_inserter = place_entity_next_to(
     direction=Direction.LEFT,
     spacing = 0
 )
+print(f"Placed a inserter at {output_inserter.position} that takes away copper cables from the assembling machine at {assembly_machine.position}")
 ```
 
 
@@ -563,6 +593,8 @@ output_inserter = place_entity_next_to(
 1. **Mining Setup**:
 Example: Create a plate mining line
 ```python
+# log your general idea what you will do next
+print(f"I will create a single line of 3 drills to mine copper ore")
 # Find space for a line of 3 miners
 move_to(source_position)
 # define the BuildingBox for the drill. 
@@ -583,10 +615,10 @@ for i in range(3):
     drill_pos = Position(x=left_top.x + 2*i, y=left_top.y)
     # Place the drill facing down as we start from top coordinate
     drill = place_entity(Prototype.ElectricMiningDrill, position=drill_pos, direction = Direction.DOWN)
-    print(f"Placed drill {i} at {drill.position}")
+    print(f"Placed ElectricMiningDrill {i} at {drill.position} to mine copper ore")
     # place a chest to catch the ore
     furnace = place_entity(Prototype.StoneFurnace, position = drill.drop_position)
-    print(f"Placed furnace to smelt drill {i} ore at {furnace.position}")
+    print(f"Placed furnace at {furnace.position} to smelt the copper ore for drill {i} at {drill.position}")
 ```
 
 #### Error Handling
@@ -626,6 +658,8 @@ Self-fueling mining systems are essential for automating resource collection, pa
 
 #### Basic Self-Fueling Mine Pattern
 ```python
+# log your general idea what you will do next
+print(f"I will create a self fueling single drill system")
 # 1. Find suitable coal patch
 coal_patch = nearest(Resource.Coal)
 # define the BuildingBox for the drill. 
@@ -641,7 +675,7 @@ target_pos = buildable_coordinates["left_top"]
 move_to(target_pos)
 # Place the drill facing down as we start from top coordinate
 drill = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, target_pos)
-print(f"Placed drill at {drill.position}")
+print(f"Placed BurnerMiningDrill to mine coal at {drill.position}")
 
 # 3. Place inserter to feed coal back into drill
 # direction is DOWN as we put 2 at the height of the buildable coordinates and put drill at top left
@@ -651,7 +685,7 @@ coal_input_inserter = place_entity_next_to(
     direction=Direction.DOWN,
     spacing=0
 )
-print(f"Placed coal_input_inserter at {coal_input_inserter.position}")
+print(f"Placed coal_input_inserter at {coal_input_inserter.position} that will input coal to the burner mining drill at {drill.position}")
 # VERY IMPORTANT: rotate input inserter to put items into drill
 coal_input_inserter = rotate_entity(coal_input_inserter, Direction.DOWN)  # Face inserter toward drill
 
@@ -662,7 +696,7 @@ belts = connect_entities(
     inserter.pickup_position,
     Prototype.TransportBelt
 )
-print(f"Conncted drill to inserter with {belts}")
+print(f"Conncted BurnerMiningDrill at {drill.position} to inserter at {coal_input_inserter.position} with {belts}")
 
 # 5. Bootstrap system with initial fuel
 # we also update the drill variable by returning it from the function
@@ -680,6 +714,8 @@ Policy 1: Put down the drill line and the shared transport line
     """
     Build a mining system sharing a common transport belt
     """
+    # log your general idea what you will do next
+    print(f"I will put down 2 lines of drills with a single shared transport belt in the middle to mine copper ore")
     copper_ore_pos = nearest(Resource.CopperOre)
     num_drills = 5
     drills = []
@@ -693,6 +729,7 @@ Policy 1: Put down the drill line and the shared transport line
     left_top = buildable_coordinates["left_top"]
     # create a list to keep track of upper drills to create the shared belt
     drills = []
+    print(f"I will create a drillline with 2 lines sharing a common transport belt in the middle")
     # start placing the drills
     for i in range(num_drills):
         # Calculate positions with proper spacing
@@ -707,7 +744,7 @@ Policy 1: Put down the drill line and the shared transport line
             Direction.DOWN, # direction is down as its the upper drill
             upper_drill_position
         )
-        print(f"Placed upper drill {i} at {upper_drill.position}")
+        print(f"Placed upper BurnerMiningDrill {i} at {upper_drill.position} to mine coal")
         # append to the list
         drills.append(upper_drill)
 
@@ -720,7 +757,7 @@ Policy 1: Put down the drill line and the shared transport line
         )
         # now we need to rotate the bottom drill to face up, i.e towards the shared transport belt
         bottom_drill = rotate_entity(bottom_drill, direction = Direction.UP)
-        print(f"Placed bottom drill {i} at {bottom_drill.position}")
+        print(f"Placed bottom BurnerMiningDrill {i} at {bottom_drill.position} to mine coal")
         drills.append(bottom_drill)
 
     # 2. Create main transport belt
@@ -742,15 +779,17 @@ Policy 1: Put down the drill line and the shared transport line
     )
     # print out all Beltgroup coordinates
     # Beltgroup has many belts so we dont pick one but print out all
-    print(f"Created the main belt: {main_belt}")
+    print(f"Created the main belt for the shared drill line: {main_belt}")
     # Example: Beltgroup end position is at Position(x = 12, y = -8)
 ```
 
-Policy 1: Put down the single chest that is the end of the line
+Policy 2: Put down the single chest that is the end of the line
 ```python
     """
     Build a mining system sharing a common transport belt
     """
+    # log your general idea what you will do next
+    print(f"I will connect the transport belt end at {belt_end_position} to a single destination chest that will collect copper ore")
     # from logs we see that the belt end is at Position(x = 12, y = -8)
     belt_end_position = Position(x = 12, y = -8)
     # add 10 spaces to ensure no collision
@@ -765,7 +804,7 @@ Policy 1: Put down the single chest that is the end of the line
     
     # place the chest
     chest = place_entity(Prototype.WoodenChest, position = left_top)
-    print(f"placed collection chest at {chest.position}")
+    print(f"placed collection chest at {chest.position} that will get the copper ore from the shared mining belt")
 
     # add the inserter
     # we add the inserter to the right as the buildable area had 2 width and we put chest at top left
@@ -778,7 +817,7 @@ Policy 1: Put down the single chest that is the end of the line
     
     # rotate the inserter to put items into chest
     chest_inserter = rotate_entity(destination_inserter, Direction.LEFT)
-
+    print(f"placed a inserter at {chest_inserter.position} that will input copper ore to the chest at {chest.position}")
     # 2. Connect the main transport belt to the chest inserter pickup position
     # Now we connect
     main_belt_extended = Fentities(
@@ -788,7 +827,7 @@ Policy 1: Put down the single chest that is the end of the line
     )
     # print out all Beltgroup coordinates
     # Beltgroup has many belts so we dont pick one but print out all
-    print(f"Extended the resource belt: {main_belt_extended}")
+    print(f"Extended the shared resource belt to the inserter at {chest_inserter.position} to input items into the chest at {chest.position}: {main_belt_extended}")
 ```
 
 #### Best Practices for Self-Fueling Systems
@@ -938,6 +977,12 @@ copper_ore = get_resource_patch(Resource.CopperOre, nearest(Resource.Coal))
 - Verify entity states after important operations
 - Clean up partially constructed systems on failure
 
+5. **Logging**
+- Always log what you have done in detail
+- Include the entities you have created with their positions and what theis their purpose
+- When entities are part of automatic structures, include what resource or ingredient that automatic structure creates 
+- When connecting structures with automatic belts, include the reason for connection and what you are connecting
+- IMPORTANT: Include the intention if entities in your print statements. This will be used later to generate a summary so for the summary to be accurate you need to say what the entities are for
 
 ## INSTRUCTIONS WHEN CREATING STRUCTURES
 - When a entity has status "WAITING_FOR_SPACE_IN_DESTINATION", it means the there is no space in the drop position. For instance, a mining drill will have status WAITING_FOR_SPACE_IN_DESTINATION when the entities it mines are not being properly collected by a furnace or a chest or transported away from drop position with transport belts

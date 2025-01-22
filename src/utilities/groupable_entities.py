@@ -246,6 +246,80 @@ def should_merge_groups(group1, group2, prototype):
 
     return False
 
+def construct_belt_groups(belts: List[TransportBelt], prototype):
+    belts_by_position = {}
+    source_belts = []
+    terminal_belts = []
+    visited = {}
+    groups = []
+
+    for belt in belts:
+        belts_by_position[(belt.position.x, belt.position.y)] = belt
+        if belt.is_source:
+            source_belts.append(belt)
+        if belt.is_terminus:
+            terminal_belts.append(belt)
+
+    if len(terminal_belts) == 0 and len(source_belts) == 0:
+        return [_construct_group(
+            id=0,
+            entities=belts,
+            prototype=prototype,
+            position=belts[0].position
+        )]
+
+    def walk_forward(belt, group):
+        if (belt.position.x, belt.position.y) in visited:
+            return group
+        if not group:
+            belt.is_source = True
+            group.append(belt)
+        visited[(belt.position.x, belt.position.y)] = True
+        output = belt.output_position
+        if (output.x, output.y) in belts_by_position:
+            next_belt = belts_by_position[(output.x, output.y)]
+            group.append(next_belt)
+            walk_forward(next_belt, group)
+        else:
+            group[-1].is_terminus = True
+        return group
+
+    def walk_backward(belt, group):
+        if (belt.position.x, belt.position.y) in visited:
+            return group
+
+        if not group:
+            belt.is_terminus = True
+            group.append(belt)
+
+        visited[(belt.position.x, belt.position.y)] = True
+        input = belt.input_position
+        if (input.x, input.y) in belts_by_position:
+            prev_belt = belts_by_position[(input.x, input.y)]
+            group.insert(0, prev_belt)
+            walk_backward(prev_belt, group)
+        else:
+            group[0].is_source = True
+        return group
+
+    for source in source_belts:
+        group = walk_forward(source, [])
+        if group:
+            groups.append(group)
+
+    for terminal in terminal_belts:
+        group = walk_backward(terminal, [])
+        if group:
+            groups.append(group)
+
+    return [_construct_group(
+        id=0,
+        entities=group,
+        prototype=prototype,
+        position=group[0].position
+    ) for group in groups]
+
+
 def agglomerate_groupable_entities(connected_entities: List[Entity]) -> List[EntityGroup]:
     """
     Group contiguous transport belts into BeltGroup objects.
@@ -294,12 +368,7 @@ def agglomerate_groupable_entities(connected_entities: List[Entity]) -> List[Ent
             position=entities[0].position
         ) for id, entities in fluidbox_ids.items()]
 
-    return [_construct_group(
-        id=0,
-        entities=connected_entities,
-        prototype=prototype,
-        position=connected_entities[0].position
-    )]
+    return construct_belt_groups(connected_entities, prototype)
 
     # # Create position-to-belt mapping for quick lookups
     # position_to_belt = {}
@@ -627,73 +696,73 @@ def _get_endpoint_objects(belt_group):
 
     return input_belts, output_belts
 
-def _get_endpoint_objects3(belt_group):
-    """
-    Calculate the input and output belt objects that are the endpoints of the belt group.
-    A belt is an input if nothing outputs to its input position.
-    A belt is an output if its output position isn't connected to any other belt's input.
-    """
-    # Create dictionaries for position lookups
-    pos_to_belt = {(belt.position.x, belt.position.y): belt for belt in belt_group}
-    belt_outputs = {(belt.output_position.x, belt.output_position.y): belt for belt in belt_group}
-
-    # For each belt, find what belt (if any) outputs to its input position
-    input_sources = {}  # belt -> belt that outputs to its input
-    for belt in belt_group:
-        input_pos = (belt.position.x, belt.position.y)
-        if input_pos in belt_outputs:
-            input_sources[(belt.position.x, belt.position.y)] = belt_outputs[input_pos]
-
-    input_belts = []
-    output_belts = []
-
-    # Find input belts - belts that have no input source
-    for belt in belt_group:
-        if (belt.position.x, belt.position.y) not in input_sources:
-            input_belts.append(belt)
-
-    # Find output belts - belts whose output isn't used as input
-    for belt in belt_group:
-        output_pos = (belt.output_position.x, belt.output_position.y)
-        is_output = True
-
-        # Check if this belt's output connects to another belt's input
-        for other_belt in belt_group:
-            if (other_belt.position.x, other_belt.position.y) == output_pos:
-                is_output = False
-                break
-
-        if is_output:
-            output_belts.append(belt)
-
-    return input_belts, output_belts
-
-def _get_endpoint_objects2(belt_group):
-    """
-    Calculate the input and output belt objects that are the endpoints of the belt group.
-    """
-    positions = {(belt.position.x, belt.position.y) for belt in belt_group}
-    outputs = {(belt.output_position.x, belt.output_position.y) for belt in belt_group}
-    inputs = {(belt.input_position.x, belt.input_position.y) for belt in belt_group}
-
-    input_belts = []
-    output_belts = []
-
-    for belt in belt_group:
-        # A belt is an input if its input position isn't any belt's output position
-        # AND no belt outputs to its position
-        belt_input = (belt.input_position.x, belt.input_position.y)
-        belt_pos = (belt.position.x, belt.position.y)
-        if belt_input not in outputs and belt_pos not in outputs:
-            input_belts.append(belt)
-
-        # A belt is an output if its output position isn't any belt's input position
-        # AND no belt's position matches its output position
-        belt_output = (belt.output_position.x, belt.output_position.y)
-        if belt_output not in inputs and belt_output not in positions:
-            output_belts.append(belt)
-
-    return input_belts, output_belts
+# def _get_endpoint_objects3(belt_group):
+#     """
+#     Calculate the input and output belt objects that are the endpoints of the belt group.
+#     A belt is an input if nothing outputs to its input position.
+#     A belt is an output if its output position isn't connected to any other belt's input.
+#     """
+#     # Create dictionaries for position lookups
+#     pos_to_belt = {(belt.position.x, belt.position.y): belt for belt in belt_group}
+#     belt_outputs = {(belt.output_position.x, belt.output_position.y): belt for belt in belt_group}
+#
+#     # For each belt, find what belt (if any) outputs to its input position
+#     input_sources = {}  # belt -> belt that outputs to its input
+#     for belt in belt_group:
+#         input_pos = (belt.position.x, belt.position.y)
+#         if input_pos in belt_outputs:
+#             input_sources[(belt.position.x, belt.position.y)] = belt_outputs[input_pos]
+#
+#     input_belts = []
+#     output_belts = []
+#
+#     # Find input belts - belts that have no input source
+#     for belt in belt_group:
+#         if (belt.position.x, belt.position.y) not in input_sources:
+#             input_belts.append(belt)
+#
+#     # Find output belts - belts whose output isn't used as input
+#     for belt in belt_group:
+#         output_pos = (belt.output_position.x, belt.output_position.y)
+#         is_output = True
+#
+#         # Check if this belt's output connects to another belt's input
+#         for other_belt in belt_group:
+#             if (other_belt.position.x, other_belt.position.y) == output_pos:
+#                 is_output = False
+#                 break
+#
+#         if is_output:
+#             output_belts.append(belt)
+#
+#     return input_belts, output_belts
+#
+# def _get_endpoint_objects2(belt_group):
+#     """
+#     Calculate the input and output belt objects that are the endpoints of the belt group.
+#     """
+#     positions = {(belt.position.x, belt.position.y) for belt in belt_group}
+#     outputs = {(belt.output_position.x, belt.output_position.y) for belt in belt_group}
+#     inputs = {(belt.input_position.x, belt.input_position.y) for belt in belt_group}
+#
+#     input_belts = []
+#     output_belts = []
+#
+#     for belt in belt_group:
+#         # A belt is an input if its input position isn't any belt's output position
+#         # AND no belt outputs to its position
+#         belt_input = (belt.input_position.x, belt.input_position.y)
+#         belt_pos = (belt.position.x, belt.position.y)
+#         if belt_input not in outputs and belt_pos not in outputs:
+#             input_belts.append(belt)
+#
+#         # A belt is an output if its output position isn't any belt's input position
+#         # AND no belt's position matches its output position
+#         belt_output = (belt.output_position.x, belt.output_position.y)
+#         if belt_output not in inputs and belt_output not in positions:
+#             output_belts.append(belt)
+#
+#     return input_belts, output_belts
 
 def _get_pipe_endpoint_objects(pipe_group):
     """

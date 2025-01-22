@@ -334,6 +334,15 @@ class TransportBelt(Entity):
     def __repr__(self):
         return f"Belt(({self.input_position}) -> ({self.output_position}), direction={self.direction})"
 
+    def __hash__(self):
+        return hash((self.position.x, self.position.y))
+
+    def __eq__(self, other):
+        if not isinstance(other, TransportBelt):
+            return False
+        return (self.position.x, self.position.y) == (other.position.x, other.position.y)
+
+
 class EnergySource(BaseModel):
     buffer_capacity: str
     input_flow_limit: str

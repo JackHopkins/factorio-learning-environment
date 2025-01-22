@@ -37,16 +37,15 @@ global.actions.craft_item = function(player_index, entity, count)
     local function can_craft_recipe(player, recipe_name)
         local recipe = player.force.recipes[recipe_name]
         if not recipe then
-            return false, "recipe "..recipe_name.." doesn't exist, it is a raw resource that must be gathered first"
+            return false, "recipe for " .. recipe_name .. " doesn't exist, it is a raw resource that must be gathered first"
         end
         if not recipe.enabled then
             local required_tech = get_required_technology(recipe_name, player.force)
             local tech_message = required_tech and string.format(" (requires %s technology)", required_tech) or ""
-            return false, "recipe not unlocked" .. tech_message
+            return false, "recipe for " .. recipe_name .. " is not unlocked yet" .. tech_message .. ". You need to research the technology first"
         end
         if recipe.category ~= "crafting" then
-
-            return false, "recipe "..recipe_name.." requires specific crafting or smelting machine"
+            return false, "Item " .. recipe_name .. " cannot be crafted. Recipe requires a crafting machine or smelting in a furnace"
         end
         return true, recipe
     end
@@ -93,7 +92,7 @@ global.actions.craft_item = function(player_index, entity, count)
             for ingredient_name, needed_amount in pairs(missing_ingredients) do
                 local crafted_amount, error_msg = attempt_craft(player, ingredient_name, needed_amount, attempted_recipes)
                 if crafted_amount == 0 then
-                    return 0, "couldn't craft a required sub-ingredient " .. ingredient_name .. " (missing amount " .. needed_amount .. ") - " .. error_msg
+                    return 0, "couldn't craft a required sub-ingredient for ".. entity_name .. " - " .. ingredient_name .. " - " .. error_msg .. ". Required " ..ingredient_name.. " amount for " .. entity_name .. " - " .. needed_amount .. ")"
                 end
             end
         end

@@ -2,7 +2,7 @@ import math
 from typing import Union
 
 from controllers.__action import Action
-from factorio_entities import Position
+from factorio_entities import Position, ResourcePatch
 from factorio_instance import PLAYER
 from factorio_types import Prototype, Resource
 
@@ -35,7 +35,10 @@ class Nearest(Action):
             response, time_elapsed = self.execute(PLAYER, name)
 
             if response is None or response == {}:
-                raise Exception(f"No {type} found on the map")
+                if metaclass == ResourcePatch:
+                    raise Exception(f"No {type} found on the map within 500 tiles of the player. Move around to explore the map more.")
+                else:
+                    raise Exception(f"No {type} found within 500 tiles of the player")
 
             if not self.game_state.last_observed_player_location:
                 self.game_state.last_observed_player_location = self.game_state.player_location

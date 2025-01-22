@@ -418,12 +418,10 @@ class Pipe(Entity):
 class EntityGroup(BaseModel):
     id: int
     status: EntityStatus = EntityStatus.NORMAL
+    position: Position
     name: str = "entity-group"
 
-class DirectedEntityGroup(EntityGroup):
-    position: Position
-
-class BeltGroup(DirectedEntityGroup):
+class BeltGroup(EntityGroup):
     belts: List[TransportBelt]
     inputs: List[Entity]
     outputs: List[Entity]
@@ -432,15 +430,15 @@ class BeltGroup(DirectedEntityGroup):
 
     def __repr__(self) -> str:
         belt_summary = f"[{len(self.belts)} belts]"
-        return f"BeltGroup(inputs={self.inputs}, outputs={self.outputs}, inventory={self.inventory}, status={self.status}, belts={belt_summary})"
+        return f"\n\tBeltGroup(inputs={self.inputs}, outputs={self.outputs}, inventory={self.inventory}, status={self.status}, belts={belt_summary})"
 
-class PipeGroup(DirectedEntityGroup):
+class PipeGroup(EntityGroup):
     pipes: List[Pipe]
     name: str = 'pipe-group'
 
     def __repr__(self) -> str:
         pipe_summary = f"[{len(self.pipes)} pipes]"
-        return f"PipeGroup(position={self.position}, status={self.status}, pipes={pipe_summary})"
+        return f"\n\tPipeGroup(position={self.position}, status={self.status}, pipes={pipe_summary})"
 
 class ElectricityGroup(EntityGroup):
     name: str = 'electricity-group'
@@ -452,7 +450,7 @@ class ElectricityGroup(EntityGroup):
         if len(positions) > 6:
             positions = positions[:3] + ['...'] + positions[-3:]
         pole_summary = f"[{','.join(positions)}]"
-        return f"ElectricityGroup(id={self.id}, poles={pole_summary})"
+        return f"\tElectricityGroup(id={self.id}, poles={pole_summary})"
 
     def __hash__(self):
         return self.name+str(self.id)

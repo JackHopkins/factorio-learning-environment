@@ -1,8 +1,9 @@
 global.paths = global.paths or {}
 
-global.actions.request_path = function(player_index, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities)
+global.actions.request_path = function(player_index, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities, entity_size)
     local player = game.get_player(player_index)
     if not player then return nil end
+    local size = entity_size/2 - 0.01
 
     local surface = player.surface
     local force = player.force
@@ -22,19 +23,19 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
     --            true
     --)
     local start_position = {y = start_y, x = start_x}
-    --create_beam_point_with_direction(player, 1, start_position)
-    --create_beam_point_with_direction(player, 1, goal_position)
-    --
-    --create_beam_point_with_direction(player, 2, {y = start_y, x = start_x, })
-    --create_beam_point_with_direction(player, 2, {y = goal_y, x = goal_x})
 
     local path_request = {
-        bounding_box = {{-0.49, -0.49}, {0.49, 0.49}}, -- Assuming a 1x1 entity size
+        bounding_box = {{-size, -size}, {size, size}}, -- Assuming a 1x1 entity size
+        --bounding_box = {{-0.7, -0.7}, {0.7, 0.7}}, -- Increased from 0.49
+        --bounding_box = {{-1, -1}, {1, 1}},
         collision_mask = { "player-layer",
                             "train-layer",
                             "consider-tile-transitions",
                             "water-tile",
-                            "object-layer"
+                            "object-layer",
+                            --"item-layer",      -- Added
+                            "transport-belt-layer", -- Added
+                            "water-tile"       -- Added
                            },
         start = start_position,
         goal = goal_position,

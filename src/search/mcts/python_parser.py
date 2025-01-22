@@ -40,9 +40,36 @@ class PythonParser:
         # Otherwise wrap in docstring
         return self._wrap_in_docstring(chunk)
 
+    def _extract_markdown_code_blocks(self, content: str) -> Optional[str]:
+        """
+        Attempt to extract all Python code blocks marked with ```python.
+
+        Args:
+            content: The full text content to parse
+
+        Returns:
+            Combined valid Python code from all blocks, or None if no valid blocks found
+        """
+        # Find all code blocks marked with ```python
+        pattern = r'```python\s*(.*?)\s*```'
+        matches = re.finditer(pattern, content, re.DOTALL)
+
+        code_blocks = []
+        for match in matches:
+            code = match.group(1).strip()
+            if code and self._is_valid_python(code):
+                code_blocks.append(code)
+
+        if code_blocks:
+            combined_code = '\n\n'.join(code_blocks)
+            if self._is_valid_python(combined_code):
+                return combined_code
+
+        return None
+
     def extract_code(self, choice) -> Optional[Tuple[str, str]]:
         """
-        Extract code from LLM response, processing chunks independently.
+        Extract code from LLM response, first trying markdown blocks then falling back to chunk processing.
 
         Args:
             choice: LLM response object with message.content or text attribute
@@ -58,10 +85,13 @@ class PythonParser:
         else:
             raise RuntimeError('Incorrect message format')
 
-        # Split into chunks by double newlines
-        chunks = content.split('\n\n')
+        # First try to extract markdown code blocks
+        markdown_code = self._extract_markdown_code_blocks(content)
+        if markdown_code:
+            return markdown_code, content
 
-        # Process each chunk
+        # Fall back to chunk-based processing
+        chunks = content.split('\n\n')
         processed_chunks = []
         for chunk in chunks:
             processed = self._process_chunk(chunk)
@@ -71,7 +101,6 @@ class PythonParser:
         # Combine processed chunks
         if processed_chunks:
             final_code = '\n\n'.join(processed_chunks)
-
             if self._is_valid_python(final_code):
                 return final_code, content
             else:

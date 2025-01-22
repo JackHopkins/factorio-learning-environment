@@ -209,8 +209,8 @@ end)
 local function find_entity_type_at_position(surface, position)
     local exact_entities = surface.find_entities_filtered{
         position = position,
-        type = {"tree", "resource"},
-        radius = 0.1  -- Tiny radius for exact position check
+        type = {"tree", "resource", "simple-entity"},--, "optimized-decorative"},
+        radius = 1  -- Tiny radius for exact position check
     }
 
     if #exact_entities > 0 then
@@ -365,7 +365,10 @@ function harvest_trees(entities, count, from_position, player)
                     local tree_surface = entity.surface
                     local stump_name = entity.name.."-stump"
                     entity.destroy({raise_destroy=true})
-                    tree_surface.create_entity({name=stump_name, position=tree_position})
+                    -- Try to create stump, if fails just continue
+                    pcall(function()
+                        tree_surface.create_entity({name=stump_name, position=tree_position})
+                    end)
                 end
             end
         end
@@ -373,8 +376,110 @@ function harvest_trees(entities, count, from_position, player)
     return yield
 end
 
+-- Add function to handle simple entities like rocks and tree stumps
+local function harvest_simple_entities(entities, count, from_position, player)
+    if count == 0 then return 0 end
+    local yield = 0
+    entities = sort_entities_by_distance(entities, from_position)
+
+    for _, entity in ipairs(entities) do
+        if entity.valid and entity.minable then
+            -- Calculate mining ticks before mining the entity
+            if global.fast then
+                global.elapsed_ticks = global.elapsed_ticks + calculate_mining_ticks(entity)
+            end
+
+            local products = entity.prototype.mineable_properties.products
+            for _, product in pairs(products) do
+                local amount = product.amount or 1
+                yield = yield + amount
+                entity.mine({ignore_minable=false, raise_destroyed=true})
+                player.insert({name=product.name, count=amount})
+                update_production_stats(player.force, product.name, amount)
+
+                if yield >= count then break end
+            end
+            if yield >= count then break end
+        end
+    end
+    return yield
+end
+
 
 global.actions.harvest_resource = function(player_index, x, y, count, radius)
+    local player = game.get_player(player_index)
+    if not player then
+        error("Player not found")
+    end
+
+    local player_position = player.position
+    local position = {x=x, y=y}
+
+    local distance = math.sqrt((position.x - player_position.x)^2 + (position.y - player_position.y)^2)
+    if distance > player.resource_reach_distance then
+        error("Nothing within reach to harvest")
+    end
+
+    local surface = player.surface
+    local target_type, target_name = find_entity_type_at_position(surface, position)
+
+    if not target_type then
+        error("Nothing within reach to harvest")
+    end
+
+    if not global.fast then
+        return harvest_resource_slow(player, player_index, surface, position, count, radius)
+    end
+
+    local total_yield = 0
+    if target_type then
+        total_yield = total_yield + harvest_specific_resources(player, surface, position, count, target_type, target_name)
+        if total_yield >= count then
+            game.print("Harvested " .. total_yield .. " items of " .. target_name)
+            return total_yield
+        end
+    end
+
+    -- Try harvesting each type in sequence if we haven't met our quota
+    if total_yield < count then
+        -- Try trees first
+        local tree_entities = surface.find_entities_filtered{
+            position = position,
+            radius = radius,
+            type = "tree"
+        }
+        total_yield = total_yield + harvest_trees(tree_entities, count - total_yield, position, player)
+    end
+
+    if total_yield < count then
+        -- Then try simple entities (rocks, stumps, etc.)
+        local simple_entities = surface.find_entities_filtered{
+            position = position,
+            radius = radius,
+            type = "simple-entity"
+        }
+        total_yield = total_yield + harvest_simple_entities(simple_entities, count - total_yield, position, player)
+    end
+
+    if total_yield < count then
+        -- Finally try standard resources
+        local mineable_entities = surface.find_entities_filtered{
+            position = position,
+            radius = radius,
+            type = "resource"
+        }
+        total_yield = total_yield + harvest(mineable_entities, count - total_yield, position, player)
+    end
+
+    if total_yield == 0 then
+        error("Nothing within reach to harvest")
+    else
+        game.print("Harvested resources yielding " .. total_yield .. " items")
+        return total_yield
+    end
+end
+
+global.actions.harvest_resource2 = function(player_index, x, y, count, radius)
     local player = game.get_player(player_index)
     if not player then
         error("Player not found")

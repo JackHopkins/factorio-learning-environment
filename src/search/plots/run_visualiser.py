@@ -1,4 +1,5 @@
 import asyncio
+import sys
 from abc import ABC, abstractmethod
 import json
 from collections import defaultdict
@@ -27,7 +28,6 @@ class Achievement:
     is_dynamic: bool
     ingredients: int
     ticks: int
-
 
 class BaseRunVisualizer(ABC):
     def __init__(self, db_client, icons_path: str, x_axis: Literal["steps", "ticks"] = "steps"):
@@ -60,34 +60,56 @@ class BaseRunVisualizer(ABC):
                     'label': f"{labels[version]} (GDP: {max_gdp:.1f})"
                 }
 
+    def _calculate_cumulative_ticks_iterative(self, node, target_depth=0):
+        """Calculate cumulative ticks up to a given depth using iteration"""
+        if target_depth == 0:
+            return 0
+
+        total_ticks = 0
+        # Stack stores tuples of (node, depth)
+        stack = [(node, 0)]
+
+        while stack:
+            current_node, current_depth = stack.pop()
+
+            if current_depth >= target_depth:
+                continue
+
+            # Add ticks for current node
+            ticks = current_node.metrics.get('ticks', 0) or 0
+            total_ticks += ticks
+
+            # Add children to stack in reverse order to maintain original traversal order
+            for child in reversed(current_node.children):
+                stack.append((child, current_depth + 1))
+
+        return total_ticks
+
     def _calculate_final_gdp(self, root_node):
-        """Calculate the final GDP value for a run"""
+        """Calculate the final GDP value for a run using iteration"""
         final_gdp = 0
+        stack = [root_node]
 
-        def traverse(node):
-            nonlocal final_gdp
+        while stack:
+            node = stack.pop()
             current_value = node.metrics.get('value', 0) or 0
-            final_gdp = final_gdp + current_value #max(final_gdp, current_value)
+            final_gdp += current_value
 
-            for child in node.children:
-                traverse(child)
+            # Add children to stack
+            stack.extend(node.children)
 
-        traverse(root_node)
         return final_gdp
 
     def _count(self, root_node):
-        """Calculate the final GDP value for a run"""
+        """Count nodes in the tree using iteration"""
         count = 0
+        stack = [root_node]
 
-        def traverse(node):
-            nonlocal count
+        while stack:
+            node = stack.pop()
+            count += 1
+            stack.extend(node.children)
 
-            count =count + 1
-
-            for child in node.children:
-                traverse(child)
-
-        traverse(root_node)
         return count
 
 
@@ -103,6 +125,7 @@ class BaseRunVisualizer(ABC):
         traverse_ingredients(recipe_dict)
         return len(seen) - 1
 
+    sys.setrecursionlimit(5000)
     def _calculate_cumulative_ticks(self, node, depth=0):
         """Calculate cumulative ticks up to a given depth"""
         if depth == 0:
@@ -125,8 +148,50 @@ class BaseRunVisualizer(ABC):
         traverse(node, current_depth)
         return total_ticks
 
+    # def process_achievements(self, max_depth: int = 1000):
+    #     """Process achievements for all versions with tick support"""
+    #     recipes = {}
+    #     with open('recipes.jsonl', 'r') as f:
+    #         for line in f:
+    #             recipe = json.loads(line)
+    #             recipes[recipe['name']] = recipe
+    #
+    #     for version, data in self.version_data.items():
+    #         seen_items = set()
+    #
+    #         def traverse_tree(node, depth=0):
+    #             if depth > max_depth:
+    #                 return
+    #
+    #             # Calculate cumulative ticks for this depth
+    #             cumulative_ticks = self._calculate_cumulative_ticks(data['nodes'][0], depth)
+    #
+    #             if hasattr(node, 'static_achievements'):
+    #                 for category in ['static', 'dynamic']:
+    #                     items = (node.static_achievements if category == 'static'
+    #                              else node.dynamic_achievements)
+    #                     for item_name, quantity in items.items():
+    #                         if item_name not in seen_items:
+    #                             self.achievements[version].append(Achievement(
+    #                                 depth=depth,
+    #                                 ticks=cumulative_ticks,
+    #                                 item_name=item_name,
+    #                                 quantity=quantity,
+    #                                 ingredients=self.count_total_ingredients(recipes[item_name])
+    #                                 if item_name in recipes else 0,
+    #                                 is_dynamic=(category == 'dynamic')
+    #                             ))
+    #                             seen_items.add(item_name)
+    #
+    #             for child in node.children:
+    #                 traverse_tree(child, depth + 1)
+    #
+    #         for root in data['nodes']:
+    #             traverse_tree(root)
+    #
+    #         self.achievements[version].sort(key=lambda x: (x.ingredients, x.item_name))
     def process_achievements(self, max_depth: int = 1000):
-        """Process achievements for all versions with tick support"""
+        """Process achievements for all versions using iteration instead of recursion"""
         recipes = {}
         with open('recipes.jsonl', 'r') as f:
             for line in f:
@@ -135,37 +200,53 @@ class BaseRunVisualizer(ABC):
 
         for version, data in self.version_data.items():
             seen_items = set()
+            # Stack stores tuples of (node, depth)
+            stack = [(root, 0) for root in data['nodes']]
 
-            def traverse_tree(node, depth=0):
+            while stack:
+                node, depth = stack.pop()
+
                 if depth > max_depth:
-                    return
+                    continue
 
                 # Calculate cumulative ticks for this depth
-                cumulative_ticks = self._calculate_cumulative_ticks(data['nodes'][0], depth)
+                cumulative_ticks = self._calculate_cumulative_ticks_iterative(data['nodes'][0], depth)
 
+                # Process achievements
                 if hasattr(node, 'static_achievements'):
-                    for category in ['static', 'dynamic']:
-                        items = (node.static_achievements if category == 'static'
-                                 else node.dynamic_achievements)
-                        for item_name, quantity in items.items():
-                            if item_name not in seen_items:
-                                self.achievements[version].append(Achievement(
-                                    depth=depth,
-                                    ticks=cumulative_ticks,
-                                    item_name=item_name,
-                                    quantity=quantity,
-                                    ingredients=self.count_total_ingredients(recipes[item_name])
-                                    if item_name in recipes else 0,
-                                    is_dynamic=(category == 'dynamic')
-                                ))
-                                seen_items.add(item_name)
+                    # Process static achievements
+                    for item_name, quantity in node.static_achievements.items():
+                        if item_name not in seen_items:
+                            self.achievements[version].append(Achievement(
+                                depth=depth,
+                                ticks=cumulative_ticks,
+                                item_name=item_name,
+                                quantity=quantity,
+                                ingredients=self.count_total_ingredients(recipes[item_name])
+                                if item_name in recipes else 0,
+                                is_dynamic=False
+                            ))
+                            seen_items.add(item_name)
 
-                for child in node.children:
-                    traverse_tree(child, depth + 1)
+                    # Process dynamic achievements
+                    for item_name, quantity in node.dynamic_achievements.items():
+                        if item_name not in seen_items:
+                            self.achievements[version].append(Achievement(
+                                depth=depth,
+                                ticks=cumulative_ticks,
+                                item_name=item_name,
+                                quantity=quantity,
+                                ingredients=self.count_total_ingredients(recipes[item_name])
+                                if item_name in recipes else 0,
+                                is_dynamic=True
+                            ))
+                            seen_items.add(item_name)
 
-            for root in data['nodes']:
-                traverse_tree(root)
+                # Add children to stack in reverse order to maintain original traversal order
+                for child in reversed(node.children):
+                    stack.append((child, depth + 1))
 
+            # Sort achievements by ingredients and item name
             self.achievements[version].sort(key=lambda x: (x.ingredients, x.item_name))
 
     def calculate_version_stats(self, version: int, max_depth: int):
@@ -337,25 +418,30 @@ class MatplotlibRunVisualizer(BaseRunVisualizer):
 
         return final_positions
 
-    def export_visualization(self, output_file: str, max_depth: int = 100, xmin=0, xmax=10**6):
+    def export_visualization(self, output_file: str, max_depth: int = 100, xmin=0, xmax=10 ** 6):
         """Export visualization with support for both steps and ticks"""
         self.process_icons()
 
-        plt.figure(figsize=(12, 8), dpi=100)
+        plt.figure(figsize=(12, 8), dpi=100, tight_layout=True)
         ax = plt.gca()
+
+        # Set font sizes
+        plt.rcParams.update({'font.size': 16})
+        ax.tick_params(axis='both', which='major', labelsize=16)
+        ax.tick_params(axis='both', which='minor', labelsize=16)
 
         # Set up log scale axes
         ax.set_xscale('log', base=10)
         ax.set_yscale('log', base=10)
 
-        # Configure axes labels
-        ax.set_xlabel('Cumulative Ticks' if self.x_axis == "ticks" else 'Steps')
-        ax.set_ylabel('Total GDP')
+        # Configure axes labels with larger font
+        ax.set_xlabel('Cumulative Ticks' if self.x_axis == "ticks" else 'Steps', fontsize=16)
+        ax.set_ylabel('Total GDP', fontsize=16)
 
         # Set axis limits based on x_axis type
         if self.x_axis == "ticks":
-            ax.set_xlim(2 * 10 ** 3, 10 ** 6)  # Adjust based on your tick ranges
-            ax.set_ylim(10 ** 0, 10 ** 5)
+            ax.set_xlim(2 * 10 ** 3, 10 ** 7)  # Adjust based on your tick ranges
+            ax.set_ylim(10 ** 1, 10 ** 5)
         else:
             ax.set_xlim(10 ** 0, 10 ** 3)
             ax.set_ylim(10 ** 1, 10 ** 5)
@@ -396,7 +482,6 @@ class MatplotlibRunVisualizer(BaseRunVisualizer):
                 i,
                 used_positions
             )
-
             # Collect and sort achievements
             achievement_data = []
             for ticks, achievements_list in achievements_by_x.items():
@@ -454,7 +539,8 @@ class MatplotlibRunVisualizer(BaseRunVisualizer):
                     print(f"Icon not found: {icon_path}")
 
         # Add legend
-        ax.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+        ax.legend(loc='lower right', fontsize=16)
+        # ax.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
 
         # Adjust layout and save
         plt.tight_layout()
@@ -534,171 +620,172 @@ class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
 
         return stats, achievements_by_x
 
-    def export_visualization(self, output_file: str, max_depth: int = 100):
-        """Export visualization with bootstrapped confidence intervals and achievement icons"""
-        self.process_icons()
-
-        plt.figure(figsize=(12, 8), dpi=100)
-        ax = plt.gca()
-
-        # Set up log scale axes
-        ax.set_xscale('log', base=10)
-        ax.set_yscale('log', base=10)
-
-        ax.set_xlabel('Cumulative Ticks' if self.x_axis == "ticks" else 'Steps')
-        ax.set_ylabel('Total GDP')
-
-        # Configure axis limits based on x_axis type
-        if self.x_axis == "ticks":
-            ax.set_xlim(2 * 10 ** 3, 10 ** 6)
-            ax.set_ylim(10 ** 0, 10 ** 5)
-        else:
-            ax.set_xlim(10 ** 0, 10 ** 3)
-            ax.set_ylim(10 ** 1, 10 ** 5)
-
-        ax.grid(True, which='both', linestyle='--', alpha=0.3)
-
-        # Sort versions by GDP
-        version_achievements = []
-        for version in self.version_data:
-            label = self.version_data[version]['label']
-            achievements = self.achievements[version]
-            color = self.colors[list(self.version_data.keys()).index(version) % len(self.colors)]
-            final_gdp = self._calculate_final_gdp(self.version_data[version]['nodes'][0])
-            version_achievements.append((version, label, achievements, color, final_gdp))
-
-        version_achievements.sort(key=lambda x: x[4], reverse=True)
-
-        used_positions = {}
-
-        # Plot data for each version
-        for i, (version, label, achievements, color, gdp) in enumerate(version_achievements):
-            stats, achievements_by_x = self.calculate_version_stats(version, max_depth)
-            if not stats:
-                continue
-
-            # Filter and sort x coordinates
-            valid_stats = {x: s for x, s in stats.items() if s['mean'] > 4}
-            x_coords = sorted(valid_stats.keys())
-
-            # Extract statistics
-            means = [valid_stats[x]['mean'] for x in x_coords]
-            ci_lower = [valid_stats[x]['ci_lower'] for x in x_coords]
-            ci_upper = [valid_stats[x]['ci_upper'] for x in x_coords]
-
-            # Plot main line
-            ax.plot(x_coords, means, color=color, label=f"{label}", linewidth=2)
-
-            # Plot confidence intervals
-            ax.fill_between(x_coords, ci_lower, ci_upper, color=color, alpha=0.2)
-
-            # Calculate achievement positions using parent class method
-            achievement_positions = self.organize_achievement_positions(
-                achievements_by_x,
-                stats,  # Now contains bootstrapped stats
-                ax,
-                i,
-                used_positions
-            )
-
-            # Collect and sort achievements
-            achievement_data = []
-            for x_coord, achievements_list in achievements_by_x.items():
-                if x_coord == 0 or stats[x_coord]['mean'] <= 4:
-                    continue
-
-                for achievement in achievements_list:
-                    achievement_key = (achievement.item_name, achievement.depth)
-                    if achievement_key in achievement_positions:
-                        x_pos, y_pos = achievement_positions[achievement_key]
-                        achievement_data.append({
-                            'achievement': achievement,
-                            'x_pos': x_pos,
-                            'y_pos': y_pos,
-                            'color': color
-                        })
-
-            achievement_data.sort(key=lambda x: x['y_pos'])
-
-            # Draw achievements using parent class methods
-            for data in achievement_data:
-                circle_img = self.create_circle_background(data['color'])
-                circle_box = OffsetImage(circle_img, zoom=0.3)
-                circle_box.image.axes = ax
-
-                ab_circle = AnnotationBbox(
-                    circle_box,
-                    (data['x_pos'], data['y_pos']),
-                    frameon=False,
-                    box_alignment=(0.5, 0.5),
-                    pad=0,
-                    xycoords='data'
-                )
-                ax.add_artist(ab_circle)
-
-                icon_path = f"icons/{data['achievement'].item_name}.png"
-                if os.path.exists(icon_path):
-                    try:
-                        icon = plt.imread(icon_path)
-                        icon_box = OffsetImage(icon, zoom=0.16)
-                        icon_box.image.axes = ax
-
-                        ab_icon = AnnotationBbox(
-                            icon_box,
-                            (data['x_pos'], data['y_pos']),
-                            frameon=False,
-                            box_alignment=(0.5, 0.5),
-                            pad=0,
-                            xycoords='data'
-                        )
-                        ax.add_artist(ab_icon)
-                    except Exception as e:
-                        print(f"Failed to add icon for {data['achievement'].item_name}: {e}")
-                else:
-                    print(f"Icon not found: {icon_path}")
-
-        # Add legend
-        ax.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
-
-        # Adjust layout and save
-        plt.tight_layout()
-        plt.savefig(output_file, bbox_inches='tight', dpi=300)
-        plt.close()
+    # def export_visualization(self, output_file: str, max_depth: int = 100):
+    #     """Export visualization with bootstrapped confidence intervals and achievement icons"""
+    #     self.process_icons()
+    #
+    #     plt.figure(figsize=(12, 8), dpi=100)
+    #     ax = plt.gca()
+    #
+    #     # Set up log scale axes
+    #     ax.set_xscale('log', base=10)
+    #     ax.set_yscale('log', base=10)
+    #
+    #     ax.set_xlabel('Cumulative Ticks' if self.x_axis == "ticks" else 'Steps')
+    #     ax.set_ylabel('Total GDP')
+    #
+    #     # Configure axis limits based on x_axis type
+    #     if self.x_axis == "ticks":
+    #         ax.set_xlim(2 * 10 ** 3, 10 ** 7)
+    #         ax.set_ylim(10 ** 2, 10 ** 5)
+    #     else:
+    #         ax.set_xlim(10 ** 0, 10 ** 3)
+    #         ax.set_ylim(10 ** 1, 10 ** 5)
+    #
+    #     ax.grid(True, which='both', linestyle='--', alpha=0.3)
+    #
+    #     # Sort versions by GDP
+    #     version_achievements = []
+    #     for version in self.version_data:
+    #         label = self.version_data[version]['label']
+    #         achievements = self.achievements[version]
+    #         color = self.colors[list(self.version_data.keys()).index(version) % len(self.colors)]
+    #         final_gdp = self._calculate_final_gdp(self.version_data[version]['nodes'][0])
+    #         version_achievements.append((version, label, achievements, color, final_gdp))
+    #
+    #     version_achievements.sort(key=lambda x: x[4], reverse=True)
+    #
+    #     used_positions = {}
+    #
+    #     # Plot data for each version
+    #     for i, (version, label, achievements, color, gdp) in enumerate(version_achievements):
+    #         stats, achievements_by_x = self.calculate_version_stats(version, max_depth)
+    #         if not stats:
+    #             continue
+    #
+    #         # Filter and sort x coordinates
+    #         valid_stats = {x: s for x, s in stats.items() if s['mean'] > 4}
+    #         x_coords = sorted(valid_stats.keys())
+    #
+    #         # Extract statistics
+    #         means = [valid_stats[x]['mean'] for x in x_coords]
+    #         ci_lower = [valid_stats[x]['ci_lower'] for x in x_coords]
+    #         ci_upper = [valid_stats[x]['ci_upper'] for x in x_coords]
+    #
+    #         # Plot main line
+    #         ax.plot(x_coords, means, color=color, label=f"{label}", linewidth=2)
+    #
+    #         # Plot confidence intervals
+    #         ax.fill_between(x_coords, ci_lower, ci_upper, color=color, alpha=0.2)
+    #
+    #         # Calculate achievement positions using parent class method
+    #         achievement_positions = self.organize_achievement_positions(
+    #             achievements_by_x,
+    #             stats,  # Now contains bootstrapped stats
+    #             ax,
+    #             i,
+    #             used_positions
+    #         )
+    #
+    #         # Collect and sort achievements
+    #         achievement_data = []
+    #         for x_coord, achievements_list in achievements_by_x.items():
+    #             if x_coord == 0 or stats[x_coord]['mean'] <= 4:
+    #                 continue
+    #
+    #             for achievement in achievements_list:
+    #                 achievement_key = (achievement.item_name, achievement.depth)
+    #                 if achievement_key in achievement_positions:
+    #                     x_pos, y_pos = achievement_positions[achievement_key]
+    #                     achievement_data.append({
+    #                         'achievement': achievement,
+    #                         'x_pos': x_pos,
+    #                         'y_pos': y_pos,
+    #                         'color': color
+    #                     })
+    #
+    #         achievement_data.sort(key=lambda x: x['y_pos'])
+    #
+    #         # Draw achievements using parent class methods
+    #         for data in achievement_data:
+    #             circle_img = self.create_circle_background(data['color'])
+    #             circle_box = OffsetImage(circle_img, zoom=0.3)
+    #             circle_box.image.axes = ax
+    #
+    #             ab_circle = AnnotationBbox(
+    #                 circle_box,
+    #                 (data['x_pos'], data['y_pos']),
+    #                 frameon=False,
+    #                 box_alignment=(0.5, 0.5),
+    #                 pad=0,
+    #                 xycoords='data'
+    #             )
+    #             ax.add_artist(ab_circle)
+    #
+    #             icon_path = f"icons/{data['achievement'].item_name}.png"
+    #             if os.path.exists(icon_path):
+    #                 try:
+    #                     icon = plt.imread(icon_path)
+    #                     icon_box = OffsetImage(icon, zoom=0.16)
+    #                     icon_box.image.axes = ax
+    #
+    #                     ab_icon = AnnotationBbox(
+    #                         icon_box,
+    #                         (data['x_pos'], data['y_pos']),
+    #                         frameon=False,
+    #                         box_alignment=(0.5, 0.5),
+    #                         pad=0,
+    #                         xycoords='data'
+    #                     )
+    #                     ax.add_artist(ab_icon)
+    #                 except Exception as e:
+    #                     print(f"Failed to add icon for {data['achievement'].item_name}: {e}")
+    #             else:
+    #                 print(f"Icon not found: {icon_path}")
+    #
+    #     # Add legend
+    #     ax.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+    #
+    #     # Adjust layout and save
+    #     plt.tight_layout()
+    #     plt.savefig(output_file, bbox_inches='tight', dpi=300)
+    #     plt.close()
 
 # Example usage:
 async def main():
-    type = "steps" # or 'steps'
-    db_client = DBClient(
-        max_conversation_length=40,
-        host=os.getenv("SKILLS_DB_HOST"),
-        port=os.getenv("SKILLS_DB_PORT"),
-        dbname=os.getenv("SKILLS_DB_NAME"),
-        user=os.getenv("SKILLS_DB_USER"),
-        password=os.getenv("SKILLS_DB_PASSWORD")
-    )
+    for type in ['ticks', 'steps']:
+        db_client = DBClient(
+            max_conversation_length=40,
+            host=os.getenv("SKILLS_DB_HOST"),
+            port=os.getenv("SKILLS_DB_PORT"),
+            dbname=os.getenv("SKILLS_DB_NAME"),
+            user=os.getenv("SKILLS_DB_USER"),
+            password=os.getenv("SKILLS_DB_PASSWORD")
+        )
 
-    icons_path = "/data/icons/early_icons"
+        icons_path = "/data/icons/early_icons"
 
-    # Create visualizer with specified x-axis type
-    visualizer = BootstrappedRunVisualizer(
-        db_client,
-        icons_path,
-        x_axis_type=type,
-        n_bootstrap=100
-    )
+        # Create visualizer with specified x-axis type
+        visualizer = BootstrappedRunVisualizer(
+            db_client,
+            icons_path,
+            x_axis_type=type,
+            n_bootstrap=100
+        )
 
-    labels = {
-        # 416: 'claude-new',
-        434: 'claude-2@4',
-        448: 'gpt-4o-mini@4',
-        450: 'gpt-4o@4',
-        436: 'claude-2@4-2'
-    }
+        labels = {
+            # 416: 'claude-new',
+            434: 'claude-2@4',
+            452: 'gpt-4o-mini@4',
+            #451: 'gpt-4o-mini@4-2',
+            453: 'gpt-4o@4',
+            436: 'claude-2@4-2'
+        }
 
-    versions = list(labels.keys())
-    visualizer.load_versions(versions, labels)
-    visualizer.process_achievements(max_depth=1024)
-    visualizer.export_visualization(f'mcts_progression_{type}.png', max_depth=1024)
+        versions = list(labels.keys())
+        visualizer.load_versions(versions, labels)
+        visualizer.process_achievements(max_depth=1024)
+        visualizer.export_visualization(f'mcts_progression_{type}.png', max_depth=1024)
 
 if __name__ == '__main__':
     asyncio.run(main())

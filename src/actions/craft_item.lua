@@ -93,7 +93,7 @@ global.actions.craft_item = function(player_index, entity, count)
             for ingredient_name, needed_amount in pairs(missing_ingredients) do
                 local crafted_amount, error_msg = attempt_craft(player, ingredient_name, needed_amount, attempted_recipes)
                 if crafted_amount == 0 then
-                    return 0, "couldn't craft a required sub-ingredient " .. ingredient_name .. " - " .. error_msg .. ". Missing amount " .. needed_amount .. ")"
+                    return 0, "couldn't craft a required sub-ingredient " .. ingredient_name .. " (missing amount " .. needed_amount .. ") - " .. error_msg
                 end
             end
         end

@@ -35,6 +35,38 @@ def test_harvest_resource(game):
         # Assert that the coal has been added to the inventory
         assert quantity <= final_coal - initial_coal
 
+create_stump = \
+"""
+game.surfaces[1].create_entity({
+    name = "dead-grey-trunk",
+    position = {x = 1, y = 0}
+})
+"""
+def test_harvest_stump(game):
+    instance = game.instance
+
+    instance.add_command(f"/c {create_stump}", raw=True)
+    instance.execute_transaction()
+    harvested = game.harvest_resource(Position(x=0, y=0), quantity=1)
+
+    assert harvested == 2
+
+create_rock = \
+"""
+game.surfaces[1].create_entity({
+    name = "rock-big",
+    position = {x = 1, y = 0}
+})
+"""
+def test_harvest_rock(game):
+    instance = game.instance
+
+    instance.add_command(f"/c {create_rock}", raw=True)
+    instance.execute_transaction()
+    harvested = game.harvest_resource(Position(x=0, y=0), quantity=1)
+
+    assert harvested == 20
+
 def test_harvest_trees(game):
     """
     Find the nearest tree resource patch and harvest 5 wood from it.

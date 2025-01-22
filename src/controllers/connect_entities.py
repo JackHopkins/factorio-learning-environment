@@ -5,7 +5,7 @@ import numpy
 import numpy as np
 
 from controllers.__action import Action
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Optional, Dict
 
 from controllers.get_entities import GetEntities
 from controllers.get_entity import GetEntity
@@ -34,6 +34,36 @@ class ConnectEntities(Action):
         self.get_entities = GetEntities(connection, game_state)
         self.get_entity = GetEntity(connection, game_state)
 
+    def _get_path(self,
+                  source_position,
+                  target_position,
+                  connection_prototype,
+                  number_of_connection_prototype,
+                  pathing_radius=1,
+                  dry_run=True,
+                  allow_paths_through_own_entities=False) -> Union[Dict, str]:
+        # We try and get larger paths first to avoid entities
+        for entity_size in [3, 2, 1, 0.5]:
+            # Attempt to avoid entities
+            path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y),
+                                            start=source_position,
+                                            allow_paths_through_own_entities=allow_paths_through_own_entities,
+                                            radius=pathing_radius,
+                                            entity_size=entity_size)
+            sleep(0.05)  # To ensure the pathing system actually computes a path
+            response, elapsed = self.execute(PLAYER,
+                                             source_position.x,
+                                             source_position.y,
+                                             target_position.x,
+                                             target_position.y,
+                                             path_handle,
+                                             connection_prototype,
+                                             dry_run,
+                                             number_of_connection_prototype)
+            if isinstance(response, dict):
+                return response
+
+        return response
 
     def _get_nearest_connection_point(self,
                                       fluid_handler_source: FluidHandler,
@@ -58,16 +88,6 @@ class ConnectEntities(Action):
             # Calculate directional components
             dir_x = np.sign(possible_offset_x - existing_offset_x)
             dir_y = np.sign(possible_offset_y - existing_offset_y)
-
-            # Check if points are facing each other
-            # if dir_x == 0 and dir_y == 0:  # They are on top of each other, so just return this point
-            #     return connection_point
-            # elif dir_x == 0 and possible_offset_y * dir_y < 0:  # They are vertically aligned and facing each other
-            #     continue
-            # elif dir_y == 0 and possible_offset_x * dir_x < 0:  # They are horizontally aligned and facing each other
-            #     continue
-            # elif possible_offset_x * dir_x < 0 and possible_offset_y * dir_y < 0:  # They are diagonally aligned and facing each other
-            #     continue
 
             # Calculate distance
             distance = abs(connection_point.x - existing_connection_position.x) + abs(
@@ -122,7 +142,7 @@ class ConnectEntities(Action):
     def __call__(self,
                  source: Union[Position, Entity, EntityGroup],
                  target: Union[Position, Entity, EntityGroup],
-                 connection_type: Prototype = Prototype.Pipe,
+                 connection_type: Prototype = None,
                  dry_run: bool = False
                  ) -> List[Union[Entity, EntityGroup]]:
         """
@@ -134,6 +154,15 @@ class ConnectEntities(Action):
         :example connect_entities(source=miner, target=stone_furnace, connection_type=Prototype.TransportBelt)
         :return: List of entities that were created
         """
+
+        if not connection_type:
+            if isinstance(source, Position) and isinstance(target, Position):
+                raise Exception("Please specify the type of connection you want to make (e.g Prototype.Pipe)")
+            if isinstance(source, FluidHandler) and isinstance(target, FluidHandler):
+                connection_type = Prototype.Pipe
+            else:
+                raise Exception("Please specify the type of connection you want to make (e.g Prototype.TransportBelt)")
+
         try:
             connection_prototype, metaclass = connection_type.value
             source_entity = None
@@ -147,7 +176,7 @@ class ConnectEntities(Action):
 
             if isinstance(source, BeltGroup):
                 source_entity = source
-                source_position = Position(x=source_entity.output_position.x, y=source_entity.output_position.y)
+                source_position = Position(x=source_entity.outputs[0].position.x, y=source_entity.outputs[0].position.y)
             elif isinstance(source, Entity) or isinstance(source, EntityGroup):
                 source_entity = source
                 source_position = Position(x=source_entity.position.x, y=source_entity.position.y)
@@ -229,15 +258,18 @@ class ConnectEntities(Action):
 
 
             if isinstance(target_entity, BeltGroup):
-                belts = target_entity.belts
-                belt_positions = [belt.position for belt in belts]
+                belt = target_entity
+                belt_input_positions = [belt.position for belt in belt.inputs]
                 # get the nearest belt to the source entity
-                min_belt_position = min(belt_positions, key=lambda x: source_position.distance(x))
-                if min_belt_position.distance(source_position) < 0.5:
-                    return [target]
+                min_belt_position = min(belt_input_positions, key=lambda x: source_position.distance(x))
+                #if min_belt_position.distance(source_position) < 0.5:
+                #    return [target]
                 # get the belt with the target_position
-                target_belt = [belt for belt in belts if belt.position == min_belt_position][0]
-                target_position = target_belt.input_position
+                #target_belt = [belt for belt in belts if belt.position == min_belt_position][0]
+                #target_position = target_belt.input_position
+
+                #target_position = target_entity.inputs[0]
+                target_position = min_belt_position
             elif isinstance(target, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
                 if isinstance(target_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
                     if isinstance(target_entity, Boiler):
@@ -301,57 +333,38 @@ class ConnectEntities(Action):
             source_position = Position(x=round(source_position.x*2)/2, y=round(source_position.y*2)/2)
             if connection_type == Prototype.Pipe or connection_type == Prototype.TransportBelt:
                 try:
-                    # Attempt to avoid entities
-                    path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y),
-                                                    start=source_position,
-                                                    allow_paths_through_own_entities=False,
-                                                    radius=pathing_radius)
-                    sleep(0.05) # To ensure the pathing system actually computes a path
-                    response, elapsed = self.execute(PLAYER,
-                                                     source_position.x,
-                                                     source_position.y,
-                                                     target_position.x,
-                                                     target_position.y,
-                                                     path_handle,
-                                                     connection_prototype,
-                                                     dry_run,
-                                                     number_of_connection_prototype)
-                    if not isinstance(response, dict) and response != "Passed":
+                    response = self._get_path(source_position,
+                                              target_position,
+                                              connection_prototype,
+                                              number_of_connection_prototype,
+                                              pathing_radius,
+                                              dry_run,
+                                              allow_paths_through_own_entities=False)
+                    if isinstance(response, str):
                         raise Exception(
-                            f"Error with connecting entities - Could not fully connect {connection_prototype} from {(source_position)} to {(target_position)}. {self.get_error_message(response.lstrip())}")
+                            f"Error with connecting entities - Could not connect {connection_prototype} from {(source_position)} to {(target_position)}. {self.get_error_message(response.lstrip())}")
 
                 except Exception as e:
-                    # But accept allowing paths through own entities if it fails
-                    path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y),
-                                                    start=source_position, allow_paths_through_own_entities=True,
-                                                    radius=pathing_radius)
-                    sleep(0.05)  # To ensure the pathing system actually computes a path
-                    response, elapsed = self.execute(PLAYER,
-                                                     source_position.x,
-                                                     source_position.y,
-                                                     target_position.x,
-                                                     target_position.y,
-                                                     path_handle,
-                                                     connection_prototype,
-                                                     dry_run,
-                                                     number_of_connection_prototype)
+                    # Accept allowing paths through own entities if it fails
+                    response = self._get_path(source_position,
+                                              target_position,
+                                              connection_prototype,
+                                              number_of_connection_prototype,
+                                              pathing_radius,
+                                              dry_run,
+                                              allow_paths_through_own_entities=True)
+                    pass
             else:
                 pathing_radius = 4 # Larger radius because we are using poles that don't need exact placement
-                path_handle = self.request_path(finish=target_position,
-                                                start=source_position,
-                                                allow_paths_through_own_entities=True,
-                                                radius=pathing_radius)
-                sleep(0.05)  # To ensure the pathing system actually computes a path
-                response, elapsed = self.execute(PLAYER,
-                                                 source_position.x,
-                                                 source_position.y,
-                                                 target_position.x,
-                                                 target_position.y,
-                                                 path_handle,
-                                                 connection_prototype,
-                                                 dry_run,
-                                                 number_of_connection_prototype)
-            if not isinstance(response, dict) and response != "Passed":
+                response = self._get_path(source_position,
+                                          target_position,
+                                          connection_prototype,
+                                          number_of_connection_prototype,
+                                          pathing_radius,
+                                          dry_run,
+                                          allow_paths_through_own_entities=True)
+
+            if isinstance(response, str):
                 raise Exception(f"Error with connecting entities - Could not connect {connection_prototype} from {(source_position)} to {(target_position)}. {self.get_error_message(response.lstrip())}")
 
             if dry_run:
@@ -389,6 +402,8 @@ class ConnectEntities(Action):
 
             deduplicated_path = _deduplicate_entities(path)
 
+
+
             entity_groups = []
             # If we are connecting to an existing belt group, we need to agglomerate them all together
             if connection_type == Prototype.TransportBelt:
@@ -404,24 +419,20 @@ class ConnectEntities(Action):
 
                 for entity_group in entity_groups:
                     entity_group.belts = _deduplicate_entities(entity_group.belts)
-            elif connection_type == Prototype.Pipe:
-                if isinstance(source_entity, PipeGroup):
-                    entity_groups = agglomerate_groupable_entities(source_entity.pipes + groupable_entities)
-                elif isinstance(target_entity, PipeGroup):
-                    entity_groups = agglomerate_groupable_entities(groupable_entities + target_entity.pipes)
-                else:
-                    entity_groups = agglomerate_groupable_entities(groupable_entities)
 
+                # If the source and target entities are both BeltGroups, we need to make sure that the final belt is rotated
+                # to face the first belt of the source entity group.
+                if isinstance(source_entity, BeltGroup) and isinstance(target_entity, BeltGroup):
+                    self.rotate_final_belt_when_connecting_groups(entity_groups[0], source_entity)
+
+                entity_groups = self.get_entities({Prototype.TransportBelt, Prototype.ExpressTransportBelt, Prototype.FastTransportBelt}, source_position)
+            elif connection_type == Prototype.Pipe:
+                entity_groups = self.get_entities({Prototype.Pipe}, source_position)
                 for entity_group in entity_groups:
                     entity_group.pipes = _deduplicate_entities(entity_group.pipes)
             elif connection_type in (Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole):
                 entity_groups = self.get_entities({Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole}, source_position)
 
-
-            # If the source and target entities are both BeltGroups, we need to make sure that the final belt is rotated
-            # to face the first belt of the source entity group.
-            if isinstance(source_entity, BeltGroup) and isinstance(target_entity, BeltGroup):
-                self.rotate_final_belt_when_connecting_groups(entity_groups[0], source_entity)
 
             # if we have more than one entity group - but one of them only has one entity (i.e it is dangling) we
             # should pick it up back into the inventory, as the connect entities routine should not have created it
@@ -446,14 +457,16 @@ class ConnectEntities(Action):
             return new_belt
         source_belt = new_belt.outputs[0]
         target_belt = target.inputs[0]
-        if source_belt.position.x < target_belt.position.x and not source_belt.direction.value == Direction.LEFT.value: # We only want to curve the belt, not invert it
+        source_belt_position = new_belt.outputs[0].position
+        target_belt_position = target.inputs[0].input_position
+        if source_belt_position.x > target_belt_position.x and not source_belt.direction.value == Direction.LEFT.value: # We only want to curve the belt, not invert it
             # It is necessary to use the direction enums from the game state
             source_belt = self.rotate_entity(source_belt, Direction.RIGHT)
-        elif source_belt.position.x > target_belt.position.x and not source_belt.direction.value == Direction.RIGHT.value:
+        elif source_belt_position.x < target_belt_position.x and not source_belt.direction.value == Direction.RIGHT.value:
             source_belt = self.rotate_entity(source_belt, Direction.LEFT)
-        elif source_belt.position.y < target_belt.position.y and not source_belt.direction.value == Direction.UP.value:
+        elif source_belt_position.y > target_belt_position.y and not source_belt.direction.value == Direction.UP.value:
             source_belt = self.rotate_entity(source_belt, Direction.DOWN)
-        elif source_belt.position.y > target_belt.position.y and not source_belt.direction.value == Direction.DOWN.value:
+        elif source_belt_position.y < target_belt_position.y and not source_belt.direction.value == Direction.DOWN.value:
             source_belt = self.rotate_entity(source_belt, Direction.UP)
 
         # Check to see if this is still a source / terminus

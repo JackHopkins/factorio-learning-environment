@@ -6,7 +6,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:
@@ -42,7 +42,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:
@@ -78,7 +78,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:
@@ -114,7 +114,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:
@@ -150,7 +150,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:
@@ -186,7 +186,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:
@@ -222,7 +222,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:
@@ -258,7 +258,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:
@@ -294,7 +294,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:
@@ -330,7 +330,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:
@@ -366,7 +366,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:
@@ -402,7 +402,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:
@@ -438,7 +438,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:
@@ -474,7 +474,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:
@@ -510,7 +510,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:
@@ -546,7 +546,7 @@ services:
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods
+      --mod-directory /opt/factorio/mods --map-gen-seed 42
     deploy:
       resources:
         limits:

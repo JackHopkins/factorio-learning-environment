@@ -38,7 +38,7 @@ class RecursiveFormatter(ConversationFormatter):
         self.cache_dir = cache_dir
         self.summary_instructions = summary_instructions
         self.truncate_entity_data = truncate_entity_data
-        self.entity_data_pattern = re.compile(r': \[((.|[\n])+)]",\)')
+        self.entity_data_pattern = re.compile(f"(?:,|:) \[((.|[\n])+)\]\)")#re.compile(r': \[((.|[\n])+)]",\)')
         self.summarize_history = summarize_history
 
         # Ensure cache directory exists.

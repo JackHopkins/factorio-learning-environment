@@ -58,6 +58,7 @@ def generate_compose_config(num_instances: int) -> Dict[str, Any]:
                 "--use-server-whitelist",
                 "--server-adminlist /opt/factorio/config/server-adminlist.json",
                 "--mod-directory /opt/factorio/mods",
+                "--map-gen-seed 42"
             ]),
             "deploy": {
                 "resources": {

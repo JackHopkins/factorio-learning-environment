@@ -425,7 +425,8 @@ class ParallelBeamSearch:
         try:
             if self.resume_version:
                 print(f"Resuming search from version {self.version} at depth {self.current_depth}")
-            await self._run_beam_iteration(n_iterations - self.current_depth if self.resume_version else n_iterations)
+
+            await self._run_beam_iteration(n_iterations)
         finally:
             self.cleanup()
     def cleanup(self):

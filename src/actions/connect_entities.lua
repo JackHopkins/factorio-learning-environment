@@ -245,7 +245,6 @@ end
 
 
 local function place_at_position(player, connection_type, current_position, dir, serialized_entities, dry_run, counter_state)
-    counter_state.place_counter = counter_state.place_counter + 1
     if dry_run then return end
 
     local is_electric_pole = wire_reach[connection_type] ~= nil
@@ -266,8 +265,9 @@ local function place_at_position(player, connection_type, current_position, dir,
     else
         local entities = game.surfaces[1].find_entities_filtered{
             position = current_position,
-            type = {"beam", "resource", "player"}, invert=true,
-            force = "player"
+            type = {"beam", "resource", "player"},
+            invert=true
+
         }
         for _, entity in pairs(entities) do
             if entity.name == connection_type then
@@ -278,17 +278,34 @@ local function place_at_position(player, connection_type, current_position, dir,
     end
 
     if existing_entity then
+        game.print("Existing entity "..existing_entity.name)
+        -- Get the existing network ID before any modifications
+        local existing_network_id = has_valid_fluidbox(existing_entity) and existing_entity.fluidbox[1].get_fluid_system_id()
+
+        -- Update direction if needed
         if existing_entity.direction ~= dir then
             existing_entity.direction = dir
-            for i, serialized in ipairs(serialized_entities) do
-                if serialized.position.x == current_position.x and serialized.position.y == current_position.y then
-                    serialized_entities[i] = global.utils.serialize_entity(existing_entity)
-                    return
+        end
+
+        -- For pipes, merge networks
+        if connection_type == 'pipe' then
+            for _, serialized in ipairs(serialized_entities) do
+                local entity = game.surfaces[1].find_entity(connection_type, serialized.position)
+                if entity and has_valid_fluidbox(entity) then
+                    existing_entity.connect_neighbour(entity)
                 end
             end
-            table.insert(serialized_entities, global.utils.serialize_entity(existing_entity))
         end
-        return
+
+        -- Update or add to serialized list
+        for i, serialized in ipairs(serialized_entities) do
+            if serialized.position.x == current_position.x and serialized.position.y == current_position.y then
+                serialized_entities[i] = global.utils.serialize_entity(existing_entity)
+                return existing_entity
+            end
+        end
+        table.insert(serialized_entities, global.utils.serialize_entity(existing_entity))
+        return existing_entity
     end
 
     -- Check inventory
@@ -324,23 +341,31 @@ local function place_at_position(player, connection_type, current_position, dir,
 
         if placed_entity then
             player.remove_item({name = connection_type, count = 1})
+            counter_state.place_counter = counter_state.place_counter + 1
             table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
             return placed_entity
         end
     else
         game.print("Avoiding entity at " .. placement_position.x.. ", " .. placement_position.y)
         global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
-        local placed_entity = player.surface.create_entity({
-            name = connection_type,
-            position = placement_position,
-            direction = dir,
-            force = player.force
-        })
 
-        if placed_entity then
-            player.remove_item({name = connection_type, count = 1})
-            table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
-            return placed_entity
+        local entities = player.surface.find_entities_filtered{position=placement_position, radius=0.5, type = {"beam", "resource", "player"}, invert=true}
+        local can_place = #entities == 0
+        if can_place then
+            local placed_entity = player.surface.create_entity({
+                name = connection_type,
+                position = placement_position,
+                direction = dir,
+                force = player.force
+            })
+
+            if placed_entity then
+                player.remove_item({name = connection_type, count = 1})
+                counter_state.place_counter = counter_state.place_counter + 1
+                table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
+                return placed_entity
+            end
+
         end
     end
 end

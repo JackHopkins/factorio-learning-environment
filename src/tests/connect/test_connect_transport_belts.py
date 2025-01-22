@@ -512,7 +512,7 @@ def test_connect_belts_with_end_rotation(game):
     main_connection2 = game.connect_entities(main_connection[0], chest_inserter.pickup_position, Prototype.TransportBelt)
 
     ticks_elapsed = game.instance.get_elapsed_ticks()
-    assert len(main_connection2[0].belts) == 24
+    assert len(main_connection2[0].belts) == 26
 
 def test_connect_belt_small(game):
     # Use available transport belts to route iron plates from furnaces to a central location:

@@ -1,4 +1,5 @@
 from collections import defaultdict
+from statistics import mean
 from typing import List
 
 from neptune.cli import status
@@ -47,7 +48,8 @@ def _construct_group(id: int,
         if not inventory:
             status = EntityStatus.EMPTY
 
-        return BeltGroup(belts=entities,
+        return BeltGroup(id=0,
+                         belts=entities,
                          inventory=inventory,
                          inputs=inputs,
                          outputs=outputs,
@@ -72,8 +74,10 @@ def _construct_group(id: int,
             status = EntityStatus.WORKING
         else:
             status = EntityStatus.NOT_PLUGGED_IN_ELECTRIC_NETWORK
+        mean_x = mean([pole.position.x for pole in entities])
+        mean_y = mean([pole.position.y for pole in entities])
 
-        return ElectricityGroup(id=entities[0].electric_network_id, poles=list(set(entities)), status=status)
+        return ElectricityGroup(id=entities[0].electric_network_id, poles=list(set(entities)), status=status, position=Position(x=mean_x, y=mean_y))
 
 
 

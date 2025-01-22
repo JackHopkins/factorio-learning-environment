@@ -47,7 +47,7 @@ class Message(BaseModel):
 class GenerationParameters(BaseModel):
     model: str
     n: int = 1
-    temperature: float = 1
+    temperature: float = 0.5
     max_tokens: int = 2048
     logit_bias: Optional[Dict[str, float]] = None
     stop_sequences: Optional[List] = None
@@ -68,7 +68,7 @@ class Conversation(BaseModel):
     def add_result(self, program: str, response: str, **kwargs):
         """Add program execution result to conversation"""
         self.messages.append(Message(role="assistant",content=program, metadata=kwargs))
-        self.messages.append(Message(role="user", content=f"Execution result: \n{response}", metadata=kwargs))
+        self.messages.append(Message(role="user", content=response, metadata=kwargs))
 
             # Updated state:
             # Inventory: {json.dumps(new_state.inventory.__dict__, indent=2)}

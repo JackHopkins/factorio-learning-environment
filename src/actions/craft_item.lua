@@ -42,7 +42,7 @@ global.actions.craft_item = function(player_index, entity, count)
         if not recipe.enabled then
             local required_tech = get_required_technology(recipe_name, player.force)
             local tech_message = required_tech and string.format(" (requires %s technology)", required_tech) or ""
-            return false, "recipe for " .. recipe_name .. " is not unlocked" .. tech_message
+            return false, "recipe for " .. recipe_name .. " is not unlocked yet" .. tech_message .. ". You need to research the technology first"
         end
         if recipe.category ~= "crafting" then
             return false, "Item " .. recipe_name .. " cannot be crafted. Recipe requires a crafting machine or smelting in a furnace"

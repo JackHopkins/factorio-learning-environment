@@ -426,6 +426,14 @@ class ConnectEntities(Action):
                     self.rotate_final_belt_when_connecting_groups(entity_groups[0], source_entity)
 
                 entity_groups = self.get_entities({Prototype.TransportBelt, Prototype.ExpressTransportBelt, Prototype.FastTransportBelt}, source_position)
+
+                # We only want whichever entity_group contains the source position
+                for entity_group in entity_groups:
+                    if source_position in [entity.position for entity in entity_group.belts]:
+                        entity_groups = [entity_group]
+                        break
+
+                pass
             elif connection_type == Prototype.Pipe:
                 entity_groups = self.get_entities({Prototype.Pipe}, source_position)
                 for entity_group in entity_groups:

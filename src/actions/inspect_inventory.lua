@@ -1,4 +1,4 @@
-global.actions.inspect_inventory = function(player_index, is_character_inventory, x, y)
+global.actions.inspect_inventory = function(player_index, is_character_inventory, x, y, entity)
     local position = {x=x, y=y}
     local player = game.get_player(player_index)
     local surface = player.surface
@@ -29,10 +29,11 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
        local closest_distance = math.huge
        local closest_entity = nil
 
-       local area = {{position.x - 0.5, position.y - 0.5}, {position.x + 0.5, position.y + 0.5}}
-       local buildings = surface.find_entities_filtered{area = area, force = "player"}
+       local area = {{position.x - 2, position.y - 2}, {position.x + 2, position.y + 2}}
+       local buildings = surface.find_entities_filtered({ area = area, force = "player", name = entity })
+       game.print("Found "..#buildings.. " "..entity)
        for _, building in ipairs(buildings) do
-           if building.rotatable and building.name ~= 'character' then
+           if building.name ~= 'character' then
                local distance = ((position.x - building.position.x) ^ 2 + (position.y - building.position.y) ^ 2) ^ 0.5
                if distance < closest_distance then
                    closest_distance = distance

@@ -230,8 +230,16 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     -- Check for player collision and move player if necessary
     local entity_prototype = game.entity_prototypes[entity]
     local entity_box = entity_prototype.collision_box
-    local entity_width = math.abs(entity_box.right_bottom.x - entity_box.left_top.x)
-    local entity_height = math.abs(entity_box.right_bottom.y - entity_box.left_top.y)
+    local entity_width = 1
+    local entity_height = 1
+    if orientation == defines.direction.north or orientation == defines.direction.south then
+        entity_width = math.abs(entity_box.right_bottom.x - entity_box.left_top.x)
+        entity_height = math.abs(entity_box.right_bottom.y - entity_box.left_top.y)
+    else
+        entity_height = math.abs(entity_box.right_bottom.x - entity_box.left_top.x)
+        entity_width = math.abs(entity_box.right_bottom.y - entity_box.left_top.y)
+    end
+
 
     local target_area = {
         {new_position.x - entity_width / 2, new_position.y - entity_height / 2},
@@ -258,6 +266,37 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
 
     -- First clean up any items-on-ground at the target position
     local area = {{new_position.x - entity_width / 2, new_position.y - entity_height / 2}, {new_position.x + entity_width / 2, new_position.y + entity_height / 2}}
+
+    -- Show bounding box
+    rendering.draw_rectangle({
+        color = {r = 0, g = 1, b = 0},
+        filled = false,
+        left_top = area[1],
+        right_bottom = area[2],
+        surface = player.surface,
+        players = {player},
+        time_to_live = 60000
+    })
+    rendering.draw_circle({
+        color = {r = 1, g = 0, b = 0},
+        radius = 0.2,
+        filled = true,
+        target = new_position,
+        surface = player.surface,
+        players = {player},
+        time_to_live = 60000
+    })
+    rendering.draw_circle({
+        color = {r = 0, g = 0, b = 1},
+        radius = 0.2,
+        filled = true,
+        target = ref_position,
+        surface = player.surface,
+        players = {player},
+        time_to_live = 60000
+    })
+
+
     local items = player.surface.find_entities_filtered{
         area = area,
         type = "item-on-ground"
@@ -286,6 +325,13 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             game.print(e.type)
             table.insert(blocker_names, e.name.."("..serpent.line(e.position)..")")
         end
+        game.print(serpent.line(blocker_names))
+
+        local tree = player.surface.find_entities_filtered{area = area, type = {"tree"}}
+        for _, e in ipairs(tree) do
+            game.print(e.type)
+            table.insert(blocker_names, e.name.."("..serpent.line(e.position)..")")
+        end
         local tiles = player.surface.find_tiles_filtered{area = area, name={"water", "deepwater", "water-green", "deepwater-green", "water-shallow", "water-mud"}}
         if #tiles > 0 then
             for _, e in ipairs(tiles) do
@@ -295,9 +341,10 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
                 end
             end
         end
+        game.print(serpent.line(blocker_names))
 
         error("\'Cannot place entity at the position " .. serpent.line(new_position) .. " with the current direction" ..
-              ". Attempting to place next to: "..ref_entity.name..". There might be a collision with existing entities or this area cannot be placed on (water). Nearby entities that might be blocking the placement - " .. serpent.line(entity_names)..
+              ". Attempting to place next to: "..ref_entity.name..". There might be a collision with existing entities or this area cannot be placed on (water). Nearby entities that might be blocking the placement - " .. serpent.line(blocker_names) ..
                 ". Consider increasing the spacing (".. gap.."), changing the direction or changing the reference position (" .. serpent.line(ref_position) .. ")\'")
 
     end

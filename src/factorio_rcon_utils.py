@@ -80,6 +80,7 @@ def _remove_numerical_keys(dictionary):
     if parts:
         pruned = parts
     return pruned
+
 def _lua2python(command, response, *parameters, trace=False, start=0):
     if trace:
         print(command, parameters, response)

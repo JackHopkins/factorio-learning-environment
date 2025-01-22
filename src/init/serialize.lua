@@ -357,9 +357,11 @@ end
 
 global.utils.serialize_fluidbox = function(fluidbox)
     local serialized = {
-        owner = fluidbox.owner and fluidbox.owner.name or nil,
         length = #fluidbox,
     }
+	if fluidbox.owner and fluidbox.owner.name then
+		serialized[fluidbox.owner] = fluidbox.owner.name
+	end
 
     -- Serialize each fluid box
     serialized.fluidboxes = {}
@@ -393,7 +395,10 @@ global.utils.serialize_fluidbox = function(fluidbox)
 
         -- Serialize connections
         for _, connection in pairs(connections) do
-            table.insert(serialized_box.connections, connection.owner and connection.owner.name or nil)
+			if connection.owner and connection.owner.name then
+				table.insert(serialized_box.connections, "\""..connection.owner.name .. "\"")
+
+			end
         end
 
         serialized.fluidboxes[i] = serialized_box
@@ -1227,7 +1232,7 @@ global.utils.serialize_entity = function(entity)
                 end
                 table.insert(serialized.warnings, "\"No fluid present in connections\"")
             end
-			serialized.fluidbox = global.utils.serialize_fluidbox(entity.fluidbox)
+			--serialized.fluidbox = global.utils.serialize_fluidbox(entity.fluidbox)
         end
     end
 

@@ -32,8 +32,7 @@ def game(instance):
 def test_connect_offshore_pump_to_boiler(game):
     #game.craft_item(Prototype.OffshorePump)
 
-    water_patch = game.get_resource_patch(Resource.Water, game.nearest(Resource.Water))
-    game.move_to(water_patch.bounding_box.left_top)
+    game.move_to(game.nearest(Resource.Water))
     offshore_pump = game.place_entity(Prototype.OffshorePump,
                                       position=game.nearest(Resource.Water))
     boiler = game.place_entity_next_to(Prototype.Boiler,
@@ -43,11 +42,10 @@ def test_connect_offshore_pump_to_boiler(game):
     water_pipes = game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
     assert len(water_pipes[0].pipes) == 5 + boiler.tile_dimensions.tile_width / 2 + offshore_pump.tile_dimensions.tile_width / 2 + 1
 
-    game.move_to(water_patch.bounding_box.right_bottom)
+    game.move_to(game.nearest(Resource.Water))
     offshore_pump = game.place_entity(Prototype.OffshorePump,
                                       position=game.nearest(Resource.Water),
-                                      direction=Direction.RIGHT,
-                                      exact=False)
+                                      direction=Direction.RIGHT)
     boiler = game.place_entity_next_to(Prototype.Boiler,
                                        reference_position=offshore_pump.position,
                                        direction=offshore_pump.direction,
@@ -309,3 +307,77 @@ def test_connect_pipes_by_positions(game):
     position_2 = Position(x=2, y=4)
     belts = game.connect_entities(position_1, position_2, Prototype.Pipe)
     print(game.get_entities())
+
+
+def test_intersecting_pipe_networks(game):
+    """Test connecting pipes that cross paths"""
+    # Create two intersecting pipe lines
+    start1 = Position(x=0, y=0)
+    end1 = Position(x=10, y=0)
+    start2 = Position(x=5, y=-5)
+    end2 = Position(x=5, y=5)
+
+    pipes1 = game.connect_entities(start1, end1, Prototype.Pipe)
+    pipes2 = game.connect_entities(start2, end2, Prototype.Pipe)
+
+    # Verify both networks exist independently
+    assert len(pipes1) == 1
+    assert len(pipes2) == 1
+    assert pipes1[0].id != pipes2[0].id
+
+
+def test_pipe_around_obstacle(game):
+    """Test pipe pathfinding around placed entities"""
+    # Place an obstacle
+    obstacle_pos = Position(x=5, y=0)
+    game.move_to(obstacle_pos)
+    game.place_entity(Prototype.Boiler, position=obstacle_pos)
+
+    start = Position(x=0, y=0)
+    end = Position(x=10, y=0)
+
+    # Connect pipes - should route around the boiler
+    pipes = game.connect_entities(start, end, Prototype.Pipe)
+    assert len(pipes) == 1
+    assert len(pipes[0].pipes) > 10  # Should be longer due to routing
+
+
+
+def test_pipe_network_branching(game):
+    """Test creating T-junctions and branched pipe networks"""
+    # Create main pipe line
+    start = Position(x=0, y=0)
+    end = Position(x=10, y=0)
+    main_line = game.connect_entities(start, end, Prototype.Pipe)
+
+    # Add branch from middle
+    branch_end = Position(x=5, y=5)
+    branch = game.connect_entities(Position(x=5, y=0), branch_end, Prototype.Pipe)
+
+    # Should merge into single network
+    assert len(branch) == 1
+    assert branch[0].id == main_line[0].id
+
+
+def test_max_pipe_distance(game):
+    """Test pipe connections at maximum allowed distances"""
+    water = game.get_resource_patch(Resource.Water, game.nearest(Resource.Water))
+    offshore_pump = game.place_entity(
+        Prototype.OffshorePump,
+        position=water.bounding_box.left_top,
+        direction=Direction.RIGHT
+    )
+
+    # Place boiler at max valid distance
+    max_distance = 17  # Factorio's max underground pipe distance
+    boiler_pos = Position(x=offshore_pump.position.x + max_distance, y=offshore_pump.position.y)
+    game.move_to(boiler_pos)
+    boiler = game.place_entity(Prototype.Boiler, position=boiler_pos)
+
+    # Should successfully connect
+    pipes = game.connect_entities(offshore_pump, boiler, Prototype.Pipe)
+    assert len(pipes) == 1
+
+    # Verify fluid flows through at max distance
+    game.insert_item(Prototype.Coal, boiler, 50)
+    assert game.get_entity(Prototype.Boiler, boiler.position).status != EntityStatus.NO_INPUT_FLUID

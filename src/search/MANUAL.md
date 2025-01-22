@@ -574,6 +574,119 @@ For larger operations, you can create systems with multiple drills sharing a com
    - Verify all connections
    - Check entity rotation
 
+### 9. Research and Technology
+
+Technology research is crucial for unlocking new capabilities. Research requires:
+1. A powered lab
+2. Required science packs
+3. Power infrastructure
+
+#### Basic Research Setup Pattern
+```python
+# 1. Set up power infrastructure first (see Power Systems section)
+# Assuming we have a working steam engine at Position(x=-10, y=0)
+steam_engine = get_entity(Prototype.SteamEngine, position=Position(x=-10, y=0))
+
+# 2. Place and power the lab
+# Lab needs significant space as it has large dimensions
+# Define building box with extra space for power connections
+building_box = BuildingBox(width=5, height=5)
+target_position = Position(x=steam_engine.position.x + 10, y=steam_engine.position.y)
+buildable_coordinates = nearest_buildable(Prototype.Lab, building_box, target_position)
+
+# Place lab
+lab_position = buildable_coordinates["left_top"]
+move_to(lab_position)
+lab = place_entity(Prototype.Lab, position=lab_position)
+print(f"Placed lab at {lab.position}")
+
+# Connect lab to power
+power_connection = connect_entities(steam_engine, lab, Prototype.SmallElectricPole)
+print(f"Connected lab to power: {power_connection}")
+
+# Wait for power connection
+sleep(10)
+# Update lab entity to get current state
+lab = get_entity(Prototype.Lab, position=lab.position)
+assert lab.energy > 0, "Lab is not receiving power"
+
+# 3. Insert required science packs
+lab = insert_item(Prototype.AutomationSciencePack, lab, quantity=10)
+print(f"Inserted 10 automation science packs into lab")
+
+# 4. Start research
+# First check what ingredients are needed
+ingredients = set_research(Technology.Automation)
+print(f"Research requires: {ingredients}")
+
+# 5. Monitor research progress
+initial_progress = get_research_progress(Technology.Automation)
+print(f"Initial research state: {initial_progress}")
+
+# Wait for research to progress
+sleep(30)
+
+# Check progress
+current_progress = get_research_progress(Technology.Automation)
+# Progress is measured by remaining ingredients needed
+assert current_progress[0].count < initial_progress[0].count, "Research is not progressing"
+print(f"Research is progressing! Started with {initial_progress[0].count} packs needed, now need {current_progress[0].count}")
+```
+
+#### Research Requirements
+
+1. **Power Requirements**
+- Labs must have constant power supply
+- Use power poles to connect to steam engines
+- Monitor lab.energy to verify power connection
+
+2. **Science Pack Management** 
+- Always check required ingredients with `set_research()`
+- Insert correct type and quantity of science packs
+- Monitor pack consumption with `get_research_progress()`
+
+3. **Research Monitoring**
+- Research progress is measured by remaining ingredients needed
+- Lower ingredient count indicates progress
+- Use `get_research_progress()` to track status
+
+#### Best Practices
+
+1. **Lab Placement**
+- Place labs with adequate spacing for power connections
+- Group multiple labs together for efficiency
+- Keep labs close to power infrastructure
+
+2. **Science Pack Supply**
+- Calculate total science packs needed before starting
+- Ensure continuous supply for longer research
+- Monitor pack consumption rate
+
+3. **Progress Verification**
+```python
+# Verify research is actually progressing
+initial_count = initial_progress[0].count
+current_count = get_research_progress(Technology.Automation)[0].count
+assert current_count < initial_count, "Research not progressing - check power and science packs"
+```
+
+#### Common Errors
+
+1. **Power Issues**
+```python
+# Always verify power connection
+lab = get_entity(Prototype.Lab, position=lab.position)
+if lab.energy <= 0:
+    print("Lab not receiving power - check connections")
+```
+
+2. **Missing Science Packs**
+```python
+# Check lab inventory before starting
+lab_inventory = inspect_inventory(lab)
+required_packs = lab_inventory.get(Prototype.AutomationSciencePack, 0)
+assert required_packs > 0, "No science packs in lab"
+```
 
 ## Common Antipatterns to Avoid
 

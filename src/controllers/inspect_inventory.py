@@ -3,6 +3,7 @@ from typing import Tuple
 from controllers.__action import Action
 from factorio_entities import Inventory, Entity, Position
 from factorio_instance import PLAYER
+from factorio_types import prototype_by_name
 
 
 class InspectInventory(Action):
@@ -29,7 +30,8 @@ class InspectInventory(Action):
                 raise ValueError(f"The first argument must be an Entity or Position object, you passed in a {type(entity)} object.")
         else:
             x, y = 0, 0
-        response, execution_time = self.execute(PLAYER, entity == None, x, y)
+
+        response, execution_time = self.execute(PLAYER, entity == None, x, y, entity.name if entity else "")
 
         if not isinstance(response, dict):
             if entity:

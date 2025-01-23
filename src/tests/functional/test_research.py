@@ -28,7 +28,7 @@ def game(instance):
     }
     instance = FactorioInstance(address='localhost',
                                          bounding_box=200,
-                                         tcp_port=27015,
+                                         tcp_port=27000,
                                          fast=True,
                                          all_technologies_researched=False,
                                          inventory=initial_inventory)

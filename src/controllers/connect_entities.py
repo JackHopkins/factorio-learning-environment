@@ -11,7 +11,7 @@ from controllers.get_entities import GetEntities
 from controllers.get_entity import GetEntity
 from controllers._get_path import GetPath
 from controllers.pickup_entity import PickupEntity
-from controllers.request_path import RequestPath
+from controllers._request_path import RequestPath
 from controllers.rotate_entity import RotateEntity
 from controllers.inspect_inventory import InspectInventory
 from factorio_entities import Entity, Boiler, FluidHandler, Position, Generator, Inserter, MiningDrill, TransportBelt, \
@@ -132,12 +132,12 @@ class ConnectEntities(Action):
                  ) -> List[Union[Entity, EntityGroup]]:
         """
         Connect two entities or positions.
-        :param source: First entity or position
-        :param target: Second entity or position
+        :param source: First Entity, Position or EntityGroup
+        :param target: Second Entity, Position or EntityGroup
         :param connection_type: a Pipe, TransportBelt or ElectricPole
         :example connect_entities(source=boiler, target=generator, connection_type=Prototype.Pipe)
-        :example connect_entities(source=miner, target=stone_furnace, connection_type=Prototype.TransportBelt)
-        :return: List of entities that were created
+        :example connect_entities(source=miner.drop_position, target=inserter.pickup_position, connection_type=Prototype.TransportBelt)
+        :return: List of entities or groups that were created
         """
 
         if not connection_type:

@@ -99,7 +99,7 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
     def setUp(self):
         self.instance = FactorioInstance(address='localhost',
                            bounding_box=200,
-                           tcp_port=27015,
+                           tcp_port=27000,
                            fast=True,
                            inventory={'boiler': 1})
 
@@ -109,7 +109,7 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
 
         self.instance = FactorioInstance(address='localhost',
                                          bounding_box=200,
-                                         tcp_port=27015,
+                                         tcp_port=27000,
                                          fast=True,
                                          inventory={})
 
@@ -122,7 +122,7 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
         vars = pickle.loads(bytes.fromhex(game_state_raw['namespace']) if 'namespace' in game_state_raw else bytes())
         self.instance = FactorioInstance(address='localhost',
                                          bounding_box=200,
-                                         tcp_port=27015,
+                                         tcp_port=27000,
                                          fast=True,
                                          inventory={})
         self.instance.reset(game_state)
@@ -138,7 +138,7 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
 
         self.instance = FactorioInstance(address='localhost',
                                          bounding_box=200,
-                                         tcp_port=27015,
+                                         tcp_port=27000,
                                          fast=True,
                                          inventory={})
 
@@ -154,7 +154,7 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
 
         self.instance = FactorioInstance(address='localhost',
                                          bounding_box=200,
-                                         tcp_port=27015,
+                                         tcp_port=27000,
                                          fast=True,
                                          inventory={})
         self.instance.reset()
@@ -173,7 +173,7 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
 
         self.instance = FactorioInstance(address='localhost',
                                          bounding_box=200,
-                                         tcp_port=27015,
+                                         tcp_port=27000,
                                          fast=True,
                                          inventory={})
         self.instance.reset()
@@ -192,7 +192,7 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
 
             self.instance = FactorioInstance(address='localhost',
                                              bounding_box=200,
-                                             tcp_port=27015,
+                                             tcp_port=27000,
                                              fast=True,
                                              inventory={})
             self.instance.reset()
@@ -206,7 +206,7 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
 
         self.instance = FactorioInstance(address='localhost',
                                          bounding_box=200,
-                                         tcp_port=27015,
+                                         tcp_port=27000,
                                          fast=True,
                                          all_technologies_researched=False,
                                          inventory={})

@@ -9,7 +9,7 @@ def game(instance):
     #game.initial_inventory = {'assembling-machine-1': 1}
     instance = FactorioInstance(address='localhost',
                                  bounding_box=200,
-                                 tcp_port=27015,
+                                 tcp_port=27000,
                                  all_technologies_researched=False,
                                  fast=True,
                                  inventory={})

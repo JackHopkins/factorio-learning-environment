@@ -25,7 +25,7 @@ class PlaceEntityNextTo(Action):
         :param direction: Direction to place entity from reference_position
         :param spacing: Space between entity and reference_position
         :example: place_entity_next_to(Prototype.WoodenChest, Position(x=0, y=0), direction=Direction.UP, spacing=1)
-        :return: Entity placed (with position of x=0, y=-1)
+        :return: Entity placed
         """
         try:
             name, metaclass = entity.value

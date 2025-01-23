@@ -10,7 +10,7 @@ from factorio_types import Prototype
 @pytest.fixture()
 def game():
     instance = FactorioInstance(address='localhost',
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 cache_scripts=False,
                                 fast=False,
                                 inventory={
@@ -34,7 +34,7 @@ def evaluate_jsonl_programs(jsonl_file):
                 programs.append(program)
         instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 #cache_scripts=False,
                                 inventory={})

@@ -2,7 +2,7 @@ from factorio_instance import FactorioInstance
 
 factorio = FactorioInstance(address='localhost',
                                     bounding_box=200,
-                                    tcp_port=27015,
+                                    tcp_port=27000,
                                     cache_scripts=False,
                                     fast=True,
                                     inventory={

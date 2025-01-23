@@ -14,7 +14,7 @@ def test_game_state():
 
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 # cache_scripts=False,
                                 inventory={})

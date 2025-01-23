@@ -15,11 +15,10 @@ class PickupEntity(Action):
                  entity: Union[Entity, Prototype, EntityGroup],
                  position: Optional[Position] = None) -> bool:
         """
-        The agent picks up an given entity prototype e at position (x, y) if it exists on the world.
+        Pick up an entity if it exists on the world at a given position.
         :param entity: Entity prototype to pickup, e.g Prototype.IronPlate
         :param position: Position to pickup entity
-        :example: pickup_entity(Prototype.IronPlate, stone_furnace.position)
-        :return:
+        :return: True if the entity was picked up successfully, False otherwise.
         """
         if not isinstance(entity, (Prototype, Entity, EntityGroup)):
             raise ValueError("The first argument must be an Entity or Prototype object")

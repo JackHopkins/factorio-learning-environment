@@ -229,14 +229,14 @@ def test_harvest_provides_score(game):
     stone_position = game.nearest(Resource.Stone)
     game.move_to(stone_position)
 
-    stats = game.production_stats()
+    stats = game._production_stats()
     reward, _ = game.score()
     # Mine 5 stone (enough for one furnace)
     stone_needed = 5
     stone_mined = game.harvest_resource(stone_position, stone_needed)
     print(f"Mined {stone_mined} stone")
 
-    nstats = game.production_stats()
+    nstats = game._production_stats()
     nreward, _ = game.score()
 
     assert nreward > reward

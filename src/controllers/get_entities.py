@@ -15,10 +15,10 @@ class GetEntities(Action):
     def __call__(self, entities: Union[Set[Prototype], Prototype] = set(), position: Position = None, radius: int = 1000) -> List[Entity]:
         """
         Get entities within a radius of a given position.
+        :param entities: Set of entity prototypes to filter by. If empty, all entities are returned.
         :param position: Position to search around. Can be a Position object or "player" for player's position.
         :param radius: Radius to search within.
-        :param entities: Set of entity prototypes to filter by. If empty, all entities are returned.
-        :return: List of Entity objects
+        :return: Found entities
         """
         try:
             if not isinstance(position, Position) and position is not None:

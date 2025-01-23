@@ -76,7 +76,7 @@ class SFTDatasetCreator:
         skills = self.read_input_file(input_file)
         instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 #cache_scripts=False,
                                 inventory={})
@@ -394,7 +394,7 @@ class SFTDatasetCreator:
         inventory = {}
         instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 #cache_scripts=False,
                                 inventory=inventory)
@@ -458,7 +458,7 @@ class SFTDatasetCreator:
         inventory = {}
         instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 #cache_scripts=False,
                                 inventory=inventory)
@@ -519,7 +519,7 @@ class SFTDatasetCreator:
     def add_system_prompt(self, file):
         instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 #cache_scripts=False,
                                 inventory={})

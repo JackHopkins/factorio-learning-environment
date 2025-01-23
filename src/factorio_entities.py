@@ -234,7 +234,9 @@ class InspectionResults(BaseModel):
 class BoundingBox(BaseModel):
     left_top: Position
     right_bottom: Position
-    center: Position
+    left_bottom: Position
+    right_top: Position
+    #center: Position
 
 class BuildingBox(BaseModel):
     height: int

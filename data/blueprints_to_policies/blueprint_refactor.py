@@ -267,12 +267,12 @@ end
             # Get servers from ECS cluster
             ips = get_public_ips(self.config.cluster_name)
             self.logger.info(f"Found {len(ips)} servers in ECS cluster {self.config.cluster_name}")
-            return [ServerConfig(ip, 27015) for ip in ips]
+            return [ServerConfig(ip, 27000) for ip in ips]
         else:
             # Use local development setup
             self.logger.info("No cluster name provided - using local server")
             self.config.num_workers = 1
-            return [ServerConfig('localhost', 27015 + i) for i in range(self.config.num_workers)]
+            return [ServerConfig('localhost', 27000 + i) for i in range(self.config.num_workers)]
 
     def _worker_heartbeat(self, worker_id: int):
         """Update worker heartbeat and log status."""

@@ -74,7 +74,7 @@ class TailRecursiveSkillGenerator:
         self.api_schema = self._get_base_api_schema_prompt()
         self.controller_names = load_controller_names(f'{os.path.dirname(os.path.realpath(__file__))}/../controllers')
         self.llm_factory = LLMFactory(model)
-        self.factorio_instance = FactorioInstance(address='localhost', bounding_box=200, tcp_port=27015, fast=True)
+        self.factorio_instance = FactorioInstance(address='localhost', bounding_box=200, tcp_port=27000, fast=True)
         self.factorio_instance.speed(10)
         self.implementation_stack = []  # Stack to track recursive implementations
 
@@ -405,7 +405,7 @@ Here are some examples of similar snippets for reference:
         self.factorio_instance = FactorioInstance(
             address='localhost',
             bounding_box=200,
-            tcp_port=27015,
+            tcp_port=27000,
             fast=True,
             inventory=objective.starting_inventory
         )

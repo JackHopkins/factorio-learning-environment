@@ -64,7 +64,7 @@ craft_item(Prototype.IronGearWheel)
 print(f"Crafted iron gear wheels")
 ```
 
-### 2. Inventory Requirements
+### 3. Inventory Requirements
 Before placing any entity, ensure it exists in the inventory. Many beginners miss this crucial step:
 ```python
 # Wrong:
@@ -73,7 +73,7 @@ drill = place_entity(Prototype.BurnerMiningDrill, position=position)  # Will fai
 # Correct:
 inventory = inspect_inventory()
 burner_drills_in_inventry = inventory[Prototype.BurnerMiningDrill]
-assert burner_drills_in_inventry > 0, "No drills in inventory 
+assert burner_drills_in_inventry > 0, "No drills in inventory"
 # move to the position to place the entity
 move_to(position)
 drill = place_entity(Prototype.BurnerMiningDrill, position=position)
@@ -91,11 +91,11 @@ iron_plates = player_inv[Prototype.IronPlate]
 move_to(pos)
 furnace = place_entity(Prototype.StoneFurnace, position=pos)
 print(f"Placed furnace at {furnace.position}")
-furnace_inv = inspect_inventory(furnace)
+furnace_inv = inspect_inventory(furnace) # Check the furnace inventory
 coal_in_furnace = furnace_inv[Prototype.Coal]
 ```
 
-### 2. Resource Location & Movement
+### 4. Resource Location & Movement
 Before any entity placement or interaction, you must first move to the target location:
 ```python
 # Always locate resources first
@@ -104,9 +104,9 @@ print(f"Found iron at {resource_position}")
 move_to(resource_position)  # Must move before placing/interacting
 ```
 
-### 3. Entity Placement Prerequisites
+### 5. Entity Placement Prerequisites
 
-#### Basic Entity Placement
+#### Basic Entity Placement and Removal
 Entities must be placed in a valid location after moving there:
 Include logs for what the entity is placed for
 ```python
@@ -115,6 +115,8 @@ move_to(target_position)
 entity = place_entity(Prototype.Entity, position=target_position)
 print(f"Placed entity at {entity.position} to do X")
 ```
+
+Entities can be picked up from the map into your inventory using the `pickup_entity` method.
 
 #### Using place_entity_next_to
 The `place_entity_next_to` method is crucial for building organized factory layouts. It handles:
@@ -142,9 +144,6 @@ connected_entity = place_entity_next_to(
 print(f"Placed inserter at {connected_entity.position} next to ref_entity at position {ref_entity.position} to input X into the ref_entity")
 ```
 
-#### Using pickup_entity
-The `pickup_entity` method useful if you need to move existing entities off the map and into your inventory.
-
 #### Common Patterns and Use Cases
 
 1. **Resource factory**
@@ -160,7 +159,7 @@ The `pickup_entity` method useful if you need to move existing entities off the 
 Example: Iron ore mine
 ```python
 # log your general idea what you will do next
-print(f"I will create a iron ore mine with burner minng drill into a collection chest")
+print(f"I will create a iron ore mine with burner mining drill into a collection chest")
 # move to the position to place the entity
 move_to(iron_ore_position)
 # define the BuildingBox for the drills.
@@ -187,8 +186,8 @@ collection_chest = get_entity(Prototype.WoodenChest, position = collection_chest
 # get the inventory
 chest_inventory = inspect_inventory(collection_chest)
 # get the iron ore in inventory
-iron_ore_in_chest = chest_inventory[Resource.IronOre]
-# check for iron onre
+iron_ore_in_chest = chest_inventory[Prototype.IronOre]
+# check for iron ore
 assert iron_ore_in_chest > 0, "No iron ore in chest"
 ```
 
@@ -198,7 +197,9 @@ Power typically involves:
 -> Water Source + OffshorePump
 -> Boiler (burning coal)
 -> SteamEngine
-NB: Use atleast spacing of 4 to ensure there is enough room for pipes
+NB: Use at least spacing of 3 to ensure there is enough room for pipes
+NB: Fluid handling objects have a `fluid_systems` attribute that specifies the fluid network they are attached to.
+
 IMPORTANT: We also need to be very careful and check where we can place boiler and steam engine as they cannot be on water
 ```python
 # log your general idea what you will do next
@@ -210,44 +211,35 @@ offshore_pump = place_entity(Prototype.OffshorePump, position=water_position)
 print(f"Placed offshore pump to get water at {offshore_pump.position}")
 # Then place the boiler close to the offshore pump
 # IMPORTANT: We need to be careful as there is water nearby which is unplaceable,
-# We do not know where the water is so we will use can_place_entity for safety
-# We will also need to be atleast 4 tiles away as the entities are large and otherwise won't have room for connections
-# construct 4 potential positions for the boiler, each 4 tiles away from offshore pump
-potential_positions = [Position(x = offshore_pump.position.x+4, y = offshore_pump.position.y),
-                        Position(x = offshore_pump.position.x-4, y = offshore_pump.position.y),
-                        Position(x = offshore_pump.position.x, y = offshore_pump.position.y+4),
-                        Position(x = offshore_pump.position.x, y = offshore_pump.position.y-4)]
-boiler_placed = False # variable to check if boiler was placed
-for boiler_position in potential_positions:
-    if can_place_entity(Prototype.Boiler, position=boiler_position):
-        # place the boiler
-        boiler = place_entity(Prototype.Boiler, 
-            position=boiler_position)
-            # update the variable
-            boiler_placed = True
-            print(f"Placed boiler to generate steam at {boiler.position}. This will be connected to the offshore pump at {offshore_pump.position}")
-            break
-assert boiler_placed, f"Could not find a safe tile to place boiler close to offshore pump at {offshore_pump.position} 4 spaces away. Consider enlargening the grid"
+# We do not know where the water is so we will use nearest_buildable for safety and place the entity at the center of the boundingbox
+# We will also need to be atleast 3 tiles away from the offshore-pump as the entities are large and otherwise won't have room for connections. Therefore the nearest_buildable buildingbox will have width and length of 7 so the center is 3 tiles away from all borders
+bbox = BuildingBox(height = 7, width = 7)
+coords = nearest_buildable(Prototype.Boiler,bbox,offshore_pump.position)
+# get the top left coordinate
+top_left_coord = coords["left_top"]
+# get the centre coordinate by adding 3 to x and y coordinates (we add 3 to y as the y coordinates are inverted in Factorio)
+center = Position(top_left_coord.x +3, top_left_coord.y +3)
+# place the boiler at the centre coordinate
+boiler = place_entity(Prototype.Boiler, position = center)
+print(f"Placed boiler to generate steam at {boiler.position}. This will be connected to the offshore pump at {offshore_pump.position}")
 # add coal to boiler to start the power generation
 boiler = insert_item(Prototype.Coal, boiler, 10)
-# Finally we need to place the steam engine close to the boiler
-# IMPORTANT: We again need to be safe and use can_place_entity with a tile size of 4
 
-potential_positions = [Position(x = boiler.position.x+4, y = boiler.position.y),
-                        Position(x = boiler.position.x-4, y = boiler.position.y),
-                        Position(x = boiler.position.x, y = boiler.position.y+4),
-                        Position(x = boiler.position.x, y = boiler.position.y-4)]
-steam_engine_placed = False # variable to check if boiler was placed
-for steam_engine_position in potential_positions:
-    if can_place_entity(Prototype.SteamEngine, position=steam_engine_position):
-        # place the steam engine
-        steam_engine = place_entity(Prototype.SteamEngine, 
-            position=steam_engine_position)
-            # update the variable
-            steam_engine_placed = True
-            print(f"Placed steam_engine to generate electricity at {steam_engine.position}. This will be connected to the boiler at {boiler.position} to generate electricity")
-            break
-assert steam_engine_placed, f"Could not find a safe tile to place steam_engine 4 spaces away from boiler at position {boiler.position}. Consider enlargening the grid"
+
+# Finally we need to place the steam engine close to the boiler
+# IMPORTANT: We again need to create a buildingbox with a height and length of 7 to be safe
+bbox = BuildingBox(height = 7, width = 7)
+coords = nearest_buildable(Prototype.SteamEngine,bbox,boiler.position)
+# get the top left coordinate
+top_left_coord = coords["left_top"]
+# get the centre coordinate by adding 3 to x and y coordinates (we add 3 to y as the y coordinates are inverted in Factorio)
+center = Position(top_left_coord.x + 3, top_left_coord.y + 3)
+# move to the centre coordinate
+move_to(center)
+# place the steam engine on the centre coordinate
+steam_engine = place_entity(Prototype.SteamEngine, position = center)
+
+print(f"Placed steam_engine to generate electricity at {steam_engine.position}. This will be connected to the boiler at {boiler.position} to generate electricity")
 
 # Connect entities in order
 water_pipes = connect_entities(offshore_pump, boiler, Prototype.Pipe)
@@ -314,6 +306,8 @@ The Position class provides helpful methods for working with coordinates:
 ```python
 # Position arithmetic
 new_pos = pos1 + Position(x=2, y=0)  # Move right 2 units
+
+new_pos = new_pos.right(2) # Move right 2 units
 ```
 
 ### 4. Multiple section Construction
@@ -382,6 +376,7 @@ Power systems follow a specific order:
 2. Get the power target
 3. Connect the target with electric poles using the `connect_entities` function with an appropriate electric pole prototype
 NB: Always use connect_entities when connecting power source to target
+NB: The `electrical_id` of the entity is used to identify the power network it is connected to.
 
 EXAMPLE
 ```python
@@ -405,7 +400,7 @@ assembling_machine = get_entity(Prototype.AssemblingMachine1, position = assembl
 assert assembling_machine.energy > 0, f"assembling machine is not getting power"
 ```
 
-### 6. Belt Systems
+### 7. Belt Systems
 When creating belt systems:
 1. Establish source
 2. Place destination
@@ -473,7 +468,7 @@ belt = connect_entities(source_inserter.drop_position, destination_inserter.pick
     Prototype.TransportBelt)
 print(f"connected chest inserter at {source_inserter.position} to the destination_inserter at {destination_inserter.position} with {belt}. This will move items from chest at {soruce.position} to the furnace at {destination_furnace.position}")
 ```
-### 7. Many-to-One Connections
+### 8. Many-to-One Connections
 When you need to connect multiple sources to a single target with transport belts
 1. Establish sources and target
 2. Create the main connection by connecting one source to the target with transport belts
@@ -498,14 +493,14 @@ main_connection = connect_entities(source_inserter_1.drop_position,
                                     Prototype.TransportBelt)
 # Print out the whole connection for logs
 # as main_connection is a list of beltgroups, we print out the whole list
-print(f"Created the main connection between inserter at {source_inserter_1.position} to inserter at {target_inserterposition}: {main_connection}")
+print(f"Created the main connection between inserter at {source_inserter_1.position} to inserter at {target_inserter.position}: {main_connection}")
 
 # Connect source_inserter_2 and source_inserter_3 to the main connection
 secondary_sources = [source_inserter_2, source_inserter_3]
 for source in secondary_sources:
     # connect the source to main connection
     # Use the first beltgroup from the main connection to connect to
-    # Also override the main_connection to get the newest beltgroups
+    # Also override the main_connection to get the newest belt groups
     main_connection = connect_entities(source.drop_position, 
                                     main_connection[0],
                                     Prototype.TransportBelt)
@@ -536,7 +531,7 @@ main_power_connection = connect_entities(drill_2,
 ```
 
 
-### 8. Using assembling machines
+### 9. Using assembling machines
 To create automatic item crafting mines (copper cable, electronic circuits etc), you need to use a assembling machine that automatically crafts the entities.
 To use assembling machines for automatic crafting mines, you need to power them and set their recipe
 The recipe will be set to the entity the machine needs to craft
@@ -655,7 +650,7 @@ if can_place_entity(Prototype.StoneFurnace, position=position):
     furnace = place_entity(Prototype.StoneFurnace, position=position)
 ```
 
-### 9. Research and Technology
+### 10. Research and Technology
 
 Technology research is crucial for unlocking new capabilities. Research requires:
 1. A powered lab
@@ -813,7 +808,7 @@ belts = connect_entities(
     inserter.pickup_position,
     Prototype.TransportBelt
 )
-print(f"Conncted BurnerMiningDrill at {drill.position} to inserter at {coal_input_inserter.position} with {belts}")
+print(f"Connected BurnerMiningDrill at {drill.position} to inserter at {coal_input_inserter.position} with {belts}")
 
 # 5. Bootstrap system with initial fuel
 # we also update the drill variable by returning it from the function
@@ -1061,10 +1056,9 @@ drill = place_entity(Prototype.BurnerMiningDrill, position=position)
 
 # Correct:
 drill = place_entity(Prototype.BurnerMiningDrill, position=position)
-
+drill = insert_item(Prototype.Coal, drill, quantity=20)
 # we also update the drill variable by returning it from the function
 # This ensures it doesnt get stale and the inventory updates are represented in the variable
-drill = insert_item(Prototype.Coal, drill, quantity=20)
 ```
 
 ## Best Practices
@@ -1073,7 +1067,7 @@ drill = insert_item(Prototype.Coal, drill, quantity=20)
 - Always use `nearest()` to find resources
 - Cache resource patch information when multiple entities will use it
 ```python
-copper_ore = get_resource_patch(Resource.CopperOre, nearest(Resource.Coal))
+copper_ore = get_resource_patch(Resource.CopperOre, nearest(Resource.CopperOre))
 ```
 
 2. **Entity Positioning and Crafting**
@@ -1082,7 +1076,6 @@ copper_ore = get_resource_patch(Resource.CopperOre, nearest(Resource.Coal))
 - Check recipe requirements recursively for complex entities
 - Always print the recipes to know what are the dependencies
 - Maintain consistent spacing patterns for similar entity types
-
 
 3. **Resource Management**
 - Pre-calculate resource requirements
@@ -1096,7 +1089,7 @@ copper_ore = get_resource_patch(Resource.CopperOre, nearest(Resource.Coal))
 
 5. **Logging**
 - Always log what you have done in detail
-- Include the entities you have created with their positions and what theis their purpose
+- Include the entities you have created with their positions and what is their purpose
 - When entities are part of automatic structures, include what resource or ingredient that automatic structure creates 
 - When connecting structures with automatic belts, include the reason for connection and what you are connecting
 - IMPORTANT: Include the intention if entities in your print statements. This will be used later to generate a summary so for the summary to be accurate you need to say what the entities are for

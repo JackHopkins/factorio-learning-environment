@@ -29,12 +29,11 @@ class PlaceObject(Action):
                  #relative=False
                  ) -> Entity:
         """
-        Places an entity e at local position (x, y) if the agent has enough resources.
-        :param entity: Entity to place from inventory
-        :param direction: Cardinal direction to place entity
+        Places an entity e at local position (x, y) if you have it in inventory.
+        :param entity: Entity to place
+        :param direction: Cardinal direction to place
         :param position: Position to place entity
         :param exact: If True, place entity at exact position, else place entity at nearest possible position
-        :example stone_furnace = place_entity(Prototype.StoneFurnace, Direction.UP, Position(x=0, y=0))
         :return: Entity object
         """
 

@@ -6,7 +6,7 @@ from skills.composition.factorio_graph_generator import FactorioGraphGenerator
 from skills.composition.factorio_implementation_dao import FactorioImplementationDAO
 
 generator = FactorioGraphGenerator()
-factorio_instance = FactorioInstance(address='localhost', bounding_box=200, tcp_port=27015, fast=True)
+factorio_instance = FactorioInstance(address='localhost', bounding_box=200, tcp_port=27000, fast=True)
 factorio_instance.speed(10)
 
 # Load and process objective

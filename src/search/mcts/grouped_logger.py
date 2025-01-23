@@ -45,7 +45,7 @@ class InstanceMetrics:
 class GroupedFactorioLogger:
     """Logger that displays instances grouped by their MCTS parallel groups"""
 
-    def __init__(self, n_groups: int, instances_per_group: int, base_port = 27015, resume_version=0):
+    def __init__(self, n_groups: int, instances_per_group: int, base_port = 27000, resume_version=0):
         self.console = Console()
         self.layout = Layout()
         self.groups: Dict[int, InstanceGroupMetrics] = {}

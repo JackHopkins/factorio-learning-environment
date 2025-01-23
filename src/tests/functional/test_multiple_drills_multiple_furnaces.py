@@ -139,7 +139,7 @@ def test_multi_drill_multi_furnace(game):
     entities = game.get_entities()
     game.sleep(30)
 
-    production_stats = game.production_stats()
+    production_stats = game._production_stats()
     assert production_stats['output']['copper-plate'] > 10
 
 

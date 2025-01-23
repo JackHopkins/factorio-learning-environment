@@ -73,7 +73,7 @@ class FactorioInstance:
                  vocabulary: Vocabulary = Vocabulary(),
                  bounding_box=20,
                  fast=False,
-                 tcp_port=27015,
+                 tcp_port=27000,
                  inventory={},
                  cache_scripts=True,
                  all_technologies_researched=True,
@@ -213,11 +213,11 @@ class FactorioInstance:
         """
         execution_path = os.path.dirname(os.path.realpath(__file__))
         folder_path = f'{execution_path}/controllers'
-        schema = load_schema(folder_path, with_docstring=False)
+        schema = load_schema(folder_path, with_docstring=True).replace("temp_module.", "")
         type_definitions = load_definitions(f'{execution_path}/factorio_types.py')
         # Filter `import` statements and `from` statements
         type_definitions = "\n".join(list(
-            filter(lambda x: not x.startswith("import") and not x.startswith("from"), type_definitions.split("\n"))))
+            filter(lambda x: not x.startswith("import") and not x.startswith("from") and not x.lstrip().startswith('#'), type_definitions.split("\n"))))
         type_definitions = type_definitions.replace("\n\n\n", "\n").replace("\n\n", "\n").strip()
         # get everything from and including class Prototype(enum.Enum):
         type_definitions = type_definitions[type_definitions.index("class Prototype(enum.Enum"):]

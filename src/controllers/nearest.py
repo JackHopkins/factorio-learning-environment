@@ -17,11 +17,9 @@ class Nearest(Action):
                  #**kwargs
                  ) -> Position:
         """
-        Find the nearest typed entity or resource to the player.
+        Find the nearest entity or resource to your position.
         :param type: Entity or resource type to find
         :return: Position of nearest entity or resource
-        :example nearest(Prototype.TransportBelt)
-        :example nearest(Resource.Coal)
         """
         try:
             if not isinstance(type, tuple) and isinstance(type.value, tuple):

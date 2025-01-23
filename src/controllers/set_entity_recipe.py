@@ -11,13 +11,11 @@ class SetEntityRecipe(Action):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
-    def __call__(self, entity: Entity, prototype: Prototype,
-                # **kwargs
-                 ) -> Entity:
+    def __call__(self, entity: Entity, prototype: Prototype) -> Entity:
         """
         Sets the recipe of an given entity.
         :param entity: Entity to set recipe
-        :param recipe: Recipe to set
+        :param prototype: The prototype to set as recipe
         :return: Entity that had its recipe set
         """
 

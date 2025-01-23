@@ -53,7 +53,7 @@ def test_script_caching():
         start_time = time.time()
         instance = FactorioInstance(address='localhost',
                                     bounding_box=200,
-                                    tcp_port=27015,
+                                    tcp_port=27000,
                                     inventory=INVENTORY, cache_scripts=True)
         end_time = time.time() - start_time
         cached_times.append(end_time)
@@ -66,7 +66,7 @@ def test_script_caching():
         start_time = time.time()
         instance = FactorioInstance(address='localhost',
                                     bounding_box=200,
-                                    tcp_port=27015,
+                                    tcp_port=27000,
                                     inventory=INVENTORY, cache_scripts=False)
         end_time = time.time() - start_time
         uncached_times.append(end_time)

@@ -66,11 +66,11 @@ def connect_to_server(ip_address):
     time.sleep(3)  # Wait for the game to close
 
 
-def is_initialised(ip_address):
+def is_initialised(ip_address, port):
     try:
         instance = FactorioInstance(address=ip_address,
                                     bounding_box=200,
-                                    tcp_port=27015,
+                                    tcp_port=port,
                                     cache_scripts=True,
                                     fast=True)
         return True
@@ -79,7 +79,7 @@ def is_initialised(ip_address):
         return False
 
 
-def get_uninitialised_ips(ip_addresses: List[str], max_workers: int = 8) -> List[str]:
+def get_uninitialised_ips(ip_addresses: List[str], tcp_ports: List[str], max_workers: int = 8) -> List[str]:
     """
     Check multiple IP addresses in parallel using ThreadPoolExecutor.
 
@@ -98,8 +98,8 @@ def get_uninitialised_ips(ip_addresses: List[str], max_workers: int = 8) -> List
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Create a dictionary to map futures to their IP addresses
-        future_to_ip = {executor.submit(is_initialised, ip): ip
-                        for ip in ip_addresses}
+        future_to_ip = {executor.submit(is_initialised, ip, port): ip
+                        for ip, port in zip(ip_addresses, tcp_ports)}
 
         # Process completed futures as they finish
         for i, future in enumerate(as_completed(future_to_ip), 1):

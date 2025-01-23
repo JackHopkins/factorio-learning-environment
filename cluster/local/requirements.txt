@@ -1,0 +1,7 @@
+# opencv-python-headless>=4.8.0
+opencv-python
+numpy>=1.24.0
+pyautogui>=0.9.54
+pillow>=10.0.0
+psutil>=5.9.0
+python-dotenv>=1.0.0

@@ -14,15 +14,8 @@ class GetResearchProgress(Action):
     def __call__(self, technology: Optional[Technology] = None) -> List[Ingredient]:
         """
         Get the progress of research for a specific technology or the current research.
-
-        Args:
-            technology: Optional technology to check. If None, checks current research.
-
-        Returns:
-            [Ingredient]: Remaining ingredients required
-
-        Raises:
-            Exception: If technology doesn't exist or isn't being researched
+        :param technology: Optional technology to check. If None, checks current research.
+        :return The remaining ingredients to complete the research
         """
         if technology is not None:
             if hasattr(technology, 'value'):

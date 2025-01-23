@@ -17,10 +17,9 @@ class GetEntity(Action):
 
     def __call__(self, entity: Prototype, position: Position) -> Entity:
         """
-        Get a given entity prototype at position (x, y) if it exists on the world.
-        :param entity: Entity prototype to get, e.g Prototype.IronPlate
-        :param position: Position to get entity
-        :example stone_furnace = get_entity(Prototype.StoneFurnace, nearest(Prototype.StoneFurnace))
+        Retrieve a given entity object at position (x, y) if it exists on the world.
+        :param entity: Entity prototype to get, e.g Prototype.StoneFurnace
+        :param position: Position where to look
         :return: Entity object
         """
         assert isinstance(entity, Prototype)

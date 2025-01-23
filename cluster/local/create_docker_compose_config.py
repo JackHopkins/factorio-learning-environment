@@ -6,10 +6,10 @@ import sys
 from typing import Dict, Any
 
 
-def generate_compose_config(num_instances: int) -> Dict[str, Any]:
+def generate_compose_config(num_instances: int, map: str) -> Dict[str, Any]:
     services = {}
     base_udp_port = 34197
-    base_tcp_port = 27015
+    base_tcp_port = 27000
 
     for i in range(num_instances):
         service_name = f"factorio_{i}"
@@ -23,7 +23,7 @@ def generate_compose_config(num_instances: int) -> Dict[str, Any]:
                 f"MODS=/opt/factorio/mods",
                 f"SCENARIOS=/opt/factorio/scenarios",
                 f"PORT={base_udp_port}",
-                f"RCON_PORT={base_tcp_port}"
+                f"RCON_PORT=27015"
             ],
             "volumes": [
                 {
@@ -33,32 +33,37 @@ def generate_compose_config(num_instances: int) -> Dict[str, Any]:
                 },
                 {
                     "type": "bind",
+                    "source": "../scenarios/open_world",
+                    "target": "/opt/factorio/scenarios/open_world"
+                },
+                {
+                    "type": "bind",
                     "source": "~/Applications/Factorio.app/Contents/Resources/mods",
                     "target": "/opt/factorio/mods"
                 }
             ],
             "ports": [
                 f"{base_udp_port + i}:{base_udp_port}/udp",
-                f"{base_tcp_port + i}:{base_tcp_port}/tcp"
+                f"{base_tcp_port + i}:27015/tcp"
             ],
             "restart": "unless-stopped",
             "user": "factorio",
             "entrypoint": [],
             "command": " ".join([
                 "/opt/factorio/bin/x64/factorio",
-                "--start-server-load-scenario default_lab_scenario",
+                f"--start-server-load-scenario {map}",
                 f"--port {base_udp_port}",
                 "--server-settings /opt/factorio/config/server-settings.json",
                 "--map-gen-settings /opt/factorio/config/map-gen-settings.json",
                 "--map-settings /opt/factorio/config/map-settings.json",
                 "--server-banlist /opt/factorio/config/server-banlist.json",
-                f"--rcon-port {base_tcp_port}",
+                f"--rcon-port 27015",
                 '--rcon-password "factorio"',
                 "--server-whitelist /opt/factorio/config/server-whitelist.json",
                 "--use-server-whitelist",
                 "--server-adminlist /opt/factorio/config/server-adminlist.json",
                 "--mod-directory /opt/factorio/mods",
-                "--map-gen-seed 42"
+                "--map-gen-seed 44340"
             ]),
             "deploy": {
                 "resources": {
@@ -73,9 +78,9 @@ def generate_compose_config(num_instances: int) -> Dict[str, Any]:
     return {"services": services}
 
 
-def setup_docker_compose(num_instances: int):
+def setup_docker_compose(num_instances: int, map: str):
     """Generate and write docker-compose.yml, then start the containers"""
-    config = generate_compose_config(num_instances)
+    config = generate_compose_config(num_instances, map)
 
     # Write the configuration to docker-compose.yml
     with open(f'docker-compose-{num_instances}.yml', 'w') as f:
@@ -88,11 +93,12 @@ def setup_docker_compose(num_instances: int):
     time.sleep(10)
 
 if __name__ == "__main__":
-    num_instances = 16
+    num_instances = 20
+    map = "open_world" # or default_lab_scenario
     if len(sys.argv) != 2:
         print("Usage: python create_docker_compose_config.py <number_of_instances>")
     else:
         num_instances = int(sys.argv[1])
 
-    setup_docker_compose(num_instances)
+    setup_docker_compose(num_instances, map)
     print(f"Created docker-compose-{num_instances}.yml for {num_instances} Factorio instances.")

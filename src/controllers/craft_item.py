@@ -11,15 +11,12 @@ class CraftItem(Action):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
         self.inspect_inventory = InspectInventory(connection, game_state)
-        #self.connection = connection
-        #self.game_state = game_state
 
     def __call__(self, entity: Prototype, quantity: int = 1) -> int:
         """
         Craft an item from a Prototype if the ingredients exist in your inventory.
         :param entity: Entity to craft
         :param quantity: Quantity to craft
-        :example craft_item(Prototype.Pipe, 1)
         :return: Number of items crafted
         """
 

@@ -4,7 +4,7 @@ from time import sleep
 from controllers.__action import Action
 from controllers._get_path import GetPath
 from controllers.observe_all import ObserveAll
-from controllers.request_path import RequestPath
+from controllers._request_path import RequestPath
 from factorio_entities import Position
 from factorio_instance import PLAYER, NONE
 from factorio_types import Prototype
@@ -22,11 +22,12 @@ class MoveTo(Action):
         """
         Move to a position.
         :param position: Position to move to.
-        :param laying: Entity to lay down behind you as you move. e.g. 'Prototype.TransportBelt', facing away from you.
-        :param leading: Entity to lay down in front of you as you move. e.g. 'Prototype.TransportBelt', facing towards you.
-        :example move_to(nearest(Prototype.StoneFurnace), laying=Prototype.TransportBelt)
-        :return:
+        :return: Your final position
         """
+        #        :param laying: Entity to lay down behind you as you move. e.g. 'Prototype.TransportBelt', facing away from you.
+        #        :param leading: Entity to lay down in front of you as you move. e.g. 'Prototype.TransportBelt', facing towards you.
+        #       example move_to(nearest(Prototype.StoneFurnace), laying=Prototype.TransportBelt)
+        #
         X_OFFSET, Y_OFFSET = 0.5, 0
 
         x, y = math.floor(position.x*4)/4 + X_OFFSET, math.floor(position.y*4)/4 + Y_OFFSET

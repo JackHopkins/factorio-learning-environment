@@ -18,19 +18,8 @@ class SetResearch(Action):
     def __call__(self, technology: Technology) -> List[Ingredient]:
         """
         Set the current research technology for the player's force.
-
-        Args:
-            technology: Technology prototype to research
-
-        Returns:
-            List[Ingredient]: List of science pack ingredients required for the research
-
-        Raises:
-            Exception: If technology cannot be researched (prerequisites not met, already researched, etc.)
-
-        Example:
-            ingredients = set_research(Prototype.AutomationScience)
-            # Returns something like [Ingredient(name="automation-science-pack", count=1)]
+        :param technology: Technology to research
+        :return: Required ingredients to research the technology.
         """
         if hasattr(technology, 'value'):
             name = technology.value

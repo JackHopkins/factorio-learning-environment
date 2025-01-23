@@ -14,7 +14,7 @@ class GetPrototypeRecipe(Action):
 
     def __call__(self, prototype: Union[Prototype, str]) -> Recipe:
         """
-        Get the recipe of the given entity prototype.
+        Get the recipe (cost to make) of the given entity prototype.
         :param prototype: Prototype to get recipe from
         :return: Recipe of the given prototype
         """

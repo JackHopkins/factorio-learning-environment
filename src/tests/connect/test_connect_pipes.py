@@ -327,6 +327,21 @@ def test_avoiding_pipe_networks(game):
     assert len(pipes2) == 1
     assert pipes1[0].id != pipes2[0].id
 
+def test_connect_pipes_through_trees(game):
+    instance = game.instance
+
+    for y in range(-10, 10):
+        instance.add_command('/c game.surfaces[1].create_entity({name = "tree-01", position = {x = 1, y = ' + str(y) + '}})', raw=True)
+    instance.execute_transaction()
+
+    start = Position(x=0, y=0)
+    end = Position(x=10, y=0)
+
+    # Connect pipes - should route around the boiler
+    pipes = game.connect_entities(start, end, Prototype.Pipe)
+
+    assert len(pipes[0].pipes) == 11
+
 
 def test_pipe_around_obstacle(game):
     """Test pipe pathfinding around placed entities"""

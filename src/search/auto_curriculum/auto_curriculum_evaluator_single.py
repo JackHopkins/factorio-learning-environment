@@ -42,7 +42,7 @@ class AutoCurriculumEvaluatorSingle(ModelEvaluator):
         instance.move_to(Position(x=0, y=0))
 
         output_list, result = eval_program_with_result_trace(instance, program)
-        achieved_pl = instance.production_stats()
+        achieved_pl = instance._production_stats()
 
         if "error" in result.lower():
             print(f"Error in program: {result}")
@@ -100,7 +100,7 @@ class AutoCurriculumEvaluatorSingle(ModelEvaluator):
             )
 
             # Reset production stats before task
-            instance.production_stats()
+            instance._production_stats()
 
             # Generate and execute program
             trace: Trace = self._execute_task(
@@ -272,5 +272,5 @@ if __name__ == '__main__':
         starting_scenarios_folder=r"../skills/data_scenarios/starting_scenarios",
         curriculum_strategy=RecipeBasedCurriculum("recipes.jsonl")
     )
-    instance = FactorioInstance(address='localhost', bounding_box=200, tcp_port=27015, fast=True, cache_scripts=False)
+    instance = FactorioInstance(address='localhost', bounding_box=200, tcp_port=27000, fast=True, cache_scripts=False)
     evaluator.run_curriculum_episode(instance, num_tasks=120)

@@ -415,7 +415,7 @@ First bring out a general step-by-step list of steps you need to carry out to ac
             # instantiate the instance
             instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 #cache_scripts=False,
                                 inventory={})
@@ -526,7 +526,7 @@ First bring out a general step-by-step list of steps you need to carry out to ac
         # start the factorio instance
         instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 #cache_scripts=False,
                                 inventory={})

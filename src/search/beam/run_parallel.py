@@ -76,7 +76,7 @@ async def run_model_search(model: str, instance_start: int, version: int, resume
 
     initial_state = GameState.from_instance(instances[0])
     API_SCHEMA = instances[0].get_system_prompt()
-    prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\nObservations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
+    prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\n# Observations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
 
     current_depth = 0
     resume_heads = None
@@ -158,10 +158,11 @@ async def main():
 
     # List of models to run in parallel
     model_configs = [
-        {"model": "gpt-4o"},
-        {"model": "claude-3-5-sonnet-20241022"},
+        {"model": "meta-llama/Llama-3.3-70B-Instruct-Turbo"},
         {"model": "gpt-4o-mini"},
-        {"model": "meta-llama/Llama-3.1-70B-Instruct-Turbo"}
+        {"model": "gpt-4o"},
+        {"model": "deepseek-chat"},
+        {"model": "claude-3-5-sonnet-20241022"}
     ]
 
     parser = argparse.ArgumentParser()
@@ -176,7 +177,7 @@ async def main():
 
     base_version = await get_version_to_use(None)
     # Get version to use with a temporary DB client
-    version_to_use = await get_version_to_use(resume_version)
+    #version_to_use = await get_version_to_use(resume_version)
 
     # Create process pool and run models in parallel
     with concurrent.futures.ProcessPoolExecutor(max_workers=len(model_configs)) as executor:

@@ -67,7 +67,7 @@ class TestEval(unittest.TestCase):
 def test_math():
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 # cache_scripts=False,
                                 inventory={})
@@ -78,7 +78,7 @@ def test_math():
 def test_name_error():
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 # cache_scripts=False,
                                 inventory={})
@@ -89,7 +89,7 @@ def test_name_error():
 def test_sleep():
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 # cache_scripts=False,
                                 inventory={})
@@ -100,7 +100,7 @@ def test_sleep():
 def test_prototype_attribute_error():
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 # cache_scripts=False,
                                 inventory={})
@@ -132,7 +132,7 @@ def test_exceptions():
 
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 # cache_scripts=False,
                                 inventory=inventory)
@@ -185,7 +185,7 @@ def test_chest_inventory():
 
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 # cache_scripts=False,
                                 inventory=inventory)
@@ -229,7 +229,7 @@ def test_try_catch():
 
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 # cache_scripts=False,
                                 inventory=inventory)
@@ -270,7 +270,7 @@ def test_type_annotations_mixed_depth_prints():
 
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True)
                                 # cache_scripts=False,
     test_string = \
@@ -318,7 +318,7 @@ def test_mixed_hard():
 
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 inventory=inventory)
                                 # cache_scripts=False,
@@ -398,7 +398,7 @@ def test_mixed_hard2():
 
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 inventory=inventory)
                                 # cache_scripts=False,

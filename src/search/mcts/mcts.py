@@ -199,7 +199,7 @@ class MCTS:
                     frequency_penalty=self.frequency_penalty
                 )
                 if 'sonnet' in generation_params.model or 'gemini' in generation_params.model and len(formatted_messages) > 32:
-                    await sleep(5 + random()*5) # Sleep with jitter to avoid rate limiting issues
+                    await sleep(2 + random()*2) # Sleep with jitter to avoid rate limiting issues
                 return response
             except Exception as e:
                 print(f"Single generation failed: {str(e)}")

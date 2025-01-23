@@ -43,7 +43,7 @@ class EntityPriority(Enum):
 
 instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast = True,
                                 cache_scripts=False,
                                 inventory={
@@ -98,15 +98,24 @@ def find_valid_origin(entities: List[BlueprintEntity], resource: Resource, game:
         x=max_x - base_miner.position["x"],
         y=max_y - base_miner.position["y"]
     )
-    center = Position(
-        x=(left_top.x + right_bottom.x) / 2,
-        y=(left_top.y + right_bottom.y) / 2
+    left_bottom = Position(
+        x=min_x - base_miner.position["x"],
+        y=max_y - base_miner.position["y"]
     )
+    right_top = Position(
+        x=max_x - base_miner.position["x"],
+        y=min_y - base_miner.position["y"]
+    )
+    # center = Position(
+    #     x=(left_top.x + right_bottom.x) / 2,
+    #     y=(left_top.y + right_bottom.y) / 2
+    # )
 
     bounding_box = BoundingBox(
         left_top=left_top,
         right_bottom=right_bottom,
-        center=center
+        left_bottom=left_bottom,
+        right_top=right_top
     )
 
     # Use nearest_buildable to find valid position
@@ -328,7 +337,7 @@ def get_tile_dimensions_of_all_entities(entities: List[BlueprintEntity]) -> Dict
         entity_counts[entity.name] = entity_counts.get(entity.name, 0) + 1
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 cache_scripts=False,
                                 inventory=entity_counts)

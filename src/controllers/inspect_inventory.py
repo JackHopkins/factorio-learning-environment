@@ -13,13 +13,10 @@ class InspectInventory(Action):
 
     def __call__(self, entity=None) -> Inventory:
         """
-        Inspects the inventory of the given entity. If no entity is given, this inspects your own inventory.
+        Inspects the inventory of the given entity. If no entity is given, inspect your own inventory.
         :param entity: Entity to inspect
-        :example: iron_chest_inventory = inspect_inventory(nearest(Prototype.IronChest))
         :return: Inventory of the given entity
         """
-
-
 
         if entity:
             if isinstance(entity, Entity):

@@ -59,7 +59,7 @@ class BlueprintAnalyzerWithPlaceNextTo:
 
         instance = FactorioInstance(address='localhost',
                                     bounding_box=200,
-                                    tcp_port=27015,
+                                    tcp_port=27000,
                                     fast=True,
                                     cache_scripts=False,
                                     inventory=entity_counts)
@@ -393,7 +393,7 @@ if __name__ == "__main__":
                 inventory = analyzer.get_inventory()
                 instance = FactorioInstance(address='localhost',
                                             bounding_box=200,
-                                            tcp_port=27015,
+                                            tcp_port=27000,
                                             fast=True,
                                             cache_scripts=False,
                                             inventory=inventory)

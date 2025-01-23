@@ -38,7 +38,9 @@ class GetResourcePatch(Action):
 
         left_top = Position(x=response['bounding_box']['left_top']['x'], y=response['bounding_box']['left_top']['y'])
         right_bottom = Position(x=response['bounding_box']['right_bottom']['x'], y=response['bounding_box']['right_bottom']['y'])
-        bounding_box = BoundingBox(left_top=left_top, right_bottom=right_bottom, center=Position(x=(left_top.x + right_bottom.x) / 2, y=(left_top.y + right_bottom.y) / 2))
+        left_bottom = Position(x=response['bounding_box']['left_top']['x'], y=response['bounding_box']['right_bottom']['y'])
+        right_top = Position(x=response['bounding_box']['right_bottom']['x'], y=response['bounding_box']['left_top']['y'])
+        bounding_box = BoundingBox(left_top=left_top, right_bottom=right_bottom, left_bottom=left_bottom, right_top=right_top)#, center=Position(x=(left_top.x + right_bottom.x) / 2, y=(left_top.y + right_bottom.y) / 2))
 
         resource_patch = ResourcePatch(name=resource[0], size=response['size'], bounding_box=bounding_box)
 
@@ -170,8 +172,10 @@ class GetResourcePatch(Action):
                     size=group.get("size", 0),
                     bounding_box=BoundingBox(left_top=Position(x=top_left_x, y=top_left_y),
                                              right_bottom=Position(x=bottom_right_x, y=bottom_right_y),
-                                             center=Position(x=(top_left_x + bottom_right_x) / 2,
-                                                                y=(top_left_y + bottom_right_y) / 2)
+                                             left_bottom=Position(x=top_left_x, y=bottom_right_y),
+                                             right_top=Position(x=bottom_right_x, y=top_left_y)
+                                             #center=Position(x=(top_left_x + bottom_right_x) / 2,
+                                             #                   y=(top_left_y + bottom_right_y) / 2)
                                                 )
                 )
 

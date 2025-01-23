@@ -12,7 +12,7 @@ class Print(Action):
     def load(self):
         pass
 
-    def __call__(self, *args) -> bool:
+    def __call__(self, *args):
         """
         Adds a string to stdout
         :param args:

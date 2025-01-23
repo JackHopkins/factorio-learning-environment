@@ -13,16 +13,15 @@ class ExtractItem(Action):
         #self.connection = connection
         #self.game_state = game_state
 
-    def __call__(self, entity: Prototype, source: Union[Position, Entity], quantity=5,
-                 ) -> bool:
+    def __call__(self, entity: Prototype, source: Union[Position, Entity], quantity=5) -> int:
         """
         Extract an item from an entity's inventory at position (x, y) if it exists on the world.
         :param entity: Entity prototype to extract, e.g Prototype.IronPlate
-        :param source_position: Position to extract entity
+        :param source: Entity or position to extract from
         :param quantity: Quantity to extract
         :example extract_item(Prototype.IronPlate, stone_furnace.position, 5)
-        :example extract_item(Prototype.CopperWire, Position(x=0, y=0), 5)
-        :return True if extraction was successful
+        :example extract_item(Prototype.CopperWire, stone_furnace, 5)
+        :return The number of items extracted.
         """
         source_name = None
         if isinstance(source, Position):
@@ -37,7 +36,10 @@ class ExtractItem(Action):
         response, elapsed = self.execute(PLAYER, name, quantity, x, y, source_name)
         if isinstance(response, str):
             msg = self.get_error_message(response)
-            raise Exception(f"Could not extract: {msg}")
+            if source_name:
+                raise Exception(f"Could not extract {name} from {source_name} at ({x}, {y}): {msg}")
+            else:
+                raise Exception(f"Could not extract {name} at ({x}, {y}): {msg}")
 
         if not response or response < 1:
             raise Exception("Could not extract.")

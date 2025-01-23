@@ -24,17 +24,17 @@ class TestProductionStats(unittest.TestCase):
             }
         instance = FactorioInstance(address='localhost',
                             bounding_box=200,
-                            tcp_port=27015,
+                            tcp_port=27000,
                             fast=True,
                             inventory=inventory)
         instance.move_to(instance.nearest(Resource.IronOre))
         instance.harvest_resource(instance.nearest(Resource.IronOre), quantity=10)
 
-        result = instance.production_stats()
+        result = instance._production_stats()
 
         assert result['input']['iron-ore'] == 10
 
-        result = instance.production_stats()
+        result = instance._production_stats()
 
         assert result['input']['iron-ore'] == 0
 

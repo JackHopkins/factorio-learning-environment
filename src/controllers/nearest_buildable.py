@@ -2,7 +2,7 @@ import math
 from typing import Optional
 
 from controllers.__action import Action
-from factorio_entities import Position, BuildingBox
+from factorio_entities import Position, BuildingBox, BoundingBox
 from factorio_instance import PLAYER
 from factorio_types import Prototype
 
@@ -19,26 +19,17 @@ class NearestBuildable(Action):
                  building_box: BuildingBox,
                  center_position: Position,
                  **kwargs
-                 ) -> dict:
+                 ) -> BoundingBox:
         """
         Find the nearest buildable area for an entity.
-        Inputs
+
         :param entity: Prototype of the entity to build.
-        :param building_box: The bounding box of the entity to build.
+        :param building_box: The building box denoting the area of location that must be placeable.
         :param center_position: The position to find the nearest area where building box fits
-        
-        Outputs
-        :return: A dictionary containing the center position of the buildable area, width and height margins
-            left_top - The top left position of the buildable area
-            right_bottom - The bottom right position of the buildable area
-            left_bottom - The bottom left position of the buildable area
-            right_top - The top right position of the buildable area
+        :return: BoundingBox of the nearest buildable area or None if no such area exists.
         """
         if not isinstance(entity, Prototype):
             raise Exception("'nearest_buildable' requires the Prototype of the desired entity as the first argument")
-
-
-
 
         MARGIN = 0
         dx = building_box.width
@@ -61,8 +52,15 @@ class NearestBuildable(Action):
         response_x = response['x']
         response_y = response['y']
 
-        return {"left_top": Position(x=response_x, y=response_y),
-                "right_bottom": Position(x=response_x+dx-1,
-                                          y=response_y+dy-1),
-                "left_bottom": Position(x=response_x, y=response_y+dy-1),
-                "right_top": Position(x=response_x + dx-1, y=response_y)}
+        # return {"left_top": Position(x=response_x, y=response_y),
+        #         "right_bottom": Position(x=response_x+dx-1,
+        #                                   y=response_y+dy-1),
+        #         "left_bottom": Position(x=response_x, y=response_y+dy-1),
+        #         "right_top": Position(x=response_x + dx-1, y=response_y)}
+        #
+        return BoundingBox(
+            left_top=Position(x=response_x, y=response_y),
+            right_bottom=Position(x=response_x+dx-1, y=response_y+dy-1),
+            left_bottom=Position(x=response_x, y=response_y+dy-1),
+            right_top=Position(x=response_x + dx-1, y=response_y)
+        )

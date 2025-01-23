@@ -21,12 +21,10 @@ class GetConnectionAmount(Action):
                  connection_type: Prototype = Prototype.Pipe
                  ) -> int:
         """
-        Connect two entities or positions.
+        Calculate the number of connecting entities needed to connect two entities, positions or groups.
         :param source: First entity or position
         :param target: Second entity or position
         :param connection_type: a Pipe, TransportBelt or ElectricPole
-        :example connect_entities(source=boiler, target=generator, connection_type=Prototype.Pipe)
-        :example connect_entities(source=miner, target=stone_furnace, connection_type=Prototype.TransportBelt)
         :return: A integer representing how many entities are required to connect the source and target entities
         """
 

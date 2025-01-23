@@ -21,7 +21,7 @@ class FactorioEnv(gym.Env, FactorioInstance):
                  address: str = None,
                  vocabulary: Vocabulary = None,
                  bounding_box=100,
-                 tcp_port=27015,
+                 tcp_port=27000,
                  render_mode: Optional[str] = None,
                  inventory: dict = {}):
 

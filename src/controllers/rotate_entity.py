@@ -12,7 +12,7 @@ class RotateEntity(Action):
 
     def __call__(self, entity: Entity, direction: Direction = Direction.UP) -> Entity:
         """
-        Rotate an entity at position (x, y) if it exists on the world.
+        Rotate an entity to a specified direction
         :param entity: Entity to rotate
         :param direction: Direction to rotate
         :example rotate_entity(iron_chest, Direction.UP)

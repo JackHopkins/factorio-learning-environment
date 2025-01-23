@@ -1,35 +1,27 @@
 import os
+import cv2
+import numpy as np
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List
-
+from typing import List, Tuple, Optional
 import psutil
 import pyautogui
 import time
 import subprocess
-import sys
-from dotenv import load_dotenv
-from cluster_ips import get_local_container_ips
-from factorio_instance import FactorioInstance
+from pathlib import Path
+from PIL import Image
+from dataclasses import dataclass
 
-"""
-This script is used to connect the client to each Factorio server running on an ECS cluster,
-and initialise it by creating a player.
-"""
+from cluster.local.cluster_ips import get_local_container_ips
+from cluster.remote.factorio_server_login import get_uninitialised_ips, launch_factorio
+from screeninfo import get_monitors
 
-# Adjust these coordinates based on your screen resolution and game UI - These are my values
-# configured using `pyautogui.position()` and manually adjusting in the Factorio game with a 1400x900 resolution
-# MULTIPLAYER_BUTTON = (720, 410)
-# CONNECT_TO_ADDRESS_BUTTON = (720, 525)
-# IP_INPUT_FIELD = (720, 445)
-# CONNECT_BUTTON = (850, 480)
-# ESC_MENU_QUIT_BUTTON = (720, 520)
 
-# On a `3456 × 2234` resolution...
-MULTIPLAYER_BUTTON = (868, 510)
-CONNECT_TO_ADDRESS_BUTTON = (863, 627)
-IP_INPUT_FIELD = (868, 545)
-CONNECT_BUTTON = (980, 580)
-ESC_MENU_QUIT_BUTTON = (870, 600)
+@dataclass
+class UIElement:
+    name: str
+    image_path: str
+    confidence: float = 0.7
+    timeout: int = 10
 
 def launch_factorio():
     # Check to see if Factorio is open
@@ -50,104 +42,154 @@ def focus_factorio():
     time.sleep(1)  # Wait a moment for the window to come into focus
 
 
-def connect_to_server(ip_address, udp=34197):
-    focus_factorio()
-    # Make sure the game is on the main menu
-    pyautogui.press('esc')
-    pyautogui.press('esc')
-    pyautogui.press('esc')
-    # Navigate to multiplayer
-    pyautogui.click(MULTIPLAYER_BUTTON)
-    # Click on "Connect to address"
-    pyautogui.click(CONNECT_TO_ADDRESS_BUTTON)
-    # Input the IP address and port
-    pyautogui.click(IP_INPUT_FIELD)
-    # Delete the existing IP address
-    pyautogui.hotkey('command', 'a')
-    pyautogui.press('delete')
-    pyautogui.write(f"{ip_address}:{udp}")
-    # Click connect
-    pyautogui.click(CONNECT_BUTTON)
-    time.sleep(5)  # Wait for connection attempt
-    # Quit the game
-    pyautogui.press('esc')
-    pyautogui.click(ESC_MENU_QUIT_BUTTON)
-    time.sleep(3)  # Wait for the game to close
+class FactorioAutomation:
+    def __init__(self, assets_dir: str = "assets", monitor_index: int = 0):
+        self.assets_dir = Path(assets_dir)
+        self.assets_dir.mkdir(exist_ok=True)
 
+        self.monitor = get_monitors()[monitor_index]
+        # Handle negative coordinates
+        self.monitor_region = (
+            max(0, self.monitor.x),  # Ensure x is not negative
+            max(0, self.monitor.y),  # Ensure y is not negative
+            self.monitor.width,
+            self.monitor.height
+        )
 
-def is_initialised(ip_address, tcp_port):
-    try:
-        instance = FactorioInstance(address=ip_address,
-                                    bounding_box=200,
-                                    tcp_port=27015,
-                                    cache_scripts=True,
-                                    fast=True)
+        # Store offset for click adjustment
+        self.x_offset = self.monitor.x
+        self.y_offset = self.monitor.y
+
+        # Define UI elements
+        self.ui_elements = {
+            "multiplayer": UIElement("Multiplayer", "multiplayer_button.png", 0.9),
+            "connect_address": UIElement("Connect to Address", "connect_to_address_button.png", 0.9),
+            "ip_field": UIElement("IP Field", "ip_field.png", 0.85),
+            "connect": UIElement("Connect", "connect_button.png", 0.9),
+            "quit": UIElement("Quit", "quit_button.png", 0.9)
+        }
+
+    def verify_assets(self) -> bool:
+        """Verify all required UI element images exist."""
+        missing = []
+        for element in self.ui_elements.values():
+            if not (self.assets_dir / element.image_path).exists():
+                missing.append(element.image_path)
+
+        if missing:
+            print(f"Missing required assets: {', '.join(missing)}")
+            return False
         return True
-    except Exception as e:
-        print(f"Error connecting to {ip_address}: {str(e)}")
+
+    def locate_element(self, element: UIElement) -> Optional[Tuple[int, int]]:
+        """
+        Locate UI element using template matching with OpenCV.
+        Returns center coordinates if found, None otherwise.
+        """
+        try:
+            # Take screenshot
+            screenshot = pyautogui.screenshot()
+            screenshot_np = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+
+            # Load template
+            template = cv2.imread(str(self.assets_dir / element.image_path))
+
+            # Template matching
+            result = cv2.matchTemplate(screenshot_np, template, cv2.TM_CCOEFF_NORMED)
+            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+
+            if max_val >= element.confidence:
+                h, w = template.shape[:2]
+                center = (max_loc[0] + w // 2, max_loc[1] + h // 2)
+                return center
+
+        except Exception as e:
+            print(f"Error locating {element.name}: {str(e)}")
+
+        return None
+
+    def locate_and_click(self, element: UIElement) -> bool:
+        start_time = time.time()
+        while time.time() - start_time < element.timeout:
+            try:
+                location = pyautogui.locateOnWindow(#).locateCenterOnScreen(
+                    str(self.assets_dir / element.image_path),
+                    "Factorio 1.1.110",
+                    confidence=element.confidence,
+                    region=self.monitor_region
+                )
+                if location:
+                    # Adjust click coordinates for monitor offset
+                    click_x = location[0] + (self.x_offset if self.x_offset < 0 else 0)
+                    click_y = location[1] + (self.y_offset if self.y_offset < 0 else 0)
+                    pyautogui.click(click_x, click_y)
+                    time.sleep(0.5)
+                    return True
+            except pyautogui.ImageNotFoundException:
+                pass
+            time.sleep(0.5)
+
+        print(f"Could not find {element.name} after {element.timeout} seconds")
         return False
 
+    def connect_to_server(self, ip_address: str, udp: int = 34197) -> bool:
+        """Connect to Factorio server using image recognition."""
+        if not self.verify_assets():
+            return False
 
-def get_uninitialised_ips(ip_addresses: List[str],
-                          tcp_ports: List[str] = None,
-                          max_workers: int = 8) -> List[str]:
-    """
-    Check multiple IP addresses in parallel using ThreadPoolExecutor.
+        focus_factorio()
 
-    Args:
-        ip_addresses: List of IP addresses to check
-        max_workers: Maximum number of concurrent threads (default: 20)
+        # Reset to main menu
+        for _ in range(3):
+            pyautogui.press('esc')
+            time.sleep(0.5)
 
-    Returns:
-        List of IP addresses that successfully initialized
-    """
-    if not tcp_ports:
-        tcp_ports = [27015]*len(ip_addresses)
+        # Click through menu sequence
+        for element in ["multiplayer", "connect_address", "ip_field"]:
+            if not self.locate_and_click(self.ui_elements[element]):
+                raise Exception(f"Could not find element - {element}")
 
-    invalid_ips = []
-    total_ips = len(ip_addresses)
+        # Enter IP address
+        pyautogui.hotkey('command', 'a')
+        pyautogui.press('delete')
+        pyautogui.write(f"{ip_address}:{udp}")
 
-    print(f"Starting initialization check for {total_ips} IP addresses...")
-    start_time = time.time()
+        # Connect and wait
+        if not self.locate_and_click(self.ui_elements["connect"]):
+            return False
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # Create a dictionary to map futures to their IP addresses
-        future_to_ip = {executor.submit(is_initialised, ip, tcp): ip
-                        for ip, tcp in zip(ip_addresses,tcp_ports)}
+        time.sleep(5)
 
-        # Process completed futures as they finish
-        for i, future in enumerate(as_completed(future_to_ip), 1):
-            ip = future_to_ip[future]
-            try:
-                if future.result():
-                    print(f"Progress: {i}/{total_ips} - {ip} is valid")
-                else:
-                    invalid_ips.append(ip)
-                    print(f"Progress: {i}/{total_ips} - {ip} is invalid")
-            except Exception as e:
-                print(f"Progress: {i}/{total_ips} - Unexpected error with {ip}: {str(e)}")
+        # Exit sequence
+        pyautogui.press('esc')
+        return self.locate_and_click(self.ui_elements["quit"])
 
-    elapsed_time = time.time() - start_time
-    print(f"\nCompleted in {elapsed_time:.2f} seconds")
-    print(f"Found {len(invalid_ips)} uninitialised IPs out of {total_ips}")
-
-    return invalid_ips
 
 def main():
-    ips, udp_ports, tcp_ports  = get_local_container_ips()
 
+    # Display available monitors
+
+    ips, udp_ports, tcp_ports = get_local_container_ips()
     if not ips:
-        raise RuntimeError("No local container IPs found. Please ensure Docker containers are running.")
+        raise RuntimeError("No local container IPs found")
+    ips_with_ports = [":".join([str(ip), str(tcp)]) for ip, tcp in zip(ips, tcp_ports)]
 
-    # filter out the ips that are not initialised
     ip_addresses = get_uninitialised_ips(ips, tcp_ports)
+    launch_factorio()
 
-    factorio_process = launch_factorio()
-    for ip, udp in zip(ip_addresses, udp_ports):
-        connect_to_server(ip, udp)
-        print(f"Connected to and quit from {ip}")
+    monitors = get_monitors()
+    print("Available monitors:")
+    for i, m in enumerate(monitors):
+        print(f"{i}: {m.name} ({m.width}x{m.height} at ({m.x}, {m.y}))")
 
-    #factorio_process.terminate()  # Ensure Factorio is closed at the end
+    for monitor_index in [1]:
+        print(f"\nAttempting to connect on monitor {monitors[monitor_index].name}...")
+        automation = FactorioAutomation(monitor_index=monitor_index)
+
+        for ip, udp in zip(ip_addresses, udp_ports):
+            success = automation.connect_to_server(ip, udp)
+            print(f"{'Successfully connected to' if success else 'Failed to connect to'} {ip}")
+
 
 if __name__ == "__main__":
     main()

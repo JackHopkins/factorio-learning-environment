@@ -106,7 +106,7 @@ def test_long_way(game):
 if __name__ == '__main__':
     factorio = FactorioInstance(address='localhost',
                             bounding_box=200,
-                            tcp_port=27015,
+                            tcp_port=27000,
                             cache_scripts=True,
                             fast=True,
                             inventory={

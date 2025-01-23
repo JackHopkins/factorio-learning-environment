@@ -13,10 +13,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 try:
-    client = factorio_rcon.RCONClient('localhost', 27015, "factorio")
+    client = factorio_rcon.RCONClient('localhost', 27000, "factorio")
     print("Connected to local client.")
 except:
-    client = factorio_rcon.RCONClient(os.getenv("REMOTE_ADDRESS"), 27015, "eSei2keed0aegai")
+    client = factorio_rcon.RCONClient(os.getenv("REMOTE_ADDRESS"), 27000, "eSei2keed0aegai")
     print("Connected to remote client.")
 
 character = "players[1]"

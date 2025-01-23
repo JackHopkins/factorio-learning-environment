@@ -297,7 +297,7 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
             entity_list.append(entities)
             step.end_state = state
             step.reward = final_reward
-            post_production_flows = instance.namespace.get_production_stats()
+            post_production_flows = instance.namespace._get_production_stats()
             step.program.meta["post_production_flows"] = post_production_flows
             step.program.meta["profits"] = -1
         except Exception as e:

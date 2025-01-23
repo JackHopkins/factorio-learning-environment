@@ -514,7 +514,7 @@ def evaluate_a_skill(folder_path):
     inventory = details["inventory"]
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 #cache_scripts=False,
                                 inventory=inventory)
@@ -557,7 +557,7 @@ if __name__ == "__main__":
     #inventory = {}
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27015,
+                                tcp_port=27000,
                                 fast=True,
                                 #cache_scripts=False,
                                 inventory=inventory)

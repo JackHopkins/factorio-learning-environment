@@ -17,13 +17,11 @@ class CanPlaceEntity(Action):
                  position: Position = Position(x=0, y=0),
                  ) -> bool:
         """
-        Tests to see if an entity e can be placed at local position (x, y).
+        Tests to see if an entity can be placed at a given position
         :param entity: Entity to place from inventory
         :param direction: Cardinal direction to place entity
         :param position: Position to place entity
-        :param exact: If True, place entity at exact position, else place entity at nearest possible position
-        :example stone_furnace = place_entity(Prototype.StoneFurnace, Direction.UP, Position(x=0, y=0))
-        :return: Entity object
+        :return: True if entity can be placed at position, else False
         """
 
         assert isinstance(entity, Prototype)

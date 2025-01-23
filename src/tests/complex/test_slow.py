@@ -9,7 +9,7 @@ from factorio_types import Prototype, Resource
 def game():
     instance = FactorioInstance(address='localhost',
                                bounding_box=200,
-                               tcp_port=27015,
+                               tcp_port=27000,
                                fast=False,
                                inventory={})
     instance.speed(1)

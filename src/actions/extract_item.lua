@@ -151,9 +151,9 @@ global.actions.extract_item = function(player_index, extract_item, count, x, y, 
 
     if not closest_entity then
         if source_name then
-            error("\"Could not find a valid "..source_name.." entity containing " .. extract_item .. " at ("..x..", "..y..")\"")
+            error("\"Could not find a valid "..source_name.." entity containing " .. extract_item.."\"")
         else
-            error("\"Could not find a valid entity containing " .. extract_item .. " at ("..x..", "..y..")\"")
+            error("\"Could not find a valid entity containing " .. extract_item .. "\"")
         end
     end
 

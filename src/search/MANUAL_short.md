@@ -142,6 +142,9 @@ connected_entity = place_entity_next_to(
 print(f"Placed inserter at {connected_entity.position} next to ref_entity at position {ref_entity.position} to input X into the ref_entity")
 ```
 
+#### Using pickup_entity
+The `pickup_entity` method useful if you need to move existing entities off the map and into your inventory.
+
 #### Common Patterns and Use Cases
 
 1. **Resource factory**
@@ -377,7 +380,7 @@ print(f"Connected furnace at {furnace.position} to assembling machine at {target
 Power systems follow a specific order:
 1. Get the power source (eg steam engine)
 2. Get the power target
-3. Power the target with electric poles
+3. Connect the target with electric poles using the `connect_entities` function with an appropriate electric pole prototype
 NB: Always use connect_entities when connecting power source to target
 
 EXAMPLE

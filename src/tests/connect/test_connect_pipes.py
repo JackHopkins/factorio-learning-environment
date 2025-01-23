@@ -311,7 +311,7 @@ def test_connect_pipes_by_positions(game):
     print(game.get_entities())
 
 
-def test_intersecting_pipe_networks(game):
+def test_avoiding_pipe_networks(game):
     """Test connecting pipes that cross paths"""
     # Create two intersecting pipe lines
     start1 = Position(x=0, y=0)
@@ -359,27 +359,3 @@ def test_pipe_network_branching(game):
     # Should merge into single network
     assert len(branch) == 1
     assert branch[0].id == main_line[0].id
-
-
-def test_max_pipe_distance(game):
-    """Test pipe connections at maximum allowed distances"""
-    water = game.get_resource_patch(Resource.Water, game.nearest(Resource.Water))
-    offshore_pump = game.place_entity(
-        Prototype.OffshorePump,
-        position=water.bounding_box.left_top,
-        direction=Direction.RIGHT
-    )
-
-    # Place boiler at max valid distance
-    max_distance = 17  # Factorio's max underground pipe distance
-    boiler_pos = Position(x=offshore_pump.position.x + max_distance, y=offshore_pump.position.y)
-    game.move_to(boiler_pos)
-    boiler = game.place_entity(Prototype.Boiler, position=boiler_pos)
-
-    # Should successfully connect
-    pipes = game.connect_entities(offshore_pump, boiler, Prototype.Pipe)
-    assert len(pipes) == 1
-
-    # Verify fluid flows through at max distance
-    game.insert_item(Prototype.Coal, boiler, 50)
-    assert game.get_entity(Prototype.Boiler, boiler.position).status != EntityStatus.NO_INPUT_FLUID

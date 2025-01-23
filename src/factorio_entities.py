@@ -1,3 +1,4 @@
+import math
 from typing import Tuple, Any, Union, Dict, Set
 from typing import List, Optional
 from enum import Enum
@@ -342,6 +343,8 @@ class TransportBelt(Entity):
             return False
         return (self.position.x, self.position.y) == (other.position.x, other.position.y)
 
+class Electric(BaseModel):
+    electrical_id: Optional[int] = None
 
 class EnergySource(BaseModel):
     buffer_capacity: str
@@ -349,10 +352,10 @@ class EnergySource(BaseModel):
     output_flow_limit: str
     drain: str
 
-class Accumulator(Entity):
+class Accumulator(Entity, Electric):
     energy_source: Optional[EnergySource] = None
 
-class Inserter(Entity):
+class Inserter(Entity, Electric):
     pickup_position: Optional[Position] = None
     drop_position: Position
 
@@ -361,6 +364,9 @@ class UndergroundBelt(Entity):
 
 class MiningDrill(Entity):
     drop_position: Position
+
+class ElectricMiningDrill(MiningDrill, Electric):
+    pass
 
 class BurnerInserter(Inserter, BurnerType):
     pass
@@ -376,7 +382,7 @@ class Ammo(BaseModel):
 class GunTurret(Entity):
     turret_ammo: Inventory = Inventory()
 
-class AssemblingMachine(Entity):
+class AssemblingMachine(Entity, Electric):
     recipe: Optional[Recipe] = None  # Prototype
     assembling_machine_input: Inventory = Inventory()
     assembling_machine_output: Inventory = Inventory()
@@ -385,15 +391,16 @@ class AssemblingMachine(Entity):
 class FluidHandler(Entity):
     connection_points: List[Position] = []
     fluid_box: Optional[Union[dict, list]] = []
+    fluid_systems: Optional[Union[dict, list]] = []
 
-class PumpJack(MiningDrill, FluidHandler):
+class PumpJack(MiningDrill, FluidHandler, Electric):
     pass
 
 class Boiler(FluidHandler, BurnerType):
     steam_output_point: Optional[Position] = None
 
 
-class Generator(FluidHandler):
+class Generator(FluidHandler, Electric):
     pass
 
 
@@ -401,12 +408,11 @@ class OffshorePump(FluidHandler):
     pass
     #fluid_box: Optional[Union[dict,list]] = []
 
-class ElectricityPole(Entity):
-    electric_network_id: int
+class ElectricityPole(Entity, Electric):
     flow_rate: float
 
     def __hash__(self):
-        return self.electric_network_id
+        return self.electrical_id
 
 class Furnace(Entity, BurnerType):
     furnace_source: Inventory = Inventory()
@@ -415,14 +421,20 @@ class Furnace(Entity, BurnerType):
 class Chest(Entity):
     inventory: Inventory = Inventory()
 
-class Lab(Entity):
+class Lab(Entity, Electric):
     lab_input: Inventory = Inventory()
     lab_modules: Inventory = Inventory()
+    research: Optional[Any] = None # Technology
+
+    def __repr__(self) -> str:
+        from factorio_types import technology_by_name
+        return f"\n\tLab(lab_input={self.lab_input}, status={self.status}, research={technology_by_name[self.research]}, electrical_id={self.electrical_id})"
 
 class Pipe(Entity):
     fluidbox_id: int
     flow_rate: float
     contents: float
+    fluid: Optional[str] = None
 
 class EntityGroup(BaseModel):
     id: int
@@ -447,16 +459,18 @@ class PipeGroup(EntityGroup):
 
     def __repr__(self) -> str:
         pipe_summary = f"[{len(self.pipes)} pipes]"
-        return f"\n\tPipeGroup(position={self.position}, status={self.status}, pipes={pipe_summary})"
+        fluid_suffix = ""
+        if self.pipes and self.pipes[0].fluid is not None and self.pipes[0].fluid != "":
+            fluid_suffix = f", fluid={self.pipes[0].fluid}"
+        return f"\n\tPipeGroup(fluid_system={self.id}, position={self.position}, status={self.status}, pipes={pipe_summary}{fluid_suffix})"
 
 class ElectricityGroup(EntityGroup):
     name: str = 'electricity-group'
     poles: List[ElectricityPole]
-    #electric_network_id: int
 
     def __repr__(self) -> str:
         positions = [f"(x={p.position.x},y={p.position.y})" for p in self.poles]
-        max_flow_rate = max([p.flow_rate for p in self.poles])
+        max_flow_rate = math.floor(max([p.flow_rate for p in self.poles]))
         if len(positions) > 6:
             positions = positions[:3] + ['...'] + positions[-3:]
         pole_summary = f"[{','.join(positions)}]"

@@ -1068,14 +1068,17 @@ global.utils.serialize_entity = function(entity)
 	-- Add input and output locations if the entity is a pipe
 	if entity.type == "pipe" then
 		serialized.connections = {}
+		local fluid_name = nil
 		for _, connection in pairs(entity.fluidbox.get_pipe_connections(1)) do
 			table.insert(serialized.connections, connection.position)
 		end
 		local contents_count = 0
 		for name, count in pairs(entity.fluidbox.get_fluid_system_contents(1)) do
 			contents_count = contents_count + count
+			fluid_name = name
 		end
 		serialized.contents = contents_count
+		serialized.fluid = fluid_name
 		serialized.fluidbox_id = entity.fluidbox.get_fluid_system_id(1)
 		serialized.flow_rate = entity.fluidbox.get_flow(1)
 	end
@@ -1090,6 +1093,15 @@ global.utils.serialize_entity = function(entity)
 	if entity.type == "pump" then
 		serialized.input_position = entity.fluidbox.get_connections(1)[1].position
 		serialized.output_position = entity.fluidbox.get_connections(2)[1].position
+	end
+
+	-- Add the current research to the lab
+	if entity.name == "lab" then
+		if game.players[1].force.current_research ~= nil then
+			serialized.research = game.players[1].force.current_research.name
+		else
+			serialized.research = nil
+		end
 	end
 
 	-- Add input and output locations if the entity is a offshore pump
@@ -1217,27 +1229,40 @@ global.utils.serialize_entity = function(entity)
             table.insert(serialized.warnings, "\"Missing fluid connection\"")
         else
             -- Additional fluid-specific checks
+			local fluid_systems = {}
             local has_fluid = false
+			local fluid_contents = nil
             for i = 1, #entity.fluidbox do
                 if entity.fluidbox[i] then
+					local system_id = entity.fluidbox.get_fluid_system_id(i)
+					if system_id then
+						table.insert(fluid_systems, system_id)
+					end
                     has_fluid = true
+					fluid_contents = entity.fluidbox[i].name
                     break
                 end
             end
+			serialized.fluid_systems = fluid_systems
 
-            if not has_fluid then
-                serialized.status = "not_connected"
-                if not serialized.warnings then
-                    serialized.warnings = {}
-                end
-                table.insert(serialized.warnings, "\"No fluid present in connections\"")
-            end
+			if not has_fluid then
+				serialized.status = "not_connected"
+				if not serialized.warnings then
+					serialized.warnings = {}
+				end
+				table.insert(serialized.warnings, "\"No fluid present in connections\"")
+			else
+				serialized.fluid = fluid_contents
+			end
 			--serialized.fluidbox = global.utils.serialize_fluidbox(entity.fluidbox)
         end
     end
 
+	if entity.electric_network_id then
+		serialized.electrical_id = entity.electric_network_id
+	end
+
 	serialized.direction = get_inverse_entity_direction(entity.name, entity.direction) --api_direction_map[entity.direction]
-	serialized.electric_network_id = entity.electric_network_id
     -- Post-process connection points if they exist
     if serialized.connection_points then
         local filtered_points = {}

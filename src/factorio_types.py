@@ -1,6 +1,6 @@
+from __future__ import annotations
 import enum
 from difflib import get_close_matches
-
 from factorio_entities import *
 
 
@@ -57,7 +57,7 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     ExpressInserter = "express-inserter", Inserter
     Inserter = "inserter", Inserter
     BurnerMiningDrill = "burner-mining-drill", BurnerMiningDrill
-    ElectricMiningDrill = "electric-mining-drill", MiningDrill
+    ElectricMiningDrill = "electric-mining-drill", ElectricMiningDrill
     StoneFurnace = "stone-furnace", Furnace
     FastTransportBelt = "fast-transport-belt", TransportBelt
     ExpressTransportBelt = "express-transport-belt", TransportBelt
@@ -97,7 +97,7 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     GunTurret = "gun-turret", GunTurret
     FirearmMagazine = "firearm-magazine", Ammo
     StoneBrick = "stone-brick", None 
-    Radar = "radar", Entity 
+    Radar = "radar", "Entity"
     StoneWall = "stone-wall", Entity
     SmallLamp = "small-lamp", Entity
     SciencePack1 = "science-pack-1", None
@@ -110,9 +110,10 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     PipeGroup = "pipe-group", PipeGroup
     ElectricityGroup = "electricity-group", ElectricityGroup
 
-    def __init__(self, prototype_name, entity_class):
+    def __init__(self, prototype_name, entity_class_name):
         self.prototype_name = prototype_name
-        self.entity_class = entity_class
+        self.entity_class = entity_class_name
+
 
 prototype_by_name = {prototype.value[0]: prototype for prototype in Prototype}
 

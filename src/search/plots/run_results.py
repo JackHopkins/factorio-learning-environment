@@ -482,19 +482,25 @@ class RunResults:
         # Get all nodes for this version
         with self.db_client.get_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute(f"""SELECT id, parent_id, code, response, achievements_json, value, raw_reward, ticks FROM programs WHERE version = {self.version}""")
+                print(f"\nExecuting SQL query for version {self.version}")
+                cur.execute(f"""SELECT id, parent_id, code, response, achievements_json, value, raw_reward, ticks 
+                              FROM programs WHERE version = {self.version}""")
                 nodes = cur.fetchall()
-
+                print(f"Found {len(nodes)} total database rows")
+                if nodes:
+                    print(f"Sample row: {nodes[0]}")
 
         # Create mapping of nodes
         node_map: Dict[int, Node] = {}
         root_nodes: List[Node] = []
         processed_ids = set()
 
+        print("\nProcessing nodes:")
         # Create Node objects
         for node in nodes:
             id, parent_id, source_code, response, achievements_json, value, raw_reward, ticks = node
             processed_ids.add(id)
+            print(f"Processing node {id} with parent {parent_id}")
 
             try:
                 achievements = json.loads(achievements_json) if achievements_json else {}
@@ -527,13 +533,20 @@ class RunResults:
             )
             node_map[id] = node_obj
 
+        print("\nBuilding tree structure:")
         # Build tree structure
         for node in node_map.values():
             if node.parent_id is None or node.parent_id not in node_map:
                 root_nodes.append(node)
+                print(f"Found root node: {node.id}")
             else:
                 parent = node_map[node.parent_id]
                 parent.children.append(node)
+                print(f"Added node {node.id} as child of {node.parent_id}")
+
+        print(f"\nFinal summary:")
+        print(f"Total nodes processed: {len(processed_ids)}")
+        print(f"Root nodes found: {[node.id for node in root_nodes]}")
 
         return root_nodes, processed_ids
 

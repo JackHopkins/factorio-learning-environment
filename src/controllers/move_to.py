@@ -18,7 +18,7 @@ class MoveTo(Action):
         self.request_path = RequestPath(connection, game_state)
         self.get_path = GetPath(connection, game_state)
 
-    def __call__(self, position: Position, laying: Prototype = None, leading: Prototype = None) -> bool:
+    def __call__(self, position: Position, laying: Prototype = None, leading: Prototype = None) -> Position:
         """
         Move to a position.
         :param position: Position to move to.
@@ -66,6 +66,6 @@ class MoveTo(Action):
                     remaining_steps = self.connection.send_command(f'/silent-command rcon.print(global.actions.get_walking_queue_length({PLAYER}))')
                 self.game_state.player_location = (position.x, position.y)
 
-            return response#, execution_time
+            return Position(x=response['x'], y=response['y'])#, execution_time
         except Exception as e:
             raise Exception(f"Cannot move. {e}")

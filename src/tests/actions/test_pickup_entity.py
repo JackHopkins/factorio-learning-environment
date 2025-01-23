@@ -32,6 +32,19 @@ def test_place_pickup(game):
     game.pickup_entity(Prototype.Boiler, position=Position(x=0, y=0))
     assert boilers_in_inventory == game.inspect_inventory()[Prototype.Boiler] - 1
 
+def test_place_pickup_pipe_group(game):
+    """
+    Place a boiler at (0, 0) and then pick it up
+    :param game:
+    :return:
+    """
+    game.move_to(Position(x=0, y=0))
+    water_pipes = game.connect_entities(Position(x=0, y=0), Position(x=10, y=0), connection_type=Prototype.Pipe)
+
+    game.pickup_entity(water_pipes[0])
+    assert game.inspect_inventory()[Prototype.Pipe] == 100
+
+
 def test_place_pickup_inventory(game):
     chest = game.place_entity(Prototype.WoodenChest, position=Position(x=0,y=0))
     iron_plate_in_inventory = game.inspect_inventory()[Prototype.IronPlate]

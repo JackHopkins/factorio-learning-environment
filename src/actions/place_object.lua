@@ -418,7 +418,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
     local function validate_entity()
         if game.entity_prototypes[entity] == nil then
             local name = entity:gsub(" ", "_"):gsub("-", "_")
-            error(name .. " isn't something that exists. Did you make a typo?")
+            error("\""..name .. " isn't something that exists. Did you make a typo?\"")
         end
     end
 
@@ -426,7 +426,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         local count = player.get_item_count(entity)
         if count == 0 then
             local name = entity:gsub(" ", "_"):gsub("-", "_")
-            error("No " .. name .. " in inventory.")
+            error("\"No " .. name .. " in inventory.\"")
         end
     end
 
@@ -464,7 +464,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 player.cursor_ghost = nil  -- Clear the ghost
                 return global.utils.serialize_entity(placed_entity)
             else
-                error("Failed to place entity after delay")
+                error("\"Failed to place entity after delay\"")
             end
         end)
 
@@ -489,7 +489,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 --else
                 --    existing_entity.destroy({raise_destroy=true})
                 --end
-                error("entity already exists at the target position " .. serpent.line(existing_entity.position) .. " - remove this before continuing." )
+                error("\"entity already exists at the target position " .. serpent.line(existing_entity.position) .. " - remove this before continuing.\"" )
             end
         end
 
@@ -569,9 +569,9 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 --end
                 if #entities ~= 0 then
                     if #entities == 1 then
-                        error("Could not find a suitable position to place " .. entity .. " at the target location, as there is an existing object in the way")
+                        error("\"Could not find a suitable position to place " .. entity .. " at the target location, as there is an existing object in the way\"")
                     else
-                        error("Could not find a suitable position to place " .. entity .. " at the target location, as there are existing objects in the way")
+                        error("\"Could not find a suitable position to place " .. entity .. " at the target location, as there are existing objects in the way\"")
                     end
                 end
             end

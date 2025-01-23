@@ -456,10 +456,11 @@ class ElectricityGroup(EntityGroup):
 
     def __repr__(self) -> str:
         positions = [f"(x={p.position.x},y={p.position.y})" for p in self.poles]
+        max_flow_rate = max([p.flow_rate for p in self.poles])
         if len(positions) > 6:
             positions = positions[:3] + ['...'] + positions[-3:]
         pole_summary = f"[{','.join(positions)}]"
-        return f"\tElectricityGroup(id={self.id}, poles={pole_summary})"
+        return f"\tElectricityGroup(id={self.id}, poles={pole_summary}, voltage={max_flow_rate})"
 
     def __hash__(self):
         return self.name+str(self.id)

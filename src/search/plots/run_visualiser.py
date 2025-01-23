@@ -775,11 +775,15 @@ async def main():
 
         labels = {
             # 416: 'claude-new',
-            434: 'claude-2@4',
-            452: 'gpt-4o-mini@4',
-            #451: 'gpt-4o-mini@4-2',
-            453: 'gpt-4o@4',
-            436: 'claude-2@4-2'
+            # 434: 'claude-2@4',
+            # 452: 'gpt-4o-mini@4',
+            # #451: 'gpt-4o-mini@4-2',
+            # 453: 'gpt-4o@4',
+            # 436: 'claude-2@4-2'
+            457: 'gpt-4o-mini@4',
+            456: 'claude@4',
+            455: 'gpt4o@4',
+
         }
 
         versions = list(labels.keys())

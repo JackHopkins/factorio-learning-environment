@@ -31,7 +31,9 @@ def game(instance):
 
 def test_connect_offshore_pump_to_boiler(game):
     #game.craft_item(Prototype.OffshorePump)
-
+    game.move_to(game.nearest(Resource.Water))
+    game.move_to(game.nearest(Resource.Wood))
+    game.harvest_resource(game.nearest(Resource.Wood), quantity=100)
     game.move_to(game.nearest(Resource.Water))
     offshore_pump = game.place_entity(Prototype.OffshorePump,
                                       position=game.nearest(Resource.Water))

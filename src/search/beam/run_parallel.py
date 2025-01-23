@@ -2,6 +2,8 @@ import argparse
 import asyncio
 import concurrent.futures
 import multiprocessing
+import signal
+import sys
 from typing import List, Tuple
 import os
 from dotenv import load_dotenv
@@ -132,7 +134,7 @@ async def run_model_search(model: str, instance_start: int, version: int, resume
     if resume_version:
         await parallel_beam._verify_version_compatibility()
 
-    await parallel_beam.search(n_iterations=512)
+    await parallel_beam.search(n_iterations=1024)
 
 
 def run_model_in_process(model: str, instance_start: int, version: int, resume_version: int = None):
@@ -140,30 +142,56 @@ def run_model_in_process(model: str, instance_start: int, version: int, resume_v
     asyncio.get_event_loop().set_debug(True)
     asyncio.run(run_model_search(model, instance_start, version, resume_version))
 
+def signal_handler(signum, frame):
+    print("\nTerminating processes...")
+    sys.exit(0)
 
 async def main():
+    # Register signal handlers
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--resume-version', type=int, help='Version to resume from')
     args = parser.parse_args()
     resume_version = args.resume_version if args.resume_version else None #450
 
     # List of models to run in parallel
-    models = ['gpt-4o', 'claude-3-5-sonnet-20241022', 'gpt-4o-mini']
+    model_configs = [
+        {"model": "gpt-4o"},
+        {"model": "claude-3-5-sonnet-20241022"},
+        {"model": "gpt-4o-mini"},
+        {"model": "meta-llama/Llama-3.1-70B-Instruct-Turbo"}
+    ]
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--resume-versions', type=str, help='Comma-separated list of versions to resume from')
+    args = parser.parse_args()
+
+    if args.resume_versions:
+        versions = [int(v.strip()) if v.strip() else None for v in args.resume_versions.split(',')]
+        for i, version in enumerate(versions[:len(model_configs)]):
+            if version is not None:
+                model_configs[i]["resume_version"] = version
+
+    base_version = await get_version_to_use(None)
     # Get version to use with a temporary DB client
     version_to_use = await get_version_to_use(resume_version)
 
     # Create process pool and run models in parallel
-    with concurrent.futures.ProcessPoolExecutor(max_workers=len(models)) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=len(model_configs)) as executor:
         # Start each model with its own set of 4 instances
         futures = []
-        for i, model in enumerate(models):
+        for i, config in enumerate(model_configs):
             instance_start = i * 4  # Each model gets 4 consecutive instances
+            resume_version = config.get("resume_version")
+            version = resume_version if resume_version else base_version + i
+
             future = executor.submit(
                 run_model_in_process,
-                model,
+                config["model"],
                 instance_start,
-                version_to_use+i,
+                version,
                 resume_version
             )
             futures.append(future)

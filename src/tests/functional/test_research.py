@@ -85,8 +85,10 @@ def test_craft_automation_packs_and_research(game):
     #initial_research = game.get_research_progress(Technology.Automation)  # Get initial research progress
     ingredients1 = game.set_research(Technology.Automation)  # Start researching automation technology
 
+    entities = game.get_entities()
+
     # Wait for some time to allow research to progress
-    game.sleep(30)
+    game.sleep(10)
 
     # Check if research has progressed
     ingredients2 = game.get_research_progress(Technology.Automation)

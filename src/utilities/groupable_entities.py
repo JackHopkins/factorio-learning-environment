@@ -77,7 +77,7 @@ def _construct_group(id: int,
         mean_x = mean([pole.position.x for pole in entities])
         mean_y = mean([pole.position.y for pole in entities])
 
-        return ElectricityGroup(id=entities[0].electric_network_id, poles=list(set(entities)), status=status, position=Position(x=mean_x, y=mean_y))
+        return ElectricityGroup(id=entities[0].electrical_id, poles=list(set(entities)), status=status, position=Position(x=mean_x, y=mean_y))
 
 
 
@@ -360,10 +360,10 @@ def agglomerate_groupable_entities(connected_entities: List[Entity]) -> List[Ent
     if prototype in (Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole):
         electricity_ids = {}
         for entity in connected_entities:
-            if entity.electric_network_id in electricity_ids:
-                electricity_ids[entity.electric_network_id].append(entity)
+            if entity.electrical_id in electricity_ids:
+                electricity_ids[entity.electrical_id].append(entity)
             else:
-                electricity_ids[entity.electric_network_id] = [entity]
+                electricity_ids[entity.electrical_id] = [entity]
 
         return [_construct_group(
             id=id,

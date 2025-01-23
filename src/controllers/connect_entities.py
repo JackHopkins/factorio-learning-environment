@@ -432,6 +432,12 @@ class ConnectEntities(Action):
                 entity_groups = self.get_entities({Prototype.Pipe}, source_position)
                 for entity_group in entity_groups:
                     entity_group.pipes = _deduplicate_entities(entity_group.pipes)
+                # We only want whichever entity_group contains the source position
+                for entity_group in entity_groups:
+                    if source_position in [entity.position for entity in entity_group.pipes]:
+                        entity_groups = [entity_group]
+                        break
+
             elif connection_type in (Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole):
                 entity_groups = self.get_entities({Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole}, source_position)
 

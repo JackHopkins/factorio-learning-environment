@@ -197,8 +197,10 @@ class FactorioEvaluator:
                 program.code += f'\n{get_entities_code}\n'
                 result += "\n"+str(len(program.code.split('\n')))+f': (\'Entities on the map: {entities}\',)'
 
+            result = result.rstrip()+"\n"
+
             if "error" in result.lower():
-                result += f'(\'Current inventory: {final_inventory}\',)'
+                result += f'(\'Current inventory: {final_inventory}\',)\n'
                 result += f'(\'Entities on the map after the current step: {entities}\',)'
 
             score, _ = instance.namespace.score()

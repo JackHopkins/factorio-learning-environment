@@ -30,7 +30,7 @@ def test_move_to(game):
 
 def test_move_to_bug(game):
     # Get stone for stone furnace
-    game.move_to(game.nearest(Resource.Stone))
+    position = game.move_to(game.nearest(Resource.Stone))
     game.harvest_resource(game.nearest(Resource.Stone), quantity=5)
 
     # Check if we got the stone

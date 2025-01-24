@@ -7,6 +7,7 @@ from typing import List, Dict, Optional, Tuple
 from llm_factory import LLMFactory
 from search.mcts.formatters.conversation_formatter import ConversationFormatter
 from search.model.conversation import Message, Conversation
+import copy
 
 DEFAULT_INSTRUCTIONS = \
     """
@@ -49,6 +50,9 @@ Some examples
  -  Make sure to move to the target entity where you want to extract from before extracting items
 ### Errors when placing into a tile which is occupied by another entity
 - Ensure you can place a entity to a tile before attempting placing
+
+Only output the report, nothing else
+Make the report concise, accurate and informative
     """
 
 
@@ -77,7 +81,7 @@ class RecursiveReportFormatter(ConversationFormatter):
         self.cache_dir = cache_dir
         self.summary_instructions = DEFAULT_INSTRUCTIONS
         self.truncate_entity_data = truncate_entity_data
-        self.entity_data_pattern = re.compile(r': \[((.|[\n])+)]",\)')
+        self.entity_data_pattern = re.compile(r"\[(?:\n\t[A-Za-z]+\(.*?\),\s*)*\n\t[A-Za-z]+\(.*?\)\]',\)")
         self.summarize_history = summarize_history
         # Ensure cache directory exists.
         os.makedirs(cache_dir, exist_ok=True)
@@ -157,10 +161,11 @@ class RecursiveReportFormatter(ConversationFormatter):
             steps = f"These are the first steps so there is no historical report to summarize.\n\n"
             steps += f"Here are the first {int(self.chunk_size/2)} execution steps of the agent:\n\n"
         else:
-            steps = f"Here is the report from step 0 until step {last_summary_step}\n\n{previous_report}\n\n"
+            steps = f"Here is the report from step 0 until step {int(last_summary_step/2)-1}\n\n{previous_report}\n\n"
             steps += f"Here are the next {int(self.chunk_size/2)} execution steps of the agent:\n\n"
         for msg in messages:
-            steps += msg + "\n\n"
+            if msg.role == "user":
+                steps += msg.content + "\n\n"
         summary_prompt.append({
             "role": "user",
             "content": steps
@@ -178,11 +183,11 @@ class RecursiveReportFormatter(ConversationFormatter):
 
         return content
     
-    def _get_chunk_hash(self, messages: List[str]) -> str:
+    def _get_chunk_hash(self, messages: List[Message]) -> str:
         """Generate a deterministic hash for a chunk of messages."""
         chunk_content = json.dumps([{
-            'content': msg
-        } for msg in messages], sort_keys=True)
+            'content': msg.content,
+        } for msg in messages if msg.role == "user"], sort_keys=True)
         return hashlib.sha256(chunk_content.encode()).hexdigest()
     
     async def format_conversation(self, conversation: Conversation) -> List[Message]:
@@ -202,50 +207,47 @@ class RecursiveReportFormatter(ConversationFormatter):
             system_message = messages[0]
             messages = messages[1:]
         
-        formatted = [
-                self._truncate_entity_data(msg, is_recent=(i >= len(messages) - 1), message_index = int(i/2))
-                for i, msg in enumerate(messages)
-            ]
-
+        #formatted = [
+        #        self._truncate_entity_data(msg, is_recent=(i >= len(messages) - 1), message_index = int(i/2))
+        #        for i, msg in enumerate(messages)
+        #    ]
+        new_messages = copy.deepcopy(messages[-self.chunk_size:])
+        new_formatted_messages = [
+                    self._truncate_entity_data(msg, is_recent=(i >= len(new_messages) - 1), message_index = int((len(messages)- self.chunk_size)/2) +  int(i/2))
+                    for i, msg in enumerate(new_messages)
+                ]
+        
         # We turn this off
         if self.summarize_history:
-            nr_of_user_messages = int(len(messages)/2)
-            user_messages_per_chunk = int(self.chunk_size/2)
+            nr_of_messages = len(messages)
             if len(messages) % self.chunk_size == 0:
-                nr_of_user_messages_in_report = ((nr_of_user_messages // user_messages_per_chunk) - 1) * user_messages_per_chunk
-                user_messages = [x.content for x in formatted if x.role == "user"]
-                user_messages_in_report = user_messages[:nr_of_user_messages_in_report]
-                new_user_messages = user_messages[nr_of_user_messages_in_report:]
-                if nr_of_user_messages_in_report > 0:
+                nr_of_messages_in_report = nr_of_messages - self.chunk_size
+                messages_in_report = messages[:nr_of_messages_in_report]
+                if nr_of_messages_in_report > 0:
                     
-                    messages_hash = self._get_chunk_hash(user_messages_in_report)
+                    messages_hash = self._get_chunk_hash(messages_in_report)
                     report = self._load_cached_summary(messages_hash)
                 else:
                     report = ""
-                historical_report = await self._generate_summary(new_user_messages, previous_report=report, last_summary_step = nr_of_user_messages_in_report)
-                new_messages = user_messages_in_report + new_user_messages
-                new_hash = self._get_chunk_hash(new_messages)
+                historical_report = await self._generate_summary(new_formatted_messages, previous_report=report, last_summary_step = nr_of_messages_in_report)
+                new_hash = self._get_chunk_hash(messages)
                 self._save_summary_cache(new_hash, historical_report)
-                nr_of_user_messages_in_report += len(new_user_messages)
+                nr_of_messages_in_report = nr_of_messages
             else:
-                nr_of_user_messages_in_report = ((nr_of_user_messages // user_messages_per_chunk)) * user_messages_per_chunk
-                user_messages = [x.content for x in formatted if x.role == "user"]
-                user_messages_in_report = user_messages[:nr_of_user_messages_in_report]
-                messages_hash = self._get_chunk_hash(user_messages_in_report)
+                nr_of_messages_in_report = ((len(messages) // self.chunk_size)) * self.chunk_size
+                messages_in_report = messages[:nr_of_messages_in_report]
+                messages_hash = self._get_chunk_hash(messages_in_report)
                 historical_report = self._load_cached_summary(messages_hash)
 
-            formatted = formatted[-self.chunk_size:]
-
             if system_message:
-                system_message.content += f"\n\nHistorical report of actions and observations until step {nr_of_user_messages_in_report-1}\n\n{historical_report}\n\n"
-                formatted = [system_message] + formatted
+                system_message.content += f"\n\nHistorical report of actions and observations until step {int(nr_of_messages_in_report/2)-1}\n\n{historical_report}\n\n"
+                new_formatted_messages = [system_message] + new_formatted_messages
         else:
-            formatted = formatted[-self.chunk_size:]
             if system_message:
-                formatted = [system_message] + formatted
+                new_formatted_messages = [system_message] + new_formatted_messages
         
 
-        return formatted
+        return new_formatted_messages
 
     def format_message(self, message: Message) -> Message:
         """Format a single message - apply entity data truncation if enabled."""

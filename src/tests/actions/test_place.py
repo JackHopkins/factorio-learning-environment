@@ -323,3 +323,14 @@ def test_place_at_drop_position(game):
     chest = game.place_entity(Prototype.WoodenChest, position=drill.drop_position)
 
     assert chest.position.is_close(drill.drop_position)
+
+
+def test_cannot_place_at_water(game):
+    steam_engine_pos = Position(x=-20.5, y=8.5)
+    game.move_to(steam_engine_pos)
+    try:
+        engine = game.place_entity(Prototype.SteamEngine, position = steam_engine_pos)
+        failed = True
+    except:
+        failed = False
+    assert failed == False

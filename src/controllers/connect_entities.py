@@ -128,7 +128,7 @@ class ConnectEntities(Action):
                     nearest_distance = distance
 
         if not nearest_connection_point:
-            raise Exception("No connection points available to connect")
+            raise Exception("The required connection points are blocked. Please change the positions of entities you are trying to connect to unblock connections")
 
         return nearest_connection_point
 

@@ -116,7 +116,11 @@ class FactorioEvaluator:
                 program.ticks = ticks
                 #program.holdout_value = holdout_value
                 conversation = copy.deepcopy(program.conversation)
-                conversation.add_result(program.code, response, score=raw_reward, advantage=relative_reward, objectives=program.meta['objectives'] if 'objectives' in program.meta else [])
+                if "text_response" in program.meta and program.meta["text_response"]:
+                    assistant_message_str = program.meta["text_response"]
+                else:
+                    assistant_message_str = program.code
+                conversation.add_result(assistant_message_str, response, score=raw_reward, advantage=relative_reward, objectives=program.meta['objectives'] if 'objectives' in program.meta else [])
                 program.conversation = conversation
                 program.response = response
                 program.achievements = achievements

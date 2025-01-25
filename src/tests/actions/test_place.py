@@ -334,3 +334,14 @@ def test_cannot_place_at_water(game):
     except:
         failed = False
     assert failed == False
+
+
+def test_cannot_place_at_water_boiler(game):
+    boiler_position = Position(x=3.5, y=28.0)
+    game.move_to(boiler_position)
+    try:
+        engine = game.place_entity(Prototype.Boiler, position = boiler_position)
+        failed = True
+    except:
+        failed = False
+    assert failed == False

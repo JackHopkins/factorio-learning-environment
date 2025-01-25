@@ -106,4 +106,4 @@ class PythonParser:
             else:
                 raise Exception("Not valid python code")
 
-        return None
+        return None, None

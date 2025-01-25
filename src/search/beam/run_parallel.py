@@ -158,11 +158,11 @@ async def main():
 
     # List of models to run in parallel
     model_configs = [
-        {"model": "meta-llama/Llama-3.3-70B-Instruct-Turbo"},
-        {"model": "gpt-4o-mini"},
-        {"model": "gpt-4o"},
-        {"model": "deepseek-chat"},
-        {"model": "claude-3-5-sonnet-20241022"}
+        {"model": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "resume_version": 464},
+        {"model": "gpt-4o-mini", "resume_version": 465},
+        {"model": "gpt-4o", "resume_version": 466},
+        {"model": "deepseek-chat", "resume_version": 467},
+        {"model": "claude-3-5-sonnet-20241022", "resume_version": 468}
     ]
 
     parser = argparse.ArgumentParser()

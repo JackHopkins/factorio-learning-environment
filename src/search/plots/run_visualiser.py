@@ -509,10 +509,202 @@ class MatplotlibRunVisualizer(BaseRunVisualizer):
 
 
 class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
-    def __init__(self, db_client, icons_path: str, x_axis_type: str = 'steps', n_bootstrap: int = 1000):
+    def __init__(self, db_client, icons_path: str, x_axis_type: str = 'steps', n_bootstrap: int = 1000,
+                 window_size: int = 5, plot_type: str = 'line', fit_degree: int = 1):
         super().__init__(db_client, icons_path, x_axis_type)
         self.n_bootstrap = n_bootstrap
-        self.max_depth = 1024  # Add configurable max_depth
+        self.max_depth = 1024
+        self.window_size = window_size
+        self.plot_type = plot_type
+        self.fit_degree = fit_degree
+
+    # Add new method to BootstrappedRunVisualizer class
+    def calculate_fit_line(self, x_values, y_values):
+        """Calculate polynomial fit line, ensuring it passes through the origin"""
+        import numpy as np
+
+        # Convert to log scale for fitting
+        log_x = np.log10(x_values)
+        log_y = np.log10(y_values)
+
+        # Add origin point (with small offset to avoid log(0))
+        min_x = min(x_values)
+        min_y = min(y_values)
+        origin_x = min_x * 0.01  # One order of magnitude lower than minimum x
+        origin_y = min_y * 0.01  # One order of magnitude lower than minimum y
+        #origin_x, origin_y = 0, 0
+        # Add origin point to arrays
+        log_x = np.append(log_x, np.log10(origin_x))
+        log_y = np.append(log_y, np.log10(origin_y))
+
+        # Calculate polynomial fit
+        coeffs = np.polyfit(log_x, log_y, self.fit_degree)
+        poly = np.poly1d(coeffs)
+
+        # Generate points for the fit line, starting from origin
+        x_fit = np.logspace(np.log10(origin_x), max(log_x), 100, base=10)
+        log_y_fit = poly(np.log10(x_fit))
+        y_fit = 10 ** log_y_fit
+
+        return x_fit, y_fit
+
+    # def calculate_version_stats(self, version: int, max_depth: int):
+    #     """Calculate statistics with improved tick binning"""
+    #     values_by_x_by_run = defaultdict(lambda: defaultdict(float))
+    #
+    #     def get_bin_size(tick_value):
+    #         if tick_value < 500:
+    #             return 20
+    #         elif tick_value < 5000:
+    #             return 100
+    #         elif tick_value < 10000:
+    #             return 500
+    #         elif tick_value < 50000:
+    #             return 1000
+    #         elif tick_value < 100000:
+    #             return 2000
+    #         else:
+    #             return 5000
+    #
+    #     def traverse_tree(node, run_index, depth=0, path_value=0, path_ticks=0):
+    #         if depth > max_depth:
+    #             return
+    #
+    #         current_value = node.metrics.get('value', 0) or 0
+    #         current_ticks = node.metrics.get('ticks', 0) or 0
+    #         total_value = path_value + current_value
+    #         total_ticks = path_ticks + current_ticks
+    #
+    #         x_coord = total_ticks if self.x_axis == "ticks" else depth
+    #         if self.x_axis == "ticks":
+    #             bin_size = get_bin_size(total_ticks)
+    #             x_coord = round(x_coord / bin_size) * bin_size
+    #
+    #         values_by_x_by_run[x_coord][run_index] = max(
+    #             values_by_x_by_run[x_coord][run_index],
+    #             total_value
+    #         )
+    #
+    #         for child in node.children:
+    #             traverse_tree(child, run_index, depth + 1, total_value, total_ticks)
+    #
+    #     for run_idx, root in enumerate(self.version_data[version]['nodes']):
+    #         traverse_tree(root, run_idx)
+    #
+    #     stats = {}
+    #     for x_coord, run_values in values_by_x_by_run.items():
+    #         values = list(run_values.values())
+    #         if values:
+    #             stats[x_coord] = self.bootstrap_statistics(values, self.n_bootstrap)
+    #
+    #     achievements_by_x = defaultdict(list)
+    #     for achievement in self.achievements[version]:
+    #         x_coord = achievement.ticks if self.x_axis == "ticks" else achievement.depth
+    #         if self.x_axis == "ticks":
+    #             bin_size = get_bin_size(x_coord)
+    #             x_coord = round(x_coord / bin_size) * bin_size
+    #         achievements_by_x[x_coord].append(achievement)
+    #
+    #
+    #     return stats, achievements_by_x  # Empty achievements for now to debug stats
+
+    # Modify the calculate_version_stats method to include raw points
+    def calculate_version_stats(self, version: int, max_depth: int):
+        if self.plot_type == 'scatter' and self.x_axis == 'ticks':
+            values_by_run = defaultdict(list)
+
+            def traverse_tree(node, run_index, path_value=0, path_ticks=0):
+                if path_ticks > max_depth * 1000:  # Arbitrary limit
+                    return
+
+                current_value = node.metrics.get('value', 0) or 0
+                current_ticks = node.metrics.get('ticks', 0) or 0
+                total_value = path_value + current_value
+                total_ticks = path_ticks + current_ticks
+
+                if total_ticks > 0 and total_value > 0:
+                    values_by_run[run_index].append((total_ticks, total_value))
+
+                for child in node.children:
+                    traverse_tree(child, run_index, total_value, total_ticks)
+
+            for run_idx, root in enumerate(self.version_data[version]['nodes']):
+                traverse_tree(root, run_idx)
+
+            # Collect all points
+            all_points = []
+            for run_points in values_by_run.values():
+                all_points.extend(run_points)
+
+            # Sort by x coordinate
+            all_points.sort(key=lambda x: x[0])
+
+            # Create a stats dictionary with a structure matching what organize_achievement_positions expects
+            x_coords = sorted(set(p[0] for p in all_points))
+            stats = {x: {'mean': 0} for x in x_coords}  # Initialize with empty means
+            for x in x_coords:
+                y_values = [p[1] for p in all_points if p[0] == x]
+                if y_values:
+                    stats[x]['mean'] = np.mean(y_values)
+
+            return {'scatter_points': all_points, 'line_stats': stats}, defaultdict(list)
+        else:
+            values_by_x_by_run = defaultdict(lambda: defaultdict(float))
+
+            def get_bin_size(tick_value):
+                if tick_value < 500:
+                    return 20
+                elif tick_value < 5000:
+                    return 100
+                elif tick_value < 10000:
+                    return 500
+                elif tick_value < 50000:
+                    return 1000
+                elif tick_value < 100000:
+                    return 2000
+                else:
+                    return 5000
+
+            def traverse_tree(node, run_index, depth=0, path_value=0, path_ticks=0):
+                if depth > max_depth:
+                    return
+
+                current_value = node.metrics.get('value', 0) or 0
+                current_ticks = node.metrics.get('ticks', 0) or 0
+                total_value = path_value + current_value
+                total_ticks = path_ticks + current_ticks
+
+                x_coord = total_ticks if self.x_axis == "ticks" else depth
+                if self.x_axis == "ticks":
+                    bin_size = get_bin_size(total_ticks)
+                    x_coord = round(x_coord / bin_size) * bin_size
+
+                values_by_x_by_run[x_coord][run_index] = max(
+                    values_by_x_by_run[x_coord][run_index],
+                    total_value
+                )
+
+                for child in node.children:
+                    traverse_tree(child, run_index, depth + 1, total_value, total_ticks)
+
+            for run_idx, root in enumerate(self.version_data[version]['nodes']):
+                traverse_tree(root, run_idx)
+
+            stats = {}
+            for x_coord, run_values in values_by_x_by_run.items():
+                values = list(run_values.values())
+                if values:
+                    stats[x_coord] = self.bootstrap_statistics(values, self.n_bootstrap)
+
+            achievements_by_x = defaultdict(list)
+            for achievement in self.achievements[version]:
+                x_coord = achievement.ticks if self.x_axis == "ticks" else achievement.depth
+                if self.x_axis == "ticks":
+                    bin_size = get_bin_size(x_coord)
+                    x_coord = round(x_coord / bin_size) * bin_size
+                achievements_by_x[x_coord].append(achievement)
+
+            return stats, achievements_by_x
 
     def bootstrap_statistics(self, values, n_bootstrap=1000):
         """Compute bootstrapped statistics for a set of values"""
@@ -520,10 +712,18 @@ class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
             return None
 
         values = np.array(values)
+        if len(values) == 0:
+            return {
+                'mean': 0,
+                'ci_lower': 0,
+                'ci_upper': 0,
+                'std': 0
+            }
+
         bootstrap_means = []
+        mean_value = np.mean(values)
 
         for _ in range(n_bootstrap):
-            # Sample with replacement
             sample_idx = np.random.randint(0, len(values), size=len(values))
             bootstrap_sample = values[sample_idx]
             bootstrap_means.append(np.mean(bootstrap_sample))
@@ -531,132 +731,62 @@ class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
         bootstrap_means = np.array(bootstrap_means)
 
         return {
-            'mean': np.mean(values),
-            'ci_lower': np.percentile(bootstrap_means, 5),
-            'ci_upper': np.percentile(bootstrap_means, 95),
-            'std': np.std(values)  # Keep std for achievement positioning
+            'mean': mean_value,
+            'ci_lower': max(np.percentile(bootstrap_means, 2.5), 0.1),
+            'ci_upper': np.percentile(bootstrap_means, 97.5),
+            'std': np.std(values)
         }
 
-    def _calculate_absolute_ticks(self, node):
-        """Calculate absolute tick position by summing ticks from root to node"""
-        total_ticks = 0
-        current = node
-        while current:
-            total_ticks += current.metrics.get('ticks', 0) or 0
-            current = self._get_parent(current)
-        return total_ticks
+    def smooth_data(self, x_values, y_values, window_size):
+        """Apply sliding window smoothing to the data"""
+        if len(x_values) < window_size:
+            return x_values, y_values
 
-    def _get_adaptive_bin_size(self, tick_value):
-        """Calculate adaptive bin size based on tick magnitude"""
-        if tick_value < 1000:
-            return 100
-        elif tick_value < 10000:
-            return 500
-        else:
-            return 1000
+        smoothed_y = []
+        valid_indices = []
 
-    def _get_parent(self, node):
-        """Get parent node using parent_id"""
-        if not hasattr(node, 'parent_id') or node.parent_id is None:
-            return None
-        return self.node_map.get(node.parent_id)
+        for i in range(len(y_values)):
+            # Get window indices
+            start_idx = max(0, i - window_size // 2)
+            end_idx = min(len(y_values), i + window_size // 2 + 1)
 
-    def _get_all_nodes(self, version: int):
-        """Get all nodes for a version"""
-        nodes = []
-        for root in self.version_data[version]['nodes']:
-            nodes.extend(self._collect_nodes(root))
-        return nodes
+            # Only include points where x values are within reasonable range
+            window_x = x_values[start_idx:end_idx]
+            window_y = y_values[start_idx:end_idx]
 
-    def _collect_nodes(self, node):
-        """Collect all nodes in a subtree"""
-        nodes = [node]
-        for child in node.children:
-            nodes.extend(self._collect_nodes(child))
-        return nodes
-
-    def calculate_version_stats(self, version: int, max_depth: int):
-        """Calculate statistics with improved tick binning"""
-        values_by_x_by_run = defaultdict(lambda: defaultdict(float))
-
-        def get_bin_size(tick_value):
-            """Dynamic bin sizing based on tick magnitude"""
-            if tick_value < 500:  # 0-10k
-                return 20
-            elif tick_value < 5000:  # 0-10k
-                return 100
-            elif tick_value < 10000:  # 0-10k
-                return 500
-            elif tick_value < 50000:  # 0-10k
-                return 1000
-            elif tick_value < 100000:  # 10k-100k
-                return 2000
-            else:  # >100k
-                return 5000
-
-        def traverse_tree(node, run_index, depth=0, path_value=0, path_ticks=0):
-            if depth > max_depth:
-                return
-
-            current_value = node.metrics.get('value', 0) or 0
-            current_ticks = node.metrics.get('ticks', 0) or 0
-            total_value = path_value + current_value
-            total_ticks = path_ticks + current_ticks
-
+            # For log-scale x-axis, check if points are within reasonable ratio
             if self.x_axis == "ticks":
-                bin_size = get_bin_size(total_ticks)
-                x_coord = round(total_ticks / bin_size) * bin_size
+                center_x = x_values[i]
+                valid_window_indices = [
+                    j for j, x in enumerate(window_x)
+                    if 0.1 <= x / center_x <= 10  # Adjust ratio as needed
+                ]
+                if valid_window_indices:
+                    window_y = [window_y[j] for j in valid_window_indices]
+                    smoothed_y.append(np.mean(window_y))
+                    valid_indices.append(i)
             else:
-                x_coord = depth
+                smoothed_y.append(np.mean(window_y))
+                valid_indices.append(i)
 
-            values_by_x_by_run[x_coord][run_index] = max(
-                values_by_x_by_run[x_coord][run_index],
-                total_value
-            )
-
-            for child in node.children:
-                traverse_tree(child, run_index, depth + 1, total_value, total_ticks)
-
-        for run_idx, root in enumerate(self.version_data[version]['nodes']):
-            traverse_tree(root, run_idx)
-
-        stats = {}
-        for x_coord, run_values in values_by_x_by_run.items():
-            values = list(run_values.values())
-            if values:
-                stats[x_coord] = self.bootstrap_statistics(values)
-
-        achievements_by_x = defaultdict(list)
-        for achievement in self.achievements[version]:
-            x_coord = achievement.ticks if self.x_axis == "ticks" else achievement.depth
-            if self.x_axis == "ticks":
-                bin_size = get_bin_size(x_coord)
-                x_coord = round(x_coord / bin_size) * bin_size
-            achievements_by_x[x_coord].append(achievement)
-
-        return stats, achievements_by_x
+        return [x_values[i] for i in valid_indices], smoothed_y
 
     def export_visualization(self, output_file: str, max_depth: int = 100, xmin=0, xmax=10 ** 6):
-        """Export visualization with bootstrapped confidence intervals and achievement icons"""
+        """Export visualization with bootstrapped confidence intervals, smoothing, and achievement icons"""
         self.process_icons()
 
         plt.figure(figsize=(12, 8), dpi=100, tight_layout=True)
         ax = plt.gca()
 
-        # Set font sizes
+        # Set font sizes and axes configuration
         plt.rcParams.update({'font.size': 16})
         ax.tick_params(axis='both', which='major', labelsize=16)
         ax.tick_params(axis='both', which='minor', labelsize=16)
-
-        # Set up log scale axes
         ax.set_xscale('log', base=10)
         ax.set_yscale('log', base=10)
-
-        # Configure axes labels with larger font
         ax.set_xlabel('Cumulative Ticks' if self.x_axis == "ticks" else 'Steps', fontsize=16)
         ax.set_ylabel('Total GDP', fontsize=16)
 
-        # Configure axis limits based on x_axis type
         if self.x_axis == "ticks":
             ax.set_xlim(2 * 10 ** 2, 10 ** 7)
             ax.set_ylim(10 ** 1, 10 ** 5)
@@ -666,7 +796,7 @@ class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
 
         ax.grid(True, which='both', linestyle='--', alpha=0.3)
 
-        # Sort versions by GDP
+        # Sort versions and prepare for plotting
         version_achievements = []
         for version in self.version_data:
             label = self.version_data[version]['label']
@@ -676,7 +806,6 @@ class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
             version_achievements.append((version, label, achievements, color, final_gdp))
 
         version_achievements.sort(key=lambda x: x[4], reverse=True)
-
         used_positions = {}
 
         # Plot data for each version
@@ -685,39 +814,57 @@ class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
             if not stats:
                 continue
 
-            # Sort x coordinates without filtering
-            x_coords = sorted(stats.keys())
+            if self.plot_type == 'scatter' and self.x_axis == 'ticks' and 'scatter_points' in stats:
+                points = stats['scatter_points']
+                line_stats = stats['line_stats']  # For achievement positioning
+                if points:
+                    x_values = [p[0] for p in points]
+                    y_values = [p[1] for p in points]
 
-            # Extract statistics
-            means = [stats[x]['mean'] for x in x_coords]
-            ci_lower = [stats[x]['ci_lower'] for x in x_coords]
-            ci_upper = [stats[x]['ci_upper'] for x in x_coords]
+                    # Plot scatter points
+                    ax.scatter(x_values, y_values, color=color, alpha=0.05, s=2)#, label=f"{label} (fit)")
 
-            # Plot main line and confidence intervals
-            if x_coords:  # Only plot if we have coordinates
-                print(f"Plotting {len(x_coords)} points for version {version}")
-                print(f"Sample x_coords: {x_coords[:5]}")
-                print(f"Sample means: {means[:5]}")
+                    # Calculate and plot fit line
+                    if len(points) > 2:
+                        x_fit, y_fit = self.calculate_fit_line(x_values, y_values)
+                        ax.plot(x_fit, y_fit, color=color, linestyle='--',
+                                label=f"{label} (fit)", linewidth=2)
 
-                # Plot main line
-                ax.plot(x_coords, means, color=color, label=f"{label}", linewidth=2)
+                # Use line_stats for achievement positioning
+                stats = line_stats
+            else:
+                x_coords = sorted(stats.keys())
+                means = [stats[x]['mean'] for x in x_coords]
+                ci_lower = [stats[x]['ci_lower'] for x in x_coords]
+                ci_upper = [stats[x]['ci_upper'] for x in x_coords]
 
-                # Plot confidence intervals
-                ax.fill_between(x_coords, ci_lower, ci_upper, color=color, alpha=0.2)
+                if x_coords:
+                    # Plot original data with low alpha
+                    ax.plot(x_coords, means, color=color, alpha=0.3, linewidth=1)
+                    ax.fill_between(x_coords, ci_lower, ci_upper, color=color, alpha=0.1)
 
-            # Calculate achievement positions
+                    # Apply smoothing and plot smoothed data
+                    smoothed_x, smoothed_means = self.smooth_data(x_coords, means, self.window_size)
+                    _, smoothed_lower = self.smooth_data(x_coords, ci_lower, self.window_size)
+                    _, smoothed_upper = self.smooth_data(x_coords, ci_upper, self.window_size)
+
+                    # Plot smoothed lines with full alpha
+                    ax.plot(smoothed_x, smoothed_means, color=color, label=f"{label}", linewidth=2)
+                    ax.fill_between(smoothed_x, smoothed_lower, smoothed_upper, color=color, alpha=0.2)
+
+            # Calculate and plot achievement positions
             achievement_positions = self.organize_achievement_positions(
                 achievements_by_x,
-                stats,  # Now contains bootstrapped stats
+                stats,  # Now using the appropriate stats structure
                 ax,
                 i,
                 used_positions
             )
 
-            # Collect and sort achievements
+            # Draw achievements
             achievement_data = []
             for x_coord, achievements_list in achievements_by_x.items():
-                if x_coord == 0 or x_coord not in stats:
+                if x_coord == 0:
                     continue
 
                 for achievement in achievements_list:
@@ -733,10 +880,9 @@ class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
 
             achievement_data.sort(key=lambda x: x['y_pos'])
 
-            # Draw achievements
             for data in achievement_data:
                 circle_img = self.create_circle_background(data['color'])
-                circle_box = OffsetImage(circle_img, zoom=0.3)
+                circle_box = OffsetImage(circle_img, zoom=0.24)
                 circle_box.image.axes = ax
 
                 ab_circle = AnnotationBbox(
@@ -753,7 +899,7 @@ class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
                 if os.path.exists(icon_path):
                     try:
                         icon = plt.imread(icon_path)
-                        icon_box = OffsetImage(icon, zoom=0.16)
+                        icon_box = OffsetImage(icon, zoom=0.12)
                         icon_box.image.axes = ax
 
                         ab_icon = AnnotationBbox(
@@ -770,10 +916,7 @@ class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
                 else:
                     print(f"Icon not found: {icon_path}")
 
-        # Add legend
         ax.legend(loc='lower right', fontsize=16)
-
-        # Adjust layout and save
         plt.tight_layout()
         plt.savefig(output_file, bbox_inches='tight', dpi=300)
         plt.close()
@@ -797,7 +940,9 @@ async def main():
             db_client,
             icons_path,
             x_axis_type=type,
-            n_bootstrap=100
+            n_bootstrap=100,
+            window_size=5 if type == 'steps' else 20,
+            plot_type="scatter" if type == "ticks" else "line"
         )
 
         labels = {
@@ -811,9 +956,15 @@ async def main():
             # 457: 'gpt-4o-mini@4',
             # 456: 'claude@4',
             # 455: 'gpt4o@4',
-            460: 'gpt-4o-mini@4',
-            459: 'claude@4',
-            458: 'gpt4o@4',
+
+            # 460: 'gpt-4o-mini@4',
+            # 459: 'claude@4',
+            # 458: 'gpt4o@4',
+            464: 'llama-70b3@4',
+            465: 'gpt-4o-mini@4',
+            466: 'gpt4o@4',
+            467: 'deepseek-3@4',
+            468: 'claude@4',
 
         }
 

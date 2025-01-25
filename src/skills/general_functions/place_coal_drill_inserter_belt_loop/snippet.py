@@ -3,7 +3,7 @@ coal_patch = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
 assert coal_patch, "No coal patch found nearby"
 
 # Place coal burner mining drill
-drill_position = coal_patch.bounding_box.center
+drill_position = coal_patch.bounding_box.center()
 move_to(drill_position)
 drill = place_entity(Prototype.BurnerMiningDrill, Direction.UP, drill_position)
 assert drill, f"Failed to place burner mining drill at {drill_position}"

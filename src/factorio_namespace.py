@@ -310,7 +310,7 @@ class FactorioNamespace:
 
                     if node.orelse and self.loop_context.state != "BREAK":
                         self.execute_body(node.orelse, eval_dict, node)
-                    return True
+                return True
             finally:
                 self.loop_context.exit_loop()
 

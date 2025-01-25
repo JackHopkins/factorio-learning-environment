@@ -104,7 +104,7 @@ def test_simple_automated_drill(game):
     assert coal_patch, "No coal patch found nearby"
 
     # Place coal burner mining drill
-    drill_position = coal_patch.bounding_box.center
+    drill_position = coal_patch.bounding_box.center()
     game.move_to(drill_position)
     drill = game.place_entity(Prototype.BurnerMiningDrill, Direction.UP, drill_position)
     assert drill, f"Failed to place burner mining drill at {drill_position}"
@@ -144,9 +144,9 @@ def test_another_self_fueling_coal_belt(game):
     # Place 5 burner mining drills in a line
     drills = []
     inserters = []
-    game.move_to(coal_patch.bounding_box.center)
+    game.move_to(coal_patch.bounding_box.center())
     for i in range(5):
-        drill_position = Position(x=coal_patch.bounding_box.left_top.x + i * 2, y=coal_patch.bounding_box.center.y)
+        drill_position = Position(x=coal_patch.bounding_box.left_top.x + i * 2, y=coal_patch.bounding_box.center().y)
 
         drill = game.place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, drill_position)
         inserter = game.place_entity_next_to(Prototype.BurnerInserter, drill_position, direction=Direction.UP, spacing=0)
@@ -179,7 +179,7 @@ def test_another_self_fueling_coal_belt(game):
     print("Completed the belt loop")
 
     # Verify the setup
-    inspection = game.inspect_entities(coal_patch.bounding_box.center, radius=15)
+    inspection = game.inspect_entities(coal_patch.bounding_box.center(), radius=15)
     assert len([e for e in inspection.entities if
                 e.name == Prototype.BurnerMiningDrill.value[0]]) == 5, "Not all burner mining drills were placed"
     assert len([e for e in inspection.entities if

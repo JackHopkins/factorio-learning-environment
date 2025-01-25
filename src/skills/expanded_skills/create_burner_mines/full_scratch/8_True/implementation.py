@@ -13,11 +13,11 @@ copper_ore_position = get_resource_patch(Resource.CopperOre, nearest(Resource.Co
 print(f"Nearest copper ore found at: {copper_ore_position}")
 
 # Move to the copper ore patch
-move_to(copper_ore_position.bounding_box.center)
+move_to(copper_ore_position.bounding_box.center())
 print(f"Moved to copper ore patch at: {copper_ore_position}")
 
 # Place the first burner mining drill
-drill1 = place_entity(Prototype.BurnerMiningDrill, direction=Direction.UP, position=copper_ore_position.bounding_box.center)
+drill1 = place_entity(Prototype.BurnerMiningDrill, direction=Direction.UP, position=copper_ore_position.bounding_box.center())
 print(f"Placed first burner mining drill at: {drill1.position}")
 
 # Place the second burner mining drill next to the first one

@@ -8,10 +8,10 @@ Design a copper ore extraction system with two burner mining drills, each feedin
 # Step 1: Find and move to a copper ore patch
 copper_ore_position = get_resource_patch(Resource.CopperOre, nearest(Resource.CopperOre))
 print(f"Nearest copper ore found at: {copper_ore_position}")
-move_to(copper_ore_position.bounding_box.center)
+move_to(copper_ore_position.bounding_box.center())
 
 # Step 2: Place and fuel the first burner mining drill
-drill1 = place_entity(Prototype.BurnerMiningDrill, direction=Direction.UP, position=copper_ore_position.bounding_box.center)
+drill1 = place_entity(Prototype.BurnerMiningDrill, direction=Direction.UP, position=copper_ore_position.bounding_box.center())
 fueled_drill1 = insert_item(Prototype.Coal, drill1, quantity=20)
 coal_in_drill1 = fueled_drill1.fuel.get(Prototype.Coal, 0)
 assert coal_in_drill1 > 0, "Failed to fuel first drill"

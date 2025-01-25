@@ -6,7 +6,7 @@ water_location = nearest(Resource.Water)
 assert coal_patch and water_location, "Required resources not found"
 
 # Set up coal mining
-drill_position = coal_patch.bounding_box.center
+drill_position = coal_patch.bounding_box.center()
 move_to(drill_position)
 drill = place_entity(Prototype.BurnerMiningDrill, Direction.UP, drill_position)
 insert_item(Prototype.Coal, drill, 5)

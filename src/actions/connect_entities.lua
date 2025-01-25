@@ -552,7 +552,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
     return {
         entities = serialized_entities,
-        connected = is_connected, 
+        connected = is_connected,
         number_of_entities = counter_state.place_counter
     }
 end
@@ -645,7 +645,6 @@ end
 -- Using the new shortest_path function.
 global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run, number_of_connection_entities)
     --First do a dry run
-    game.print("haha")
     local result = connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, true)
     -- then do an actual run if dry run is false
     if not dry_run then
@@ -658,6 +657,6 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
         end
         result = connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, false)
     end
-    
+
     return result
 end

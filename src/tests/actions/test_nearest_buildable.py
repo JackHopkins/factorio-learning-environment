@@ -1,6 +1,6 @@
 import pytest
 from factorio_types import Prototype, Resource
-from factorio_entities import Position, BoundingBox, BuildingBox
+from factorio_entities import Position, BoundingBox, BuildingBox, Direction
 from factorio_instance import FactorioInstance
 
 @pytest.fixture()
@@ -183,3 +183,28 @@ def test_nearest_buildable_with_obstacles(game):
             y=player_pos.y + dy
         )
         assert position != obstacle_pos
+
+
+def test_drill_groups(game):
+    # Find iron ore patch
+    iron_ore_pos = game.nearest(Resource.IronOre)
+    print(f"Found iron ore patch at {iron_ore_pos}")
+
+    # Place 3 electric mining drills with smaller building boxes
+    drill_positions = []
+    for i in range(3):
+        # Use 3x3 building box for each drill
+        building_box = BuildingBox(width=3, height=3)
+        buildable_coords = game.nearest_buildable(Prototype.ElectricMiningDrill, building_box, iron_ore_pos)
+
+        # Place drill at center of buildable area
+        drill_pos = Position(x=buildable_coords.left_top.x + 1.5, y=buildable_coords.left_top.y + 1.5)
+        game.move_to(drill_pos)
+        drill = game.place_entity(Prototype.ElectricMiningDrill, position=drill_pos, direction=Direction.DOWN)
+        print(f"Placed electric mining drill {i + 1} at {drill.position}")
+        drill_positions.append(drill.position)
+        # Update iron_ore_pos to be near last placed drill for next iteration
+        iron_ore_pos = drill.position
+
+    entities = game.get_entities()
+    assert len(entities) == 3

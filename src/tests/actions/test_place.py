@@ -54,7 +54,7 @@ def test_place_transport_belt_next_to_miner(game):
     :param game:
     :return:
     """
-    iron_position = game.get_resource_patch(Resource.IronOre, game.nearest(Resource.IronOre)).bounding_box.center
+    iron_position = game.get_resource_patch(Resource.IronOre, game.nearest(Resource.IronOre)).bounding_box.center()
     game.move_to(iron_position)
     drill = game.place_entity(Prototype.BurnerMiningDrill, position=iron_position, exact=True)
     for y in range(-1, 3, 1):
@@ -145,28 +145,28 @@ def test_place_offshore_pumps(game):
     water_location = game.nearest(Resource.Water)
     water_patch = game.get_resource_patch(Resource.Water, water_location)
 
-    left_of_water_patch = Position(x=water_patch.bounding_box.left_top.x, y=water_patch.bounding_box.center.y)
+    left_of_water_patch = Position(x=water_patch.bounding_box.left_top.x, y=water_patch.bounding_box.center().y)
     game.move_to(left_of_water_patch)
     offshore_pump = game.place_entity(entity,
                                       position=left_of_water_patch,
                                       direction=Direction.LEFT)
     assert offshore_pump.direction.value == Direction.LEFT.value
 
-    right_of_water_patch = Position(x=water_patch.bounding_box.right_bottom.x, y=water_patch.bounding_box.center.y)
+    right_of_water_patch = Position(x=water_patch.bounding_box.right_bottom.x, y=water_patch.bounding_box.center().y)
     game.move_to(right_of_water_patch)
     offshore_pump = game.place_entity(entity,
                                       position=right_of_water_patch,
                                       direction=Direction.RIGHT)
     assert offshore_pump.direction.value == Direction.RIGHT.value
 
-    above_water_patch = Position(x=water_patch.bounding_box.center.x, y=water_patch.bounding_box.left_top.y)
+    above_water_patch = Position(x=water_patch.bounding_box.center().x, y=water_patch.bounding_box.left_top.y)
     game.move_to(above_water_patch)
     offshore_pump = game.place_entity(entity,
                                       position=above_water_patch,
                                       direction=Direction.UP)
     assert offshore_pump.direction.value == Direction.UP.value
 
-    below_water_patch = Position(x=water_patch.bounding_box.center.x, y=water_patch.bounding_box.right_bottom.y)
+    below_water_patch = Position(x=water_patch.bounding_box.center().x, y=water_patch.bounding_box.right_bottom.y)
     game.move_to(below_water_patch)
     offshore_pump = game.place_entity(entity,
                                       position=below_water_patch,
@@ -184,28 +184,28 @@ def test_place_offshore_pumps_no_default_direction(game):
     water_location = game.nearest(Resource.Water)
     water_patch = game.get_resource_patch(Resource.Water, water_location)
 
-    left_of_water_patch = Position(x=water_patch.bounding_box.left_top.x, y=water_patch.bounding_box.center.y)
+    left_of_water_patch = Position(x=water_patch.bounding_box.left_top.x, y=water_patch.bounding_box.center().y)
     game.move_to(left_of_water_patch)
     offshore_pump = game.place_entity(entity,
                                       position=left_of_water_patch)
     assert offshore_pump.direction.value == Direction.LEFT.value
     assert offshore_pump.connection_points
 
-    right_of_water_patch = Position(x=water_patch.bounding_box.right_bottom.x, y=water_patch.bounding_box.center.y)
+    right_of_water_patch = Position(x=water_patch.bounding_box.right_bottom.x, y=water_patch.bounding_box.center().y)
     game.move_to(right_of_water_patch)
     offshore_pump = game.place_entity(entity,
                                       position=right_of_water_patch)
     assert offshore_pump.direction.value == Direction.RIGHT.value
     assert offshore_pump.connection_points
 
-    above_water_patch = Position(x=water_patch.bounding_box.center.x, y=water_patch.bounding_box.left_top.y)
+    above_water_patch = Position(x=water_patch.bounding_box.center().x, y=water_patch.bounding_box.left_top.y)
     game.move_to(above_water_patch)
     offshore_pump = game.place_entity(entity,
                                       position=above_water_patch)
     assert offshore_pump.direction.value == Direction.UP.value
     assert offshore_pump.connection_points
 
-    below_water_patch = Position(x=water_patch.bounding_box.center.x, y=water_patch.bounding_box.right_bottom.y)
+    below_water_patch = Position(x=water_patch.bounding_box.center().x, y=water_patch.bounding_box.right_bottom.y)
     game.move_to(below_water_patch)
     offshore_pump = game.place_entity(entity,
                                       position=below_water_patch)

@@ -7,6 +7,8 @@ import numpy as np
 from controllers.__action import Action
 from typing import Tuple, List, Union, Optional, Dict
 
+from controllers._clear_collision_boxes import ClearCollisionBoxes
+from controllers._extend_collision_boxes import ExtendCollisionBoxes
 from controllers.get_entities import GetEntities
 from controllers.get_entity import GetEntity
 from controllers._get_path import GetPath
@@ -15,9 +17,9 @@ from controllers._request_path import RequestPath
 from controllers.rotate_entity import RotateEntity
 from controllers.inspect_inventory import InspectInventory
 from factorio_entities import Entity, Boiler, FluidHandler, Position, Generator, Inserter, MiningDrill, TransportBelt, \
-    OffshorePump, PumpJack, BeltGroup, EntityGroup, PipeGroup, ElectricityGroup
+    OffshorePump, PumpJack, BeltGroup, EntityGroup, PipeGroup, ElectricityGroup, Pipe
 from factorio_instance import PLAYER, Direction
-from factorio_types import Prototype
+from factorio_types import Prototype, prototype_by_name
 from utilities.groupable_entities import agglomerate_groupable_entities, _deduplicate_entities
 
 
@@ -33,6 +35,8 @@ class ConnectEntities(Action):
         self.inspect_inventory = InspectInventory(connection, game_state)
         self.get_entities = GetEntities(connection, game_state)
         self.get_entity = GetEntity(connection, game_state)
+        self._extend_collision_boxes = ExtendCollisionBoxes(connection, game_state)
+        self._clear_collision_boxes = ClearCollisionBoxes(connection, game_state)
 
     def _get_path(self,
                   source_position,
@@ -43,12 +47,12 @@ class ConnectEntities(Action):
                   dry_run=True,
                   allow_paths_through_own_entities=False) -> Union[Dict, str]:
         # We try and get larger paths first to avoid entities
-        for entity_size in [3, 2, 1, 0.5]:
+        for entity_size in [2, 1.5, 1, 0.5]:
             # Attempt to avoid entities
             path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y),
                                             start=source_position,
                                             allow_paths_through_own_entities=allow_paths_through_own_entities,
-                                            radius=pathing_radius,
+                                            radius=pathing_radius,#pathing_radius, #max(entity_size-1, 0),#pathing_radius,
                                             entity_size=entity_size)
             sleep(0.05)  # To ensure the pathing system actually computes a path
             response, elapsed = self.execute(PLAYER,
@@ -78,7 +82,7 @@ class ConnectEntities(Action):
             existing_offset_y = 0
 
         # By default, select the first connection point
-        nearest_connection_point = fluid_handler_source.connection_points[0]
+        nearest_connection_point = None #fluid_handler_source.connection_points[0]
         nearest_distance = 10000000  # Large value
 
         for connection_point in fluid_handler_source.connection_points:
@@ -95,33 +99,49 @@ class ConnectEntities(Action):
 
             # Update if this distance is smaller
             if distance < nearest_distance:
-                nearest_distance = distance
-                nearest_connection_point = connection_point
+                candidate_connection_point = connection_point
 
-        # The connection points need to be at the center of a tile. If either coordinate is an integer, it needs
-        # to be rounded to the half-tile furthest away from the source position.
-        # If the connection point is to the left of the source position, and a 0.5 x offset
-        nearest_connection_point_x = nearest_connection_point.x
-        nearest_connection_point_y = nearest_connection_point.y
+                # The connection points need to be at the center of a tile. If either coordinate is an integer, it needs
+                # to be rounded to the half-tile furthest away from the source position.
+                # If the connection point is to the left of the source position, and a 0.5 x offset
+                candidate_connection_point_x = candidate_connection_point.x
+                candidate_connection_point_y = candidate_connection_point.y
 
-        # This ensures that the connection point is always outside of the entity (no longer just bordering it)
-        if nearest_connection_point_x % 1 == 0:
-            if nearest_connection_point_x < fluid_handler_source.position.x:
-                nearest_connection_point_x = nearest_connection_point_x - 0.5
-            elif nearest_connection_point_x > fluid_handler_source.position.x:
-                nearest_connection_point_x = nearest_connection_point_x + 0.5
-        if nearest_connection_point_y % 1 == 0:
-            if nearest_connection_point_y < fluid_handler_source.position.y:
-                nearest_connection_point_y = nearest_connection_point_y - 0.5
-            elif nearest_connection_point_y > fluid_handler_source.position.y:
-                nearest_connection_point_y = nearest_connection_point_y + 0.5
+                # This ensures that the connection point is always outside of the entity (no longer just bordering it)
+                if candidate_connection_point_x % 1 == 0:
+                    if candidate_connection_point_x < fluid_handler_source.position.x:
+                        candidate_connection_point_x = candidate_connection_point_x - 0.5
+                    elif candidate_connection_point_x > fluid_handler_source.position.x:
+                        candidate_connection_point_x = candidate_connection_point_x + 0.5
+                if candidate_connection_point_y % 1 == 0:
+                    if candidate_connection_point_y < fluid_handler_source.position.y:
+                        candidate_connection_point_y = candidate_connection_point_y - 0.5
+                    elif candidate_connection_point_y > fluid_handler_source.position.y:
+                        candidate_connection_point_y = candidate_connection_point_y + 0.5
 
-        nearest_connection_point = Position(x=nearest_connection_point_x, y=nearest_connection_point_y)
+                entities_in_connection_point = self.get_entities(position=Position(x=candidate_connection_point_x, y=candidate_connection_point_y), radius=1)
+
+                entities_in_connection_point = [entity for entity in entities_in_connection_point if entity.position != fluid_handler_source.position]
+
+                if not entities_in_connection_point:
+                    nearest_connection_point = Position(x=candidate_connection_point_x, y=candidate_connection_point_y)
+                    nearest_distance = distance
+
+        if not nearest_connection_point:
+            raise Exception("No connection points available to connect")
 
         return nearest_connection_point
 
     def _round_position(self, position: Position):
         return Position(x=math.floor(position.x), y=math.floor(position.y))
+
+    def _attempt_to_get_entity(self, position: Position) -> Union[Position, Entity, EntityGroup]:
+        entities = self.get_entities(position=position, radius=0.1)
+        if not entities:
+            return position
+        if isinstance(entities[0], (BeltGroup, TransportBelt, PipeGroup, Pipe)):
+            return position
+        return entities[0]
 
 
     def __call__(self,
@@ -139,6 +159,11 @@ class ConnectEntities(Action):
         :example connect_entities(source=miner.drop_position, target=inserter.pickup_position, connection_type=Prototype.TransportBelt)
         :return: List of entities or groups that were created
         """
+
+        if isinstance(source, Position):
+            source = self._attempt_to_get_entity(source)
+        if isinstance(target, Position):
+            target = self._attempt_to_get_entity(target)
 
         if not connection_type:
             if isinstance(source, Position) and isinstance(target, Position):
@@ -158,6 +183,11 @@ class ConnectEntities(Action):
             inventory = self.inspect_inventory()
             # get the number of the connection_prototype in the inventory
             number_of_connection_prototype = inventory.get(connection_prototype, 0)
+
+            # if isinstance(source, Entity):
+            #     source = self.get_entity(prototype_by_name[source._get_prototype()], source.position)
+            # if isinstance(target, Entity):
+            #     target = self.get_entity(prototype_by_name[target._get_prototype()], target.position)
 
             if isinstance(source, BeltGroup):
                 source_entity = source
@@ -214,7 +244,7 @@ class ConnectEntities(Action):
                                 else:
                                     source_position = Position(x=source_entity.position.x - BOILER_WIDTH/2 - OFFSET, y=source_entity.position.y)
 
-                        elif target_entity and isinstance(target_entity, OffshorePump):
+                        elif target_entity and isinstance(target_entity, (Boiler, OffshorePump)):
                             source_position = self._get_nearest_connection_point(source_entity,
                                                                                  source_position,
                                                                                  existing_connection_entity=target_entity)
@@ -258,14 +288,14 @@ class ConnectEntities(Action):
             elif isinstance(target, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
                 if isinstance(target_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
                     if isinstance(target_entity, Boiler):
-                        if isinstance(source_entity, OffshorePump):
+                        if isinstance(source_entity, OffshorePump) or isinstance(source_entity, Boiler):
                             target_position = self._get_nearest_connection_point(target_entity,
                                                                                  source_position,
                                                                                  existing_connection_entity=source_entity)
                         else:
-                            target_position = target_entity.steam_input_point
+                            target_position = target_entity.steam_output_point
                     elif isinstance(target_entity, Boiler) and isinstance(source_entity, Generator):
-                        target_position = target_entity.steam_input_point
+                        target_position = target_entity.steam_output_point
                         pass
                     else:
                         target_position = self._get_nearest_connection_point(target_entity,
@@ -326,6 +356,12 @@ class ConnectEntities(Action):
             target_position = Position(x=round(target_position.x*2)/2, y=round(target_position.y*2)/2)
             source_position = Position(x=round(source_position.x*2)/2, y=round(source_position.y*2)/2)
             if connection_type == Prototype.Pipe or connection_type == Prototype.TransportBelt:
+
+                # If we are dealing with pipes, insulate all pre-existing pipes with a wider bounding box
+                # This will prevent accidentally merging adjacent pipes.
+                if connection_type == Prototype.Pipe:
+                    self._extend_collision_boxes(source_position, target_position)
+
                 try:
                     response = self._get_path(source_position,
                                               target_position,
@@ -340,6 +376,7 @@ class ConnectEntities(Action):
 
                 except Exception as e:
                     # Accept allowing paths through own entities if it fails
+                    #if isinstance(source, (BeltGroup, TransportBelt)) and isinstance(target, (BeltGroup, TransportBelt)):
                     response = self._get_path(source_position,
                                               target_position,
                                               connection_prototype,
@@ -347,9 +384,16 @@ class ConnectEntities(Action):
                                               pathing_radius,
                                               dry_run,
                                               allow_paths_through_own_entities=True)
-                    pass
+                    #else:
+                    #    response = str(e)
+
+                # If we are dealing with pipes, insulate all pre-existing pipes with a wider bounding box
+                # This will prevent accidentally merging adjacent pipes.
+                if connection_type == Prototype.Pipe:
+                    self._clear_collision_boxes()
             else:
                 pathing_radius = 4 # Larger radius because we are using poles that don't need exact placement
+                self._extend_collision_boxes(source_position, target_position)
                 response = self._get_path(source_position,
                                           target_position,
                                           connection_prototype,
@@ -357,6 +401,7 @@ class ConnectEntities(Action):
                                           pathing_radius,
                                           dry_run,
                                           allow_paths_through_own_entities=True)
+                self._clear_collision_boxes()
 
             if isinstance(response, str):
                 raise Exception(f"Error with connecting entities - Could not connect {connection_prototype} from {(source_position)} to {(target_position)}. {self.get_error_message(response.lstrip())}")

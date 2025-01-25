@@ -1,13 +1,11 @@
-import os
-import sys
 import time
-from typing import List, Tuple, Dict, Any, Union
+from timeit import default_timer as timer
+from typing import List, Tuple, Dict, Any
 
 from slpp import slpp as lua, ParseError
-from timeit import default_timer as timer
 
-from factorio_entities import Position, Entity, EntityStatus
-from factorio_rcon_utils import _lua2python, _load_action
+from factorio_entities import EntityStatus
+from factorio_rcon_utils import _lua2python
 
 COMMAND = "/silent-command"
 

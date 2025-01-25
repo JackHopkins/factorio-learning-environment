@@ -14,8 +14,8 @@ class GetPath(Action):
 
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
-        self.connection = connection
-        self.game_state = game_state
+        #self.connection = connection
+        #self.game_state = game_state
 
     def __call__(self, path_handle: int, max_attempts: int = 10) -> List[Position]:
         """
@@ -29,7 +29,7 @@ class GetPath(Action):
             wait_time = 0.032  # 32ms
             for attempt in range(max_attempts):
 
-                response, elapsed = self.execute(PLAYER, str(path_handle))
+                response, elapsed = self.execute(path_handle)
 
                 if response is None or response == {} or isinstance(response, str):
                     raise Exception("Could not request path", response)
@@ -54,4 +54,4 @@ class GetPath(Action):
             raise Exception(f"Path request timed out after {max_attempts} attempts")
 
         except Exception as e:
-            raise Exception(f"Could not get path with handle {path_handle}") from e
+            raise ConnectionError(f"Could not get path with handle {path_handle}") from e

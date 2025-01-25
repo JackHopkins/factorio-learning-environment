@@ -1,10 +1,10 @@
 # Find stone patch and move there
 stone_patch = get_resource_patch(Resource.Stone, nearest(Resource.Stone))
 assert stone_patch is not None, "No stone patch found"
-move_to(stone_patch.bounding_box.center)
+move_to(stone_patch.bounding_box.center())
 
 # Place mining drill oriented towards where furnace will go
-drill = place_entity(Prototype.BurnerMiningDrill, Direction.RIGHT, stone_patch.bounding_box.center)
+drill = place_entity(Prototype.BurnerMiningDrill, Direction.RIGHT, stone_patch.bounding_box.center())
 assert drill is not None, "Failed to place burner mining drill"
 
 # Place furnace to receive stone

@@ -15,11 +15,11 @@ iron_ore_position = get_resource_patch(Resource.IronOre, nearest(Resource.IronOr
 print(f"Nearest iron ore found at: {iron_ore_position}")
 
 # Move to the iron ore patch
-move_to(iron_ore_position.bounding_box.center)
+move_to(iron_ore_position.bounding_box.center())
 print(f"Moved to iron ore patch at: {iron_ore_position}")
 
 # Place the first burner mining drill
-drill1 = place_entity(Prototype.BurnerMiningDrill, direction=Direction.UP, position=iron_ore_position.bounding_box.center)
+drill1 = place_entity(Prototype.BurnerMiningDrill, direction=Direction.UP, position=iron_ore_position.bounding_box.center())
 print(f"Placed first burner mining drill at: {drill1.position}")
 
 # Fuel the first drill

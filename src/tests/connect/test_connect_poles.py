@@ -60,8 +60,8 @@ def test_connect_power_poles_without_blocking_mining_drill(game):
     coal_position = game.nearest(Resource.Coal)
     coal_patch = game.get_resource_patch(Resource.Coal, coal_position, radius=10)
     assert coal_patch, "No coal patch found within radius"
-    game.move_to(coal_patch.bounding_box.center)
-    miner = game.place_entity(Prototype.ElectricMiningDrill, Direction.UP, coal_patch.bounding_box.center)
+    game.move_to(coal_patch.bounding_box.center())
+    miner = game.place_entity(Prototype.ElectricMiningDrill, Direction.UP, coal_patch.bounding_box.center())
 
     # print out initial inventory
     initial_inventory = game.inspect_inventory()
@@ -216,7 +216,7 @@ def test_connect_steam_engine_mining_drill(game):
     game.move_to(pos)
     drill = game.place_entity(Prototype.ElectricMiningDrill, position=pos)
     game.connect_entities(drill, steam_engine, Prototype.SmallElectricPole)
-
+    game.sleep(2)
     drill = game.get_entity(Prototype.ElectricMiningDrill, position=pos)
     assert drill.status == EntityStatus.WORKING
 
@@ -235,4 +235,4 @@ def test_pole_groups(game):
     print(steam_engine)
     outp = game.connect_entities(steam_engine.position, Position(x=4, y=-20), Prototype.SmallElectricPole)
     entities = game.get_entities()
-    assert len(entities) == 5
+    assert len(entities) == 6

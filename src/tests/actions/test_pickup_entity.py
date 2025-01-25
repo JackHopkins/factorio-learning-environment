@@ -66,6 +66,21 @@ def test_pickup_belts(game):
     pickup_belts = game.pickup_entity(belt)
     assert pickup_belts
 
+def test_pickup_belts_position(game):
+    belts = game.connect_entities(Position(x=1, y=-1), Position(x=-2, y=0), Prototype.TransportBelt)
+    print(belts)
+    print(belts[0].belts)
+    game.pickup_entity(Prototype.TransportBelt, Position(x=1.5, y=0.5))
+    pass
+
+def test_pickup_pipes(game):
+    pipes = game.connect_entities(Position(x=1, y=-1), Position(x=-2, y=0), Prototype.Pipe)
+    print(pipes)
+    print(pipes[0].pipes)
+    for belt in pipes[0].pipes:
+        game.pickup_entity(Prototype.Pipe, belt.position)
+        print(f"Pickup belt at {belt.position}")
+
 def test_pickup_belts_that_dont_exist(game):
     belts = game.connect_entities(Position(x=0.5, y=0.5), Position(x=0.5, y=8.5), Prototype.TransportBelt)
     belt = belts[0]

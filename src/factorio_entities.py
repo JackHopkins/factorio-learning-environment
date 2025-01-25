@@ -195,6 +195,19 @@ class Position(BaseModel):
         return Position(x=self.x - self._modifier(args), y=self.y)
     def right(self, *args) -> 'Position':
         return Position(x=self.x + self._modifier(args), y=self.y)
+
+    def to_bounding_box(self, other: 'Position') -> 'BoundingBox':
+        min_x = min(self.x, other.x)
+        max_x = max(self.x, other.x)
+        min_y = min(self.y, other.y)
+        max_y = max(self.y, other.y)
+
+        return BoundingBox(
+            left_top=Position(min_x, min_y),
+            right_bottom=Position(max_x, max_y),
+            left_bottom=Position(min_x, max_y),
+            right_top=Position(max_x, min_y)
+        )
     def __eq__(self, other) -> bool:
         if not isinstance(other, Position):
             return NotImplemented
@@ -237,6 +250,11 @@ class BoundingBox(BaseModel):
     left_bottom: Position
     right_top: Position
     #center: Position
+    def center(self) -> Position:
+        return Position(
+            x=(self.left_top.x + self.right_bottom.x)//2,
+            y=(self.left_top.y + self.right_bottom.y)//2
+        )
 
 class BuildingBox(BaseModel):
     height: int
@@ -321,6 +339,8 @@ class Entity(BaseModel):
         # Convert to string format
         items = [f"{k}={v!r}" for k, v in repr_dict.items()]
         return f"\n\t{self.__class__.__name__}({', '.join(items)})"
+    def _get_prototype(self):
+        return self.prototype
 
 class Splitter(Entity):
     input_positions: List[Position]
@@ -430,7 +450,10 @@ class Lab(Entity, Electric):
 
     def __repr__(self) -> str:
         from factorio_types import technology_by_name
-        return f"\n\tLab(lab_input={self.lab_input}, status={self.status}, research={technology_by_name[self.research]}, electrical_id={self.electrical_id})"
+        research_string = ""
+        if self.research and self.research in technology_by_name:
+            research_string=f"research={self.research}, "
+        return f"\n\tLab(lab_input={self.lab_input}, status={self.status}, {research_string}electrical_id={self.electrical_id})"
 
 class Pipe(Entity):
     fluidbox_id: int

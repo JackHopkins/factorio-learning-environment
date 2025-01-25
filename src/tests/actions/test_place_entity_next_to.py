@@ -242,7 +242,7 @@ def test_inserters_above_chest(game):
         assert inserter, "Failed to place inserter"
 
 def test_adjacent_electric_mining_drills(game):
-    origin = game.get_resource_patch(Resource.CopperOre, game.nearest(Resource.CopperOre)).bounding_box.center
+    origin = game.get_resource_patch(Resource.CopperOre, game.nearest(Resource.CopperOre)).bounding_box.center()
     game.move_to(origin)
     # Place electric-mining-drill
     electric_mining_drill_1 = game.place_entity(Prototype.ElectricMiningDrill, direction=Direction.DOWN,

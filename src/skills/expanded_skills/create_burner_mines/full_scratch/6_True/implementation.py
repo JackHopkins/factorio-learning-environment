@@ -15,11 +15,11 @@ stone_position = get_resource_patch(Resource.Stone, nearest(Resource.Stone))
 print(f"Nearest stone patch found at: {stone_position}")
 
 # Move to the stone patch
-move_to(stone_position.bounding_box.center)
+move_to(stone_position.bounding_box.center())
 print(f"Moved to stone patch at: {stone_position}")
 
 # Place the first burner mining drill
-drill1 = place_entity(Prototype.BurnerMiningDrill, direction=Direction.UP, position=stone_position.bounding_box.center)
+drill1 = place_entity(Prototype.BurnerMiningDrill, direction=Direction.UP, position=stone_position.bounding_box.center())
 print(f"Placed first burner mining drill at: {drill1.position}")
 
 # Place the second burner mining drill next to the first one

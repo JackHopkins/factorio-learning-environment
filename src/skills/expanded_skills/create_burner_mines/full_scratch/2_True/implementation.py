@@ -14,11 +14,11 @@ coal_position = get_resource_patch(Resource.Coal, nearest(Resource.Coal))
 print(f"Nearest coal patch found at: {coal_position}")
 
 # Move to the coal patch
-move_to(coal_position.bounding_box.center)
+move_to(coal_position.bounding_box.center())
 print(f"Moved to coal patch at: {coal_position}")
 
 # Place the burner mining drill
-drill = place_entity(Prototype.BurnerMiningDrill, direction=Direction.UP, position=coal_position.bounding_box.center)
+drill = place_entity(Prototype.BurnerMiningDrill, direction=Direction.UP, position=coal_position.bounding_box.center())
 print(f"Placed burner mining drill at: {drill.position}")
 
 # Fuel the burner mining drill

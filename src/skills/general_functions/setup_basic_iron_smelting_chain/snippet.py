@@ -1,12 +1,12 @@
 # Place iron ore patch
 iron_ore_patch = get_resource_patch(Resource.IronOre, nearest(Resource.IronOre))
 assert iron_ore_patch, "No iron ore patch found"
-print(f"Iron ore patch found at {iron_ore_patch.bounding_box.center}")
+print(f"Iron ore patch found at {iron_ore_patch.bounding_box.center()}")
 
 # Place burner mining drill on iron ore patch
-move_to(iron_ore_patch.bounding_box.center)
+move_to(iron_ore_patch.bounding_box.center())
 drill = place_entity(Prototype.BurnerMiningDrill, direction=Direction.RIGHT,
-                          position=iron_ore_patch.bounding_box.center)
+                          position=iron_ore_patch.bounding_box.center())
 assert drill, "Failed to place burner mining drill"
 print(f"Burner mining drill placed at {drill.position}")
 

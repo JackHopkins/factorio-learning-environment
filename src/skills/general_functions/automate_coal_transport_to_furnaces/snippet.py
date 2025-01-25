@@ -12,7 +12,7 @@ coal_patch = get_resource_patch(Resource.Coal, coal_position, radius=10)
 assert coal_patch, "No coal patch found within radius"
 
 # Place the mining drill
-miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, coal_patch.bounding_box.center)
+miner = place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, coal_patch.bounding_box.center())
 assert miner, "Failed to place burner mining drill"
 
 # Place stone furnaces

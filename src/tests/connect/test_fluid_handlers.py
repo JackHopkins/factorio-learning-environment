@@ -192,3 +192,19 @@ def test_multiple(game):
     # Connect boiler to steam engine with pipes
     boiler_to_engine = game.connect_entities(boiler.position, steam_engine.position, Prototype.Pipe)
     print(f"Connected boiler to steam engine with pipes: {boiler_to_engine}")
+
+
+
+def test_for_attribute_error(game):
+    boiler_position = Position(x=2.5, y=29.5)
+    game.move_to(boiler_position)
+    boiler = game.place_entity(Prototype.Boiler, position=boiler_position)
+    offshore_pump_pos = Position(x=-0, y=29)
+    pump= game.place_entity(Prototype.OffshorePump, position=offshore_pump_pos, direction = Direction.UP)
+    pipes = game.connect_entities(pump, boiler, Prototype.Pipe)
+    try:
+        engine = game.place_entity(Prototype.SteamEngine, position=Position(x=8.5 ,y=28.5))
+        pipes = game.connect_entities(engine, boiler, Prototype.Pipe)
+    except Exception as e:
+        # fail the test if the exception is an AttributeError
+        assert not isinstance(e, AttributeError)

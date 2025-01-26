@@ -260,7 +260,7 @@ class ParallelBeamSearch:
             raise ValueError(f"No metadata found for version {self.version}")
 
         # Check model compatibility
-        if metadata.get('model') != self.llm_factory.model:
+        if self.llm_factory.model+'\n' not in metadata.get('version_description'):
             raise ValueError(f"Model mismatch: Version uses {metadata.get('model')}, "
                              f"but current config uses {self.llm_factory.model}")
 

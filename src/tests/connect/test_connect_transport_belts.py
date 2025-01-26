@@ -580,3 +580,6 @@ def test_multi_belt_join(game):
     pass
 
 
+def test_connect_furnace(game):
+    furnace = game.place_entity(Prototype.StoneFurnace, position = Position(x = 2, y = 0))
+    belts = game.connect_entities(Position(x = 0, y = 0), furnace.position, Prototype.TransportBelt)

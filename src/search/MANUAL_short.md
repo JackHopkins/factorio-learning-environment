@@ -787,6 +787,7 @@ if lab.energy <= 0:
 lab_inventory = inspect_inventory(lab)
 required_packs = lab_inventory.get(Prototype.AutomationSciencePack, 0)
 assert required_packs > 0, "No science packs in lab"
+```
 
 ### Self-Fueling Mining Systems
 
@@ -1118,4 +1119,4 @@ copper_ore = get_resource_patch(Resource.CopperOre, nearest(Resource.CopperOre))
 - When a entity has status "WAITING_FOR_SPACE_IN_DESTINATION", it means the there is no space in the drop position. For instance, a mining drill will have status WAITING_FOR_SPACE_IN_DESTINATION when the entities it mines are not being properly collected by a furnace or a chest or transported away from drop position with transport belts
 - Make sure to always put enough fuel into all entities that require fuel. It's easy to mine more coal, so it's better to insert in abundance 
 - Keep it simple! Minimise the usage of transport belts if you don't need them. Use chests and furnaces to catch the ore directly from drills
-- Inserters put items into entities or take items away from entities. You need to add inserters when items need to be automatically put into entities like chests, assembling machines, furnaces, boilers etc. The only exception is you can put a furance or a chest directly at drills drop position, that catches the ore directly
+- Inserters put items into entities or take items away from entities. You need to add inserters when items need to be automatically put into entities like chests, assembling machines, furnaces, boilers etc. The only exception is you can put a furnace or a chest directly at drills drop position, that catches the ore directly

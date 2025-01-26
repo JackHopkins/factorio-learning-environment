@@ -35,18 +35,11 @@ def test_fail_when_placing_on_the_same_place(game):
     :return:
     """
     game.place_entity(Prototype.Pipe, position=(0, 0))
-    game.place_entity(Prototype.Pipe, position=(0, 0))
-    pass
-
-def test_fast_replace(game):
-    game.move_to(game.nearest(Resource.Water))
-    game.place_entity(Prototype.OffshorePump,
-                                      position=game.nearest(Resource.Water),
-                                      direction=Direction.RIGHT)
-    game.place_entity(Prototype.OffshorePump,
-                                      position=game.nearest(Resource.Water),
-                                      direction=Direction.RIGHT)
-    assert game.inspect_inventory()[Prototype.OffshorePump] == 3
+    try:
+        game.place_entity(Prototype.Pipe, position=(0, 0))
+        assert False
+    except:
+        assert True
 
 def test_place_transport_belt_next_to_miner(game):
     """

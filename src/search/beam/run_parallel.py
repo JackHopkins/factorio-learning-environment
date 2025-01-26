@@ -15,6 +15,7 @@ from search.beam.run import OBSERVATION_SPACE, MANUAL, SYSTEM_PROMPT, HISTORY_SU
 from search.db_client import DBClient
 from factorio_instance import FactorioInstance
 from search.mcts.formatters.recursive_formatter import RecursiveFormatter
+from search.mcts.formatters.recursive_report_formatter import RecursiveReportFormatter
 from search.model.game_state import GameState
 
 os.environ.update({"FORCE_COLOR": "1", "TERM": "xterm-256color"})
@@ -109,12 +110,17 @@ async def run_model_search(model: str, instance_start: int, version: int, resume
 
     llm_factory = LLMFactory(model=model)
 
-    formatter = RecursiveFormatter(
+    # formatter = RecursiveFormatter(
+    #     chunk_size=32,
+    #     llm_factory=llm_factory,
+    #     cache_dir='./summary_cache',
+    #     summary_instructions=API_SCHEMA + HISTORY_SUMMARIZATION_INSTRUCTIONS,
+    #     summarize_history=False
+    # )
+    formatter = RecursiveReportFormatter(
         chunk_size=32,
         llm_factory=llm_factory,
         cache_dir='./summary_cache',
-        summary_instructions=API_SCHEMA + HISTORY_SUMMARIZATION_INSTRUCTIONS,
-        summarize_history=False
     )
 
     parallel_beam = ParallelBeamSearch(
@@ -157,12 +163,19 @@ async def main():
     resume_version = args.resume_version if args.resume_version else None #450
 
     # List of models to run in parallel
+    # model_configs = [
+    #     {"model": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "resume_version": 464},
+    #     {"model": "gpt-4o-mini", "resume_version": 465},
+    #     {"model": "gpt-4o", "resume_version": 466},
+    #     {"model": "deepseek-chat", "resume_version": 467},
+    #     {"model": "claude-3-5-sonnet-20241022", "resume_version": 468}
+    # ]
     model_configs = [
-        {"model": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "resume_version": 464},
-        {"model": "gpt-4o-mini", "resume_version": 465},
-        {"model": "gpt-4o", "resume_version": 466},
-        {"model": "deepseek-chat", "resume_version": 467},
-        {"model": "claude-3-5-sonnet-20241022", "resume_version": 468}
+        #{"model": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "resume_version": 469},
+        #{"model": "gpt-4o-mini", "resume_version": 470},
+        {"model": "gpt-4o", "resume_version": 471},
+        #{"model": "deepseek-chat", "resume_version": 472},
+        #{"model": "claude-3-5-sonnet-20241022", "resume_version": 473},
     ]
 
     parser = argparse.ArgumentParser()

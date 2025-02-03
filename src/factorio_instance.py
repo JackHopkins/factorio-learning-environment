@@ -345,7 +345,51 @@ class FactorioInstance:
             script = command
         return script
 
-    async def screenshot(self, resolution="1920x1080", save_path=None, zoom=None, script_output_path="/Users/jackhopkins/Library/Application Support/factorio/script-output"):
+    def calculate_optimal_zoom(self, bounds: BoundingBox, resolution="1920x1080"):
+        """
+        Calculate the optimal zoom level to fit the factory in the screenshot.
+
+        Args:
+            bounds (BoundingBox): Factory bounds containing width and height
+            resolution (str): Screenshot resolution in format "WIDTHxHEIGHT"
+
+        Returns:
+            float: Optimal zoom level
+        """
+        # Parse resolution
+        width, height = map(int, resolution.split('x'))
+        aspect_ratio = width / height
+
+        # Get factory dimensions
+        factory_width = bounds.width()
+        factory_height = bounds.height()
+        factory_aspect_ratio = factory_width / factory_height
+
+        # Base tiles visible at zoom level 1
+        # These values are approximate for Factorio's zoom levels
+        BASE_VISIBLE_HEIGHT = 25  # tiles visible vertically at zoom 1
+        BASE_VISIBLE_WIDTH = BASE_VISIBLE_HEIGHT * aspect_ratio
+
+        # Calculate required zoom based on both dimensions
+        zoom_by_width = BASE_VISIBLE_WIDTH / factory_width
+        zoom_by_height = BASE_VISIBLE_HEIGHT / factory_height
+
+        # Use the smaller zoom to ensure entire factory is visible
+        optimal_zoom = min(zoom_by_width, zoom_by_height)
+
+        # Add padding (20% margin)
+        optimal_zoom *= 0.8
+
+        # Clamp zoom to reasonable values
+        # Factorio's min and max zoom levels
+        MIN_ZOOM = 0.1
+        MAX_ZOOM = 4.0
+
+        optimal_zoom = max(MIN_ZOOM, min(MAX_ZOOM, optimal_zoom))
+
+        return round(optimal_zoom, 2)
+
+    def screenshot(self, resolution="1920x1080", save_path=None, zoom=None, center_on_factory=False, script_output_path="/Users/jackhopkins/Library/Application Support/factorio/script-output"):
         """
         Take a screenshot in game and optionally save it to a specific location.
 
@@ -360,13 +404,21 @@ class FactorioInstance:
             str: Path to the saved screenshot, or None if failed
         """
         # Clear rendering
+        bounds: BoundingBox = self.namespace._get_factory_centroid()
+        POS_STRING = ""
+        if bounds:
+            centroid = bounds.center()
+            POS_STRING = ", position={x="+str(centroid.x)+", y="+str(centroid.y)+"}"
+
         self.rcon_client.send_command("/c rendering.clear()")
 
+        # Calculate optimal zoom if not specified
+        if zoom is None:
+            zoom = self.calculate_optimal_zoom(bounds, resolution)
 
-        # Build the screenshot command
-        command = "/c game.take_screenshot({player=1, zoom="+str(zoom)+", show_entity_info=true, hide_clouds=true, hide_fog=true})"
+        command = "/c game.take_screenshot({player=1, zoom="+str(zoom)+", show_entity_info=true, hide_clouds=true, hide_fog=true "+POS_STRING+"})"
         response = self.rcon_client.send_command(command)
-        await asyncio.sleep(1)
+        time.sleep(1)
         # if not response:
         #     return None
 

@@ -24,7 +24,7 @@ class PickupEntity(Action):
             raise ValueError("The first argument must be an Entity or Prototype object")
         if isinstance(entity, Entity) and isinstance(position, Position):
             raise ValueError("If the first argument is an Entity object, the second argument must be None")
-        if position and not isinstance(position, Position):
+        if position is not None and not isinstance(position, Position):
             raise ValueError("The second argument must be a Position object")
 
         if isinstance(entity, Prototype):

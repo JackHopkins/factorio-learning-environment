@@ -8,7 +8,8 @@ def game(instance):
     instance.reset()
     instance.set_inventory(**{
         'wooden-chest': 100,
-        'electric-mining-drill': 10
+        'electric-mining-drill': 10,
+        'steam-engine': 1
     })
     yield instance.namespace
 
@@ -28,6 +29,25 @@ def test_nearest_buildable_simple(game):
         # Verify the returned position is valid
         can_build = game.can_place_entity(Prototype.WoodenChest, position = coord)
         assert can_build is True
+
+def test_nearest_buildable_near_water(game):
+    """
+    Test finding a buildable position for a simple entity like a wooden chest
+    without a bounding box.
+    """
+    #steam_engine = game.place_entity(Prototype.SteamEngine, direction=Direction.RIGHT, position=Position(x=0, y=0))
+    water_pos = game.nearest(Resource.Water)
+    game.move_to(water_pos)
+
+    building_box = BuildingBox(width=5, height=3)  # Steam engine dimensions are 3x5
+    buildable_area = game.nearest_buildable(Prototype.SteamEngine, building_box, water_pos)
+
+    # Step 2: Place Steam Engine at Valid Position
+    steam_engine_position = buildable_area.center()
+    game.move_to(steam_engine_position)
+    steam_engine = game.place_entity(Prototype.SteamEngine, direction=Direction.RIGHT, position=steam_engine_position)
+
+    assert True, "The steam engine should be placeable due to the bounding box"
 
 
 def test_nearest_buildable_mining_drill(game):

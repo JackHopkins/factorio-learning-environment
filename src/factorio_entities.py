@@ -187,21 +187,23 @@ class Position(BaseModel):
         return ((self.x - a.x) ** 2 + (self.y - a.y) ** 2) ** 0.5
     
     def _modifier(self, args):
+        if isinstance(args, int) and args > 0:
+            return args
         if len(args) > 0 and isinstance(args[0], int):
             return args[0]
         return 1
     def above(self, *args) -> 'Position':
-        return Position(x=self.x, y=self.y - self._modifier(args))
+        return Position(x=self.x, y=self.y - self._modifier(*args))
     def up(self, *args) -> 'Position':
         return self.above(args)
     def below(self, *args) -> 'Position':
-        return Position(x=self.x, y=self.y + self._modifier(args))
+        return Position(x=self.x, y=self.y + self._modifier(*args))
     def down(self, *args) -> 'Position':
         return self.below(args)
     def left(self, *args) -> 'Position':
-        return Position(x=self.x - self._modifier(args), y=self.y)
+        return Position(x=self.x - self._modifier(*args), y=self.y)
     def right(self, *args) -> 'Position':
-        return Position(x=self.x + self._modifier(args), y=self.y)
+        return Position(x=self.x + self._modifier(*args), y=self.y)
 
     def to_bounding_box(self, other: 'Position') -> 'BoundingBox':
         min_x = min(self.x, other.x)
@@ -256,12 +258,30 @@ class BoundingBox(BaseModel):
     right_bottom: Position
     left_bottom: Position
     right_top: Position
-    #center: Position
+
     def center(self) -> Position:
         return Position(
-            x=(self.left_top.x + self.right_bottom.x)//2,
-            y=(self.left_top.y + self.right_bottom.y)//2
+            x=(self.left_top.x + self.right_bottom.x)/2,
+            y=(self.left_top.y + self.right_bottom.y)/2
         )
+
+    def width(self) -> float:
+        """
+        Calculate the width of the bounding box.
+
+        Returns:
+            float: The absolute difference between right and left x-coordinates
+        """
+        return abs(self.right_bottom.x - self.left_top.x)
+
+    def height(self) -> float:
+        """
+        Calculate the height of the bounding box.
+
+        Returns:
+            float: The absolute difference between bottom and top y-coordinates
+        """
+        return abs(self.right_bottom.y - self.left_top.y)
 
 class BuildingBox(BaseModel):
     height: int
@@ -311,7 +331,7 @@ class EntityCore(BaseModel):
     direction: Direction
     position: Position
     def __repr__(self):
-        return f"Entity(name='{self.name}', direction={self.direction.name}, position={self.position})"
+        return f"Entity(name='{self.name}', direction={self.direction.name}, position=Position({self.position})"
 
 class Entity(EntityCore):
 
@@ -323,7 +343,6 @@ class Entity(EntityCore):
     health: float
     warnings: List[str] = []
     status: EntityStatus = EntityStatus.NORMAL
-    neighbours: Optional[List[EntityCore]] = []
     game: Optional[Any] = None # RCON connection for refreshing attributes
 
     def __repr__(self) -> str:
@@ -355,6 +374,9 @@ class Entity(EntityCore):
         return f"\n\t{self.__class__.__name__}({', '.join(items)})"
     def _get_prototype(self):
         return self.prototype
+
+class StaticEntity(Entity):
+    neighbours: Optional[Union[Dict, List[EntityCore]]] = []
 
 class Splitter(Entity):
     input_positions: List[Position]
@@ -388,17 +410,17 @@ class EnergySource(BaseModel):
     output_flow_limit: str
     drain: str
 
-class Accumulator(Entity, Electric):
+class Accumulator(StaticEntity, Electric):
     energy_source: Optional[EnergySource] = None
 
-class Inserter(Entity, Electric):
+class Inserter(StaticEntity, Electric):
     pickup_position: Optional[Position] = None
     drop_position: Position
 
 class UndergroundBelt(Entity):
     type: str
 
-class MiningDrill(Entity):
+class MiningDrill(StaticEntity):
     drop_position: Position
     resources: List[Ingredient]
 
@@ -416,16 +438,16 @@ class Ammo(BaseModel):
     magazine_size: Optional[int] = 0
     reload_time: Optional[float] = 0
 
-class GunTurret(Entity):
+class GunTurret(StaticEntity):
     turret_ammo: Inventory = Inventory()
 
-class AssemblingMachine(Entity, Electric):
+class AssemblingMachine(StaticEntity, Electric):
     recipe: Optional[Recipe] = None  # Prototype
     assembling_machine_input: Inventory = Inventory()
     assembling_machine_output: Inventory = Inventory()
     assembling_machine_modules: Inventory = Inventory()
 
-class FluidHandler(Entity):
+class FluidHandler(StaticEntity):
     connection_points: List[Position] = []
     fluid_box: Optional[Union[dict, list]] = []
     fluid_systems: Optional[Union[dict, list]] = []

@@ -372,6 +372,7 @@ local function place_at_position(player, connection_type, current_position, dir,
     end
 end
 
+
 local function connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run)
     local counter_state = {place_counter = 0}
     local player = game.get_player(player_index)
@@ -642,10 +643,105 @@ global.utils.normalise_path = function(original_path, start_position, end_positi
     return path
 end
 
+-- Helper function to check if two positions are adjacent
+local function are_positions_adjacent(pos1, pos2)
+    local dx = math.abs(pos1.x - pos2.x)
+    local dy = math.abs(pos1.y - pos2.y)
+    return (dx <= 1 and dy <= 1) and not (dx == 0 and dy == 0)
+end
+
+-- Helper function to validate belt direction compatibility
+local function are_belt_directions_compatible(dir1, dir2, pos1, pos2)
+    -- Convert positions to vectors
+    local dx = pos2.x - pos1.x
+    local dy = pos2.y - pos1.y
+
+    -- Check if the belts are pointing in compatible directions
+    -- This is a simplified check - you may need to adjust based on your specific needs
+    if dir1 == dir2 then
+        -- Same direction - check if it matches position delta
+        local expected_dir = global.utils.get_direction(pos1, pos2)
+        return dir1 == expected_dir
+    else
+        -- Different directions - check if they form a valid turn
+        -- Add more sophisticated turn validation if needed
+        return are_positions_adjacent(pos1, pos2)
+    end
+end
+
+
+-- Function to validate belt connectivity
+local function validate_belt_connectivity(path, connection_type)
+    if not path or #path < 2 then
+        return false, "Invalid path length"
+    end
+
+    -- Check each segment of the path
+    for i = 1, #path - 1 do
+        local current_pos = path[i].position
+        local next_pos = path[i + 1].position
+
+        -- Check if positions are adjacent or properly spaced
+        if not are_positions_adjacent(current_pos, next_pos) then
+            return false, "Gap detected in belt placement at position " ..
+                   current_pos.x .. "," .. current_pos.y
+        end
+
+        -- Calculate directions for current and next position
+        local current_dir = global.utils.get_direction(current_pos, next_pos)
+        local next_dir = i < #path - 1 and
+                        global.utils.get_direction(next_pos, path[i + 2].position) or
+                        current_dir
+
+        -- Check direction compatibility
+        if not are_belt_directions_compatible(current_dir, next_dir, current_pos, next_pos) then
+            return false, "Invalid belt turn detected at position " ..
+                   current_pos.x .. "," .. current_pos.y
+        end
+
+        -- Check if position is placeable
+        if not is_placeable(current_pos) then
+            return false, "Cannot place belt at position " ..
+                   current_pos.x .. "," .. current_pos.y
+        end
+    end
+
+    -- Check final position
+    if not is_placeable(path[#path].position) then
+        return false, "Cannot place belt at final position"
+    end
+
+    return true, nil
+end
+
+-- Modify the connect_entities function to include validation
+local function connect_entities_with_validation(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run)
+    local path = global.paths[path_handle]
+
+    -- Only perform validation for belt-type entities
+    if connection_type:find("belt") then
+        -- Normalize path first
+        local normalized_path = global.utils.normalise_path(path,
+            {x = source_x, y = source_y},
+            {x = target_x, y = target_y})
+
+        -- Validate connectivity
+        local is_valid, error_message = validate_belt_connectivity(normalized_path, connection_type)
+        if not is_valid then
+            error(error_message)
+        end
+    end
+
+    -- If validation passes or it's not a belt, proceed with normal connection
+    return connect_entities(player_index, source_x, source_y, target_x, target_y,
+                          path_handle, connection_type, dry_run)
+end
+
+
 -- Using the new shortest_path function.
 global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, dry_run, number_of_connection_entities)
     --First do a dry run
-    local result = connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, true)
+    local result = connect_entities_with_validation(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, true)
     -- then do an actual run if dry run is false
     if not dry_run then
         -- Check if the player has enough entities in their inventory
@@ -655,7 +751,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
         if number_of_connection_entities < required_count then
             error("\"You do not have enough " .. connection_type .. " in you inventory to complete this connection. Required number - " .. required_count .. ", Available in inventory - " .. number_of_connection_entities.."\"")
         end
-        result = connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, false)
+        result = connect_entities_with_validation(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type, false)
     end
 
     return result

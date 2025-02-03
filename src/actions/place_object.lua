@@ -209,9 +209,10 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             local collision_box = entity_prototype.collision_box
             -- Calculate the area to check for water
             local check_area = {
-                {position.x + collision_box.left_top.x, position.y + collision_box.left_top.y},
-                {position.x + collision_box.right_bottom.x, position.y + collision_box.right_bottom.y}
+                {position.x - collision_box.left_top.x/2, position.y - collision_box.left_top.y/2},
+                {position.x + collision_box.right_bottom.x/2, position.y + collision_box.right_bottom.y/2}
             }
+            rendering.draw_circle{width = 1, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.5, filled = false, target = {x=position.x, y=position.y}, time_to_live = 12000}
 
             -- Check each tile in the entity's footprint for water
             for x = math.floor(check_area[1][1]), math.ceil(check_area[2][1]) do
@@ -318,7 +319,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             }
 
             if not can_build then
-                error("Cannot place " .. entity .. " at the target location.")
+                error("Cannot place " .. entity .. " at the target location - something is in the way")
             end
         end
 

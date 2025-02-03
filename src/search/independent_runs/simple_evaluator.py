@@ -27,45 +27,8 @@ class SimpleFactorioEvaluator:
         self.value_accrual_time = value_accrual_time  # Time to accrue value before evaluating
         self.error_penalty = error_penalty  # Penalty for errors during evaluation
 
-        # # Initialize logger if not provided
-        # if not logger:
-        #     self.logger = FactorioLogger(len(instances))
-        #     self.logger.start()
-        # else:
-        #     self.logger = logger
-
-        # Create instance ID to TCP port mapping
-        # self.instance_to_port = {
-        #     i: instance.tcp_port
-        #     for i, instance in enumerate(self.instances)
-        # }
-        # self.instance_to_port[len(self.instances)] = self.holdout.tcp_port  # Add holdout mapping
-
         if logger:
             self.port_to_group = logger.port_to_group
-            # Find the group ID for the holdout instance
-            # self.holdout_group_id = self.port_to_group[self.holdout.tcp_port]
-
-    # def set_status(self, status):
-    #     for instance in self.instances:
-    #         self.logger.update_instance(instance.tcp_port, status=status)
-
-    # def set_sampling_status(self):
-    #     """Update status for all instances in this evaluator's group"""
-    #     if self.logger:
-    #         for instance in self.instances:
-    #             self.logger.update_instance(instance.tcp_port, status="sampling")
-            # Also update holdout status
-            # self.logger.update_instance(self.holdout.tcp_port, status="sampling")
-
-    # def set_iteration(self, iteration, n_iterations):
-    #     """Update iteration number for all instances in this evaluator's group"""
-    #     if self.logger:
-    #         for instance in self.instances:
-    #             self.logger.update_instance(instance.tcp_port, iteration=iteration, n_iterations=n_iterations)
-            # Also update holdout status
-            # self.logger.update_instance(self.holdout.tcp_port, iteration=iteration, n_iterations=n_iterations)
-
     async def evaluate(self, program: Program, start_state: GameState) -> Program:
         try:
             self.instance.reset(start_state)
@@ -78,19 +41,11 @@ class SimpleFactorioEvaluator:
             program.state = state
             program.raw_reward = raw_reward
             program.ticks = ticks
-            # program.holdout_value = holdout_value
             conversation = copy.deepcopy(program.conversation)
-
-            # if "text_response" in program.meta and program.meta["text_response"]:
-            #     assistant_message_str = program.meta["text_response"]
-            # else:
-            #     assistant_message_str = program.code
-
 
             conversation.add_result(program.code, response, score=raw_reward, advantage=relative_reward,
                                     objectives=program.meta[
                                         'objectives'] if 'objectives' in program.meta else [])  #
-            # conversation.add_result(assistant_message_str, response, score=raw_reward, advantage=relative_reward, objectives=program.meta['objectives'] if 'objectives' in program.meta else [])
             program.conversation = conversation
             program.response = response
             program.achievements = achievements
@@ -113,15 +68,11 @@ class SimpleFactorioEvaluator:
             start_inventory = instance.namespace.inspect_inventory()
             start_production_flows = instance.namespace._get_production_stats()
             initial_value, start_time = instance.namespace.score()
-
             reward, time, result = instance.eval(program.code, timeout=60)
 
 
-            save_path = Path(f"../../../data/screenshots/{program.version}/{self.instance.tcp_port}/{program.depth}.png")
-            await self.instance.screenshot(save_path=save_path, zoom=0.5)
-
-            # Get the namespace variables in a human readable format for debugging purposes
-            #vars = pickle.loads(state.namespace)
+            save_path = Path(f"../../../data/screenshots/{program.version}/{self.instance.tcp_port}/{int(((program.depth-1)/2)+1)}.png")
+            self.instance.screenshot(save_path=save_path, center_on_factory=True)
 
             entities = instance.namespace.get_entities()
             final_inventory = instance.namespace.inspect_inventory()

@@ -142,9 +142,9 @@ global.actions.nearest_buildable = function(player_index, entity_name, bounding_
                         right_bottom = right_bottom,
                         filled = false,
                         color = {r=0, g=1, b=0, a=0.5},
-                        time_to_live = 6000
+                        time_to_live = 60000
                     }
-                    return current_pos
+                    return {position=current_pos, left_top=left_top, right_bottom=right_bottom}
                 end
             else
                 -- Simple position check for entities without bounding box

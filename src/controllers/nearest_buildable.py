@@ -41,26 +41,30 @@ class NearestBuildable(Action):
                 "right_bottom": {"x": dx, "y": dy}
             }
         # make all the values integers
-        center_position = {"x": math.ceil(center_position.x + 0.5), "y": math.ceil(center_position.y + 0.5)}
-
+        #center_position = {"x": math.ceil(center_position.x + 0.5), "y": math.ceil(center_position.y + 0.5)}
+        center_position = {"x": center_position.x , "y": center_position.y}
 
         response, time_elapsed = self.execute(PLAYER, entity.value[0], bb_data, center_position)
 
         if isinstance(response, str):
             raise Exception(f"No viable place to put {str(entity)} near the centre position {center_position} with this BuildingBox size found on the map. Either decrease the size of the BuildingBox or use multiple smaller BuildingBoxes")
 
-        response_x = response['x']
-        response_y = response['y']
-
+        response_x = response['position']['x']
+        response_y = response['position']['y']
+        right_bottom = Position(x=response['right_bottom']['x'], y=response['right_bottom']['y'])
+        left_top = Position(x=response['left_top']['x'], y=response['left_top']['y'])
+        left_bottom = Position(x=response['left_top']['x'], y=response['right_bottom']['y'])
+        right_top = Position(x=response['right_bottom']['x'], y=response['left_top']['y'])
         # return {"left_top": Position(x=response_x, y=response_y),
         #         "right_bottom": Position(x=response_x+dx-1,
         #                                   y=response_y+dy-1),
         #         "left_bottom": Position(x=response_x, y=response_y+dy-1),
         #         "right_top": Position(x=response_x + dx-1, y=response_y)}
         #
+        #XOFFSET, YOFFSET = -0.5, -0.5
         return BoundingBox(
-            left_top=Position(x=response_x, y=response_y),
-            right_bottom=Position(x=response_x+dx-1, y=response_y+dy-1),
-            left_bottom=Position(x=response_x, y=response_y+dy-1),
-            right_top=Position(x=response_x + dx-1, y=response_y)
+            left_top=left_top,
+            right_bottom=right_bottom,
+            left_bottom=left_bottom,
+            right_top=right_top
         )

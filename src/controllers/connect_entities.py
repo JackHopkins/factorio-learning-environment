@@ -135,11 +135,11 @@ class ConnectEntities(Action):
     def _round_position(self, position: Position):
         return Position(x=math.floor(position.x), y=math.floor(position.y))
 
-    def _attempt_to_get_entity(self, position: Position) -> Union[Position, Entity, EntityGroup]:
+    def _attempt_to_get_entity(self, position: Position, get_connectors=False) -> Union[Position, Entity, EntityGroup]:
         entities = self.get_entities(position=position, radius=0.1)
         if not entities:
             return position
-        if isinstance(entities[0], (BeltGroup, TransportBelt, PipeGroup, Pipe)):
+        if isinstance(entities[0], (BeltGroup, TransportBelt, PipeGroup, Pipe)) and not get_connectors:
             return position
         return entities[0]
 
@@ -216,7 +216,7 @@ class ConnectEntities(Action):
                 y_sign = numpy.sign(source_position.y - target_position.y)
 
             if isinstance(source_entity, BeltGroup):
-                source_position = source_entity.outputs[0].position # TODO This should be the nearest output to the source position
+                source_position = source_entity.outputs[0].output_position # TODO This should be the nearest output to the source position
             elif source_entity and isinstance(source, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
                 if isinstance(source_entity, PumpJack) and connection_type.name == Prototype.Pipe.name:
                     source_position = source_entity.connection_points[0]
@@ -375,22 +375,37 @@ class ConnectEntities(Action):
                             f"Error with connecting entities - Could not connect {connection_prototype} from {(source_position)} to {(target_position)}. {self.get_error_message(response.lstrip())}")
 
                 except Exception as e:
+                    #raise e
                     # Accept allowing paths through own entities if it fails
                     #if isinstance(source, (BeltGroup, TransportBelt)) and isinstance(target, (BeltGroup, TransportBelt)):
-                    response = self._get_path(source_position,
-                                              target_position,
+                    source_pos = source_position
+                    if not source_entity or isinstance(source_entity, Position):
+                        source_entity = self._attempt_to_get_entity(source_position, get_connectors=True)
+                        if source_entity and isinstance(source_entity, BeltGroup):
+                            source_pos = source_entity.outputs[0].output_position
+
+                    target_pos = target_position
+                    if not target_entity or isinstance(target_entity, Position):
+                        target_entity = self._attempt_to_get_entity(target_position, get_connectors=True)
+                        if target_entity and isinstance(target_entity, BeltGroup):
+                            target_pos = source_entity.outputs[0].input_position
+
+                    response = self._get_path(source_pos,
+                                              target_pos,
                                               connection_prototype,
                                               number_of_connection_prototype,
                                               pathing_radius,
                                               dry_run,
-                                              allow_paths_through_own_entities=True)
-                    #else:
-                    #    response = str(e)
+                                              allow_paths_through_own_entities=False)
 
                 # If we are dealing with pipes, insulate all pre-existing pipes with a wider bounding box
                 # This will prevent accidentally merging adjacent pipes.
-                if connection_type == Prototype.Pipe:
-                    self._clear_collision_boxes()
+                self._clear_collision_boxes()
+
+                if isinstance(response, str):
+                    raise Exception(
+                        f"Error with connecting entities - Could not connect {connection_prototype} from {(source_position)} to {(target_position)}. {self.get_error_message(response.lstrip())}")
+
             else:
                 pathing_radius = 4 # Larger radius because we are using poles that don't need exact placement
                 self._extend_collision_boxes(source_position, target_position)

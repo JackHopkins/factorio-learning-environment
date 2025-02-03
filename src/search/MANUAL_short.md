@@ -425,73 +425,59 @@ assert assembling_machine.energy > 0, f"assembling machine is not getting power"
 ```
 
 ### 7. Belt Systems
-When creating belt systems:
-1. Establish source
-2. Place destination
-3. Connect with belts
-NB: ALWAYS USE INSERTERS TO INSERT ITEMS INTO DESTINATION OR TAKE FROM SOURCE
-Only difference are drills as they have a drop_position that automatically drops resources
+When creating belt systems, ensure that the belts form a straight line wherever possible.
+Straight, grid-aligned belts ensure more predictable item flow and easier maintenance.
+Establish source, place destination, and then connect with belts. 
+NB: ALWAYS USE INSERTERS TO INSERT ITEMS INTO DESTINATION OR TAKE FROM SOURCE.
+IMPORTANT: For best results, align the transport belt segments as straight lines.
 
 Example
 Move items from a chest to a furnace
 ```python
 # log your general idea what you will do next
-print("I will create a chest that transports items to a furnace")
+print("I will create a chest that transports items to a furnace using a straight belt line")
 source_position = Position(0, 0)
 # Belt system pattern
 move_to(source_position)
 # define the BuildingBox for the chest. 
-# chest dimensions are 1x1
-# We add 3 as height as we want to add a inserter that takes items from the chest to the furnace (+1 for inserter, +1 for inserter drop position)
+# chest dimensions are 1x1; add extra space for the inserter
 building_box = BuildingBox(width = 1, height = 3)
-# get the nearest buildable area around the iron_ore_position
 buildable_coordinates = nearest_buildable(Prototype.WoodenChest, building_box, source_position)
-# Place chest on the left_top of the buildable_coordinates
 source_pos = buildable_coordinates.left_top
 move_to(source_pos)
 source = place_entity(Prototype.WoodenChest, position=source_pos)
 print(f"Placed chest at {source.position}")
-# add inserter
-# always use 0 spacing for inserters
-# direction is DOWN as we put 2 at the height of the buildable coordinates and put chest at the top of the buildable box
-# we do not need to rotate the inserter as it takes from the chest not puts to it
+
+# Add inserter (always use 0 spacing for inserters)
 source_inserter = place_entity_next_to(Prototype.BurnerInserter, 
-    reference_position=source.position,
-    direction=Direction.DOWN,
-    spacing = 0)
-print(f"Placed a inserter at {source_inserter.position} that will take items from the chest at {source.position}")
-# Place a furnace 10 spaces away
-target_position = Position(x = source.position.x, y = source.position.y)
-# move to the position to place the entity
+                                      reference_position=source.position,
+                                      direction=Direction.DOWN,
+                                      spacing=0)
+print(f"Placed an inserter at {source_inserter.position} to extract items from the chest at {source.position}")
+
+# Place a furnace 10 spaces away in a grid-aligned fashion for a straight belt run
+target_position = Position(x = source.position.x + 10, y = source.position.y)
 move_to(target_position)
-# define the buildable area for the furnace, furnace dimensions are 1x1
-# Also need to account for inserter that puts items to the furnace so width is 3 (+1 for inster, +1 for inserter pickup position)
 building_box = BuildingBox(width = 3, height = 1)
-# get the nearest buildable area around the iron_ore_position
-buildable_coordinates = nearest_buildable(Prototype.StoneFurnace, building_box, iron_ore_position)
-# use the left_top coordinate to put the furnace
+buildable_coordinates = nearest_buildable(Prototype.StoneFurnace, building_box, target_position)
 furnace_pos = buildable_coordinates.left_top
 move_to(furnace_pos)
-destination_furnace = place_entity(Prototype.WoodenChest, position=furnace_pos)
-print(f"Placed destination_furnace at {destination_furnace.position}. This will start getting items from chest at {source.position}")
-# add inserter
-# always use 0 spacing for inserters
-# direction is RIGHT as we put 2 at the width of the buildable coordinates and the furnace is at top left
-destination_inserter = place_entity_next_to(Prototype.BurnerInserter, 
-    reference_position=destination_furnace.position,
-    direction=Direction.RIGHT,
-    spacing = 0)
-print(f"Placed destination_inserter at {destination_inserter.position}")
-# VERY IMPORTANT: rotate inserter as by default the inserter takes items from the entity it is placed next to
-# We want it to put items into the destination furnace
-destination_inserter = rotate_entity(destination_inserter, Direction.LEFT)  # Face inserter toward furnace
+destination_furnace = place_entity(Prototype.StoneFurnace, position=furnace_pos)
+print(f"Placed furnace at {destination_furnace.position}")
 
-print(f"Placed a inserter at {destination_inserter.position} that will put items into the furnace at {destination_furnace.position}")
-# IMPORTANT: ALWAYS NEED TO CONNECT TRANSPORT BELTS TO A INSERTER, NEVER DIRECTLY CONNECT TO A CHEST OR FURNACE
-belt = connect_entities(source_inserter.drop_position, destination_inserter.pickup_position, 
-    Prototype.TransportBelt)
-print(f"connected chest inserter at {source_inserter.position} to the destination_inserter at {destination_inserter.position} with {belt}. This will move items from chest at {soruce.position} to the furnace at {destination_furnace.position}")
+# Add inserter next to the furnace (using 0 spacing)
+destination_inserter = place_entity_next_to(Prototype.BurnerInserter, 
+                                           reference_position=destination_furnace.position,
+                                           direction=Direction.RIGHT,
+                                           spacing=0)
+destination_inserter = rotate_entity(destination_inserter, Direction.LEFT)  # Rotate to insert into the furnace
+print(f"Placed inserter at {destination_inserter.position} to feed the furnace at {destination_furnace.position}")
+
+# Connect the two inserters with a straight transport belt line
+belt = connect_entities(source_inserter, destination_inserter, Prototype.TransportBelt)
+print(f"Connected chest inserter at {source_inserter.position} to furnace inserter at {destination_inserter.position} with a straight belt: {belt}")
 ```
+
 ### 8. Many-to-One Connections
 When you need to connect multiple sources to a single target with transport belts
 1. Establish sources and target
@@ -833,7 +819,7 @@ belts = connect_entities(
     inserter.pickup_position,
     Prototype.TransportBelt
 )
-print(f"Conncted BurnerMiningDrill at {drill.position} to inserter at {coal_input_inserter.position} with {belts}")
+print(f"Connected BurnerMiningDrill at {drill.position} to inserter at {coal_input_inserter.position} with {belts}")
 
 # 5. Bootstrap system with initial fuel
 # we also update the drill variable by returning it from the function

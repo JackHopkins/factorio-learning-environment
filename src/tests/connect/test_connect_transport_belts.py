@@ -510,6 +510,7 @@ def test_connect_belt_small(game):
     pass
 
 def test_merge_belt_into_another_belt(game):
+    game.instance.screenshot()
     # Use available transport belts to route iron plates from furnaces to a central location:
     belt_start_position = Position(x=0.0, y=0.0)  # Position near the first furnace
     belt_end_position = Position(x=10.0, y=0.0)  # Position leading to an assembly area
@@ -520,6 +521,7 @@ def test_merge_belt_into_another_belt(game):
     nbelt_midpoint = belts[0].belts[len(belts[0].belts)//2]
     merge = game.connect_entities(nbelt_start, nbelt_midpoint.position, Prototype.TransportBelt)
 
+    game.instance.screenshot()
     assert len(merge[0].inputs) == 2
     assert len(merge[0].outputs) == 1
 

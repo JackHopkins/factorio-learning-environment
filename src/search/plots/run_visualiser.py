@@ -36,6 +36,7 @@ class BaseRunVisualizer(ABC):
         self.version_data = {}
         self.achievements = defaultdict(list)
         self.x_axis = x_axis
+        self.cumulative_ticks_cache = {}  # Add cache
 
     def load_versions(self, versions: List[int], labels: Dict[int, str]):
         """Load data for multiple versions, keeping all runs for each version"""
@@ -55,6 +56,35 @@ class BaseRunVisualizer(ABC):
                     'nodes': root_nodes,
                     'label': f"{labels[version]} (Mean GDP: {mean_gdp:.1f})"
                 }
+
+    def _calculate_cumulative_ticks_with_cache(self, node, depth=0):
+        """Calculate cumulative ticks with caching"""
+        cache_key = (node.id, depth)
+        if cache_key in self.cumulative_ticks_cache:
+            return self.cumulative_ticks_cache[cache_key]
+
+        if depth == 0:
+            return 0
+
+        total_ticks = 0
+        stack = [(node, 0)]
+        visited = set()
+
+        while stack:
+            current_node, current_depth = stack.pop()
+
+            if current_node.id in visited or current_depth >= depth:
+                continue
+
+            visited.add(current_node.id)
+            total_ticks += current_node.metrics.get('ticks', 0) or 0
+
+            for child in reversed(current_node.children):
+                if child.id not in visited:
+                    stack.append((child, current_depth + 1))
+
+        self.cumulative_ticks_cache[cache_key] = total_ticks
+        return total_ticks
 
     def _calculate_cumulative_ticks_iterative(self, node, target_depth=0):
         """Calculate cumulative ticks up to a given depth using iteration"""
@@ -216,6 +246,50 @@ class BaseRunVisualizer(ABC):
             self.achievements[version].sort(key=lambda x: (x.ingredients, x.item_name))
 
     def calculate_version_stats(self, version: int, max_depth: int):
+        """Optimized version stats calculation"""
+        # Pre-calculate all cumulative values in one pass
+        cumulative_values = {}  # (node_id, depth) -> (cumulative_value, cumulative_ticks)
+
+        for root in self.version_data[version]['nodes']:
+            stack = [(root, 0, 0, 0)]  # (node, depth, cum_value, cum_ticks)
+            while stack:
+                node, depth, parent_value, parent_ticks = stack.pop()
+                if depth > max_depth:
+                    continue
+
+                current_value = node.metrics.get('value', 0) or 0
+                current_ticks = node.metrics.get('ticks', 0) or 0
+                total_value = parent_value + current_value
+                total_ticks = parent_ticks + current_ticks
+
+                cumulative_values[(node.id, depth)] = (total_value, total_ticks)
+
+                for child in reversed(node.children):
+                    stack.append((child, depth + 1, total_value, total_ticks))
+
+        # Now use pre-calculated values for stats
+        values_by_x = defaultdict(list)
+        for (_, depth), (total_value, total_ticks) in cumulative_values.items():
+            x_coord = total_ticks if self.x_axis == "ticks" else depth
+            values_by_x[x_coord].append(total_value)
+
+        stats = {}
+        for x_coord, values in values_by_x.items():
+            if values:
+                stats[x_coord] = {
+                    'mean': np.mean(values),
+                    'std': np.std(values)
+                }
+
+        # Process achievements once using cached values
+        achievements_by_x = defaultdict(list)
+        for achievement in self.achievements[version]:
+            x_coord = achievement.ticks if self.x_axis == "ticks" else achievement.depth
+            achievements_by_x[x_coord].append(achievement)
+
+        return stats, achievements_by_x
+
+    def calculate_version_stats_old(self, version: int, max_depth: int):
         """Calculate statistics for a specific version with tick support"""
         values_by_x = defaultdict(list)
         ticks_by_depth = {}  # Store cumulative ticks for each depth
@@ -404,7 +478,7 @@ class MatplotlibRunVisualizer(BaseRunVisualizer):
             ax.set_ylim(10 ** 1, 10 ** 5)
         else:
             ax.set_xlim(10 ** 0, 10 ** 3)
-            ax.set_ylim(10 ** 1, 10 ** 5)
+            ax.set_ylim(10 ** 1, 10 ** 6)
 
         ax.grid(True, which='both', linestyle='--', alpha=0.3)
 
@@ -509,7 +583,7 @@ class MatplotlibRunVisualizer(BaseRunVisualizer):
 
 
 class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
-    def __init__(self, db_client, icons_path: str, x_axis_type: str = 'steps', n_bootstrap: int = 1000,
+    def __init__(self, db_client, icons_path: str, x_axis_type: str = 'steps', n_bootstrap: int = 100,
                  window_size: int = 5, plot_type: str = 'line', fit_degree: int = 1):
         super().__init__(db_client, icons_path, x_axis_type)
         self.n_bootstrap = n_bootstrap
@@ -707,6 +781,39 @@ class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
             return stats, achievements_by_x
 
     def bootstrap_statistics(self, values, n_bootstrap=1000):
+        """Compute bootstrapped statistics for a set of values, enforcing monotonicity"""
+        if not values:
+            return None
+
+        values = np.array(values)
+        if len(values) == 0:
+            return {
+                'mean': 0,
+                'ci_lower': 0,
+                'ci_upper': 0,
+                'std': 0
+            }
+
+        bootstrap_means = []
+        mean_value = np.mean(values)
+        min_value = np.min(values)  # Get minimum value across all runs
+
+        for _ in range(n_bootstrap):
+            sample_idx = np.random.randint(0, len(values), size=len(values))
+            bootstrap_sample = values[sample_idx]
+            bootstrap_means.append(np.mean(bootstrap_sample))
+
+        bootstrap_means = np.array(bootstrap_means)
+
+        return {
+            'mean': mean_value,
+            'ci_lower': max(np.percentile(bootstrap_means, 2.5), min_value),  # Never go below minimum
+            'ci_upper': np.percentile(bootstrap_means, 97.5),
+            'std': np.std(values)
+        }
+
+
+    def bootstrap_statistics_old(self, values, n_bootstrap=1000):
         """Compute bootstrapped statistics for a set of values"""
         if not values:
             return None
@@ -738,6 +845,43 @@ class BootstrappedRunVisualizer(MatplotlibRunVisualizer):
         }
 
     def smooth_data(self, x_values, y_values, window_size):
+        """Apply sliding window smoothing to the data while preserving monotonicity"""
+        if len(x_values) < window_size:
+            return x_values, y_values
+
+        smoothed_y = []
+        valid_indices = []
+        current_max = 0  # Track maximum value seen so far
+
+        for i in range(len(y_values)):
+            # Get window indices
+            start_idx = max(0, i - window_size // 2)
+            end_idx = min(len(y_values), i + window_size // 2 + 1)
+
+            window_x = x_values[start_idx:end_idx]
+            window_y = y_values[start_idx:end_idx]
+
+            if self.x_axis == "ticks":
+                center_x = x_values[i]
+                valid_window_indices = [
+                    j for j, x in enumerate(window_x)
+                    if 0.1 <= x / center_x <= 10
+                ]
+                if valid_window_indices:
+                    window_y = [window_y[j] for j in valid_window_indices]
+                    smoothed_value = max(np.mean(window_y), current_max)  # Ensure monotonicity
+                    current_max = smoothed_value
+                    smoothed_y.append(smoothed_value)
+                    valid_indices.append(i)
+            else:
+                smoothed_value = max(np.mean(window_y), current_max)  # Ensure monotonicity
+                current_max = smoothed_value
+                smoothed_y.append(smoothed_value)
+                valid_indices.append(i)
+
+        return [x_values[i] for i in valid_indices], smoothed_y
+
+    def smooth_data_old(self, x_values, y_values, window_size):
         """Apply sliding window smoothing to the data"""
         if len(x_values) < window_size:
             return x_values, y_values
@@ -960,11 +1104,11 @@ async def main():
             # 460: 'gpt-4o-mini@4',
             # 459: 'claude@4',
             # 458: 'gpt4o@4',
-            464: 'llama-70b3@4',
-            465: 'gpt-4o-mini@4',
-            466: 'gpt4o@4',
-            467: 'deepseek-3@4',
-            468: 'claude@4',
+            488: 'llama-70b3@4',
+            487: 'gpt-4o-mini@4',
+            490: 'gpt4o@4',
+            491: 'deepseek-3@4',
+            492: 'claude@4',
 
         }
 

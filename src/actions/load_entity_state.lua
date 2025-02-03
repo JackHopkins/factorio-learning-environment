@@ -10,7 +10,7 @@ global.actions.load_entity_state = function(player, stored_json_data)
     local surface = player_entity.surface
     local created_entities = {}
     local stored_data = game.json_to_table(stored_json_data)
-
+    local character_state = nil
     -- First pass: Create all non-character entities and store character state
     for _, state in pairs(stored_data) do
         local name = unquote_string(state.name)
@@ -65,6 +65,29 @@ global.actions.load_entity_state = function(player, stored_json_data)
 
         if new_character then
             player_entity.character = new_character
+            -- Restore character inventory
+            if character_state.inventory then
+                local main_inventory = new_character.get_inventory(defines.inventory.character_main)
+                if main_inventory then
+                    for item_name, count in pairs(character_state.inventory) do
+                        -- Remove quotes if they exist
+                        item_name = unquote_string(item_name)
+                        if item_name and item_name ~= "" then
+                            if game.item_prototypes[item_name] then
+                                main_inventory.insert({
+                                    name = item_name,
+                                    count = tonumber(count)
+                                })
+                            else
+                                game.print("Warning: Unknown item " .. item_name)
+                            end
+                        end
+                    end
+                else
+                    game.print("Warning: Could not get character main inventory")
+                end
+            end
+
             -- Add character to created_entities for inventory restoration
             created_entities[character_state.entity_number] = {
                 entity = new_character,
@@ -133,21 +156,6 @@ global.actions.load_entity_state = function(player, stored_json_data)
 
         -- Restore burner
         if state.burner and entity.burner then
---             if state.burner.inventory then
---                 for quoted_item_name, count in pairs(state.burner.inventory) do
---                     local item_name = unquote_string(quoted_item_name)
---                     if game.item_prototypes[item_name] then  -- Verify fuel item exists
---                         game.print("Inserting fuel " .. count .. " " .. item_name)
---                         entity.burner.inventory.insert({
---                             name = item_name,
---                             count = tonumber(count)
---                         })
---                     else
---                         game.print("Warning: Unknown fuel item " .. item_name)
---                     end
---                 end
---             end
-
             if state.burner.currently_burning then
                 local burning_name = unquote_string(state.burner.currently_burning)
                 if game.item_prototypes[burning_name] then  -- Verify burning item exists

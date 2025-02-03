@@ -47,3 +47,8 @@ src/skills/ground_truth_skills/*
 /src/search/mcts/runs/
 /data/icons/
 /src/search/beam/summary_cache/
+/src/search/independent_runs/summary_cache/
+/data/screenshots
+/src/search/plots/*.png
+/src/search/plots/*/*.png
+/src/search/plots/*.pkl

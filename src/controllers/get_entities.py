@@ -50,6 +50,9 @@ class GetEntities(Action):
             entities_list = []
             belt_list = []
             for raw_entity_data in response:
+                if isinstance(raw_entity_data, list):
+                    continue
+
                 entity_data = self.clean_response(raw_entity_data)
                 # Find the matching Prototype
                 matching_prototype = None

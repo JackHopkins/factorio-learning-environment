@@ -8,8 +8,9 @@ from factorio_types import Prototype
 
 class PlaceEntityNextTo(Action):
 
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, connection, game_state):
+        #self.game_state = game_state
+        super().__init__(connection, game_state)
 
     def __call__(self,
                  entity: Prototype,
@@ -50,7 +51,7 @@ class PlaceEntityNextTo(Action):
             cleaned_response = self.clean_response(response)
 
             try:
-                object = metaclass(prototype=name, **cleaned_response)
+                object = metaclass(prototype=name, game=self.connection, **cleaned_response)
             except Exception as e:
                 raise Exception(f"Could not create {name} object from response: {response}", e)
 

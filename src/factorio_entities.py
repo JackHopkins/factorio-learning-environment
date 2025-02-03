@@ -136,6 +136,13 @@ class Direction(Enum):
     def __repr__(self):
         return f"Direction.{self.name}"
 
+    @classmethod
+    def from_string(cls, direction_string):
+        for status in cls:
+            if status.value == direction_string:
+                return status
+        return None
+
 
 class Position(BaseModel):
     x: float
@@ -298,11 +305,16 @@ class BurnerType(BaseModel):
         arbitrary_types_allowed = True
     fuel: Inventory = Inventory()
 
-
-class Entity(BaseModel):
+class EntityCore(BaseModel):
+    #id: Optional[str] = None
     name: str
-    position: Position
     direction: Direction
+    position: Position
+    def __repr__(self):
+        return f"Entity(name='{self.name}', direction={self.direction.name}, position={self.position})"
+
+class Entity(EntityCore):
+
     energy: float
     type: Optional[str] = None
     dimensions: Dimensions
@@ -311,14 +323,16 @@ class Entity(BaseModel):
     health: float
     warnings: List[str] = []
     status: EntityStatus = EntityStatus.NORMAL
+    neighbours: Optional[List[EntityCore]] = []
+    game: Optional[Any] = None # RCON connection for refreshing attributes
 
     def __repr__(self) -> str:
-        # Only includes the fields we  want to present to the agent
+        # Only includes the fields we want to present to the agent
         # Get all instance attributes
         all_fields = self.__dict__
 
         # Filter out private attributes and excluded fields
-        excluded_fields = {'dimensions', 'prototype', 'type', 'health'}
+        excluded_fields = {'dimensions', 'prototype', 'type', 'health', 'game'}
         rename_fields = {}
         repr_dict = {}
 
@@ -386,6 +400,7 @@ class UndergroundBelt(Entity):
 
 class MiningDrill(Entity):
     drop_position: Position
+    resources: List[Ingredient]
 
 class ElectricMiningDrill(MiningDrill, Electric):
     pass
@@ -487,6 +502,11 @@ class PipeGroup(EntityGroup):
         fluid_suffix = ""
         if self.pipes and self.pipes[0].fluid is not None and self.pipes[0].fluid != "":
             fluid_suffix = f", fluid={self.pipes[0].fluid}"
+        positions = [f"(x={p.position.x},y={p.position.y})" for p in self.pipes]
+        if len(positions) > 6:
+            positions = positions[:3] + ['...'] + positions[-3:]
+        pipe_summary = f"[{','.join(positions)}]"
+
         return f"\n\tPipeGroup(fluid_system={self.id}, position={self.position}, status={self.status}, pipes={pipe_summary}{fluid_suffix})"
 
 class ElectricityGroup(EntityGroup):

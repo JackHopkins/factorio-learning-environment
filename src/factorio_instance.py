@@ -1,3 +1,4 @@
+import asyncio
 import atexit
 import atexit
 import enum
@@ -6,12 +7,15 @@ import importlib
 import inspect
 import json
 import os
+import shutil
 import signal
 import sys
 import threading
+import time
 import traceback
 import types
 from concurrent.futures import TimeoutError
+from datetime import datetime
 from pathlib import Path
 from timeit import default_timer as timer
 
@@ -341,6 +345,76 @@ class FactorioInstance:
             script = command
         return script
 
+    async def screenshot(self, resolution="1920x1080", save_path=None, zoom=None, script_output_path="/Users/jackhopkins/Library/Application Support/factorio/script-output"):
+        """
+        Take a screenshot in game and optionally save it to a specific location.
+
+        This does nothing in headless mode.
+
+        Args:
+            resolution (str, optional): Screenshot resolution (e.g., "1920x1080")
+            save_path (str, optional): Path where to save the screenshot copy
+            zoom (float, optional): Zoom level for the screenshot (e.g., 0.5 for zoomed out, 2.0 for zoomed in)
+
+        Returns:
+            str: Path to the saved screenshot, or None if failed
+        """
+        # Clear rendering
+        self.rcon_client.send_command("/c rendering.clear()")
+
+
+        # Build the screenshot command
+        command = "/c game.take_screenshot({player=1, zoom="+str(zoom)+", show_entity_info=true, hide_clouds=true, hide_fog=true})"
+        response = self.rcon_client.send_command(command)
+        await asyncio.sleep(1)
+        # if not response:
+        #     return None
+
+        # Wait for the screenshot file to appear and get its path
+        screenshot_path = self._get_latest_screenshot(script_output_path=script_output_path)
+        if not screenshot_path:
+            print("Screenshot file not found")
+            return None
+
+        # If save_path is provided, copy the screenshot there
+        if save_path:
+            try:
+                # Create directory if it doesn't exist
+                os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
+
+                # Copy the file
+                shutil.copy2(screenshot_path, save_path)
+                return save_path
+            except Exception as e:
+                print(f"Failed to copy screenshot: {e}")
+                return screenshot_path
+
+        return screenshot_path
+
+    def _get_latest_screenshot(self, script_output_path, max_wait=2):
+        """
+        Get the path to the latest screenshot in the script-output directory.
+        Waits up to max_wait seconds for the file to appear.
+        """
+        start_time = time.time()
+        while time.time() - start_time < max_wait:
+            try:
+                # Get list of screenshot files
+                screenshots = [f for f in os.listdir(script_output_path)
+                               if f.endswith('.png') and f.startswith('screenshot')]
+
+                if screenshots:
+                    # Sort by modification time to get the latest
+                    latest = max(screenshots,
+                                 key=lambda x: os.path.getmtime(os.path.join(script_output_path, x)))
+                    return os.path.join(script_output_path, latest)
+            except Exception as e:
+                print(f"Error checking for screenshots: {e}")
+
+            time.sleep(0.5)  # Wait before checking again
+
+        return None
+
     def _send(self, command, *parameters, trace=False) -> List[str]:
         """
         Send a Lua command to the underlying Factorio instance
@@ -353,16 +427,16 @@ class FactorioInstance:
         # print(lua_response)
         return _lua2python(command, lua_response, start=start)
 
-    def comment(self, comment: str, *args):
-        """
-        Send a comment to the Factorio game console
-        :param comment:
-        :param args:
-        :return:
-        """
-        # game.players[1].print({"","[img=entity/character][color=orange]",{"engineer-title"},": [/color]",{"think-"..thought}})
-        #self.rcon_client.send_command(f'/c game.players[1].print("[img=entity/character][color=orange]" {{"{comment}"}},": ",{args}}})')
-        self.rcon_client.send_command(f"[img=entity/character] " + str(comment) + ", ".join(args))
+    # def comment(self, comment: str, *args):
+    #     """
+    #     Send a comment to the Factorio game console
+    #     :param comment:
+    #     :param args:
+    #     :return:
+    #     """
+    #     # game.players[1].print({"","[img=entity/character][color=orange]",{"engineer-title"},": [/color]",{"think-"..thought}})
+    #     #self.rcon_client.send_command(f'/c game.players[1].print("[img=entity/character][color=orange]" {{"{comment}"}},": ",{args}}})')
+    #     self.rcon_client.send_command(f"[img=entity/character] " + str(comment) + ", ".join(args))
 
     def _reset_static_achievement_counters(self):
         """

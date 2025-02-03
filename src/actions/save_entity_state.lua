@@ -65,6 +65,22 @@ global.actions.save_entity_state = function(player, distance, player_entities, r
     local entity_array = {}
     for _, entity in pairs(entities) do
 
+        -- Serialize inventories by type
+        local inventory_defines = {
+            chest = defines.inventory.chest,
+            furnace_source = defines.inventory.furnace_source,
+            furnace_result = defines.inventory.furnace_result,
+            fuel = defines.inventory.fuel,
+            burnt_result = defines.inventory.burnt_result,
+            assembling_machine_input = defines.inventory.assembling_machine_input,
+            assembling_machine_output = defines.inventory.assembling_machine_output,
+            turret_ammo = defines.inventory.turret_ammo,
+            lab_input = defines.inventory.lab_input,
+            lab_modules = defines.inventory.lab_modules,
+            assembling_machine_modules = defines.inventory.assembling_machine_modules
+        }
+
+
         if entity.name ~= "character" then
             local state = {
                 name = '"' .. entity.name .. '"',
@@ -99,21 +115,6 @@ global.actions.save_entity_state = function(player, distance, player_entities, r
                 }
             end
 
-            -- Serialize inventories by type
-            local inventory_defines = {
-                chest = defines.inventory.chest,
-                furnace_source = defines.inventory.furnace_source,
-                furnace_result = defines.inventory.furnace_result,
-                fuel = defines.inventory.fuel,
-                burnt_result = defines.inventory.burnt_result,
-                assembling_machine_input = defines.inventory.assembling_machine_input,
-                assembling_machine_output = defines.inventory.assembling_machine_output,
-                turret_ammo = defines.inventory.turret_ammo,
-                lab_input = defines.inventory.lab_input,
-                lab_modules = defines.inventory.lab_modules,
-                assembling_machine_modules = defines.inventory.assembling_machine_modules
-            }
-
             for name, define in pairs(inventory_defines) do
                 local inventory = entity.get_inventory(define)
                 if inventory then
@@ -147,7 +148,7 @@ global.actions.save_entity_state = function(player, distance, player_entities, r
             if entity.burner then
                 state.burner = {
                     currently_burning = entity.burner.currently_burning and
-                                      '"' .. entity.burner.currently_burning.name .. '"' or nil,
+                            '"' .. entity.burner.currently_burning.name .. '"' or nil,
                     remaining_burning_fuel = serialize_number(entity.burner.remaining_burning_fuel or 0),
                     heat = serialize_number(entity.burner.heat or 0)
                 }
@@ -170,9 +171,9 @@ global.actions.save_entity_state = function(player, distance, player_entities, r
 
             -- Handle recipe - only for crafting machines and furnaces
             if (entity.type == "assembling-machine" or
-                entity.type == "furnace" or
-                entity.type == "rocket-silo") and
-               entity.get_recipe then
+                    entity.type == "furnace" or
+                    entity.type == "rocket-silo") and
+                    entity.get_recipe then
                 local recipe = entity.get_recipe()
                 if recipe then
                     state.recipe = serialize_recipe_info(recipe)
@@ -280,6 +281,27 @@ global.actions.save_entity_state = function(player, distance, player_entities, r
                 end
             end
 
+            table.insert(entity_array, state)
+        else
+            local state = {
+                name = '"' .. entity.name .. '"',
+                position = serialize_position(entity.position),
+                direction = entity.direction,
+                entity_number = entity.unit_number or -1,
+                inventories = {}
+            }
+            -- Get the character's inventory using defines
+            local inventory = entity.get_inventory(defines.inventory.character_main)
+
+            if inventory then
+                state.inventory = {}
+                local contents = inventory.get_contents()
+                for item_name, count in pairs(contents) do
+                    if item_name and item_name ~= "" then
+                        state.inventory[tostring(item_name)] = serialize_number(count)
+                    end
+                end
+            end
             table.insert(entity_array, state)
         end
     end

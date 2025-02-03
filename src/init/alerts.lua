@@ -304,7 +304,7 @@ function get_issues(entity)
                     table.insert(issues, "\'transport belt at drop position is blocked. Clear the belt at (" .. rounded_x .. ", " .. rounded_y .. ") to continue mining.\'")
                 end
             else
-                table.insert(issues, "\'waiting for space in destination as the output is full. Place a sink object at (" .. rounded_x .. ", " .. rounded_y .. ") to unblock.\'")
+                table.insert(issues, "\'output blocked by item on the ground. There is no sink entity in place to accept the output.\'")
             end
         else
             table.insert(issues, "\'waiting for space in destination\'")

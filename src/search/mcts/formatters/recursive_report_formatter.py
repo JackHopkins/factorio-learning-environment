@@ -67,7 +67,8 @@ class RecursiveReportFormatter(ConversationFormatter):
                  llm_factory: Optional[LLMFactory] = None,
                  cache_dir: str = ".conversation_cache",
                  truncate_entity_data: bool = True,
-                 summarize_history: bool = True):
+                 summarize_history: bool = True,
+                 max_chars: int = 400000):
         """
 
         @param chunk_size:
@@ -81,10 +82,52 @@ class RecursiveReportFormatter(ConversationFormatter):
         self.cache_dir = cache_dir
         self.summary_instructions = DEFAULT_INSTRUCTIONS
         self.truncate_entity_data = truncate_entity_data
-        self.entity_data_pattern = re.compile(r"\[(?:\n\t[A-Za-z]+\(.*?\),\s*)*\n\t[A-Za-z]+\(.*?\)\]',\)")
+        #self.entity_data_pattern = re.compile(r"\[(?:\n\t[A-Za-z]+\(.*?\),\s*)*\n\t[A-Za-z]+\(.*?\)\]',\)")
+        #self.entity_data_pattern = re.compile(r"\[\n\t(.+)\"")
+        self.entity_data_pattern = re.compile(r"\[([\n\t\\t\\n].+)+[\"']")
         self.summarize_history = summarize_history
+        self.max_chars = max_chars
         # Ensure cache directory exists.
         os.makedirs(cache_dir, exist_ok=True)
+
+    def _get_conversation_length(self, messages: List[Message]) -> int:
+        """Calculate total character length of all messages in conversation."""
+        return sum(len(msg.content) for msg in messages)
+
+    def _trim_conversation_to_limit(self, messages: List[Message]) -> List[Message]:
+        """
+        Trim conversation to stay within character limit while preserving system message.
+        Removes oldest messages first (after system message).
+        """
+        if not messages:
+            return messages
+
+        # Separate system message if present
+        system_message = None
+        working_messages = messages.copy()
+        if working_messages[0].role == "system":
+            system_message = working_messages.pop(0)
+
+        # Calculate current length
+        current_length = self._get_conversation_length(working_messages)
+        if system_message:
+            current_length += len(system_message.content)
+
+        # If we're already under limit, return original messages
+        if current_length <= self.max_chars:
+            return messages
+
+        # Remove oldest messages until we're under the limit
+        while working_messages and current_length > self.max_chars:
+            removed_message = working_messages.pop(0)
+            current_length -= len(removed_message.content)
+
+        # Reassemble messages with system message if present
+        final_messages = working_messages
+        if system_message:
+            final_messages.insert(0, system_message)
+
+        return final_messages
 
     def _get_chunk_hash(self, messages: List[Message]) -> str:
         """Generate a deterministic hash for a chunk of messages."""
@@ -135,6 +178,9 @@ class RecursiveReportFormatter(ConversationFormatter):
                 new_content = message.content
             else:
                 new_content = self.entity_data_pattern.sub(': <STALE_ENTITY_DATA_OMITTED/>', message.content)
+
+            if new_content != message.content:
+                pass
             new_content = f"Step {message_index} execution log\n{new_content}"
             return Message(
                 role=message.role,
@@ -196,6 +242,10 @@ class RecursiveReportFormatter(ConversationFormatter):
         Returns [system_message (if present), historical_summary, recent_messages].
         """
         messages = conversation.messages
+
+        # First trim conversation to character limit
+        messages = self._trim_conversation_to_limit(messages)
+
         # Handle base cases
         if len(messages) <= self.chunk_size: # account for system message
             return [self._truncate_entity_data(msg, is_recent=(i >= len(messages) - 1), message_index = int((i - 1)/2))
@@ -239,8 +289,10 @@ class RecursiveReportFormatter(ConversationFormatter):
                 messages_hash = self._get_chunk_hash(messages_in_report)
                 historical_report = self._load_cached_summary(messages_hash)
 
+            #Historical report of actions and observations
             if system_message:
-                system_message.content += f"\n\nHistorical report of actions and observations until step {int(nr_of_messages_in_report/2)-1}\n\n{historical_report}\n\n"
+                sys = system_message.content.split("Historical report of actions and observations until step")[0].strip()
+                system_message.content = sys+f"\n\nHistorical report of actions and observations until step {int(nr_of_messages_in_report/2)-1}\n\n{historical_report}\n\n"
                 new_formatted_messages = [system_message] + new_formatted_messages
         else:
             if system_message:

@@ -38,6 +38,9 @@ services:
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
       type: bind
+    - source: ../../data/_screenshots
+      target: /opt/factorio/script-output
+      type: bind
   factorio_1:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
@@ -76,6 +79,9 @@ services:
       type: bind
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
+      type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
       type: bind
   factorio_10:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
@@ -116,6 +122,9 @@ services:
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
       type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
+      type: bind
   factorio_11:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
@@ -154,6 +163,9 @@ services:
       type: bind
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
+      type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
       type: bind
   factorio_12:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
@@ -194,6 +206,9 @@ services:
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
       type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
+      type: bind
   factorio_13:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
@@ -232,6 +247,9 @@ services:
       type: bind
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
+      type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
       type: bind
   factorio_14:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
@@ -272,6 +290,9 @@ services:
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
       type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
+      type: bind
   factorio_15:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
@@ -310,6 +331,9 @@ services:
       type: bind
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
+      type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
       type: bind
   factorio_16:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
@@ -350,6 +374,9 @@ services:
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
       type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
+      type: bind
   factorio_17:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
@@ -388,6 +415,9 @@ services:
       type: bind
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
+      type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
       type: bind
   factorio_18:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
@@ -428,6 +458,9 @@ services:
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
       type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
+      type: bind
   factorio_19:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
@@ -466,6 +499,9 @@ services:
       type: bind
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
+      type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
       type: bind
   factorio_2:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
@@ -506,6 +542,9 @@ services:
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
       type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
+      type: bind
   factorio_3:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
@@ -544,6 +583,9 @@ services:
       type: bind
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
+      type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
       type: bind
   factorio_4:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
@@ -584,6 +626,9 @@ services:
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
       type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
+      type: bind
   factorio_5:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
@@ -622,6 +667,9 @@ services:
       type: bind
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
+      type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
       type: bind
   factorio_6:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
@@ -662,6 +710,9 @@ services:
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
       type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
+      type: bind
   factorio_7:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
@@ -700,6 +751,9 @@ services:
       type: bind
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
+      type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
       type: bind
   factorio_8:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
@@ -740,6 +794,9 @@ services:
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
       type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
+      type: bind
   factorio_9:
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
@@ -778,4 +835,7 @@ services:
       type: bind
     - source: ~/Applications/Factorio.app/Contents/Resources/mods
       target: /opt/factorio/mods
+      type: bind
+    - source: ../../../data/_screenshots
+      target: /opt/factorio/script-output
       type: bind

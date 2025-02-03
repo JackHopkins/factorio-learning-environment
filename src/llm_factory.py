@@ -36,7 +36,7 @@ class LLMFactory:
             if message['content'].strip()
         ]
 
-    @retry(wait=wait_exponential(multiplier=1, min=2, max=15))
+    @retry(wait=wait_exponential(multiplier=2, min=2, max=15))
     async def acall(self, *args, **kwargs):
         max_tokens = kwargs.get('max_tokens', 1500)
         model_to_use = kwargs.get('model', self.model)
@@ -131,33 +131,77 @@ class LLMFactory:
                 stream=False
             )
         
-        elif "o1-mini" in model_to_use:
+        elif "o1-mini" in model_to_use or 'o3-mini' in model_to_use:
             client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             # replace `max_tokens` with `max_completion_tokens` for OpenAI API
             if "max_tokens" in kwargs:
                 kwargs.pop("max_tokens")
+            messages = kwargs.get('messages')
+            messages[0]['role'] = 'developer'
+            try:
+                reasoning_length = "low"
+                if "med" in model_to_use:
+                    reasoning_length = "medium"
+                elif "high" in model_to_use:
+                    reasoning_length = "high"
+                model = kwargs.get('model', 'o3-mini')
+                if 'o3-mini' in model:
+                    model = 'o3-mini'
+                elif 'o1-mini' in model:
+                    model = 'o1-mini'
 
-            return await client.chat.completions.create(
-                *args,
-                n=self.beam,
-                **kwargs,
-                stream=False
-            )
+                response = await client.chat.completions.create(
+                    *args,
+                    n=self.beam,
+                    model=model,
+                    messages = messages,
+                    stream=False,
+                    response_format={
+                        "type": "text"
+                    },
+                    reasoning_effort=reasoning_length
+                )
+                return response
+            except Exception as e:
+                print(e)
         else:
-            client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-            assert "messages" in kwargs, "You must provide a list of messages to the model."
-            return await client.chat.completions.create(
-                model=model_to_use,
-                max_tokens=kwargs.get('max_tokens', 256),
-                temperature=kwargs.get('temperature', 0.3),
-                messages=kwargs.get('messages', None),
-                logit_bias=kwargs.get('logit_bias', None),
-                n=kwargs.get('n_samples', None),
-                stop=kwargs.get('stop_sequences', None),
-                stream=False,
-                presence_penalty=kwargs.get('presence_penalty', None),
-                frequency_penalty=kwargs.get('frequency_penalty', None),
-            )
+            try:
+                client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+                assert "messages" in kwargs, "You must provide a list of messages to the model."
+                return await client.chat.completions.create(
+                    model=model_to_use,
+                    max_tokens=kwargs.get('max_tokens', 256),
+                    temperature=kwargs.get('temperature', 0.3),
+                    messages=kwargs.get('messages', None),
+                    logit_bias=kwargs.get('logit_bias', None),
+                    n=kwargs.get('n_samples', None),
+                    stop=kwargs.get('stop_sequences', None),
+                    stream=False,
+                    presence_penalty=kwargs.get('presence_penalty', None),
+                    frequency_penalty=kwargs.get('frequency_penalty', None),
+                )
+            except Exception as e:
+                print(e)
+                try:
+                    client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+                    assert "messages" in kwargs, "You must provide a list of messages to the model."
+                    sys = kwargs.get('messages', None)[0]
+                    messages = [sys] + kwargs.get('messages', None)[8:]
+                    return await client.chat.completions.create(
+                        model=model_to_use,
+                        max_tokens=kwargs.get('max_tokens', 256),
+                        temperature=kwargs.get('temperature', 0.3),
+                        messages=messages,
+                        logit_bias=kwargs.get('logit_bias', None),
+                        n=kwargs.get('n_samples', None),
+                        stop=kwargs.get('stop_sequences', None),
+                        stream=False,
+                        presence_penalty=kwargs.get('presence_penalty', None),
+                        frequency_penalty=kwargs.get('frequency_penalty', None),
+                    )
+                except Exception as e:
+                    print(e)
+                    raise
 
     def call(self, *args, **kwargs):
         max_tokens = kwargs.get('max_tokens', 1500)

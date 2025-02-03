@@ -241,6 +241,16 @@ def test_inserters_above_chest(game):
                                         direction=Direction.UP, spacing=2)
         assert inserter, "Failed to place inserter"
 
+def test_inserters_below_furnace(game):
+    game.move_to(Position(x=0, y=0))
+
+    furnace = game.place_entity(Prototype.StoneFurnace, Direction.UP, Position(x=0, y=0))
+    assert furnace, "Failed to place furnace"
+    inserter = game.place_entity_next_to(Prototype.BurnerInserter, reference_position=furnace.position,
+                                        direction=Direction.DOWN, spacing=0)
+    assert inserter, "Failed to place inserter"
+
+
 def test_adjacent_electric_mining_drills(game):
     origin = game.get_resource_patch(Resource.CopperOre, game.nearest(Resource.CopperOre)).bounding_box.center()
     game.move_to(origin)

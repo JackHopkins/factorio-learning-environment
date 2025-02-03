@@ -40,7 +40,12 @@ def generate_compose_config(num_instances: int, map: str) -> Dict[str, Any]:
                     "type": "bind",
                     "source": "~/Applications/Factorio.app/Contents/Resources/mods",
                     "target": "/opt/factorio/mods"
-                }
+                },
+                {
+                    "type": "bind",
+                    "source": "../../data/_screenshots",
+                    "target": "/opt/factorio/script-output"
+                },
             ],
             "ports": [
                 f"{base_udp_port + i}:{base_udp_port}/udp",

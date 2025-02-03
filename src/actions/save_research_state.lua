@@ -44,14 +44,14 @@ global.actions.save_research_state = function(player_index)
 
     -- Save current research and progress
     if force.current_research then
-        research_state.current_research = force.current_research.name
+        research_state.current_research = "\""..force.current_research.name.."\""
         research_state.research_progress = force.research_progress
     end
 
     -- Save research queue if it exists
     if force.research_queue then
         for _, tech in pairs(force.research_queue) do
-            table.insert(research_state.research_queue, tech.name)
+            table.insert(research_state.research_queue, "\""..tech.name.."\"")
         end
     end
 

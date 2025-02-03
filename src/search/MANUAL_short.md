@@ -310,10 +310,10 @@ For example, if you want to connect inserter_1 at Position(x = 12, y = 11) to in
 # get the inserter entities
 inserter_1 = get_entity(Prototype.BurnerInserter, position = Position(x = 12, y = 11))
 inserter_2 = get_entity(Prototype.BurnerInserter, position = Position(x = 0, y = 0))
-# connect the two inserters
+# connect the two inserters (source -> target). Passing in the entity will result in them being connected intelligently.
 belts = connect_entities(
-    inserter_1.drop_position,
-    inserter_2.pickup_position,
+    inserter_1, #.drop_position,
+    inserter_2, #.pickup_position,
     Prototype.TransportBelt
 )
 print(f"Connected inserters at {inserter_1.position} and {inserter_2.position} with {belts}")

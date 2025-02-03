@@ -23,20 +23,47 @@ load_dotenv()
 
 
 def create_factorio_instances(start_index: int, count: int) -> List[FactorioInstance]:
-    def init_instance(params: Tuple[str, int, int]) -> FactorioInstance:
-        ip, udp_port, tcp_port = params
-        return FactorioInstance(address=ip, tcp_port=tcp_port, bounding_box=200,
-                                fast=True, cache_scripts=False, inventory={}, all_technologies_researched=False)
-
+    """Create Factorio instances with proper resource management"""
     ips, udp_ports, tcp_ports = get_local_container_ips()
+
     # Slice the IPs and ports based on start_index and count
     ips = ips[start_index:start_index + count]
     udp_ports = udp_ports[start_index:start_index + count]
     tcp_ports = tcp_ports[start_index:start_index + count]
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        return list(executor.map(init_instance, zip(ips, udp_ports, tcp_ports)))
+    instances = []
+    errors = []
 
+    # Create instances sequentially to avoid race conditions
+    for ip, udp_port, tcp_port in zip(ips, udp_ports, tcp_ports):
+        try:
+            instance = FactorioInstance(
+                address=ip,
+                tcp_port=tcp_port,
+                bounding_box=200,
+                fast=True,
+                cache_scripts=False,
+                inventory={},
+                all_technologies_researched=False
+            )
+            instance.speed(10)
+            instances.append(instance)
+        except Exception as e:
+            errors.append(f"Failed to create instance at {ip}:{tcp_port} - {str(e)}")
+
+    if errors:
+        # Clean up any successfully created instances
+        # for instance in instances:
+        #     try:
+        #         instance.close()
+        #     except:
+        #         pass
+        raise RuntimeError(f"Failed to create all instances: {'; '.join(errors)}")
+
+    if not instances:
+        raise RuntimeError(f"No instances were created successfully")
+
+    return instances
 
 async def get_version_to_use(resume_version: int = None) -> int:
     """Initialize DB client and get the version to use."""
@@ -49,8 +76,12 @@ async def get_version_to_use(resume_version: int = None) -> int:
 async def create_db_client() -> DBClient:
     """Create and return a new database client."""
     try:
+        max_connections = 5  # Per process
+        min_connections = 2
         return DBClient(
             max_conversation_length=40,
+            min_connections=min_connections,
+            max_connections=max_connections,
             host=os.getenv("SKILLS_DB_HOST"),
             port=os.getenv("SKILLS_DB_PORT"),
             dbname=os.getenv("SKILLS_DB_NAME"),
@@ -94,8 +125,8 @@ async def run_model_search(model: str, instance_start: int, version: int, resume
             return
 
         depth = resume_heads[0].depth
-        for prog in resume_heads:
-            assert prog.depth == depth, "All beam head depths must be the same in order to resume."
+        # for prog in resume_heads:
+        #     assert prog.depth == depth, "All beam head depths must be the same in order to resume."
 
         current_depth = depth
 
@@ -145,12 +176,34 @@ async def run_model_search(model: str, instance_start: int, version: int, resume
 
 def run_model_in_process(model: str, instance_start: int, version: int, resume_version: int = None):
     """Helper function to run asyncio event loop in a separate process"""
-    asyncio.get_event_loop().set_debug(True)
-    asyncio.run(run_model_search(model, instance_start, version, resume_version))
+    # Close any existing event loop
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            loop.stop()
+        loop.close()
+    except:
+        pass
+
+    # Create new event loop for this process
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    try:
+        # Enable debug mode only if needed
+        # loop.set_debug(True)
+        return loop.run_until_complete(run_model_search(model, instance_start, version, resume_version))
+    finally:
+        try:
+            loop.stop()
+            loop.close()
+        except:
+            pass
 
 def signal_handler(signum, frame):
     print("\nTerminating processes...")
     sys.exit(0)
+
 
 async def main():
     # Register signal handlers
@@ -158,29 +211,14 @@ async def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--resume-version', type=int, help='Version to resume from')
-    args = parser.parse_args()
-    resume_version = args.resume_version if args.resume_version else None #450
-
-    # List of models to run in parallel
-    # model_configs = [
-    #     {"model": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "resume_version": 464},
-    #     {"model": "gpt-4o-mini", "resume_version": 465},
-    #     {"model": "gpt-4o", "resume_version": 466},
-    #     {"model": "deepseek-chat", "resume_version": 467},
-    #     {"model": "claude-3-5-sonnet-20241022", "resume_version": 468}
-    # ]
-    model_configs = [
-        #{"model": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "resume_version": 469},
-        #{"model": "gpt-4o-mini", "resume_version": 470},
-        {"model": "gpt-4o", "resume_version": 471},
-        #{"model": "deepseek-chat", "resume_version": 472},
-        #{"model": "claude-3-5-sonnet-20241022", "resume_version": 473},
-    ]
-
-    parser = argparse.ArgumentParser()
     parser.add_argument('--resume-versions', type=str, help='Comma-separated list of versions to resume from')
     args = parser.parse_args()
+
+    model_configs = [
+        {"model": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "resume_version": 483},
+        {"model": "gpt-4o-mini", "resume_version": 484},
+        {"model": "gpt-4o", "resume_version": 485}
+    ]
 
     if args.resume_versions:
         versions = [int(v.strip()) if v.strip() else None for v in args.resume_versions.split(',')]
@@ -189,15 +227,18 @@ async def main():
                 model_configs[i]["resume_version"] = version
 
     base_version = await get_version_to_use(None)
-    # Get version to use with a temporary DB client
-    #version_to_use = await get_version_to_use(resume_version)
 
-    # Create process pool and run models in parallel
-    with concurrent.futures.ProcessPoolExecutor(max_workers=len(model_configs)) as executor:
-        # Start each model with its own set of 4 instances
+    # Use ProcessPoolExecutor with proper cleanup
+    executor = concurrent.futures.ProcessPoolExecutor(
+        max_workers=len(model_configs),
+        mp_context=multiprocessing.get_context('spawn')  # Use spawn for better process isolation
+    )
+
+    try:
+        # Start each model with its own set of instances
         futures = []
         for i, config in enumerate(model_configs):
-            instance_start = i * 4  # Each model gets 4 consecutive instances
+            instance_start = i * 4
             resume_version = config.get("resume_version")
             version = resume_version if resume_version else base_version + i
 
@@ -210,16 +251,31 @@ async def main():
             )
             futures.append(future)
 
-        # Wait for all processes to complete
-        concurrent.futures.wait(futures)
+        # Monitor futures with timeout
+        done, not_done = concurrent.futures.wait(
+            futures,
+            timeout=3600*5,  # 5 hour timeout
+            return_when=concurrent.futures.ALL_COMPLETED
+        )
 
-        # Check for any exceptions
-        for future in futures:
+        # Handle timeouts
+        if not_done:
+            print(f"Some processes did not complete: {len(not_done)} remaining")
+            for future in not_done:
+                future.cancel()
+
+        # Check results
+        for future in done:
             try:
                 future.result()
             except Exception as e:
                 print(f"\033[91mError in model process: {e}\033[91m")
 
+    finally:
+        # Ensure executor is shut down
+        executor.shutdown(wait=True, cancel_futures=True)
+
 
 if __name__ == '__main__':
+    multiprocessing.set_start_method('spawn')
     asyncio.run(main())

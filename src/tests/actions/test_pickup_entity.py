@@ -1,10 +1,7 @@
-from xmlrpc.client import Transport
-
 import pytest
 
 from factorio_entities import Position
-from factorio_types import Prototype
-from utils import eval_program_with_achievements
+from factorio_types import Prototype, Resource
 
 
 @pytest.fixture()
@@ -18,6 +15,20 @@ def game(instance):
     instance.reset()
     yield instance.namespace
     instance.reset()
+
+def test_pickup_ground_item(game):
+    """
+    Place a boiler at (0, 0) and then pick it up
+    :param game:
+    :return:
+    """
+    iron = game.nearest(Resource.IronOre)
+    game.move_to(iron)
+    drill = game.place_entity(Prototype.BurnerMiningDrill, position=iron)
+    game.insert_item(Prototype.Coal, drill, quantity=50)
+    game.sleep(1)
+    game.pickup_entity(Prototype.IronOre, drill.drop_position)
+    assert game.inspect_inventory()[Prototype.IronOre] == 1
 
 def test_place_pickup(game):
     """

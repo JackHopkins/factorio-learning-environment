@@ -4,7 +4,7 @@ from typing import List, Tuple, Dict, Any
 
 from slpp import slpp as lua, ParseError
 
-from factorio_entities import EntityStatus
+from factorio_entities import EntityStatus, Direction
 from factorio_rcon_utils import _lua2python
 
 COMMAND = "/silent-command"
@@ -51,9 +51,17 @@ class Controller:
             return value
 
         cleaned_response = {}
+
+
+
+        if not hasattr(response, 'items'):
+            pass
+
         for key, value in response.items():
             if key == 'status' and isinstance(value, str):
                 cleaned_response[key] = EntityStatus.from_string(value)
+            elif key == 'direction' and isinstance(value, str):
+                cleaned_response[key] = Direction.from_string(value)
             elif not value and key == 'warnings':
                 cleaned_response[key] = []
             else:

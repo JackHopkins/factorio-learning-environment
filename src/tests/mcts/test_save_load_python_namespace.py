@@ -91,6 +91,19 @@ assert iron_plates_in_chest > 0, "No iron plates were produced in the chest"
 print(f"Successfully produced {iron_plates_in_chest} iron plates and stored them in the chest")
 '''
 
+FULL_PROGRAM_2 = \
+"""
+# Find the nearest iron ore patch
+iron_ore_position = nearest(Resource.IronOre)
+move_to(iron_ore_position)
+
+# Place the burner mining drill on the iron ore patch
+burner_mining_drill = place_entity(Prototype.BurnerMiningDrill, direction=Direction.DOWN, position=iron_ore_position)
+
+# Fuel the burner mining drill with coal
+insert_item(Prototype.Coal, burner_mining_drill, quantity=5)
+"""
+
 class TestSaveLoadPythonNamespace(unittest.TestCase):
     """
     FactorioInstance exposes a Python namespace for the agent to persist variables.
@@ -101,7 +114,7 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
                            bounding_box=200,
                            tcp_port=27000,
                            fast=True,
-                           inventory={'boiler': 1})
+                           inventory={'boiler': 1, 'burner-mining-drill': 1, 'coal': 50})
 
     def test_save_load_simple_variable_namespace(self):
         self.instance.eval('x=2')
@@ -199,6 +212,21 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
             self.instance.reset(game_state)
 
             print(resp)
+
+    def test_drill_inventory(self):
+        resp = self.instance.eval(FULL_PROGRAM_2)
+
+        game_state = GameState.from_instance(self.instance)
+
+        self.instance = FactorioInstance(address='localhost',
+                                         bounding_box=200,
+                                         tcp_port=27000,
+                                         fast=True,
+                                         inventory={'coal': 50})
+        self.instance.reset()
+        self.instance.reset(game_state)
+
+        print(resp)
 
     def test_save_load_research_new_instance(self):
         # Save game state including research

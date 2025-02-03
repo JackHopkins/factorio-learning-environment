@@ -43,7 +43,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     end
 
     local ref_entities = player.surface.find_entities_filtered({
-        area = {{ref_x - 0.5, ref_y - 0.5}, {ref_x + 0.5, ref_y + 0.5}},
+        area = {{ref_x - 0.707, ref_y - 0.707}, {ref_x + 0.707, ref_y + 0.707}},
         type = {"character", "resource"}, -- Find players
         invert = true
     })

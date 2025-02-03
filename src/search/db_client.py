@@ -1,64 +1,163 @@
+import asyncio
 import json
+import logging
 import math
 import random
 import statistics
+import threading
 from typing import Optional, Dict, Any, List
-from contextlib import contextmanager
+from contextlib import contextmanager, asynccontextmanager
 
 import psycopg2
 import tenacity
 from psycopg2.extras import DictCursor
+from psycopg2.pool import ThreadedConnectionPool
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
 from search.model.program import Program
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class DBClient:
-    def __init__(self, max_conversation_length: int = 20, **db_config):
+    def __init__(self, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20, **db_config):
         self.db_config = db_config
         self.max_conversation_length = max_conversation_length
         # Don't store connection as instance variable
         # Instead create connection pool
-        self.pool = []
-        self.max_pool_size = 5
+        # self.pool = []
+        # self.max_pool_size = 5
+        self._pool = None
+        self.min_connections = min_connections
+        self.max_connections = max_connections
+        self._lock = threading.Lock()
+
+
+    async def initialize(self):
+        """Initialize the connection pool"""
+        if self._pool is None:
+            async with self._lock:
+                if self._pool is None:  # Double check pattern
+                    self._pool = ThreadedConnectionPool(
+                        self.min_connections,
+                        self.max_connections,
+                        **self.db_config
+                    )
+
+    def _ensure_pool(self):
+        """Ensure connection pool exists with proper locking"""
+        if self._pool is None:
+            with self._lock:
+                if self._pool is None:
+                    self._pool = ThreadedConnectionPool(
+                        self.min_connections,
+                        self.max_connections,
+                        **self.db_config
+                    )
 
     @contextmanager
     def get_connection(self):
-        """Context manager to handle database connections"""
+        """Regular context manager for database connections"""
+        self._ensure_pool()
         conn = None
         try:
-            # Try to get connection from pool
-            if self.pool:
-                conn = self.pool.pop()
-                try:
-                    # Test if connection is still alive
-                    conn.cursor().execute('SELECT 1')
-                except (psycopg2.OperationalError, psycopg2.InterfaceError):
-                    # If connection is dead, close it and create new one
-                    conn.close()
-                    conn = None
-
-            # If no connection from pool, create new one
-            if conn is None:
-                conn = psycopg2.connect(**self.db_config)
-
+            conn = self._pool.getconn()
             yield conn
-
-            # If connection still good, return to pool
-            try:
-                conn.cursor().execute('SELECT 1')
-                if len(self.pool) < self.max_pool_size:
-                    self.pool.append(conn)
-                else:
-                    conn.close()
-            except:
-                conn.close()
-
-        except Exception as e:
+        finally:
             if conn:
-                conn.close()
-            raise e
+                try:
+                    self._pool.putconn(conn)
+                except Exception as e:
+                    print(f"Error returning connection to pool: {e}")
+                    try:
+                        self._pool.putconn(conn, close=True)
+                    except:
+                        pass
 
+    # @contextmanager
+    # def get_connection2(self):
+    #     """Context manager to handle database connections"""
+    #     conn = None
+    #     try:
+    #         # Try to get connection from pool
+    #         if self.pool:
+    #             conn = self.pool.pop()
+    #             try:
+    #                 # Test if connection is still alive
+    #                 conn.cursor().execute('SELECT 1')
+    #             except (psycopg2.OperationalError, psycopg2.InterfaceError):
+    #                 # If connection is dead, close it and create new one
+    #                 conn.close()
+    #                 conn = None
+    #
+    #         # If no connection from pool, create new one
+    #         if conn is None:
+    #             conn = psycopg2.connect(**self.db_config)
+    #
+    #         yield conn
+    #
+    #         # If connection still good, return to pool
+    #         try:
+    #             conn.cursor().execute('SELECT 1')
+    #             if len(self.pool) < self.max_pool_size:
+    #                 self.pool.append(conn)
+    #             else:
+    #                 conn.close()
+    #         except:
+    #             conn.close()
+    #
+    #     except Exception as e:
+    #         if conn:
+    #             conn.close()
+    #         raise e
     async def get_beam_heads(self, version: int, beam_width: int) -> List[Program]:
+        """Get the highest value programs across all depths for a given version."""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=DictCursor) as cur:
+                    # Use a CTE to get diverse set of programs
+                    cur.execute("""
+                        WITH ProgramsByDepth AS (
+                            SELECT DISTINCT ON (depth) *
+                            FROM programs
+                            WHERE version = %s
+                            AND state_json IS NOT NULL
+                            AND value IS NOT NULL
+                            ORDER BY depth, value DESC
+                        )
+                        SELECT * FROM (
+                            SELECT * FROM ProgramsByDepth
+                            ORDER BY value DESC
+                            LIMIT %s
+                        ) as depth_diverse
+                        UNION DISTINCT
+                        SELECT * FROM (
+                            SELECT * FROM programs
+                            WHERE version = %s
+                            AND state_json IS NOT NULL
+                            AND value IS NOT NULL
+                            ORDER BY value DESC
+                            LIMIT %s
+                        ) as value_focused
+                        ORDER BY value DESC
+                        LIMIT %s
+                    """, (version, beam_width, version, beam_width * 2, beam_width))
+
+                    results = cur.fetchall()
+                    if not results:
+                        logger.warning(f"No programs found for version {version}")
+                        return []
+
+                    programs = [Program.from_row(dict(row)) for row in results]
+                    depths = [p.depth for p in programs]
+                    logger.info(f"Found {len(programs)} beam heads for version {version} - {depths}")
+                    return programs
+        except Exception as e:
+            logger.error(f"Error fetching beam heads: {e}", exc_info=True)
+            return []
+
+
+    async def get_beam_heads2(self, version: int, beam_width: int) -> List[Program]:
         """Get the highest value programs at max depth for a given version"""
         try:
             with self.get_connection() as conn:
@@ -162,8 +261,21 @@ class DBClient:
                     program.created_at = created_at
                     return program
         except Exception as e:
+            conn.rollback()
             print(f"Error creating program: {e}")
             raise e
+
+    async def cleanup(self):
+        """Clean up database resources"""
+        if self._pool is not None:
+            with self._lock:
+                if self._pool is not None:
+                    try:
+                        self._pool.closeall()
+                    except Exception as e:
+                        logger.error(f"Error closing connection pool: {e}")
+                    finally:
+                        self._pool = None
 
     @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
                     wait=wait_exponential(multiplier=1, min=4, max=10))

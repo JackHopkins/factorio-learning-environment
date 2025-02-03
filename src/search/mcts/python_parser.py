@@ -67,6 +67,33 @@ class PythonParser:
 
         return None
 
+    def _extract_all_backtick_blocks(self, content: str) -> Optional[str]:
+        """
+        Attempt to extract all code blocks between backticks, regardless of language marker.
+
+        Args:
+            content: The full text content to parse
+
+        Returns:
+            Combined valid Python code from all blocks, or None if no valid blocks found
+        """
+        # Find all code blocks between backticks, with or without language marker
+        pattern = r'```(?:\w+)?\s*(.*?)\s*```'
+        matches = re.finditer(pattern, content, re.DOTALL)
+
+        code_blocks = []
+        for match in matches:
+            code = match.group(1).strip()
+            if code and self._is_valid_python(code):
+                code_blocks.append(code)
+
+        if code_blocks:
+            combined_code = '\n\n'.join(code_blocks)
+            if self._is_valid_python(combined_code):
+                return combined_code
+
+        return None
+
     def extract_code(self, choice) -> Optional[Tuple[str, str]]:
         """
         Extract code from LLM response, first trying markdown blocks then falling back to chunk processing.
@@ -84,6 +111,14 @@ class PythonParser:
             content = choice.text
         else:
             raise RuntimeError('Incorrect message format')
+
+        if self._is_valid_python(content):
+            return content, content
+
+        # First try to extract all backtick blocks
+        backtick_code = self._extract_all_backtick_blocks(content)
+        if backtick_code:
+            return backtick_code, content
 
         # First try to extract markdown code blocks
         markdown_code = self._extract_markdown_code_blocks(content)

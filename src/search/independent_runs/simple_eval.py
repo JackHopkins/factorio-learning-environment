@@ -370,7 +370,7 @@ def main():
         #{"model": "deepseek-chat", "resume_version": 507}
         #{"model": "deepseek-chat", "resume_version": None},#491},
         #{"model": "claude-3-5-sonnet-20241022", "resume_version": None}#517}#516}
-        {"model": "gpt-4o", "resume_version": 520}
+        {"model": "gpt-4o", "resume_version": 521}
         #{"model": 'o3-mini', "resume_version": 510}#509 }#508}
     ]
     # model_configs = [

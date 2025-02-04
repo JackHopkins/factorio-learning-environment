@@ -38,8 +38,8 @@ class Nearest(Action):
                 else:
                     raise Exception(f"No {type} found within 500 tiles of the player")
 
-            if not self.game_state.last_observed_player_location:
-                self.game_state.last_observed_player_location = self.game_state.player_location
+            #if not self.game_state.last_observed_player_location:
+            #    self.game_state.last_observed_player_location = self.game_state.player_location
 
             #if relative:
             #    x = -response['x'] + self.game_state.last_observed_player_location[0]

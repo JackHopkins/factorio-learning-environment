@@ -1,524 +1,359 @@
-import math
 from time import sleep
+from typing import Union, Optional, List, Dict, cast
 
 import numpy
-import numpy as np
 
 from controllers.__action import Action
-from typing import Tuple, List, Union, Optional, Dict
-
 from controllers._clear_collision_boxes import ClearCollisionBoxes
 from controllers._extend_collision_boxes import ExtendCollisionBoxes
+from controllers._get_path import GetPath
+from controllers._request_path import RequestPath
 from controllers.get_entities import GetEntities
 from controllers.get_entity import GetEntity
-from controllers._get_path import GetPath
-from controllers.pickup_entity import PickupEntity
-from controllers._request_path import RequestPath
-from controllers.rotate_entity import RotateEntity
 from controllers.inspect_inventory import InspectInventory
-from factorio_entities import Entity, Boiler, FluidHandler, Position, Generator, Inserter, MiningDrill, TransportBelt, \
-    OffshorePump, PumpJack, BeltGroup, EntityGroup, PipeGroup, ElectricityGroup, Pipe
+from controllers.pickup_entity import PickupEntity
+from controllers.rotate_entity import RotateEntity
+from factorio_entities import EntityGroup, Entity, Position, BeltGroup, PipeGroup, ElectricityGroup, TransportBelt, \
+    Pipe, FluidHandler, MiningDrill, Inserter
 from factorio_instance import PLAYER, Direction
-from factorio_types import Prototype, prototype_by_name
-from utilities.groupable_entities import agglomerate_groupable_entities, _deduplicate_entities
+from factorio_types import Prototype
+from utilities.connection.path_result import PathResult
+from utilities.connection.resolver import ConnectionType
+from utilities.connection.resolvers.fluid_connection_resolver import FluidConnectionResolver
+from utilities.connection.resolvers.power_connection_resolver import PowerConnectionResolver
+from utilities.connection.resolvers.transport_connection_resolver import TransportConnectionResolver
+from utilities.groupable_entities import _deduplicate_entities, agglomerate_groupable_entities
 
 
 class ConnectEntities(Action):
-
     def __init__(self, connection, game_state):
-        self.game_state = game_state
         super().__init__(connection, game_state)
-        self.request_path = RequestPath(connection, game_state)
-        self.get_path = GetPath(connection, game_state)
-        self.rotate_entity = RotateEntity(connection, game_state)
-        self.pickup_entity = PickupEntity(connection, game_state)
-        self.inspect_inventory = InspectInventory(connection, game_state)
-        self.get_entities = GetEntities(connection, game_state)
-        self.get_entity = GetEntity(connection, game_state)
-        self._extend_collision_boxes = ExtendCollisionBoxes(connection, game_state)
-        self._clear_collision_boxes = ClearCollisionBoxes(connection, game_state)
+        #self.game_state = game_state
+        #self.connection = connection
+        self._setup_actions()
+        self._setup_resolvers()
 
-    def _get_path(self,
-                  source_position,
-                  target_position,
-                  connection_prototype,
-                  number_of_connection_prototype,
-                  pathing_radius=1,
-                  dry_run=True,
-                  allow_paths_through_own_entities=False) -> Union[Dict, str]:
-        # We try and get larger paths first to avoid entities
-        for entity_size in [2, 1.5, 1, 0.5]:
-            # Attempt to avoid entities
-            path_handle = self.request_path(finish=Position(x=target_position.x, y=target_position.y),
-                                            start=source_position,
-                                            allow_paths_through_own_entities=allow_paths_through_own_entities,
-                                            radius=pathing_radius,#pathing_radius, #max(entity_size-1, 0),#pathing_radius,
-                                            entity_size=entity_size)
-            sleep(0.05)  # To ensure the pathing system actually computes a path
-            response, elapsed = self.execute(PLAYER,
-                                             source_position.x,
-                                             source_position.y,
-                                             target_position.x,
-                                             target_position.y,
-                                             path_handle,
-                                             connection_prototype,
-                                             dry_run,
-                                             number_of_connection_prototype)
-            if isinstance(response, dict):
-                return response
+    def _setup_actions(self):
+        self.request_path = RequestPath(self.connection, self.game_state)
+        self.get_path = GetPath(self.connection, self.game_state)
+        self.rotate_entity = RotateEntity(self.connection, self.game_state)
+        self.pickup_entity = PickupEntity(self.connection, self.game_state)
+        self.inspect_inventory = InspectInventory(self.connection, self.game_state)
+        self.get_entities = GetEntities(self.connection, self.game_state)
+        self.get_entity = GetEntity(self.connection, self.game_state)
+        self._extend_collision_boxes = ExtendCollisionBoxes(self.connection, self.game_state)
+        self._clear_collision_boxes = ClearCollisionBoxes(self.connection, self.game_state)
 
-        return response
+    def _setup_resolvers(self):
+        self.resolvers = {
+            ConnectionType.FLUID: FluidConnectionResolver(self.get_entities),
+            ConnectionType.TRANSPORT: TransportConnectionResolver(),
+            ConnectionType.POWER: PowerConnectionResolver()
+        }
 
-    def _get_nearest_connection_point(self,
-                                      fluid_handler_source: FluidHandler,
-                                      existing_connection_position: Position,
-                                      existing_connection_entity: Entity = None):
-
-        if existing_connection_entity is not None:
-            existing_offset_x = existing_connection_position.x - existing_connection_entity.position.x
-            existing_offset_y = existing_connection_position.y - existing_connection_entity.position.y
-        else:
-            existing_offset_x = 0
-            existing_offset_y = 0
-
-        # By default, select the first connection point
-        nearest_connection_point = None #fluid_handler_source.connection_points[0]
-        nearest_distance = 10000000  # Large value
-
-        for connection_point in fluid_handler_source.connection_points:
-            possible_offset_x = connection_point.x - fluid_handler_source.position.x
-            possible_offset_y = connection_point.y - fluid_handler_source.position.y
-
-            # Calculate directional components
-            dir_x = np.sign(possible_offset_x - existing_offset_x)
-            dir_y = np.sign(possible_offset_y - existing_offset_y)
-
-            # Calculate distance
-            distance = abs(connection_point.x - existing_connection_position.x) + abs(
-                connection_point.y - existing_connection_position.y)
-
-            # Update if this distance is smaller
-            if distance < nearest_distance:
-                candidate_connection_point = connection_point
-
-                # The connection points need to be at the center of a tile. If either coordinate is an integer, it needs
-                # to be rounded to the half-tile furthest away from the source position.
-                # If the connection point is to the left of the source position, and a 0.5 x offset
-                candidate_connection_point_x = candidate_connection_point.x
-                candidate_connection_point_y = candidate_connection_point.y
-
-                # This ensures that the connection point is always outside of the entity (no longer just bordering it)
-                if candidate_connection_point_x % 1 == 0:
-                    if candidate_connection_point_x < fluid_handler_source.position.x:
-                        candidate_connection_point_x = candidate_connection_point_x - 0.5
-                    elif candidate_connection_point_x > fluid_handler_source.position.x:
-                        candidate_connection_point_x = candidate_connection_point_x + 0.5
-                if candidate_connection_point_y % 1 == 0:
-                    if candidate_connection_point_y < fluid_handler_source.position.y:
-                        candidate_connection_point_y = candidate_connection_point_y - 0.5
-                    elif candidate_connection_point_y > fluid_handler_source.position.y:
-                        candidate_connection_point_y = candidate_connection_point_y + 0.5
-
-                entities_in_connection_point = self.get_entities(position=Position(x=candidate_connection_point_x, y=candidate_connection_point_y), radius=1)
-
-                entities_in_connection_point = [entity for entity in entities_in_connection_point if entity.position != fluid_handler_source.position]
-
-                if not entities_in_connection_point:
-                    nearest_connection_point = Position(x=candidate_connection_point_x, y=candidate_connection_point_y)
-                    nearest_distance = distance
-
-        if not nearest_connection_point:
-            raise Exception("The required connection points are blocked. Please change the positions of entities you are trying to connect to unblock connections")
-
-        return nearest_connection_point
-
-    def _round_position(self, position: Position):
-        return Position(x=math.floor(position.x), y=math.floor(position.y))
-
-    def _attempt_to_get_entity(self, position: Position, get_connectors=False) -> Union[Position, Entity, EntityGroup]:
-        entities = self.get_entities(position=position, radius=0.1)
-        if not entities:
-            return position
-        if isinstance(entities[0], (BeltGroup, TransportBelt, PipeGroup, Pipe)) and not get_connectors:
-            return position
-        return entities[0]
-
+    def _get_connection_type(self, prototype: Prototype) -> ConnectionType:
+        match prototype:
+            case Prototype.Pipe:
+                return ConnectionType.FLUID
+            case Prototype.TransportBelt:
+                return ConnectionType.TRANSPORT
+            case Prototype.SmallElectricPole | Prototype.MediumElectricPole | Prototype.BigElectricPole:
+                return ConnectionType.POWER
+            case _:
+                raise ValueError(f"Unsupported connection type: {prototype}")
 
     def __call__(self,
                  source: Union[Position, Entity, EntityGroup],
                  target: Union[Position, Entity, EntityGroup],
-                 connection_type: Prototype = None,
-                 dry_run: bool = False
-                 ) -> List[Union[Entity, EntityGroup]]:
-        """
-        Connect two entities or positions.
-        :param source: First Entity, Position or EntityGroup
-        :param target: Second Entity, Position or EntityGroup
-        :param connection_type: a Pipe, TransportBelt or ElectricPole
-        :example connect_entities(source=boiler, target=generator, connection_type=Prototype.Pipe)
-        :example connect_entities(source=miner.drop_position, target=inserter.pickup_position, connection_type=Prototype.TransportBelt)
-        :return: List of entities or groups that were created
-        """
+                 connection_type: Optional[Prototype] = None,
+                 dry_run: bool = False) -> List[Union[Entity, EntityGroup]]:
+        """Connect two entities or positions."""
 
-        if isinstance(source, Position):
-            source = self._attempt_to_get_entity(source)
-        if isinstance(target, Position):
-            target = self._attempt_to_get_entity(target)
-
+        # Resolve connection type if not provided
         if not connection_type:
-            if isinstance(source, Position) and isinstance(target, Position):
-                raise Exception("Please specify the type of connection you want to make (e.g Prototype.Pipe)")
-            if isinstance(source, FluidHandler) and isinstance(target, FluidHandler):
-                connection_type = Prototype.Pipe
-            else:
-                raise Exception("Please specify the type of connection you want to make (e.g Prototype.TransportBelt)")
+            connection_type = self._infer_connection_type(source, target)
 
-        try:
-            connection_prototype, metaclass = connection_type.value
-            source_entity = None
-            target_entity = None
-            pathing_radius = 0
+        # Get resolver for this connection type
+        resolver = self.resolvers[self._get_connection_type(connection_type)]
 
-            # get the inventory
-            inventory = self.inspect_inventory()
-            # get the number of the connection_prototype in the inventory
-            number_of_connection_prototype = inventory.get(connection_prototype, 0)
+        # Resolve source and target positions
+        prioritised_list_of_position_pairs = resolver.resolve(source, target)
 
-            # if isinstance(source, Entity):
-            #     source = self.get_entity(prototype_by_name[source._get_prototype()], source.position)
-            # if isinstance(target, Entity):
-            #     target = self.get_entity(prototype_by_name[target._get_prototype()], target.position)
+        last_exception = None
+        for source_pos, target_pos in prioritised_list_of_position_pairs:
+            # Handle the actual connection
+            try:
+                # self._create_connection(
+                #     source_pos, target_pos,
+                #     connection_type, True,
+                #     source_entity=source if isinstance(source, (Entity, EntityGroup)) else None,
+                #     target_entity=target if isinstance(target, (Entity, EntityGroup)) else None
+                # )
+                return self._create_connection(
+                    source_pos, target_pos,
+                    connection_type, False,
+                    source_entity=source if isinstance(source, (Entity, EntityGroup)) else None,
+                    target_entity=target if isinstance(target, (Entity, EntityGroup)) else None
+                )
+            except Exception as e:
+                last_exception = e
 
-            if isinstance(source, BeltGroup):
-                source_entity = source
-                source_position = Position(x=source_entity.outputs[0].position.x, y=source_entity.outputs[0].position.y)
-            elif isinstance(source, Entity) or isinstance(source, EntityGroup):
-                source_entity = source
-                source_position = Position(x=source_entity.position.x, y=source_entity.position.y)
-            elif isinstance(source, Position):
-                source_position = source
-            else:
-                raise TypeError("Source must be either an Entity, Position or EntityGroup")
+        raise Exception(
+            f"Failed to connect {connection_type} from {source} to {target}. "
+            f"{self.get_error_message(str(last_exception))}"
+        )
 
-            if isinstance(target, Entity) or isinstance(target, EntityGroup):
-                target_entity = target
-                target_position = Position(x=target_entity.position.x, y=target_entity.position.y)
-            elif isinstance(target, Position):
-                target_position = target
-            else:
-                raise TypeError("Target must be either an Entity or Position.")
+    def _infer_connection_type(self,
+                               source: Union[Position, Entity, EntityGroup],
+                               target: Union[Position, Entity, EntityGroup]) -> Prototype:
+        """
+        Infers the appropriate connection type based on source and target entities.
 
-            if source_entity:
-                x_sign = numpy.sign(source_entity.position.x - target_position.x)
-                y_sign = numpy.sign(source_entity.position.y - target_position.y)
-            else:
-                x_sign = numpy.sign(source_position.x - target_position.x)
-                y_sign = numpy.sign(source_position.y - target_position.y)
+        Args:
+            source: Source entity, position or group
+            target: Target entity, position or group
 
-            if isinstance(source_entity, BeltGroup):
-                source_position = source_entity.outputs[0].output_position # TODO This should be the nearest output to the source position
-            elif source_entity and isinstance(source, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
-                if isinstance(source_entity, PumpJack) and connection_type.name == Prototype.Pipe.name:
-                    source_position = source_entity.connection_points[0]
-                    pass
-                elif isinstance(source_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
-                    if isinstance(source_entity, OffshorePump):
-                        source_position = Position(x=source_entity.connection_points[0].x,
-                                                   y=source_entity.connection_points[0].y)
-                    elif isinstance(source_entity, Boiler):
-                        if target_entity and isinstance(target_entity, Generator):
-                            #source_position = self._round_position(source_entity.steam_output_point)
-                            x_diff_source_position_target_position = source_entity.position.x - source_entity.steam_output_point.x
-                            y_diff_source_position_target_position = source_entity.position.y - source_entity.steam_output_point.y
-                            BOILER_WIDTH = 3
-                            OFFSET = 0
-                            # check if steam_output_point is on the top, bottom, left or right of the boiler, if so, add a 0.5 offset to the position in the direction of the generator
-                            if x_diff_source_position_target_position == 0:
-                                if y_diff_source_position_target_position < 0:
-                                    source_position = Position(x=source_entity.position.x, y=source_entity.position.y + BOILER_WIDTH/2 + OFFSET)
-                                else:
-                                    source_position = Position(x=source_entity.position.x, y=source_entity.position.y - BOILER_WIDTH/2 - OFFSET)
-                            elif y_diff_source_position_target_position == 0:
-                                if x_diff_source_position_target_position < 0:
-                                    source_position = Position(x=source_entity.position.x + BOILER_WIDTH/2 + OFFSET, y=source_entity.position.y)
-                                else:
-                                    source_position = Position(x=source_entity.position.x - BOILER_WIDTH/2 - OFFSET, y=source_entity.position.y)
+        Returns:
+            The appropriate Prototype for the connection
 
-                        elif target_entity and isinstance(target_entity, (Boiler, OffshorePump)):
-                            source_position = self._get_nearest_connection_point(source_entity,
-                                                                                 source_position,
-                                                                                 existing_connection_entity=target_entity)
+        Raises:
+            ValueError: If connection type cannot be determined or entities are incompatible
+        """
+        # If both are positions, we can't infer the type
+        if isinstance(source, Position) and isinstance(target, Position):
+            raise ValueError("Cannot infer connection type when both source and target are positions. "
+                             "Please specify connection_type explicitly.")
 
-                    else:
-                        source_position = self._get_nearest_connection_point(source_entity,
-                                                                             target_position,
-                                                                             existing_connection_entity=target_entity)
+        # Handle fluid connections
+        if isinstance(source, FluidHandler) and isinstance(target, FluidHandler):
+            return Prototype.Pipe
 
-                elif isinstance(source_entity, Inserter):
-                    source_position = source_entity.drop_position
-                elif isinstance(source_entity, MiningDrill):
-                    source_position = source_entity.drop_position
-                elif isinstance(source_entity, TransportBelt):
-                    source_position = source_entity.position
-                else:
-                    source_position = Position(x=source_entity.position.x-x_sign*source_entity.tile_dimensions.tile_width/2,
-                                               y=source_entity.position.y-y_sign*source_entity.tile_dimensions.tile_height/2)
-            elif connection_type.name == Prototype.TransportBelt.name:
-                # If we are connecting a position with a transport belt, we need to add 0.5 to the position to prevent
-                # Weird behaviour from the pathfinding
-                source_position = Position(x=math.floor(source_position.x)+0.5, y=math.floor(source_position.y)+0.5)
-                pass
+        # Handle belt connections
+        is_source_belt = isinstance(source, (TransportBelt, BeltGroup))
+        is_target_belt = isinstance(target, (TransportBelt, BeltGroup))
+        if is_source_belt or is_target_belt:
+            return Prototype.TransportBelt
 
+        # Handle mining and insertion
+        is_source_miner = isinstance(source, MiningDrill)
+        is_target_inserter = isinstance(target, Inserter)
+        is_source_inserter = isinstance(source, Inserter)
+        if (is_source_miner and is_target_inserter) or (is_source_inserter and is_target_belt):
+            return Prototype.TransportBelt
 
+        # If we can't determine the type, we need explicit specification
+        raise ValueError("Could not infer connection type. Please specify connection_type explicitly.")
 
+    def _attempt_path_finding(self,
+                              source_pos: Position,
+                              target_pos: Position,
+                              connection_prototype: str,
+                              num_available: int,
+                              pathing_radius: float = 1,
+                              dry_run: bool = False,
+                              allow_paths_through_own: bool = False) -> PathResult:
+        """Attempt to find a path between two positions"""
+        entity_sizes = [1, 0.5, 0.25]  # Ordered from largest to smallest
 
-            if isinstance(target_entity, BeltGroup):
-                belt = target_entity
-                belt_input_positions = [belt.position for belt in belt.inputs]
-                # get the nearest belt to the source entity
-                min_belt_position = min(belt_input_positions, key=lambda x: source_position.distance(x))
-                #if min_belt_position.distance(source_position) < 0.5:
-                #    return [target]
-                # get the belt with the target_position
-                #target_belt = [belt for belt in belts if belt.position == min_belt_position][0]
-                #target_position = target_belt.input_position
+        for size in entity_sizes:
+            path_handle = self.request_path(
+                finish=target_pos,
+                start=source_pos,
+                allow_paths_through_own_entities=allow_paths_through_own,
+                radius=pathing_radius,
+                entity_size=size
+            )
 
-                #target_position = target_entity.inputs[0]
-                target_position = min_belt_position
-            elif isinstance(target, Entity) and (connection_type.name == Prototype.Pipe.name or connection_type.name == Prototype.TransportBelt.name):
-                if isinstance(target_entity, FluidHandler) and connection_type.name == Prototype.Pipe.name:
-                    if isinstance(target_entity, Boiler):
-                        if isinstance(source_entity, OffshorePump) or isinstance(source_entity, Boiler):
-                            target_position = self._get_nearest_connection_point(target_entity,
-                                                                                 source_position,
-                                                                                 existing_connection_entity=source_entity)
-                        else:
-                            target_position = target_entity.steam_output_point
-                    elif isinstance(target_entity, Boiler) and isinstance(source_entity, Generator):
-                        target_position = target_entity.steam_output_point
-                        pass
-                    else:
-                        target_position = self._get_nearest_connection_point(target_entity,
-                                                                             source_position,
-                                                                             existing_connection_entity=source_entity)
-                        #target_position = Position(x=target_position.x+0.5, y=target_position.y+0.5)
-                        target_position = Position(x=target_position.x, y=target_position.y)
+            sleep(0.05)  # Allow pathing system time to compute
 
-                elif isinstance(target_entity, Inserter):
-                    target_position = target_entity.pickup_position
-                elif isinstance(target_entity, MiningDrill):
-                    target_position = target_entity.drop_position
-                elif isinstance(target_entity, TransportBelt):
-                    #target_position = target_entity.position
-                    x_sign = numpy.sign(math.floor(source_position.x) - math.floor(target_position.x))
-                    y_sign = numpy.sign(math.floor(source_position.y) - math.floor(target_position.y))
+            response, _ = self.execute(
+                PLAYER,
+                source_pos.x,
+                source_pos.y,
+                target_pos.x,
+                target_pos.y,
+                path_handle,
+                connection_prototype,
+                dry_run,
+                num_available
+            )
 
-                    target_position = Position(
-                        x=(target_entity.position.x) + (x_sign * target_entity.tile_dimensions.tile_width),
-                        y=(target_entity.position.y) + (y_sign * target_entity.tile_dimensions.tile_height))
-                else:
-                    target_position = Position(x=target_entity.position.x + x_sign*source_entity.tile_dimensions.tile_width/2,
-                                               y=target_entity.position.y + y_sign*source_entity.tile_dimensions.tile_height/2)
-            elif connection_type.name == Prototype.TransportBelt.name:
-                # If we are connecting a position with a transport belt, we need to add 0.5 to the position to prevent
-                # Weird behaviour from the pathfinding
-                x_offset, y_offset = 0.5, 0.5
+            result = PathResult(response)
+            if result.is_success:
+                return result
 
-                #x_offset, y_offset = 0.25, 0.25
-                target_position = Position(x=math.floor(target_position.x) + x_offset, y=math.floor(target_position.y) + y_offset)
-                pass
+        return result  # Return last failed result if all attempts fail
 
-            if isinstance(source_entity, PipeGroup) and isinstance(target_entity, PipeGroup):
-                # If the source_entity and the target_entity is the same object, ensure there are only 2 input_positions
-                # And set them.
-                if source_entity.pipes[0].position == target_entity.pipes[0].position:
-                    if len(source_entity.input) == 2:
-                        source_position = source_entity.inputs[0].position
-                        target_position = target_entity.inputs[1].position
-                    else:
-                        raise Exception("PipeGroup must have only 2 input_position if connecting to itself.")
-                else:
-                    # check each output_position from the source_entity, and each input_position from the target_entity
-                    # determine which pair is the closest, and connect them
-                    shortest_distance = 1000000
-                    for source_output in source_entity.outputs:
-                        source_output_position = source_output.output_position
-                        for target_input in target_entity.inputs:
-                            target_input_position = target_input.input_position
-                            distance = abs(source_output_position.x - target_input_position.x) + abs(source_output_position.y - target_input_position.y)
-                            if distance < shortest_distance:
-                                shortest_distance = distance
-                                source_position = source_output_position
-                                target_position = target_input_position
+    def _create_connection(self,
+                           source_pos: Position,
+                           target_pos: Position,
+                           connection_type: Prototype,
+                           dry_run: bool,
+                           source_entity: Optional[Entity] = None,
+                           target_entity: Optional[Entity] = None) -> List[Union[Entity, EntityGroup]]:
+        """Create a connection between two positions"""
+        connection_prototype, metaclass = connection_type.value
+        inventory = self.inspect_inventory()
+        num_available = inventory.get(connection_prototype, 0)
 
-
-            # Move the source and target positions to the center of the tile
-            target_position = Position(x=round(target_position.x*2)/2, y=round(target_position.y*2)/2)
-            source_position = Position(x=round(source_position.x*2)/2, y=round(source_position.y*2)/2)
-            if connection_type == Prototype.Pipe or connection_type == Prototype.TransportBelt:
-
-                # If we are dealing with pipes, insulate all pre-existing pipes with a wider bounding box
-                # This will prevent accidentally merging adjacent pipes.
-                if connection_type == Prototype.Pipe:
-                    self._extend_collision_boxes(source_position, target_position)
-
+        # Determine connection strategy based on type
+        match connection_type:
+            case Prototype.Pipe:
+                pathing_radius = 0.5
+                self._extend_collision_boxes(source_pos, target_pos)
                 try:
-                    response = self._get_path(source_position,
-                                              target_position,
-                                              connection_prototype,
-                                              number_of_connection_prototype,
-                                              pathing_radius,
-                                              dry_run,
-                                              allow_paths_through_own_entities=False)
-                    if isinstance(response, str):
-                        raise Exception(
-                            f"Error with connecting entities - Could not connect {connection_prototype} from {(source_position)} to {(target_position)}. {self.get_error_message(response.lstrip())}")
+                    result = self._attempt_path_finding(
+                        source_pos, target_pos,
+                        connection_prototype, num_available,
+                        pathing_radius, dry_run
+                    )
+                finally:
+                    self._clear_collision_boxes()
 
-                except Exception as e:
-                    #raise e
-                    # Accept allowing paths through own entities if it fails
-                    #if isinstance(source, (BeltGroup, TransportBelt)) and isinstance(target, (BeltGroup, TransportBelt)):
-                    source_pos = source_position
-                    if not source_entity or isinstance(source_entity, Position):
-                        source_entity = self._attempt_to_get_entity(source_position, get_connectors=True)
-                        if source_entity and isinstance(source_entity, BeltGroup):
-                            source_pos = source_entity.outputs[0].output_position
+            case Prototype.TransportBelt:
+                pathing_radius = 0.5
+                result = self._attempt_path_finding(
+                    source_pos, target_pos,
+                    connection_prototype, num_available,
+                    pathing_radius, dry_run
+                )
 
-                    target_pos = target_position
-                    if not target_entity or isinstance(target_entity, Position):
-                        target_entity = self._attempt_to_get_entity(target_position, get_connectors=True)
-                        if target_entity and isinstance(target_entity, BeltGroup):
-                            target_pos = source_entity.outputs[0].input_position
+                if not result.is_success:
+                    # Retry with modified parameters for belts
+                    source_pos_adjusted = self._adjust_belt_position(source_pos, source_entity)
+                    target_pos_adjusted = self._adjust_belt_position(target_pos, target_entity)
+                    result = self._attempt_path_finding(
+                        source_pos_adjusted, target_pos_adjusted,
+                        connection_prototype, num_available,
+                        2, dry_run, False
+                    )
+                    pass
 
-                    response = self._get_path(source_pos,
-                                              target_pos,
-                                              connection_prototype,
-                                              number_of_connection_prototype,
-                                              pathing_radius,
-                                              dry_run,
-                                              allow_paths_through_own_entities=False)
+            case _:  # Power poles
+                pathing_radius = 4  # Larger radius for poles
+                self._extend_collision_boxes(source_pos, target_pos)
+                try:
+                    result = self._attempt_path_finding(
+                        source_pos, target_pos,
+                        connection_prototype, num_available,
+                        pathing_radius, dry_run, True
+                    )
+                finally:
+                    self._clear_collision_boxes()
 
-                # If we are dealing with pipes, insulate all pre-existing pipes with a wider bounding box
-                # This will prevent accidentally merging adjacent pipes.
-                self._clear_collision_boxes()
+        if not result.is_success:
+            raise Exception(
+                f"Failed to connect {connection_prototype} from {source_pos} to {target_pos}. "
+                f"{self.get_error_message(result.error_message.lstrip())}"
+            )
 
-                if isinstance(response, str):
-                    raise Exception(
-                        f"Error with connecting entities - Could not connect {connection_prototype} from {(source_position)} to {(target_position)}. {self.get_error_message(response.lstrip())}")
+        if dry_run:
+            return {
+                "number_of_entities_required": result.required_entities,
+                "number_of_entities_available": num_available
+            }
 
-            else:
-                pathing_radius = 4 # Larger radius because we are using poles that don't need exact placement
-                self._extend_collision_boxes(source_position, target_position)
-                response = self._get_path(source_position,
-                                          target_position,
-                                          connection_prototype,
-                                          number_of_connection_prototype,
-                                          pathing_radius,
-                                          dry_run,
-                                          allow_paths_through_own_entities=True)
-                self._clear_collision_boxes()
+        # Process created entities
+        path = []
+        groupable_entities = []
 
-            if isinstance(response, str):
-                raise Exception(f"Error with connecting entities - Could not connect {connection_prototype} from {(source_position)} to {(target_position)}. {self.get_error_message(response.lstrip())}")
+        for entity_data in result.entities.values():
+            if not isinstance(entity_data, dict):
+                continue
 
-            if dry_run:
-                return {"number_of_entities_required": response["number_of_entities"],
-                        "number_of_entities_available": number_of_connection_prototype}
+            try:
+                self._process_warnings(entity_data)
+                entity = metaclass(prototype=connection_type, **entity_data)
 
-            success = response.get('connected', False)
-            entities_list = response.get('entities', {}).values()
-            path = []
-            groupable_entities = []
-            for value in entities_list:
-                if isinstance(value, dict):
-                    try:
-                        if not value['warnings']:
-                            del value['warnings']
-                            value['warnings'] = []
-                        else:
-                            warnings = value['warnings']
-                            if isinstance(warnings, dict):
-                                warnings = list(warnings.values())
-                            else:
-                                warnings = [warnings]
-                            value['warnings'] = warnings
-                        entity = metaclass(prototype=connection_type, **value)
-
-                        if entity.prototype in (Prototype.TransportBelt, Prototype.Pipe, Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole):
-                            groupable_entities.append(entity)
-                        else:
-                            path.append(entity)
-                    except Exception as e:
-                        if not value:
-                            continue
-                        raise Exception(f"Could not create {connection_prototype} object from response: {response}", e)
-
-
-            deduplicated_path = _deduplicate_entities(path)
-
-
-
-            entity_groups = []
-            # If we are connecting to an existing belt group, we need to agglomerate them all together
-            if connection_type == Prototype.TransportBelt:
-                if isinstance(source_entity, BeltGroup):
-                    #entity_groups = agglomerate_groupable_entities(source_entity.belts + groupable_entities)
-                    entity_groups = agglomerate_groupable_entities(groupable_entities)
-                    #entity_groups[0].inputs = source_entity.inputs
-                elif isinstance(target_entity, BeltGroup):
-                    entity_groups = agglomerate_groupable_entities(groupable_entities + target_entity.belts)
-                    #entity_groups[0].outputs = target_entity.outputs
+                if entity.prototype in (Prototype.TransportBelt, Prototype.Pipe,
+                                        Prototype.SmallElectricPole, Prototype.BigElectricPole,
+                                        Prototype.MediumElectricPole):
+                    groupable_entities.append(entity)
                 else:
-                    entity_groups = agglomerate_groupable_entities(groupable_entities)
+                    path.append(entity)
+            except Exception as e:
+                if entity_data:
+                    raise Exception(
+                        f"Failed to create {connection_prototype} object from response: {result.raw_response}") from e
 
-                for entity_group in entity_groups:
-                    entity_group.belts = _deduplicate_entities(entity_group.belts)
+        # Process entity groups based on connection type
+        entity_groups = self._process_entity_groups(
+            connection_type, groupable_entities,
+            source_entity, target_entity, source_pos
+        )
 
-                # If the source and target entities are both BeltGroups, we need to make sure that the final belt is rotated
-                # to face the first belt of the source entity group.
-                if isinstance(source_entity, BeltGroup) and isinstance(target_entity, BeltGroup):
-                    self.rotate_final_belt_when_connecting_groups(entity_groups[0], source_entity)
+        return _deduplicate_entities(path) + entity_groups
 
-                entity_groups = self.get_entities({Prototype.TransportBelt, Prototype.ExpressTransportBelt, Prototype.FastTransportBelt}, source_position)
+    def _process_warnings(self, entity_data: Dict):
+        """Process warnings in entity data"""
+        if not entity_data.get('warnings'):
+            entity_data['warnings'] = []
+        else:
+            warnings = entity_data['warnings']
+            entity_data['warnings'] = list(warnings.values()) if isinstance(warnings, dict) else [warnings]
 
-                # We only want whichever entity_group contains the source position
-                for entity_group in entity_groups:
-                    if source_position in [entity.position for entity in entity_group.belts]:
-                        entity_groups = [entity_group]
-                        break
+    def _process_entity_groups(self,
+                               connection_type: Prototype,
+                               groupable_entities: List[Entity],
+                               source_entity: Optional[Entity],
+                               target_entity: Optional[Entity],
+                               source_pos: Position) -> List[EntityGroup]:
+        """Process and create entity groups based on connection type"""
+        match connection_type:
+            case Prototype.ExpressTransportBelt | Prototype.FastTransportBelt | Prototype.TransportBelt:
+                return self._process_belt_groups(
+                    groupable_entities, source_entity,
+                    target_entity, source_pos
+                )
 
-                pass
-            elif connection_type == Prototype.Pipe:
-                entity_groups = self.get_entities({Prototype.Pipe}, source_position)
-                for entity_group in entity_groups:
-                    entity_group.pipes = _deduplicate_entities(entity_group.pipes)
-                # We only want whichever entity_group contains the source position
-                for entity_group in entity_groups:
-                    if source_position in [entity.position for entity in entity_group.pipes]:
-                        entity_groups = [entity_group]
-                        break
+            case Prototype.Pipe:
+                return self._process_pipe_groups(
+                    groupable_entities, source_pos
+                )
 
-            elif connection_type in (Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole):
-                entity_groups = self.get_entities({Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole}, source_position)
+            case _:  # Power poles
+                return self._process_power_groups(
+                    groupable_entities, source_pos
+                )
 
+    def _process_belt_groups(self,
+                             groupable_entities: List[Entity],
+                             source_entity: Optional[Entity],
+                             target_entity: Optional[Entity],
+                             source_pos: Position) -> List[BeltGroup]:
+        """Process transport belt groups"""
+        if isinstance(source_entity, BeltGroup):
+            entity_groups = agglomerate_groupable_entities(groupable_entities)
+        elif isinstance(target_entity, BeltGroup):
+            entity_groups = agglomerate_groupable_entities(groupable_entities + target_entity.belts)
+        else:
+            entity_groups = agglomerate_groupable_entities(groupable_entities)
 
-            # if we have more than one entity group - but one of them only has one entity (i.e it is dangling) we
-            # should pick it up back into the inventory, as the connect entities routine should not have created it
-            if len(entity_groups) > 1:
-                for entity_group in entity_groups:
-                    if connection_type == Prototype.TransportBelt:
-                        if len(entity_group.belts) == 1:
-                            #self.pickup_entity(connection_type, entity_group.belts[0].position)
-                            entity_groups.remove(entity_group)
-                    elif connection_type == Prototype.Pipe:
-                        if len(entity_group.pipes) == 1:
-                            self.pickup_entity(connection_type, entity_group.pipes[0].position)
-                            entity_groups.remove(entity_group)
+        # Deduplicate belts in groups
+        for group in entity_groups:
+            if hasattr(group,'belts'):
+                group.belts = _deduplicate_entities(group.belts)
 
-            # Use the new deduplication function
-            return deduplicated_path + entity_groups
-        except Exception as e:
-            raise e
+        # Handle belt rotation for group connections
+        if isinstance(source_entity, BeltGroup) and entity_groups: #isinstance(target_entity, BeltGroup):
+            self.rotate_end_belt_to_face(source_entity, entity_groups[0])
+            #self.rotate_final_belt_when_connecting_groups(source_entity, entity_groups[0])
+
+        if isinstance(target_entity, BeltGroup) and entity_groups:
+            self.rotate_end_belt_to_face(entity_groups[0], target_entity)
+            #self.rotate_final_belt_when_connecting_groups(entity_groups[0], source_entity)
+
+        # Get final groups and filter to relevant one
+        entity_groups = self.get_entities(
+            {Prototype.TransportBelt, Prototype.ExpressTransportBelt, Prototype.FastTransportBelt},
+            source_pos
+        )
+
+        for group in entity_groups:
+            if source_pos in [entity.position for entity in group.belts]:
+                return cast(List[BeltGroup], [group])
+
+        return cast(List[BeltGroup], entity_groups)
 
     def _update_belt_group(self, new_belt: BeltGroup, source_belt: TransportBelt, target_belt: TransportBelt):
         new_belt.outputs[0] = source_belt
@@ -544,25 +379,136 @@ class ConnectEntities(Action):
                 if not belt.is_source and belt in new_belt.inputs:
                     new_belt.inputs.remove(belt)
 
-    def rotate_final_belt_when_connecting_groups(self, new_belt: BeltGroup, target: BeltGroup) -> BeltGroup:
-        if not new_belt.outputs:
-            return new_belt
-        source_belt = new_belt.outputs[0]
+    def rotate_end_belt_to_face(self, source_belt_group: BeltGroup, target: BeltGroup) -> BeltGroup:
+        if not source_belt_group.outputs:
+            return source_belt_group
+
+        source_belt = source_belt_group.outputs[0]
         target_belt = target.inputs[0]
-        source_belt_position = new_belt.outputs[0].position
-        target_belt_position = target.inputs[0].input_position
-        if source_belt_position.x > target_belt_position.x and not source_belt.direction.value == Direction.LEFT.value: # We only want to curve the belt, not invert it
-            # It is necessary to use the direction enums from the game state
-            source_belt = self.rotate_entity(source_belt, Direction.RIGHT)
-        elif source_belt_position.x < target_belt_position.x and not source_belt.direction.value == Direction.RIGHT.value:
-            source_belt = self.rotate_entity(source_belt, Direction.LEFT)
-        elif source_belt_position.y > target_belt_position.y and not source_belt.direction.value == Direction.UP.value:
-            source_belt = self.rotate_entity(source_belt, Direction.DOWN)
-        elif source_belt_position.y < target_belt_position.y and not source_belt.direction.value == Direction.DOWN.value:
-            source_belt = self.rotate_entity(source_belt, Direction.UP)
+        source_pos = source_belt.position
+        target_pos = target_belt.position
 
-        # Check to see if this is still a source / terminus
+        if not source_pos.is_close(target_pos, 1.001): # epsilon for
+            return source_belt_group
+
+        # Calculate relative position
+        relative_pos = (
+            numpy.sign(source_pos.x - target_pos.x),
+            numpy.sign(source_pos.y - target_pos.y)
+        )
+
+
+        # Don't rotate if belt is already facing correct direction
+        match relative_pos:
+            case(1, 1):
+                pass  #raise Exception("Cannot rotate non adjacent belts to face one another")
+
+            case (-1, -1):
+                pass #raise Exception("Cannot rotate non adjacent belts to face one another")
+
+            case (1, _) if source_belt.direction.value not in (Direction.LEFT.value, Direction.RIGHT.value):
+                # Source is to right of target - point left
+                source_belt = self.rotate_entity(source_belt, Direction.LEFT)
+
+            case (-1, _) if source_belt.direction.value not in (Direction.LEFT.value, Direction.RIGHT.value):
+                # Source is to left of target - point right
+                source_belt = self.rotate_entity(source_belt, Direction.RIGHT)
+
+            case (_, 1) if source_belt.direction.value not in (Direction.UP.value, Direction.DOWN.value):
+                # Source is below target - point up
+                source_belt = self.rotate_entity(source_belt, Direction.UP)
+
+            case (_, -1) if source_belt.direction.value not in (Direction.UP.value, Direction.DOWN.value):
+                # Source is above target - point down
+                source_belt = self.rotate_entity(source_belt, Direction.DOWN)
+
+        # Update the belt group connections
         target_belt = self.get_entity(target_belt.prototype, target_belt.position)
-        self._update_belt_group(new_belt, source_belt, target_belt)  # Update the belt group with the new direction of the source belt.)
+        self._update_belt_group(source_belt_group, source_belt, target_belt)
 
-        return new_belt
+        return source_belt
+
+
+    # def rotate_final_belt_when_connecting_groups(self, new_belt: BeltGroup, target: BeltGroup) -> BeltGroup:
+    #     if not new_belt.outputs:
+    #         return new_belt
+    #     source_belt = new_belt.outputs[0]
+    #     target_belt = target.inputs[0]
+    #     source_belt_position = new_belt.outputs[0].position
+    #     target_belt_position = target.inputs[0].input_position
+    #     if source_belt_position.x > target_belt_position.x and not source_belt.direction.value == Direction.LEFT.value: # We only want to curve the belt, not invert it
+    #         # It is necessary to use the direction enums from the game state
+    #         source_belt = self.rotate_entity(source_belt, Direction.RIGHT)
+    #     elif source_belt_position.x < target_belt_position.x and not source_belt.direction.value == Direction.RIGHT.value:
+    #         source_belt = self.rotate_entity(source_belt, Direction.LEFT)
+    #     elif source_belt_position.y > target_belt_position.y and not source_belt.direction.value == Direction.UP.value:
+    #         source_belt = self.rotate_entity(source_belt, Direction.DOWN)
+    #     elif source_belt_position.y < target_belt_position.y and not source_belt.direction.value == Direction.DOWN.value:
+    #         source_belt = self.rotate_entity(source_belt, Direction.UP)
+    #
+    #     # Check to see if this is still a source / terminus
+    #     target_belt = self.get_entity(target_belt.prototype, target_belt.position)
+    #     self._update_belt_group(new_belt, source_belt, target_belt)  # Update the belt group with the new direction of the source belt.)
+    #
+    #     return new_belt
+
+    def _process_pipe_groups(self,
+                             groupable_entities: List[Entity],
+                             source_pos: Position) -> List[PipeGroup]:
+        """Process pipe groups"""
+        entity_groups = self.get_entities({Prototype.Pipe}, source_pos)
+
+        for group in entity_groups:
+            group.pipes = _deduplicate_entities(group.pipes)
+            if source_pos in [entity.position for entity in group.pipes]:
+                return [group]
+
+        return entity_groups
+
+    def _attempt_to_get_entity(self,
+                               position: Position,
+                               get_connectors: bool = False) -> Union[Position, Entity, EntityGroup]:
+        """
+        Attempts to find an entity at the given position.
+
+        Args:
+            position: The position to check
+            get_connectors: If True, returns connector entities (belts, pipes) instead of treating them as positions
+
+        Returns:
+            - The original position if no entity is found
+            - The position if a connector entity is found and get_connectors is False
+            - The entity or entity group if found and either get_connectors is True or it's not a connector
+        """
+        entities = self.get_entities(position=position, radius=0.1)
+
+        if not entities:
+            return position
+
+        entity = entities[0]
+
+        # If we found a connector entity (belt/pipe) and don't want connectors,
+        # just return the position
+        if not get_connectors and isinstance(entity, (BeltGroup, TransportBelt, PipeGroup, Pipe)):
+            return position
+
+        return entity
+
+    def _process_power_groups(self,
+                              groupable_entities: List[Entity],
+                              source_pos: Position) -> List[ElectricityGroup]:
+        """Process power pole groups"""
+        return cast(List[ElectricityGroup], self.get_entities(
+            {Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole},
+            source_pos
+        ))
+
+    def _adjust_belt_position(self,
+                              pos: Position,
+                              entity: Optional[Entity]) -> Position:
+        """Adjust belt position for better path finding"""
+        if not entity or isinstance(entity, Position):
+            entity = self._attempt_to_get_entity(pos, get_connectors=True)
+            if entity and isinstance(entity, BeltGroup):
+                return entity.outputs[0].output_position
+        return pos

@@ -44,6 +44,7 @@ def test_connect_offshore_pump_to_boiler(game):
     water_pipes = game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
     assert len(water_pipes[0].pipes) == 5 + boiler.tile_dimensions.tile_width / 2 + offshore_pump.tile_dimensions.tile_width / 2 + 1
 
+    game.instance.reset()
     game.move_to(game.nearest(Resource.Water))
     offshore_pump = game.place_entity(Prototype.OffshorePump,
                                       position=game.nearest(Resource.Water),
@@ -248,7 +249,7 @@ def test_avoid_self_collision(game):
     print(f"Placed offshore pump at: {offshore_pump.position}")
 
     # Step 4: Place boiler
-    boiler_pos = Position(x=offshore_pump.position.x + 2, y=offshore_pump.position.y + 2)
+    boiler_pos = Position(x=offshore_pump.position.x + 2, y=offshore_pump.position.y - 2)
     game.move_to(boiler_pos)
     boiler = game.place_entity(Prototype.Boiler, position=boiler_pos, direction=Direction.RIGHT)
     print(f"Placed boiler at: {boiler.position}")

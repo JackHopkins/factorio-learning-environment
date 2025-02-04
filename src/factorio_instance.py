@@ -89,8 +89,8 @@ class FactorioInstance:
         self.tcp_port = tcp_port
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
         self.all_technologies_researched = all_technologies_researched
-        self.game_state = ObservationState().with_default(vocabulary)
-        self.game_state.fast = fast
+        #self.game_state = ObservationState().with_default(vocabulary)
+        self.fast = fast
         self._speed = 1
         self._ticks_elapsed = 0
 
@@ -101,22 +101,24 @@ class FactorioInstance:
         self.script_dict = {**self.lua_script_manager.action_scripts, **self.lua_script_manager.init_scripts}
 
         # Load the python controllers that correspond to the Lua scripts
-        self.setup_controllers(self.lua_script_manager, self.game_state)
+        self.setup_controllers(self.lua_script_manager)#, self.game_state)
 
         self.initial_inventory = inventory
         self.initialise(fast, **inventory)
+        self.initial_score = 0
+
         try:
-            self.namespace.observe_all()
+            self.namespace.score()
         except Exception as e:
             # Invalidate cache if there is an error
             self.lua_script_manager = FactorioLuaScriptManager(self.rcon_client, False)
             self.script_dict = {**self.lua_script_manager.action_scripts, **self.lua_script_manager.init_scripts}
-            self.setup_controllers(self.lua_script_manager, self.game_state)
+            self.setup_controllers(self.lua_script_manager)#, self.game_state)
             self.initialise(fast, **inventory)
 
         self._tasks = []
 
-        self._initial_score, goal = self.namespace.score()
+        self.initial_score, goal = self.namespace.score()
 
         # Register the cleanup method to be called on exit
         atexit.register(self.cleanup)
@@ -160,9 +162,9 @@ class FactorioInstance:
             pass
 
         try:
-            self.game_state.initial_score, goal = self.namespace.score()
+            self.initial_score, goal = self.namespace.score()
         except Exception as e:
-            self.game_state.initial_score, goal = 0, None
+            self.initial_score, goal = 0, None
 
 
 
@@ -181,7 +183,7 @@ class FactorioInstance:
 
     def speed(self, speed):
         response = self.rcon_client.send_command(f'/c game.speed = {speed}')
-        self.game_state._speed = speed
+        self._speed = speed
 
     def get_elapsed_ticks(self):
         response = self.rcon_client.send_command(f'/c rcon.print(global.elapsed_ticks or 0)')
@@ -255,11 +257,10 @@ class FactorioInstance:
         print(f"Connected to {address} client at tcp/{tcp_port}.")
         return rcon_client, address
 
-    def setup_controllers(self, lua_script_manager, game_state):
+    def setup_controllers(self, lua_script_manager):
         """
         Here we load all the Python controllers into the namespace, e.g `inspect_inventory(), nearest(), ect`
         @param lua_script_manager:
-        @param game_state:
         @return:
         """
         # Define the directory containing the callable class files
@@ -297,7 +298,7 @@ class FactorioInstance:
 
                 # Create an instance of the callable class
                 try:
-                    callable_instance = callable_class(lua_script_manager, game_state)
+                    callable_instance = callable_class(lua_script_manager, self.namespace)
                     self.controllers[module_name.lower()] = callable_instance
                 except Exception as e:
                     raise Exception(f"Could not instantiate {class_name}. {e}")
@@ -356,6 +357,9 @@ class FactorioInstance:
         Returns:
             float: Optimal zoom level
         """
+        if not bounds:
+            return 1
+
         # Parse resolution
         width, height = map(int, resolution.split('x'))
         aspect_ratio = width / height

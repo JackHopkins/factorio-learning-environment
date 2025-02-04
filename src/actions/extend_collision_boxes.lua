@@ -14,25 +14,25 @@ local function get_boiler_connection_positions(boiler)
         table.insert(positions, {x = x - 2, y = y + 0.5})
         table.insert(positions, {x = x + 2, y = y + 0.5})
         -- Steam output point
-        table.insert(positions, {x = x, y = y - 2})
+        table.insert(positions, {x = x, y = y - 1})
     elseif boiler.direction == defines.direction.south then
         -- Water input points
         table.insert(positions, {x = x - 2, y = y - 0.5})
         table.insert(positions, {x = x + 2, y = y - 0.5})
         -- Steam output point
-        table.insert(positions, {x = x, y = y + 2})
+        table.insert(positions, {x = x, y = y + 1})
     elseif boiler.direction == defines.direction.east then
         -- Water input points
         table.insert(positions, {x = x - 0.5, y = y - 2})
         table.insert(positions, {x = x - 0.5, y = y + 2})
         -- Steam output point
-        table.insert(positions, {x = x + 2, y = y})
+        table.insert(positions, {x = x + 1, y = y})
     elseif boiler.direction == defines.direction.west then
         -- Water input points
         table.insert(positions, {x = x + 0.5, y = y - 2})
         table.insert(positions, {x = x + 0.5, y = y + 2})
         -- Steam output point
-        table.insert(positions, {x = x - 2, y = y})
+        table.insert(positions, {x = x - 1, y = y})
     end
 
     return positions
@@ -41,6 +41,13 @@ end
 local function add_clearance_entities(surface, force, region, start_pos, end_pos)
     local created_entities = {}
     local all_positions = {}
+
+    local epsilon = 1 --0.707*2  -- Small value for floating point comparison
+    -- Helper function to check if a position is start or end
+    local function is_excluded_position(pos)
+        return (math.abs(pos.x - start_pos.x) < epsilon and math.abs(pos.y - start_pos.y) < epsilon) or
+               (math.abs(pos.x - end_pos.x) < epsilon and math.abs(pos.y - end_pos.y) < epsilon)
+    end
 
     -- Find all pipes and boilers in the region
     local pipes = surface.find_entities_filtered{
@@ -57,7 +64,7 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
 
     -- Find all mining drills in the region
     local drills = surface.find_entities_filtered{
-        name = {"electric-mining-drill" }, -- Add other drill types if needed
+        type = "mining-drill", -- Add other drill types if needed
         force = force,
         area = region
     }
@@ -71,7 +78,9 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
             {x = pipe.position.x, y = pipe.position.y - 1}
         }
         for _, pos in pairs(pipe_positions) do
-            table.insert(all_positions, pos)
+            if not is_excluded_position(pos) then
+                table.insert(all_positions, pos)
+            end
         end
     end
 
@@ -92,7 +101,7 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
 
     -- Collect all positions for mining drills
     for _, drill in pairs(drills) do
-        local drop_pos = drill.drop_position
+        local drop_pos = {x=math.round(drill.drop_position.x*2)/2, y=math.round(drill.drop_position.y*2)/2}
         local is_start = math.abs(drop_pos.x - start_pos.x) < epsilon and math.abs(drop_pos.y - start_pos.y) < epsilon
         local is_end = math.abs(drop_pos.x - end_pos.x) < epsilon and math.abs(drop_pos.y - end_pos.y) < epsilon
         if not is_start and not is_end then
@@ -102,6 +111,7 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
 
     -- Create entities at filtered positions
     for _, pos in pairs(all_positions) do
+
         local entity = surface.create_entity{
             name = "simple-entity-with-owner",
             position = pos,

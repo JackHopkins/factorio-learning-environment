@@ -7,8 +7,18 @@ global.actions.get_resource_patch = function(player_index, resource, x, y, radiu
     local function expand_bounding_box(box, pos)
         box.left_top.x = math.min(box.left_top.x, pos.x)
         box.left_top.y = math.min(box.left_top.y, pos.y)
-        box.right_bottom.x = math.max(box.right_bottom.x, pos.x + 1)
-        box.right_bottom.y = math.max(box.right_bottom.y, pos.y + 1)
+        box.right_bottom.x = math.max(box.right_bottom.x, pos.x)
+        box.right_bottom.y = math.max(box.right_bottom.y, pos.y)
+
+        local left_bottom = {x=box.left_top.x, y=box.right_bottom.y}
+        local right_top = {y=box.left_top.y, x=box.right_bottom.x}
+
+        rendering.clear()
+        rendering.draw_circle{width = 0.5, color = {r = 1, g = 0, b = 0}, surface = game.players[1].surface, radius = 0.5, filled = false, target = box.left_top, time_to_live = 60000}
+        rendering.draw_circle{width = 0.5, color = {r = 0, g = 1, b = 0}, surface = game.players[1].surface, radius = 0.5, filled = false, target = box.right_bottom, time_to_live = 60000}
+        rendering.draw_circle{width = 0.5, color = {r = 1, g = 0, b = 1}, surface = game.players[1].surface, radius = 0.5, filled = false, target = left_bottom, time_to_live = 60000}
+        rendering.draw_circle{width = 0.5, color = {r = 0, g = 1, b = 1}, surface = game.players[1].surface, radius = 0.5, filled = false, target = right_top, time_to_live = 60000}
+
     end
 
     -- Initialize bounding box
@@ -25,6 +35,8 @@ global.actions.get_resource_patch = function(player_index, resource, x, y, radiu
             expand_bounding_box(bounding_box, tile.position)
             total_water_tiles = total_water_tiles + 1
         end
+        bounding_box.right_bottom.x = bounding_box.right_bottom.x + 1
+        bounding_box.right_bottom.y = bounding_box.right_bottom.y + 1
 
         return {bounding_box = bounding_box, size = total_water_tiles}
     elseif resource == "wood" then

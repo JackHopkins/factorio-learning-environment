@@ -121,6 +121,17 @@ global.utils.get_closest_entity = function(player, position)
     return closest_entity
 end
 
+global.utils.is_position_blocked = function(player, position)
+    rendering.draw_circle{width = 0.5, color = {r = 1, g = 0, b = 1}, surface = player.surface, radius = 0.5, filled = false, target = position, time_to_live = 60000}
+
+    local can_place = player.surface.can_place_entity{
+        name = "simple-entity-with-owner",
+        position = position,
+    }
+    return not can_place
+end
+
+
 global.utils.calculate_movement_ticks = function(player, from_pos, to_pos)
     -- Calculate distance between points
     local dx = to_pos.x - from_pos.x

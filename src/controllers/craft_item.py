@@ -26,7 +26,7 @@ class CraftItem(Action):
             name = entity
 
         count_in_inventory = 0
-        if not self.game_state.fast:
+        if not self.game_state.instance.fast:
             count_in_inventory = self.inspect_inventory()[entity]
 
         success, elapsed = self.execute(PLAYER, name, quantity)
@@ -37,7 +37,7 @@ class CraftItem(Action):
                 result = self.get_error_message(success)
                 raise Exception(result)
 
-        if not self.game_state.fast:
+        if not self.game_state.instance.fast:
             sleep(0.5)
             attempt = 0
             max_attempts = 10

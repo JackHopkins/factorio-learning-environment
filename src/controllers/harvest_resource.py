@@ -37,7 +37,7 @@ class HarvestResource(Action):
         # If not fast mode, we need to identify what resource is at the x, y position
         # Because if the first pass of the harvest doesn't get the necessary
         resource_to_harvest = Resource.IronOre
-        if not self.game_state.fast:
+        if not self.game_state.instance.fast:
             resource_to_harvest = self.get_resource_type_at_position(position)
 
         # Now we attempt to harvest.
@@ -49,7 +49,7 @@ class HarvestResource(Action):
             raise Exception(f"Could not harvest. {msg}")
 
         # If `fast` is turned off - we need to long poll the game state to ensure the player has moved
-        if not self.game_state.fast:
+        if not self.game_state.instance.fast:
             remaining_steps = self.connection.send_command(
                 f'/silent-command rcon.print(global.actions.get_harvest_queue_length({PLAYER}))')
             attempt = 0

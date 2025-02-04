@@ -14,7 +14,7 @@ class MoveTo(Action):
 
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
-        self.observe = ObserveAll(connection, game_state)
+        #self.observe = ObserveAll(connection, game_state)
         self.request_path = RequestPath(connection, game_state)
         self.get_path = GetPath(connection, game_state)
 
@@ -33,11 +33,11 @@ class MoveTo(Action):
         x, y = math.floor(position.x*4)/4 + X_OFFSET, math.floor(position.y*4)/4 + Y_OFFSET
         nposition = Position(x=x, y=y)
 
-        if nposition.is_close(Position(x=self.game_state.player_location[0], y=self.game_state.player_location[1]), tolerance=0.5):
-            return True
+        #if nposition.is_close(Position(x=self.game_state.player_location[0], y=self.game_state.player_location[1]), tolerance=0.5):
+        #    return True
 
-        path_handle = self.request_path(start=Position(x=self.game_state.player_location[0],
-                                                       y=self.game_state.player_location[1]), finish=nposition,
+        path_handle = self.request_path(start=Position(x=self.game_state.player_location.x,
+                                                       y=self.game_state.player_location.y), finish=nposition,
                                         allow_paths_through_own_entities=True)
         sleep(0.05) # Let the pathing complete in the game.
         try:
@@ -57,15 +57,15 @@ class MoveTo(Action):
                 raise Exception("Could not lay entity, perhaps a typo?")
 
             if response and isinstance(response, dict):
-                self.game_state.player_location = (response['x'], response['y'])
+                self.game_state.player_location = Position(x=response['x'], y=response['y'])
 
             # If `fast` is turned off - we need to long poll the game state to ensure the player has moved
-            if not self.game_state.fast:
+            if not self.game_state.instance.fast:
                 remaining_steps = self.connection.send_command(f'/silent-command rcon.print(global.actions.get_walking_queue_length({PLAYER}))')
                 while remaining_steps != '0':
                     sleep(0.5)
                     remaining_steps = self.connection.send_command(f'/silent-command rcon.print(global.actions.get_walking_queue_length({PLAYER}))')
-                self.game_state.player_location = (position.x, position.y)
+                self.game_state.player_location = Position(x=position.x, y=position.y)
 
             return Position(x=response['x'], y=response['y'])#, execution_time
         except Exception as e:

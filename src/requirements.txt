@@ -1,10 +1,8 @@
 factorio-rcon-py
-python-dotenv
-git+https://github.com/SirAnthony/slpp
+python-dotenv==1.0.1
 imageio
 anyio
 pygame
-slpp
 neptune
 pyopenssl==24.0.0
 rich
@@ -15,15 +13,10 @@ anthropic
 scipy
 scikit-image
 pyautogui
-pydantic
-dotenv
-slpp
 lupa
-factorio-rcon-py
 numpy
 pillow
-scikit-image
-openai
-anthropic
 psycopg2
 backoff
+# For slpp, use the git version since it's likely more up to date:
+git+https://github.com/SirAnthony/slpp

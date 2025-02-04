@@ -731,7 +731,7 @@ function get_inverse_entity_direction(entity, factorio_direction)
 end
 
 -- Helper function to check if a position is valid (not colliding with water or other impassable tiles)
-local function is_valid_connection_point(surface, position)
+global.utils.is_valid_connection_point = function(surface, position)
     -- Get the tile at the position
     local tile = surface.get_tile(position.x, position.y)
 
@@ -755,7 +755,7 @@ local function filter_connection_points(entity, points)
 
     local filtered_points = {}
     for _, point in ipairs(points) do
-        if is_valid_connection_point(entity.surface, point) then
+        if global.utils.is_valid_connection_point(entity.surface, point) then
             table.insert(filtered_points, point)
         end
     end
@@ -1292,19 +1292,19 @@ global.utils.serialize_entity = function(entity)
 		if entity.direction == defines.direction.north then
 			game.print("Boiler direction is north")
 			serialized.connection_points = {{x = x - 2, y = y + 0.5}, {x = x + 2, y = y + 0.5}}
-			serialized.steam_output_point = {x = x, y = y - 2}
+			serialized.steam_output_point = {x = x, y = y - 1.5}
 		elseif entity.direction == defines.direction.south then
 			game.print("Boiler direction is south")
 			serialized.connection_points = {{x = x - 2, y = y - 0.5}, {x = x + 2, y = y - 0.5}}
-			serialized.steam_output_point = {x = x, y = y + 2}
+			serialized.steam_output_point = {x = x, y = y + 1.5}
 		elseif entity.direction == defines.direction.east then
 			game.print("Boiler direction is east")
 			serialized.connection_points = {{x = x - 0.5, y = y - 2}, {x = x - 0.5, y = y + 2}}
-			serialized.steam_output_point = {x = x + 2, y = y}
+			serialized.steam_output_point = {x = x + 1.5, y = y}
 		elseif entity.direction == defines.direction.west then
 			game.print("Boiler direction is west")
 			serialized.connection_points = {{x = x + 0.5, y = y - 2}, {x = x + 0.5, y = y + 2}}
-			serialized.steam_output_point = {x = x - 2, y = y}
+			serialized.steam_output_point = {x = x - 1.5, y = y}
 		end
 	end
 
@@ -1402,7 +1402,7 @@ global.utils.serialize_entity = function(entity)
     if serialized.connection_points then
         local filtered_points = {}
         for _, point in ipairs(serialized.connection_points) do
-            if is_valid_connection_point(game.surfaces[1], point) then
+            if global.utils.is_valid_connection_point(game.surfaces[1], point) then
                 table.insert(filtered_points, point)
             end
         end
@@ -1428,7 +1428,7 @@ global.utils.serialize_entity = function(entity)
 
     -- Handle special case for boilers which have separate steam output points
     if serialized.steam_output_point then
-        if not is_valid_connection_point(game.surfaces[1], serialized.steam_output_point) then
+        if not global.utils.is_valid_connection_point(game.surfaces[1], serialized.steam_output_point) then
             serialized.steam_output_point = nil
             if not serialized.warnings then
                 serialized.warnings = {}

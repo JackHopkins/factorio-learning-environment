@@ -5,14 +5,17 @@ from typing import List, Tuple, Dict, Any
 from slpp import slpp as lua, ParseError
 
 from factorio_entities import EntityStatus, Direction
+from factorio_lua_script_manager import FactorioLuaScriptManager
+from factorio_namespace import FactorioNamespace
 from factorio_rcon_utils import _lua2python
 
 COMMAND = "/silent-command"
 
 class Controller:
 
-    def __init__(self, lua_script_manager: 'FactorioLuaScriptManager', game_state: 'FactorioInstance', *args, **kwargs):
-        self.connection = lua_script_manager.rcon_client
+    def __init__(self, lua_script_manager: 'FactorioLuaScriptManager', game_state: 'FactorioNamespace', *args, **kwargs):
+        assert isinstance(lua_script_manager, FactorioLuaScriptManager), "Not correct"
+        self.connection = lua_script_manager
         self.game_state = game_state
         self.name = self.camel_to_snake(self.__class__.__name__)
         self.lua_script_manager = lua_script_manager
@@ -125,7 +128,7 @@ class Controller:
             parameters = [lua.encode(arg) for arg in args]
             invocation = f"pcall(global.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
             wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
-            lua_response = self.connection.send_command(wrapped)
+            lua_response = self.connection.rcon_client.send_command(wrapped)
             parsed, elapsed = _lua2python(invocation, lua_response, start=start)
             if not parsed['a'] and 'b' in parsed and isinstance(parsed['b'], str):
                 parts = lua_response.split("[\"b\"] = ")

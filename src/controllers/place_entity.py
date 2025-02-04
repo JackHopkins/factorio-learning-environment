@@ -72,7 +72,7 @@ class PlaceObject(Action):
 
 
         # If we are in `slow` mode, there is a delay between placing the entity and the entity being created
-        if not self.game_state.fast:
+        if not self.game_state.instance.fast:
             sleep(1)
             return self.get_entity(entity, position)
         else:

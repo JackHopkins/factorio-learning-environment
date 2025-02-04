@@ -55,6 +55,7 @@ class FactorioNamespace:
         self.max_sequential_exception_count = 1
         self._sequential_exception_count = 0
         self.log_counter = 0
+        self.player_location = Position(x=0, y=0)
 
         self.loop_context = LoopContext()
 

@@ -10,8 +10,8 @@ class Reward(Action):
 
     def __call__(self, *args, **kwargs):
         response, execution_time = self.execute(*args, **kwargs)
-        if self.game_state.initial_score:
-            response['player'] -= self.game_state.initial_score
+        if self.game_state.instance.initial_score:
+            response['player'] -= self.game_state.instance.initial_score
 
         if 'goal' in response:
             goal = response['goal']

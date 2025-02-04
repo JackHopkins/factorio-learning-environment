@@ -3,6 +3,16 @@ util =
   table = {}
 }
 
+-- Helper to check if a tile is water
+function is_water_tile(tile_name)
+    return tile_name == "water" or
+           tile_name == "deepwater" or
+           tile_name == "water-green" or
+           tile_name == "deepwater-green" or
+           tile_name == "water-shallow" or
+           tile_name == "water-mud"
+end
+
 function table.deepcopy(object)
   local lookup_table = {}
   local function _copy(object)

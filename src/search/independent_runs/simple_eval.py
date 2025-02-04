@@ -24,6 +24,7 @@ from search.mcts.python_parser import PythonParser
 
 load_dotenv()
 
+COURTESY_SLEEP = 1
 
 @dataclass
 class EvalConfig:
@@ -217,7 +218,7 @@ class TrajectoryRunner:
         # Run trajectory
         for iteration in range(depth, self.config.trajectory_length):
             iteration_start = time.time()
-            time.sleep(5) # courtesy sleep
+            time.sleep(COURTESY_SLEEP) # courtesy sleep
             try:
                 # Generate program
                 generation_params = GenerationParameters(
@@ -370,7 +371,7 @@ def main():
         #{"model": "deepseek-chat", "resume_version": 507}
         #{"model": "deepseek-chat", "resume_version": None},#491},
         #{"model": "claude-3-5-sonnet-20241022", "resume_version": None}#517}#516}
-        {"model": "gpt-4o", "resume_version": 521}
+        {"model": "gpt-4o", "resume_version": 523}
         #{"model": 'o3-mini', "resume_version": 510}#509 }#508}
     ]
     # model_configs = [

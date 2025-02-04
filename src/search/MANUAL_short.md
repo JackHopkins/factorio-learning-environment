@@ -131,9 +131,8 @@ Example with beltgroups
 starting_pos = Position(x = 0, y = 12)
 ending_pos = Position(x = 0, y = 8)
 # create the beltgroup
-belts = connect_entity(starting_pos, ending_pos, Prototype.TransportBelt)
-# as connect entities returns a list of beltgroups, we pick up the first beltgroups in this example
-beltgroup_to_be_picked_up = belts[0]
+beltgroup_to_be_picked_up = connect_entities(starting_pos, ending_pos, Prototype.TransportBelt)
+
 # loop through the belts to pick them up separately
 for belt in beltgroup_to_be_picked_up.belts:
     # pick the belt up
@@ -390,7 +389,7 @@ machine_input_inserter = insert_item(Prototype.Coal, machine_input_inserter, qua
 
 # connect the furnace output inserter to chest input inserter
 # IMPORTANT: ALWAYS NEED TO CONNECT TRANSPORT BELTS TO A INSERTER, NEVER DIRECTLY CONNECT TO A CHEST OR FURNACE
-connection = connect_entities(furnace_output_inserter.drop_position, machine_input_inserter.pickup_position Prototype.TransportBelt)
+connection = connect_entities(furnace_output_inserter.drop_position, machine_input_inserter.pickup_position, Prototype.TransportBelt)
 print(f"Connected furnace at {furnace.position} to assembling machine at {target_machine.position} with {connection}. This will move copper plates to assembling machine to create copper cables")
 ```
 
@@ -512,7 +511,7 @@ for source in secondary_sources:
     # Use the first beltgroup from the main connection to connect to
     # Also override the main_connection to get the newest belt groups
     main_connection = connect_entities(source.drop_position, 
-                                    main_connection[0],
+                                    main_connection,
                                     Prototype.TransportBelt)
     print(f"Extended main connection to include inserter at {source.position}: {main_connection}")
 print(f"Final connection after connecting all inserters to target: {main_connection}")
@@ -536,7 +535,7 @@ print(f"Created the main connection to power drill at {drill_1.position} with st
 # Use the first ElectricityGroup from the main connection to connect to
 # Also override the main_power_connection to get the newest ElectricityGroups
 main_power_connection = connect_entities(drill_2, 
-                                main_connection[0],
+                                main_connection,
                                 Prototype.SmallElectricPole)
 ```
 

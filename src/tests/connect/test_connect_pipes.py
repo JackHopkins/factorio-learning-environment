@@ -3,7 +3,7 @@ from typing import List
 
 import pytest
 
-from factorio_entities import Entity, Position, PipeGroup, EntityStatus, ResourcePatch
+from factorio_entities import Entity, Position, PipeGroup, EntityStatus, ResourcePatch, BuildingBox
 from factorio_instance import Direction
 from factorio_types import Prototype, Resource, PrototypeName
 
@@ -375,3 +375,37 @@ def test_pipe_network_branching_inverted(game):
     # Should merge into single network
     assert branch
     assert branch.id == main_line.id
+
+
+def test_connect_power_system_with_nearest_buildable(game):
+    # get the water position
+    water_position = game.nearest(Resource.Water)
+    # moveto water positon
+    game.move_to(water_position)
+    # first place offshore pump on the water system
+    offshore_pump = game.place_entity(Prototype.OffshorePump, position=water_position)
+    print(f"Placed offshore pump to get water at {offshore_pump.position}")
+
+    # Use nearest_buildable to find a valid position for the boiler
+    # The boiler has a dimension of 2x3, so we need to ensure there is enough space
+    boiler_building_box = BuildingBox(width=3, height=2)
+    offshore_pump_position = Position(x=-10.5, y=-0.5)
+
+    # Find the nearest buildable position for the boiler
+    boiler_bounding_box = game.nearest_buildable(Prototype.Boiler, building_box=boiler_building_box,
+                                            center_position=offshore_pump_position)
+
+    # Log the found position for the boiler
+    print(f"Found buildable position for boiler: {boiler_bounding_box.center()}")
+
+    # Move to the center of the bounding box and place the boiler
+    game.move_to(boiler_bounding_box.center())
+    boiler = game.place_entity(Prototype.Boiler, position=boiler_bounding_box.center())
+    print(f"Placed boiler at {boiler.position}")
+
+    # Connect the offshore pump to the boiler with pipes
+    pipes_to_boiler = game.connect_entities(offshore_pump_position, boiler.position, Prototype.Pipe)
+    print(f"Connected offshore pump to boiler with pipes: {pipes_to_boiler}")
+    game.sleep(2)
+    print(f"Current inventory {game.inspect_inventory()}")
+    print(f"Updated entities on the map: {game.get_entities()}")

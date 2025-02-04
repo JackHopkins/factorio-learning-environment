@@ -3,13 +3,7 @@ global.actions.get_resource_patch = function(player_index, resource, x, y, radiu
     local position = {x = x, y = y}
     local surface = player.surface
 
-    -- Function to expand bounding box
-    local function expand_bounding_box(box, pos)
-        box.left_top.x = math.min(box.left_top.x, pos.x)
-        box.left_top.y = math.min(box.left_top.y, pos.y)
-        box.right_bottom.x = math.max(box.right_bottom.x, pos.x)
-        box.right_bottom.y = math.max(box.right_bottom.y, pos.y)
-
+    local function render_box(box)
         local left_bottom = {x=box.left_top.x, y=box.right_bottom.y}
         local right_top = {y=box.left_top.y, x=box.right_bottom.x}
 
@@ -18,6 +12,15 @@ global.actions.get_resource_patch = function(player_index, resource, x, y, radiu
         rendering.draw_circle{width = 0.5, color = {r = 0, g = 1, b = 0}, surface = game.players[1].surface, radius = 0.5, filled = false, target = box.right_bottom, time_to_live = 60000}
         rendering.draw_circle{width = 0.5, color = {r = 1, g = 0, b = 1}, surface = game.players[1].surface, radius = 0.5, filled = false, target = left_bottom, time_to_live = 60000}
         rendering.draw_circle{width = 0.5, color = {r = 0, g = 1, b = 1}, surface = game.players[1].surface, radius = 0.5, filled = false, target = right_top, time_to_live = 60000}
+
+    end
+    -- Function to expand bounding box
+    local function expand_bounding_box(box, pos)
+        box.left_top.x = math.min(box.left_top.x, pos.x)
+        box.left_top.y = math.min(box.left_top.y, pos.y)
+        box.right_bottom.x = math.max(box.right_bottom.x, pos.x)
+        box.right_bottom.y = math.max(box.right_bottom.y, pos.y)
+
 
     end
 
@@ -35,9 +38,11 @@ global.actions.get_resource_patch = function(player_index, resource, x, y, radiu
             expand_bounding_box(bounding_box, tile.position)
             total_water_tiles = total_water_tiles + 1
         end
-        bounding_box.right_bottom.x = bounding_box.right_bottom.x + 1
-        bounding_box.right_bottom.y = bounding_box.right_bottom.y + 1
-
+        bounding_box.left_top.x = bounding_box.left_top.x - 0.5
+        bounding_box.left_top.y = bounding_box.left_top.y - 0.5
+        bounding_box.right_bottom.y = bounding_box.right_bottom.y + 1.5
+        bounding_box.right_bottom.x = bounding_box.right_bottom.x + 1.5
+        render_box(bounding_box)
         return {bounding_box = bounding_box, size = total_water_tiles}
     elseif resource == "wood" then
         local trees = surface.find_entities_filtered{
@@ -60,6 +65,7 @@ global.actions.get_resource_patch = function(player_index, resource, x, y, radiu
                 total_wood = total_wood + 1
             end
         end
+        render_box(bounding_box)
         return {bounding_box = bounding_box, size = total_wood}
     else
         local resource_entities = surface.find_entities_filtered{position = position, name = resource, radius = radius}
@@ -93,6 +99,7 @@ global.actions.get_resource_patch = function(player_index, resource, x, y, radiu
         local visited = {}
         local total_resource = explore_resource_patch(resource_entities[1], visited)
 
+        render_box(bounding_box)
         return {bounding_box = bounding_box, size = total_resource}
     end
 end

@@ -1,12 +1,12 @@
 from typing import Optional, Union, Tuple, cast, List
 
-from factorio_entities import FluidHandler, Position, Entity, Generator, Boiler, OffshorePump
+from factorio_entities import FluidHandler, Position, Entity, Generator, Boiler, OffshorePump, Pipe
 from utilities.connection.resolver import Resolver
 
 
 class FluidConnectionResolver(Resolver):
     def __init__(self, *args):
-        super().__init__(args)
+        super().__init__(*args)
 
     def _adjust_connection_point(self, point: Position, entity: Entity) -> Position:
         x, y = point.x, point.y
@@ -48,8 +48,17 @@ class FluidConnectionResolver(Resolver):
                 )
                 source_positions = sorted_positions if sorted_positions else [source.position]
 
-            case _:
+            case (Pipe(), _):
+                source_positions = [source.position, source.position.up(), source.position.down(), source.position.left(), source.position.right()]
+
+            case (Position(), _):
+                source_positions = [source]
+
+            case (Entity(), _):
                 source_positions = [source.position]
+
+            case _:
+                raise Exception("Not supported source object")
 
         # Get target positions in priority order
         match target:
@@ -72,8 +81,17 @@ class FluidConnectionResolver(Resolver):
                 )
                 target_positions = sorted_positions if sorted_positions else [target.position]
 
-            case _:
+            case Position():
+                target_positions = [target]
+
+            case Pipe():
+                target_positions = [target.position, target.position.up(), target.position.down(),
+                                    target.position.left(), target.position.right()]
+            case Entity():
                 target_positions = [target.position]
+
+            case _:
+                raise Exception("Not supported target object")
 
         # Generate all possible combinations, sorted by combined distance
         connection_pairs = [

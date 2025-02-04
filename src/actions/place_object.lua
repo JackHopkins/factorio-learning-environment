@@ -310,6 +310,27 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             }
 
             if not can_build then
+                local entity_prototype = game.entity_prototypes[entity]
+                local entity_box = entity_prototype.collision_box
+                local entity_width = 1
+                local entity_height = 1
+                if direction == defines.direction.north or direction == defines.direction.south then
+                    entity_width = math.abs(entity_box.right_bottom.x - entity_box.left_top.x)
+                    entity_height = math.abs(entity_box.right_bottom.y - entity_box.left_top.y)
+                else
+                    entity_height = math.abs(entity_box.right_bottom.x - entity_box.left_top.x)
+                    entity_width = math.abs(entity_box.right_bottom.y - entity_box.left_top.y)
+                end
+
+                rendering.draw_rectangle{
+                    surface = player.surface,
+                    left_top = {position.x - entity_width / 2, position.y - entity_height / 2},
+                    right_bottom = {position.x + entity_width / 2, position.y + entity_height / 2},
+                    filled = false,
+                    color = {r=1, g=0, b=0, a=0.5},
+                    time_to_live = 60000
+                }
+
                 error("Cannot place " .. entity .. " at the target location - something is in the way")
             end
         end

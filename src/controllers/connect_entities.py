@@ -73,6 +73,12 @@ class ConnectEntities(Action):
         if not connection_type:
             connection_type = self._infer_connection_type(source, target)
 
+        # Resolve positions into entities if they exist
+        if isinstance(source, Position):
+            source = self._resolve_position_into_entity(source)
+        if isinstance(target, Position):
+            target = self._resolve_position_into_entity(target)
+
         # Get resolver for this connection type
         resolver = self.resolvers[self._get_connection_type(connection_type)]
 
@@ -83,12 +89,6 @@ class ConnectEntities(Action):
         for source_pos, target_pos in prioritised_list_of_position_pairs:
             # Handle the actual connection
             try:
-                # self._create_connection(
-                #     source_pos, target_pos,
-                #     connection_type, True,
-                #     source_entity=source if isinstance(source, (Entity, EntityGroup)) else None,
-                #     target_entity=target if isinstance(target, (Entity, EntityGroup)) else None
-                # )
                 return self._create_connection(
                     source_pos, target_pos,
                     connection_type, False,
@@ -102,6 +102,25 @@ class ConnectEntities(Action):
             f"Failed to connect {connection_type} from {source} to {target}. "
             f"{self.get_error_message(str(last_exception))}"
         )
+
+    def _resolve_position_into_entity(self, position: Position):
+        entities = self.get_entities(position=position, radius=0.5)
+        if not entities:
+            return position
+        if isinstance(entities[0], EntityGroup):
+            if isinstance(entities[0], PipeGroup):
+                for pipe in entities[0].pipes:
+                    if pipe.position.is_close(position, tolerance=0.707):
+                        return pipe
+            elif isinstance(entities[0], ElectricityGroup):
+                for pole in entities[0].poles:
+                    if pole.position.is_close(position, tolerance=0.707):
+                        return pole
+            elif isinstance(entities[0], BeltGroup):
+                for belt in entities[0].belts:
+                    if belt.position.is_close(position, tolerance=0.707):
+                        return belt
+        return entities[0]
 
     def _infer_connection_type(self,
                                source: Union[Position, Entity, EntityGroup],
@@ -153,7 +172,7 @@ class ConnectEntities(Action):
                               dry_run: bool = False,
                               allow_paths_through_own: bool = False) -> PathResult:
         """Attempt to find a path between two positions"""
-        entity_sizes = [1, 0.5, 0.25]  # Ordered from largest to smallest
+        entity_sizes = [2, 1, 0.5, 0.25]  # Ordered from largest to smallest
 
         for size in entity_sizes:
             path_handle = self.request_path(

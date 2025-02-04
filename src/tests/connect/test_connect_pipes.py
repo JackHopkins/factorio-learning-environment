@@ -42,7 +42,7 @@ def test_connect_offshore_pump_to_boiler(game):
                                        direction=offshore_pump.direction,
                                        spacing=5)
     water_pipes = game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
-    assert len(water_pipes[0].pipes) == 5 + boiler.tile_dimensions.tile_width / 2 + offshore_pump.tile_dimensions.tile_width / 2 + 1
+    assert len(water_pipes.pipes) == 5 + boiler.tile_dimensions.tile_width / 2 + offshore_pump.tile_dimensions.tile_width / 2 + 1
 
     game.instance.reset()
     game.move_to(game.nearest(Resource.Water))
@@ -55,7 +55,7 @@ def test_connect_offshore_pump_to_boiler(game):
                                        spacing=5)
     assert boiler.direction.value == offshore_pump.direction.value
     water_pipes = game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
-    assert len(water_pipes[0].pipes) >= math.ceil(
+    assert len(water_pipes.pipes) >= math.ceil(
         5 + boiler.tile_dimensions.tile_height / 2 + offshore_pump.tile_dimensions.tile_height / 2 + 1)
 
     game.instance.reset()
@@ -71,7 +71,7 @@ def test_connect_offshore_pump_to_boiler(game):
                                        spacing=5)
     assert boiler.direction.value == offshore_pump.direction.value
     water_pipes = game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
-    assert len(water_pipes[0].pipes) >= math.ceil(
+    assert len(water_pipes.pipes) >= math.ceil(
         5 + boiler.tile_dimensions.tile_height / 2 + offshore_pump.tile_dimensions.tile_height / 2 + 1)
 
     game.move_to(Position(x=-30, y=0))
@@ -84,7 +84,7 @@ def test_connect_offshore_pump_to_boiler(game):
                                        spacing=5)
     assert boiler.direction.value == offshore_pump.direction.value
     water_pipes = game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
-    assert len(water_pipes[0].pipes) >= math.ceil(
+    assert len(water_pipes.pipes) >= math.ceil(
         5 + boiler.tile_dimensions.tile_width / 2 + offshore_pump.tile_dimensions.tile_width / 2 + 1)
 
 
@@ -106,15 +106,15 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
                                              direction=Direction.UP)
     assert steam_engine.direction.value == Direction.UP.value
 
-    connection: List[PipeGroup] = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
+    connection: PipeGroup = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
     # check to see if the steam engine has water
     #inspection = game.inspect_entities(position=steam_engine.position)
 
     #assert inspection.get_entity(Prototype.SteamEngine).warning == 'not receiving electricity'
     assert boilers_in_inventory - 1 == game.inspect_inventory()[Prototype.Boiler]
     assert steam_engines_in_inventory - 1 == game.inspect_inventory()[Prototype.SteamEngine]
-    assert pipes_in_inventory - len(connection[0].pipes) == game.inspect_inventory()[Prototype.Pipe]
-    assert len(connection[0].pipes) >= 10
+    assert pipes_in_inventory - len(connection.pipes) == game.inspect_inventory()[Prototype.Pipe]
+    assert len(connection.pipes) >= 10
 
     game.instance.reset()
 
@@ -129,7 +129,7 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
         steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=offset, direction=direction)
 
         try:
-            connection: List[PipeGroup] = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
+            connection: PipeGroup = game.connect_entities(boiler, steam_engine, connection_type=Prototype.Pipe)
         except Exception as e:
             print(e)
             assert False
@@ -138,7 +138,7 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
 
         current_pipes_in_inventory = game.inspect_inventory()[Prototype.Pipe]
         spent_pipes = (pipes_in_inventory - current_pipes_in_inventory)
-        assert spent_pipes == len(connection[0].pipes)
+        assert spent_pipes == len(connection.pipes)
 
         # check to see if the steam engine has water
         entities = game.get_entities(position=steam_engine.position)
@@ -256,7 +256,6 @@ def test_avoid_self_collision(game):
 
     # Connect offshore pump to boiler with pipes
     pipes = game.connect_entities(offshore_pump, boiler, Prototype.Pipe)
-    assert len(pipes) == 1, "Failed to construct a single contiguous pipe group"
     assert pipes, "Failed to connect offshore pump to boiler with pipes"
     print("Successfully connected offshore pump to boiler with pipes")
 
@@ -287,7 +286,7 @@ def test_connect_where_connection_points_are_blocked(game):
     assert pump_to_boiler_pipes, "Failed to connect pump to boiler with pipes"
     print("Connected pump to boiler with pipes")
 
-    assert boiler.connection_points[0] in [p.position for p in pump_to_boiler_pipes[0].pipes]
+    assert boiler.connection_points[0] in [p.position for p in pump_to_boiler_pipes.pipes]
 
 def test_connect_ragged_edges(game):
     water: ResourcePatch = game.get_resource_patch(Resource.Water, game.nearest(Resource.Water))
@@ -300,7 +299,7 @@ def test_connect_ragged_edges(game):
 
     pipes = game.connect_entities(start_pos, end_pos, Prototype.Pipe)
 
-    assert len(pipes) == 1
+    assert pipes
 
 def test_connect_pipes_by_positions(game):
     """
@@ -309,7 +308,7 @@ def test_connect_pipes_by_positions(game):
     position_1 = Position(x=0, y=1)
     position_2 = Position(x=2, y=4)
     pipes = game.connect_entities(position_1, position_2, Prototype.Pipe)
-    assert len(pipes[0].pipes) == 6
+    assert len(pipes.pipes) == 6
 
 
 def test_avoiding_pipe_networks(game):
@@ -324,24 +323,9 @@ def test_avoiding_pipe_networks(game):
     pipes2 = game.connect_entities(start2, end2, Prototype.Pipe)
 
     # Verify both networks exist independently
-    assert len(pipes1) == 1
-    assert len(pipes2) == 1
-    assert pipes1[0].id != pipes2[0].id
-
-# def test_connect_pipes_through_trees(game):
-#     instance = game.instance
-#
-#     for y in range(-10, 10):
-#         instance.add_command('/c game.surfaces[1].create_entity({name = "tree-01", position = {x = 1, y = ' + str(y) + '}})', raw=True)
-#     instance.execute_transaction()
-#
-#     start = Position(x=0, y=0)
-#     end = Position(x=10, y=0)
-#
-#     # Connect pipes - should route around the boiler
-#     pipes = game.connect_entities(start, end, Prototype.Pipe)
-#
-#     assert len(pipes[0].pipes) == 11
+    assert pipes1
+    assert pipes2
+    assert pipes1.id != pipes2.id
 
 
 def test_pipe_around_obstacle(game):
@@ -356,8 +340,8 @@ def test_pipe_around_obstacle(game):
 
     # Connect pipes - should route around the boiler
     pipes = game.connect_entities(start, end, Prototype.Pipe)
-    assert len(pipes) == 1
-    assert len(pipes[0].pipes) > 10  # Should be longer due to routing
+    assert pipes
+    assert len(pipes.pipes) > 10  # Should be longer due to routing
 
 
 
@@ -373,8 +357,8 @@ def test_pipe_network_branching(game):
     branch = game.connect_entities(Position(x=5, y=0), branch_end, Prototype.Pipe)
 
     # Should merge into single network
-    assert len(branch) == 1
-    assert branch[0].id == main_line[0].id
+    assert branch
+    assert branch.id == main_line.id
 
 
 def test_pipe_network_branching_inverted(game):
@@ -389,5 +373,5 @@ def test_pipe_network_branching_inverted(game):
     branch = game.connect_entities(branch_end, Position(x=5, y=0), Prototype.Pipe)
 
     # Should merge into single network
-    assert len(branch) == 1
-    assert branch[0].id == main_line[0].id
+    assert branch
+    assert branch.id == main_line.id

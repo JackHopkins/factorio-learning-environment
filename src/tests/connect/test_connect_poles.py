@@ -49,7 +49,7 @@ def test_connect_steam_engine_to_assembler_with_electricity_poles(game):
     current_poles_in_inventory = game.inspect_inventory()[Prototype.SmallElectricPole]
     spent_poles = (poles_in_inventory - current_poles_in_inventory)
 
-    assert spent_poles == len(poles2[0].poles)
+    assert spent_poles == len(poles2.poles)
 
     # check to see if the assemblers are connected to the electricity network
     assemblers = game.get_entities({Prototype.AssemblingMachine1})

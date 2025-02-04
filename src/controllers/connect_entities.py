@@ -62,11 +62,35 @@ class ConnectEntities(Action):
             case _:
                 raise ValueError(f"Unsupported connection type: {prototype}")
 
-    def __call__(self,
-                 source: Union[Position, Entity, EntityGroup],
-                 target: Union[Position, Entity, EntityGroup],
-                 connection_type: Optional[Prototype] = None,
-                 dry_run: bool = False) -> List[Union[Entity, EntityGroup]]:
+    def __call__(self, *args, **kwargs):
+        connection_type = None
+        waypoints = []
+        if 'connection_type' in kwargs:
+            waypoints = args
+            connection_type = kwargs['connection_type']
+
+
+        if 'target' in kwargs and 'source' in kwargs:
+            waypoints = []
+            waypoints.append(kwargs['source'])
+            waypoints.append(kwargs['target'])
+
+        if not waypoints:
+            for arg in args:
+                if isinstance(arg, Prototype):
+                    connection_type = arg
+                else:
+                    waypoints.append(arg)
+        assert len(waypoints) > 1, "Need more than one waypoint"
+        connection = waypoints[0]
+        for _, target in zip(waypoints[:-1], waypoints[1:]):
+            connection = self._connect_pair_of_waypoints(connection, target, connection_type=connection_type)
+        return connection
+
+    def _connect_pair_of_waypoints(self,
+                                   source: Union[Position, Entity, EntityGroup],
+                                   target: Union[Position, Entity, EntityGroup],
+                                   connection_type: Optional[Prototype] = None) -> Union[Entity, EntityGroup]:
         """Connect two entities or positions."""
 
         # Resolve connection type if not provided
@@ -94,7 +118,7 @@ class ConnectEntities(Action):
                     connection_type, False,
                     source_entity=source if isinstance(source, (Entity, EntityGroup)) else None,
                     target_entity=target if isinstance(target, (Entity, EntityGroup)) else None
-                )
+                )[0]
             except Exception as e:
                 last_exception = e
 

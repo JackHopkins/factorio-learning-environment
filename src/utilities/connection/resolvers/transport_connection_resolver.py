@@ -1,6 +1,7 @@
 import math
 from typing import Union, Tuple, List
-from factorio_entities import Position, Entity, BeltGroup, Inserter, MiningDrill, TransportBelt, Direction, EntityGroup
+from factorio_entities import Position, Entity, BeltGroup, Inserter, MiningDrill, TransportBelt, Direction, EntityGroup, \
+    GunTurret, AssemblingMachine, Lab, Chest, Accumulator, Furnace
 from utilities.connection.resolver import Resolver
 
 
@@ -29,8 +30,13 @@ class TransportConnectionResolver(Resolver):
 
     def resolve(self, source: Union[Position, Entity, EntityGroup], target: Union[Position, Entity, EntityGroup]) -> List[Tuple[Position, Position]]:
         match source:
+            case GunTurret() | AssemblingMachine() | Lab() | Chest() | Accumulator() | Furnace():
+                raise Exception(
+                    f"Cannot connect belts directly from a {source.prototype} object, we need to use an inserter.")
+
             case BeltGroup():
                 source_positions = self._get_transport_belt_adjacent_positions(source.outputs[0], target=False)
+
             case Inserter():
                 source_positions = [source.drop_position]
 
@@ -47,6 +53,9 @@ class TransportConnectionResolver(Resolver):
                 source_positions = [source.position]
 
         match target:
+            case GunTurret() | AssemblingMachine() | Lab() | Chest() | Accumulator() | Furnace():
+                raise Exception(f"Cannot connect belts directly to a {target.prototype} object, we need to use an inserter.")
+
             case BeltGroup():
                 target_positions = self._get_transport_belt_adjacent_positions(target.inputs[0], target=True) #[belt.position for belt in target.inputs]
 

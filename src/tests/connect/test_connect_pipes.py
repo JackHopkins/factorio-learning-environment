@@ -119,7 +119,7 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
     game.instance.reset()
 
     # Define the offsets for the four cardinal directions
-    offsets = [Position(x=10, y=0), Position(x=0, y=-10), Position(x=-10, y=0)]  # Up, Right, Down, Left  (0, -10),
+    offsets = [Position(x=5, y=0), Position(x=0, y=-5), Position(x=-5, y=0)]  # Up, Right, Down, Left  (0, -10),
     directions = [Direction.RIGHT, Direction.UP, Direction.LEFT]
     for offset, direction in zip(offsets, directions):
         game.move_to(Position(x=0, y=0))
@@ -249,7 +249,7 @@ def test_avoid_self_collision(game):
     print(f"Placed offshore pump at: {offshore_pump.position}")
 
     # Step 4: Place boiler
-    boiler_pos = Position(x=offshore_pump.position.x + 2, y=offshore_pump.position.y - 2)
+    boiler_pos = Position(x=offshore_pump.position.x + 5, y=offshore_pump.position.y - 2)
     game.move_to(boiler_pos)
     boiler = game.place_entity(Prototype.Boiler, position=boiler_pos, direction=Direction.RIGHT)
     print(f"Placed boiler at: {boiler.position}")
@@ -308,8 +308,8 @@ def test_connect_pipes_by_positions(game):
     """
     position_1 = Position(x=0, y=1)
     position_2 = Position(x=2, y=4)
-    belts = game.connect_entities(position_1, position_2, Prototype.Pipe)
-    print(game.get_entities())
+    pipes = game.connect_entities(position_1, position_2, Prototype.Pipe)
+    assert len(pipes[0].pipes) == 6
 
 
 def test_avoiding_pipe_networks(game):
@@ -371,6 +371,22 @@ def test_pipe_network_branching(game):
     # Add branch from middle
     branch_end = Position(x=5, y=5)
     branch = game.connect_entities(Position(x=5, y=0), branch_end, Prototype.Pipe)
+
+    # Should merge into single network
+    assert len(branch) == 1
+    assert branch[0].id == main_line[0].id
+
+
+def test_pipe_network_branching_inverted(game):
+    """Test creating T-junctions and branched pipe networks"""
+    # Create main pipe line
+    start = Position(x=0, y=0)
+    end = Position(x=10, y=0)
+    main_line = game.connect_entities(start, end, Prototype.Pipe)
+
+    # Add branch from middle
+    branch_end = Position(x=5, y=5)
+    branch = game.connect_entities(branch_end, Position(x=5, y=0), Prototype.Pipe)
 
     # Should merge into single network
     assert len(branch) == 1

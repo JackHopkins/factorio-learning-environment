@@ -587,7 +587,7 @@ end
 global.utils.normalise_path = function(original_path, start_position, end_position)
     local path = {}
     local seen = {}  -- To track seen positions
-    if original_path == nil or #original_path <= 1 or original_path == "not_found" then
+    if original_path == nil or #original_path < 1 or original_path == "not_found" then
         error("Not a valid path to normalise")
     end
     if math.ceil(start_position.x) == start_position.x then

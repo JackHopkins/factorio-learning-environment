@@ -186,7 +186,7 @@ class Position(BaseModel):
         # calculates the euclidean distance between two points
         return ((self.x - a.x) ** 2 + (self.y - a.y) ** 2) ** 0.5
     
-    def _modifier(self, args):
+    def _modifier(self, args=1):
         if isinstance(args, int) and args > 0:
             return args
         if len(args) > 0 and isinstance(args[0], int):

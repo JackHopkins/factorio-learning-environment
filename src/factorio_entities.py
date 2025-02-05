@@ -452,12 +452,23 @@ class FluidHandler(StaticEntity):
     fluid_box: Optional[Union[dict, list]] = []
     fluid_systems: Optional[Union[dict, list]] = []
 
+class MultiFluidHandler(StaticEntity):
+    input_connection_points: List[Position] = []
+    output_connection_points: List[Position] = []
+    fluid_box: Optional[Union[dict, list]] = []
+    fluid_systems: Optional[Union[dict, list]] = []
+
+class ChemicalPlant(MultiFluidHandler, AssemblingMachine):
+    pass
+
+class OilRefinery(MultiFluidHandler, Electric):
+    pass
+
 class PumpJack(MiningDrill, FluidHandler, Electric):
     pass
 
 class Boiler(FluidHandler, BurnerType):
     steam_output_point: Optional[Position] = None
-
 
 class Generator(FluidHandler, Electric):
     pass
@@ -523,13 +534,13 @@ class PipeGroup(EntityGroup):
         pipe_summary = f"[{len(self.pipes)} pipes]"
         fluid_suffix = ""
         if self.pipes and self.pipes[0].fluid is not None and self.pipes[0].fluid != "":
-            fluid_suffix = f", fluid={self.pipes[0].fluid}"
+            fluid_suffix = f"fluid={self.pipes[0].fluid} "
         positions = [f"(x={p.position.x},y={p.position.y})" for p in self.pipes]
         if len(positions) > 6:
             positions = positions[:3] + ['...'] + positions[-3:]
         pipe_summary = f"[{','.join(positions)}]"
 
-        return f"\n\tPipeGroup(fluid_system={self.id}, position={self.position}, status={self.status}, pipes={pipe_summary}{fluid_suffix})"
+        return f"\n\tPipeGroup(fluid_system={self.id}, {fluid_suffix}position={self.position}, status={self.status}, pipes={pipe_summary})"
 
 class ElectricityGroup(EntityGroup):
     name: str = 'electricity-group'

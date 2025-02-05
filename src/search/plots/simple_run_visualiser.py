@@ -791,7 +791,7 @@ async def main():
         viz = ProgressionVisualizer(db_client, icons_path, x_axis,
                                     use_log_scale = x_axis != "ticks",
                                     use_value_gdp=False,
-                                    recipes_file="/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/src/recipes/recipes.jsonl")
+                                    recipes_file="/data/recipes/recipes.jsonl")
 
         # Configure versions to plot
         versions = {

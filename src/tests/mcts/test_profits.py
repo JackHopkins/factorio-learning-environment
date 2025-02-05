@@ -1,6 +1,6 @@
 import math
 from factorio_instance import FactorioInstance
-from utils import eval_program_with_profits
+from _utils import eval_program_with_profits
 
 def test_profits():
         instance = FactorioInstance(address='localhost',

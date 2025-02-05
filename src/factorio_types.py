@@ -71,6 +71,9 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
 
     OffshorePump = "offshore-pump", OffshorePump
     PumpJack = "pumpjack", PumpJack
+    OilRefinery = "oil-refinery", OilRefinery
+    ChemicalPlant = "chemical-plant", ChemicalPlant
+
     Boiler = "boiler", Boiler
     SteamEngine = "steam-engine", Generator
     Pipe = "pipe", Pipe

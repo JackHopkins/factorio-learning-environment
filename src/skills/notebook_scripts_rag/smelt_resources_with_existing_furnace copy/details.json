@@ -1,6 +1,0 @@
-{
-  "step":"Set recipe. We need to set the assembling machine's recipe on the map to produce copper cables",
-  "inventory": {},
-  "planning":"All we need to do is get the assembling machine entity from the map and set entity recipe at the machine to copper cables. The machine is already powered",
-  "mining_setup": "The following entities are available on the map: [Furnace(fuel={'coal': 4}, name='stone-furnace', position=Position(x=-12.0, y=-12.0), direction=<Direction.UP: 0>, energy=1600.0, type='furnace', dimensions=Dimensions(width=1.3984375, height=1.3984375), tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), prototype=<Prototype.StoneFurnace: ('stone-furnace', <class 'factorio_entities.Furnace'>)>, health=200.0, warnings=['no ingredients to smelt'], status=<EntityStatus.NO_INGREDIENTS: 'no_ingredients'>, furnace_source={}, furnace_result={'iron-plate': 5})]"
-}

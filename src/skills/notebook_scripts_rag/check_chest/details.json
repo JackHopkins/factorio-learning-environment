@@ -1,8 +1,0 @@
-{
-  "step": "Verify if a chest has iron ore. We need to wait for 30 seconds and verify if the chest has iron ore in it",
-  "inventory": {"burner-inserter": 5,
-                "transport-belt": 50,
-                "coal": 5},
-  "planning": "We need to wait for 30 seconds and use the previously placed chest variable to see if there is iron ore in chest",
-  "mining_setup": "There is a drill and a chest on the map"
-}

@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pytest
 
+from factorio_instance import FactorioInstance
+
 # Add the src directory to the Python path
 src_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if src_dir not in sys.path:
@@ -20,7 +22,7 @@ if str(project_root / 'src') not in sys.path:
 
 @pytest.fixture()#scope="session")
 def instance():
-    from src.factorio_instance import FactorioInstance
+    #from gym import FactorioInstance
     try:
         instance = FactorioInstance(address='localhost',
                                     bounding_box=200,

@@ -27,7 +27,7 @@ async def evaluate_program_trace(version: int = 330) -> None:
 
     # Create Factorio instance using pytest fixture
     def game_instance():
-        from src.factorio_instance import FactorioInstance
+        from gym import FactorioInstance
         try:
             instance = FactorioInstance(
                 address='localhost',

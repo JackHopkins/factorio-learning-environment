@@ -3,7 +3,7 @@ from typing import List
 
 import pytest
 
-from factorio_entities import Entity, Position, PipeGroup, EntityStatus, ResourcePatch, BuildingBox
+from factorio_entities import Entity, Position, PipeGroup, EntityStatus, ResourcePatch, BuildingBox, Generator
 from factorio_instance import Direction
 from factorio_types import Prototype, Resource, PrototypeName
 
@@ -214,24 +214,21 @@ def test_connect_boiler_to_steam_engine_with_pipes_vertically(game):
     pipes = game.connect_entities(boiler, steam_engine, Prototype.Pipe)
     assert pipes, "Failed to connect boiler to steam engine with pipes"
 
-# def test_connect_pipe_groups_horizontally(game):
-#
-#     # Create a horizontal pipe group
-#     pipe_group_right = game.connect_entities(Position(x=0, y=0), Position(x=5, y=0), Prototype.Pipe)
-#
-#     # Loop the pipes back around
-#     pipe_group_right = game.connect_entities(pipe_group_right[0], pipe_group_right[0], Prototype.Pipe)
-#
-#     # This should result in a single contiguous group
-#     assert len(pipe_group_right) == 1
-#
-#     pipe_group_left = game.connect_entities(Position(x=0, y=-10), Position(x=-5, y=-10), Prototype.Pipe)
-#
-#     # Loop the pipes back around
-#     pipe_group_left = game.connect_entities(pipe_group_left[0], pipe_group_left[0], Prototype.Pipe)
-#
-#     # This should result in a single contiguous group
-#     assert len(pipe_group_left) == 1
+def test_connect_boiler_to_steam_engine_with_pipes_vertically_with_positions(game):
+    boiler_pos = Position(x=0, y=0)
+    game.move_to(boiler_pos)
+    boiler = game.place_entity(Prototype.Boiler, position=boiler_pos, direction=Direction.UP)
+
+    # Step 5: Place and set up the steam engine
+    steam_engine_pos = Position(x=boiler.position.x + 5, y=boiler.position.y + 5)
+    game.move_to(steam_engine_pos)
+    steam_engine: Generator = game.place_entity(Prototype.SteamEngine, position=steam_engine_pos, direction=Direction.UP)
+
+    # Connect boiler to steam engine with pipes
+    pipes = game.connect_entities(boiler.steam_output_point, steam_engine.connection_points[0], Prototype.Pipe)
+    assert pipes, "Failed to connect boiler to steam engine with pipes"
+
+
 
 def test_avoid_self_collision(game):
 
@@ -378,34 +375,144 @@ def test_pipe_network_branching_inverted(game):
 
 
 def test_connect_power_system_with_nearest_buildable(game):
-    # get the water position
     water_position = game.nearest(Resource.Water)
     # moveto water positon
     game.move_to(water_position)
     # first place offshore pump on the water system
     offshore_pump = game.place_entity(Prototype.OffshorePump, position=water_position)
     print(f"Placed offshore pump to get water at {offshore_pump.position}")
-
     # Use nearest_buildable to find a valid position for the boiler
     # The boiler has a dimension of 2x3, so we need to ensure there is enough space
     boiler_building_box = BuildingBox(width=3, height=2)
-    offshore_pump_position = Position(x=-10.5, y=-0.5)
-
-    # Find the nearest buildable position for the boiler
     boiler_bounding_box = game.nearest_buildable(Prototype.Boiler, building_box=boiler_building_box,
-                                            center_position=offshore_pump_position)
+                                            center_position=offshore_pump.position)
 
     # Log the found position for the boiler
     print(f"Found buildable position for boiler: {boiler_bounding_box.center()}")
 
     # Move to the center of the bounding box and place the boiler
     game.move_to(boiler_bounding_box.center())
-    boiler = game.place_entity(Prototype.Boiler, position=boiler_bounding_box.center())
+    boiler = game.place_entity(Prototype.Boiler, position=boiler_bounding_box.center().left(1))
     print(f"Placed boiler at {boiler.position}")
 
     # Connect the offshore pump to the boiler with pipes
-    pipes_to_boiler = game.connect_entities(offshore_pump_position, boiler.position, Prototype.Pipe)
+    pipes_to_boiler = game.connect_entities(offshore_pump.position, boiler.position, Prototype.Pipe)
     print(f"Connected offshore pump to boiler with pipes: {pipes_to_boiler}")
     game.sleep(2)
-    print(f"Current inventory {game.inspect_inventory()}")
     print(f"Updated entities on the map: {game.get_entities()}")
+    pass
+
+
+def test_connect_steam_engine_battery(game):
+    """
+    Test setting up a battery of steam engines and boilers in a 2x2 configuration:
+    - 2 boilers side by side
+    - 2 steam engines connected to each boiler
+    - All components properly connected with pipes
+    Layout:
+    OP - B - SE - SE
+       |
+    OP - B - SE - SE
+
+    Where: OP = Offshore Pump, B = Boiler, SE = Steam Engine
+    """
+    # First, find water and set up the first line
+    water_pos = game.nearest(Resource.Water)
+    game.move_to(water_pos)
+
+    # Place first offshore pump
+    offshore_pump1 = game.place_entity(
+        Prototype.OffshorePump,
+        position=water_pos,
+        direction=Direction.RIGHT
+    )
+
+    # Place first boiler with some spacing for pipes
+    boiler1 = game.place_entity_next_to(
+        Prototype.Boiler,
+        reference_position=offshore_pump1.position,
+        direction=Direction.RIGHT,
+        spacing=3
+    )
+
+    # Connect first pump to first boiler
+    pump1_pipes = game.connect_entities(offshore_pump1, boiler1, connection_type=Prototype.Pipe)
+    assert pump1_pipes, "Failed to connect first pump to first boiler"
+
+    # Place two steam engines after the first boiler
+    steam_engine1a = game.place_entity_next_to(
+        Prototype.SteamEngine,
+        reference_position=boiler1.position,
+        direction=Direction.RIGHT,
+        spacing=2
+    )
+
+    steam_engine1b = game.place_entity_next_to(
+        Prototype.SteamEngine,
+        reference_position=steam_engine1a.position,
+        direction=Direction.RIGHT,
+        spacing=2
+    )
+
+    # Connect first boiler to its steam engines
+    boiler1_pipes = game.connect_entities(boiler1, steam_engine1a, connection_type=Prototype.Pipe)
+    assert boiler1_pipes, "Failed to connect first boiler to first steam engine"
+
+    engine1_pipes = game.connect_entities(steam_engine1a, steam_engine1b, connection_type=Prototype.Pipe)
+    assert engine1_pipes, "Failed to connect steam engines in first row"
+
+    # Set up second row
+    # Place second offshore pump below first one
+    offshore_pump2 = game.place_entity_next_to(
+        Prototype.OffshorePump,
+        reference_position=offshore_pump1.position,
+        direction=Direction.DOWN,
+        spacing=3
+    )
+
+    # Place second boiler
+    boiler2 = game.place_entity_next_to(
+        Prototype.Boiler,
+        reference_position=offshore_pump2.position,
+        direction=Direction.RIGHT,
+        spacing=3
+    )
+
+    # Connect second pump to second boiler
+    pump2_pipes = game.connect_entities(offshore_pump2, boiler2, connection_type=Prototype.Pipe)
+    assert pump2_pipes, "Failed to connect second pump to second boiler"
+
+    # Place two more steam engines
+    steam_engine2a = game.place_entity_next_to(
+        Prototype.SteamEngine,
+        reference_position=boiler2.position,
+        direction=Direction.RIGHT,
+        spacing=2
+    )
+
+    steam_engine2b = game.place_entity_next_to(
+        Prototype.SteamEngine,
+        reference_position=steam_engine2a.position,
+        direction=Direction.RIGHT,
+        spacing=2
+    )
+
+    # Connect second boiler to its steam engines
+    boiler2_pipes = game.connect_entities(boiler2, steam_engine2a, connection_type=Prototype.Pipe)
+    assert boiler2_pipes, "Failed to connect second boiler to first steam engine"
+
+    engine2_pipes = game.connect_entities(steam_engine2a, steam_engine2b, connection_type=Prototype.Pipe)
+    assert engine2_pipes, "Failed to connect steam engines in second row"
+
+    # Add fuel to boilers
+    game.insert_item(Prototype.Coal, boiler1, 50)
+    game.insert_item(Prototype.Coal, boiler2, 50)
+
+    # Connect boilers
+    boiler_connective_pipes = game.connect_entities(boiler1, boiler2, connection_type=Prototype.Pipe)
+    assert boiler_connective_pipes, "Failed to connect boiler connective pipes"
+
+    # Verify steam engines are properly set up but waiting for power connection
+    for engine in [steam_engine1a, steam_engine1b, steam_engine2a, steam_engine2b]:
+        engine_status = game.get_entity(Prototype.SteamEngine, engine.position)
+        assert engine_status.status in (EntityStatus.NOT_PLUGGED_IN_ELECTRIC_NETWORK, EntityStatus.NOT_CONNECTED)

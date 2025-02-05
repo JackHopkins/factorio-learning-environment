@@ -9,7 +9,7 @@ from search.mcts.logger import FactorioLogger
 from search.model.program import Program
 from factorio_entities import Entity, EntityGroup
 from factorio_instance import FactorioInstance
-from utils import get_achievements
+from _utils import get_achievements
 
 
 class FactorioEvaluator:

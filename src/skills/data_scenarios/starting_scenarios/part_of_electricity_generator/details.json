@@ -1,9 +1,0 @@
-{
-  "fixed_inventory": {},
-  "random_inventory": {"offshore-pump": [0, 1],
-                        "pipe": [0, 10],
-                        "boiler": [0, 1],
-                        "steam-engine": [0, 1],
-                        "small-electric-pole": [0, 10]},
-  "mining_setup": "There are no entities on the map"
-}

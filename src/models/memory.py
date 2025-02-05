@@ -1,17 +1,27 @@
 import json
 import os
 from datetime import datetime
+from enum import Enum
 from typing import List, Union
 
 from rich.console import Console
 
-from bcolors import bcolors
+from utilities.bcolors import bcolors
 from models.event import Event, EventEncoder
 from models.event_type import EventType
-from models.insufficient_score_exception import InsufficientScoreException
+from exceptions.insufficient_score_exception import InsufficientScoreException
 from models.role_type import RoleType
-from models.slot import Slot
-from utilities.controller_loader import load_schema, load_definitions
+from pydantic import BaseModel
+
+class Roles(Enum):
+    assistant = 'assistant'
+    system = 'system'
+    user = 'user'
+
+class Slot(BaseModel):
+    role: Roles
+    content: str
+    name: str
 
 instructions = \
     """
@@ -24,141 +34,6 @@ instructions = \
 # 4. On the map, you are called 'player_character'.
 # 2. Automate resource extraction, processing and manufacturing to increase your score.
 
-
-"""
-with get_entity(Prototype.SteamEngine, Position(x=0, y=0)) as engine:
-    with get_entity(Prototype.Boiler, Position(x=0, y=0)) as boiler:
-        connect_entities(engine, boiler, Prototype.Pipe)
-
-
-
-
-"""
-schema_old = \
-    """
-# Observe and describe the natural resources and landscape around you
-inspect_resources() -> Dict[Entity, List[Dict["size", "top_left_position", "bottom_right_position"]]
-
-# Inspect entities within a 20-meter radius around you
-inspect_entities(radius:int = 20) -> List[Entity]
-
-# Examine the items currently in your inventory
-inspect_inventory() -> Dict[Entity, Int]
-
-# Craft 1 iron chest
-craft_item(entity: Entity, quantity=1) -> None
-
-# Find the nearest entity
-nearest(entity: Union[Entity, Resource]) -> PositionTuple
-
-# Place an entity facing up, at (1, 1)
-place_entity(entity: Entity, direction: Direction = UP, position: PositionTuple = (1, 1)) -> PositionTuple
-
-# Place an entity facing down, on to the nearest buildable position
-place_entity(entity: Entity, direction: Direction = DOWN, exact=False, position: PositionTuple = (0,0)) -> PositionTuple
-
-# Pick up an entity near position
-pickup_entity(entity: Entity, position: PositionTuple) -> None
-
-# Insert an entity from your inventory into entity at target_position
-insert_item(entity: Entity, target_position: PositionTuple = (0,0), quantity: int = 1) -> None
-
-# Extract an entity from the entity at the source_position
-extract_item(entity: Entity, source_position: PositionTuple = (0, 1), quantity: int = 1) -> None
-
-# Set the recipe of the entity at position for crafting.
-set_entity_recipe(position: PositionTuple, recipe: Entity) -> None
-
-# Move to position
-move_to(position: PositionTuple) -> None
-
-# Move to position, laying an entity such as a transport belt as you go
-move_to(position: PositionTuple, laying: Entity='transport-belt') -> None
-
-# Harvest or mine the resource located at position
-harvest_resource(position: PositionTuple, quantity: int = 5) -> None
-
-# Rotate the entity at position
-rotate_entity(position: PositionTuple, direction: Direction = LEFT) -> None
-
-# Place an entity next to an existing entity, with a space in-between (0 space means adjacent)
-place_entity_next_to(entity: Entity, reference_position: PositionTuple = (0,0), placement_position: Direction = LEFT, spacing: int = 1) -> PositionTuple
-
-# Connect one entity to another using a connection_type.
-connect_entities(source_position: PositionTuple = (0, 0), target_position: PositionTuple = (0, 0), connection_type: Entity = 'inserter') -> None
-"""
-
-schema2 = \
-    """
-# Observe and describe the natural resources and landscape around you
-inspect_resources() -> dict;
-
-# Inspect entities within a 20-meter radius around you
-inspect_entities(radius=20) -> list;
-
-# Examine the items currently in your inventory
-inspect_inventory() -> dict;
-
-# Find the nearest coal
-nearest('coal')
-
-# Move to (10, 5), laying transport belts as you go
-move_to((10, 5), laying='transport-belt');
-
-# Craft 1 iron chest
-craft_item('iron-chest', quantity=1);
-
-# Place an assembling machine facing up, at (1, 1)
-entity_position = place_entity('assembling-machine-1', direction=UP, position=(1, 1));
-
-# Place a burner drill facing down, on to the nearest buildable position
-entity_position = place_entity('burner-mining-drill', direction=DOWN, exact=False, position=(0,0));
-
-# Pick up coal near (-2, 0)
-pickup_entity('coal', (-2, 0));
-
-# Insert 1 coal from your inventory into the nearest mining drill for fuel
-insert_item('coal', target_position=nearest('burner-mining-drill'), quantity=1);
-
-# Extract 1 coal from the entity at (0, 1)
-extract_item('coal', source_position=(0, 1), quantity=1);
-
-# Set the recipe of the entity at (0, 1) to craft 'iron-chest'
-set_entity_recipe((0, 1), recipe='iron-chest');
-
-# Move to (0, -40)
-move_to((0, -40));
-
-# Move to the position of the nearest tree
-move_to(nearest('tree'));
-
-# Harvest or mine 5 of the resource located at (-2, 0)
-harvest_resource((-2, 0), quantity=5);
-
-# Rotate the entity at (0, 0)
-rotate_entity((0, 0), direction=LEFT);
-
-# Place a burner-mining-drill to the left of the existing stone furnace leaving a gap of 1 tile
-entity_position = place_entity_next_to('burner-mining-drill', reference_position=stone_furnace_position, direction=LEFT, gap=1)
-
-# Connect the burner-mining-drill's output to the stone-furnace's input using an inserter
-connect_entities(source_position=(burner_drill_position[0]-2, burner_drill_position[1]), target_position=stone_furnace_position, connection_type='inserter')
-"""
-
-
-"""@deprecated
-Example:
-```
-# Place a burner-mining-drill and a furnace next to its drop point
-stone_position = nearest(Resource.Stone)
-move_to(stone_position)
-drill = place_entity(Prototype.BurnerMiningDrill, position=stone_position, direction=Direction.UP)
-furnace = place_entity_next_to(Prototype.StoneFurnace, reference_position=ore, placement_position=ABOVE, gap=0)
-
-# Check to ensure that burner-mining-drill has been placed 
-inspect_entities(5) 
-```
-"""
 
 # get execution path
 execution_path = os.path.dirname(os.path.realpath(__file__))

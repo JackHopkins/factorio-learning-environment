@@ -196,7 +196,7 @@ class ConnectEntities(Action):
                               dry_run: bool = False,
                               allow_paths_through_own: bool = False) -> PathResult:
         """Attempt to find a path between two positions"""
-        entity_sizes = [2, 1, 0.5, 0.25]  # Ordered from largest to smallest
+        entity_sizes = [1.5, 1, 0.5, 0.25]  # Ordered from largest to smallest
 
         for size in entity_sizes:
             path_handle = self.request_path(

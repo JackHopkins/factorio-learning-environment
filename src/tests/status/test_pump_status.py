@@ -44,7 +44,7 @@ def test_connected_pump_is_working(game):
 
     assert boiler.direction.value == offshore_pump.direction.value
     water_pipes = game.connect_entities(boiler, offshore_pump, connection_type=Prototype.Pipe)
-    assert len(water_pipes[0].pipes) >= math.ceil(
+    assert len(water_pipes.pipes) >= math.ceil(
         5 + boiler.tile_dimensions.tile_height / 2 + offshore_pump.tile_dimensions.tile_height / 2 + 1)
     boiler = game.get_entity(Prototype.Boiler, boiler.position)
     assert boiler.status == EntityStatus.NO_FUEL

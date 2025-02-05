@@ -1,9 +1,0 @@
-{
-  "instruction": "manually craft 20 automation science packs",
-  "objective": "manually craft 20 automation science packs",
-  "steps": "To achieve the objective of manually crafting 20 automation science packs in Factorio, you would follow these steps:\n\n1. Gather required raw materials:\n   - 40 iron plates (1 iron ore smelted into 1 iron plate)\n   - 40 copper plates (1 copper ore smelted into 1 copper plate)\n   - 20 iron gear wheels\n\n2. Craft intermediate products:\n   - Use 40 iron plates to craft 20 iron gear wheels (2 iron plates per gear wheel)\n\n3. Craft automation science packs:\n   - Open your crafting menu\n   - Select the automation science pack recipe\n   - Craft 20 automation science packs using:\n     - 20 copper plates\n     - 20 iron gear wheels\n\n4. Execution tips:\n   - Mine iron and copper ore\n   - Smelt the ore into plates using stone furnaces\n   - Craft the gear wheels first to save inventory space\n   - Queue up the crafting of all 20 science packs at once for efficiency\n\nRemember, this is a manual process. Once you've completed this objective, you might want to set up an automated production line for future science pack needs.",
-  "corrections": [],
-  "token_count": 6842,
-  "cost": 0.0032658,
-  "snippet_passed": true
-}

@@ -12,9 +12,9 @@ from factorio_types import Prototype, Resource
 def game(instance):
     instance.initial_inventory = {'stone-furnace': 1, 'transport-belt': 30,
                                   'boiler': 1, 'steam-engine': 1, 'offshore-pump': 1, 'pipe': 100, 'iron-plate': 50, 'copper-plate': 20, 'coal': 50}
-    #instance.rcon_client.send_command('game.reset_game_state()')
-    #instance.rcon_client.send_command('game.reload_script()')
+
     instance.reset()
+
     yield instance.namespace
 
 def test_create_offshore_pump_to_steam_engine(game):
@@ -23,10 +23,6 @@ def test_create_offshore_pump_to_steam_engine(game):
     :param game:
     :return:
     """
-    boilers_in_inventory = game.inspect_inventory()[Prototype.Boiler]
-    steam_engines_in_inventory = game.inspect_inventory()[Prototype.SteamEngine]
-    pipes_in_inventory = game.inspect_inventory()[Prototype.Pipe]
-
     # move to the nearest water source
     water_location = game.nearest(Resource.Water)
     game.move_to(water_location)
@@ -68,8 +64,6 @@ def test_create_offshore_pump_to_steam_engine(game):
     assert inspected_steam_engine.status == EntityStatus.NOT_PLUGGED_IN_ELECTRIC_NETWORK
 
     assert steam_engine.direction.value == Direction.opposite(boiler.direction).value
-    #game.add_command(f"/c game.take_screenshot{{zoom=1, anti_alias=true, show_entity_info=true, position={{x={boiler.position.x}, y={boiler.position.y}}}}}", raw=True)
-    #game.execute_transaction()
 
 
 def test_build_iron_gear_factory_from_scratch(game):

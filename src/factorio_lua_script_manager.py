@@ -1,11 +1,12 @@
 import hashlib
 import json
-from pathlib import Path
 from factorio_rcon_utils import _load_init, _get_action_dir, _get_init_dir, _get_action_names, _load_script, \
     _get_init_names, _load_action
-from src.rcon.factorio_rcon import RCONClient
 
 from lupa.lua54 import LuaRuntime
+
+from rcon.factorio_rcon import RCONClient
+
 
 class FactorioLuaScriptManager:
     def __init__(self,
@@ -115,6 +116,7 @@ class FactorioLuaScriptManager:
 
     def _clear_game_checksums(self, rcon_client):
         rcon_client.send_command("/c global.clear_lua_script_checksums()")
+
     def _get_game_checksums(self, rcon_client):
         response = rcon_client.send_command("/c rcon.print(global.get_lua_script_checksums())")
         return json.loads(response)

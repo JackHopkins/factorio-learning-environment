@@ -122,10 +122,12 @@ class PlanningConfig(BaseConfig):
     planning_model: str = "claude-3-5-sonnet-20241022"
     executor_model: str = "ft:gpt-4o-2024-08-06:paperplane-ai:fact-instruct-1:ATSVGf4d:ckpt-step-214"
     objective_model: str = "ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91"
-    step_executor_prompt_path: Path = Path("../../prompts/bottoms_up_prompts/finetuning_prompts/step_supervised")
-    step_generator_prompt_path: Path = Path("../../prompts/bottoms_up_prompts/finetuning_prompts/step_generator")
-    step_judge_prompt_path: Path = Path("../../prompts/bottoms_up_prompts/finetuning_prompts/step_judge")
-    example_plan_prompt_path: Path = Path("../../prompts/bottoms_up_prompts/finetuning_prompts/executor_plan")
+    step_executor_prompt_path: Path = Path(
+        "../../../data/prompts/bottoms_up_prompts/finetuning_prompts/step_supervised")
+    step_generator_prompt_path: Path = Path(
+        "../../../data/prompts/bottoms_up_prompts/finetuning_prompts/step_generator")
+    step_judge_prompt_path: Path = Path("../../../data/prompts/bottoms_up_prompts/finetuning_prompts/step_judge")
+    example_plan_prompt_path: Path = Path("../../../data/prompts/bottoms_up_prompts/finetuning_prompts/executor_plan")
     max_steps_per_objective: int = 8
     number_of_steps_for_judge: int = 3
     n_parallel: int = 8

@@ -126,12 +126,12 @@ async def main():
     step_executor_model_path = "ft:gpt-4o-2024-08-06:paperplane-ai:fact-instruct-1:ATSVGf4d:ckpt-step-214"
     planner_model = "claude-3-5-sonnet-20241022"
     objective_model = "ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91"
-    step_executor_prompt_path = r"../../prompts/bottoms_up_prompts/finetuning_prompts/step_supervised"
-    step_generator_prompt_path = r"../../prompts/bottoms_up_prompts/finetuning_prompts/step_generator"
-    executor_plan_prompt_path = r"../../prompts/bottoms_up_prompts/finetuning_prompts/executor_plan"
-    step_judge_prompt_path = r"../../prompts/bottoms_up_prompts/finetuning_prompts/step_judge"
+    step_executor_prompt_path = r"../../../data/prompts/bottoms_up_prompts/finetuning_prompts/step_supervised"
+    step_generator_prompt_path = r"../../../data/prompts/bottoms_up_prompts/finetuning_prompts/step_generator"
+    executor_plan_prompt_path = r"../../../data/prompts/bottoms_up_prompts/finetuning_prompts/executor_plan"
+    step_judge_prompt_path = r"../../../data/prompts/bottoms_up_prompts/finetuning_prompts/step_judge"
     starting_scenario_folder = r"../../skills/data_scenarios/starting_scenarios"
-    objective_model_prompt_path = r"../../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_self_gen.md"
+    objective_model_prompt_path = r"../../../data/prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_self_gen.md"
     nr_of_seeded_programs = 4
     version = 101
     version = 43

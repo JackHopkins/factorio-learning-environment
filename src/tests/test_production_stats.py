@@ -27,14 +27,14 @@ class TestProductionStats(unittest.TestCase):
                             tcp_port=27000,
                             fast=True,
                             inventory=inventory)
-        instance.move_to(instance.nearest(Resource.IronOre))
-        instance.harvest_resource(instance.nearest(Resource.IronOre), quantity=10)
+        instance.namespace.move_to(instance.namespace.nearest(Resource.IronOre))
+        instance.namespace.harvest_resource(instance.namespace.nearest(Resource.IronOre), quantity=10)
 
-        result = instance._production_stats()
+        result = instance.namespace._production_stats()
 
         assert result['input']['iron-ore'] == 10
 
-        result = instance._production_stats()
+        result = instance.namespace._production_stats()
 
         assert result['input']['iron-ore'] == 0
 

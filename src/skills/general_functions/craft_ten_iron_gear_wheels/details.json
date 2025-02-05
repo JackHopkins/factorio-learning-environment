@@ -1,8 +1,0 @@
-{
-  "objective": "craft 10 iron gear wheels",
-  "steps": "To craft 10 iron gear wheels in Factorio, you'll need to follow these steps:\n\n1. Gather resources:\n   - You'll need 20 iron plates (2 iron plates per iron gear wheel)\n\n2. Set up production:\n   - If you don't have an assembling machine yet, craft one using 9 iron plates, 5 gears, and 3 electronic circuits\n   - Place the assembling machine in a suitable location\n\n3. Configure the assembling machine:\n   - Open the assembling machine interface\n   - Select the \"Iron gear wheel\" recipe\n\n4. Supply materials:\n   - Ensure you have a steady supply of iron plates feeding into the assembling machine\n   - You can do this manually by inserting the plates, or set up a transport belt system to automate the process\n\n5. Power the assembling machine:\n   - Make sure the assembling machine is connected to a power source (steam engine or solar panels)\n\n6. Wait for production:\n   - The assembling machine will automatically craft the iron gear wheels\n   - Each iron gear wheel takes 0.5 seconds to craft\n\n7. Collect the output:\n   - Once 10 iron gear wheels have been produced, collect them from the output of the assembling machine\n\nThis process can be scaled up or automated further as you progress in the game, but this basic approach will allow you to craft the 10 iron gear wheels you need.",
-  "corrections": [],
-  "token_count": 6663,
-  "cost": 0.0030465,
-  "snippet_passed": true
-}

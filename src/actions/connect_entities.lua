@@ -470,7 +470,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         -- Place poles until we achieve connectivity
         local last_pole = source_entity
 
-        for i = 1, #path-1, step_size do
+        for i = 1, #path, step_size do
             local current_pos = path[i].position
             local dir = global.utils.get_direction(current_pos, path[math.min(i + step_size, #path)].position)
             local entity_dir = global.utils.get_entity_direction(connection_type, dir/2)

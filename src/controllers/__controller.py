@@ -72,33 +72,29 @@ class Controller:
 
         return cleaned_response
 
-    # def clean_response_deprecated(self, response):
-    #     cleaned_response = {}
-    #     for key, value in response.items():
-    #         if key == 'status' and isinstance(value, str):
-    #             cleaned_response[key] = EntityStatus.from_string(value)
-    #             continue
-    #         # We handle warnings separately, as they are not always present and should be an empty list rather than
-    #         # an empty dict
-    #         if not value and key == 'warnings':
-    #             cleaned_response[key] = []
-    #             continue
-    #         if isinstance(value, dict):
-    #             if 1 in value.keys():
-    #                 if 'inventory' in key:
-    #                     cleaned_response[key] = {}
-    #                     values = list(value.values())
-    #                     for val in values:
-    #                         cleaned_response[key][val['name']] = val['count']
-    #                 else:
-    #                     cleaned_response[key] = []
-    #                     for sub_key, sub_value in value.items():
-    #                         cleaned_response[key].append(sub_value)
-    #             else:
-    #                 cleaned_response[key] = value
-    #         else:
-    #             cleaned_response[key] = value
-    #     return cleaned_response
+    def parse_lua_dict(self, d):
+        if all(isinstance(k, int) for k in d.keys()):
+            # Convert to list if all keys are numeric
+            return [self.parse_lua_dict(d[k]) for k in sorted(d.keys())]
+        else:
+            # Process dictionaries with mixed keys
+            new_dict = {}
+            last_key = None
+
+            for key in d.keys():
+                if isinstance(key, int):
+                    if last_key is not None and isinstance(d[key], str):
+                        # Concatenate the value to the previous key's value
+                        new_dict[last_key] += '-' + d[key]
+                else:
+                    last_key = key
+                    if isinstance(d[key], dict):
+                        # Recursively process nested dictionaries
+                        new_dict[key] = self.parse_lua_dict(d[key])
+                    else:
+                        new_dict[key] = d[key]
+
+            return new_dict
 
     def camel_to_snake(self, camel_str):
         snake_str = ""

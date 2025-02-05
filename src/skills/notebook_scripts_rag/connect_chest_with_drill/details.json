@@ -1,9 +1,0 @@
-{
-  "step": "Connect drills output to a chest. To create this we need to place a inserter next to the chest and rotate the inserters as by default inserter takes from the drill and not puts to it. After that we need to connect the drills drop position with the inserters pickup position",
-  "inventory": {"burner-inserter": 5,
-                "transport-belt": 50,
-                "coal": 5},
-  "planning": "To create this we need a burner inserter, coal and transport belts. We have all the items in our inventory so we don't need to craft anything. To first put a burner inserter next to the chest. Then we need to rotate the burner inserter and use coal to fuel it. Finally we need to connect drill's drop position with chest inserters pickup position with transport belts. We need to use the python variables for the chest and drill that we previously got when placing them to avoid confusion",
-  "mining_setup": "There is a drill and a chest on the map"
-}
-

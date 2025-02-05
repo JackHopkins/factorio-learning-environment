@@ -30,10 +30,7 @@ def game(instance):
 
 def test_not_connected_pipes_is_not_connected(game):
     pipes1 = game.connect_entities(Position(x=0, y=0), Position(x=5, y=0), connection_type=Prototype.Pipe)
-    assert pipes1[0].status == EntityStatus.EMPTY
+    assert pipes1.status == EntityStatus.EMPTY
 
     pipes2 = game.connect_entities(Position(x=7, y=0), Position(x=12, y=0), connection_type=Prototype.Pipe)
-    assert pipes2[0].status == EntityStatus.EMPTY
-
-    entities = game.get_entities()
-    pass
+    assert pipes2.status == EntityStatus.EMPTY

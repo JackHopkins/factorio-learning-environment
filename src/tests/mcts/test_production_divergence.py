@@ -1,7 +1,7 @@
 import unittest
 
 from factorio_instance import FactorioInstance
-from utils import eval_program_with_achievements
+from _utils import eval_program_with_achievements
 
 test_string = \
 """

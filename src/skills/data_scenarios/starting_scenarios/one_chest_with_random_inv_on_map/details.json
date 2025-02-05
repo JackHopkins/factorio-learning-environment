@@ -1,9 +1,0 @@
-{
-  "fixed_inventory": {"wooden-chest": 1},
-  "random_inventory": {
-    "coal": [0, 20],
-    "stone": [0, 10],
-    "iron-ore": [0, 20],
-    "copper-ore": [0, 20]
-}
-}

@@ -1,5 +1,3 @@
-from typing import Dict
-
 from controllers.__controller import Controller
 from factorio_entities import BoundingBox, Position
 from factorio_instance import PLAYER

@@ -1,6 +1,6 @@
 # factorio-rcon-py
 
-A simple factorio RCON client
+A simple factorio RCON client by [Mark9064](https://github.com/mark9064).
 
 ## Install
 

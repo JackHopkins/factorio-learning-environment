@@ -1,5 +1,3 @@
-import asyncio
-import atexit
 import atexit
 import enum
 import functools
@@ -15,7 +13,6 @@ import time
 import traceback
 import types
 from concurrent.futures import TimeoutError
-from datetime import datetime
 from pathlib import Path
 from timeit import default_timer as timer
 
@@ -25,14 +22,12 @@ from slpp import slpp as lua
 from factorio_entities import *
 from factorio_lua_script_manager import FactorioLuaScriptManager
 from factorio_namespace import FactorioNamespace
+from factorio_rcon_utils import _lua2python
 from factorio_transaction import FactorioTransaction
-from models.observation_state import ObservationState
 from models.research_state import ResearchState
+from rcon.factorio_rcon import RCONClient
 from search.model.game_state import GameState
-from src.factorio_rcon_utils import _lua2python
-from src.rcon.factorio_rcon import RCONClient
-from utilities.controller_loader import load_schema, load_definitions, parse_file_for_structure
-from vocabulary import Vocabulary
+from utilities.controller_loader.system_prompt_generator import SystemPromptGenerator
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000
@@ -73,15 +68,15 @@ class Direction(Enum):
 
 class FactorioInstance:
 
-    def __init__(self, address=None,
-                 vocabulary: Vocabulary = Vocabulary(),
-                 bounding_box=20,
+    def __init__(self,
+                 address=None,
                  fast=False,
                  tcp_port=27000,
                  inventory={},
                  cache_scripts=True,
                  all_technologies_researched=True,
-                 peaceful=True
+                 peaceful=True,
+                 **kwargs
                  ):
 
         self.persistent_vars = {}
@@ -190,48 +185,17 @@ class FactorioInstance:
         if not response: return 0
         return int(response)
 
-    # def log(self, *arg):
-    #     """
-    #     Shadows the builtin print function,and ensures that whatever is printed is logged in agent memory
-    #     """
-    #     #if self.memory:
-    #     #    self.memory.log_observation(str(arg))
-    #     if self.line_value not in self.logging_results:
-    #         self.logging_results[self.line_value] = []
-    #     self.logging_results[self.line_value].append(repr(arg))
-    #
-    #     if 'error' in repr(arg).lower():
-    #         print(f"\033[93m{self.tcp_port}: {repr(arg)}")
-    #     else:
-    #         print(f"{self.tcp_port}: {repr(arg)}")
-    #     return arg
-
     def get_system_prompt(self) -> str:
         """
         Get the system prompt for the Factorio environment.
-
         This includes all the available actions, objects, and entities that the agent can interact with.
-
         We get the system prompt by loading the schema, definitions, and entity definitions from their source files.
-
         These are converted to their signatures - leaving out the implementations.
         :return:
         """
-        execution_path = os.path.dirname(os.path.realpath(__file__))
-        folder_path = f'{execution_path}/controllers'
-        schema = load_schema(folder_path, with_docstring=True).replace("temp_module.", "")
-        type_definitions = load_definitions(f'{execution_path}/factorio_types.py')
-        # Filter `import` statements and `from` statements
-        type_definitions = "\n".join(list(
-            filter(lambda x: not x.startswith("import") and not x.startswith("from") and not x.lstrip().startswith('#'), type_definitions.split("\n"))))
-        type_definitions = type_definitions.replace("\n\n\n", "\n").replace("\n\n", "\n").strip()
-        # get everything from and including class Prototype(enum.Enum):
-        type_definitions = type_definitions[type_definitions.index("class Prototype(enum.Enum"):]
-        # entity_definitions = load_definitions(f'{execution_path}/factorio_entities.py')
-        entity_definitions = parse_file_for_structure(f'{execution_path}/factorio_entities.py')
-        brief = f"```types\n{type_definitions}\n```\n```objects\n{entity_definitions}\n```\n```tools\n{schema}\n```"
-
-        return brief
+        execution_path = Path(os.path.dirname(os.path.realpath(__file__)))
+        generator = SystemPromptGenerator(str(execution_path))
+        return generator.generate()
 
     def connect_to_server(self, address, tcp_port):
         try:

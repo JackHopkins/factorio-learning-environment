@@ -267,7 +267,7 @@ if __name__ == '__main__':
 
     evaluator = AutoCurriculumEvaluatorSingle(
         model_path=r"ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91",
-        system_prompt_path=r"../../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_self_gen.md",
+        system_prompt_path=r"../../../data/prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_self_gen.md",
         save_path=r"finetuned_model_gen",
         starting_scenarios_folder=r"../skills/data_scenarios/starting_scenarios",
         curriculum_strategy=RecipeBasedCurriculum("recipes.jsonl")

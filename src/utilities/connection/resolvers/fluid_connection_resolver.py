@@ -1,6 +1,7 @@
 from typing import Optional, Union, Tuple, cast, List
 
-from factorio_entities import FluidHandler, Position, Entity, Generator, Boiler, OffshorePump, Pipe
+from factorio_entities import FluidHandler, Position, Entity, Generator, Boiler, OffshorePump, Pipe, OilRefinery, \
+    ChemicalPlant
 from utilities.connection.resolver import Resolver
 
 
@@ -37,19 +38,28 @@ class FluidConnectionResolver(Resolver):
                 sorted_positions = self._get_all_connection_points(
                     cast(FluidHandler, source),
                     target.position,
-                    target
+                    source.connection_points
                 )
                 source_positions = sorted_positions if sorted_positions else [source.position]
 
             case (FluidHandler(), _):
                 sorted_positions = self._get_all_connection_points(
                     cast(FluidHandler, source),
-                    target.position
+                    target.position,
+                    source.connection_points
                 )
                 source_positions = sorted_positions if sorted_positions else [source.position]
 
             case (Pipe(), _):
                 source_positions = [source.position, source.position.up(), source.position.down(), source.position.left(), source.position.right()]
+
+            case (OilRefinery() | ChemicalPlant(), _):
+                sorted_positions = self._get_all_connection_points(
+                    cast(FluidHandler, source),
+                    target.position,
+                    source.output_connection_points
+                )
+                source_positions = sorted_positions if sorted_positions else [target.position]
 
             case (Position(), _):
                 source_positions = [source]
@@ -67,7 +77,7 @@ class FluidConnectionResolver(Resolver):
                     sorted_positions = self._get_all_connection_points(
                         cast(FluidHandler, target),
                         source_positions[0],  # Use first source pos for initial sorting
-                        source
+                        target.connection_points
                     )
                     target_positions = sorted_positions if sorted_positions else [target.position]
                 else:
@@ -77,7 +87,7 @@ class FluidConnectionResolver(Resolver):
                 sorted_positions = self._get_all_connection_points(
                     cast(FluidHandler, target),
                     source_positions[0],
-                    source
+                    target.connection_points
                 )
                 target_positions = sorted_positions if sorted_positions else [target.position]
 
@@ -87,6 +97,15 @@ class FluidConnectionResolver(Resolver):
             case Pipe():
                 target_positions = [target.position, target.position.up(), target.position.down(),
                                     target.position.left(), target.position.right()]
+
+            case OilRefinery() | ChemicalPlant():
+                sorted_positions = self._get_all_connection_points(
+                    cast(FluidHandler, target),
+                    source_positions[0],
+                    target.input_connection_points
+                )
+                target_positions = sorted_positions if sorted_positions else [target.position]
+
             case Entity():
                 target_positions = [target.position]
 
@@ -112,12 +131,12 @@ class FluidConnectionResolver(Resolver):
     def _get_all_connection_points(self,
                                    fluid_handler: FluidHandler,
                                    reference_pos: Position,
-                                   reference_entity: Optional[Entity] = None) -> List[Position]:
+                                   connection_points) -> List[Position]:
         """Get all possible connection points sorted by distance."""
 
         # Sort all connection points by distance to reference position
         sorted_points = sorted(
-            fluid_handler.connection_points,
+            connection_points,
             key=lambda point: abs(point.x - reference_pos.x) + abs(point.y - reference_pos.y)
         )
 

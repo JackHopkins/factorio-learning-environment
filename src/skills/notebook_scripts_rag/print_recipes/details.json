@@ -1,6 +1,0 @@
-{
-  "step": "Print recipes. We need to craft a burner mining drill, a burner inserter, a wooden chest and some transport belts (atleast 10). We must print the recipes of all the items we need to craft",
-  "inventory": {},
-  "planning": "We first need to print the recipes of the items we need to craft, i.e \nthe burner mining drill, the burner inserter, the transport belt and the wooden chest",
-  "mining_setup": "There are no entities on the map"
-}

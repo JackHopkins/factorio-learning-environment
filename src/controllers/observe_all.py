@@ -6,9 +6,8 @@ from numpy import ndarray, zeros
 
 from controllers.__action import Action
 from factorio_instance import PLAYER, CHUNK_SIZE, MAX_SAMPLES
-from models.observation_state import FIELDS, ObservationState
-
-from utils import stitch
+from gym.utils import stitch
+from gym.observation_state import FIELDS, ObservationState
 
 
 class ObserveAll(Action):
@@ -127,8 +126,8 @@ class ObserveAll(Action):
         return offset // CHUNK_SIZE
 
     def _sample_chunk(self):
-        x = self._sample_chunk_from_normal(self.game_state.player_location[0])
-        y = self._sample_chunk_from_normal(self.game_state.player_location[1])
+        x = self._sample_chunk_from_normal(self.game_state.player_location.x)
+        y = self._sample_chunk_from_normal(self.game_state.player_location.y)
         index_x = x + int(self.game_state.minimap_bounding_box / 2)
         index_y = y + int(self.game_state.minimap_bounding_box / 2)
 

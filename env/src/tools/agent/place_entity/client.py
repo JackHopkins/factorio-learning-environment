@@ -15,6 +15,7 @@ class PlaceObject(Tool):
     def __init__(self, *args):
         super().__init__(*args)
         self.name = "place_entity"
+        self.load()
         self.get_entity = GetEntity(*args)
         self.pickup_entity = PickupEntity(*args)
 

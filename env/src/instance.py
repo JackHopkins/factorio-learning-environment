@@ -94,7 +94,7 @@ class FactorioInstance:
         self.namespace = FactorioNamespace(self)
 
         self.lua_script_manager = LuaScriptManager(self.rcon_client, cache_scripts)
-        self.script_dict = {**self.lua_script_manager.tool_scripts, **self.lua_script_manager.lib_scripts}
+        self.script_dict = {**self.lua_script_manager.lib_scripts, **self.lua_script_manager.tool_scripts}
 
         # Load the python controllers that correspond to the Lua scripts
         self.setup_tools(self.lua_script_manager)#, self.game_state)
@@ -108,7 +108,7 @@ class FactorioInstance:
         except Exception as e:
             # Invalidate cache if there is an error
             self.lua_script_manager = LuaScriptManager(self.rcon_client, False)
-            self.script_dict = {**self.lua_script_manager.tool_scripts, **self.lua_script_manager.lib_scripts}
+            self.script_dict = {**self.lua_script_manager.lib_scripts, **self.lua_script_manager.tool_scripts}
             self.setup_tools(self.lua_script_manager)
             self.initialise(fast, **inventory)
 

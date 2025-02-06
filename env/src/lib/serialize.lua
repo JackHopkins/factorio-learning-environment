@@ -675,7 +675,7 @@ function get_entity_direction(entity, direction)
         else
             return defines.direction.west
         end
-    elseif prototype and prototype.type == "transport-belt" or prototype.type == "splitter" then
+    elseif prototype and prototype.type == "transport-belt" or prototype.type == "splitter"  then
         --game.print("Transport belt direction: " .. direction)
         if direction == 0 then
             return defines.direction.north
@@ -706,6 +706,26 @@ function get_entity_direction(entity, direction)
             return cardinals[4]
         else
             return cardinals[1]
+        end
+    elseif prototype.type == "underground-belt" then
+        if direction == 1 then
+            return defines.direction.east
+        elseif direction == 2 then
+            return defines.direction.south
+        elseif direction == 3 then
+            return defines.direction.west
+        else
+            return defines.direction.north
+        end
+    elseif prototype.type == "pipe-to-ground" then
+        if direction == 1 then
+            return defines.direction.east
+        elseif direction == 2 then
+            return defines.direction.north
+        elseif direction == 3 then
+            return defines.direction.west
+        else
+            return defines.direction.south
         end
     else
         return direction
@@ -956,7 +976,7 @@ global.utils.serialize_entity = function(entity)
 
 
     -- Add input and output locations if the entity is a transport belt
-    if entity.type == "transport-belt" then
+    if entity.type == "transport-belt" or entity.type == "underground-belt" then
         -- input_position is the position upstream of the belt
         --local direction = entity.direction
         local x, y = entity.position.x, entity.position.y
@@ -1046,9 +1066,21 @@ global.utils.serialize_entity = function(entity)
             table.insert(serialized.warnings, "Belt output is full")
         end
 
-
+        if entity.type == "underground-belt" then
+            serialized.is_input = entity.belt_to_ground_type == "input"
+            if serialized.is_input then
+                serialized.is_terminus = entity.neighbours == nil
+            else
+                serialized.is_source = entity.neighbours == nil
+            end
+            if entity.neighbours ~= nil then
+                --game.print(serpent.block(entity.neighbours))
+                serialized.connected_to = entity.neighbours.unit_number
+            end
+        end
     end
 
+    serialized.id = entity.unit_number
     -- Special handling for power poles
     if entity.type == "electric-pole" then
         local stats = entity.electric_network_statistics
@@ -1179,8 +1211,22 @@ global.utils.serialize_entity = function(entity)
 
     -- Add input and output locations if the entity is a pipe-to-ground
     if entity.type == "pipe-to-ground" then
-        serialized.input_position = entity.fluidbox.get_connections(1)[1].position
-        serialized.output_position = entity.fluidbox.get_connections(2)[1].position
+         serialized.connections = {}
+        local fluid_name = nil
+        for _, connection in pairs(entity.fluidbox.get_pipe_connections(1)) do
+            table.insert(serialized.connections, connection.position)
+        end
+        local contents_count = 0
+        for name, count in pairs(entity.fluidbox.get_fluid_system_contents(1)) do
+            contents_count = contents_count + count
+            fluid_name = "\""..name.."\""
+        end
+        serialized.fluidbox_id = entity.fluidbox.get_fluid_system_id(1)
+        serialized.flow_rate = entity.fluidbox.get_flow(1)
+        serialized.contents = contents_count
+        serialized.fluid = fluid_name
+        --serialized.input_position = entity.fluidbox.get_connections(1)[1].position
+        --serialized.output_position = entity.fluidbox.get_connections(2)[1].position
     end
 
     -- Add input and output locations if the entity is a pump

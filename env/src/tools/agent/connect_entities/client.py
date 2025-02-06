@@ -1,5 +1,5 @@
 from time import sleep
-from typing import Union, Optional, List, Dict, cast
+from typing import Union, Optional, List, Dict, cast, Set
 
 import numpy
 
@@ -23,6 +23,7 @@ from tools.agent.inspect_inventory.client import InspectInventory
 from tools.agent.pickup_entity.client import PickupEntity
 from tools.agent.rotate_entity.client import RotateEntity
 from tools.tool import Tool
+from collections.abc import Set as AbstractSet
 
 
 class ConnectEntities(Tool):
@@ -52,21 +53,28 @@ class ConnectEntities(Tool):
 
     def _get_connection_type(self, prototype: Prototype) -> ConnectionType:
         match prototype:
-            case Prototype.Pipe:
+            case Prototype.Pipe | Prototype.UndergroundPipe:
                 return ConnectionType.FLUID
-            case Prototype.TransportBelt:
+            case Prototype.TransportBelt | Prototype.ExpressUndergroundBelt | Prototype.FastTransportBelt | Prototype.UndergroundBelt | Prototype.ExpressTransportBelt | Prototype.FastUndergroundBelt:
                 return ConnectionType.TRANSPORT
             case Prototype.SmallElectricPole | Prototype.MediumElectricPole | Prototype.BigElectricPole:
                 return ConnectionType.POWER
             case _:
                 raise ValueError(f"Unsupported connection type: {prototype}")
 
+    def is_set_of_prototype(self, arg) -> bool:
+        return (
+                isinstance(arg, AbstractSet) and
+                all(isinstance(item, Prototype) for item in arg)
+        )
+
+
     def __call__(self, *args, **kwargs):
-        connection_type = None
+        connection_types = set()
         waypoints = []
         if 'connection_type' in kwargs:
             waypoints = args
-            connection_type = kwargs['connection_type']
+            connection_types = kwargs['connection_type']
 
 
         if 'target' in kwargs and 'source' in kwargs:
@@ -77,24 +85,40 @@ class ConnectEntities(Tool):
         if not waypoints:
             for arg in args:
                 if isinstance(arg, Prototype):
-                    connection_type = arg
+                    connection_types = set(arg)
+                elif self.is_set_of_prototype(arg):
+                    connection_types = arg
                 else:
                     waypoints.append(arg)
+
+
         assert len(waypoints) > 1, "Need more than one waypoint"
         connection = waypoints[0]
         for _, target in zip(waypoints[:-1], waypoints[1:]):
-            connection = self._connect_pair_of_waypoints(connection, target, connection_type=connection_type)
+            connection = self._connect_pair_of_waypoints(connection, target, connection_types=connection_types)
         return connection
+
+    def _validate_connection_types(self, connection_types: Set[Prototype]):
+        """
+        Ensure that all connection_types handle the same contents - either FLUID, TRANSPORT or POWER
+        """
+        types = [self._get_connection_type(connection_type) for connection_type in connection_types]
+        return len(set(types)) == 1
 
     def _connect_pair_of_waypoints(self,
                                    source: Union[Position, Entity, EntityGroup],
                                    target: Union[Position, Entity, EntityGroup],
-                                   connection_type: Optional[Prototype] = None) -> Union[Entity, EntityGroup]:
+                                   connection_types: Set[Prototype] = {}) -> Union[Entity, EntityGroup]:
         """Connect two entities or positions."""
 
         # Resolve connection type if not provided
-        if not connection_type:
+        if not connection_types:
             connection_type = self._infer_connection_type(source, target)
+        else:
+            valid = self._validate_connection_types(connection_types)
+            if not valid:
+                raise Exception(f"All connection types must handle the sort of contents: either fluid, power or items. "
+                                f"Your types are incompatible {set(['Prototype.'+type.name for type in connection_types])}")
 
         # Resolve positions into entities if they exist
         if isinstance(source, Position):
@@ -103,7 +127,7 @@ class ConnectEntities(Tool):
             target = self._resolve_position_into_entity(target)
 
         # Get resolver for this connection type
-        resolver = self.resolvers[self._get_connection_type(connection_type)]
+        resolver = self.resolvers[self._get_connection_type(list(connection_types)[0])]
 
         # Resolve source and target positions
         prioritised_list_of_position_pairs = resolver.resolve(source, target)
@@ -114,7 +138,7 @@ class ConnectEntities(Tool):
             try:
                 return self._create_connection(
                     source_pos, target_pos,
-                    connection_type, False,
+                    connection_types, False,
                     source_entity=source if isinstance(source, (Entity, EntityGroup)) else None,
                     target_entity=target if isinstance(target, (Entity, EntityGroup)) else None
                 )[0]
@@ -122,7 +146,7 @@ class ConnectEntities(Tool):
                 last_exception = e
 
         raise Exception(
-            f"Failed to connect {connection_type} from {source} to {target}. "
+            f"Failed to connect {set([type.name for type in connection_types])} from {source} to {target}. "
             f"{self.get_error_message(str(last_exception))}"
         )
 
@@ -189,7 +213,7 @@ class ConnectEntities(Tool):
     def _attempt_path_finding(self,
                               source_pos: Position,
                               target_pos: Position,
-                              connection_prototype: str,
+                              connection_prototypes: List[str],
                               num_available: int,
                               pathing_radius: float = 1,
                               dry_run: bool = False,
@@ -215,7 +239,7 @@ class ConnectEntities(Tool):
                 target_pos.x,
                 target_pos.y,
                 path_handle,
-                connection_prototype,
+                ",".join(connection_prototypes),
                 dry_run,
                 num_available
             )
@@ -229,34 +253,45 @@ class ConnectEntities(Tool):
     def _create_connection(self,
                            source_pos: Position,
                            target_pos: Position,
-                           connection_type: Prototype,
+                           connection_types: Set[Prototype],
                            dry_run: bool,
                            source_entity: Optional[Entity] = None,
                            target_entity: Optional[Entity] = None) -> List[Union[Entity, EntityGroup]]:
         """Create a connection between two positions"""
-        connection_prototype, metaclass = connection_type.value
+
+        connection_type_names = {}
+        names_to_type = {}
+        metaclasses = {}
+
+        for connection_type in connection_types:
+            connection_prototype, metaclass = connection_type.value
+            metaclasses[connection_prototype] = metaclass
+            connection_type_names[connection_type] = connection_prototype
+            names_to_type[connection_prototype] = connection_type
+
         inventory = self.inspect_inventory()
         num_available = inventory.get(connection_prototype, 0)
 
+        connection_type_names_values = list(connection_type_names.values())
         # Determine connection strategy based on type
-        match connection_type:
-            case Prototype.Pipe:
+        match connection_types:
+            case _ if connection_types & {Prototype.Pipe, Prototype.UndergroundPipe}:
                 pathing_radius = 0.5
                 self._extend_collision_boxes(source_pos, target_pos)
                 try:
                     result = self._attempt_path_finding(
                         source_pos, target_pos,
-                        connection_prototype, num_available,
+                        connection_type_names_values, num_available,
                         pathing_radius, dry_run
                     )
                 finally:
                     self._clear_collision_boxes()
 
-            case Prototype.TransportBelt:
+            case _ if connection_types & {Prototype.TransportBelt, Prototype.UndergroundBelt}:
                 pathing_radius = 0.5
                 result = self._attempt_path_finding(
                     source_pos, target_pos,
-                    connection_prototype, num_available,
+                    connection_type_names_values, num_available,
                     pathing_radius, dry_run
                 )
 
@@ -266,7 +301,7 @@ class ConnectEntities(Tool):
                     target_pos_adjusted = self._adjust_belt_position(target_pos, target_entity)
                     result = self._attempt_path_finding(
                         source_pos_adjusted, target_pos_adjusted,
-                        connection_prototype, num_available,
+                        connection_type_names_values, num_available,
                         2, dry_run, False
                     )
                     pass
@@ -277,7 +312,7 @@ class ConnectEntities(Tool):
                 try:
                     result = self._attempt_path_finding(
                         source_pos, target_pos,
-                        connection_prototype, num_available,
+                        connection_type_names_values, num_available,
                         pathing_radius, dry_run, True
                     )
                 finally:
@@ -305,11 +340,14 @@ class ConnectEntities(Tool):
 
             try:
                 self._process_warnings(entity_data)
-                entity = metaclass(prototype=connection_type, **entity_data)
+                entity = metaclasses[entity_data['name']](prototype=names_to_type[entity_data['name']], **entity_data)
 
-                if entity.prototype in (Prototype.TransportBelt, Prototype.Pipe,
-                                        Prototype.SmallElectricPole, Prototype.BigElectricPole,
-                                        Prototype.MediumElectricPole):
+                if entity.prototype in (Prototype.TransportBelt, Prototype.UndergroundBelt,
+                                        Prototype.FastTransportBelt, Prototype.FastUndergroundBelt,
+                                        Prototype.ExpressTransportBelt, Prototype.ExpressUndergroundBelt,
+
+                                        Prototype.Pipe,Prototype.UndergroundPipe,
+                                        Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole):
                     groupable_entities.append(entity)
                 else:
                     path.append(entity)
@@ -342,13 +380,13 @@ class ConnectEntities(Tool):
                                source_pos: Position) -> List[EntityGroup]:
         """Process and create entity groups based on connection type"""
         match connection_type:
-            case Prototype.ExpressTransportBelt | Prototype.FastTransportBelt | Prototype.TransportBelt:
+            case Prototype.ExpressTransportBelt | Prototype.FastTransportBelt | Prototype.TransportBelt | Prototype.UndergroundBelt:
                 return self._process_belt_groups(
                     groupable_entities, source_entity,
                     target_entity, source_pos
                 )
 
-            case Prototype.Pipe:
+            case Prototype.Pipe | Prototype.UndergroundPipe:
                 return self._process_pipe_groups(
                     groupable_entities, source_pos
                 )
@@ -387,7 +425,7 @@ class ConnectEntities(Tool):
 
         # Get final groups and filter to relevant one
         entity_groups = self.get_entities(
-            {Prototype.TransportBelt, Prototype.ExpressTransportBelt, Prototype.FastTransportBelt},
+            {Prototype.TransportBelt, Prototype.ExpressTransportBelt, Prototype.FastTransportBelt, Prototype.UndergroundBelt, Prototype.FastUndergroundBelt, Prototype.ExpressUndergroundBelt},
             source_pos
         )
 
@@ -498,7 +536,7 @@ class ConnectEntities(Tool):
                              groupable_entities: List[Entity],
                              source_pos: Position) -> List[PipeGroup]:
         """Process pipe groups"""
-        entity_groups = self.get_entities({Prototype.Pipe}, source_pos)
+        entity_groups = self.get_entities({Prototype.Pipe, Prototype.UndergroundPipe}, source_pos)
 
         for group in entity_groups:
             group.pipes = _deduplicate_entities(group.pipes)

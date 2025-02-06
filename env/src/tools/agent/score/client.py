@@ -7,6 +7,7 @@ class Reward(Tool):
         super().__init__(connection, game_state)
         self.name = "score"
         self.game_state = game_state
+        self.load()
 
     def __call__(self, *args, **kwargs):
         response, execution_time = self.execute(*args, **kwargs)

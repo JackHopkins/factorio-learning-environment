@@ -18,6 +18,7 @@ def game(instance):
         'offshore-pump': 4,
         'pipe': 100,
         'small-electric-pole': 50,
+        'underground-belt': 2,
         'transport-belt': 200,
         'coal': 100,
         'wooden-chest': 5,
@@ -495,25 +496,6 @@ def test_connect_belts_with_end_rotation(game):
 
     assert len(main_connection2.belts) > 20
 
-def test_connect_belt_small(game):
-    # Use available transport belts to route iron plates from furnaces to a central location:
-    belt_start_position = Position(x=0.0, y=1.0)  # Position near the first furnace
-    belt_end_position = Position(x=4.0, y=3.0)  # Position leading to an assembly area
-
-    # Lay out the transport belt along the planned path:
-    try:
-        game.connect_entities(belt_start_position, belt_end_position, Prototype.TransportBelt)
-        print(f"Transport Belts laid from {belt_start_position} to {belt_end_position}.")
-    except Exception as e:
-        print(f"Failed to lay Transport Belts: {e}")
-
-    ### Final Assessment:
-
-    # Validate current setup as you prepare for the next logical extension, moving towards enhancement opportunities once research and resource bottlenecks ease.
-
-    # Check the current status:
-    entities_current = game.get_entities()
-    pass
 
 def test_merge_belt_into_another_belt(game):
     belt_start_position = Position(x=0.0, y=0.0)

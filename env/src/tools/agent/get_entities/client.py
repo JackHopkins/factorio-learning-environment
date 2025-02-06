@@ -87,7 +87,7 @@ class GetEntities(Tool):
                     print(f"Could not create {entity_data['name']} object: {e1}")
 
             # get all pipes into a list
-            pipes = [entity for entity in entities_list if hasattr(entity, 'prototype') and entity.prototype == Prototype.Pipe]
+            pipes = [entity for entity in entities_list if hasattr(entity, 'prototype') and entity.prototype in (Prototype.Pipe, Prototype.UndergroundPipe)]
             group = agglomerate_groupable_entities(pipes)
             [entities_list.remove(pipe) for pipe in pipes]
             entities_list.extend(group)
@@ -97,7 +97,8 @@ class GetEntities(Tool):
             [entities_list.remove(pole) for pole in poles]
             entities_list.extend(group)
 
-            belts = [entity for entity in entities_list if hasattr(entity, 'prototype') and entity.prototype in (Prototype.TransportBelt, Prototype.FastTransportBelt, Prototype.ExpressTransportBelt)]
+            belt_types = (Prototype.TransportBelt, Prototype.FastTransportBelt, Prototype.ExpressTransportBelt, Prototype.UndergroundBelt, Prototype.FastUndergroundBelt, Prototype.ExpressUndergroundBelt)
+            belts = [entity for entity in entities_list if hasattr(entity, 'prototype') and entity.prototype in belt_types]
             group = agglomerate_groupable_entities(belts)
             [entities_list.remove(belt) for belt in belts]
             entities_list.extend(group)

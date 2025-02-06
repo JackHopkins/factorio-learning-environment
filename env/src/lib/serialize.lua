@@ -1211,7 +1211,7 @@ global.utils.serialize_entity = function(entity)
 
     -- Add input and output locations if the entity is a pipe-to-ground
     if entity.type == "pipe-to-ground" then
-         serialized.connections = {}
+        serialized.connections = {}
         local fluid_name = nil
         for _, connection in pairs(entity.fluidbox.get_pipe_connections(1)) do
             table.insert(serialized.connections, connection.position)
@@ -1261,75 +1261,75 @@ global.utils.serialize_entity = function(entity)
         if entity.direction == defines.direction.north then
             -- Two crude oil inputs at the bottom
             table.insert(serialized.input_connection_points,
-				{x = x + 1, y = y + 3
-            })
+                    {x = x + 1, y = y + 3
+                    })
             table.insert(serialized.input_connection_points,
-                {x = x - 1, y = y + 3
-            })
+                    {x = x - 1, y = y + 3
+                    })
             -- Three outputs at the top (petroleum, light oil, heavy oil)
             table.insert(serialized.output_connection_points,
-				{x = x - 2, y = y - 3
-            })
+                    {x = x - 2, y = y - 3
+                    })
             table.insert(serialized.output_connection_points,
-                {x = x, y = y - 3
-            })
+                    {x = x, y = y - 3
+                    })
             table.insert(serialized.output_connection_points,
-                {x = x + 2, y = y - 3
-            })
+                    {x = x + 2, y = y - 3
+                    })
         elseif entity.direction == defines.direction.south then
             -- Two crude oil inputs at the top
             table.insert(serialized.input_connection_points,
-				{x = x + 1, y = y - 3
-            })
+                    {x = x + 1, y = y - 3
+                    })
             table.insert(serialized.input_connection_points,
-                {x = x - 1, y = y - 3
-            })
+                    {x = x - 1, y = y - 3
+                    })
             -- Three outputs at the bottom
             table.insert(serialized.output_connection_points,
-                {x = x - 2, y = y + 3
-            })
+                    {x = x - 2, y = y + 3
+                    })
             table.insert(serialized.output_connection_points,
-                {x = x, y = y + 3
-            })
+                    {x = x, y = y + 3
+                    })
             table.insert(serialized.output_connection_points,
-                {x = x + 2, y = y + 3
-            })
+                    {x = x + 2, y = y + 3
+                    })
         elseif entity.direction == defines.direction.east then
             -- Two crude oil inputs on the left
             table.insert(serialized.input_connection_points,
-                {x = x - 3, y = y + 1
-            })
+                    {x = x - 3, y = y + 1
+                    })
             table.insert(serialized.input_connection_points,
-                {x = x - 3, y = y - 1
-            })
+                    {x = x - 3, y = y - 1
+                    })
             -- Three outputs on the right
             table.insert(serialized.output_connection_points,
-                {x = x + 3, y = y - 2
-            })
+                    {x = x + 3, y = y - 2
+                    })
             table.insert(serialized.output_connection_points,
-                {x = x + 3, y = y
-            })
+                    {x = x + 3, y = y
+                    })
             table.insert(serialized.output_connection_points,
-				{x = x + 3, y = y + 2
-            })
+                    {x = x + 3, y = y + 2
+                    })
         elseif entity.direction == defines.direction.west then
             -- Two crude oil inputs on the right
             table.insert(serialized.input_connection_points,
-                {x = x + 3, y = y + 1
-            })
+                    {x = x + 3, y = y + 1
+                    })
             table.insert(serialized.input_connection_points,
-                {x = x + 3, y = y - 1
-            })
+                    {x = x + 3, y = y - 1
+                    })
             -- Three outputs on the left
             table.insert(serialized.output_connection_points,
-                {x = x - 3, y = y - 2
-            })
+                    {x = x - 3, y = y - 2
+                    })
             table.insert(serialized.output_connection_points,
-				{x = x - 3, y = y
-            })
+                    {x = x - 3, y = y
+                    })
             table.insert(serialized.output_connection_points,
-                {x = x - 3, y = y + 2
-            })
+                    {x = x - 3, y = y + 2
+                    })
         end
 
         -- Filter out any invalid connection points
@@ -1358,63 +1358,63 @@ global.utils.serialize_entity = function(entity)
         if direction == defines.direction.north then
             -- Input pipes at the bottom
             table.insert(serialized.input_connection_points,
-                {x = x - 1, y = y + 1.5
-            })
+                    {x = x - 1, y = y + 1.5
+                    })
             table.insert(serialized.input_connection_points,
-                {x = x + 1, y = y + 1.5
-            })
+                    {x = x + 1, y = y + 1.5
+                    })
             -- Output pipes at the top
             table.insert(serialized.output_connection_points,
-                {x = x - 1, y = y - 1.5
-            })
+                    {x = x - 1, y = y - 1.5
+                    })
             table.insert(serialized.output_connection_points,
-                {x = x + 1, y = y - 1.5
-            })
+                    {x = x + 1, y = y - 1.5
+                    })
         elseif direction == defines.direction.south then
             -- Input pipes at the top
             table.insert(serialized.input_connection_points,
-                {x = x - 1, y = y - 1.5
-            })
+                    {x = x - 1, y = y - 1.5
+                    })
             table.insert(serialized.input_connection_points,
-                {x = x + 1, y = y - 1.5
-            })
+                    {x = x + 1, y = y - 1.5
+                    })
             -- Output pipes at the bottom
             table.insert(serialized.output_connection_points,
-                {x = x - 1, y = y + 1.5
-            })
+                    {x = x - 1, y = y + 1.5
+                    })
             table.insert(serialized.output_connection_points,
-                {x = x + 1, y = y + 1.5
-            })
+                    {x = x + 1, y = y + 1.5
+                    })
         elseif direction == defines.direction.east then
             -- Input pipes on the left
             table.insert(serialized.input_connection_points,
-                {x = x - 1.5, y = y - 1
-            })
+                    {x = x - 1.5, y = y - 1
+                    })
             table.insert(serialized.input_connection_points,
-				{x = x - 1.5, y = y + 1,
-            })
+                    {x = x - 1.5, y = y + 1,
+                    })
             -- Output pipes on the right
             table.insert(serialized.output_connection_points,
-				{x = x + 1.5, y = y - 1,
-            })
+                    {x = x + 1.5, y = y - 1,
+                    })
             table.insert(serialized.output_connection_points,
-				{x = x + 1.5, y = y + 1
-            })
+                    {x = x + 1.5, y = y + 1
+                    })
         elseif direction == defines.direction.west then
             -- Input pipes on the right
             table.insert(serialized.input_connection_points,
-                {x = x + 1.5, y = y - 1,
-            })
+                    {x = x + 1.5, y = y - 1,
+                    })
             table.insert(serialized.input_connection_points,
-                {x = x + 1.5, y = y + 1
-            })
+                    {x = x + 1.5, y = y + 1
+                    })
             -- Output pipes on the left
             table.insert(serialized.output_connection_points,
-                {x = x - 1.5, y = y - 1
-            })
+                    {x = x - 1.5, y = y - 1
+                    })
             table.insert(serialized.output_connection_points,
-                {x = x - 1.5, y = y + 1
-            })
+                    {x = x - 1.5, y = y + 1
+                    })
         end
 
         -- Filter out any invalid connection points
@@ -1437,6 +1437,39 @@ global.utils.serialize_entity = function(entity)
 
     end
 
+    if entity.type == "assembling-machine" then
+        local x, y = entity.position.x, entity.position.y
+        serialized.connection_points = {}
+
+        -- Assembling machine connection points are similar to chemical plants
+        if direction == defines.direction.north then
+            table.insert(serialized.connection_points,
+                    {x = x, y = y - 2
+                    })
+        elseif direction == defines.direction.south then
+            table.insert(serialized.connection_points,
+                    {x = x, y = y + 2
+                    })
+        elseif direction == defines.direction.east then
+            table.insert(serialized.connection_points,
+                    {x = x + 2, y
+                    })
+        elseif direction == defines.direction.west then
+            table.insert(serialized.connection_points,
+                    {x = x - 2, y = y
+                    })
+        end
+
+        -- Filter out any invalid connection points
+        local filtered_connection_points = {}
+        for _, point in ipairs(serialized.connection_points) do
+            if global.utils.is_valid_connection_point(game.surfaces[1], point) then
+                table.insert(filtered_connection_points, point)
+            end
+        end
+
+        serialized.connection_points = filtered_connection_points
+    end
     -- Add tile dimensions of the entity
     serialized.tile_dimensions = {
         tile_width = prototype.tile_width,
@@ -1561,8 +1594,13 @@ global.utils.serialize_entity = function(entity)
         end
     end
 
+    if entity.type == "solar-panel" then
+        serialized.power_production = entity.power_production
+    end
+
     if entity.type == "generator" then
         serialized.connection_points = get_pipe_positions(entity)
+        serialized.power_production = entity.power_production
     end
 
     if entity.name == "pumpjack" then

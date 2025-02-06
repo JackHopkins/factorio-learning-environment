@@ -5,7 +5,7 @@ import pytest
 
 from entities import Entity, Position, PipeGroup, EntityStatus, ResourcePatch, BuildingBox, Generator
 from instance import Direction
-from game_types import Prototype, Resource, PrototypeName
+from game_types import Prototype, Resource
 
 
 @pytest.fixture()
@@ -22,6 +22,8 @@ def game(instance):
         'coal': 100,
         'wooden-chest': 1,
         'assembling-machine-1': 10,
+        'assembling-machine-2': 10,
+        'assembling-machine-3': 10,
         'boiler': 3,
         'steam-engine': 3
     }
@@ -307,6 +309,18 @@ def test_connect_pipes_by_positions(game):
     position_2 = Position(x=2, y=4)
     pipes = game.connect_entities(position_1, position_2, Prototype.Pipe)
     assert len(pipes.pipes) == 6
+
+def test_connect_pipes_to_advanced_assembler(game):
+    """
+    Ensure that advanced assemblers can be connected to.
+    """
+    position_1 = Position(x=10, y=0)
+
+    assembler_2 = game.place_entity(Prototype.AssemblingMachine2, Direction.UP, Position(x=0, y=0))
+    pipes = game.connect_entities(position_1, assembler_2, Prototype.Pipe)
+
+
+    assert len(pipes.pipes) == 13
 
 def test_fail_connect_pipes_with_mixed_connection_types(game):
     """

@@ -4,23 +4,6 @@ from difflib import get_close_matches
 from entities import *
 
 
-class PrototypeName(enum.Enum):
-    AssemblingMachine = "assembling-machine-1"
-    BurnerInserter = "burner-inserter"
-    BurnerMiningDrill = "burner-mining-drill"
-    ElectricMiningDrill = "electric-mining-drill"
-    StoneFurnace = "stone-furnace"
-    TransportBelt = "transport-belt"
-    OffshorePump = "offshore-pump"
-    Boiler = "boiler"
-    SteamEngine = "steam-engine"
-    Pipe = "pipe"
-    SmallElectricPole = "small-electric-pole"
-    IronChest = "iron-chest"
-    ElectronicCircuit = "electronic-circuit"
-    Lab = "lab"
-    GunTurret = "gun-turret"
-
 class ResourceName(enum.Enum):
     Coal = "coal"
     IronOre = "iron-ore"
@@ -49,68 +32,108 @@ class PrototypeMetaclass(enum.EnumMeta):
             raise AttributeError(f"'{cls.__name__}' has no attribute '{name}'{suggestion_msg}")
 
 class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
+
     AssemblingMachine1 = "assembling-machine-1", AssemblingMachine
-    AssemblingMachine2 = "assembling-machine-2", AssemblingMachine
-    AssemblingMachine3 = "assembling-machine-3", AssemblingMachine
+    AssemblingMachine2 = "assembling-machine-2", AdvancedAssemblingMachine
+    AssemblingMachine3 = "assembling-machine-3", AdvancedAssemblingMachine
+
     BurnerInserter = "burner-inserter", BurnerInserter
+    Inserter = "inserter", Inserter
     FastInserter = "fast-inserter", Inserter
     ExpressInserter = "express-inserter", Inserter
-    Inserter = "inserter", Inserter
+
+    LongHandedInserter = "long-handed-inserter", Inserter #TODO
+    StackInserter = "stack-inserter", Inserter #TODO
+    StackFilterInserter = "stack-filter-inserter", Inserter #TODO
+    FilterInserter = "filter-inserter", Inserter #TODO
+
     BurnerMiningDrill = "burner-mining-drill", BurnerMiningDrill
     ElectricMiningDrill = "electric-mining-drill", ElectricMiningDrill
+
     StoneFurnace = "stone-furnace", Furnace
-    FastTransportBelt = "fast-transport-belt", TransportBelt
-    ExpressTransportBelt = "express-transport-belt", TransportBelt
+    SteelFurnace = "steel-furnace", Furnace
+    ElectricFurnace = "electric-furnace", ElectricFurnace
+
     Splitter = "splitter", Splitter
     FastSplitter = "fast-splitter", Splitter
     ExpressSplitter = "express-splitter", Splitter
+
     TransportBelt = "transport-belt", TransportBelt
+    FastTransportBelt = "fast-transport-belt", TransportBelt
+    ExpressTransportBelt = "express-transport-belt", TransportBelt
     ExpressUndergroundBelt = "express-underground-belt", UndergroundBelt
     FastUndergroundBelt = "fast-underground-belt", UndergroundBelt
     UndergroundBelt = "underground-belt", UndergroundBelt
 
     OffshorePump = "offshore-pump", OffshorePump
     PumpJack = "pumpjack", PumpJack
+    Pump = "pump", Pump
+    Boiler = "boiler", Boiler
     OilRefinery = "oil-refinery", OilRefinery
     ChemicalPlant = "chemical-plant", ChemicalPlant
 
-    Boiler = "boiler", Boiler
+    SolarPanel = "solar-panel", SolarPanel
     SteamEngine = "steam-engine", Generator
 
     UndergroundPipe = "pipe-to-ground", Pipe
     Pipe = "pipe", Pipe
 
+    SteelChest = "steel-chest", Chest
     IronChest = "iron-chest", Chest
     WoodenChest = "wooden-chest", Chest
-    IronGearWheel = "iron-gear-wheel", Entity
-    Coal = "coal", None
-    Wood = "wood", None
-    IronPlate = "iron-plate", None # Crafting requires smelting 1 iron ore, smelts for 0.5 seconds per ore
-    SteelPlate = "steel-plate", None # Crafting requires smelting 5 iron plates, smelts for 4 seconds per ore
-    CopperPlate = "copper-plate", None # Crafting requires smelting 1 copper ore, smelts for 0.5 seconds per ore
+    StorageTank = "storage-tank", Chest
+
     SmallElectricPole = "small-electric-pole", ElectricityPole
     MediumElectricPole = "medium-electric-pole", ElectricityPole
     BigElectricPole = "big-electric-pole", ElectricityPole
+
+    Coal = "coal", None
+    Wood = "wood", None
+    Sulfur = "sulfur", None
     IronOre = "iron-ore", None
     CopperOre = "copper-ore", None
     Stone = "stone", None
+
+    IronPlate = "iron-plate", None  # Crafting requires smelting 1 iron ore, smelts for 0.5 seconds per ore
+    IronGearWheel = "iron-gear-wheel", None
+    IronStick = "iron-stick", None
+    SteelPlate = "steel-plate", None  # Crafting requires smelting 5 iron plates, smelts for 4 seconds per ore
+    CopperPlate = "copper-plate", None  # Crafting requires smelting 1 copper ore, smelts for 0.5 seconds per ore
+    StoneBrick = "stone-brick", None
     CopperCable = "copper-cable", None
+    PlasticBar = "plastic-bar", None
+    EmptyBarrel = "empty-barrel", None
+    Battery = "battery", None
+    SulfuricAcid = "sulfuric-acid", None
+
+    Lubricant = "lubricant", None
+    AdvancedOilProcessing = "advanced-oil-processing", None # These are recipes, not prototypes.
+    CoalLiquifaction = "coal-liquifaction", None # These are recipes, not prototypes.
+    SolidFuel = "solid-fuel", None # These are recipes, not prototypes.
+
     ElectronicCircuit = "electronic-circuit", None
     AdvancedCircuit = "advanced-circuit", None
+    ProcessingUnit = "processing-unit", None
+    EngineUnit = "engine-unit", None
+
     Lab = "lab", Lab
-    AutomationSciencePack = "automation-science-pack", None
     Accumulator = "accumulator", Accumulator
     GunTurret = "gun-turret", GunTurret
+
+    PiercingRoundsMagazine = "piercing-rounds-magazine", Ammo
     FirearmMagazine = "firearm-magazine", Ammo
-    StoneBrick = "stone-brick", None 
-    Radar = "radar", "Entity"
+    Grenade = "grenade", None
+
+    Radar = "radar", Entity
     StoneWall = "stone-wall", Entity
+    Gate = "gate", Entity
     SmallLamp = "small-lamp", Entity
-    SciencePack1 = "science-pack-1", None
-    SciencePack2 = "science-pack-2", None
-    SciencePack3 = "science-pack-3", None
+
+    AutomationSciencePack = "automation-science-pack", None
     MilitarySciencePack = "military-science-pack", None
-    EngineUnit = "engine-unit", None
+    ProductionSciencePack = "production-science-pack", None
+    UtilitySciencePack = "utility-science-pack", None
+    ChemicalSciencePack = "chemical-science-pack", None
 
     BeltGroup = "belt-group", BeltGroup
     PipeGroup = "pipe-group", PipeGroup

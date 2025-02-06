@@ -28,6 +28,7 @@ def test_place(game):
     game.place_entity(Prototype.Boiler, position=(0, 0))
     assert boilers_in_inventory - 1 == game.inspect_inventory()[Prototype.Boiler]
 
+
 def test_drill_with_expected_resources(game):
     """
     Place a boiler at (0, 0)

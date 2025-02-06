@@ -126,7 +126,7 @@ def consolidate_underground_belts(belt_groups):
                                 is_source=entrance.is_source,
                                 is_terminus=exit.is_terminus,
                                 input_position=entrance.input_position,
-                                output_position=exit.output_position,
+                                output_position=exit.position,
                                 connected_to=exit.id,
                                 energy=entrance.energy+exit.energy,
                                 dimensions=entrance.dimensions,

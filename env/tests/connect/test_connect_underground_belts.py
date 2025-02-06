@@ -27,19 +27,21 @@ def game(instance):
 
 
 def test_connect_belt_underground(game):
-    game.instance.initial_inventory = {'underground-belt': 2, 'transport-belt': 200}
+    game.instance.initial_inventory = {'express-underground-belt': 4, 'express-transport-belt': 200}
     game.instance.reset()
 
-    belt_start_position = Position(x=0.0, y=1.0)
-    belt_end_position = Position(x=0.0, y=10.0)
+    position_1 = Position(x=0.0, y=1.0)
+    position_2 = Position(x=0.0, y=10.0)
+    position_3 = Position(x=10, y=10)
+
     try:
-        belts = game.connect_entities(belt_start_position, belt_end_position, {Prototype.TransportBelt, Prototype.UndergroundBelt})
+        belts = game.connect_entities(position_1, position_2, position_3, {Prototype.ExpressTransportBelt, Prototype.ExpressUndergroundBelt})
         counter = 0
         for belt in belts.belts:
             if isinstance(belt, UndergroundBelt):
                 counter += 1
 
         assert counter == 2
-        print(f"Transport Belts laid from {belt_start_position} to {belt_end_position}.")
+        print(f"Transport Belts laid from {position_1} to {position_3}.")
     except Exception as e:
         print(f"Failed to lay Transport Belts: {e}")

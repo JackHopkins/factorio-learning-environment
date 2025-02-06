@@ -257,7 +257,7 @@ local function place_at_position(player, connection_type, current_position, dir,
     end
 
     if is_electric_pole then
-        placement_position = game.surfaces[1].find_non_colliding_position(connection_type, current_position, 3, 0.1)
+        placement_position = game.surfaces[1].find_non_colliding_position(connection_type, current_position, 2, 0.1)
         if not placement_position then
             error("Cannot find suitable position to place " .. connection_type)
         end

@@ -76,7 +76,10 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
 
     Boiler = "boiler", Boiler
     SteamEngine = "steam-engine", Generator
+
+    UndergroundPipe = "underground-pipe", Pipe
     Pipe = "pipe", Pipe
+
     IronChest = "iron-chest", Chest
     WoodenChest = "wooden-chest", Chest
     IronGearWheel = "iron-gear-wheel", Entity

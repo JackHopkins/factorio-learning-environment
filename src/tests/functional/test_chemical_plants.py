@@ -70,7 +70,7 @@ def test_build_chemical_plant(game):
     # Start at the origin
     game.move_to(game.nearest(Resource.CrudeOil))
     pumpjack = game.place_entity(Prototype.PumpJack,
-                                 direction=Direction.RIGHT,
+                                 direction=Direction.DOWN,
                                  position=game.nearest(Resource.CrudeOil))
 
     # Start at the origin

@@ -307,6 +307,15 @@ def test_connect_pipes_by_positions(game):
     pipes = game.connect_entities(position_1, position_2, Prototype.Pipe)
     assert len(pipes.pipes) == 6
 
+def test_connect_pipes_with_underground_pipes(game):
+    """
+    This should ensure that pipe groups are always returned - instead of pipes themselves.
+    """
+    position_1 = Position(x=0, y=1)
+    position_2 = Position(x=2, y=4)
+    pipes = game.connect_entities(position_1, position_2, { Prototype.Pipe, Prototype.UndergroundPipe })
+    assert len(pipes.pipes) == 6
+
 
 def test_avoiding_pipe_networks(game):
     """Test connecting pipes that cross paths"""

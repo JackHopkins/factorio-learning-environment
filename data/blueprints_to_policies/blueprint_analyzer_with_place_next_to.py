@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from typing import List, Dict, Optional, Set, Tuple
 from typing import Union
 
-from factorio_entities import EntityGroup
-from factorio_instance import FactorioInstance, Direction
-from factorio_types import prototype_by_name, Resource
+from entities import EntityGroup
+from instance import FactorioInstance, Direction
+from game_types import prototype_by_name, Resource
 
 
 @dataclass

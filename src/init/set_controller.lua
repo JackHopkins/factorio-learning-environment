@@ -1,1 +1,0 @@
-game.players[arg1].set_controller{type=defines.controllers.arg2}

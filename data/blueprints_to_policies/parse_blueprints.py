@@ -6,7 +6,7 @@ from collections import Counter
 import matplotlib.pyplot as plt
 from dataclasses import dataclass, field
 
-from factorio_types import Prototype
+from game_types import Prototype
 
 
 @dataclass(frozen=True)  # Make the class immutable and hashable

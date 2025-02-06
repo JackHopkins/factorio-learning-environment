@@ -58,7 +58,7 @@ We provide a dataset of 50,000 trajectories of gameplay. These trajectories were
 
 The dataset can be downloaded [here]().
 
-To generate your own dataset, you should perform an MCTS run by following the instructions [here](src/datasetgen/mcts/readme.md)
+To generate your own dataset, you should perform an MCTS run by following the instructions [here](environment/src/datasetgen/mcts/readme.md)
 
 
 ## Evaluate Agent

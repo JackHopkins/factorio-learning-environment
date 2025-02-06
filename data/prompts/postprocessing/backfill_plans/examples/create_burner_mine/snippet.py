@@ -1,4 +1,4 @@
-from factorio_instance import *
+from instance import *
 
 """
 Step 1: Place the burner mining drill. We need to carry out the following substeps:

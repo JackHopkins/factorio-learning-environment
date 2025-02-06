@@ -40,7 +40,9 @@ def test_connect_belt_underground(game):
         for belt in belts.belts:
             if isinstance(belt, UndergroundBelt):
                 counter += 1
+        game.pickup_entity(belts)
 
+        assert not game.get_entities()
         assert counter == 2
         print(f"Transport Belts laid from {position_1} to {position_3}.")
     except Exception as e:

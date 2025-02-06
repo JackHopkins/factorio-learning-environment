@@ -96,6 +96,7 @@ class ConnectEntities(Tool):
         connection = waypoints[0]
         for _, target in zip(waypoints[:-1], waypoints[1:]):
             connection = self._connect_pair_of_waypoints(connection, target, connection_types=connection_types)
+            #sleep(0.01) # Sleep for 250ms to ensure that the game updates
         return connection
 
     def _validate_connection_types(self, connection_types: Set[Prototype]):
@@ -136,14 +137,17 @@ class ConnectEntities(Tool):
         for source_pos, target_pos in prioritised_list_of_position_pairs:
             # Handle the actual connection
             try:
-                return self._create_connection(
+                connection = self._create_connection(
                     source_pos, target_pos,
                     connection_types, False,
                     source_entity=source if isinstance(source, (Entity, EntityGroup)) else None,
                     target_entity=target if isinstance(target, (Entity, EntityGroup)) else None
-                )[0]
+                )
+                return connection[0]
             except Exception as e:
                 last_exception = e
+                trace_back = e.__traceback__
+                pass
 
         raise Exception(
             f"Failed to connect {set([type.name for type in connection_types])} from {source} to {target}. "
@@ -287,7 +291,9 @@ class ConnectEntities(Tool):
                 finally:
                     self._clear_collision_boxes()
 
-            case _ if connection_types & {Prototype.TransportBelt, Prototype.UndergroundBelt}:
+            case _ if (connection_types & {Prototype.TransportBelt, Prototype.UndergroundBelt}) \
+                      or (connection_types & {Prototype.FastTransportBelt, Prototype.FastUndergroundBelt}) \
+                      or (connection_types & {Prototype.ExpressTransportBelt, Prototype.ExpressUndergroundBelt}):
                 pathing_radius = 0.5
                 result = self._attempt_path_finding(
                     source_pos, target_pos,
@@ -380,7 +386,7 @@ class ConnectEntities(Tool):
                                source_pos: Position) -> List[EntityGroup]:
         """Process and create entity groups based on connection type"""
         match connection_type:
-            case Prototype.ExpressTransportBelt | Prototype.FastTransportBelt | Prototype.TransportBelt | Prototype.UndergroundBelt:
+            case Prototype.ExpressTransportBelt | Prototype.FastTransportBelt | Prototype.TransportBelt | Prototype.UndergroundBelt | Prototype.FastUndergroundBelt | Prototype.ExpressUndergroundBelt:
                 return self._process_belt_groups(
                     groupable_entities, source_entity,
                     target_entity, source_pos

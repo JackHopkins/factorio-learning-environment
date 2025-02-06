@@ -607,6 +607,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
 
 
+
         local current_index = 1
         for _, section in ipairs(straight_sections) do
 
@@ -840,11 +841,11 @@ global.utils.normalise_path = function(original_path, start_position, end_positi
         error("Not a valid path to normalise")
     end
     if math.ceil(start_position.x) == start_position.x then
-        --start_position.x = start_position.x + 0.5
+        start_position.x = start_position.x + 0.5
         --start_position.y = start_position.y + 0.5
     end
     if math.ceil(start_position.y) == start_position.y then
-       -- start_position.y = start_position.y + 0.5
+        start_position.y = start_position.y + 0.5
     end
 
     if math.ceil(end_position.x) == end_position.x or math.ceil(end_position.y) == end_position.y then

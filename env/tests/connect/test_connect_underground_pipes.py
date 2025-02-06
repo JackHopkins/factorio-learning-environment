@@ -30,7 +30,7 @@ def test_connect_pipes_underground_limited_inventory(game):
     game.instance.initial_inventory = {'pipe-to-ground': 2, 'pipe': 200}
     game.instance.reset()
 
-    belt_start_position = Position(x=0.0, y=-5.0)
+    belt_start_position = Position(x=0, y=-5.0)
     belt_end_position = Position(x=0.0, y=15.0)
     try:
         belts = game.connect_entities(belt_start_position, belt_end_position, {Prototype.UndergroundPipe, Prototype.Pipe})
@@ -51,6 +51,8 @@ def test_connect_pipes_with_underground_pipes(game):
     position_1 = Position(x=0.5, y=0.5)
     position_2 = Position(x=0, y=20)
     pipes = game.connect_entities(position_1, position_2, { Prototype.Pipe, Prototype.UndergroundPipe })
+
+    game.pickup_entity(pipes)
     assert len(pipes.pipes) == 2
 
 

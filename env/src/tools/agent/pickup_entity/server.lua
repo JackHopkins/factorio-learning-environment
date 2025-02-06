@@ -3,6 +3,7 @@ global.actions.pickup_entity = function(player_index, x, y, entity)
     local position = {x=x, y=y}
     local surface = player.surface
     local success = false
+    rendering.draw_circle{width = 0.5, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.25, filled = false, target = position, time_to_live = 12000}
 
     -- Debug print
     game.print("Starting pickup attempt for " .. entity .. " at (" .. x .. ", " .. y .. ")")
@@ -57,7 +58,7 @@ global.actions.pickup_entity = function(player_index, x, y, entity)
     local player_entities = surface.find_entities_filtered{
         name=entity,
         position=position,
-        radius=0.702,
+        radius=0.707,
         force="player"
     }
     game.print("Found " .. #player_entities .. " placed entities") -- Debug
@@ -65,7 +66,7 @@ global.actions.pickup_entity = function(player_index, x, y, entity)
     local ground_items = surface.find_entities_filtered{
         name="item-on-ground",
         position=position,
-        radius=0.702
+        radius=0.707
     }
     game.print("Found " .. #ground_items .. " ground items") -- Debug
 

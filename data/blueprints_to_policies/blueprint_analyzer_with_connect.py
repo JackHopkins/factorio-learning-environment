@@ -1,14 +1,13 @@
 import json
 import os
 from collections import defaultdict
-from dataclasses import dataclass
-from typing import List, Dict, Optional, Union, Tuple
+from typing import List, Dict
 from typing import Union
 
-from factorio_entities import EntityGroup
-from factorio_instance import FactorioInstance
-from factorio_types import prototype_by_name
-from models.blueprint_entity import BlueprintEntity
+from entities import EntityGroup
+from instance import FactorioInstance
+from game_types import prototype_by_name
+from data.blueprints_to_policies.models.blueprint_entity import BlueprintEntity
 
 
 class BlueprintAnalyzerWithConnect:

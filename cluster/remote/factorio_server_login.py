@@ -9,7 +9,7 @@ import sys
 from dotenv import load_dotenv
 
 from cluster.remote.cluster_ips import get_public_ips
-from factorio_instance import FactorioInstance
+from instance import FactorioInstance
 
 """
 This script is used to connect the client to each Factorio server running on an ECS cluster,

@@ -16,10 +16,10 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from cluster.remote.cluster_ips import get_public_ips
 from data.blueprints_to_policies.processing_state import ProcessingState
-from factorio_entities import Position
-from factorio_instance import FactorioInstance
+from entities import Position
+from instance import FactorioInstance
 from blueprint_analyzer import BlueprintAnalyzer
-from factorio_types import Resource
+from game_types import Resource
 
 load_dotenv()
 

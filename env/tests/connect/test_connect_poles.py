@@ -236,3 +236,47 @@ def test_pole_groups(game):
     outp = game.connect_entities(steam_engine.position, Position(x=4, y=-20), Prototype.SmallElectricPole)
     entities = game.get_entities()
     assert len(entities) == 6
+
+def test_connect_electricity_2(game):
+    # Find water for power generation
+    print("Starting to build power infrastructure")
+    water_pos = game.nearest(Resource.Water)
+    game.move_to(water_pos)
+
+    # Place offshore pump
+    pump = game.place_entity(Prototype.OffshorePump, position=water_pos)
+    print(f"Placed offshore pump at {pump.position}")
+
+    # Place boiler with spacing for pipes
+    boiler = game.place_entity_next_to(Prototype.Boiler, reference_position=pump.position, direction=Direction.RIGHT,
+                                  spacing=2)
+    print(f"Placed boiler at {boiler.position}")
+
+    # Add coal to boiler
+    boiler = game.insert_item(Prototype.Coal, boiler, 50)
+    print(f"Added coal to boiler")
+
+    # Place steam engine with spacing for pipes
+    steam_engine = game.place_entity_next_to(Prototype.SteamEngine, reference_position=boiler.position,
+                                        direction=Direction.RIGHT, spacing=2)
+    print(f"Placed steam engine at {steam_engine.position}")
+
+    # Connect pump to boiler with pipes
+    water_connection = game.connect_entities(pump, boiler, Prototype.Pipe)
+    print(f"Connected water from pump to boiler")
+
+    # Connect boiler to steam engine with pipes
+    steam_connection = game.connect_entities(boiler, steam_engine, Prototype.Pipe)
+    print(f"Connected steam from boiler to engine")
+
+    # Sleep to let system start up
+    game.sleep(5)
+
+    # Verify power generation
+    steam_engine = game.get_entity(Prototype.SteamEngine, steam_engine.position)
+    assert steam_engine.energy > 0, "Steam engine is not generating power"
+    print("Power infrastructure successfully built and generating electricity")
+    pole_group = game.connect_entities(steam_engine, Position(x=0, y=0), Prototype.SmallElectricPole)
+    pole_group = game.connect_entities(pole_group, Position(x=10, y=-10), Prototype.SmallElectricPole)
+
+    pass

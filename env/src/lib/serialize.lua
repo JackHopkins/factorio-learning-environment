@@ -1600,7 +1600,7 @@ global.utils.serialize_entity = function(entity)
 
     if entity.type == "generator" then
         serialized.connection_points = get_pipe_positions(entity)
-        serialized.power_production = entity.power_production
+        --serialized.power_production = entity.power_production
     end
 
     if entity.name == "pumpjack" then

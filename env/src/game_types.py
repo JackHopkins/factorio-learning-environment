@@ -13,6 +13,16 @@ class ResourceName(enum.Enum):
     CrudeOil = "crude-oil"
     UraniumOre = "uranium-ore"
 
+class RecipeName(enum.Enum):
+    NuclearFuelReprocessing = "nuclear-fuel-reprocessing"
+    UraniumProcessing = "uranium-processing"
+    SulfuricAcid = "sulfuric-acid"
+    BasicOilProcessing = "basic-oil-processing"
+    AdvancedOilProcessing = "advanced-oil-processing"
+    CoalLiquefaction = "coal-liquefaction"
+    HeavyOilCracking = "heavy-oil-cracking"
+    LightOilCracking = "light-oil-cracking"
+
 
 class PrototypeMetaclass(enum.EnumMeta):
     def __getattr__(cls, name):
@@ -36,6 +46,7 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     AssemblingMachine1 = "assembling-machine-1", AssemblingMachine
     AssemblingMachine2 = "assembling-machine-2", AdvancedAssemblingMachine
     AssemblingMachine3 = "assembling-machine-3", AdvancedAssemblingMachine
+    Centrifuge = "centrifuge", AssemblingMachine
 
     BurnerInserter = "burner-inserter", BurnerInserter
     Inserter = "inserter", Inserter
@@ -76,7 +87,9 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     SteamEngine = "steam-engine", Generator
 
     UndergroundPipe = "pipe-to-ground", Pipe
+    HeatPipe = 'heat-pipe', Pipe
     Pipe = "pipe", Pipe
+
 
     SteelChest = "steel-chest", Chest
     IronChest = "iron-chest", Chest
@@ -93,6 +106,7 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     IronOre = "iron-ore", None
     CopperOre = "copper-ore", None
     Stone = "stone", None
+    UraniumOre = "uranium-ore", None
 
     IronPlate = "iron-plate", None  # Crafting requires smelting 1 iron ore, smelts for 0.5 seconds per ore
     IronGearWheel = "iron-gear-wheel", None
@@ -105,6 +119,8 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     EmptyBarrel = "empty-barrel", None
     Battery = "battery", None
     SulfuricAcid = "sulfuric-acid", None
+    Uranium235 = "uranium-235", None
+    Uranium238 = "uranium-238", None
 
     Lubricant = "lubricant", None
     AdvancedOilProcessing = "advanced-oil-processing", None # These are recipes, not prototypes.
@@ -128,6 +144,10 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     StoneWall = "stone-wall", Entity
     Gate = "gate", Entity
     SmallLamp = "small-lamp", Entity
+
+    NuclearReactor = "nuclear-reactor", Reactor
+    UraniumFuelCell = "uranium-fuel-cell", None
+    HeatExchanger = 'heat-exchanger', HeatExchanger
 
     AutomationSciencePack = "automation-science-pack", None
     MilitarySciencePack = "military-science-pack", None

@@ -314,7 +314,7 @@ function get_issues(entity)
     end
 
     if not has_electricity(entity) then
-        if entity.electric_network_id then
+        if entity.electric_network_id and (entity.type ~= 'solar-panel' and entity.type ~= 'generator') then
             table.insert(issues, "\'not receiving electricity\'")
         else
             table.insert(issues, "\'not connected to power network\'")

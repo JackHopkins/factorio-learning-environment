@@ -635,7 +635,7 @@ function get_entity_direction(entity, direction)
         defines.direction.south,
         defines.direction.west
     }
-    if prototype and (prototype.name == "boiler" or prototype.type == "generator") then
+    if prototype and (prototype.name == "boiler" or prototype.type == "generator" or prototype.name == "heat-exchanger") then
         if direction == 0 then
             return defines.direction.north
         elseif direction == 1 then
@@ -1595,11 +1595,19 @@ global.utils.serialize_entity = function(entity)
     end
 
     if entity.type == "solar-panel" then
-        serialized.power_production = entity.power_production
+        serialized.electric_output_flow_limit = entity.electric_output_flow_limit
+    end
+
+    if entity.type == 'accumulator' then
+        --serialized.energy_source = entity.energy_source
+        --serialized.power_usage = entity.power_usage
+        --serialized.emissions = entity.emissions
+        serialized.energy = entity.energy
     end
 
     if entity.type == "generator" then
         serialized.connection_points = get_pipe_positions(entity)
+        serialized.energy_generated_last_tick = entity.energy_generated_last_tick
         --serialized.power_production = entity.power_production
     end
 

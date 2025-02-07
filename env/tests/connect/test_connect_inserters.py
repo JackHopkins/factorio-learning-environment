@@ -6,7 +6,7 @@ import pytest
 
 from entities import Entity, Position
 from instance import Direction
-from types import Prototype, Resource, PrototypeName
+from game_types import Prototype, Resource
 
 
 @pytest.fixture()

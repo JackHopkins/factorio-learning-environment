@@ -481,7 +481,7 @@ class SolarPanel(ElectricalProducer):
 class Boiler(FluidHandler, BurnerType):
     steam_output_point: Optional[Position] = None
 
-class Generator(FluidHandler, ElectricalProducer):
+class Generator(FluidHandler, StaticEntity):
     pass
 
 class Pump(FluidHandler, Electric):

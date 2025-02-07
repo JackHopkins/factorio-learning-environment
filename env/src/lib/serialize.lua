@@ -1652,7 +1652,7 @@ global.utils.serialize_entity = function(entity)
             if not serialized.warnings then
                 serialized.warnings = {}
             end
-            table.insert(serialized.warnings, "\"Missing fluid connection\"")
+            table.insert(serialized.warnings, "\"missing fluid connection\"")
         else
             -- Additional fluid-specific checks
             local fluid_systems = {}
@@ -1676,7 +1676,7 @@ global.utils.serialize_entity = function(entity)
                 if not serialized.warnings then
                     serialized.warnings = {}
                 end
-                table.insert(serialized.warnings, "\"No fluid present in connections\"")
+                table.insert(serialized.warnings, "\"no fluid present in connections\"")
             else
                 serialized.fluid = fluid_contents
             end

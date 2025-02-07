@@ -294,12 +294,14 @@ function get_issues(entity)
 
             local destination_entity = entity.surface.find_entities_filtered{
                 position = entity.drop_position,
-                type = {"container", "transport-belt", "underground-belt", "splitter"}
+                type = {"container", "transport-belt", "underground-belt", "splitter", "furnace"}
             }[1]
 
             if destination_entity then
                 if destination_entity.type == "container" then
                     table.insert(issues, "\'chest at drop position is full. Empty the chest at (" .. rounded_x .. ", " .. rounded_y .. ") to continue mining.\'")
+                elseif destination_entity.type == "furnace" then
+                    table.insert(issues, "\'furnace belt at drop position is blocked.\'")
                 else
                     table.insert(issues, "\'transport belt at drop position is blocked. Clear the belt at (" .. rounded_x .. ", " .. rounded_y .. ") to continue mining.\'")
                 end

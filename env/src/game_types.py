@@ -145,6 +145,7 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
 
 
 prototype_by_name = {prototype.value[0]: prototype for prototype in Prototype}
+prototype_by_title = {str(prototype): prototype for prototype in Prototype}
 
 import enum
 

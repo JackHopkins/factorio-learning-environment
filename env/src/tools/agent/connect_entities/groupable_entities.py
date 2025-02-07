@@ -165,7 +165,8 @@ def consolidate_underground_belts(belt_groups):
         return group
 
     # Process each belt group
-    return [process_group(group) for group in belt_groups]
+    return ([process_group(group) for group in belt_groups if isinstance(group, BeltGroup)] +
+            [group for group in belt_groups if not isinstance(group, BeltGroup)])
 
 def construct_belt_groups(belts: List[Union[TransportBelt, UndergroundBelt]], prototype):
     belts_by_position = {}

@@ -10,6 +10,12 @@ from factorio_rcon import AsyncRCONClient
 from timeit import default_timer as timer
 from slpp import slpp as lua
 
+import io
+import contextlib
+from timeit import default_timer as timer
+import re
+
+
 
 def _load_script(filename):
     with open(filename, "r", encoding='utf-8') as file:
@@ -115,47 +121,128 @@ def _remove_numerical_keys(dictionary):
         pruned = parts
     return pruned
 
+# def _lua2python(command, response, *parameters, trace=False, start=0):
+#     if trace:
+#         print(command, parameters, response)
+#     if response:
+#         if trace:
+#             print(f"success: {command}")
+#         end = timer()
+#
+#         if response[0] != '{':
+#
+#             splitted = response.split("\n")[-1]
+#
+#             if "[string" in splitted:
+#                 a, b = splitted.split("[string")
+#                 splitted = a + '[\"' + b.replace('"', '!!')
+#                 # remove trailing ',} '
+#                 splitted = re.sub(r',\s*}\s*$', '', splitted) + "\"]}"
+#
+#             output = lua.decode(splitted)
+#         else:
+#             output = lua.decode(response)
+#
+#         ##output = luadata.unserialize(splitted[-1], encoding="utf-8", multival=False)
+#
+#         if trace:
+#             print("{hbar}\nCOMMAND: {command}\nPARAMETERS: {parameters}\n\n{response}\n\nOUTPUT:{output}"
+#                   .format(hbar="-" * 100, command=command, parameters=parameters, response=response, output=output))
+#
+#         # remove numerical keys
+#         if isinstance(output, dict) and 'b' in output:
+#             pruned = _remove_numerical_keys(output['b'])
+#             output['b'] = pruned
+#             # Only the last transmission is considered the output - the rest are just messages
+#         return output, (end - start)
+#     else:
+#         if trace:
+#             print(f"failure: {command} \t")
+#     end = timer()
+#
+#     try:
+#         return lua.decode(response), (end - start)
+#     except Exception as e:
+#         return None, (end - start)
+
+class LuaConversionError(Exception):
+    """Custom exception for Lua conversion errors"""
+    pass
+
+
+def _check_output_for_errors(command, response, output):
+    """Check captured stdout for known Lua parsing errors"""
+    ERRORS = {
+        'unexp_end_string': 'Unexpected end of string while parsing Lua string.',
+        'unexp_end_table': 'Unexpected end of table while parsing Lua string.',
+        'mfnumber_minus': 'Malformed number (no digits after initial minus).',
+        'mfnumber_dec_point': 'Malformed number (no digits after decimal point).',
+        'mfnumber_sci': 'Malformed number (bad scientific format).',
+    }
+
+    for error_key, error_msg in ERRORS.items():
+        if error_msg in output:
+            raise LuaConversionError(f"Lua parsing error: {error_msg} for command:\n'{command}' with response:\n'{response}'")
+
+
 def _lua2python(command, response, *parameters, trace=False, start=0):
-    if trace:
-        print(command, parameters, response)
-    if response:
+    # Capture stdout using StringIO
+    stdout = io.StringIO()
+
+    with contextlib.redirect_stdout(stdout):
         if trace:
-            print(f"success: {command}")
-        end = timer()
+            print(command, parameters, response)
 
-        if response[0] != '{':
+        if response:
+            if trace:
+                print(f"success: {command}")
+            end = timer()
 
-            splitted = response.split("\n")[-1]
+            if response[0] != '{':
+                splitted = response.split("\n")[-1]
 
-            if "[string" in splitted:
-                a, b = splitted.split("[string")
-                splitted = a + '[\"' + b.replace('"', '!!')
-                # remove trailing ',} '
-                splitted = re.sub(r',\s*}\s*$', '', splitted) + "\"]}"
+                if "[string" in splitted:
+                    a, b = splitted.split("[string")
+                    splitted = a + '[\"' + b.replace('"', '!!')
+                    splitted = re.sub(r',\s*}\s*$', '', splitted) + "\"]}"
 
-            output = lua.decode(splitted)
+                try:
+                    output = lua.decode(splitted)
+                except Exception as e:
+                    # Capture any decode errors
+                    output = None
+            else:
+                try:
+                    output = lua.decode(response)
+                except Exception as e:
+                    # Capture any decode errors
+                    output = None
+
+            if trace:
+                print("{hbar}\nCOMMAND: {command}\nPARAMETERS: {parameters}\n\n{response}\n\nOUTPUT:{output}"
+                      .format(hbar="-" * 100, command=command, parameters=parameters,
+                              response=response, output=output))
+
+            # Check captured stdout for errors
+            captured_output = stdout.getvalue()
+            _check_output_for_errors(command, response, captured_output)
+
+            # remove numerical keys
+            if isinstance(output, dict) and 'b' in output:
+                pruned = _remove_numerical_keys(output['b'])
+                output['b'] = pruned
+
+            return output, (end - start)
         else:
-            output = lua.decode(response)
+            if trace:
+                print(f"failure: {command} \t")
+            end = timer()
 
-        ##output = luadata.unserialize(splitted[-1], encoding="utf-8", multival=False)
-
-        if trace:
-            print("{hbar}\nCOMMAND: {command}\nPARAMETERS: {parameters}\n\n{response}\n\nOUTPUT:{output}"
-                  .format(hbar="-" * 100, command=command, parameters=parameters, response=response, output=output))
-
-        # remove numerical keys
-        if isinstance(output, dict) and 'b' in output:
-            pruned = _remove_numerical_keys(output['b'])
-            output['b'] = pruned
-            # Only the last transmission is considered the output - the rest are just messages
-        return output, (end - start)
-    else:
-        if trace:
-            print(f"failure: {command} \t")
-    end = timer()
-
-    try:
-        return lua.decode(response), (end - start)
-    except Exception as e:
-        return None, (end - start)
+            try:
+                return lua.decode(response), (end - start)
+            except Exception as e:
+                # Check captured stdout for errors before returning None
+                captured_output = stdout.getvalue()
+                _check_output_for_errors(command, response, captured_output)
+                return None, (end - start)
 

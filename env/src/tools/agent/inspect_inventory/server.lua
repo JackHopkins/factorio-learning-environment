@@ -78,6 +78,17 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            return closest_entity.get_inventory(defines.inventory.lab_input).get_contents()
        end
 
+        -- Handle centrifuge inventories
+       if closest_entity.type == "assembling-machine" and closest_entity.name == "centrifuge" then
+           local source = closest_entity.get_inventory(defines.inventory.assembling_machine_input).get_contents()
+           local output = closest_entity.get_inventory(defines.inventory.assembling_machine_output).get_contents()
+           -- Merge input and output contents
+           for k, v in pairs(output) do
+               source[k] = (source[k] or 0) + v
+           end
+           return source
+       end
+
        return closest_entity.get_inventory(defines.inventory.chest).get_contents()
     end
 

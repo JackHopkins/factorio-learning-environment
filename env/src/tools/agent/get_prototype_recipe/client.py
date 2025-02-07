@@ -2,7 +2,7 @@ from typing import Union
 
 from entities import Recipe, Ingredient
 from instance import PLAYER
-from game_types import Prototype
+from game_types import Prototype, RecipeName
 from tools.tool import Tool
 
 
@@ -11,7 +11,7 @@ class GetPrototypeRecipe(Tool):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
-    def __call__(self, prototype: Union[Prototype, str]) -> Recipe:
+    def __call__(self, prototype: Union[Prototype, RecipeName, str]) -> Recipe:
         """
         Get the recipe (cost to make) of the given entity prototype.
         :param prototype: Prototype to get recipe from
@@ -20,6 +20,8 @@ class GetPrototypeRecipe(Tool):
 
         if isinstance(prototype, Prototype):
             name, _ = prototype.value
+        elif isinstance(prototype, RecipeName):
+            name = prototype.value
         else:
             name = prototype
 

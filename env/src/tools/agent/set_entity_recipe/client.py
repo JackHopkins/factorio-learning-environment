@@ -1,6 +1,8 @@
+from typing import Union
+
 from entities import Entity
 from instance import PLAYER
-from game_types import Prototype
+from game_types import Prototype, RecipeName
 from tools.tool import Tool
 
 
@@ -9,24 +11,22 @@ class SetEntityRecipe(Tool):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
-    def __call__(self, entity: Entity, prototype: Prototype) -> Entity:
+    def __call__(self, entity: Entity, prototype: Union[Prototype, RecipeName]) -> Entity:
         """
         Sets the recipe of an given entity.
         :param entity: Entity to set recipe
-        :param prototype: The prototype to set as recipe
+        :param prototype: The prototype to create, or a recipe name for more complex processes
         :return: Entity that had its recipe set
         """
 
         x, y = entity.position.x, entity.position.y
-        try:
 
+        if isinstance(prototype, Prototype):
             name, _ = prototype.value
-        except AttributeError as e:
+        elif isinstance(prototype, RecipeName):
+            name = prototype.value
+        else:
             raise ValueError(f"Invalid entity type: {prototype}")
-
-        #if not relative:
-        #    x -= self.game_state.last_observed_player_location[0]
-        #    y -= self.game_state.last_observed_player_location[1]
 
         response, elapsed = self.execute(PLAYER, name, x, y)
 

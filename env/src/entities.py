@@ -404,8 +404,10 @@ class TransportBelt(Entity):
 class Electric(BaseModel):
     electrical_id: Optional[int] = None
 
-class ElectricalProducer(Electric):
-    power_production: Optional[float] = 0
+class ElectricalProducer(Electric, Entity):
+    production: Optional[Any] = {}
+    energy_source: Optional[Any] = {}
+    electric_output_flow_limit: Optional[float] = 0
 
 class EnergySource(BaseModel):
     buffer_capacity: str
@@ -444,6 +446,7 @@ class Ammo(BaseModel):
 
 class GunTurret(StaticEntity):
     turret_ammo: Inventory = Inventory()
+    kills: Optional[int] = 0
 
 class AssemblingMachine(StaticEntity, Electric):
     recipe: Optional[Recipe] = None  # Prototype
@@ -480,6 +483,9 @@ class SolarPanel(ElectricalProducer):
 
 class Boiler(FluidHandler, BurnerType):
     steam_output_point: Optional[Position] = None
+
+class HeatExchanger(Boiler):
+    pass
 
 class Generator(FluidHandler, StaticEntity):
     pass
@@ -525,6 +531,9 @@ class Pipe(Entity):
     flow_rate: float
     contents: float
     fluid: Optional[str] = None
+
+class Reactor(StaticEntity):
+    pass
 
 class EntityGroup(BaseModel):
     id: int

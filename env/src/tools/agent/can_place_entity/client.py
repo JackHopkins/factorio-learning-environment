@@ -1,6 +1,6 @@
 
 
-from entities import Position, Entity
+from entities import Position, Entity, Direction as DirectionA
 from instance import PLAYER, Direction
 from game_types import Prototype
 from tools.tool import Tool
@@ -25,7 +25,7 @@ class CanPlaceEntity(Tool):
         """
 
         assert isinstance(entity, Prototype)
-        assert isinstance(direction, Direction)
+        assert isinstance(direction, (Direction, DirectionA))
 
         # If position is a tuple, cast it to a Position object:
         if isinstance(position, tuple):

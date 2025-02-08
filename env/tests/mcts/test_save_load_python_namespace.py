@@ -3,6 +3,7 @@ import unittest
 
 from eval.open.mcts.chunked_mcts import ChunkedMCTS
 from eval.open.model.game_state import GameState
+from game_types import Prototype
 from instance import FactorioInstance
 
 FULL_PROGRAM = \
@@ -113,7 +114,7 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
                            bounding_box=200,
                            tcp_port=27000,
                            fast=True,
-                           inventory={'boiler': 1, 'burner-mining-drill': 1, 'coal': 50})
+                           inventory={'boiler': 1, 'burner-mining-drill': 1, 'coal': 50, 'transport-belt': 10})
 
     def test_save_load_simple_variable_namespace(self):
         self.instance.eval('x=2')
@@ -143,6 +144,53 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
 
         assert 'coal_position' in nvars and nvars['coal_position']
 
+    def test_save_load_items_on_ground(self):
+        MINER = \
+"""
+move_to(nearest(Resource.IronOre))
+miner = place_entity(Prototype.BurnerMiningDrill, Direction.UP, nearest(Resource.IronOre))
+insert_item(Prototype.Coal, miner)
+sleep(15)
+pickup_entity(miner)
+"""
+        self.instance.eval(MINER)
+        game_state = GameState.from_instance(self.instance)
+
+        self.instance = FactorioInstance(address='localhost',
+                                         bounding_box=200,
+                                         tcp_port=27000,
+                                         fast=True,
+                                         inventory={})
+
+        self.instance.reset(game_state)
+        response = self.instance.eval('pickup_entity(Prototype.IronOre, miner.drop_position)')
+        assert 'Error' not in response
+
+    def test_save_load_items_on_belt(self):
+        MINER = \
+"""
+move_to(nearest(Resource.IronOre))
+miner = place_entity(Prototype.BurnerMiningDrill, Direction.UP, nearest(Resource.IronOre))
+insert_item(Prototype.Coal, miner)
+belt = place_entity(Prototype.TransportBelt, Direction.UP, miner.drop_position)
+sleep(15)
+pickup_entity(miner)
+"""
+        response = self.instance.eval(MINER)
+        game_state = GameState.from_instance(self.instance)
+
+        self.instance = FactorioInstance(address='localhost',
+                                         bounding_box=200,
+                                         tcp_port=27000,
+                                         fast=True,
+                                         inventory={})
+
+        self.instance.reset(game_state)
+        response = self.instance.eval('pickup_entity(Prototype.TransportBelt, belt.position)')
+        assert 'Error' not in response
+
+        assert self.instance.namespace.inspect_inventory()[Prototype.IronOre] == 4
+
 
     def test_save_load_simple_variable_namespace_with_exception(self):
         self.instance.eval('boiler = place_entity(Prototype.Boiler, Direction.UP, Position(x=0, y=0))')
@@ -155,7 +203,7 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
                                          inventory={})
 
         self.instance.reset(game_state)
-        response = self.instance.eval('print(boiler.position)')
+        _, _, response = self.instance.eval('print(boiler.position)')
 
         assert 'Error' not in response
         pass

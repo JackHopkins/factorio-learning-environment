@@ -50,7 +50,7 @@ local function serialize_recipe_info(recipe)
 end
 
 -- Main serialization function
-global.actions.save_entity_state = function(player, distance, player_entities, resource_entities)
+global.actions.save_entity_state = function(player, distance, player_entities, resource_entities, items_on_ground)
     local surface = game.players[player].surface
     if player_entities then
         entities = surface.find_entities_filtered({area={{-distance, -distance}, {distance, distance}}, force=game.players[player].force})
@@ -61,6 +61,20 @@ global.actions.save_entity_state = function(player, distance, player_entities, r
             entities = surface.find_entities_filtered({area={{-distance, -distance}, {distance, distance}}, force=game.players[player].force})
         end
     end
+
+    -- Always get items on ground if requested
+    if items_on_ground then
+        local ground_items = surface.find_entities_filtered({
+            area = {{-distance, -distance}, {distance, distance}},
+            name = "item-on-ground"
+        })
+        game.print("Ground items "..#ground_items)
+        -- Merge the arrays
+        for _, item in pairs(ground_items) do
+            table.insert(entities, item)
+        end
+    end
+
     local entity_states = {}
     local entity_array = {}
     for _, entity in pairs(entities) do
@@ -80,8 +94,19 @@ global.actions.save_entity_state = function(player, distance, player_entities, r
             assembling_machine_modules = defines.inventory.assembling_machine_modules
         }
 
-
-        if entity.name ~= "character" then
+        if entity.name == "item-on-ground" then
+            -- Capture the item details
+            local item = entity.stack
+            if item and item.valid then
+                local state = {
+                    name = '\"item-on-ground\"',
+                    type = '"' .. item.name .. '"',
+                    count = serialize_number(item.count),
+                    position = serialize_position(entity.position),
+                }
+                table.insert(entity_array, state)
+            end
+        elseif entity.name ~= "character" then
             local state = {
                 name = '"' .. entity.name .. '"',
                 position = serialize_position(entity.position),
@@ -181,13 +206,48 @@ global.actions.save_entity_state = function(player, distance, player_entities, r
             end
 
             -- Handle specific entity types
+            --if entity.type == "transport-belt" then
+            --    state.input_position = serialize_position(entity.position)
+            --    state.output_position = serialize_position(entity.position)
+            --    -- Add belt contents
+            --    state.inventory = {}
+            --    for name, count in pairs(entity.get_transport_line(1).get_contents()) do
+            --        state.inventory[tostring(name)] = serialize_number(count)
+            --    end
             if entity.type == "transport-belt" then
-                state.input_position = serialize_position(entity.position)
-                state.output_position = serialize_position(entity.position)
-                -- Add belt contents
+                --state.input_position = serialize_position(entity.input_position)
+                --state.output_position = serialize_position(entity.output_position)
+                state.position = serialize_position(entity.position)
+
+                -- Store contents of each transport line separately
+                state.transport_lines = {}
+
+                -- Front line (line 1)
+                state.transport_lines[1] = {}
+                local contents1 = entity.get_transport_line(1).get_contents()
+                for name, count in pairs(contents1) do
+                    state.transport_lines[1][tostring(name)] = serialize_number(count)
+                end
+
+                -- Back line (line 2)
+                state.transport_lines[2] = {}
+                local contents2 = entity.get_transport_line(2).get_contents()
+                for name, count in pairs(contents2) do
+                    state.transport_lines[2][tostring(name)] = serialize_number(count)
+                end
+
+                -- Total counts (for backwards compatibility)
                 state.inventory = {}
-                for name, count in pairs(entity.get_transport_line(1).get_contents()) do
+                for name, count in pairs(contents1) do
                     state.inventory[tostring(name)] = serialize_number(count)
+                end
+                for name, count in pairs(contents2) do
+                    local existing = state.inventory[tostring(name)]
+                    if existing then
+                        state.inventory[tostring(name)] = serialize_number(tonumber(existing) + count)
+                    else
+                        state.inventory[tostring(name)] = serialize_number(count)
+                    end
                 end
 
             elseif entity.type == "inserter" then

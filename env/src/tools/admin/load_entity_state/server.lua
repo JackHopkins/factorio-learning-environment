@@ -17,7 +17,28 @@ global.actions.load_entity_state = function(player, stored_json_data)
 
         if name == "character" then
             character_state = state
+        elseif name == "item-on-ground" then
+            local item_name = unquote_string(state.type)
+            local item_count = tonumber(state.count)
+
+            if game.item_prototypes[item_name] then
+                local entity = surface.create_entity({
+                    name = name,
+                    position = {
+                        x = tonumber(state.position.x),
+                        y = tonumber(state.position.y)
+                    },
+                    stack = {
+                        name = item_name,
+                        count = item_count
+                    },
+                    force = game.forces.player
+                })
+            else
+                game.print("Warning: Unknown item type " .. item_name)
+            end
         else
+
             local entity = surface.create_entity({
                 name = name,
                 position = {
@@ -152,8 +173,6 @@ global.actions.load_entity_state = function(player, stored_json_data)
             end
         end
 
-        game.print("Restore burner")
-
         -- Restore burner
         if state.burner and entity.burner then
             if state.burner.currently_burning then
@@ -187,6 +206,51 @@ global.actions.load_entity_state = function(player, stored_json_data)
                 end
             else
                 game.print("Warning: Skipping recipe for incompatible entity type: " .. entity.type)
+            end
+        end
+
+        -- Restore transport belt contents
+        if entity_type == "transport-belt" and state.transport_lines then
+            game.print("Has transport_lines field: " .. tostring(state.transport_lines ~= nil))
+            -- Handle front line (line 1)
+            local line1 = entity.get_transport_line(1)
+
+            if state.transport_lines["1"] then
+                game.print("Transport line 1")
+                for item_name, count in pairs(state.transport_lines["1"]) do
+                    local name = unquote_string(item_name)
+                    local item_count = tonumber(count)
+                    if game.item_prototypes[name] then
+                       for i = 1, item_count do
+                            -- Space items evenly along the belt
+                            local position = (i - 1) / item_count
+                            line1.insert_at(position, {
+                                name = name,
+                                count = 1
+                            })
+                        end
+                    end
+                end
+            end
+
+            -- Handle back line (line 2)
+            local line2 = entity.get_transport_line(2)
+            if state.transport_lines["2"] then
+                game.print("Transport line 2")
+                for item_name, count in pairs(state.transport_lines["2"]) do
+                    local name = unquote_string(item_name)
+                    local item_count = tonumber(count)
+                    if game.item_prototypes[name] then
+                        for i = 1, item_count do
+                            -- Space items evenly along the belt
+                            local position = (i - 1) / item_count
+                            line2.insert_at(position, {
+                                name = name,
+                                count = 1
+                            })
+                        end
+                    end
+                end
             end
         end
 

@@ -44,6 +44,23 @@ global.actions.pickup_entity = function(player_index, x, y, entity)
                     end
                 end
 
+                -- Add transport belt contents if applicable
+                if ent.type == "transport-belt" then
+                    -- Check line 1
+                    local line1 = ent.get_transport_line(1)
+                    local contents1 = line1.get_contents()
+                    for name, count in pairs(contents1) do
+                        table.insert(items_to_insert, {name=name, count=count})
+                    end
+
+                    -- Check line 2
+                    local line2 = ent.get_transport_line(2)
+                    local contents2 = line2.get_contents()
+                    for name, count in pairs(contents2) do
+                        table.insert(items_to_insert, {name=name, count=count})
+                    end
+                end
+
                 -- Add the entity itself
                 table.insert(items_to_insert, {name=ent.name, count=1})
 

@@ -14,8 +14,9 @@ class SaveEntityState(Tool):
 
     def __call__(self,
                  distance=500,
-                 player_entities=True,
+                 player_entities=False,
                  resource_entities=False,
+                 items_on_ground=True,
                  encode=False,
                  compress=False,
                  ) -> Union[List[Dict], str]:
@@ -30,7 +31,7 @@ class SaveEntityState(Tool):
             Note: Perform encoding and compression if we are sending this over a network.
         :return: Blueprint and offset to blueprint from the origin.
         """
-        entities, _ = self.execute(PLAYER, distance, player_entities, resource_entities)
+        entities, _ = self.execute(PLAYER, distance, player_entities, resource_entities, items_on_ground)
 
         if encode:
             encoded_string = json.dumps(entities).encode()

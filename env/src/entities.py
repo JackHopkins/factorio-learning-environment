@@ -344,7 +344,7 @@ class Entity(EntityCore):
     health: float
     warnings: List[str] = []
     status: EntityStatus = EntityStatus.NORMAL
-    game: Optional[Any] = None # RCON connection for refreshing attributes
+    # game: Optional[Any] = None # RCON connection for refreshing attributes
 
     def __repr__(self) -> str:
         # Only includes the fields we want to present to the agent

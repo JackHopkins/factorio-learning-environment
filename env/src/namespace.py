@@ -403,17 +403,32 @@ class FactorioNamespace:
             return True
 
         elif isinstance(node, ast.Assign):
+
+            # Get the original eval_dict keys before execution
+            original_keys = set(eval_dict.keys())
+
+            # Compile and execute the assignment
             compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
             exec(compiled, eval_dict)
 
+            # Find all new or updated variables
+            new_or_updated_keys = set()
+
+            # Check explicit targets
             targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
-            for name in targets:
-                if name in eval_dict:
+            new_or_updated_keys.update(targets)
+
+            # Also check for any new variables that might have been created by function calls
+            current_keys = set(eval_dict.keys())
+            new_keys = current_keys - original_keys
+            new_or_updated_keys.update(new_keys)
+
+            # Persist all new or updated variables
+            for name in new_or_updated_keys:
+                if name in eval_dict and not name.startswith('_'):
                     value = eval_dict[name]
                     self.persistent_vars[name] = wrap_for_serialization(value)
                     setattr(self, name, value)
-                    #print(f"{self.tcp_port}: Stored variable {name} - {type(value)}")
-
             return True
 
         elif isinstance(node, ast.AnnAssign):

@@ -205,6 +205,39 @@ script.on_nth_tick(15, function(event)
 end)
 
 
+local function check_inventory_space(player, entity, count)
+    -- Get player's main inventory
+    local inventory = player.get_main_inventory()
+    if not inventory then return false end
+
+    -- Create a temporary inventory to test insertion
+    local test_inventory = game.create_inventory(1)
+    local can_insert = true
+
+    -- Calculate total items that would be added
+    local total_items = 0
+    local products = entity.prototype.mineable_properties.products
+    for _, product in pairs(products) do
+        local amount = (product.amount or 1) * count
+        -- Try to insert into test inventory
+        local test_stack = {name = product.name, count = amount}
+        if not inventory.can_insert(test_stack) then
+            can_insert = false
+            break
+        end
+        total_items = total_items + amount
+    end
+
+    -- Clean up test inventory
+    test_inventory.destroy()
+
+    if not can_insert then
+        error("Inventory is full")
+    end
+
+    return true
+end
+
 
 local function find_entity_type_at_position(surface, position)
     local exact_entities = surface.find_entities_filtered{
@@ -307,6 +340,21 @@ end
 function harvest(entities, count, from_position, player)
     if count == 0 then return 0 end
     local yield = 0
+
+    -- Check inventory space first using the first valid entity as reference
+    local reference_entity = nil
+    for _, entity in ipairs(entities) do
+        if entity.valid and entity.minable then
+            reference_entity = entity
+            break
+        end
+    end
+
+    if reference_entity then
+        check_inventory_space(player, reference_entity, count)
+    end
+
+
     entities = sort_entities_by_distance(entities, from_position)
 
     ::start::
@@ -478,64 +526,64 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
         return total_yield
     end
 end
-
-global.actions.harvest_resource2 = function(player_index, x, y, count, radius)
-    local player = game.get_player(player_index)
-    if not player then
-        error("Player not found")
-    end
-
-    local player_position = player.position
-    local position = {x=x, y=y}
-
-    local distance = math.sqrt((position.x - player_position.x)^2 + (position.y - player_position.y)^2)
-    if distance > player.resource_reach_distance then
-        error("Nothing within reach to harvest")
-    end
-    local surface = player.surface
-
-    -- Check what's under the player first
-    local target_type, target_name = find_entity_type_at_position(surface, position)
-    if not target_type then
-        error("Nothing within reach to harvest")
-    end
-    if not global.fast then
-        return harvest_resource_slow(player, player_index, surface, position, count, radius)
-    end
-
-
-    local total_yield = 0
-    if target_type then
-        -- If we found something at the exact position, harvest that specific type
-        total_yield = total_yield + harvest_specific_resources(player, surface, position, count, target_type, target_name)
-        if total_yield >= count then
-            game.print("Harvested " .. total_yield .. " items of " .. target_name)
-            return total_yield
-        end
-    end
-
-    -- If nothing at exact position or couldn't get enough yield, fall back to original logic
-    local tree_entities = surface.find_entities_filtered{position=position, radius=radius, type = "tree"}
-    local tree_yield = harvest_trees(tree_entities, count - total_yield, position, player)
-    local total_yield = total_yield + tree_yield
-
-    if tree_yield < count then
-        local mineable_entities = surface.find_entities_filtered{position=position, radius=radius, type = "resource"}
-        local resource_yield = harvest(mineable_entities, count - total_yield, position, player)
-        total_yield = total_yield + resource_yield
-
-        if total_yield == 0 then
-            error("Could not harvest at position ("..position.x..", "..position.y..").")
-        end
-    end
-
-    if total_yield == 0 then
-        error("Nothing within reach to harvest")
-    else
-        game.print("Harvested resources yielding " .. total_yield .. " items")
-        return total_yield
-    end
-end
+--
+--global.actions.harvest_resource2 = function(player_index, x, y, count, radius)
+--    local player = game.get_player(player_index)
+--    if not player then
+--        error("Player not found")
+--    end
+--
+--    local player_position = player.position
+--    local position = {x=x, y=y}
+--
+--    local distance = math.sqrt((position.x - player_position.x)^2 + (position.y - player_position.y)^2)
+--    if distance > player.resource_reach_distance then
+--        error("Nothing within reach to harvest")
+--    end
+--    local surface = player.surface
+--
+--    -- Check what's under the player first
+--    local target_type, target_name = find_entity_type_at_position(surface, position)
+--    if not target_type then
+--        error("Nothing within reach to harvest")
+--    end
+--    if not global.fast then
+--        return harvest_resource_slow(player, player_index, surface, position, count, radius)
+--    end
+--
+--
+--    local total_yield = 0
+--    if target_type then
+--        -- If we found something at the exact position, harvest that specific type
+--        total_yield = total_yield + harvest_specific_resources(player, surface, position, count, target_type, target_name)
+--        if total_yield >= count then
+--            game.print("Harvested " .. total_yield .. " items of " .. target_name)
+--            return total_yield
+--        end
+--    end
+--
+--    -- If nothing at exact position or couldn't get enough yield, fall back to original logic
+--    local tree_entities = surface.find_entities_filtered{position=position, radius=radius, type = "tree"}
+--    local tree_yield = harvest_trees(tree_entities, count - total_yield, position, player)
+--    local total_yield = total_yield + tree_yield
+--
+--    if tree_yield < count then
+--        local mineable_entities = surface.find_entities_filtered{position=position, radius=radius, type = "resource"}
+--        local resource_yield = harvest(mineable_entities, count - total_yield, position, player)
+--        total_yield = total_yield + resource_yield
+--
+--        if total_yield == 0 then
+--            error("Could not harvest at position ("..position.x..", "..position.y..").")
+--        end
+--    end
+--
+--    if total_yield == 0 then
+--        error("Nothing within reach to harvest")
+--    else
+--        game.print("Harvested resources yielding " .. total_yield .. " items")
+--        return total_yield
+--    end
+--end
 
 
 global.actions.clear_harvest_queue = function(player_index)

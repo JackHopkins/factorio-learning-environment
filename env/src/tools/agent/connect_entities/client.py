@@ -75,6 +75,10 @@ class ConnectEntities(Tool):
         if 'connection_type' in kwargs:
             waypoints = args
             connection_types = kwargs['connection_type']
+            if isinstance(connection_types, Prototype):
+                connection_types = {connection_types}
+            elif self.is_set_of_prototype(connection_types):
+                connection_types = connection_types
 
 
         if 'target' in kwargs and 'source' in kwargs:

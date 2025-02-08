@@ -1,4 +1,5 @@
-from entities import Entity, Direction as DirectionA # We have 2 Direction objects to avoid circular deps
+from entities import Entity, Direction as DirectionA, \
+    AssemblingMachine  # We have 2 Direction objects to avoid circular deps
 from instance import PLAYER, Direction
 from game_types import prototype_by_name
 from tools.tool import Tool
@@ -64,6 +65,11 @@ class RotateEntity(Tool):
             object = metaclass(**cleaned_response)
         except Exception as e:
             raise Exception(f"Could not create {entity.name} object from response: {response}", e)
+
+        if object.direction.value != direction.value:
+            if isinstance(entity, AssemblingMachine):
+                raise Exception(f"Could not rotate {entity.name}. Set the recipe first.")
+            raise Exception(f"Could not rotate {entity.name}.")
 
         return object
 

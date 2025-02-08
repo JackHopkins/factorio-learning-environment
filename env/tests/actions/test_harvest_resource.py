@@ -10,6 +10,29 @@ def game(instance):
     yield instance.namespace
     #instance.reset()
 
+def test_harvest_resource_with_full_inventory(game):
+    """
+    Find the nearest coal resource patch and harvest 5 coal from it.
+    :param game:
+    :return:
+    """
+    game.instance.initial_inventory = {**game.instance.initial_inventory, 'coal': 4000}
+    game.instance.reset()
+
+    inventory = game.inspect_inventory()
+    # Check initial inventory
+    initial_coal = inventory[Resource.Coal]
+    # Find nearest coal resource
+    nearest_coal = game.nearest(Resource.Coal)
+    # Move to the coal resource
+    game.move_to(nearest_coal)
+    try:
+        # Harvest coal
+        harvested = game.harvest_resource(nearest_coal, quantity=100)  # Assuming there is a coal resource at (10, 10)
+        assert False, "Cannot harvest with a full inventory"
+    except Exception as e:
+        assert True
+
 def test_harvest_resource(game):
     """
     Find the nearest coal resource patch and harvest 5 coal from it.

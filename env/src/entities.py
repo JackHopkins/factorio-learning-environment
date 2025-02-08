@@ -40,9 +40,10 @@ class EntityStatus(Enum):
     MISSING_SCIENCE_PACKS = "missing_science_packs"
     WAITING_FOR_SOURCE_ITEMS = "waiting_for_source_items"
     WAITING_FOR_SPACE_IN_DESTINATION = "waiting_for_space_in_destination"
-    #PREPARING_ROCKET_FOR_LAUNCH = "preparing_rocket_for_launch"
-    #WAITING_TO_LAUNCH_ROCKET = "waiting_to_launch_rocket"
-    #LAUNCHING_ROCKET = "launching_rocket"
+
+    PREPARING_ROCKET_FOR_LAUNCH = "preparing_rocket_for_launch"
+    WAITING_TO_LAUNCH_ROCKET = "waiting_to_launch_rocket"
+    LAUNCHING_ROCKET = "launching_rocket"
     #NO_MODULES_TO_TRANSMIT = "no_modules_to_transmit"
     #RECHARGING_AFTER_POWER_OUTAGE = "recharging_after_power_outage"
     #WAITING_FOR_TARGET_TO_BE_BUILT = "waiting_for_target_to_be_built"
@@ -462,7 +463,6 @@ class FluidHandler(StaticEntity):
 class AdvancedAssemblingMachine(FluidHandler, AssemblingMachine):
     pass
 
-
 class MultiFluidHandler(StaticEntity):
     input_connection_points: List[Position] = []
     output_connection_points: List[Position] = []
@@ -513,6 +513,28 @@ class ElectricFurnace(Electric):
 
 class Chest(Entity):
     inventory: Inventory = Inventory()
+
+
+class RocketSilo(StaticEntity, Electric):
+    """Represents a rocket silo that can build and launch rockets."""
+    rocket_parts: int = 0  # Number of rocket parts currently assembled
+    rocket_inventory: Inventory = Inventory()  # Holds satellite or other payload
+    rocket_progress: float = 0.0  # Progress of current rocket construction (0-100)
+    launch_count: int = 0  # Number of successful launches
+
+    def __repr__(self) -> str:
+        return f"\n\tRocketSilo(position={self.position}, status={self.status}, " \
+               f"rocket_parts={self.rocket_parts}, rocket_progress={self.rocket_progress:.1f}%, " \
+               f"launch_count={self.launch_count})"
+
+class Rocket(Entity):
+    """Represents a rocket that can be launched from a silo."""
+    payload: Optional[Inventory] = None
+    launch_progress: float = 0.0  # Progress of launch sequence (0-100)
+
+    def __repr__(self) -> str:
+        payload_str = f", payload={self.payload}" if self.payload else ""
+        return f"\n\tRocket(status={self.status}, launch_progress={self.launch_progress:.1f}%{payload_str})"
 
 class Lab(Entity, Electric):
     lab_input: Inventory = Inventory()

@@ -1,15 +1,50 @@
 import pytest
 
-from entities import Position
 from instance import Direction
-from game_types import Prototype
-
+from game_types import Prototype, RecipeName
+from entities import Position
 
 @pytest.fixture()
 def game(instance):
+    instance.initial_inventory = {'iron-chest': 1, 'pipe': 10, 'assembling-machine-2': 2, 'iron-plate': 10, 'assembling-machine-1': 1, 'copper-cable': 3}
     instance.reset()
     yield instance.namespace
     instance.reset()
+
+def test_rotate_assembling_machine_2(game):
+    assembler = game.place_entity_next_to(Prototype.AssemblingMachine2,
+                                       reference_position=Position(x=0, y=0),
+                                       direction=Direction.RIGHT,
+                                       spacing=2)
+    # orthogonal direction to the boiler
+    orthogonal_direction = Direction.DOWN
+
+    # rotate the boiler to face the offshore pump
+    try:
+        assembler = game.rotate_entity(assembler, orthogonal_direction)
+        assert False, "Cannot rotate an assembler without a recipe set"
+    except:
+        assert True
+
+    # assert that the boiler is facing the offshore pump
+    assert assembler.direction.value == orthogonal_direction.value
+
+def test_rotate_assembling_machine_2_with_recipe(game):
+    assembler = game.place_entity_next_to(Prototype.AssemblingMachine2,
+                                       reference_position=Position(x=0, y=0),
+                                       direction=Direction.RIGHT,
+                                       spacing=2)
+    # orthogonal direction to the boiler
+    orthogonal_direction = Direction.DOWN
+
+    game.set_entity_recipe(assembler, RecipeName.FillCrudeOilBarrel)
+    # rotate the boiler to face the offshore pump
+    assembler = game.rotate_entity(assembler, orthogonal_direction)
+
+    # assert that the boiler is facing the offshore pump
+    assert assembler.direction.value == orthogonal_direction.value
+
+
 
 def test_rotate_boiler(game):
     # place the boiler next to the offshore pump

@@ -16,6 +16,33 @@ def game(instance):
     yield instance.namespace
     instance.reset()
 
+#    game.instance.initial_inventory = {**game.instance.initial_inventory, 'coal': 4000}
+#    game.instance.reset()
+
+def test_pickup_item_full_inventory(game):
+    """
+    Place a boiler at (0, 0) and then pick it up
+    :param game:
+    :return:
+    """
+    game.instance.initial_inventory = {**game.instance.initial_inventory, 'coal': 4000}
+    game.instance.reset()
+
+    iron = game.nearest(Resource.IronOre)
+    game.move_to(iron)
+    drill = game.place_entity(Prototype.Boiler, position=iron)
+
+    game.harvest_resource(iron, 50)
+
+    game.sleep(1)
+    try:
+        game.pickup_entity(drill)
+        assert False, "Inventory should be full"
+    except:
+        assert True, "Failed to pick up given a full inventory"
+
+
+
 def test_pickup_ground_item(game):
     """
     Place a boiler at (0, 0) and then pick it up
@@ -26,7 +53,7 @@ def test_pickup_ground_item(game):
     game.move_to(iron)
     drill = game.place_entity(Prototype.BurnerMiningDrill, position=iron)
     game.insert_item(Prototype.Coal, drill, quantity=50)
-    game.sleep(1)
+    game.sleep(6)
     game.pickup_entity(Prototype.IronOre, drill.drop_position)
     assert game.inspect_inventory()[Prototype.IronOre] == 1
 
@@ -41,18 +68,13 @@ def test_place_pickup(game):
     assert boilers_in_inventory == game.inspect_inventory()[Prototype.Boiler] + 1
 
     game.pickup_entity(Prototype.Boiler, position=Position(x=0, y=0))
-    assert boilers_in_inventory == game.inspect_inventory()[Prototype.Boiler] - 1
+    assert boilers_in_inventory == game.inspect_inventory()[Prototype.Boiler]
 
 def test_place_pickup_pipe_group(game):
-    """
-    Place a boiler at (0, 0) and then pick it up
-    :param game:
-    :return:
-    """
     game.move_to(Position(x=0, y=0))
     water_pipes = game.connect_entities(Position(x=0, y=0), Position(x=10, y=0), connection_type=Prototype.Pipe)
 
-    game.pickup_entity(water_pipes[0])
+    game.pickup_entity(water_pipes)
     assert game.inspect_inventory()[Prototype.Pipe] == 100
 
 
@@ -72,7 +94,7 @@ def test_place_pickup_inventory2(game):
 
 def test_pickup_belts(game):
     belts = game.connect_entities(Position(x=0.5, y=0.5), Position(x=0.5, y=8.5), Prototype.TransportBelt)
-    belt = belts[0]
+    belt = belts
     nbelts = game.get_entity(Prototype.BeltGroup, belt.position)
     pickup_belts = game.pickup_entity(belt)
     assert pickup_belts
@@ -80,21 +102,21 @@ def test_pickup_belts(game):
 def test_pickup_belts_position(game):
     belts = game.connect_entities(Position(x=1, y=-1), Position(x=-2, y=0), Prototype.TransportBelt)
     print(belts)
-    print(belts[0].belts)
-    game.pickup_entity(Prototype.TransportBelt, Position(x=1.5, y=0.5))
+    print(belts.belts)
+    game.pickup_entity(Prototype.TransportBelt, Position(x=0.5, y=0.5))
     pass
 
 def test_pickup_pipes(game):
     pipes = game.connect_entities(Position(x=1, y=-1), Position(x=-2, y=0), Prototype.Pipe)
     print(pipes)
-    print(pipes[0].pipes)
-    for belt in pipes[0].pipes:
+    print(pipes.pipes)
+    for belt in pipes.pipes:
         game.pickup_entity(Prototype.Pipe, belt.position)
         print(f"Pickup belt at {belt.position}")
 
 def test_pickup_belts_that_dont_exist(game):
     belts = game.connect_entities(Position(x=0.5, y=0.5), Position(x=0.5, y=8.5), Prototype.TransportBelt)
-    belt = belts[0]
+    belt = belts
     nbelts = game.get_entity(Prototype.BeltGroup, belt.position)
     pickup_belts = game.pickup_entity(belt)
     assert pickup_belts

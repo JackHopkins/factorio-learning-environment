@@ -8,24 +8,55 @@ global.actions.pickup_entity = function(player_index, x, y, entity)
     -- Debug print
     game.print("Starting pickup attempt for " .. entity .. " at (" .. x .. ", " .. y .. ")")
 
+    -- Function to check if player can receive items
+    local function can_receive_items(items_to_check)
+        local main_inventory = player.get_main_inventory()
+        -- Check each item individually
+        for _, item in pairs(items_to_check) do
+            if not main_inventory.can_insert({name = item.name, count = item.count}) then
+                return false
+            end
+        end
+        return true
+    end
+
     -- Function to pick up and add entity to player's inventory
     local function pickup_placed_entity(entities)
         for _, ent in pairs(entities) do
             if ent.valid and ent.name == entity then
-                game.print("Found valid placed entity: " .. ent.name) -- Debug
-                local products = ent.prototype.mineable_properties.products
-                if products ~= nil then
-                    game.print("Entity has mineable products") -- Debug
-                    for _, product in pairs(products) do
-                        player.insert{name=product.name, count=product.amount}
-                    end
-                end
+                game.print("Found valid placed entity: " .. ent.name)
+
+                -- Collect all items that need to be inserted
+                local items_to_insert = {}
+
+                -- Add entity products
+                --local products = ent.prototype.mineable_properties.products
+                --if products ~= nil then
+                --    for _, product in pairs(products) do
+                --        table.insert(items_to_insert, {name=product.name, count=product.amount})
+                --    end
+                --end
+
+                -- Add chest contents if applicable
                 if ent.get_inventory(defines.inventory.chest) then
                     for name, count in pairs(ent.get_inventory(defines.inventory.chest).get_contents()) do
-                        player.insert{name=name, count=count}
+                        table.insert(items_to_insert, {name=name, count=count})
                     end
                 end
-                player.insert{name=ent.name, count=1}
+
+                -- Add the entity itself
+                table.insert(items_to_insert, {name=ent.name, count=1})
+
+                -- Check if player can receive all items
+                if not can_receive_items(items_to_insert) then
+                    error("Inventory is full")
+                end
+
+                -- Insert all items
+                for _, item in pairs(items_to_insert) do
+                    player.insert(item)
+                end
+
                 if ent.can_be_destroyed() then
                     game.print("Picked up placed "..ent.name)
                     pcall(ent.destroy{raise_destroy=false, do_cliff_correction=false})
@@ -40,8 +71,14 @@ global.actions.pickup_entity = function(player_index, x, y, entity)
     local function pickup_ground_item(ground_items)
         for _, item in pairs(ground_items) do
             if item.valid and item.stack and item.stack.name == entity then
-                game.print("Found valid ground item: " .. item.stack.name)-- .. " of count "..item.stack.count) -- Debug
+                game.print("Found valid ground item: " .. item.stack.name)
                 local count = item.stack.count
+
+                -- Check if player can receive the item
+                if not can_receive_items({{name=entity, count=count}}) then
+                    error("Cannot pick up " .. entity .. " - inventory is full")
+                end
+
                 local inserted = player.insert{name=entity, count=count}
                 if inserted > 0 then
                     game.print("Picked up ground item2 " .. count .. " " .. entity)
@@ -61,20 +98,20 @@ global.actions.pickup_entity = function(player_index, x, y, entity)
         radius=0.707,
         force="player"
     }
-    game.print("Found " .. #player_entities .. " placed entities") -- Debug
+    game.print("Found " .. #player_entities .. " placed entities")
 
     local ground_items = surface.find_entities_filtered{
         name="item-on-ground",
         position=position,
         radius=0.707
     }
-    game.print("Found " .. #ground_items .. " ground items") -- Debug
+    game.print("Found " .. #ground_items .. " ground items")
 
     -- Try to pick up placed entities first, if any exist
     if #player_entities > 0 then
         success = pickup_placed_entity(player_entities)
         if success then
-            game.print("Successfully picked up placed entity")--, {skip=false}) -- Debug
+            game.print("Successfully picked up placed entity")
             return {}
         end
     end
@@ -83,7 +120,7 @@ global.actions.pickup_entity = function(player_index, x, y, entity)
     if not success and #ground_items > 0 then
         success = pickup_ground_item(ground_items)
         if success then
-            game.print("Successfully picked up ground item") -- Debug
+            game.print("Successfully picked up ground item")
             return {}
         end
     end

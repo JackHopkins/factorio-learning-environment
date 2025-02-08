@@ -727,12 +727,21 @@ function get_entity_direction(entity, direction)
         else
             return defines.direction.south
         end
+    elseif prototype.type == "assembling-machine" then
+        if direction == 0 then
+            return defines.direction.north
+        elseif direction == 1 then
+            return defines.direction.east
+        elseif direction == 2 then
+            return defines.direction.south
+        else
+            return defines.direction.west
+        end
     else
         return direction
     end
-
-        return direction
-    end
+    return direction
+end
 
 function get_inverse_entity_direction(entity, factorio_direction)
     local prototype = game.entity_prototypes[entity]
@@ -1591,6 +1600,75 @@ global.utils.serialize_entity = function(entity)
             game.print("Boiler direction is west")
             serialized.connection_points = {{x = x + 0.5, y = y - 2}, {x = x + 0.5, y = y + 2}}
             serialized.steam_output_point = {x = x - 1.5, y = y}
+        end
+    end
+
+    if entity.type == "rocket-silo" then
+        -- Basic rocket silo properties
+        serialized.rocket_parts = 0  -- Will be updated with actual count
+        serialized.rocket_progress = 0.0  -- Will be updated with actual progress
+        --serialized.launch_count = entity.launch_count or 0
+
+        -- Get the current rocket details if one exists
+        --local rocket_inventory = entity.get_inventory(defines.inventory.rocket_silo_rocket)
+        --local rocket = entity.rocket or nil
+
+        --if rocket then
+        --    -- If there's a rocket, get its state
+        --    serialized.rocket = {
+        --        status = global.entity_status_names[rocket.status] or "normal",
+        --        launch_progress = rocket.launch_progress * 100.0  -- Convert to percentage
+        --    }
+        --
+        --    -- Check for payload
+        --    local payload_inventory = rocket.get_inventory(defines.inventory.cargo_unit)
+        --    if payload_inventory and not payload_inventory.is_empty() then
+        --        serialized.rocket.payload = payload_inventory.get_contents()
+        --    end
+        --end
+
+        -- Get part construction progress
+        local parts_inventory = entity.get_inventory(defines.inventory.rocket_silo_input)
+        if parts_inventory then
+            serialized.rocket_parts = parts_inventory.get_item_count("rocket-part")
+            -- Each rocket needs 100 parts, calculate progress
+            serialized.rocket_progress = (serialized.rocket_parts / 100.0) * 100.0
+        end
+
+        -- Get input inventories for rocket components
+        local rocket_inventory = {
+            rocket_part = entity.get_inventory(defines.inventory.rocket_silo_input),
+            result = entity.get_inventory(defines.inventory.rocket_silo_output)
+        }
+
+        -- Serialize the component inventories
+        for name, inventory in pairs(rocket_inventory) do
+            if inventory and not inventory.is_empty() then
+                serialized[name .. "_inventory"] = inventory.get_contents()
+            end
+        end
+
+        -- Update status based on rocket state
+        if serialized.rocket then
+            if serialized.rocket.launch_progress > 0 then
+                serialized.status = "launching_rocket"
+            elseif serialized.rocket.payload then
+                serialized.status = "waiting_to_launch_rocket"
+            end
+        elseif serialized.rocket_parts < 100 then
+            if serialized.rocket_parts > 0 then
+                serialized.status = "preparing_rocket_for_launch"
+            end
+        end
+
+        -- Add warnings based on state
+        if not serialized.warnings then
+            serialized.warnings = {}
+        end
+        if serialized.rocket_parts < 100 and serialized.rocket_parts > 0 then
+            table.insert(serialized.warnings, "\"waiting for rocket parts\"")
+        elseif serialized.status == "waiting_to_launch_rocket" then
+            table.insert(serialized.warnings, "\"ready to launch\"")
         end
     end
 

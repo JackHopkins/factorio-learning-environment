@@ -565,7 +565,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         end
     end
 
-    rendering.clear()
+    --rendering.clear()
 
     rendering.draw_circle{width = 1, color = {r = 1, g = 0, b = 0}, surface = game.players[1].surface, radius = 0.5, filled = false, target = start_position, time_to_live = 60000}
     rendering.draw_circle{width = 1, color = {r = 0, g = 1, b = 0}, surface = game.players[1].surface, radius = 0.5, filled = false, target = end_position, time_to_live = 60000}

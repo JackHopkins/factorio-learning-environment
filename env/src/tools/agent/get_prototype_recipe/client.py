@@ -1,6 +1,6 @@
 from typing import Union
 
-from entities import Recipe, Ingredient
+from entities import Recipe, Ingredient, Product
 from instance import PLAYER
 from game_types import Prototype, RecipeName
 from tools.tool import Tool
@@ -33,5 +33,8 @@ class GetPrototypeRecipe(Tool):
         parsed_response = self.parse_lua_dict(response)
 
         ingredients = [Ingredient(name=ingredient['name'], count=ingredient['amount'], type=ingredient['type'] if 'type' in ingredient else None) for ingredient in parsed_response['ingredients']]
+        products = [Product(name=product['name'], count=product['amount'], probability=product['probability'],
+                                  type=product['type'] if 'type' in product else None) for product in
+                       parsed_response['products']]
 
-        return Recipe(name=name, ingredients=ingredients)
+        return Recipe(name=name, ingredients=ingredients, products=products)

@@ -2,7 +2,7 @@ import pytest
 
 from entities import Position, Entity
 from instance import Direction
-from types import Prototype, Resource
+from game_types import Prototype, Resource
 
 @pytest.fixture()
 def base_game(instance):

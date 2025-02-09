@@ -285,55 +285,55 @@ class FactorioInstance:
                 except Exception as e:
                     raise Exception(f"Could not instantiate {class_name} from {client_file}. {e}")
 
-    @deprecated("Now using tools")
-    def setup_controllers(self, lua_script_manager):
-        """
-        Here we load all the Python controllers into the namespace, e.g `inspect_inventory(), nearest(), ect`
-        @param lua_script_manager:
-        @return:
-        """
-        # Define the directory containing the callable class files
-        callable_classes_directory = "controllers"
-
-        # Get the local execution directory
-        local_directory = os.path.dirname(os.path.realpath(__file__))
-
-        def snake_to_camel(snake_str):
-            return "".join(word.capitalize() for word in snake_str.split("_"))
-
-        # Store the callable instances in a dictionary
-        self.controllers = {}
-
-        # Loop through the files in the directory
-        for file in os.listdir(os.path.join(local_directory, callable_classes_directory)):
-            # Check if the file is a Python file and does not start with '_'
-            if file.endswith(".py") and not file.startswith("__"):
-                # Load the module
-                module_name = Path(file).stem
-                module_spec = importlib.util.spec_from_file_location(module_name,
-                                                                     os.path.join(os.path.join(local_directory, callable_classes_directory), file))
-                module = importlib.util.module_from_spec(module_spec)
-                module_spec.loader.exec_module(module)
-
-                class_name = snake_to_camel(module_name)
-
-                # We have to rename these because on windows environments it fails silently (for some reason)
-                if module_name == "place_entity":
-                    class_name = "PlaceObject"
-                if module_name == "score":
-                    class_name = "Reward"
-                # Get the callable class
-                callable_class = getattr(module, class_name)
-
-                # Create an instance of the callable class
-                try:
-                    callable_instance = callable_class(lua_script_manager, self.namespace)
-                    self.controllers[module_name.lower()] = callable_instance
-                except Exception as e:
-                    raise Exception(f"Could not instantiate {class_name}. {e}")
-                # Add the instance as a member method
-                setattr(self.namespace, module_name.lower(), callable_instance)
-        pass
+    # @deprecated("Now using tools")
+    # def setup_controllers(self, lua_script_manager):
+    #     """
+    #     Here we load all the Python controllers into the namespace, e.g `inspect_inventory(), nearest(), ect`
+    #     @param lua_script_manager:
+    #     @return:
+    #     """
+    #     # Define the directory containing the callable class files
+    #     callable_classes_directory = "controllers"
+    #
+    #     # Get the local execution directory
+    #     local_directory = os.path.dirname(os.path.realpath(__file__))
+    #
+    #     def snake_to_camel(snake_str):
+    #         return "".join(word.capitalize() for word in snake_str.split("_"))
+    #
+    #     # Store the callable instances in a dictionary
+    #     self.controllers = {}
+    #
+    #     # Loop through the files in the directory
+    #     for file in os.listdir(os.path.join(local_directory, callable_classes_directory)):
+    #         # Check if the file is a Python file and does not start with '_'
+    #         if file.endswith(".py") and not file.startswith("__"):
+    #             # Load the module
+    #             module_name = Path(file).stem
+    #             module_spec = importlib.util.spec_from_file_location(module_name,
+    #                                                                  os.path.join(os.path.join(local_directory, callable_classes_directory), file))
+    #             module = importlib.util.module_from_spec(module_spec)
+    #             module_spec.loader.exec_module(module)
+    #
+    #             class_name = snake_to_camel(module_name)
+    #
+    #             # We have to rename these because on windows environments it fails silently (for some reason)
+    #             if module_name == "place_entity":
+    #                 class_name = "PlaceObject"
+    #             if module_name == "score":
+    #                 class_name = "Reward"
+    #             # Get the callable class
+    #             callable_class = getattr(module, class_name)
+    #
+    #             # Create an instance of the callable class
+    #             try:
+    #                 callable_instance = callable_class(lua_script_manager, self.namespace)
+    #                 self.controllers[module_name.lower()] = callable_instance
+    #             except Exception as e:
+    #                 raise Exception(f"Could not instantiate {class_name}. {e}")
+    #             # Add the instance as a member method
+    #             setattr(self.namespace, module_name.lower(), callable_instance)
+    #     pass
 
 
     def eval_with_error(self, expr, timeout=60):
@@ -625,6 +625,9 @@ class FactorioInstance:
         self.lua_script_manager.load_init_into_game('clear_entities')
         self.lua_script_manager.load_init_into_game('alerts')
         self.lua_script_manager.load_init_into_game('util')
+        self.lua_script_manager.load_init_into_game('priority_queue')
+        self.lua_script_manager.load_init_into_game('connection_points')
+        self.lua_script_manager.load_init_into_game('recipe_fluid_connection_mappings')
         self.lua_script_manager.load_init_into_game('serialize')
         self.lua_script_manager.load_init_into_game('production_score')
         self.lua_script_manager.load_init_into_game('initialise_inventory')

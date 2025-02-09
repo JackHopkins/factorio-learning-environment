@@ -362,14 +362,14 @@ def main():
     # Model configurations
     model_configs = [
         #{"model": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "resume_version": 488},
-        #{"model": "gpt-4o-mini", "resume_version": 487},
+        {"model": "gpt-4o-mini", "resume_version": None},
         #{"model": "gpt-4o", "resume_version": 490},
        # {"model": "gpt-4o-mini", "resume_version": 505},
         #{"model": "deepseek-chat", "resume_version": 507}
         #{"model": "deepseek-chat", "resume_version": None},#491},
         #{"model": "claude-3-5-sonnet-20241022", "resume_version": None}#517}#516}
         #{"model": "gpt-4o", "resume_version": 524}
-        {"model": "claude-3-5-sonnet-20241022", "resume_version": 527}
+        #{"model": "claude-3-5-sonnet-20241022", "resume_version": 527}
         #{"model": 'o3-mini', "resume_version": 510}#509 }#508}
     ]
     # model_configs = [
@@ -402,7 +402,7 @@ def main():
             version=model_config["resume_version"] if model_config["resume_version"] else base_version + model_idx,
             version_description=f"model:{model_config['model']}\ntype:simple_trajectory",
             resume_version=model_config["resume_version"],
-            trajectory_length=3000
+            trajectory_length=5000
         )
 
         # Start 4 processes for each model

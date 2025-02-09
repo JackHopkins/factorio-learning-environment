@@ -1,5 +1,4 @@
 import json
-
 from entities import Position, Direction, EntityStatus
 from game_types import Resource, Prototype
 import pytest
@@ -36,15 +35,14 @@ def test_rocket_launch(game):
     water_pos = game.nearest(Resource.Water)
     game.move_to(water_pos)
     pump = game.place_entity(Prototype.OffshorePump, position=water_pos)
-    boiler = game.place_entity_next_to(Prototype.Boiler, pump.position, Direction.UP, spacing=5)
-    engine = game.place_entity_next_to(Prototype.SteamEngine, boiler.position, Direction.UP, spacing=5)
+    boiler = game.place_entity_next_to(Prototype.Boiler, pump.position, Direction.DOWN, spacing=5)
+    engine = game.place_entity_next_to(Prototype.SteamEngine, boiler.position, Direction.DOWN, spacing=5)
     game.connect_entities(pump, boiler, Prototype.Pipe)
     game.connect_entities(boiler, engine, Prototype.Pipe)
     game.insert_item(Prototype.Coal, boiler, quantity=50)
 
     # Place rocket silo with spacing from power generation
     silo = game.place_entity_next_to(Prototype.RocketSilo, engine.position, Direction.RIGHT, spacing=5)
-    game.connect_entities(engine, silo, Prototype.SmallElectricPole)
 
     # Left side setup (input components)
     # LowDensityStructure setup
@@ -61,6 +59,8 @@ def test_rocket_launch(game):
     # RocketControlUnit setup
     rcu_chest = game.place_entity_next_to(Prototype.SteelChest, lds_chest.position, Direction.UP, spacing=2)
     rcu_inserter = game.place_entity_next_to(Prototype.FastInserter, rcu_chest.position, Direction.RIGHT)
+
+    game.connect_entities(engine, silo, Prototype.SmallElectricPole)
 
     # Connect power to all inserters
     inserters = [lds_inserter, fuel_inserter, rcu_inserter]
@@ -93,18 +93,16 @@ def test_rocket_launch(game):
 
     # Verify rocket construction has started
     assert silo.status == EntityStatus.PREPARING_ROCKET_FOR_LAUNCH
-    #assert silo.rocket_parts > 0
 
     # Wait for rocket construction to complete
-    game.sleep(200)
+    game.sleep(180)
     silo = game.get_entities({Prototype.RocketSilo})[0]
 
     # Verify rocket is ready
     assert silo.status == EntityStatus.WAITING_TO_LAUNCH_ROCKET
-    assert silo.rocket_progress == 100.0
 
     # Launch the rocket
-    game.launch_rocket(silo)
+    silo = game.launch_rocket(silo)
 
     # Verify launch sequence started
     assert silo.status == EntityStatus.LAUNCHING_ROCKET

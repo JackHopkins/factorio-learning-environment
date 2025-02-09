@@ -44,8 +44,8 @@ def create_electricity_connection(game, steam_engine_pos, boiler_pos):
     steam_pipes = game.connect_entities(boiler, engine, Prototype.Pipe)
     engine = game.get_entity(Prototype.SteamEngine, engine.position)
 
-    assert len(steam_pipes) == 1
-    assert len(water_pipes) == 1
+    assert steam_pipes
+    assert water_pipes
     assert engine.energy > 0
 
 

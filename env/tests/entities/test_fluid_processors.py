@@ -120,7 +120,8 @@ def recipe_setup(game, recipes_to_test, prototype, direction=Direction.DOWN):
         game.instance.reset()
 
         # Start with placing the processing building
-        building_position = Position(x=0, y=0)
+        building_position = Position(x=-50, y=15)
+        game.move_to(building_position)
         building, requirements = setup_processing_building(game, recipe, building_position, prototype, direction)
         power = setup_power(game, building_position.up(10), building)
 

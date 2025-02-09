@@ -139,9 +139,9 @@ end
 
 global.utils.get_boiler_connection_points = function(entity)
     local x, y = entity.position.x, entity.position.y
-    local orientation = entity.orientation
+    local orientation = entity.orientation * 8
 
-    local dx, dy
+    local dx, dy = 0, 0
     if orientation == defines.direction.north then
         dx, dy = 1, 0
     elseif orientation == defines.direction.south then
@@ -151,13 +151,16 @@ global.utils.get_boiler_connection_points = function(entity)
     elseif orientation == defines.direction.west then
         dx, dy = 0, -1
     end
-    local water_inputs = {}
-    water_inputs[1] = {x = x + 1*dx, y = y + 1*dy}
-    water_inputs[2] = {x = x - 1*dx, y = y - 1*dy}
+    --local water_inputs = {}
+    --water_inputs[1] = {x = x + 1*dx, y = y + 1*dy}
+    --water_inputs[2] = {x = x - 1*dx, y = y - 1*dy}
 
     local pipe_positions = {
-        water_inputs = water_inputs,
-        steam_output = {x = x, y = y - 1*dy}
+        --water_inputs = water_inputs,
+        --steam_output = {x = x, y = y - 1*dy}
+        {x = x + 1*dx, y = y + 1*dy},
+        {x = x - 1*dx, y = y - 1*dy},
+        {x = x, y = y - 1*dy}
     }
 
     return pipe_positions

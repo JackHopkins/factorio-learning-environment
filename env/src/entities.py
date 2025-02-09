@@ -605,6 +605,10 @@ class EntityGroup(BaseModel):
     position: Position
     name: str = "entity-group"
 
+class WallGroup(EntityGroup):
+    name: str = "wall-group"
+    entities: List[Entity]
+
 class BeltGroup(EntityGroup):
     belts: List[TransportBelt]
     inputs: List[Entity]

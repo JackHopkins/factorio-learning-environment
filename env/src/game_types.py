@@ -41,6 +41,9 @@ class RecipeName(enum.Enum):
 
 
 class PrototypeMetaclass(enum.EnumMeta):
+
+    def __repr__(self):
+        return self
     def __getattr__(cls, name):
         try:
             attr =  super().__getattr__(name)

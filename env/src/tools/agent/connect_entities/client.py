@@ -6,13 +6,13 @@ import numpy
 from entities import EntityGroup, Entity, Position, BeltGroup, PipeGroup, ElectricityGroup, TransportBelt, \
     Pipe, FluidHandler, MiningDrill, Inserter
 from instance import PLAYER, Direction
-from game_types import Prototype
+from game_types import Prototype, prototype_by_name
 from tools.admin.clear_collision_boxes.client import ClearCollisionBoxes
 from tools.admin.extend_collision_boxes.client import ExtendCollisionBoxes
 from tools.admin.get_path.client import GetPath
 from tools.admin.request_path.client import RequestPath
 from tools.agent.connect_entities.path_result import PathResult
-from tools.agent.connect_entities.resolver import ConnectionType
+from tools.agent.connect_entities.resolver import ConnectionType, Resolver
 from tools.agent.connect_entities.resolvers.fluid_connection_resolver import FluidConnectionResolver
 from tools.agent.connect_entities.resolvers.power_connection_resolver import PowerConnectionResolver
 from tools.agent.connect_entities.resolvers.transport_connection_resolver import TransportConnectionResolver
@@ -48,7 +48,8 @@ class ConnectEntities(Tool):
         self.resolvers = {
             ConnectionType.FLUID: FluidConnectionResolver(self.get_entities),
             ConnectionType.TRANSPORT: TransportConnectionResolver(),
-            ConnectionType.POWER: PowerConnectionResolver()
+            ConnectionType.POWER: PowerConnectionResolver(),
+            ConnectionType.WALL: Resolver(self.get_entities)
         }
 
     def _get_connection_type(self, prototype: Prototype) -> ConnectionType:
@@ -59,6 +60,8 @@ class ConnectEntities(Tool):
                 return ConnectionType.TRANSPORT
             case Prototype.SmallElectricPole | Prototype.MediumElectricPole | Prototype.BigElectricPole:
                 return ConnectionType.POWER
+            case Prototype.StoneWall:
+                return ConnectionType.WALL
             case _:
                 raise ValueError(f"Unsupported connection type: {prototype}")
 
@@ -355,7 +358,7 @@ class ConnectEntities(Tool):
                 if entity.prototype in (Prototype.TransportBelt, Prototype.UndergroundBelt,
                                         Prototype.FastTransportBelt, Prototype.FastUndergroundBelt,
                                         Prototype.ExpressTransportBelt, Prototype.ExpressUndergroundBelt,
-
+                                        Prototype.StoneWall,
                                         Prototype.Pipe,Prototype.UndergroundPipe,
                                         Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole):
                     groupable_entities.append(entity)
@@ -398,6 +401,11 @@ class ConnectEntities(Tool):
 
             case Prototype.Pipe | Prototype.UndergroundPipe:
                 return self._process_pipe_groups(
+                    groupable_entities, source_pos
+                )
+
+            case Prototype.StoneWall:
+                return self._process_groups(Prototype.StoneWall,
                     groupable_entities, source_pos
                 )
 
@@ -541,6 +549,33 @@ class ConnectEntities(Tool):
     #     self._update_belt_group(new_belt, source_belt, target_belt)  # Update the belt group with the new direction of the source belt.)
     #
     #     return new_belt
+
+    def _process_pipe_groups(self,
+                             groupable_entities: List[Entity],
+                             source_pos: Position) -> List[PipeGroup]:
+        """Process pipe groups"""
+        entity_groups = self.get_entities({Prototype.Pipe, Prototype.UndergroundPipe}, source_pos)
+
+        for group in entity_groups:
+            group.pipes = _deduplicate_entities(group.pipes)
+            if source_pos in [entity.position for entity in group.pipes]:
+                return [group]
+
+        return entity_groups
+
+    def _process_groups(self,
+                        prototype: Prototype,
+                        groupable_entities: List[Entity],
+                        source_pos: Position) -> List[PipeGroup]:
+        """Process other groups"""
+        entity_groups = self.get_entities(prototype, source_pos)
+
+        for group in entity_groups:
+            group.entities = _deduplicate_entities(group.entities)
+            if source_pos in [entity.position for entity in group.entities]:
+                return [group]
+
+        return entity_groups
 
     def _process_pipe_groups(self,
                              groupable_entities: List[Entity],

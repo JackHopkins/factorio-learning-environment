@@ -57,7 +57,7 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
     local created_entities = {}
     local all_positions = {}
 
-    local epsilon = 1 -- Small value for floating point comparison
+    local epsilon = 0.707 -- Small value for floating point comparison
 
     -- Helper function to check if a position is start or end
     local function is_excluded_position(pos)
@@ -76,6 +76,7 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
         storage_tanks = surface.find_entities_filtered{name = "storage-tank", force = force, area = region}
     }
 
+
     -- Draw debug circles for start and end positions
     rendering.draw_circle{width = 1, color = {r = 1, g = 0, b = 0}, surface = surface, radius = 0.5, filled = false, target = start_pos, time_to_live = 60000}
     rendering.draw_circle{width = 1, color = {r = 0, g = 1, b = 0}, surface = surface, radius = 0.5, filled = false, target = end_pos, time_to_live = 60000}
@@ -89,9 +90,9 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
             {x = pipe.position.x, y = pipe.position.y - 1}
         }
         for _, pos in pairs(pipe_positions) do
-            --if not is_excluded_position(pos) then
-            table.insert(all_positions, pos)
-            --end
+            if not is_excluded_position(pos) then
+                table.insert(all_positions, pos)
+            end
         end
     end
 
@@ -132,17 +133,21 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
     end
 
      -- Collect positions from storage tanks
-    for _, plant in pairs(entities.storage_tanks) do
-        for _, pos in pairs(global.utils.get_storage_tank_connection_points(plant)) do
+    for _, tank in pairs(entities.storage_tanks) do
+        for _, pos in pairs(global.utils.get_storage_tank_connection_points(tank)) do
             if not is_excluded_position(pos) then
                 table.insert(all_positions, pos)
             end
         end
     end
-
+    game.print("There are "..#entities.drills)
+    for _, drill in pairs(entities.drills) do
+        game.print(serpent.block(drill))
+    end
     -- Collect positions from mining drills
     for _, drill in pairs(entities.drills) do
-        local drop_pos = {x=math.round(drill.drop_position.x*2)/2, y=math.round(drill.drop_position.y*2)/2}
+        game.print("Drop position ".. serpent.line(drill.drop_position))
+        local drop_pos = drill.drop_position--{x=math.round(drill.drop_position.x*2)/2, y=math.round(drill.drop_position.y*2)/2}
         if not is_excluded_position(drop_pos) then
             table.insert(all_positions, drop_pos)
         end
@@ -158,7 +163,7 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
             position = pos,
             force = force,
             graphics_variation = 255,
-            render_player_index = nil,
+            render_player_index = 65535,
             raise_built = false
         }
         if entity then

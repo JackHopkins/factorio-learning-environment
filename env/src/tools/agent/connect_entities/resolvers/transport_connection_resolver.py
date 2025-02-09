@@ -57,7 +57,10 @@ class TransportConnectionResolver(Resolver):
                 raise Exception(f"Cannot connect belts directly to a {target.prototype} object, we need to use an inserter.")
 
             case BeltGroup():
-                target_positions = self._get_transport_belt_adjacent_positions(target.inputs[0], target=True) #[belt.position for belt in target.inputs]
+                #if target.inputs:
+                target_positions = self._get_transport_belt_adjacent_positions(target.inputs[0], target=True)
+                #else:
+                #    target_positions = [belt.position for belt in target.belts]
 
             case Inserter():
                 target_positions = [target.pickup_position]

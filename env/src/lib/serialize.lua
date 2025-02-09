@@ -876,67 +876,166 @@ global.utils.serialize_entity = function(entity)
 
 
     -- Add input and output locations if the entity is a transport belt
+    --if entity.type == "transport-belt" or entity.type == "underground-belt" then
+    --    -- input_position is the position upstream of the belt
+    --    --local direction = entity.direction
+    --
+    --    local x, y = entity.position.x, entity.position.y
+    --    if entity.direction == defines.direction.north then
+    --        y = y + 1
+    --    elseif entity.direction == defines.direction.south then
+    --        y = y - 1
+    --    elseif entity.direction == defines.direction.east then
+    --        x = x - 1
+    --    elseif entity.direction == defines.direction.west then
+    --        x = x + 1
+    --    elseif entity.direction == defines.direction.northeast then
+    --        game.print("NORTHEAST")
+    --        x = x - 1
+    --        y = y + 1
+    --    elseif entity.direction == defines.direction.southeast then
+    --        x = x - 1
+    --        y = y - 1
+    --    elseif entity.direction == defines.direction.northwest then
+    --        x = x + 1
+    --        y = y + 1
+    --    elseif entity.direction == defines.direction.southwest then
+    --        x = x + 1
+    --        y = y - 1
+    --    end
+    --
+    --    serialized.input_position = {x = x, y = y}
+    --
+    --    -- output_position is the position downstream of the belt
+    --    local x, y = entity.position.x, entity.position.y
+    --    if entity.direction == defines.direction.north then
+    --        y = y - 1
+    --    elseif entity.direction == defines.direction.south then
+    --        y = y + 1
+    --    elseif entity.direction == defines.direction.east then
+    --        x = x + 1
+    --    elseif entity.direction == defines.direction.west then
+    --        x = x - 1
+    --    elseif entity.direction == defines.direction.northeast then
+    --        x = x + 1
+    --        y = y - 1
+    --    elseif entity.direction == defines.direction.southeast then
+    --        x = x + 1
+    --        y = y + 1
+    --    elseif entity.direction == defines.direction.northwest then
+    --        x = x - 1
+    --        y = y - 1
+    --    elseif entity.direction == defines.direction.southwest then
+    --        x = x - 1
+    --        y = y + 1
+    --    end
+    --    --create_beam_point_with_direction(game.players[1], entity.direction , {x = x, y = y})
+    --    serialized.output_position = {x = x, y = y}
+    --    serialized.position = {x = entity.position.x, y = entity.position.y}
+    --    --serialized.inventory = entity.get_transport_line(1).get_contents()
+    --
+    --    -- Get contents from both lines
+    --    local line1 = entity.get_transport_line(1)
+    --    local line2 = entity.get_transport_line(2)
+    --
+    --    -- Calculate if belt is full at the end (can't insert more items)
+    --    local is_full = not line1.can_insert_at_back() and not line2.can_insert_at_back()
+    --
+    --    serialized.belt_status = {
+    --        status = is_full and "full_output" or "normal"
+    --    }
+    --
+    --    -- Get and merge contents from both lines
+    --    serialized.inventory = {}
+    --    local line1_contents = line1.get_contents()
+    --    local line2_contents = line2.get_contents()
+    --
+    --    serialized.is_terminus = #entity.belt_neighbours["outputs"] == 0
+    --    serialized.is_source = #entity.belt_neighbours["inputs"] == 0
+    --
+    --    for item_name, count in pairs(line1_contents) do
+    --        serialized.inventory[item_name] = (serialized.inventory[item_name] or 0) + count
+    --    end
+    --    for item_name, count in pairs(line2_contents) do
+    --        serialized.inventory[item_name] = (serialized.inventory[item_name] or 0) + count
+    --    end
+    --
+    --    -- Add warning if belt is full
+    --    if not serialized.warnings then
+    --        serialized.warnings = {}
+    --    end
+    --    if is_full then
+    --        table.insert(serialized.warnings, "Belt output is full")
+    --    end
+    --
+    --    if entity.type == "underground-belt" then
+    --        serialized.is_input = entity.belt_to_ground_type == "input"
+    --        if serialized.is_input then
+    --            serialized.is_terminus = entity.neighbours == nil
+    --        else
+    --            serialized.is_source = entity.neighbours == nil
+    --        end
+    --        if entity.neighbours ~= nil then
+    --            --game.print(serpent.block(entity.neighbours))
+    --            serialized.connected_to = entity.neighbours.unit_number
+    --        end
+    --    end
+    --end
+    -- Add input and output locations if the entity is a transport belt
     if entity.type == "transport-belt" or entity.type == "underground-belt" then
-        -- input_position is the position upstream of the belt
-        --local direction = entity.direction
         local x, y = entity.position.x, entity.position.y
-        if entity.direction == defines.direction.north then
-            y = y + 1
-        elseif entity.direction == defines.direction.south then
-            y = y - 1
-        elseif entity.direction == defines.direction.east then
-            x = x - 1
-        elseif entity.direction == defines.direction.west then
-            x = x + 1
-        elseif entity.direction == defines.direction.northeast then
-            x = x - 1
-            y = y + 1
-        elseif entity.direction == defines.direction.southeast then
-            x = x - 1
-            y = y - 1
-        elseif entity.direction == defines.direction.northwest then
-            x = x + 1
-            y = y + 1
-        elseif entity.direction == defines.direction.southwest then
-            x = x + 1
-            y = y - 1
+
+        -- Initialize positions with default offsets based on belt direction
+        local input_offset = {
+            [defines.direction.north] = {x = 0, y = 1},
+            [defines.direction.south] = {x = 0, y = -1},
+            [defines.direction.east] = {x = -1, y = 0},
+            [defines.direction.west] = {x = 1, y = 0}
+        }
+
+        local output_offset = {
+            [defines.direction.north] = {x = 0, y = -1},
+            [defines.direction.south] = {x = 0, y = 1},
+            [defines.direction.east] = {x = 1, y = 0},
+            [defines.direction.west] = {x = -1, y = 0}
+        }
+
+        -- Set input position based on upstream connections
+        local input_pos = {x = x, y = y}
+        if #entity.belt_neighbours["inputs"] > 0 then
+            -- Use the position of the first connected input belt
+            local input_belt = entity.belt_neighbours["inputs"][1]
+            input_pos = {x = input_belt.position.x, y = input_belt.position.y}
+        else
+            -- No input connection, use default offset
+            local offset = input_offset[entity.direction]
+            input_pos.x = x + offset.x
+            input_pos.y = y + offset.y
         end
+        serialized.input_position = input_pos
 
-        serialized.input_position = {x = x, y = y}
-
-        -- output_position is the position downstream of the belt
-        local x, y = entity.position.x, entity.position.y
-        if entity.direction == defines.direction.north then
-            y = y - 1
-        elseif entity.direction == defines.direction.south then
-            y = y + 1
-        elseif entity.direction == defines.direction.east then
-            x = x + 1
-        elseif entity.direction == defines.direction.west then
-            x = x - 1
-        elseif entity.direction == defines.direction.northeast then
-            x = x + 1
-            y = y - 1
-        elseif entity.direction == defines.direction.southeast then
-            x = x + 1
-            y = y + 1
-        elseif entity.direction == defines.direction.northwest then
-            x = x - 1
-            y = y - 1
-        elseif entity.direction == defines.direction.southwest then
-            x = x - 1
-            y = y + 1
+        -- Set output position based on downstream connections
+        local output_pos = {x = x, y = y}
+        if #entity.belt_neighbours["outputs"] > 0 then
+            -- Use the position of the first connected output belt
+            local output_belt = entity.belt_neighbours["outputs"][1]
+            output_pos = {x = output_belt.position.x, y = output_belt.position.y}
+        else
+            -- No output connection, use default offset
+            local offset = output_offset[entity.direction]
+            output_pos.x = x + offset.x
+            output_pos.y = y + offset.y
         end
-        --create_beam_point_with_direction(game.players[1], entity.direction , {x = x, y = y})
-        serialized.output_position = {x = x, y = y}
-        serialized.position = {x = entity.position.x, y = entity.position.y}
-        --serialized.inventory = entity.get_transport_line(1).get_contents()
+        serialized.output_position = output_pos
 
-        -- Get contents from both lines
+        -- Store the belt's own position
+        serialized.position = {x = x, y = y}
+
+        -- Handle belt contents and status
         local line1 = entity.get_transport_line(1)
         local line2 = entity.get_transport_line(2)
 
-        -- Calculate if belt is full at the end (can't insert more items)
+        -- Calculate if belt is full at the output
         local is_full = not line1.can_insert_at_back() and not line2.can_insert_at_back()
 
         serialized.belt_status = {
@@ -948,9 +1047,11 @@ global.utils.serialize_entity = function(entity)
         local line1_contents = line1.get_contents()
         local line2_contents = line2.get_contents()
 
+        -- Set terminus and source flags based on connections
         serialized.is_terminus = #entity.belt_neighbours["outputs"] == 0
         serialized.is_source = #entity.belt_neighbours["inputs"] == 0
 
+        -- Merge contents from both belt lines
         for item_name, count in pairs(line1_contents) do
             serialized.inventory[item_name] = (serialized.inventory[item_name] or 0) + count
         end
@@ -966,6 +1067,7 @@ global.utils.serialize_entity = function(entity)
             table.insert(serialized.warnings, "Belt output is full")
         end
 
+        -- Special handling for underground belts
         if entity.type == "underground-belt" then
             serialized.is_input = entity.belt_to_ground_type == "input"
             if serialized.is_input then
@@ -974,7 +1076,6 @@ global.utils.serialize_entity = function(entity)
                 serialized.is_source = entity.neighbours == nil
             end
             if entity.neighbours ~= nil then
-                --game.print(serpent.block(entity.neighbours))
                 serialized.connected_to = entity.neighbours.unit_number
             end
         end

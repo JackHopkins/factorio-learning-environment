@@ -524,4 +524,5 @@ def agglomerate_groupable_entities(connected_entities: List[Entity]) -> List[Ent
             position=connected_entities[0].position
         )]
 
-    return construct_belt_groups(connected_entities, prototype)
+    groups = construct_belt_groups(connected_entities, prototype)
+    return groups

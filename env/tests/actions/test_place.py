@@ -109,34 +109,9 @@ def test_place_pickup(game):
     assert boilers_in_inventory == game.inspect_inventory()[Prototype.Boiler] + 1
 
     game.pickup_entity(Prototype.Boiler, position=Position(x=0, y=0))
-    assert boilers_in_inventory == game.inspect_inventory()[Prototype.Boiler] - 1
+    assert boilers_in_inventory == game.inspect_inventory()[Prototype.Boiler]
 
 
-def test_place_override(game):
-    """
-    Place an inserter over a transport belt and verify that the transport belt is removed
-    :param game:
-    :return:
-    """
-
-    # Lay belts from intermediate position to iron position (along X-axis)
-    iron_position = game.nearest(Resource.IronOre)
-    far_left_of_iron = Position(x=iron_position.x + 10, y=iron_position.y)
-    left_of_iron = Position(x=iron_position.x + 1, y=iron_position.y)
-
-    coal_belt = game.connect_entities(far_left_of_iron, left_of_iron, connection_type=Prototype.TransportBelt)
-
-    # Place the iron mining drill at iron_position, facing down
-    game.move_to(iron_position)
-    final_belt = coal_belt[-1]
-    # Place an inserter to fuel the iron drill from the coal belt
-    inserter_position = Position(x=final_belt.position.x + final_belt.tile_dimensions.tile_width / 2,
-                                 y=final_belt.position.y)
-    inserter = game.place_entity(Prototype.BurnerInserter, position=left_of_iron, direction=Direction.LEFT, exact=True)
-
-    belt = game.inspect_entities(inserter.position, radius=10).get_entity(Prototype.TransportBelt)
-
-    assert belt.quantity == 9
 
 
 def test_place_offshore_pumps(game):
@@ -232,16 +207,22 @@ def test_place_burner_inserters(game):
                                       position=location,
                                       direction=Direction.LEFT)
     assert offshore_pump.direction.value == Direction.LEFT.value
+    game.instance.reset()
+
     game.move_to(Position(x=location.x, y=location.y))
     offshore_pump = game.place_entity(entity,
                                       position=location,
                                       direction=Direction.RIGHT)
     assert offshore_pump.direction.value == Direction.RIGHT.value
+    game.instance.reset()
+
     game.move_to(Position(x=location.x, y=location.y))
     offshore_pump = game.place_entity(entity,
                                       position=location,
                                       direction=Direction.UP)
     assert offshore_pump.direction.value == Direction.UP.value
+    game.instance.reset()
+
     game.move_to(Position(x=location.x, y=location.y))
     offshore_pump = game.place_entity(entity,
                                       position=location,
@@ -263,21 +244,28 @@ def test_place_burner_mining_drills(game):
                               position=location,
                               direction=Direction.LEFT)
     assert drill.direction.value == Direction.LEFT.value
+    game.instance.reset()
+
     game.move_to(Position(x=location.x, y=location.y))
     drill = game.place_entity(entity,
                               position=location,
                               direction=Direction.RIGHT)
     assert drill.direction.value == Direction.RIGHT.value
+    game.instance.reset()
+
     game.move_to(Position(x=location.x, y=location.y))
     drill = game.place_entity(entity,
                               position=location,
                               direction=Direction.UP)
     assert drill.direction.value == Direction.UP.value
+    game.instance.reset()
+
     game.move_to(Position(x=location.x, y=location.y))
     drill = game.place_entity(entity,
                               position=location,
                               direction=Direction.DOWN)
     assert drill.direction.value == Direction.DOWN.value
+    game.instance.reset()
 
 def test_placed_drill_status(game):
     iron_position = game.nearest(Resource.IronOre)

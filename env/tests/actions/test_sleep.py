@@ -15,8 +15,8 @@ def game(instance):
 
 def test_sleep(game):
     for i in range(10):
-        game.speed(i)
-        speed = game._speed
+        game.instance.speed(i)
+        speed = game.speed
         start_time = time.time()
         game.sleep(10)
         end_time = time.time()

@@ -15,6 +15,6 @@ def test_path(game):
     :param game:
     :return:
     """
-    path = game.request_path(Position(x=0, y=0), Position(x=10, y=0))
+    path = game._request_path(Position(x=0, y=0), Position(x=10, y=0))
 
     assert path

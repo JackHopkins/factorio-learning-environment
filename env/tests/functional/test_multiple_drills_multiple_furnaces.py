@@ -63,8 +63,8 @@ def test_multi_drill_multi_furnace(game):
     drill3 = game.get_entity(Prototype.BurnerMiningDrill, drill3.position)
 
     # Connect drills with transport belts to create a collection line
-    belts1 = game.connect_entities(drill1.drop_position, drill2.drop_position, Prototype.TransportBelt)
-    belts2 = game.connect_entities(drill2.drop_position, drill3.drop_position, Prototype.TransportBelt)
+    belts = game.connect_entities(drill1.drop_position, drill2.drop_position, Prototype.TransportBelt)
+    belts = game.connect_entities(belts, drill3.drop_position, Prototype.TransportBelt)
 
     # Connect the collection line to both furnaces using inserters
     # Place inserter for first furnace
@@ -92,8 +92,8 @@ def test_multi_drill_multi_furnace(game):
     inserter2 = game.rotate_entity(inserter2, Direction.UP)
 
     # Connect collection line to furnace inserters
-    game.connect_entities(drill3.drop_position, inserter2.pickup_position, Prototype.TransportBelt)
-    game.connect_entities(inserter2.pickup_position, inserter1.pickup_position, Prototype.TransportBelt)
+    belts = game.connect_entities(belts, inserter2.pickup_position, Prototype.TransportBelt)
+    belts = game.connect_entities(belts, inserter1.pickup_position, Prototype.TransportBelt)
 
     # Add output inserters for furnaces
     # First furnace output inserter
@@ -125,8 +125,8 @@ def test_multi_drill_multi_furnace(game):
     print(f"Placed collection chest at {collection_chest.position}")
 
     # Connect output inserters to chest with belts
-    game.connect_entities(output_inserter1.drop_position, output_inserter2.drop_position, Prototype.TransportBelt)
-    game.connect_entities(output_inserter2.drop_position, collection_chest.position.right(2), Prototype.TransportBelt)
+    belts = game.connect_entities(output_inserter1.drop_position, output_inserter2.drop_position, Prototype.TransportBelt)
+    game.connect_entities(belts, collection_chest.position.right(2), Prototype.TransportBelt)
 
     output_inserter3 = game.place_entity_next_to(
         Prototype.BurnerInserter,

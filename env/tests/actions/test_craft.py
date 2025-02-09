@@ -106,8 +106,8 @@ def test_craft_uncraftable_entity(game):
     print(f"Crafted iron gear wheels. Current inventory: {game.inspect_inventory()}")
 
 def test_craft_no_technology(game):
-    game.all_technologies_researched = False
-    game.reset()
+    game.instance.all_technologies_researched = False
+    game.instance.reset()
 
     try:
         response = game.craft_item(Prototype.AssemblingMachine1, quantity=1)

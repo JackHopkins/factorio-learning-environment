@@ -2,7 +2,8 @@ import pytest
 
 from entities import Position, Entity
 from instance import Direction
-from game_types import Prototype, Resource
+from game_types import Prototype, Resource, RecipeName
+
 
 @pytest.fixture()
 def base_game(instance):
@@ -80,26 +81,18 @@ def test_build_chemical_plant(game):
                                  direction=Direction.DOWN,
                                  position=Position(x=0, y=-6))
 
+    refinery = game.set_entity_recipe(refinery, RecipeName.BasicOilProcessing)
     # Start at the origin
     game.move_to(Position(x=0, y=0))
 
     chemical_plant = game.place_entity(Prototype.ChemicalPlant,
                                        direction=Direction.DOWN,
-                                       position=Position(x=0, y=0))
+                                       position=Position(x=0, y=6))
+    chemical_plant = game.set_entity_recipe(chemical_plant, RecipeName.LightOilCracking)
 
     steam_engine = game.get_entity(Prototype.SteamEngine, game.nearest(Prototype.SteamEngine))
-
 
 
     game.connect_entities(pumpjack, refinery, connection_type=Prototype.Pipe)
     game.connect_entities(refinery, chemical_plant, connection_type=Prototype.Pipe)
     game.connect_entities(pumpjack, refinery, chemical_plant, steam_engine, connection_type=Prototype.SmallElectricPole)
-
-    #game.connect_entities(pumpjack, steam_engine, connection_type=Prototype.SmallElectricPole)
-    entities = game.get_entities()
-    # Find the nearest coal patch
-    coal_patch = game.get_resource_patch(Resource.Coal, game.nearest(Resource.Coal))
-
-    # Move to the center of the coal patch
-    game.move_to(coal_patch.bounding_box.left_top)
-

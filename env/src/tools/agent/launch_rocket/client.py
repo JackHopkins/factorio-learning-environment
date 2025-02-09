@@ -16,8 +16,8 @@ class LaunchRocket(Tool):
 
     def __call__(self, silo: Union[Position, RocketSilo]) -> RocketSilo:
         """
-        Move to a position.
-        :param position: Position to move to.
+        Launch a rocket.
+        :param silo: Rocket silo
         :return: Your final position
         """
 

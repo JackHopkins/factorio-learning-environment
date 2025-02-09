@@ -36,6 +36,7 @@ def test_defence(game):
     while copper_ore_harvested < 200:
         copper_ore_harvested += game.harvest_resource(copper_ore_position, 50)
 
+    game.move_to(coal_position)
     coal_harvested = game.harvest_resource(coal_position, 50)
 
     print(f"Harvested {iron_ore_harvested} iron ore and {coal_harvested} coal")

@@ -52,7 +52,7 @@ def test_auto_fueling_iron_smelting_factory(game):
     coal_belt = game.connect_entities(source=coal_drill, target=iron_drill_fuel_inserter, connection_type=Prototype.TransportBelt)
 
     # Extend coal belt to pass next to the furnace position
-    furnace_position = Position(x=iron_drill.drop_position.x, y=iron_drill.drop_position.y + 1)
+    furnace_position = Position(x=iron_drill.drop_position.x, y=iron_drill.drop_position.y)
 
     # Place the furnace at the iron drill's drop position
     iron_furnace = game.place_entity(Prototype.StoneFurnace, position=furnace_position)
@@ -61,8 +61,7 @@ def test_auto_fueling_iron_smelting_factory(game):
     furnace_fuel_inserter_position = Position(x=iron_furnace.position.x + 1, y=iron_furnace.position.y)
     furnace_fuel_inserter = game.place_entity(Prototype.BurnerInserter, position=furnace_fuel_inserter_position, direction=Direction.LEFT)
 
-    coal_belt_to_furnace = game.connect_entities(iron_drill_fuel_inserter.pickup_position, furnace_fuel_inserter.pickup_position, connection_type=Prototype.TransportBelt)
-    coal_belt.extend(coal_belt_to_furnace)
+    coal_belt = game.connect_entities(coal_belt, furnace_fuel_inserter, connection_type=Prototype.TransportBelt)
 
     furnace_to_chest_inserter = game.place_entity_next_to(Prototype.BurnerInserter,
                                                           reference_position=iron_furnace.position,
@@ -79,7 +78,7 @@ def test_auto_fueling_iron_smelting_factory(game):
     game.insert_item(Prototype.Coal, coal_drill, quantity=10)
 
     # Wait for some time to let the system produce iron plates
-    sleep(60)  # Wait for 60 seconds
+    sleep(15)  # Wait for 15 seconds
 
     # Check the iron chest to see if iron plates have been produced
     chest_inventory = game.inspect_inventory(iron_chest)

@@ -16,7 +16,7 @@ def game(instance):
         'storage-tank': 8,
         'iron-plate': 200,
         'steel-chest': 5,
-        'pipe-to-ground': 10,
+        'pipe-to-ground': 20,
         'sulfur': 100,
         'coal': 200,
         'solar-panel': 3,
@@ -93,7 +93,7 @@ def setup_processing_building(game, recipe_name: RecipeName, position: Position,
     return building, requirements
 
 def test_coal_liquefaction(game):
-    recipe_setup(game, [RecipeName.CoalLiquefaction], Prototype.OilRefinery, Direction.DOWN)
+    recipe_setup(game, [RecipeName.CoalLiquefaction], Prototype.OilRefinery)
     #recipe_setup(game, [RecipeName.CoalLiquefaction], Prototype.OilRefinery, Direction.UP)
     #AWrecipe_setup(game, [RecipeName.CoalLiquefaction], Prototype.OilRefinery, Direction.RIGHT)
 
@@ -113,7 +113,7 @@ def test_light_oil_cracking(game):
     recipe_setup(game, [RecipeName.LightOilCracking], Prototype.ChemicalPlant)
 
 
-def recipe_setup(game, recipes_to_test, prototype, direction):
+def recipe_setup(game, recipes_to_test, prototype, direction=Direction.DOWN):
     """Test setup for various recipes with proper positioning"""
     for recipe in recipes_to_test:
         # Reset game state for each recipe
@@ -174,11 +174,11 @@ def recipe_setup(game, recipes_to_test, prototype, direction):
                 current_x += 8
 
         for name, position in output_tanks.items():
-            game.connect_entities(building, position, connection_type=Prototype.Pipe)
+            game.connect_entities(building, position, connection_type={Prototype.UndergroundPipe, Prototype.Pipe})
 
         # Connect fluid inputs and outputs
         for name, position in fluid_inputs.items():
-            game.connect_entities(position, building, connection_type=Prototype.Pipe)
+            game.connect_entities(position, building, connection_type={Prototype.UndergroundPipe, Prototype.Pipe})
 
 
         game.sleep(40)

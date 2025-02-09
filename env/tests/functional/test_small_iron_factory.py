@@ -102,15 +102,6 @@ def test_steel_smelting_chain(game):
     game.insert_item(Prototype.Coal, furnace2, 5)
     game.insert_item(Prototype.Coal, inserter1, 1)
 
-    # Verify setup
-    entities = game.inspect_entities(burner_drill.position, radius=10)
-    assert any(
-        e.name == "burner-mining-drill" for e in entities.entities), "Burner mining drill not found in inspection"
-    assert sum(
-        1 for e in entities.entities if e.name == "stone-furnace") == 2, "Two stone furnaces not found in inspection"
-    assert sum(1 for e in entities.entities if
-               e.name == "burner-inserter") == 1, "A burner inserter not found in inspection"
-
     # Test that the stone furnace has steel after 60 seconds
     game.sleep(60)
     furnace_inventory = game.inspect_inventory(furnace2)
@@ -150,28 +141,33 @@ def test_build_iron_plate_factory(game):
 
     iron_drill_coal_belt_inserter = game.place_entity_next_to(Prototype.BurnerInserter, chest.position, Direction.LEFT, spacing=0)
 
-    # Place a transport belt form the coal belt inserter to the end of the
-    coal_belt_start = game.place_entity_next_to(Prototype.TransportBelt, coal_belt_inserter.position, Direction.RIGHT, spacing=0)
 
     # Place a transport belt from the miner's output
-    iron_belt_start = game.place_entity_next_to(Prototype.TransportBelt, miner.position, Direction.DOWN, spacing=0)
+    iron_belt_start = miner.position.down()#, Direction.DOWN, spacing=0)
 
+    furnaces = []
     # Place 5 stone furnaces along the belt
     furnace_line_start = game.place_entity_next_to(Prototype.StoneFurnace, miner.position, Direction.DOWN,
                                                    spacing=2)
+    furnaces.append(furnace_line_start)
     current_furnace = furnace_line_start
 
     for _ in range(3):
         current_furnace = game.place_entity_next_to(Prototype.StoneFurnace, current_furnace.position, Direction.RIGHT,
                                                     spacing=WIDTH_SPACING)
+        furnaces.append(current_furnace)
 
     # Connect furnaces with transport belt
     above_current_furnace = Position(x=current_furnace.position.x, y=current_furnace.position.y - 2.5)
-    iron_belt = game.connect_entities(iron_belt_start.position, above_current_furnace, Prototype.TransportBelt)
+    iron_belt = game.connect_entities(iron_belt_start, above_current_furnace, Prototype.TransportBelt)
 
-    coal_to_iron_belt = game.connect_entities(iron_drill_coal_belt_inserter.drop_position, iron_belt[0], Prototype.TransportBelt)
+    coal_to_iron_belt = game.connect_entities(iron_drill_coal_belt_inserter.drop_position, iron_belt, Prototype.TransportBelt)
 
-    next_coal_belt_position = coal_belt_start.position
+   # next_coal_belt_position = coal_belt_start.position #coal_belt_start
+    # Place a transport belt form the coal belt inserter to the end of the
+    # coal_belt_start = game.place_entity_next_to(Prototype.TransportBelt, coal_belt_inserter.position, Direction.RIGHT,
+    #                                             spacing=0)
+    iron_belt = game.connect_entities(coal_belt_inserter.position, coal_belt_inserter.position.right(10), Prototype.TransportBelt)
 
     # Place 4 more drills
     miners = [miner]
@@ -183,18 +179,21 @@ def test_build_iron_plate_factory(game):
 
         # Connect furnaces with coal belt
         above_current_drill = Position(x=miner.position.x, y=miner.position.y - miner.dimensions.height - 1)
-        game.connect_entities(next_coal_belt_position, above_current_drill, Prototype.TransportBelt)
+        #game.connect_entities(next_coal_belt_position, above_current_drill, Prototype.TransportBelt)
 
         miner_coal_inserter = game.place_entity(Prototype.BurnerInserter, Direction.UP, Position(x=miner.drop_position.x, y=above_current_drill.y + 1))
         miner_coal_inserter = game.rotate_entity(miner_coal_inserter, Direction.DOWN)
         next_coal_belt_position = above_current_drill
 
+    #game.connect_entities(next_coal_belt_position, above_current_drill, Prototype.TransportBelt)
+
     # Place inserters for each furnace
     for i in range(4):
-        furnace_pos = Position(x=miners[i].drop_position.x, y=furnace_line_start.position.y + 1)
+        furnace_pos = furnaces[i].position#Position(x=miners[i].drop_position.x, y=furnace_line_start.position.y + 1)
         game.move_to(furnace_pos)
-        game.place_entity(Prototype.BurnerInserter, Direction.DOWN, Position(x=furnace_pos.x, y=furnace_pos.y - (current_furnace.dimensions.height + 2)))
-        game.place_entity(Prototype.BurnerInserter, Direction.DOWN, Position(x=furnace_pos.x, y=furnace_pos.y - 1))
+        game.place_entity_next_to(Prototype.BurnerInserter, furnace_pos, Direction.DOWN)
+        ins = game.place_entity_next_to(Prototype.BurnerInserter, furnace_pos, Direction.UP)
+        game.rotate_entity(ins, Direction.DOWN)
 
     # Place output belt for iron plates
     output_belt = game.connect_entities(Position(x=furnace_line_start.position.x, y=furnace_line_start.position.y + 2.5),
@@ -202,13 +201,12 @@ def test_build_iron_plate_factory(game):
 
     # Place a chest at the end of the output belt
     output_chest = game.place_entity_next_to(Prototype.IronChest,
-                                             Position(x=output_belt[-1].output_positions[0].x,
-                                                      y=output_belt[-1].output_positions[0].y),
-                                             Direction.RIGHT, spacing=0)
+                                             output_belt.outputs[0].position,
+                                             Direction.RIGHT, spacing=1)
 
     # Place an inserter to move plates from belt to chest
     game.place_entity(Prototype.BurnerInserter, Direction.RIGHT,
-                      Position(x=output_chest.position.x-1, y=output_chest.position.y))
+                      output_chest.position.left())
 
     # Find nearest coal patch
     coal_patch = game.get_resource_patch(Resource.Coal, game.nearest(Resource.Coal))

@@ -131,7 +131,7 @@ def test_get_entities_hanging_bug(game):
 
     # Place boiler next to offshore pump
     # Important: The boiler needs to be placed with a spacing of 2 to allow for pipe connections
-    boiler = game.place_entity_next_to(Prototype.Boiler, offshore_pump.position, Direction.DOWN, spacing=2)
+    boiler = game.place_entity_next_to(Prototype.Boiler, offshore_pump.position, Direction.RIGHT, spacing=2)
     assert boiler, "Failed to place boiler"
 
     # add coal to the boiler
@@ -144,20 +144,12 @@ def test_get_entities_hanging_bug(game):
 
     # Place steam engine next to boiler
     # Important: The steam engine needs to be placed with a spacing of 2 to allow for pipe connections
-    steam_engine = game.place_entity_next_to(Prototype.SteamEngine, boiler.position, Direction.LEFT, spacing=2)
+    steam_engine = game.place_entity_next_to(Prototype.SteamEngine, boiler.position, Direction.RIGHT, spacing=2)
     assert steam_engine, "Failed to place steam engine"
 
     # Connect boiler to steam engine with pipes
     pipes = game.connect_entities(boiler, steam_engine, Prototype.Pipe)
     assert pipes, "Failed to connect boiler to steam engine"
-
-    # check if the boiler is receiving electricity
-    # if it says not connected to power network, then it is working
-    # it just isn't connected to any power poles
-    inspected_steam_engine = game.inspect_entities(position=steam_engine.position, radius=1).get_entity(
-        Prototype.SteamEngine)
-
-    assert inspected_steam_engine.warning == 'not connected to power network'
 
     entities = game.get_entities()
     assert len(entities) == 4

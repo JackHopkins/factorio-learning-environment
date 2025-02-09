@@ -26,13 +26,13 @@ def test_multi_drill_multi_furnace(game):
     print(f"Moved to copper ore position at {copper_ore_position}")
 
     # Define the building box for the drill line
-    building_box = BuildingBox(width=2 * 5,
-                               height=4)  # 5 drills, 2 width per drill, 4 height to account for inserter and belt
+    building_box = BuildingBox(width=2 * 4,
+                               height=3)  # 5 drills, 2 width per drill, 4 height to account for inserter and belt
     # Get the nearest buildable area around the copper ore position
     buildable_coordinates = game.nearest_buildable(Prototype.ElectricMiningDrill, building_box, copper_ore_position)
 
     # Place the drill line
-    left_top = buildable_coordinates["left_top"]
+    left_top = buildable_coordinates.left_top
     game.move_to(left_top)
     for i in range(4):
         drill_position = Position(x=left_top.x + 3 * i, y=left_top.y)

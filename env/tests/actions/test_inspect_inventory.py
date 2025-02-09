@@ -37,24 +37,6 @@ def test_inspect_assembling_machine_inventory(game):
     iron_count = chest_inventory[Prototype.IronPlate]
     assert iron_count == 5
 
-def test_inspect_chest_inventory(game):
-    # Place storage chest at end of main belt
-    storage_pos = Position(x=-8.5, y=30.5)
-    game.move_to(storage_pos)
-    storage_chest = game.place_entity(Prototype.IronChest, position=storage_pos)
-    print(f"Placed storage chest at {storage_pos}")
-
-    # Connect main belt to storage chest
-    belt_end = Position(x=-10.5, y=30.5)
-    game.connect_entities(belt_end, storage_pos, Prototype.TransportBelt)
-    print(f"Connected main belt at {belt_end} to storage chest at {storage_pos}")
-
-    # Verify ore flow to storage chest
-    game.sleep(10)
-    storage_chest = game.get_entity(Prototype.IronChest, storage_pos)
-    storage_inv = game.inspect_inventory(storage_chest)
-    pass
-
 
 def test_print_inventory(game):
     inventory = game.inspect_inventory()

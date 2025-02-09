@@ -14,7 +14,7 @@ def game(instance):
         'iron-plate': 50,
         'iron-ore': 10,
         'stone-furnace': 1,
-        'assembly-machine-1': 1,
+        'assembling-machine-1': 1,
         'burner-mining-drill': 1,
         'lab': 1,
         'automation-science-pack': 1,
@@ -54,6 +54,7 @@ def test_get_offshore_pump(game):
     assert boiler is not None, "Failed to retrieve boiler"
     # Check to see if the boiler has water
     assert boiler.fluid_box, "Failed to get water"
+
 def test_get_stone_furnace(game):
     """
     Test to ensure that the inventory of a stone furnace is correctly updated after smelting iron ore
@@ -62,6 +63,7 @@ def test_get_stone_furnace(game):
     """
     # Check initial inventory
     position = game.nearest(Resource.Stone)
+    game.move_to(position)
     # 1. Place a stone furnace
     stone_furnace = game.place_entity(Prototype.StoneFurnace, Direction.UP, position)
     assert stone_furnace is not None, "Failed to place stone furnace"
@@ -85,6 +87,7 @@ def test_get_mining_drill(game):
     """
     # Check initial inventory
     position = game.nearest(Resource.IronOre)
+    game.move_to(position)
     mining_drill = game.place_entity(Prototype.BurnerMiningDrill, Direction.UP, position)
     game.insert_item(Prototype.Coal, mining_drill, 5)
     assert mining_drill is not None, "Failed to place mining drill"

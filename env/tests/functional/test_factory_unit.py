@@ -16,7 +16,7 @@ def game(instance):
     instance.reset()
 
 
-def test_steam_engines(game: FactorioInstance):
+def test_steam_engines(game):
     #game.craft_item(Prototype.OffshorePump)
     game.move_to(game.nearest(Resource.Water))
     offshore_pump = game.place_entity(Prototype.OffshorePump,
@@ -49,9 +49,9 @@ def test_steam_engines(game: FactorioInstance):
     assert burner_inserter
 
     belts = game.connect_entities(burner_mining_drill, burner_inserter, connection_type=Prototype.TransportBelt)
-    assert len(belts[0].outputs) == 1
+    assert len(belts.outputs) == 1
 
-    coal_to_boiler_belts = game.connect_entities(belts[0], coal_inserter.pickup_position, connection_type=Prototype.TransportBelt)
+    coal_to_boiler_belts = game.connect_entities(belts, coal_inserter.pickup_position, connection_type=Prototype.TransportBelt)
     assert coal_to_boiler_belts
 
     assembler = game.place_entity_next_to(Prototype.AssemblingMachine1,
@@ -102,7 +102,7 @@ def test_iron_smelting(game: FactorioInstance):
     game.move_to(nearest_iron_ore)
     try:
         iron_mining_drill = game.place_entity(Prototype.BurnerMiningDrill, position=nearest_iron_ore)
-        stone_furnace = game.place_entity(Prototype.StoneFurnace, position=iron_mining_drill.drop_position)
+        stone_furnace = game.place_entity(Prototype.StoneFurnace, position=iron_mining_drill.drop_position.up())
 
         coal_to_iron_drill_inserter = game.place_entity_next_to(Prototype.BurnerInserter,
                                                                 reference_position=iron_mining_drill.position,
@@ -119,7 +119,7 @@ def test_iron_smelting(game: FactorioInstance):
                                                    coal_to_iron_drill_inserter.pickup_position,
                                                    connection_type=Prototype.TransportBelt)
 
-        coal_to_smelter_belt = game.connect_entities(belts[-1], coal_to_drill_belt[-1],
+        coal_to_smelter_belt = game.connect_entities(belts, coal_to_drill_belt,
                                                      connection_type=Prototype.TransportBelt)
         pass
     except Exception as e:

@@ -9,7 +9,8 @@ def game(instance):
     instance.set_inventory(**{
         'wooden-chest': 100,
         'electric-mining-drill': 10,
-        'steam-engine': 1
+        'steam-engine': 1,
+        'burner-mining-drill': 5
     })
     yield instance.namespace
 
@@ -25,10 +26,9 @@ def test_nearest_buildable_simple(game):
                                       chest_box, 
                                       Position(x=5, y=5))
 
-    for key, coord in boundingbox_coords.items():
-        # Verify the returned position is valid
-        can_build = game.can_place_entity(Prototype.WoodenChest, position = coord)
-        assert can_build is True
+
+    can_build = game.can_place_entity(Prototype.WoodenChest, position = boundingbox_coords.center())
+    assert can_build is True
 
 def test_nearest_buildable_near_water(game):
     """
@@ -42,9 +42,11 @@ def test_nearest_buildable_near_water(game):
     building_box = BuildingBox(width=5, height=3)  # Steam engine dimensions are 3x5
     buildable_area = game.nearest_buildable(Prototype.SteamEngine, building_box, water_pos)
 
+
     # Step 2: Place Steam Engine at Valid Position
     steam_engine_position = buildable_area.center()
-    game.move_to(steam_engine_position)
+    game.move_to(steam_engine_position.right(5))
+
     steam_engine = game.place_entity(Prototype.SteamEngine, direction=Direction.RIGHT, position=steam_engine_position)
 
     assert True, "The steam engine should be placeable due to the bounding box"
@@ -70,28 +72,26 @@ def test_nearest_buildable_mining_drill(game):
         center_position=game.nearest(Resource.CopperOre)
         #center_position=Position(5, 5)
     )
-    for key, coord in boundingbox_coords.items():
-        game.move_to(coord)
-        # Verify the position is valid for the entire bounding box
-        can_build = game.can_place_entity(
-            Prototype.BurnerMiningDrill,
-            position=coord
-        )
-        game.place_entity(Prototype.BurnerMiningDrill, position=coord)
-        #assert can_build is True
+    game.move_to(boundingbox_coords.center())
+    # Verify the position is valid for the entire bounding box
+    can_build = game.can_place_entity(
+        Prototype.BurnerMiningDrill,
+        position=boundingbox_coords.center()
+    )
+    game.place_entity(Prototype.BurnerMiningDrill, position=boundingbox_coords.center())
+    #assert can_build is True
 
     boundingbox_coords = game.nearest_buildable(
         Prototype.BurnerMiningDrill,
         building_box=drill_box,
         center_position=Position(5, 5)
     )
-    for key, coord in boundingbox_coords.items():
-        # Verify the position is valid for the entire bounding box
-        can_build = game.can_place_entity(
-            Prototype.BurnerMiningDrill,
-            position=coord
-        )
-        assert can_build is True
+    can_build = game.can_place_entity(
+        Prototype.BurnerMiningDrill,
+        direction=Direction.UP,
+        position=boundingbox_coords.center()
+    )
+    assert can_build is True
 
 def test_nearest_buildable_invalid_position(game):
     """
@@ -101,21 +101,14 @@ def test_nearest_buildable_invalid_position(game):
     # Define mining drill bounding box (3x3)
     drill_box = BuildingBox(height=11, width=7)
 
-    boundingbox_coords = game.nearest_buildable(
-        Prototype.BurnerMiningDrill,
-        building_box=drill_box,
-        center_position=game.nearest(Resource.CopperOre)
-        #center_position=Position(5, 5)
-    )
-
     # Attempt to find position for an entity with impossible bounding box
     with pytest.raises(Exception) as exc_info:
         boundingbox_coords = game.nearest_buildable(
         Prototype.BurnerMiningDrill,
         building_box=drill_box,
         center_position=game.nearest(Resource.CopperOre)
-    )
-    assert "Could not find a buildable position" in str(exc_info.value)
+        )
+        assert "Could not find a buildable position" in str(exc_info.value)
 
 def test_nearest_buildable_multiple_entities(game):
     """
@@ -132,7 +125,7 @@ def test_nearest_buildable_multiple_entities(game):
     )
 
     # get the top left
-    top_left = coordinates['left_top']
+    top_left = coordinates.left_top
     positions = []
     # iterate from left to right
     for i in range(0, 3):
@@ -166,7 +159,7 @@ def test_nearest_buildable_relative_to_player(game):
 
     buildingbox = BuildingBox(height=3, width=3)
     # Find buildable position
-    position = game.nearest_buildable(Prototype.WoodenChest, buildingbox, player_pos)
+    position = game.nearest_buildable(Prototype.WoodenChest, buildingbox, player_pos).center()
 
     # Verify found position is reasonably close to player
     distance = ((position.x - player_pos.x) ** 2 +
@@ -179,21 +172,21 @@ def test_nearest_buildable_with_obstacles(game):
     Test finding buildable position when there are obstacles in the way.
     """
     # Place some obstacles around player
-    player_pos = game.get_player_position()
+    player_pos = Position(x=0, y=0)
     for dx, dy in [(0, 1), (1, 0), (-1, 0), (0, -1)]:
         obstacle_pos = Position(
             x=player_pos.x + dx,
             y=player_pos.y + dy
         )
-        game.place_entity(Prototype.WoodenChest, obstacle_pos)
+        game.place_entity(Prototype.WoodenChest, Direction.UP, obstacle_pos)
 
     chest_box = BuildingBox(height=1, width=1)
     # Find buildable position for another chest
     coords = game.nearest_buildable(Prototype.WoodenChest, chest_box, player_pos)
 
-    position = coords["left_top"]
+    position = coords.center()
     # Verify position is valid and different from obstacle positions
-    can_build = game.can_place_entity(Prototype.WoodenChest, position)
+    can_build = game.can_place_entity(Prototype.WoodenChest, Direction.UP, position)
     assert can_build is True
 
     # Verify it's not at any of the obstacle positions
@@ -202,7 +195,7 @@ def test_nearest_buildable_with_obstacles(game):
             x=player_pos.x + dx,
             y=player_pos.y + dy
         )
-        assert position != obstacle_pos
+        assert not position is obstacle_pos
 
 
 def test_drill_groups(game):

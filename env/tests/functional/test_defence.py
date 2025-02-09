@@ -10,7 +10,9 @@ def game(instance):
     instance.initial_inventory = {'stone-furnace': 1,
                                   'iron-chest': 3,
                                   'burner-inserter': 6,
+                                  'iron-plate':1000,
                                   'coal': 50,
+                                  'copper-plate': 100,
                                   'transport-belt': 50,
                                   'burner-mining-drill': 5}
     instance.reset()
@@ -20,39 +22,11 @@ def game(instance):
     instance.speed(1)
 
 def test_defence(game):
-    # First, gather available resources
-    iron_ore_position = game.nearest(Resource.IronOre)
-    coal_position = game.nearest(Resource.Coal)
-
-    # Harvest iron ore and coal
-    game.move_to(iron_ore_position)
-    iron_ore_harvested = 0
-    while iron_ore_harvested < 400:
-        iron_ore_harvested += game.harvest_resource(iron_ore_position, 50)
-
-    copper_ore_position = game.nearest(Resource.CopperOre)
-    game.move_to(copper_ore_position)
-    copper_ore_harvested = 0
-    while copper_ore_harvested < 200:
-        copper_ore_harvested += game.harvest_resource(copper_ore_position, 50)
-
-    game.move_to(coal_position)
-    coal_harvested = game.harvest_resource(coal_position, 50)
-
-    print(f"Harvested {iron_ore_harvested} iron ore and {coal_harvested} coal")
-
-    # Craft iron plates
-    iron_plates = game.craft_item(Prototype.IronPlate, iron_ore_harvested)
-    print(f"Crafted {iron_plates} iron plates")
-
-    # Craft copper plates
-    copper_plates = game.craft_item(Prototype.CopperPlate, copper_ore_harvested)
-    print(f"Crafted {copper_plates} copper plates")
 
     # Calculate how many items we can craft based on available iron plates
-    max_gears = iron_plates // 8
-    max_ammo = iron_plates // 8
-    max_turrets = min(5, iron_plates // 20)  # Cap at 5 turrets
+    max_gears = 100 // 8
+    max_ammo = 100 // 8
+    max_turrets = min(5, 100 // 20)  # Cap at 5 turrets
 
     # Craft necessary items
     gears_crafted = game.craft_item(Prototype.IronGearWheel, max_gears)

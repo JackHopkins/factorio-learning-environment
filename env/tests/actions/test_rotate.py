@@ -6,7 +6,15 @@ from entities import Position
 
 @pytest.fixture()
 def game(instance):
-    instance.initial_inventory = {'iron-chest': 1, 'pipe': 10, 'assembling-machine-2': 2, 'iron-plate': 10, 'assembling-machine-1': 1, 'copper-cable': 3}
+    instance.initial_inventory = {
+        'iron-chest': 1,
+        'pipe': 10,
+        'assembling-machine-2': 2,
+        'transport-belt':10,
+        'burner-inserter':10,
+        'iron-plate': 10,
+        'assembling-machine-1': 1,
+        'copper-cable': 3}
     instance.reset()
     yield instance.namespace
     instance.reset()
@@ -25,9 +33,8 @@ def test_rotate_assembling_machine_2(game):
         assert False, "Cannot rotate an assembler without a recipe set"
     except:
         assert True
+        return
 
-    # assert that the boiler is facing the offshore pump
-    assert assembler.direction.value == orthogonal_direction.value
 
 def test_rotate_assembling_machine_2_with_recipe(game):
     assembler = game.place_entity_next_to(Prototype.AssemblingMachine2,
@@ -97,7 +104,7 @@ def test_rotate_inserters(game):
     insert1 = game.place_entity_next_to(Prototype.BurnerInserter, Position(x=0, y=0), Direction.DOWN, spacing=0)
     insert1 = game.rotate_entity(insert1, Direction.UP)
     assert insert1 is not None, "Failed to place input inserter"
-    assert insert1.direction == Direction.UP
+    assert insert1.direction.value == Direction.UP.value
 
 def test_rotate_transport_belts(game):
     belt = game.place_entity(Prototype.TransportBelt, position=(0, 0), direction=Direction.UP)

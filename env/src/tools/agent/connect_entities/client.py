@@ -156,8 +156,11 @@ class ConnectEntities(Tool):
                 trace_back = e.__traceback__
                 pass
 
+        source_pos = source.position if not isinstance(source, Position) else source
+        target_pos = target.position if not isinstance(target, Position) else target
+
         raise Exception(
-            f"Failed to connect {set([type.name for type in connection_types])} from {source} to {target}. "
+            f"Failed to connect {set([type.name for type in connection_types])} from {source_pos} to {target_pos}. "
             f"{self.get_error_message(str(last_exception))}"
         )
 

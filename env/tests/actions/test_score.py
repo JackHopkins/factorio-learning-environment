@@ -8,4 +8,5 @@ def game(instance):
     yield instance.namespace
 
 def test_get_score(game):
-    score = game.score()
+    score, _ = game.score()
+    assert score

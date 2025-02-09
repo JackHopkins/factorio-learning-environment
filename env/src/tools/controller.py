@@ -65,7 +65,7 @@ class Controller:
                 cleaned_response[key] = EntityStatus.from_string(value)
             elif key == 'direction' and isinstance(value, str):
                 cleaned_response[key] = Direction.from_string(value)
-            elif not value and key == 'warnings':
+            elif not value and key in ('warnings', 'input_connection_points', 'output_connection_points'):
                 cleaned_response[key] = []
             else:
                 cleaned_response[key] = clean_value(value)

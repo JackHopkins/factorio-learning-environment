@@ -1,136 +1,57 @@
 -- Helper function for pumpjack fluid positions
-local function get_pumpjack_connection_positions(pumpjack)
-    local positions = {}
-    local x, y = pumpjack.position.x, pumpjack.position.y
+--local function get_pumpjack_connection_positions(pumpjack)
+--    local positions = {}
+--    local x, y = pumpjack.position.x, pumpjack.position.y
+--
+--    -- Pumpjack output position changes based on direction
+--    if pumpjack.direction == defines.direction.north then
+--        table.insert(positions, {x = x, y = y - 2})
+--    elseif pumpjack.direction == defines.direction.south then
+--        table.insert(positions, {x = x, y = y + 2})
+--    elseif pumpjack.direction == defines.direction.east then
+--        table.insert(positions, {x = x + 2, y = y})
+--    elseif pumpjack.direction == defines.direction.west then
+--        table.insert(positions, {x = x - 2, y = y})
+--    end
+--
+--    return positions
+--end
 
-    -- Pumpjack output position changes based on direction
-    if pumpjack.direction == defines.direction.north then
-        table.insert(positions, {x = x, y = y - 2})
-    elseif pumpjack.direction == defines.direction.south then
-        table.insert(positions, {x = x, y = y + 2})
-    elseif pumpjack.direction == defines.direction.east then
-        table.insert(positions, {x = x + 2, y = y})
-    elseif pumpjack.direction == defines.direction.west then
-        table.insert(positions, {x = x - 2, y = y})
-    end
-
-    return positions
-end
-
--- Helper function for boiler fluid positions
-local function get_boiler_connection_positions(boiler)
-    local positions = {}
-    local x, y = boiler.position.x, boiler.position.y
-
-    if boiler.direction == defines.direction.north then
-        -- Water input points
-        table.insert(positions, {x = x - 2, y = y + 0.5})
-        table.insert(positions, {x = x + 2, y = y + 0.5})
-        -- Steam output point
-        table.insert(positions, {x = x, y = y - 1.5})
-    elseif boiler.direction == defines.direction.south then
-        -- Water input points
-        table.insert(positions, {x = x - 2, y = y - 0.5})
-        table.insert(positions, {x = x + 2, y = y - 0.5})
-        -- Steam output point
-        table.insert(positions, {x = x, y = y + 1.5})
-    elseif boiler.direction == defines.direction.east then
-        -- Water input points
-        table.insert(positions, {x = x - 0.5, y = y - 2})
-        table.insert(positions, {x = x - 0.5, y = y + 2})
-        -- Steam output point
-        table.insert(positions, {x = x + 1.5, y = y})
-    elseif boiler.direction == defines.direction.west then
-        -- Water input points
-        table.insert(positions, {x = x + 0.5, y = y - 2})
-        table.insert(positions, {x = x + 0.5, y = y + 2})
-        -- Steam output point
-        table.insert(positions, {x = x - 1.5, y = y})
-    end
-
-    return positions
-end
+---- Helper function for boiler fluid positions
+--local function get_boiler_connection_positions(boiler)
+--    local positions = {}
+--    local x, y = boiler.position.x, boiler.position.y
+--
+--    if boiler.direction == defines.direction.north then
+--        -- Water input points
+--        table.insert(positions, {x = x - 2, y = y + 0.5})
+--        table.insert(positions, {x = x + 2, y = y + 0.5})
+--        -- Steam output point
+--        table.insert(positions, {x = x, y = y - 1.5})
+--    elseif boiler.direction == defines.direction.south then
+--        -- Water input points
+--        table.insert(positions, {x = x - 2, y = y - 0.5})
+--        table.insert(positions, {x = x + 2, y = y - 0.5})
+--        -- Steam output point
+--        table.insert(positions, {x = x, y = y + 1.5})
+--    elseif boiler.direction == defines.direction.east then
+--        -- Water input points
+--        table.insert(positions, {x = x - 0.5, y = y - 2})
+--        table.insert(positions, {x = x - 0.5, y = y + 2})
+--        -- Steam output point
+--        table.insert(positions, {x = x + 1.5, y = y})
+--    elseif boiler.direction == defines.direction.west then
+--        -- Water input points
+--        table.insert(positions, {x = x + 0.5, y = y - 2})
+--        table.insert(positions, {x = x + 0.5, y = y + 2})
+--        -- Steam output point
+--        table.insert(positions, {x = x - 1.5, y = y})
+--    end
+--
+--    return positions
+--end
 
 
--- Helper function for chemical plant fluid positions
-local function get_chemical_plant_connection_positions(plant)
-    local positions = {}
-    local x, y = plant.position.x, plant.position.y
-
-    if plant.direction == defines.direction.north then
-        -- Input pipes
-        table.insert(positions, {x = x - 1, y = y + 1.5})
-        table.insert(positions, {x = x + 1, y = y + 1.5})
-        -- Output pipes
-        table.insert(positions, {x = x - 1, y = y - 1.5})
-        table.insert(positions, {x = x + 1, y = y - 1.5})
-    elseif plant.direction == defines.direction.south then
-        -- Input pipes
-        table.insert(positions, {x = x - 1, y = y - 1.5})
-        table.insert(positions, {x = x + 1, y = y - 1.5})
-        -- Output pipes
-        table.insert(positions, {x = x - 1, y = y + 1.5})
-        table.insert(positions, {x = x + 1, y = y + 1.5})
-    elseif plant.direction == defines.direction.east then
-        -- Input pipes
-        table.insert(positions, {x = x - 1.5, y = y - 1})
-        table.insert(positions, {x = x - 1.5, y = y + 1})
-        -- Output pipes
-        table.insert(positions, {x = x + 1.5, y = y - 1})
-        table.insert(positions, {x = x + 1.5, y = y + 1})
-    elseif plant.direction == defines.direction.west then
-        -- Input pipes
-        table.insert(positions, {x = x + 1.5, y = y - 1})
-        table.insert(positions, {x = x + 1.5, y = y + 1})
-        -- Output pipes
-        table.insert(positions, {x = x - 1.5, y = y - 1})
-        table.insert(positions, {x = x - 1.5, y = y + 1})
-    end
-
-    return positions
-end
-
--- Helper function for oil refinery fluid positions
-local function get_refinery_connection_positions(refinery)
-    local positions = {}
-    local x, y = refinery.position.x, refinery.position.y
-
-    if refinery.direction == defines.direction.north then
-        -- Crude oil input
-        table.insert(positions, {x = x+1, y = y + 3})
-        table.insert(positions, {x = x-1, y = y + 3})
-        -- Outputs (petroleum, light oil, heavy oil)
-        table.insert(positions, {x = x - 2, y = y - 3})
-        table.insert(positions, {x = x, y = y - 3})
-        table.insert(positions, {x = x + 2, y = y - 3})
-    elseif refinery.direction == defines.direction.south then
-        -- Crude oil input
-        table.insert(positions, {x = x+1, y = y - 3})
-        table.insert(positions, {x = x-1, y = y - 3})
-        -- Outputs
-        table.insert(positions, {x = x - 2, y = y + 3})
-        table.insert(positions, {x = x, y = y + 3})
-        table.insert(positions, {x = x + 2, y = y + 3})
-    elseif refinery.direction == defines.direction.east then
-        -- Crude oil input
-        table.insert(positions, {x = x - 3, y = y+1})
-        table.insert(positions, {x = x - 3, y = y-1})
-        -- Outputs
-        table.insert(positions, {x = x + 3, y = y - 2})
-        table.insert(positions, {x = x + 3, y = y})
-        table.insert(positions, {x = x + 3, y = y + 2})
-    elseif refinery.direction == defines.direction.west then
-        -- Crude oil input
-        table.insert(positions, {x = x + 3, y = y+1})
-        table.insert(positions, {x = x + 3, y = y-1})
-        -- Outputs
-        table.insert(positions, {x = x - 3, y = y - 2})
-        table.insert(positions, {x = x - 3, y = y})
-        table.insert(positions, {x = x - 3, y = y + 2})
-    end
-
-    return positions
-end
 
 local function add_clearance_entities(surface, force, region, start_pos, end_pos)
     local created_entities = {}
@@ -151,7 +72,8 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
         drills = surface.find_entities_filtered{type = "mining-drill", force = force, area = region},
         pumpjacks = surface.find_entities_filtered{name = "pumpjack", force = force, area = region},
         refineries = surface.find_entities_filtered{name = "oil-refinery", force = force, area = region},
-        chemical_plants = surface.find_entities_filtered{name = "chemical-plant", force = force, area = region}
+        chemical_plants = surface.find_entities_filtered{name = "chemical-plant", force = force, area = region},
+        storage_tanks = surface.find_entities_filtered{name = "storage-tank", force = force, area = region}
     }
 
     -- Draw debug circles for start and end positions
@@ -175,7 +97,7 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
 
     -- Collect positions from boilers
     for _, boiler in pairs(entities.boilers) do
-        for _, pos in pairs(get_boiler_connection_positions(boiler)) do
+        for _, pos in pairs(global.utils.get_boiler_connection_points(boiler)) do
             if not is_excluded_position(pos) then
                 table.insert(all_positions, pos)
             end
@@ -184,7 +106,7 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
 
     -- Collect positions from pumpjacks
     for _, pumpjack in pairs(entities.pumpjacks) do
-        for _, pos in pairs(get_pumpjack_connection_positions(pumpjack)) do
+        for _, pos in pairs(global.utils.get_pumpjack_connection_points(pumpjack)) do
             if not is_excluded_position(pos) then
                 table.insert(all_positions, pos)
             end
@@ -193,7 +115,7 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
 
     -- Collect positions from refineries
     for _, refinery in pairs(entities.refineries) do
-        for _, pos in pairs(get_refinery_connection_positions(refinery)) do
+        for _, pos in pairs(global.utils.get_refinery_connection_points(refinery)) do
             if not is_excluded_position(pos) then
                 table.insert(all_positions, pos)
             end
@@ -202,7 +124,16 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
 
     -- Collect positions from chemical plants
     for _, plant in pairs(entities.chemical_plants) do
-        for _, pos in pairs(get_chemical_plant_connection_positions(plant)) do
+        for _, pos in pairs(global.utils.get_chemical_plant_connection_points(plant)) do
+            if not is_excluded_position(pos) then
+                table.insert(all_positions, pos)
+            end
+        end
+    end
+
+     -- Collect positions from storage tanks
+    for _, plant in pairs(entities.storage_tanks) do
+        for _, pos in pairs(global.utils.get_storage_tank_connection_points(plant)) do
             if not is_excluded_position(pos) then
                 table.insert(all_positions, pos)
             end

@@ -1,5 +1,5 @@
 import math
-from typing import Tuple, Any, Union, Dict, Set
+from typing import Tuple, Any, Union, Dict, Set, Literal
 from typing import List, Optional
 from enum import Enum
 from pydantic import BaseModel, PrivateAttr, root_validator
@@ -174,6 +174,9 @@ class Position(BaseModel):
             return {'x': values[0], 'y': values[1]}
         return values
 
+    def __hash__(self):
+        return hash(f"{self.x},{self.y}")
+
     def __add__(self, other) -> 'Position':
         return Position(x=self.x + other.x, y=self.y + other.y)
 
@@ -188,9 +191,9 @@ class Position(BaseModel):
         return ((self.x - a.x) ** 2 + (self.y - a.y) ** 2) ** 0.5
     
     def _modifier(self, args=1):
-        if isinstance(args, int) and args > 0:
+        if isinstance(args, (float, int)):
             return args
-        if len(args) > 0 and isinstance(args[0], int):
+        if len(args) > 0 and isinstance(args[0], (float, int)):
             return args[0]
         return 1
     def above(self, *args) -> 'Position':
@@ -222,6 +225,41 @@ class Position(BaseModel):
         if not isinstance(other, Position):
             return NotImplemented
         return self.is_close(other, tolerance=1)
+
+class IndexedPosition(Position):
+    type: str
+
+    def __new__(cls, *args, **kwargs):
+        # Handle both positional and keyword arguments
+        if args and not kwargs:
+            if len(args) == 3:  # x, y, type
+                kwargs = {'x': args[0], 'y': args[1], 'type': args[2]}
+            elif len(args) == 2:  # x, y only
+                kwargs = {'x': args[0], 'y': args[1]}
+
+        # If this is being called from a parent class method (like above(), left(), etc.)
+        # we need to preserve the type from the original instance
+        if not kwargs.get('type') and hasattr(cls, '_current_type'):
+            kwargs['type'] = cls._current_type
+
+        instance = super().__new__(cls)
+
+        # Store the type at class level temporarily for child instances
+        if 'type' in kwargs:
+            cls._current_type = kwargs['type']
+
+        return instance
+
+    def __init__(self, *args, **kwargs):
+        if args and not kwargs:
+            if len(args) == 3:  # x, y, type
+                kwargs = {'x': args[0], 'y': args[1], 'type': args[2]}
+            elif len(args) == 2:  # x, y only
+                kwargs = {'x': args[0], 'y': args[1]}
+        super().__init__(**kwargs)
+
+    def __hash__(self):
+        return hash(f"{self.x},{self.y},{self.type}")
 
 
 class EntityInfo(BaseModel):
@@ -307,7 +345,7 @@ class TileDimensions(BaseModel):
 class Ingredient(BaseModel):
     name: str
     count: Optional[int] = 1
-    type: Optional[str] = None
+    type: Optional[Literal['fluid', 'item']] = None
 
 class Product(Ingredient):
     probability: Optional[float] = 1
@@ -464,15 +502,17 @@ class AdvancedAssemblingMachine(FluidHandler, AssemblingMachine):
     pass
 
 class MultiFluidHandler(StaticEntity):
-    input_connection_points: List[Position] = []
-    output_connection_points: List[Position] = []
+    input_fluids: List[str] = []
+    output_fluids: List[str] = []
+    input_connection_points: List[IndexedPosition] = []
+    output_connection_points: List[IndexedPosition] = []
     fluid_box: Optional[Union[dict, list]] = []
     fluid_systems: Optional[Union[dict, list]] = []
 
 class ChemicalPlant(MultiFluidHandler, AssemblingMachine):
     pass
 
-class OilRefinery(MultiFluidHandler, Electric):
+class OilRefinery(MultiFluidHandler, AssemblingMachine):
     pass
 
 class PumpJack(MiningDrill, FluidHandler, Electric):
@@ -514,6 +554,8 @@ class ElectricFurnace(Electric):
 class Chest(Entity):
     inventory: Inventory = Inventory()
 
+class StorageTank(FluidHandler):
+    pass
 
 class RocketSilo(StaticEntity, Electric):
     """Represents a rocket silo that can build and launch rockets."""

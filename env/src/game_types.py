@@ -43,7 +43,8 @@ class RecipeName(enum.Enum):
 class PrototypeMetaclass(enum.EnumMeta):
     def __getattr__(cls, name):
         try:
-            return super().__getattr__(name)
+            attr =  super().__getattr__(name)
+            return attr
         except AttributeError:
             # Get all valid prototype names
             valid_names = [member.name for member in cls]
@@ -111,7 +112,7 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     SteelChest = "steel-chest", Chest
     IronChest = "iron-chest", Chest
     WoodenChest = "wooden-chest", Chest
-    StorageTank = "storage-tank", Chest
+    StorageTank = "storage-tank", StorageTank
 
     SmallElectricPole = "small-electric-pole", ElectricityPole
     MediumElectricPole = "medium-electric-pole", ElectricityPole

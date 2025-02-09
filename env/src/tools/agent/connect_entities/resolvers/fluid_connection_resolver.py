@@ -1,7 +1,8 @@
 from typing import Union, Tuple, cast, List, Optional
 
 from entities import FluidHandler, Position, Entity, Generator, Boiler, OffshorePump, Pipe, OilRefinery, \
-    ChemicalPlant, IndexedPosition, MultiFluidHandler
+    ChemicalPlant, IndexedPosition, MultiFluidHandler, PipeGroup
+from game_types import Prototype
 from tools.agent.connect_entities.resolver import Resolver
 
 
@@ -80,8 +81,22 @@ class FluidConnectionResolver(Resolver):
             case (Entity(), _):
                 source_positions = [source.position]
 
+            case (PipeGroup(), _):
+                underground_positions = set([pipe.position for pipe in source.pipes if pipe.prototype == Prototype.UndergroundPipe])
+                positions = [pipe.position for pipe in source.pipes if pipe.prototype == Prototype.Pipe]
+                source_positions = []
+                for position in positions:
+                    source_positions.append(position)
+                    if position.up() not in underground_positions:
+                        source_positions.append(position.up())
+                    if position.down() not in underground_positions:
+                        source_positions.append(position.down())
+                    if position.left() not in underground_positions:
+                        source_positions.append(position.left())
+                    if position.right() not in underground_positions:
+                        source_positions.append(position.right())
             case _:
-                raise Exception("Not supported source object")
+                raise Exception(f"{type(source)} is not a supported source object")
 
         # Get target positions in priority order
         match target:

@@ -19,7 +19,7 @@ def test_connect_wall_line(game):
     start_position = Position(x=0, y=0)
     end_position = Position(x=5, y=0)
 
-    walls = game.connect_entities(start_position, end_position, connection_type=Prototype.StoneWall)
-    assert len(walls) == 6
+    wall = game.connect_entities(start_position, end_position, connection_type=Prototype.StoneWall)
+    assert len(wall.entities) == 6
 
 

@@ -97,6 +97,11 @@ class GetEntities(Tool):
             [entities_list.remove(pole) for pole in poles]
             entities_list.extend(group)
 
+            walls = [entity for entity in entities_list if hasattr(entity, 'prototype') and entity.prototype == Prototype.StoneWall]
+            group = agglomerate_groupable_entities(walls)
+            [entities_list.remove(wall) for wall in walls]
+            entities_list.extend(group)
+
             belt_types = (Prototype.TransportBelt, Prototype.FastTransportBelt, Prototype.ExpressTransportBelt, Prototype.UndergroundBelt, Prototype.FastUndergroundBelt, Prototype.ExpressUndergroundBelt)
             belts = [entity for entity in entities_list if hasattr(entity, 'prototype') and entity.prototype in belt_types]
             group = agglomerate_groupable_entities(belts)

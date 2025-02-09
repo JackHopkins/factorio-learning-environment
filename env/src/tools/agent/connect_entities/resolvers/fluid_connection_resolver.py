@@ -118,6 +118,8 @@ class FluidConnectionResolver(Resolver):
                     target.input_connection_points,
                     source_fluid
                 )
+                if not sorted_positions:
+                    raise Exception(f"Cannot connect to a {target.prototype} until a recipe has been set.")
                 target_positions = sorted_positions if sorted_positions else [target.position]
 
             case FluidHandler():

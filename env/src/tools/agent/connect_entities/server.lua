@@ -94,6 +94,7 @@ local function split_section_into_underground_segments(section, path, range, max
         end
     end
 
+
     return segments
 end
 
@@ -690,6 +691,16 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
                     global.utils.get_entity_direction(default_connection_type, dir/2),
                     serialized_entities, dry_run, counter_state, false)
             current_index = current_index + 1
+        end
+
+        -- After underground segment placement
+        if current_index == #path and not path[#path].has_entity then
+            local final_pos = path[#path].position
+            local prev_pos = path[#path-1].position
+            local dir = global.utils.get_direction(prev_pos, final_pos)
+            place_at_position(player, default_connection_type, final_pos,
+                    global.utils.get_entity_direction(default_connection_type, dir/2),
+                    serialized_entities, dry_run, counter_state, false)
         end
     else
         -- Handle source belt orientation if it exists

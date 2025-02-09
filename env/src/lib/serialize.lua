@@ -608,11 +608,11 @@ function get_entity_direction(entity, direction)
         end
     elseif prototype.type == "pipe-to-ground" then
         if direction == 1 then
-            return defines.direction.east
+            return defines.direction.west
         elseif direction == 2 then
             return defines.direction.north
         elseif direction == 3 then
-            return defines.direction.west
+            return defines.direction.east
         else
             return defines.direction.south
         end

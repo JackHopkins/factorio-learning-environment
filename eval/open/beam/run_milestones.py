@@ -1,4 +1,6 @@
-from llm_factory import LLMFactory
+import sys
+
+from env.src.llm_factory import LLMFactory
 from eval.open.beam.beam_search_milestones import MilestonesBeamSearchExecutor
 
 import os
@@ -6,19 +8,20 @@ import asyncio
 from dotenv import load_dotenv
 from cluster.local.cluster_ips import get_local_container_ips
 from eval.open.db_client import DBClient
-from instance import FactorioInstance
+from env.src.instance import FactorioInstance
 import concurrent.futures
 from typing import List, Tuple
 from eval.open.mcts.parallel_supervised_config import SupervisedExecutorConfig
 import json
 
-from eval.open.mcts.formatters.recursive_formatter import RecursiveFormatter
+from eval.open.mcts.formatters.recursive_report_formatter import RecursiveReportFormatter
 from eval.open.model.game_state import GameState
 import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
-from eval.tasks import TASKS
-
+import copy
+from env.src.utils.achievements import eval_program_with_achievements
+from eval.tasks.throughput_task import ThroughputTask, LAB_PLAY_POPULATED_STARTING_INVENTORY
 
 os.environ.update({"FORCE_COLOR": "1", "TERM": "xterm-256color"})
 load_dotenv()
@@ -114,20 +117,63 @@ def initiate_executor(config, instances, version, db_client, version_description
     return executor
 
 
-def create_factorio_instances() -> List[FactorioInstance]:
-    def init_instance(params: Tuple[str, int, int]) -> FactorioInstance:
-        ip, udp_port, tcp_port = params
-        return FactorioInstance(address=ip, tcp_port=tcp_port, bounding_box=200,
-                                fast=True, cache_scripts=False, inventory={})
+def initiate_task_configs(input_task):
+    if input_task["task_type"] == "populated_lab_play":
+        input_task["config"]["starting_inventory"] = LAB_PLAY_POPULATED_STARTING_INVENTORY
+        return ThroughputTask(**input_task["config"])
+    task_config = ThroughputTask(**input_task["config"])
+    return task_config
 
+def initialise_starting_state(instance, task, reset_game_state):
+    # reset the instance
+    instance.reset(reset_game_state)
+    # reset the game state but with the new inventory
+    task.setup(instance)
+    return task
+
+
+def get_starting_state(instance, config, starting_scenario_folder, reset_game_state):
+    # reset the game state but with the new inventory
+    reset_game_state_copy = copy.deepcopy(reset_game_state)
+    reset_game_state_copy.inventory = config.starting_inventory
+    instance.reset(reset_game_state_copy)
+    print(instance.namespace.inspect_inventory())
+    if config.starting_setup_code_location is None:
+        starting_game_state = GameState.from_instance(instance)
+        config.starting_game_state = starting_game_state
+        return config
+    # get the starting code folder path
+    starting_code_folder = os.path.join(starting_scenario_folder, config.starting_setup_code_location)
+    # read in the starting code
+    with open(starting_code_folder, "r") as f:
+        starting_code = f.read()
+    # execute the starting code
+    output_list, result, error, achievements = eval_program_with_achievements(instance, starting_code)
+    # get the game state
+    starting_game_state = GameState.from_instance(instance)
+    config.starting_game_state = starting_game_state
+    config.starting_scenario_code = starting_code
+    config.starting_scenario_logs = result
+    return config
+
+def create_factorio_instance(instance_id: int) -> FactorioInstance:
+    """Create a single Factorio instance"""
     ips, udp_ports, tcp_ports = get_local_container_ips()
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        return list(executor.map(init_instance, zip(ips, udp_ports, tcp_ports)))
 
+    instance = FactorioInstance(
+        address=ips[instance_id],
+        tcp_port=tcp_ports[instance_id],
+        bounding_box=200,
+        fast=True,
+        cache_scripts=True,
+        inventory={},
+        all_technologies_researched=False
+    )
+    instance.speed(10)
+    return instance
 
 SYSTEM_PROMPT = \
-    """
-    You are an agent designed to operate within FactoryEnv, a novel evaluation framework built on the game Factorio, with capabilities in long-horizon planning, spatial reasoning, and systematic automation. 
+    """You are an agent designed to operate within FactoryEnv, a novel evaluation framework built on the game Factorio, with capabilities in long-horizon planning, spatial reasoning, and systematic automation. 
     
     You interact with the environment through Python program synthesis, using any of the API's 28 core methods below.
     
@@ -139,9 +185,13 @@ SYSTEM_PROMPT = \
     
     Follow this structure: The first stage is PLANNING: Think extensively step-by-step in natural language to first plan your next step, reasoning over available entities and your inventory.
     
-    In the planning stage, follow this structure: 1) Was there an error? If yes, then what was the problem 2) What is the best next step that is of reasonable size, 3) What actions do I need to take for this step 
+    In the planning stage, follow this structure: 1) Was there an error? If yes, then what was the problem? Extensively analyse potential causes of the error and bring out in bulletpoints the candidate causes of the error 2) Thoroughly analysing your previous steps, what is the best next step 3) What actions do I need to take for this step 
     
-    The second stage is POLICY: create the python policy that carries out the steps you want in the game. Your policy MUST be between two python tags: ```python create_policy_here```
+    Be thorough and detailed in your analysis. Think in terms of factory components and topology. Think extensively what entities are needed and how they are set up in a spatial manner.
+
+    Think what entities are needed for the step, what entities exist in the game (in different entity inventories or in your inventory), what entities are you missing for the task.
+    
+    When you see errors, try out different solutions. Do not repeat the same solution as that is likely going to fail again.The second stage is POLICY: create the python policy that carries out the steps you want in the game. Your policy MUST be between two python tags like this: ```python\nYOUR_POLICY_HERE\n```
 
     For example: "I should move to position 0, 0 ```python move_to(Position(x=0, y=0))```"
     
@@ -157,22 +207,14 @@ SYSTEM_PROMPT = \
     
     After each step the throughput of the factory is evaluated during 60 seconds of worktime and the results are supplied to you in the response. If you have achieved the target throughput, make sure to fuel the factory and make small improvements but do not break the factory.
     
-    Create small steps that are easily executed and will get you close to your goal. Do not create large steps as they will likely error out
-    
-    If you dont know what an entity is for in the map, assume it is part of a working automatic structure. Be careful not to break any working automatic structures
-
-    Think what entities are needed for the step, what entities exist in the game (in different entity inventories or in your inventory), what entities are you missing for the task.
-    
-    DON'T REPEAT YOUR PREVIOUS STEPS - just continue from where you left off. Take into account what was the lasdt action that was executed and continue from there. If there was a error previously, do not repeat your last lines - as this will alter the game state unnecessarily. Fix errors as they occur.
+    DON'T REPEAT YOUR PREVIOUS STEPS - just continue from where you left off. Take into account what was the last action that was executed and continue from there. If there was a error previously, do not repeat your last lines - as this will alter the game state unnecessarily. Fix errors as they occur.
     
     Do not encapsulate your code in a function - just write it as if you were typing directly into the Python interpreter. NEVER write <LINES X-Y CUT/> - as this is a processing step applied to the conversational history - it represents code.
     
-    You are now ready to begin playing FactoryEnv! Good luck!
-    """
+    You are now ready to begin playing FactoryEnv! Good luck!"""
 
 OBSERVATION_SPACE = \
-   """
-   You observe the STDOUT and STDERR of your program.
+   """You observe the STDOUT and STDERR of your program.
    
     ```stderr
     Error: 1: ("Initial Inventory: {'stone-furnace': 2, 'coal': 50, 'stone': 1610, 'iron-ore': 50, 'iron-gear-wheel': 31}",)
@@ -185,19 +227,9 @@ OBSERVATION_SPACE = \
     78: ('Entities on the map: [Furnace(fuel={'coal': 49}, name='stone-furnace', position=Position(x=0.0, y=0.0), direction=<Direction.UP: 0>, energy=1600.0, tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), health=200.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, furnace_source={'iron-ore': 12}, furnace_result={'iron-plate': 27}), Furnace(fuel={'coal': 49}, name='stone-furnace', position=Position(x=2.0, y=0.0), direction=<Direction.UP: 0>, energy=1600.0, tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), health=200.0, warnings=[], status=<EntityStatus.WORKING: 'working'>, furnace_source={'iron-ore': 12}, furnace_result={'iron-plate': 25}), Furnace(fuel={'coal': 23}, name='stone-furnace', position=Position(x=4.0, y=4.0), direction=<Direction.UP: 0>, energy=1600.0, tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), health=200.0, warnings=['no ingredients to smelt'], status=<EntityStatus.NO_INGREDIENTS: 'no_ingredients'>, furnace_source={}, furnace_result={'iron-plate': 20}), Furnace(fuel={'coal': 23}, name='stone-furnace', position=Position(x=6.0, y=4.0), direction=<Direction.UP: 0>, energy=1600.0, tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), health=200.0, warnings=['no ingredients to smelt'], status=<EntityStatus.NO_INGREDIENTS: 'no_ingredients'>, furnace_source={}, furnace_result={'iron-plate': 20})]',)
     ```
     
-    This response indicates that `print(get_entities())` was called at line 78 to get state of the entities on the map. There are four stone furnaces, two of which are working and two of which have no ingredients to smelt. Non-working entities can be determined by checking the `warnings` and `status` fields.
-   """
+    This response indicates that `print(get_entities())` was called at line 78 to get state of the entities on the map. There are four stone furnaces, two of which are working and two of which have no ingredients to smelt. Non-working entities can be determined by checking the `warnings` and `status` fields."""
 
-HISTORY_SUMMARIZATION_INSTRUCTIONS = \
-"""
-Review the code interaction an agent has written with the Factorio REPL Environment and provide a report. 
-
-Focus on what they attempted to achieve, any errors that occurred, and the outcomes of their actions.
-
-Provide specific tips and successful patterns that you see in the code, and any examples that you can provide.
-"""
-
-with open("src\search\MANUAL_short.md", "r") as f:
+with open("eval\open\MANUAL_short.md", "r") as f:
     MANUAL = f.read()
 
 
@@ -219,9 +251,9 @@ async def main():
 
     # Initialize components
     try:
-        instances = create_factorio_instances()
-        for instance in instances:
-            instance.speed(10)  # Speed up the game for faster evaluation
+        instances = [create_factorio_instance(i) for i in range(4)]
+        #for instance in instances:
+        #    instance.speed(10)  # Speed up the game for faster evaluation
     except Exception as e:
         print(
             "\033[91mError initialising Factorio instances. Are the docker containers running, and have they been activated?\033[91m")
@@ -229,37 +261,34 @@ async def main():
     
     API_SCHEMA = instances[0].get_system_prompt()
     prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\nObservations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
-    initial_state = GameState.from_instance(instances[0])
+    zero_state = GameState.from_instance(instances[0])
 
     model_to_evaluate = "claude-3-5-sonnet-20241022"
     #model_to_evaluate = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
     #model_to_evaluate = "Qwen/Qwen2.5-72B-Instruct-Turbo"
     #model_to_evaluate = "gpt-4o"
+    #model_to_evaluate = 'gpt-4o-mini-2024-07-18'
+    #model_to_evaluate = "o1-mini-2024-09-12"
+    #model_to_evaluate = 'deepseek-chat'
     version = 332 # 120 and 121 was the last version before this change
     llm_factory = LLMFactory(model=model_to_evaluate)
     version_description = "eval_agentic_supervised"
 
-    result_path = r"src\supervised_tasks\supervised_results"
-    task_types = ["electronic_circuit_thresholds_placement"]
-    tasks_to_exclude = []
+    task_folder = r"eval\tasks\task_definitions"
+    result_path = r"eval\tasks\supervised_results"
+    tasks = ["steel_plate_populated_16"]
     search_type = "beam_supervised"
     search_iterations = 1
 
-    formatter = RecursiveFormatter(
-        chunk_size=32,
+    formatter = RecursiveReportFormatter(
+        chunk_size=128,
         llm_factory=llm_factory,
-        cache_dir='summary_cache',
-        summary_instructions=HISTORY_SUMMARIZATION_INSTRUCTIONS
+        cache_dir='./summary_cache',
     )
-
     configs = {"beam_supervised": {"config": SupervisedExecutorConfig(
         n_parallel=1,
         model_to_evaluate=model_to_evaluate,
-        initial_state=initial_state,
-        supervised_kwargs = {
-                             "max_steps_per_objective": 32,
-                             #"beam_unification_steps": 1,
-                             "system_prompt": prompt}),
+        supervised_kwargs = {"system_prompt": prompt}),
         "executor": MilestonesBeamSearchExecutor}
         }
     
@@ -272,34 +301,35 @@ async def main():
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
-    task_types = task_types if task_types else TASKS.keys()
     executor = initiate_executor(configs[search_type], instances, version, db_client, version_description, llm_factory, formatter)
     
-    for task_type in task_types:
-        tasks_for_this_category = TASKS[task_type]
+    for task_key in tasks:
+        # read in the input task
+        with open(os.path.join(task_folder, f"{task_key}.json"), "r") as f:
+            input_task = json.load(f)
+        task = initiate_task_configs(input_task)
+        task = initialise_starting_state(instances[0], task, zero_state)
         config_dict = {"iterations": search_iterations,
-                   "executor_kwargs": executor.config._to_dict()}
+                   "executor_kwargs": executor.config._to_dict(),
+                   "task_config": task._to_dict()}
         # save the config dict
-        with open(os.path.join(save_path, f"{task_type}_config.json"), "w") as f:
+        with open(os.path.join(save_path, f"{task_key}_config.json"), "w") as f:
             json.dump(config_dict, f)
-        for task_key, task in tasks_for_this_category.items():
-            if task_key in tasks_to_exclude:
-                continue
-            print(f"Starting MCTS search for task {task.task}")
-            results = await executor.search_supervised(
-            n_iterations=search_iterations,
-            skip_failures=False,
-            task=task,
-            run_id = f"{task_key}_{dt_string}"
-            )
-            print(f"Task: {task.task} has been completed")
-            result_dict = {"results" :results,
-                           "starting_inventory": task.starting_inventory,
-                           "target_entity": task.throughput_entity,}
-            with open(os.path.join(save_path, f"{task_key}.json"), "w") as f:
-                json.dump(result_dict, f)
-            plot_throughput_timeseries(result_dict, os.path.join(save_path, f"{task_key}_individual.png"), task)
-            plot_throughput_timeseries_mean(result_dict, os.path.join(save_path, f"{task_key}_mean.png"), task)
+        print(f"Starting MCTS search for task {task.task}")
+        results = await executor.search_supervised(
+        n_iterations=search_iterations,
+        skip_failures=False,
+        task=task,
+        run_id = f"{task_key}_{dt_string}"
+        )
+        print(f"Task: {task.task} has been completed")
+        result_dict = {"results" :results,
+                       "starting_inventory": task.starting_inventory,
+                       "target_entity": task.throughput_entity,}
+        with open(os.path.join(save_path, f"{task_key}.json"), "w") as f:
+            json.dump(result_dict, f)
+        plot_throughput_timeseries(result_dict, os.path.join(save_path, f"{task_key}_individual.png"), task)
+        plot_throughput_timeseries_mean(result_dict, os.path.join(save_path, f"{task_key}_mean.png"), task)
     print("All tasks completed")
 
 

@@ -16,16 +16,12 @@ LAB_PLAY_POPULATED_STARTING_INVENTORY = {"coal": 500, "burner-mining-drill": 10,
 
 class ThroughputTask(TaskABC):
     def __init__(self, maximum_steps, starting_inventory: Union[Inventory, Dict], task: str,
-                  throughput_entity: Entity, quota: int, holdout_wait_period: int, pre_holdout_wait_period: int = 0,
-                  starting_setup_code_location: str = None):
+                  throughput_entity: Entity, quota: int, holdout_wait_period: int, pre_holdout_wait_period: int = 0):
         super().__init__(maximum_steps, starting_inventory, task=task)
         self.throughput_entity = throughput_entity
         self.quota = quota
         self.holdout_wait_period = holdout_wait_period
-        self.starting_setup_code_location = starting_setup_code_location
         self.starting_game_state = None
-        self.starting_scenario_code = None
-        self.starting_scenario_logs = None
         self.pre_holdout_wait_period = pre_holdout_wait_period
     
     def verify(self, score: float, step: int, instance: FactorioInstance, step_statistics: Dict) -> bool:
@@ -42,13 +38,14 @@ class ThroughputTask(TaskABC):
             "quota": self.quota,
             "maximum_steps": self.maximum_steps,
             "starting_inventory": self.starting_inventory,
-            "starting_setup_code_location": self.starting_setup_code_location,
             "initial_state": self.starting_game_state.to_raw(),
-            "initial_scenario_code": self.starting_scenario_code,
-            "initial_scenario_logs": self.starting_scenario_logs
         }
 
-
-    def setup(self, instance):
+    def setup_instance(self, instance):
         """Code to provision the task environment"""
         pass
+
+    def setup(self, instance):
+        """setup function"""
+        self.setup_instance(instance)
+        self.starting_game_state = GameState.from_instance(instance)

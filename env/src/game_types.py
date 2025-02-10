@@ -42,8 +42,6 @@ class RecipeName(enum.Enum):
 
 class PrototypeMetaclass(enum.EnumMeta):
 
-    def __repr__(self):
-        return self
     def __getattr__(cls, name):
         try:
             attr =  super().__getattr__(name)
@@ -142,6 +140,7 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     SulfuricAcid = "sulfuric-acid", None
     Uranium235 = "uranium-235", None
     Uranium238 = "uranium-238", None
+    Concrete = "concrete", None
 
     Lubricant = "lubricant", None
     AdvancedOilProcessing = "advanced-oil-processing", None # These are recipes, not prototypes.

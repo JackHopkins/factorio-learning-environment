@@ -12,7 +12,8 @@ global.utils.get_storage_tank_connection_points = function(entity)
 
     -- Note: entity.direction is in Factorio's 8-way direction system (0-7)
     -- We need to handle both orientations (0/2 and 1/3)
-    if entity.direction == 1 or entity.direction == 3 then
+    game.print("en "..entity.direction)
+    if entity.direction == 1 or entity.direction == 2 then
         -- TopRight/BottomLeft connections
         table.insert(connection_points, {x = x + 1, y = y - 2})  -- Top right - Top
         table.insert(connection_points, {x = x + 2, y = y - 1})  -- Top right - Right

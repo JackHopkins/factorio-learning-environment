@@ -24,11 +24,18 @@ class ThroughputTask(TaskABC):
         self.pre_holdout_wait_period = pre_holdout_wait_period
     
     def verify(self, score: float, step: int, instance: FactorioInstance, step_statistics: Dict) -> bool:
+        max_achieved_throughput = 0
         # wait the pre-holdout period
         instance.sleep(self.pre_holdout_wait_period)
-        result_list, result, error,  achievements = eval_program_with_achievements(program = f"sleep({self.holdout_wait_period})", instance=instance)
-        dynamic_achievements = achievements["dynamic"]
-        return dynamic_achievements.get(self.throughput_entity, 0) >= self.quota, achievements
+        while True:
+            result_list, result, error,  achievements = eval_program_with_achievements(program = f"sleep({self.holdout_wait_period})", instance=instance)
+            dynamic_achievements = achievements["dynamic"]
+            target_throughput = dynamic_achievements.get(self.throughput_entity, 0)
+            if target_throughput > max_achieved_throughput:
+                max_achieved_throughput = target_throughput
+            else:
+                break
+        return max_achieved_throughput >= self.quota, achievements
             
     def _to_dict(self) -> Dict[str, Any]:
         return {

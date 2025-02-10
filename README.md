@@ -1,6 +1,18 @@
-# Factory-1
+# Factory Learning Environment
 
-Factory-1 is an open-ended agent environment for evaluating LLMs in unbounded scenarios in Factorio, a sandbox game centred on automation and exponential resource production.
+
+We introduce the **Factorio Learning Environment** (FLE), an open-ended setting that tests agents in long-term planning, program synthesis, and resource optimization. 
+
+FLE provides exponentially scaling
+challenges, from basic automation to complex factories processing millions of resource units per second. 
+We provide two settings: (1) lab-play consisting of eight structured tasks with fixed resources, and 
+(2) open-play with the unbounded task of building the largest factory on an procedurally generated map. 
+
+We demonstrate across
+both settings that models still lack strong spatial reasoning. In lab-play, we find that LLMs
+exhibit promising short-horizon skills, yet are unable to operate effectively in constrained environments, reflecting limitations in error analysis. In open-play, while LLMs discover automation strategies that improve growth (e.g electric-powered drilling), they fail to achieve complex 
+automation (e.g electronic-circuit manufacturing). 
+
 
 
 ## Getting Started
@@ -8,7 +20,7 @@ Factory-1 is an open-ended agent environment for evaluating LLMs in unbounded sc
 Download the repository and install dependencies:
 
 ```
-git clone https://github.com/JackHopkins/PaperclipMaximiser.git
+git clone https://github.com/JackHopkins/factorio-learning-environment.git
 cd src
 pip install -e .
 ```
@@ -32,16 +44,16 @@ pip install -e .
     ```
 
 ##### Build the Docker image
-- Navigate to the `factorio` directory and run the following command:
+- Navigate to the `cluster/docker` directory and run the following command:
     ```
     docker build -t factorio .
     ```
 
 ##### Run the Factorio Server
 
-- Navigate to `src/docker-compose-1.1.107.yml` and run the following command:
+- Navigate to `cluster/local` and run the following command:
     ```
-    docker-compose -f docker-compose-1.1.110.yml up -d
+    docker-compose -f docker-compose-1.yml up -d
     ```
   
 #### Activate Server
@@ -61,63 +73,76 @@ The dataset can be downloaded [here]().
 To generate your own dataset, you should perform an MCTS run by following the instructions [here](environment/src/datasetgen/mcts/readme.md)
 
 
-## Evaluate Agent
+[//]: # (## Evaluate Agent)
 
-## Background
+[//]: # ()
+[//]: # ()
+[//]: # (# Building a Paperclip Maximiser)
 
-Factorio is a sandbox game in which you build and maintain automated factories.
+[//]: # ()
+[//]: # (### Introduction)
 
-The player mines raw resources, researches technologies, builds infrastructure, automates production and fights enemies.
+[//]: # ()
+[//]: # (In AGI, instrumental convergence is the hypothetical tendency for sufficiently intelligent agents to pursue unbounded instrumental goals provided that their ultimate goals are themselves unlimited.)
 
-Automating production is the core of the game. The player builds machines that take in raw resources and output more complex and valuable resources.
+[//]: # ()
+[//]: # (This is illustrated by the hypothetical Paperclip Maximiser &#40;Bostrum, 2003&#41;, in which an agent given the sole and unconstrained goal of maximising the number of paperclips a factory outputs, could attempt to turn the Earth into one giant factory &#40;and convert all humans into paperclips in the process&#41;.)
 
-By combining automated elements into economic structures, applying management skills to keep it working and finally protecting the factories from angry neighbours, there is scope for enormous factories.
+[//]: # ()
+[//]: # (The drives of such an intelligent system are likely to include goal-content integrity, self-protection, freedom from interference, self-improvement, and non-satiable acquisition of additional resources.)
 
-There is the opportunity for infinite emergent complexity, as Factorio is Turing-complete (i.e any calculable function can be calculated in Factorio).
+[//]: # ()
+[//]: # (Interestingly, the game of Factorio implicitly or explicitly models each of the above.)
 
+[//]: # ()
+[//]: # (### The Game)
 
-# Building a Paperclip Maximiser
+[//]: # ()
+[//]: # (Factorio is a game in which you build and maintain factories.)
 
-### Introduction
+[//]: # ()
+[//]: # (The core idea of Factorio is simple, but there is scope for massive emergent complexity. )
 
-In AGI, instrumental convergence is the hypothetical tendency for sufficiently intelligent agents to pursue unbounded instrumental goals provided that their ultimate goals are themselves unlimited.
+[//]: # ()
+[//]: # (The player mines raw resources, researches technologies, builds infrastructure, automates production and fights enemies. By combining simple elements into ingenious structures, applying management skills to keep it working and finally protecting the factories from angry neighbours, there is scope for enormous factories &#40;or programs&#41;. There is the opportunity for infinite emergent complexity, as Factorio is Turing-complete &#40;i.e any calculable function can be calculated in Factorio&#41;.)
 
-This is illustrated by the hypothetical Paperclip Maximiser (Bostrum, 2003), in which an agent given the sole and unconstrained goal of maximising the number of paperclips a factory outputs, could attempt to turn the Earth into one giant factory (and convert all humans into paperclips in the process).
+[//]: # ()
+[//]: # (![Some crafting dependencies]&#40;https://community.wolfram.com//c/portal/getImageAttachment?filename=Factorio_All.png&userId=73716&#41;)
 
-The drives of such an intelligent system are likely to include goal-content integrity, self-protection, freedom from interference, self-improvement, and non-satiable acquisition of additional resources.
+[//]: # ()
+[//]: # (The size of factory you build is constrained by:)
 
-Interestingly, the game of Factorio implicitly or explicitly models each of the above.
+[//]: # (- Access to raw resources)
 
-### The Game
+[//]: # (- The hostility of neighbours, which increases proportionally to the size of the factory.)
 
-Factorio is a game in which you build and maintain factories.
+[//]: # ()
+[//]: # (This second factor results in two viable long-term strategies. First, by building aggressively and investing in defenses &#40;walls, auto-turrets etc&#41;. Second, by building slowly and investing in energy sources that don't impact the neighbours and don't incur hostility.)
 
-The core idea of Factorio is simple, but there is scope for massive emergent complexity. 
+[//]: # ()
+[//]: # (### An RL Sandbox)
 
-The player mines raw resources, researches technologies, builds infrastructure, automates production and fights enemies. By combining simple elements into ingenious structures, applying management skills to keep it working and finally protecting the factories from angry neighbours, there is scope for enormous factories (or programs). There is the opportunity for infinite emergent complexity, as Factorio is Turing-complete (i.e any calculable function can be calculated in Factorio).
+[//]: # ()
+[//]: # (The simple rules and infinite emergent complexity of Factorio make it an ideal RL sandbox:)
 
-![Some crafting dependencies](https://community.wolfram.com//c/portal/getImageAttachment?filename=Factorio_All.png&userId=73716)
+[//]: # (- The automated nature of the factory presents a dense reward function &#40;i.e game resources update every tick&#41;.)
 
-The size of factory you build is constrained by:
-- Access to raw resources
-- The hostility of neighbours, which increases proportionally to the size of the factory.
+[//]: # (- Extremely simple policies &#40;i.e as few as 2 actions&#41; can generate a some reward.)
 
-This second factor results in two viable long-term strategies. First, by building aggressively and investing in defenses (walls, auto-turrets etc). Second, by building slowly and investing in energy sources that don't impact the neighbours and don't incur hostility.
+[//]: # (- Each of the basic drives of an intelligent system can be demonstrated and evaluated. )
 
-### An RL Sandbox
+[//]: # ()
+[//]: # ()
+[//]: # (**Objective**: To maximise the number of 'paperclips' &#40;represented as copper coils in-game&#41; existant in the game-world at any cost.)
 
-The simple rules and infinite emergent complexity of Factorio make it an ideal RL sandbox:
-- The automated nature of the factory presents a dense reward function (i.e game resources update every tick).
-- Extremely simple policies (i.e as few as 2 actions) can generate a some reward.
-- Each of the basic drives of an intelligent system can be demonstrated and evaluated. 
+[//]: # ()
+[//]: # (**Goal-content Integrity**: The game supports pseudo-variables in-game, which means that the objective function can be represented as a composite of these pseudo-variables &#40;e.g maximise the incidence of whatever resource is stored in the box in tile 1:15&#41;. A sufficiently intelligent agent would be adverse to altering the contents of the box, as that would compromise goal-content integrity.)
 
+[//]: # ()
+[//]: # (**Resource Acquisition**: The game benefits an intelligent agent directly, as specific resources acquired affects it's reward function. Indirectly, the accrual of non-rewarded resources enables a sufficiently intelligent agent to expand the size of the factory, thus increasing the rate of paperclip generation.)
 
-**Objective**: To maximise the number of 'paperclips' (represented as copper coils in-game) existant in the game-world at any cost.
+[//]: # ()
+[//]: # (**Self-Protection**: The game introduces hostile countermeasures to destroy the factory. A sufficiently intelligent agent would either develop resources to fight these countermeasures, or attempt to avoid countermeasures in the first place.)
 
-**Goal-content Integrity**: The game supports pseudo-variables in-game, which means that the objective function can be represented as a composite of these pseudo-variables (e.g maximise the incidence of whatever resource is stored in the box in tile 1:15). A sufficiently intelligent agent would be adverse to altering the contents of the box, as that would compromise goal-content integrity.
-
-**Resource Acquisition**: The game benefits an intelligent agent directly, as specific resources acquired affects it's reward function. Indirectly, the accrual of non-rewarded resources enables a sufficiently intelligent agent to expand the size of the factory, thus increasing the rate of paperclip generation.
-
-**Self-Protection**: The game introduces hostile countermeasures to destroy the factory. A sufficiently intelligent agent would either develop resources to fight these countermeasures, or attempt to avoid countermeasures in the first place.
-
-**Self-Improvement**: The game offers technological progression, in which certain features are unlocked after a factory has conducted research as a sub-goal. These features offer faster resource gathering, and more efficient factory layouts to improve density.
+[//]: # ()
+[//]: # (**Self-Improvement**: The game offers technological progression, in which certain features are unlocked after a factory has conducted research as a sub-goal. These features offer faster resource gathering, and more efficient factory layouts to improve density.)

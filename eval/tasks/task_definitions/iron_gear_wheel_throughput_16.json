@@ -1,0 +1,12 @@
+
+{                          
+    "task_type": "populated_lab_play",
+    "config": {
+        "task":"Create an automatic iron gear wheel factory that produces 16 iron gear wheel per 60 ingame seconds. Useful information for this task: One burner mining drill mines 15 resources and one electric mining drill mines 30 resources per 60 ingame seconds.  One stone furnace smelts 18 iron plates per 60 ingame seconds and one assembling machine crafts 60 iron gear wheel per 60 ingame seconds",
+        "throughput_entity":"iron-gear-wheel",
+        "quota":16,
+        "maximum_steps": 16,
+        "holdout_wait_period": 60,
+        "pre_holdout_wait_period": 60
+    }
+}

@@ -4,7 +4,8 @@ from typing import Tuple
 import numpy as np
 from numpy import ndarray, zeros
 
-from client.utils import roll, stitch
+from gym.utils import stitch, roll
+
 
 
 class TestUtils(unittest.TestCase):

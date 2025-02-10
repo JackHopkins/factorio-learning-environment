@@ -121,49 +121,6 @@ def _remove_numerical_keys(dictionary):
         pruned = parts
     return pruned
 
-# def _lua2python(command, response, *parameters, trace=False, start=0):
-#     if trace:
-#         print(command, parameters, response)
-#     if response:
-#         if trace:
-#             print(f"success: {command}")
-#         end = timer()
-#
-#         if response[0] != '{':
-#
-#             splitted = response.split("\n")[-1]
-#
-#             if "[string" in splitted:
-#                 a, b = splitted.split("[string")
-#                 splitted = a + '[\"' + b.replace('"', '!!')
-#                 # remove trailing ',} '
-#                 splitted = re.sub(r',\s*}\s*$', '', splitted) + "\"]}"
-#
-#             output = lua.decode(splitted)
-#         else:
-#             output = lua.decode(response)
-#
-#         ##output = luadata.unserialize(splitted[-1], encoding="utf-8", multival=False)
-#
-#         if trace:
-#             print("{hbar}\nCOMMAND: {command}\nPARAMETERS: {parameters}\n\n{response}\n\nOUTPUT:{output}"
-#                   .format(hbar="-" * 100, command=command, parameters=parameters, response=response, output=output))
-#
-#         # remove numerical keys
-#         if isinstance(output, dict) and 'b' in output:
-#             pruned = _remove_numerical_keys(output['b'])
-#             output['b'] = pruned
-#             # Only the last transmission is considered the output - the rest are just messages
-#         return output, (end - start)
-#     else:
-#         if trace:
-#             print(f"failure: {command} \t")
-#     end = timer()
-#
-#     try:
-#         return lua.decode(response), (end - start)
-#     except Exception as e:
-#         return None, (end - start)
 
 class LuaConversionError(Exception):
     """Custom exception for Lua conversion errors"""

@@ -378,13 +378,3 @@ def extend_resource_network(game, existing_belt_end, new_consumers):
             
     return True
 ```
-
-### 3. Power Grid Expansion
-```python
-def expand_power_grid(game, power_source, new_machines):
-    for machine in new_machines:
-        connection = game.connect_entities(power_source,
-                                         machine,
-                                         Prototype.SmallElectricPole)
-        if not connection:
-            print(f"Failed to connect power to machine at {machine.

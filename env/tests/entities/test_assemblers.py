@@ -12,9 +12,10 @@ def game(instance):
         'accumulator': 3,
         'steam-engine': 3,
         'small-electric-pole': 4,
-        'assembling-machine-2': 1,
+        'assembling-machine-2': 2,
         'offshore-pump': 1,
-        'pipe': 100
+        'pipe': 100,
+        'storage-tank': 4,
     }
     instance.speed(10)
     instance.reset()
@@ -37,4 +38,18 @@ def test_solar_panel_charge_accumulator(game):
     print( f"Connected ass_machine to water {ass_machine.position} with {group}")
 
 
+def test_assembler_2_connect_to_storage(game):
 
+    for direction in [Direction.UP, Direction.LEFT, Direction.RIGHT, Direction.DOWN]:
+        assembly_pos = Position(x=-37, y=-16.5)
+        game.move_to(assembly_pos)
+        ass_machine = game.place_entity(Prototype.AssemblingMachine2, position=assembly_pos, direction=Direction.LEFT)
+        game.set_entity_recipe(entity=ass_machine, prototype=Prototype.Concrete)
+        ass_machine = game.rotate_entity(ass_machine, direction)
+
+        tank_pos = Position(x=-37, y=-6.5)
+        game.move_to(tank_pos)
+        tank = game.place_entity(Prototype.StorageTank, position=tank_pos, direction=direction)
+        print(f"Placed storage tank at {tank.position}")
+        game.connect_entities(tank, ass_machine, Prototype.Pipe)
+        game.instance.reset()

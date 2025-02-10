@@ -626,6 +626,16 @@ function get_entity_direction(entity, direction)
         else
             return defines.direction.west
         end
+    elseif prototype.type == "storage-tank" then
+        if direction == 0 then
+            return defines.direction.north
+        elseif direction == 1 then
+            return defines.direction.east -- Only 2 directions
+        elseif direction == 2 then
+            return defines.direction.south -- Only 2 directions
+        else
+            return defines.direction.west -- Only 2 directions
+        end
     else
         return direction
     end
@@ -1493,19 +1503,19 @@ global.utils.serialize_entity = function(entity)
         serialized.connection_points = {}
 
         -- Assembling machine connection points are similar to chemical plants
-        if direction == defines.direction.north then
+        if entity.direction == defines.direction.north then
             table.insert(serialized.connection_points,
                     {x = x, y = y - 2
                     })
-        elseif direction == defines.direction.south then
+        elseif entity.direction == defines.direction.south then
             table.insert(serialized.connection_points,
                     {x = x, y = y + 2
                     })
-        elseif direction == defines.direction.east then
+        elseif entity.direction == defines.direction.east then
             table.insert(serialized.connection_points,
-                    {x = x + 2, y
+                    {x = x + 2, y = y
                     })
-        elseif direction == defines.direction.west then
+        elseif entity.direction == defines.direction.west then
             table.insert(serialized.connection_points,
                     {x = x - 2, y = y
                     })
@@ -1514,6 +1524,7 @@ global.utils.serialize_entity = function(entity)
         -- Filter out any invalid connection points
         local filtered_connection_points = {}
         for _, point in ipairs(serialized.connection_points) do
+            game.print(serpent.line(point))
             if global.utils.is_valid_connection_point(game.surfaces[1], point) then
                 table.insert(filtered_connection_points, point)
             end

@@ -6,6 +6,7 @@
         "throughput_entity":"steel-plate",
         "quota":16,
         "maximum_steps": 16,
-        "wait_period": 60
+        "holdout_wait_period": 60,
+        "pre_holdout_wait_period": 60
     }
 }

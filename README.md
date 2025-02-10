@@ -1,4 +1,4 @@
-# Factory Learning Environment
+# ⚙ Factorio Learning Environment
 
 
 We introduce the **Factorio Learning Environment** (FLE), an open-ended setting that tests agents in long-term planning, program synthesis, and resource optimization. 

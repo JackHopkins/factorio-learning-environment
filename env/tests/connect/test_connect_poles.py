@@ -280,3 +280,35 @@ def test_connect_electricity_2(game):
     pole_group = game.connect_entities(pole_group, Position(x=10, y=-10), Prototype.SmallElectricPole)
 
     pass
+
+
+def test_prevent_power_pole_cobwebbing(game):
+    """
+    Test that the connect_entities function prevents unnecessary power pole placement
+    when points are already connected to the same power network.
+    """
+    # Place initial power setup
+    steam_engine = game.place_entity(Prototype.SteamEngine, position=Position(x=0, y=0))
+
+    # Place a series of poles forming a basic grid
+    pole1 = game.place_entity_next_to(Prototype.SmallElectricPole, steam_engine.position, Direction.RIGHT, spacing=3)
+    pole2 = game.place_entity_next_to(Prototype.SmallElectricPole, steam_engine.position, Direction.DOWN, spacing=3)
+    pole3 = game.place_entity_next_to(Prototype.SmallElectricPole, pole1.position, Direction.DOWN, spacing=3)
+
+    # First connection should work - creates initial power network
+    game.connect_entities(steam_engine, pole3, connection_type=Prototype.SmallElectricPole)
+
+    # Now attempt to connect points that are already in the same network
+    try:
+        game.connect_entities(pole1, pole2, connection_type=Prototype.SmallElectricPole)
+        assert False, "Should have raised an exception - points already in same network"
+    except Exception as e:
+        assert str(e).find("already connected to the same power network") != -1
+
+    # Verify no additional poles were placed
+    groups = game.get_entities({Prototype.SmallElectricPole})
+    assert len(groups[0].poles) == 3, f"Expected only 3 poles, found {len(groups[0].poles)}"
+
+    # Check that all poles share the same electrical network ID
+    ids = {pole.electrical_id for pole in groups[0].poles}
+    assert len(ids) == 1, "All poles should be in the same network"

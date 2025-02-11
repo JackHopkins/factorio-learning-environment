@@ -37,6 +37,8 @@ global.actions.load_entity_state = function(player, stored_json_data)
             else
                 game.print("Warning: Unknown item type " .. item_name)
             end
+        elseif state.type == "simple-entity-with-owner" then
+            -- Do nothing, we don't want to load in placeholder entities if they were somehow persisted!
         else
 
             local entity = surface.create_entity({

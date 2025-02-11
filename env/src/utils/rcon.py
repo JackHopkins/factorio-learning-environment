@@ -143,6 +143,35 @@ def _check_output_for_errors(command, response, output):
 
 
 def _lua2python(command, response, *parameters, trace=False, start=0):
+    stdout = io.StringIO()
+
+    with contextlib.redirect_stdout(stdout):
+        if not response:
+            return None, (timer() - start)
+
+        try:
+            # Handle the case where response is a complete table
+            if response.strip().startswith('{') and response.strip().endswith('}'):
+                output = lua.decode(response)
+            else:
+                # Handle the case where we need to extract the last line
+                splitted = response.split("\n")[-1]
+                if "[string" in splitted:
+                    splitted = re.sub(r'\[string[^\]]*\]', '', splitted)
+                output = lua.decode(splitted)
+
+            if isinstance(output, dict) and 'b' in output:
+                output['b'] = _remove_numerical_keys(output['b'])
+
+            return output, (timer() - start)
+
+        except Exception as e:
+            if trace:
+                print(f"Parsing error: {str(e)}")
+            return None, (timer() - start)
+
+@deprecated("Doesn't handle nested structures that well")
+def _lua2python_old(command, response, *parameters, trace=False, start=0):
     # Capture stdout using StringIO
     stdout = io.StringIO()
 

@@ -44,7 +44,7 @@ class ThroughputTask(TaskABC):
             "quota": self.quota,
             "maximum_steps": self.maximum_steps,
             "starting_inventory": self.starting_inventory,
-            "initial_state": self.starting_game_state.to_raw(),
+            "initial_state": self.starting_game_state.to_raw() if self.starting_game_state else None,
         }
 
     def setup_instance(self, instance):

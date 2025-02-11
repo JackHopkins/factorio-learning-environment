@@ -5,30 +5,36 @@ We introduce the **Factorio Learning Environment** (FLE), an open-ended setting 
 
 FLE provides exponentially scaling
 challenges, from basic automation to complex factories processing millions of resource units per second. 
-We provide two settings: (1) lab-play consisting of eight structured tasks with fixed resources, and 
-(2) open-play with the unbounded task of building the largest factory on an procedurally generated map. 
+We provide two settings:
+1. **Lab-play**: Eight structured tasks with fixed resources.
+2. **Open-play** Unbounded task of building the largest factory on a procedurally generated map. 
 
-We demonstrate across
-both settings that models still lack strong spatial reasoning. In lab-play, we find that LLMs
-exhibit promising short-horizon skills, yet are unable to operate effectively in constrained environments, reflecting limitations in error analysis. In open-play, while LLMs discover automation strategies that improve growth (e.g electric-powered drilling), they fail to achieve complex 
+Our results demonstrate that models still lack strong spatial reasoning. In lab-play, we find that while LLMs
+exhibit promising short-horizon skills, they are unable to operate effectively in constrained environments, reflecting limitations in error analysis. In open-play, while LLMs discover automation strategies that improve growth (e.g electric-powered drilling), they fail to achieve complex 
 automation (e.g electronic-circuit manufacturing). 
 
 <img src="docs/assets/videos/claude-500.webp" width="364" height="364" controls></video>
 <img src="docs/assets/videos/4o-mini-1500.webp" width="364" height="364" controls></video>
 
 
-## Table of Contents
-- Getting Started
-- Environment
-- Agents
-- Tools
-- Repository Structure
-- Contribution
-- License
+## Quick Links
+- Installation Guide
+- Environment Documentation
+- Agents API Reference
+- Tool Documentation
+- Contributing Guidelines
+- License Information
 
-## Getting Started
+## Installation
 
-Download the repository and install dependencies:
+### Prerequisites
+- [Factorio](https://www.factorio.com/) (version 1.1.110)
+- Docker 
+- Python 3.10+
+
+### Quickstart
+
+1. **Clone the repository**:
 
 ```
 git clone https://github.com/JackHopkins/factorio-learning-environment.git
@@ -36,59 +42,36 @@ cd src
 pip install -e .
 ```
 
-### Client
+2. **Set up Factorio client**:
+- Purchase Factorio from the [official website](https://www.factorio.com/) or on Steam.
+- Downgrade to version 1.1.110:
+    - Steam: Right-click Factorio → Properties → Betas → Select 1.1.110
 
-- Buy Factorio from the [official website](https://www.factorio.com/).
-- Downgrade to version 1.1.110 (the latest version supported by the environment) by following the following instructions:
-    - Right-click Factorio in your Steam library and select Properties.
-    - Go to the Betas tab.
-    - Select 1.1.110 from the dropdown menu.
+3. **Launch FLE Docker server**:
+```bash
+# Start Docker daemon
+sudo systemctl start docker
 
-### Server
+# Build Docker image
+cd cluster/docker
+docker build -t factorio .
 
-#### Install Docker
+# Run a single server
+cd ../local
+docker-compose -f docker-compose-1.yml up -d
+```
 
-- Install Docker by following the instructions [here](https://docs.docker.com/get-docker/).
-- Start the Docker daemon by running the following command:
-    ```
-    sudo systemctl start docker
-    ```
-
-##### Build the Docker image
-- Navigate to the `cluster/docker` directory and run the following command:
-    ```
-    docker build -t factorio .
-    ```
-
-##### Run the Factorio Server
-
-- Navigate to `cluster/local` and run the following command:
-    ```
-    docker-compose -f docker-compose-1.yml up -d
-    ```
-  
-#### Activate Server
-
-Once you have a server running, we need to activate it before we can start playing the game. 
-
-To do this, open the Factorio client, navigate to 'Multiplayer' and enter the UDP address of the running server. By default this will be _localhost:34197_.
-
-If you are running multiple servers (via docker compose), you will need to activate each one.
-
-## Environment
+4. **Activate server**:
+- Open Factorio client
+- Navigate to _Multiplayer_
+- Connect to `localhost:34197` (default) or your configured address in Docker. 
 
 
-## Agents
-
-### Tools
-
-Agents have access to an API of 27 tools, which can be found at `env/src/tools/agent`.
-
-## Repository
+## Project Structure
 
 ```
 factorio-learning-environment/
-├── cluster/
+├── cluster/ # Contains  
 │     ├── docker/
 │     │     ├── config/
 │     │     └── mods/
@@ -101,17 +84,11 @@ factorio-learning-environment/
 ├── data/
 │     ├── blueprints_to_policies/
 │     ├── icons/
-│     ├── plans/
 │     ├── prompts/
 │     ├── recipes/
-│     ├── screenshots/
 │     └── scripts/
 ├── docs/
-│     ├── assets/
-│     │     └── images/
-│     └── static/
-│         ├── css/
-│         └── js/
+│     └── assets/
 ├── env/
 │     ├── src/
 │     │     ├── exceptions/
@@ -121,16 +98,7 @@ factorio-learning-environment/
 │     │     ├── rcon/
 │     │     ├── tools/
 │     │     └── utils/
-│     └── tests
-│         ├── actions/
-│         ├── benchmarks/
-│         ├── blueprints/
-│         ├── complex/
-│         ├── connect/
-│         ├── entities/
-│         ├── functional/
-│         ├── mcts/
-│         └── status/
+│     └── tests/
 └── eval/
       ├── open/
       │     ├── auto_curriculum/

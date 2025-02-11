@@ -336,7 +336,7 @@ class ConnectEntities(Tool):
 
         if not result.is_success:
             raise Exception(
-                f"Failed to connect {connection_prototype} from {source_pos} to {target_pos}. "
+               # f"Failed to connect {connection_prototype} from {source_pos} to {target_pos}. "
                 f"{self.get_error_message(result.error_message.lstrip())}"
             )
 

@@ -7,6 +7,21 @@ class PowerConnectionResolver(Resolver):
     def __init__(self, *args):
         super().__init__(args)
 
+    def _check_existing_network_connection(self, source_entity, target_entity) -> bool:
+        """
+        Check if source and target are already connected to the same power network.
+
+        Returns True if already connected, False otherwise.
+        """
+        if not (source_entity and target_entity):
+            return False
+
+        if not hasattr(source_entity, 'electrical_id') or not hasattr(target_entity, 'electrical_id'):
+            return False
+
+        return source_entity.electrical_id == target_entity.electrical_id and source_entity.electrical_id is not None
+
+
     def _get_entity_connection_points(self, entity: Entity) -> Set[Position]:
         """Get all predefined connection points for an entity."""
         connection_points = set()
@@ -72,6 +87,10 @@ class PowerConnectionResolver(Resolver):
     def resolve(self, source: Union[Position, Entity, ElectricityGroup],
                 target: Union[Position, Entity, ElectricityGroup]) -> List[Tuple[Position, Position]]:
         """Resolve positions for power connections"""
+
+        # First check if source and target are already connected
+        if self._check_existing_network_connection(source, target):
+            raise Exception("Source and target are already connected to the same power network")
 
         if isinstance(source, ElectricityGroup):
             positions = []

@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 
 from env.src.llm_factory import LLMFactory
 from eval.open.beam.beam_search_milestones import MilestonesBeamSearchExecutor
@@ -229,7 +230,8 @@ OBSERVATION_SPACE = \
     
     This response indicates that `print(get_entities())` was called at line 78 to get state of the entities on the map. There are four stone furnaces, two of which are working and two of which have no ingredients to smelt. Non-working entities can be determined by checking the `warnings` and `status` fields."""
 
-with open("eval\open\MANUAL_short.md", "r") as f:
+path = Path(__file__).parent.parent / "MANUAL_short.md"
+with open(path, "r") as f:
     MANUAL = f.read()
 
 
@@ -274,9 +276,9 @@ async def main():
     llm_factory = LLMFactory(model=model_to_evaluate)
     version_description = "eval_agentic_supervised"
 
-    task_folder = r"eval\tasks\task_definitions"
-    result_path = r"eval\tasks\supervised_results"
-    tasks = ["steel_plate_populated_16"]
+    task_folder = Path(__file__).parent.parent.parent / "tasks" / "task_definitions"
+    result_path = Path(__file__).parent.parent.parent / "tasks" / "supervised_results"
+    tasks = ["steel_plate_throughput_16"]
     search_type = "beam_supervised"
     search_iterations = 1
 

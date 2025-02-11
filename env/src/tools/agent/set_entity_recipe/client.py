@@ -48,22 +48,12 @@ class SetEntityRecipe(Tool):
 
         metaclass = matching_prototype.value[1]
 
-        #obj = get_attr(factorio_entities, entity.prototype) (**response)
-        # for key, value in response.items():
-        #     try:
-        #         value_class = entity.__getattribute__(key).__class__
-        #         # if value_class is a pydantic model, construct it
-        #         if hasattr(value_class, "construct"):
-        #             response[key] = value_class.construct(**value)
-        #         elif isinstance(value, dict):
-        #             if 1 in value.keys():
-        #                 response[key] = []
-        #                 for sub_key, sub_value in value.items():
-        #                     response[key].append(sub_value)
-        #     except AttributeError as e:
-        #         pass
         entity = metaclass(**cleaned_response, prototype=matching_prototype)
-        #entity = entity.__class__.construct(**response)
-        entity.recipe = name
+
+        # Handle filter inserters differently
+        if 'filter' in entity.name:
+            entity.filter = name  # Store the filter item
+        else:
+            entity.recipe = name  # Store the recipe for assembling machines
 
         return entity

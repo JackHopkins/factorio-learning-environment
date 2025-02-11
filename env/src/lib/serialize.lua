@@ -828,7 +828,7 @@ global.utils.serialize_entity = function(entity)
         health = entity.health,
         energy = entity.energy,
         type = "\""..entity.type.."\"",
-        status = global.entity_status_names[entity.status] or "normal",
+        status = global.entity_status_names[entity.status] or "\"normal\"",
     }
 
     if entity.grid then
@@ -1049,7 +1049,7 @@ global.utils.serialize_entity = function(entity)
         local is_full = not line1.can_insert_at_back() and not line2.can_insert_at_back()
 
         serialized.belt_status = {
-            status = is_full and "full_output" or "normal"
+            status = is_full and "\"full_output\"" or "\"normal\""
         }
 
         -- Get and merge contents from both lines
@@ -1608,7 +1608,7 @@ global.utils.serialize_entity = function(entity)
 
         -- Add mining status
         if #resources_array == 0 then
-            serialized.status = "no_minable_resources"
+            serialized.status = "\"no_minable_resources\""
             if not serialized.warnings then serialized.warnings = {} end
             table.insert(serialized.warnings, "\"nothing to mine\"")
         end
@@ -1704,13 +1704,13 @@ global.utils.serialize_entity = function(entity)
         -- Update status based on rocket state
         if serialized.rocket then
             if serialized.rocket.launch_progress > 0 then
-                serialized.status = "launching_rocket"
+                serialized.status = "\"launching_rocket\""
             elseif serialized.rocket.payload then
-                serialized.status = "waiting_to_launch_rocket"
+                serialized.status = "\"waiting_to_launch_rocket\""
             end
         elseif serialized.rocket_parts < 100 then
             if serialized.rocket_parts > 0 then
-                serialized.status = "preparing_rocket_for_launch"
+                serialized.status = "\"preparing_rocket_for_launch\""
             end
         end
 
@@ -1720,7 +1720,7 @@ global.utils.serialize_entity = function(entity)
         end
         if serialized.rocket_parts < 100 and serialized.rocket_parts > 0 then
             table.insert(serialized.warnings, "\"waiting for rocket parts\"")
-        elseif serialized.status == "waiting_to_launch_rocket" then
+        elseif serialized.status == "\"waiting_to_launch_rocket\"" then
             table.insert(serialized.warnings, "\"ready to launch\"")
         end
     end
@@ -1787,7 +1787,7 @@ global.utils.serialize_entity = function(entity)
     if is_fluid_handler(entity.type) then
         -- Check if the entity has a fluidbox
         if not entity.fluidbox or #entity.fluidbox == 0 then
-            serialized.status = "not_connected"
+            serialized.status = "\"not_connected\""
             if not serialized.warnings then
                 serialized.warnings = {}
             end

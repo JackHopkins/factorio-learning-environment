@@ -1,3 +1,5 @@
+-- connect_entities
+
 -- Wire reach values for different electric pole types
 local wire_reach = {
     ['small-electric-pole'] = 4,
@@ -19,6 +21,70 @@ local underground_ranges = {
     ['fast-underground-belt'] = 4,
     ['express-underground-belt'] = 4
 }
+
+local function is_within_pole_range(position, pole)
+    local dx = position.x - pole.position.x
+    local dy = position.y - pole.position.y
+    local wire_reach = wire_reach[pole.name] or 4
+    return (dx * dx + dy * dy) <= wire_reach * wire_reach
+end
+
+local function get_electric_network_at_position(position)
+    -- Get all electric poles near the position
+    local nearby_poles = game.surfaces[1].find_entities_filtered{
+        position = position,
+        radius = 9, -- Maximum pole reach is 9 for medium poles
+        type = "electric-pole"
+    }
+
+    -- Check if any pole's wire reaches this position
+    for _, pole in pairs(nearby_poles) do
+        if is_within_pole_range(position, pole) then
+            return pole.electric_network_id
+        end
+    end
+    return nil
+end
+
+local function are_positions_in_same_network(pos1, pos2)
+    local network1 = get_electric_network_at_position(pos1)
+    local network2 = get_electric_network_at_position(pos2)
+    return network1 and network2 and network1 == network2
+end
+
+local function is_position_saturated(position)
+    -- Get nearby poles
+    local nearby_poles = game.surfaces[1].find_entities_filtered{
+        position = position,
+        radius = 9,
+        type = "electric-pole"
+    }
+
+    -- Check each corner of a 1x1 tile centered on the position
+    local corners = {
+        {x = position.x - 0.4, y = position.y - 0.4},
+        {x = position.x - 0.4, y = position.y + 0.4},
+        {x = position.x + 0.4, y = position.y + 0.4},
+        {x = position.x + 0.4, y = position.y - 0.4}
+    }
+
+    -- For each corner, check if it's within range of any existing pole
+    for _, corner in pairs(corners) do
+        local corner_covered = false
+        for _, pole in pairs(nearby_poles) do
+            if is_within_pole_range(corner, pole) then
+                corner_covered = true
+                break
+            end
+        end
+        if not corner_covered then
+            return false -- Found an uncovered corner
+        end
+    end
+
+    return true -- All corners are covered
+end
+
 
 function get_step_size(connection_type)
     return wire_reach[connection_type] or 1
@@ -371,6 +437,11 @@ local function place_at_position(player, connection_type, current_position, dir,
     end
 
     if is_electric_pole then
+
+        if is_position_saturated(current_position) then
+            return -- No need to place another pole
+        end
+
         placement_position = game.surfaces[1].find_non_colliding_position(connection_type, current_position, 2, 0.1)
         if not placement_position then
             error("Cannot find suitable position to place " .. connection_type)
@@ -1015,7 +1086,15 @@ local function connect_entities_with_validation(player_index, source_x, source_y
     end
     -- Only perform validation for belt-type entities
     for _,connection_type in pairs(connection_types) do
-        if connection_type:find("belt") then
+        if wire_reach[connection_type] then
+            if are_positions_in_same_network(
+                {x = source_x, y = source_y},
+                {x = target_x, y = target_y}
+            ) then
+                error("Source and target positions are already connected to the same power network")
+            end
+            break
+        elseif connection_type:find("belt") then
             -- Normalize path first
             local normalized_path = global.utils.normalise_path(path,
                     {x = source_x, y = source_y},

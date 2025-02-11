@@ -69,14 +69,11 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     BurnerInserter = "burner-inserter", BurnerInserter
     FastInserter = "fast-inserter", Inserter
     ExpressInserter = "express-inserter", Inserter
-
-    LongHandedInserter = "long-handed-inserter", Inserter  # TODO
-    StackInserter = "stack-inserter", Inserter  # TODO
-    StackFilterInserter = "stack-filter-inserter", Inserter  # TODO
-    FilterInserter = "filter-inserter", Inserter  # TODO
-
+    LongHandedInserter = "long-handed-inserter", Inserter
+    StackInserter = "stack-inserter", Inserter
+    StackFilterInserter = "stack-filter-inserter", FilterInserter
+    FilterInserter = "filter-inserter", FilterInserter
     Inserter = "inserter", Inserter
-
 
     BurnerMiningDrill = "burner-mining-drill", BurnerMiningDrill
     ElectricMiningDrill = "electric-mining-drill", ElectricMiningDrill

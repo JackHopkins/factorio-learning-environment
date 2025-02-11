@@ -118,6 +118,29 @@ class Controller:
         return script
 
     def execute(self, *args) -> Tuple[Dict, Any]:
+        try:
+            start = time.time()
+            parameters = [lua.encode(arg) for arg in args]
+            invocation = f"pcall(global.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
+            wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
+            lua_response = self.connection.rcon_client.send_command(wrapped)
+
+            parsed, elapsed = _lua2python(invocation, lua_response, start=start)
+            if parsed is None:
+                return {}, elapsed
+
+            if not parsed.get('a') and 'b' in parsed and isinstance(parsed['b'], str):
+                if parsed['b'] == 'string':
+                    error = lua_response.split(":")[-1].replace("}","").replace("\"","").strip()
+                    return error, elapsed
+                return parsed['b'], elapsed
+
+            return parsed.get('b', {}), elapsed
+
+        except Exception as e:
+            return {}, -1
+
+    def execute2(self, *args) -> Tuple[Dict, Any]:
         lua_response = ""
         try:
             start = time.time()

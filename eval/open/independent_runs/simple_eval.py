@@ -362,8 +362,8 @@ def main():
     # Model configurations
     model_configs = [
         #{"model": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "resume_version": 488},
-        {"model": "gpt-4o-mini", "resume_version": None},
-        #{"model": "gpt-4o", "resume_version": 490},
+        #{"model": "gpt-4o-mini", "resume_version": None},
+        {"model": "gpt-4o", "resume_version": 530},
        # {"model": "gpt-4o-mini", "resume_version": 505},
         #{"model": "deepseek-chat", "resume_version": 507}
         #{"model": "deepseek-chat", "resume_version": None},#491},

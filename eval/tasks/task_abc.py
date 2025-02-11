@@ -11,6 +11,6 @@ class TaskABC:
     def verify(self, score: float, step: int, instance: FactorioInstance, step_statistics: Dict) -> bool:
         """ Return true is the task is completed"""
         pass
-    def setup(instance):
+    def setup(self, instance):
         """Code to provision the task environment"""
         pass

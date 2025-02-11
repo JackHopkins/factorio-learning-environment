@@ -71,7 +71,6 @@ class SupervisedTaskExecutorABC(ABC):
         
         # Create instance groups
         self.instance_groups = self._create_instance_groups(instances)
-        self.api_description = self.instance_groups[0].evaluator.instances[0].get_system_prompt()
 
     def read_in_prompts(self, path):
         system_prompt_path = os.path.join(path, "system_prompt.md")

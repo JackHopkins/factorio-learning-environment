@@ -235,19 +235,13 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
             for program in step.sampled_programs:
                 # reset the instance to the start state
                 instance.reset(step.start_state)
-                final_reward, state, result, entities, achievements, ticks, error = await group.evaluator._evaluate_single(
+                final_reward, state, result, entities, achievements, ticks = await group.evaluator._evaluate_single(
                     instance_id,
                     program,
                     instance
                 )
                 print(f"\nOutput for instance {instance_id}: {result}\n")
-                if not isinstance(program, Program):
-                    print(f"Weird program 2: {program}")
-                if error:
-                    print(f"Error in group {group.group_id}, instance {instance_id}: {error}")
                 step.program = program
-                if not error:
-                    break
             entity_list.append(entities)
             step.end_state = state
             step.reward = final_reward
@@ -297,6 +291,7 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
                 "mining_setup": step.program.meta["mining_setup"],
                 "starting_inventory": step.program.meta["starting_inventory"],
                 "holdout_achievements": step.program.meta.get("holdout_achievements", None),
+                "task_success": step.program.meta.get("task_success", None),
                 }
 
         program = step.program

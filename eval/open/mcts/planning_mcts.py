@@ -12,7 +12,7 @@ from tenacity import wait_exponential, retry
 
 
 def get_mining_setup(instance):
-        mining_setup = instance.get_entities()
+        mining_setup = instance.namespace.get_entities()
         if len(mining_setup) == 0:
             mining_setup = "There are no entities on the map"
         else:

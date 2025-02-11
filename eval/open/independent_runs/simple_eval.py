@@ -52,7 +52,7 @@ class TrajectoryRunner:
         self.iteration_times = []
         self.process_id = process_id
         self.formatter = RecursiveReportFormatter(
-            chunk_size=4,
+            chunk_size=16,
             llm_factory=llm_factory,
             cache_dir='summary_cache',
         )
@@ -363,7 +363,7 @@ def main():
     model_configs = [
         #{"model": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "resume_version": 488},
         #{"model": "gpt-4o-mini", "resume_version": None},
-        {"model": "gpt-4o", "resume_version": 530},
+        {"model": "gpt-4o", "resume_version": None},
        # {"model": "gpt-4o-mini", "resume_version": 505},
         #{"model": "deepseek-chat", "resume_version": 507}
         #{"model": "deepseek-chat", "resume_version": None},#491},
@@ -406,7 +406,7 @@ def main():
         )
 
         # Start 4 processes for each model
-        RUNS_PER_MODEL = 1
+        RUNS_PER_MODEL = 4
         for process_id in range(RUNS_PER_MODEL):
             global_process_id = (model_idx * RUNS_PER_MODEL) + process_id# + 16
             p = multiprocessing.Process(

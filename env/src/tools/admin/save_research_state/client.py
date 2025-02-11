@@ -32,8 +32,8 @@ class SaveResearchState(Tool):
                         level=tech["level"],
                         research_unit_count=tech["research_unit_count"],
                         research_unit_energy=tech["research_unit_energy"],
-                        prerequisites=tech["prerequisites"],
-                        ingredients=tech["ingredients"]
+                        prerequisites=[x for x in tech["prerequisites"].values()],
+                        ingredients=[{x["name"]: x["amount"]} for x in tech["ingredients"].values()],
                     )
                     for name, tech in state["technologies"].items()
                 }
@@ -41,7 +41,7 @@ class SaveResearchState(Tool):
                 technologies=technologies,
                 current_research=state["current_research"] if "current_research" in state else None,
                 research_progress=state["research_progress"],
-                research_queue=state["research_queue"]
+                research_queue=[x for x in state["research_queue"].values()],
             )
 
         except Exception as e:

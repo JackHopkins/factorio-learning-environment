@@ -132,30 +132,6 @@ def initialise_starting_state(instance, task, reset_game_state):
     return task
 
 
-def get_starting_state(instance, config, starting_scenario_folder, reset_game_state):
-    # reset the game state but with the new inventory
-    reset_game_state_copy = copy.deepcopy(reset_game_state)
-    reset_game_state_copy.inventory = config.starting_inventory
-    instance.reset(reset_game_state_copy)
-    print(instance.namespace.inspect_inventory())
-    if config.starting_setup_code_location is None:
-        starting_game_state = GameState.from_instance(instance)
-        config.starting_game_state = starting_game_state
-        return config
-    # get the starting code folder path
-    starting_code_folder = os.path.join(starting_scenario_folder, config.starting_setup_code_location)
-    # read in the starting code
-    with open(starting_code_folder, "r") as f:
-        starting_code = f.read()
-    # execute the starting code
-    output_list, result, error, achievements = eval_program_with_achievements(instance, starting_code)
-    # get the game state
-    starting_game_state = GameState.from_instance(instance)
-    config.starting_game_state = starting_game_state
-    config.starting_scenario_code = starting_code
-    config.starting_scenario_logs = result
-    return config
-
 def create_factorio_instance(instance_id: int) -> FactorioInstance:
     """Create a single Factorio instance"""
     ips, udp_ports, tcp_ports = get_local_container_ips()
@@ -167,7 +143,7 @@ def create_factorio_instance(instance_id: int) -> FactorioInstance:
         fast=True,
         cache_scripts=True,
         inventory={},
-        all_technologies_researched=False
+        all_technologies_researched=True
     )
     instance.speed(10)
     return instance
@@ -276,7 +252,7 @@ async def main():
 
     task_folder = r"eval\tasks\task_definitions"
     result_path = r"eval\tasks\supervised_results"
-    tasks = ["steel_plate_populated_16"]
+    tasks = ["steel_plate_throughput_16"]
     search_type = "beam_supervised"
     search_iterations = 1
 

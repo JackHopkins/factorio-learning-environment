@@ -26,7 +26,7 @@ class ThroughputTask(TaskABC):
     def verify(self, score: float, step: int, instance: FactorioInstance, step_statistics: Dict) -> bool:
         max_achieved_throughput = 0
         # wait the pre-holdout period
-        instance.sleep(self.pre_holdout_wait_period)
+        instance.namespace.sleep(self.pre_holdout_wait_period)
         while True:
             result_list, result, error,  achievements = eval_program_with_achievements(program = f"sleep({self.holdout_wait_period})", instance=instance)
             dynamic_achievements = achievements["dynamic"]
@@ -44,7 +44,7 @@ class ThroughputTask(TaskABC):
             "quota": self.quota,
             "maximum_steps": self.maximum_steps,
             "starting_inventory": self.starting_inventory,
-            "initial_state": self.starting_game_state.to_raw(),
+            "initial_state": self.starting_game_state.to_raw() if self.starting_game_state else None,
         }
 
     def setup_instance(self, instance):

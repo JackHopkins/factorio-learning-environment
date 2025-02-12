@@ -47,8 +47,8 @@ class ConnectEntities(Tool):
     def _setup_resolvers(self):
         self.resolvers = {
             ConnectionType.FLUID: FluidConnectionResolver(self.get_entities),
-            ConnectionType.TRANSPORT: TransportConnectionResolver(),
-            ConnectionType.POWER: PowerConnectionResolver(),
+            ConnectionType.TRANSPORT: TransportConnectionResolver(self.get_entities),
+            ConnectionType.POWER: PowerConnectionResolver(self.get_entities),
             ConnectionType.WALL: Resolver(self.get_entities)
         }
 
@@ -158,17 +158,16 @@ class ConnectEntities(Tool):
 
         source_pos = source.position if not isinstance(source, Position) else source
         target_pos = target.position if not isinstance(target, Position) else target
-
-
         source_error_message_addition = f"{source}" if isinstance(source, Position) else f"{source.name} at {source.position}"
         target_error_message_addition = f"{target}" if isinstance(target, Position) else f"{target.name} at {target.position}"
+        
         raise Exception(
-            f"Failed to connect {set([type.name for type in connection_types])} from {source_error_message_addition} to {target_error_message_addition}. "
-            f"{self.get_error_message(str(last_exception))}"
+            f"Failed to connect {set([type.name for type in connection_types])} from {source_error_message_addition} to {target_error_message_addition}."
+            f" {self.get_error_message(str(last_exception))}"
         )
 
     def _resolve_position_into_entity(self, position: Position):
-        entities = self.get_entities(position=position, radius=0.5)
+        entities = self.get_entities(position=position, radius=0)
         if not entities:
             return position
         if isinstance(entities[0], EntityGroup):
@@ -339,7 +338,7 @@ class ConnectEntities(Tool):
 
         if not result.is_success:
             raise Exception(
-               # f"Failed to connect {connection_prototype} from {source_pos} to {target_pos}. "
+                f"Failed to connect {connection_prototype} from {source_pos} to {target_pos}. "
                 f"{self.get_error_message(result.error_message.lstrip())}"
             )
 

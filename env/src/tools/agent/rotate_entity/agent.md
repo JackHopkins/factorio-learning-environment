@@ -16,38 +16,19 @@ Returns the rotated Entity object.
 
 ### Examples
 ```python
-# Basic rotation
-belt = place_entity(Prototype.TransportBelt, position=pos)
-belt = rotate_entity(belt, Direction.RIGHT)
-
-# Rotating inserter
-inserter = place_entity(Prototype.BurnerInserter, position=pos)
+# Rotating inserters - Inserter rotation affects pickup/drop positions
+# Important: By default inserters take from entities they are placed next to
+# Always rotate the inserters the other way if they need to take items from an entity
+inserter = place_entity(Prototype.BurnerInserter, position=pos, direction = Direction.UP)
+print(f"Original inserter: pickup={inserter.pickup_position}, drop={inserter.drop_position}")
 inserter = rotate_entity(inserter, Direction.DOWN)
+print(f"Rotated inserter: pickup={inserter.pickup_position}, drop={inserter.drop_position}")
 ```
 
 ## Entity-Specific Behaviors
 
-### 1. Transport Belts
-```python
-# Belt rotation affects input/output positions
-belt = place_entity(Prototype.TransportBelt, position=pos)
-print(f"Original: in={belt.input_position}, out={belt.output_position}")
-
-belt = rotate_entity(belt, Direction.DOWN)
-print(f"Rotated: in={belt.input_position}, out={belt.output_position}")
-```
-
-### 2. Inserters
-```python
-# Inserter rotation affects pickup/drop positions
-inserter = place_entity(Prototype.BurnerInserter, position=pos)
-print(f"Original: pickup={inserter.pickup_position}, drop={inserter.drop_position}")
-
-inserter = rotate_entity(inserter, Direction.LEFT)
-print(f"Rotated: pickup={inserter.pickup_position}, drop={inserter.drop_position}")
-```
-
-### 3. Assembling Machines
+### 1. Assembling Machines, Oil refineris and Chemical Cplants
+Always need to set the recipe for assembling machines, oil refineries and chemical plants as their behaviour differs with recipes
 ```python
 # Must set recipe before rotating
 assembler = place_entity(Prototype.AssemblingMachine1, position=pos)
@@ -63,152 +44,33 @@ assembler = set_entity_recipe(assembler, Prototype.IronGearWheel)
 assembler = rotate_entity(assembler, Direction.RIGHT)
 ```
 
-## Common Patterns
-
-1. **Aligning Input/Output**
-```python
-def align_entities(source: Entity, target: Entity):
-    # Calculate desired direction
-    dx = target.position.x - source.position.x
-    dy = target.position.y - source.position.y
-    
-    if abs(dx) > abs(dy):
-        direction = Direction.RIGHT if dx > 0 else Direction.LEFT
-    else:
-        direction = Direction.DOWN if dy > 0 else Direction.UP
-        
-    return rotate_entity(source, direction)
-```
-
-
-2. **Inserter Configuration**
-```python
-def configure_inserter(inserter: Entity, source: Entity, target: Entity):
-    # Calculate direction based on source/target positions
-    dx = target.position.x - source.position.x
-    dy = target.position.y - source.position.y
-    
-    if abs(dx) > abs(dy):
-        direction = Direction.RIGHT if dx > 0 else Direction.LEFT
-    else:
-        direction = Direction.DOWN if dy > 0 else Direction.UP
-        
-    return rotate_entity(inserter, direction)
-```
-
-## Best Practices
-
-1. **Update References**
-```python
-# Always update entity reference after rotation
-inserter = place_entity(Prototype.BurnerInserter, position=pos)
-inserter = rotate_entity(inserter, Direction.RIGHT)  # Update reference
-```
-
-2. **Verify Rotation**
-```python
-def verify_rotation(entity: Entity, target_direction: Direction):
-    rotated = rotate_entity(entity, target_direction)
-    if rotated.direction != target_direction:
-        raise Exception(f"Rotation failed: {entity} to {target_direction}")
-    return rotated
-```
-
-3. **Handle Recipe Requirements**
-```python
-def safe_rotate_assembler(assembler: Entity, direction: Direction):
-    try:
-        return rotate_entity(assembler, direction)
-    except Exception as e:
-        if "recipe" in str(e):
-            assembler = set_entity_recipe(assembler, Prototype.IronGearWheel)
-            return rotate_entity(assembler, direction)
-        raise
-```
-
-## Error Handling
-
-1. **Recipe Requirements**
-```python
-def rotate_production_machine(machine: Entity, direction: Direction):
-    try:
-        return rotate_entity(machine, direction)
-    except Exception as e:
-        if "Set the recipe first" in str(e):
-            print("Machine requires recipe before rotation")
-            return machine
-        raise
-```
-
-
 ## Common Use Cases
 
-1. **Production Line Setup**
+1. **Smelting Setup**
 ```python
-def setup_assembly_line():
-    # Place and orient machines
-    assembler = place_entity(
-        Prototype.AssemblingMachine1,
-        position=pos
-    )
-    assembler = set_entity_recipe(
-        assembler,
-        Prototype.IronGearWheel
-    )
-    
-    # Orient input inserter
-    input_inserter = place_entity_next_to(
-        Prototype.BurnerInserter,
-        assembler.position,
-        Direction.LEFT
-    )
-    input_inserter = rotate_entity(
-        input_inserter,
-        Direction.RIGHT  # Face assembler
-    )
-    
-    # Orient output inserter
-    output_inserter = place_entity_next_to(
-        Prototype.BurnerInserter,
-        assembler.position,
-        Direction.RIGHT
-    )
-    output_inserter = rotate_entity(
-        output_inserter,
-        Direction.LEFT  # Face away from assembler
-    )
-```
-
-2. **Smelting Setup**
-```python
-def setup_smelting_line(start_pos: Position):
-    # Place furnace
-    furnace = place_entity(
-        Prototype.StoneFurnace,
-        position=start_pos
-    )
-    
-    # Input inserter on the left, facing right
-    input_inserter = place_entity_next_to(
-        Prototype.BurnerInserter,
-        furnace.position,
-        Direction.LEFT
-    )
-    input_inserter = rotate_entity(
-        input_inserter,
-        Direction.RIGHT
-    )
-    
-    # Output inserter on the right, facing left
-    output_inserter = place_entity_next_to(
-        Prototype.BurnerInserter,
-        furnace.position,
-        Direction.RIGHT
-    )
-    output_inserter = rotate_entity(
-        output_inserter,
-        Direction.LEFT
-    )
-    
-    return furnace, input_inserter, output_inserter
+# Place furnace
+furnace = place_entity(
+    Prototype.StoneFurnace,
+    position=start_pos
+)
+print(f"Put furnace at {furnace.position}")
+# Input inserter on the left, facing right
+input_inserter = place_entity_next_to(
+    Prototype.BurnerInserter,
+    furnace.position,
+    Direction.LEFT
+)
+input_inserter = rotate_entity(
+    input_inserter,
+    Direction.RIGHT
+)
+print(f"Put input inserter to input items into furnace at {input_inserter.position}")
+# Output inserter on the right,
+# dont need to rotate as its taking from the furnace
+output_inserter = place_entity_next_to(
+    Prototype.BurnerInserter,
+    furnace.position,
+    Direction.RIGHT
+)
+print(f"Put output inserter to get items from furnace at {output_inserter.position}")
 ```

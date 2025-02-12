@@ -56,17 +56,12 @@ except Exception as e:
     print("No coal within 500 tiles")
 ```
 
-2. **Position Accuracy**
-```python
-# Returns positions on the resource grid
-coal_pos = nearest(Resource.Coal)
-move_to(coal_pos)  # Will move to exact resource position
-```
-
-3. **Water Finding**
+2. **Water Finding**
 ```python
 # Water positions are tile-based
 water_pos = nearest(Resource.Water)
+# move to water pos
+move_to(water_pos)
 # Use for placing offshore pumps
 pump = place_entity(Prototype.OffshorePump, position=water_pos)
 ```
@@ -84,83 +79,6 @@ def collect_resource(resource_type: Resource, amount: int):
     harvest_resource(resource_pos, amount)
 ```
 
-2. **Power Setup Pattern**
-```python
-def setup_power():
-    # Find water for offshore pump
-    water_pos = nearest(Resource.Water)
-    move_to(water_pos)
-    
-    # Place power infrastructure
-    pump = place_entity(Prototype.OffshorePump, position=water_pos)
-    boiler = place_entity_next_to(Prototype.Boiler, pump.position, Direction.DOWN)
-    engine = place_entity_next_to(Prototype.SteamEngine, boiler.position, Direction.DOWN)
-```
-
-3. **Resource Verification Pattern**
-```python
-def verify_resources_available():
-    required_resources = [
-        Resource.Coal,
-        Resource.IronOre,
-        Resource.CopperOre,
-        Resource.Stone
-    ]
-    
-    for resource in required_resources:
-        try:
-            pos = nearest(resource)
-            print(f"Found {resource} at {pos}")
-        except Exception:
-            print(f"Missing required resource: {resource}")
-```
-
-## Best Practices
-
-1. **Error Handling**
-```python
-try:
-    resource_pos = nearest(Resource.Coal)
-except Exception as e:
-    print(f"Could not find resource: {e}")
-    # Handle missing resource case
-```
-
-2**Resource Distance Checking**
-```python
-def is_resource_close(resource_type: Resource, max_distance: float = 50):
-    try:
-        pos = nearest(resource_type)
-        player_pos = Position(x=0, y=0)  # Current position
-        distance = ((pos.x - player_pos.x)**2 + (pos.y - player_pos.y)**2)**0.5
-        return distance <= max_distance
-    except:
-        return False
-```
-
-Example workflow:
-```python
-# Complete mining setup workflow
-def setup_mining(resource_type: Resource):
-    # Find resource
-    resource_pos = nearest(resource_type)
-    
-    # Move to location
-    move_to(resource_pos)
-    
-    # Place mining drill
-    drill = place_entity(Prototype.BurnerMiningDrill, position=resource_pos)
-    
-    # Place chest for output
-    chest = place_entity_next_to(
-        Prototype.WoodenChest,
-        drill.position,
-        Direction.DOWN
-    )
-    
-    return drill, chest
-```
-
 ## Troubleshooting
 
 1. "No resource found"
@@ -172,8 +90,3 @@ def setup_mining(resource_type: Resource):
    - Check resource enum spelling
    - Verify resource type is supported
    - Use correct Resource enum
-
-3. Position accuracy
-   - Positions are grid-aligned
-   - Water positions are tile-based
-   - Use returned positions directly

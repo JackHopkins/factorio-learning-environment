@@ -488,7 +488,8 @@ class Accumulator(StaticEntity, Electric):
     _width: float = 2
 
 class Inserter(StaticEntity, Electric):
-    """Represents an inserter that moves items between entities."""
+    """Represents an inserter that moves items between entities.
+    Requires electricity to power"""
     pickup_position: Optional[Position] = None
     drop_position: Position
     _width: float = 1
@@ -505,7 +506,8 @@ class UndergroundBelt(TransportBelt):
     _width: float = 1
 
 class MiningDrill(StaticEntity):
-    """Base class for mining drills that extract resources."""
+    """Base class for mining drills that extract resources.
+    The direction of the drill is where the drop_position is oriented towards"""
     drop_position: Position
     resources: List[Ingredient]
 
@@ -554,7 +556,8 @@ class FluidHandler(StaticEntity):
     fluid_systems: Optional[Union[dict, list]] = []
 
 class AdvancedAssemblingMachine(FluidHandler, AssemblingMachine):
-    """A second and third tier assembling machine that can handle fluids."""
+    """A second and third tier assembling machine that can handle fluids.
+    A recipe first needs to be set and then the input fluid source can be connected with pipes"""
     _height: float = 3
     _width: float = 3
 
@@ -569,20 +572,36 @@ class MultiFluidHandler(StaticEntity):
 
 class FilterInserter(Inserter, Filtered):
     """A inserter that only moves specific items"""
+    _height: float = 1
+    _width: float = 1
 
 class ChemicalPlant(MultiFluidHandler, AssemblingMachine):
-    """Represents a chemical plant that processes fluid recipes."""
+    """Represents a chemical plant that processes fluid recipes.
+    Requires powering and accepts input fluids (from storage tanks etc) and solids
+    Outputs either:
+        solids (battery, plastic) that need to be extracted with inserters
+        fluids (sulfuric acid, oil) that need to be extracted with pipes
+    First a recipe needs to be set and then the fluid sources can be connected to the plant"""
     _height: float = 3
     _width: float = 3
+    pass
 
 
 class OilRefinery(MultiFluidHandler, AssemblingMachine):
-    """An oil refinery for processing crude oil into products."""
+    """An oil refinery for processing crude oil into products.
+    Requires powering and accepts input fluids (from pumpjacks, storage tanks etc) and solids
+    First a recipe needs to be set and then the fluid sources can be connected to the refinery"""
+    """Represents a chemical plant that processes fluid recipes."""
     _height: float = 5
     _width: float = 5
 
+
 class PumpJack(MiningDrill, FluidHandler, Electric):
-    """A pump jack for extracting crude oil."""
+    """A pump jack for extracting crude oil. Requires electricity
+    This needs to be placed on crude oil and oil needs to be extracted with pipes
+    Oil can be sent to a storage tank, oil refinery or a chemical plant
+    Oil can also be sent to assmbling machine to be made into oil barrels
+    """
     _height: float = 3
     _width: float = 3
     pass
@@ -651,9 +670,10 @@ class Chest(Entity):
     _height: float = 1
     _width: float = 1
 
-
 class StorageTank(FluidHandler):
-    """A tank for storing fluids."""
+    """A tank for storing fluids.
+    Can be used for inputs and outputs of chemical plants and refineries.
+    Also can store water from offshore pumps."""
     _height: float = 3
     _width: float = 3
 

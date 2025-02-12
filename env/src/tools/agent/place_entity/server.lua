@@ -331,7 +331,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                     time_to_live = 60000
                 }
 
-                error("Cannot place " .. entity .. " at the target location - something is in the way")
+                error("\"Cannot place " .. entity .. " at the target location - something is in the way or part of the terrain is unplaceable (water)\"")
             end
         end
 

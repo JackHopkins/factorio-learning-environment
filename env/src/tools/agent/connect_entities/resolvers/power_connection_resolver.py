@@ -104,7 +104,7 @@ class PowerConnectionResolver(Resolver):
                     positions.append((pole.position, nearest_point))
             else:
                 # If target is a Position, round it to the nearest half-tile
-                target_pos = target.position if isinstance(target, Entity) else target
+                target_pos = target.position if (isinstance(target, Entity) or isinstance(target, ElectricityGroup)) else target
                 target_pos = Position(
                     x=round(target_pos.x * 2) / 2,
                     y=round(target_pos.y * 2) / 2
@@ -129,7 +129,7 @@ class PowerConnectionResolver(Resolver):
                 return [(source_pos, nearest_point)]
             else:
                 # If target is a Position, round it to the nearest half-tile
-                target_pos = target.position if isinstance(target, Entity) else target
+                target_pos = target.position if (isinstance(target, Entity) or isinstance(target, ElectricityGroup)) else target
                 target_pos = Position(
                     x=round(target_pos.x * 2) / 2,
                     y=round(target_pos.y * 2) / 2

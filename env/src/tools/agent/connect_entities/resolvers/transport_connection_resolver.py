@@ -32,7 +32,7 @@ class TransportConnectionResolver(Resolver):
         match source:
             case GunTurret() | AssemblingMachine() | Lab() | Chest() | Accumulator() | Furnace():
                 raise Exception(
-                    f"Cannot connect belts directly from a {source.prototype} object, we need to use an inserter.")
+                    f"Cannot connect belts directly from a {source.prototype} object, we need to use an inserter to take items from {source.prototype}.")
 
             case BeltGroup():
                 source_positions = self._get_transport_belt_adjacent_positions(source.outputs[0], target=False)
@@ -54,7 +54,7 @@ class TransportConnectionResolver(Resolver):
 
         match target:
             case GunTurret() | AssemblingMachine() | Lab() | Chest() | Accumulator() | Furnace():
-                raise Exception(f"Cannot connect belts directly to a {target.prototype} object, we need to use an inserter.")
+                raise Exception(f"Cannot connect belts directly to a {target.prototype} object, we need to use an inserter to input items into the {target.prototype}.")
 
             case BeltGroup():
                 #if target.inputs:

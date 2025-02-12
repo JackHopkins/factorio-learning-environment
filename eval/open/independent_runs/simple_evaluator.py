@@ -4,8 +4,9 @@ from pathlib import Path
 from typing import List, Tuple, Union, Dict
 
 from eval.open.db_client import DBClient
-from eval.open.model.game_state import GameState
-from eval.open.model.program import Program
+from models.achievements import ProductionFlows
+from models.game_state import GameState
+from models.program import Program
 from entities import Entity, EntityGroup
 from instance import FactorioInstance
 from utils.profits import get_achievements
@@ -29,7 +30,7 @@ class SimpleFactorioEvaluator:
     async def evaluate(self, program: Program, start_state: GameState) -> Program:
         try:
             self.instance.reset(start_state)
-            raw_reward, state, response, entities, achievements, ticks = await self._evaluate_single(self.instance.tcp_port, program, self.instance)
+            raw_reward, state, response, entities, achievements, flows, ticks = await self._evaluate_single(self.instance.tcp_port, program, self.instance)
 
             relative_reward = raw_reward  # - holdout_value
 
@@ -46,6 +47,7 @@ class SimpleFactorioEvaluator:
             program.conversation = conversation
             program.response = response
             program.achievements = achievements
+            program.flows = flows
 
             return program
 
@@ -54,21 +56,23 @@ class SimpleFactorioEvaluator:
             raise e
 
     async def  _evaluate_single(self, instance_port: int, program: Program, instance: FactorioInstance) \
-            -> Tuple[float, GameState, str, List[Union[Entity, EntityGroup]], Dict[str, Dict[str, int]], int]:
+            -> Tuple[float, GameState, str, List[Union[Entity, EntityGroup]], Dict, ProductionFlows, int]:
 
-        tcp_port = instance_port
+        #tcp_port = instance_port
 
         try:
             # Get initial state information
 
             start_entities = instance.namespace.get_entities()
             start_inventory = instance.namespace.inspect_inventory()
-            start_production_flows = instance.namespace._get_production_stats()
+            #start_production_flows = instance.namespace._get_production_stats()
+            start_production_flows = ProductionFlows.from_dict(instance.namespace._get_production_stats())
+
             initial_value, start_time = instance.namespace.score()
             reward, time, result = instance.eval(program.code, timeout=60)
 
 
-            save_path = Path(f"../../../data/screenshots/{program.version}/{self.instance.tcp_port}/{int(((program.depth-1)/2)+1)}.png")
+            save_path = Path(f"../../../data/screenshots/{program.version}/{self.instance.tcp_port}/{program.get_step()}.png")
             self.instance.screenshot(save_path=save_path, center_on_factory=True)
 
             entities = instance.namespace.get_entities()
@@ -85,7 +89,7 @@ class SimpleFactorioEvaluator:
                 result += f'\n' + str(len(program.code.split('\n'))) + f': (\'Current inventory {final_inventory}\',)'
 
             # Check to see if the entities are different
-            # If so, we put a hint in the code and result
+            # If they are, we put a hint in the code AND result
             get_entities_code = 'print(f"Entities on the map: {get_entities()}")'
             if (start_entities != entities and 'error' not in result.lower()
                     and get_entities_code not in program.code
@@ -107,10 +111,12 @@ class SimpleFactorioEvaluator:
             final_reward = score - initial_value
             ticks = instance.get_elapsed_ticks()
 
-            post_production_flows = instance.namespace._get_production_stats()
-            achievements = get_achievements(start_production_flows, post_production_flows)
+            post_production_flows = ProductionFlows.from_dict(instance.namespace._get_production_stats())
 
-            return final_reward, state, result, entities, achievements, ticks
+            achievements = get_achievements(start_production_flows, post_production_flows)
+            flows = start_production_flows.get_new_flows(post_production_flows)#
+
+            return final_reward, state, result, entities, achievements, flows, ticks
 
         except Exception as e:
             print(f"Error in _evaluate_single:")

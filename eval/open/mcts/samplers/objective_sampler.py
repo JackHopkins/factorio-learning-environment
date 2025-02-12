@@ -2,7 +2,7 @@ import asyncio
 from typing import List, Dict, Any
 import re
 
-from llm_factory import LLMFactory
+from agents.utils.llm_factory import LLMFactory
 
 
 class ObjectiveTreeSampler:

@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from instance import FactorioInstance
-from eval.open.model.game_state import GameState
-
+from models.game_state import GameState
 
 
 def test_game_state():

@@ -10,12 +10,14 @@ import tenacity
 from tenacity import wait_exponential, retry, retry_if_exception_type
 
 from eval.open.mcts.python_parser import PythonParser
-from eval.open.model.conversation import Conversation, Message, GenerationParameters
-from eval.open.mcts.formatters.conversation_formatter import ConversationFormatter, DefaultFormatter
+from models.conversation import Conversation
+from models.message import Message
+from models.generation_parameters import GenerationParameters
+from agents.utils.formatters.conversation_formatter_abc import ConversationFormatter, DefaultFormatter
 from eval.open.db_client import DBClient
-from eval.open.factorio_evaluator import FactorioEvaluator
-from eval.open.model.game_state import GameState
-from eval.open.model.program import Program
+from eval.evaluator import Evaluator
+from models.game_state import GameState
+from models.program import Program
 from eval.open.mcts.samplers.db_sampler import DBSampler
 
 
@@ -23,7 +25,7 @@ class MCTS:
     def __init__(self,
                  llm_factory: 'LLMFactory',
                  db_client: DBClient,
-                 evaluator: FactorioEvaluator,
+                 evaluator: Evaluator,
                  sampler: DBSampler,
                  system_prompt: str,
                  initial_state: GameState,

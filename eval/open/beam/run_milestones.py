@@ -1,27 +1,21 @@
-import sys
+import asyncio
+import json
+import os
+from datetime import datetime
 from pathlib import Path
 
-from env.src.llm_factory import LLMFactory
-from eval.open.beam.beam_search_milestones import MilestonesBeamSearchExecutor
-
-import os
-import asyncio
-from dotenv import load_dotenv
-from cluster.local.cluster_ips import get_local_container_ips
-from eval.open.db_client import DBClient
-from env.src.instance import FactorioInstance
-import concurrent.futures
-from typing import List, Tuple
-from eval.open.mcts.parallel_supervised_config import SupervisedExecutorConfig
-import json
-
-from eval.open.mcts.formatters.recursive_report_formatter import RecursiveReportFormatter
-from eval.open.model.game_state import GameState
 import matplotlib.pyplot as plt
 import numpy as np
-from datetime import datetime
-import copy
-from env.src.utils.achievements import eval_program_with_achievements
+from dotenv import load_dotenv
+
+from agents.utils.llm_factory import LLMFactory
+from cluster.local.cluster_ips import get_local_container_ips
+from env.src.instance import FactorioInstance
+from eval.open.beam.beam_search_milestones import MilestonesBeamSearchExecutor
+from eval.open.db_client import DBClient
+from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
+from eval.open.mcts.parallel_supervised_config import SupervisedExecutorConfig
+from models.game_state import GameState
 from eval.tasks.throughput_task import ThroughputTask, LAB_PLAY_POPULATED_STARTING_INVENTORY
 
 os.environ.update({"FORCE_COLOR": "1", "TERM": "xterm-256color"})
@@ -261,7 +255,7 @@ async def main():
 
     formatter = RecursiveReportFormatter(
         chunk_size=128,
-        llm_factory=llm_factory,
+        llm_call=llm_factory.acall,
         cache_dir='./summary_cache',
     )
     configs = {"beam_supervised": {"config": SupervisedExecutorConfig(

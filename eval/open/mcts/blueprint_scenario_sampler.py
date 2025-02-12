@@ -3,9 +3,10 @@ from typing import List, Optional, Tuple, Dict
 import psycopg2
 from psycopg2.extras import DictCursor
 
-from eval.open.model.conversation import Conversation, Message
-from eval.open.model.game_state import GameState
-from eval.open.model.program import Program
+from models.conversation import Conversation
+from models.message import Message
+from models.game_state import GameState
+from models.program import Program
 from instance import FactorioInstance
 
 

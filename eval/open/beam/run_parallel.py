@@ -8,14 +8,14 @@ from typing import List
 import os
 from dotenv import load_dotenv
 
-from llm_factory import LLMFactory
+from agents.utils.llm_factory import LLMFactory
 from eval.open.beam.beam_search import ParallelBeamSearch, ParallelBeamConfig
 from cluster.local.cluster_ips import get_local_container_ips
 from eval.open.beam.run import OBSERVATION_SPACE, MANUAL, SYSTEM_PROMPT
 from eval.open.db_client import DBClient
 from instance import FactorioInstance
-from eval.open.mcts.formatters.recursive_report_formatter import RecursiveReportFormatter
-from eval.open.model.game_state import GameState
+from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
+from models.game_state import GameState
 
 os.environ.update({"FORCE_COLOR": "1", "TERM": "xterm-256color"})
 load_dotenv()
@@ -149,7 +149,7 @@ async def run_model_search(model: str, instance_start: int, version: int, resume
     # )
     formatter = RecursiveReportFormatter(
         chunk_size=32,
-        llm_factory=llm_factory,
+        llm_call=llm_factory.acall,
         cache_dir='summary_cache',
     )
 

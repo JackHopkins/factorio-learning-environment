@@ -12,7 +12,7 @@ import tenacity
 from psycopg2.extras import DictCursor
 from psycopg2.pool import ThreadedConnectionPool
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
-from eval.open.model.program import Program
+from models.program import Program
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -153,38 +153,6 @@ class DBClient:
                     return programs
         except Exception as e:
             logger.error(f"Error fetching beam heads: {e}", exc_info=True)
-            return []
-
-
-    async def get_beam_heads2(self, version: int, beam_width: int) -> List[Program]:
-        """Get the highest value programs at max depth for a given version"""
-        try:
-            with self.get_connection() as conn:
-                with conn.cursor(cursor_factory=DictCursor) as cur:
-                    # Get max depth for version
-                    cur.execute("""
-                        SELECT MAX(depth) as max_depth
-                        FROM programs
-                        WHERE version = %s
-                    """, (version,))
-                    result = cur.fetchone()
-                    max_depth = result['max_depth'] if result else 0
-
-                    # Get top programs at max depth
-                    cur.execute("""
-                        SELECT *
-                        FROM programs
-                        WHERE version = %s
-                        AND depth = %s
-                        AND state_json IS NOT NULL
-                        ORDER BY value DESC
-                        LIMIT %s
-                    """, (version, max_depth, beam_width))
-
-                    results = cur.fetchall()
-                    return [Program.from_row(dict(row)) for row in results]
-        except Exception as e:
-            print(f"Error fetching beam heads: {e}")
             return []
 
     async def version_exists(self, version: int) -> bool:
@@ -430,38 +398,6 @@ class DBClient:
             print(f"Error sampling parent: {e}")
             raise e
 
-    @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
-                    wait=wait_random_exponential(multiplier=1, min=4, max=10))
-    async def get_parent_visit_stats(self, version: int = None) -> Dict[str, float]:
-        """Get visit statistics with proper connection management"""
-        query = """
-            SELECT 
-                AVG(visits) as avg_visits,
-                MIN(visits) as min_visits,
-                MAX(visits) as max_visits,
-                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY visits) as median_visits
-            FROM programs 
-            WHERE visits > 0
-        """
-        if version is not None:
-            query += " AND version = %s"
-
-        params = (version,) if version is not None else ()
-
-        try:
-            with self.get_connection() as conn:
-                with conn.cursor() as cur:
-                    cur.execute(query, params)
-                    result = cur.fetchone()
-                    return {
-                        'avg_visits': result[0],
-                        'min_visits': result[1],
-                        'max_visits': result[2],
-                        'median_visits': result[3]
-                    }
-        except Exception as e:
-            print(f"Error fetching visit statistics: {e}")
-            return {}
 
     async def update_program(self, program_id: int, updates: Dict[str, Any]) -> Program:
         """Update program with proper connection management"""

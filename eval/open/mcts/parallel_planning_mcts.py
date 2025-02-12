@@ -8,16 +8,18 @@ from dataclasses import dataclass
 from rich.console import Console
 from tenacity import retry, wait_exponential
 
-from eval.open.model.conversation import Conversation, GenerationParameters, Message
-from eval.open.mcts.formatters.conversation_formatter import ConversationFormatter, StructurePreservingFormatter
+from models.conversation import Conversation
+from models.message import Message
+from models.generation_parameters import GenerationParameters
+from agents.utils.formatters.conversation_formatter_abc import ConversationFormatter, StructurePreservingFormatter
 from eval.open.db_client import DBClient
-from eval.open.factorio_evaluator import FactorioEvaluator
+from eval.evaluator import Evaluator
 from eval.open.mcts.grouped_logger import GroupedFactorioLogger
 from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
 from eval.open.mcts.planning_mcts import get_mining_setup
 from eval.open.mcts.planning_models import PlanOutput, TaskOutput, Step, LanguageOutput, InitialPlanOutput
-from eval.open.model.game_state import GameState
-from eval.open.model.program import Program
+from models.game_state import GameState
+from models.program import Program
 from instance import FactorioInstance
 
 logger = logging.basicConfig(level=logging.INFO)
@@ -27,7 +29,7 @@ logger = logging.basicConfig(level=logging.INFO)
 class PlanningGroup:
     group_id: int
     mcts: 'ParallelPlanningMCTS'
-    evaluator: FactorioEvaluator
+    evaluator: Evaluator
     active_instances: List[FactorioInstance]
     holdout_instance: FactorioInstance
     plans: Dict[int, PlanOutput] = None
@@ -125,7 +127,7 @@ class ParallelPlanningMCTS:
             holdout_instance = group_instances[-1]
 
             # Create evaluator for this group
-            evaluator = FactorioEvaluator(
+            evaluator = Evaluator(
                 db_client=self.db_client,
                 instances=group_instances,
                 value_accrual_time=3,

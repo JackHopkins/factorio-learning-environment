@@ -10,8 +10,8 @@ import questionary
 from dataclasses import asdict
 
 from eval.open.mcts.samplers.beam_sampler import BeamSampler
-from eval.open.model.game_state import GameState
-from llm_factory import LLMFactory
+from models.game_state import GameState
+from agents.utils.llm_factory import LLMFactory
 
 
 class ModelFamily(Enum):
@@ -244,7 +244,7 @@ class MCTSFactory:
         from eval.open.mcts.chunked_mcts import ChunkedMCTS
         from eval.open.mcts.parallel_mcts import ParallelMCTS
         from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
-        from eval.open.mcts.formatters.conversation_formatter import StructurePreservingFormatter
+        from agents.utils.formatters.conversation_formatter_abc import StructurePreservingFormatter
 
         mcts_config = ParallelMCTSConfig(
             n_parallel=config.n_parallel,
@@ -276,7 +276,7 @@ class MCTSFactory:
         from eval.open.mcts.objective_mcts import ObjectiveMCTS
         from eval.open.mcts.parallel_mcts import ParallelMCTS
         from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
-        from eval.open.mcts.formatters.conversation_formatter import StructurePreservingFormatter
+        from agents.utils.formatters.conversation_formatter_abc import StructurePreservingFormatter
 
         mcts_config = ParallelMCTSConfig(
             n_parallel=config.n_parallel,

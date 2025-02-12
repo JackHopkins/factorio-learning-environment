@@ -2,11 +2,12 @@ import json
 import os
 
 from eval.open.auto_curriculum.plan_sampler import PlanSampler
-from eval.open.model.conversation import Conversation, Message
+from models.conversation import Conversation
+from models.message import Message
 from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
 from eval.open.mcts.parallel_planning_mcts import ParallelPlanningMCTS
 from eval.open.mcts.planning_mcts import PlanningMCTS
-from eval.open.model.program import Program
+from models.program import Program
 from eval.open.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
 
 os.environ["FORCE_COLOR"] = "1"
@@ -19,11 +20,11 @@ from typing import Tuple, List
 from dotenv import load_dotenv
 from rich import print
 from cluster.local.cluster_ips import get_local_container_ips
-from eval.open.mcts.formatters.conversation_formatter import PLANNING_ADDITION_PROMPT
+from agents.utils.formatters.conversation_formatter_abc import PLANNING_ADDITION_PROMPT
 from eval.open.db_client import DBClient
-from eval.open.model.game_state import GameState
+from models.game_state import GameState
 from instance import FactorioInstance
-from llm_factory import LLMFactory
+from agents.utils.llm_factory import LLMFactory
 
 load_dotenv()
 

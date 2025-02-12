@@ -5,7 +5,7 @@ from collections import Counter
 import numpy as np
 from psycopg2.extras import DictRow
 
-from eval.open.model.program import Program
+from models.program import Program
 from eval.open.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
 
 

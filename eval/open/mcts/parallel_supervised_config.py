@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from eval.open.model.game_state import GameState
+from models.game_state import GameState
 
 
 class SupervisedExecutorConfig:

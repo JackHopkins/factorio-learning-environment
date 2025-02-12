@@ -7,10 +7,11 @@ from typing import Tuple, Optional, Union
 
 from entities import Entity, EntityGroup
 from eval.open.mcts.mcts import MCTS
-from eval.open.model.conversation import Conversation, Message
-from eval.open.model.conversation import GenerationParameters
-from eval.open.model.game_state import GameState
-from eval.open.model.program import Program
+from models.conversation import Conversation
+from models.message import Message
+from models.generation_parameters import GenerationParameters
+from models.game_state import GameState
+from models.program import Program
 
 
 class ChunkedMCTS(MCTS):

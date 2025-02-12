@@ -2,7 +2,7 @@ import pytest
 
 from instance import Direction, FactorioInstance
 from game_types import Resource, Prototype, Technology
-from eval.open.model.game_state import GameState
+from models.game_state import GameState
 
 
 @pytest.fixture()

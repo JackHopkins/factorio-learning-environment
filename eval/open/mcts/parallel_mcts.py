@@ -6,9 +6,9 @@ from typing import List, Dict, Any
 from rich.console import Console
 
 from eval.open.db_client import DBClient
-from eval.open.factorio_evaluator import FactorioEvaluator
+from eval.evaluator import Evaluator
 from eval.open.mcts.grouped_logger import GroupedFactorioLogger
-from eval.open.model.instance_group import InstanceGroup
+from eval.open.mcts.instance_group import InstanceGroup
 from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
 from instance import FactorioInstance
 
@@ -91,7 +91,7 @@ class ParallelMCTS:
             #holdout_instance = group_instances[-1]
 
             # Create evaluator for this group
-            evaluator = FactorioEvaluator(
+            evaluator = Evaluator(
                 db_client=self.db_client,
                 instances=group_instances,
                 value_accrual_time=3,

@@ -3,16 +3,17 @@ import builtins
 import math
 import pickle
 import traceback
+import types
 from difflib import get_close_matches
-from typing import Optional, Union, List, Dict, Tuple, Set
+from typing import Optional, Union, List, Dict, Tuple, Set, Any
 
 from exceptions.hinting_name_error import get_value_type_str
 from entities import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe, BuildingBox, PipeGroup, \
     ElectricityGroup, Pipe
 
 from game_types import Prototype, Resource, Technology, prototype_by_name
-from eval.open.model.game_state import SerializableFunction, wrap_for_serialization, GameState, \
-    unwrap_after_deserialization
+from models.serializable_function import SerializableFunction
+from models.game_state import GameState
 
 
 class LoopContext:
@@ -585,3 +586,24 @@ class FactorioNamespace:
             #raise Exception(result_output)
 
         return score, goal, result_output
+
+
+def wrap_for_serialization(value):
+    """Wrap values that need special serialization handling"""
+    if isinstance(value, types.FunctionType):
+        # Skip builtin functions
+        if value.__module__ == 'builtins':
+            return value
+
+        return SerializableFunction(value)
+    return value
+
+
+def unwrap_after_deserialization(instance, value):
+    """Unwrap serialized values back to their original form"""
+    if isinstance(value, SerializableFunction):
+        return value.bind(instance)
+    return value
+
+
+

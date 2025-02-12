@@ -3,7 +3,7 @@ from env.src.entities import Inventory, Entity
 from env.src.instance import FactorioInstance
 from eval.tasks.task_abc import TaskABC
 from env.src.utils.achievements import eval_program_with_achievements
-from eval.open.model.game_state import GameState
+from models.game_state import GameState
 import copy
 
 LAB_PLAY_POPULATED_STARTING_INVENTORY = {"coal": 500, "burner-mining-drill": 50, "wooden-chest": 10, "burner-inserter": 50,"inserter": 50, "transport-belt": 500,

@@ -12,17 +12,18 @@ from rich import print
 from eval.open.auto_curriculum.plan_sampler import PlanSampler
 from eval.open.mcts.blueprint_scenario_sampler import BlueprintScenarioSampler
 from eval.open.mcts.chunked_mcts import ChunkedMCTS
-from eval.open.model.conversation import Conversation, Message
+from models.conversation import Conversation
+from models.message import Message
 from eval.open.mcts.objective_mcts import ObjectiveMCTS
 from eval.open.mcts.parallel_mcts import ParallelMCTS
 from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
-from eval.open.mcts.formatters.conversation_formatter import StructurePreservingFormatter, PLANNING_ADDITION_PROMPT
+from agents.utils.formatters.conversation_formatter_abc import StructurePreservingFormatter, PLANNING_ADDITION_PROMPT
 from eval.open.db_client import DBClient
-from eval.open.model.game_state import GameState
-from eval.open.model.program import Program
+from models.game_state import GameState
+from models.program import Program
 from eval.open.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
 from instance import FactorioInstance
-from llm_factory import LLMFactory
+from agents.utils.llm_factory import LLMFactory
 from cluster.local.cluster_ips import get_local_container_ips
 
 # Configure environment

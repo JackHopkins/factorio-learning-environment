@@ -12,14 +12,16 @@ from dotenv import load_dotenv
 from rich.console import Console
 
 from eval.open.db_client import DBClient
-from eval.open.factorio_evaluator import FactorioEvaluator
+from eval.evaluator import Evaluator
 from eval.open.mcts.grouped_logger import GroupedFactorioLogger
 from eval.open.mcts.mcts import MCTS
-from eval.open.model.instance_group import InstanceGroup
-from eval.open.model.conversation import Conversation, Message, GenerationParameters
-from eval.open.model.game_state import GameState
-from eval.open.model.program import Program
-from eval.open.mcts.formatters.conversation_formatter import ConversationFormatter, DefaultFormatter
+from eval.open.mcts.instance_group import InstanceGroup
+from models.conversation import Conversation
+from models.message import Message
+from models.generation_parameters import GenerationParameters
+from models.game_state import GameState
+from models.program import Program
+from agents.utils.formatters.conversation_formatter_abc import ConversationFormatter, DefaultFormatter
 from instance import FactorioInstance
 
 # Configure logging
@@ -122,7 +124,7 @@ class BeamGroup(InstanceGroup):
     def __init__(self,
                  group_id: int,
                  beam: 'BeamSearch',
-                 evaluator: FactorioEvaluator,
+                 evaluator: Evaluator,
                  active_instances: List['FactorioInstance'],
                  resume_head: Optional[Program] = None):
         super().__init__(
@@ -143,7 +145,7 @@ class BeamSearch(MCTS):
     def __init__(self,
                  llm_factory: 'LLMFactory',
                  db_client: DBClient,
-                 evaluator: FactorioEvaluator,
+                 evaluator: Evaluator,
                  system_prompt: str,
                  initial_state: GameState,
                  formatter: ConversationFormatter = DefaultFormatter(),
@@ -345,7 +347,7 @@ class ParallelBeamSearch:
             group_instances = instances[start_idx:end_idx]
 
             # Create evaluator for this group
-            evaluator = FactorioEvaluator(
+            evaluator = Evaluator(
                 db_client=self.db_client,
                 instances=group_instances,
                 value_accrual_time=3,

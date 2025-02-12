@@ -1,6 +1,6 @@
 from typing import Any, Dict, Type
 
-from eval.open.model.game_state import GameState
+from models.game_state import GameState
 from eval.open.mcts.mcts import MCTS
 from eval.open.mcts.samplers.db_sampler import DBSampler
 

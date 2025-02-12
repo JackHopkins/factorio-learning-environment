@@ -4,9 +4,9 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from eval.open.model.conversation import Conversation
-from eval.open.model.program import Program
-from eval.open.model.game_state import GameState
+from models.conversation import Conversation
+from models.program import Program
+from models.game_state import GameState
 
 
 class LanguageOutput(BaseModel):

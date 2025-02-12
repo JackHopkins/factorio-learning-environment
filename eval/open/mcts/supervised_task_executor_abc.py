@@ -8,15 +8,16 @@ from dataclasses import dataclass
 from rich.console import Console
 from tenacity import retry, wait_exponential
 import copy
-from eval.open.model.conversation import Conversation, GenerationParameters
-from eval.open.mcts.formatters.conversation_formatter import DefaultFormatter
+from models.conversation import Conversation
+from models.generation_parameters import GenerationParameters
+from agents.utils.formatters.conversation_formatter_abc import DefaultFormatter
 from eval.open.db_client import DBClient
-from eval.open.factorio_evaluator import FactorioEvaluator
+from eval.evaluator import Evaluator
 from eval.open.mcts.grouped_logger import GroupedFactorioLogger
 from eval.open.mcts.parallel_supervised_config import SupervisedExecutorConfig
 from eval.open.mcts.planning_models import PlanOutput, TaskOutput, Step, LanguageOutput, InitialPlanOutput
-from eval.open.model.game_state import GameState
-from eval.open.model.program import Program
+from models.game_state import GameState
+from models.program import Program
 from env.src.instance import FactorioInstance
 from eval.tasks.task_abc import TaskABC
 logger = logging.basicConfig(level=logging.INFO)
@@ -26,7 +27,7 @@ from abc import ABC, abstractmethod
 @dataclass
 class PlanningGroupV2:
     group_id: int
-    evaluator: FactorioEvaluator
+    evaluator: Evaluator
     active_instances: List[FactorioInstance]
     plans: Dict[int, PlanOutput] = None
 
@@ -97,7 +98,7 @@ class SupervisedTaskExecutorABC(ABC):
             active_instances = group_instances
 
             # Create evaluator for this group
-            evaluator = FactorioEvaluator(
+            evaluator = Evaluator(
                 db_client=self.db_client,
                 instances=group_instances,
                 value_accrual_time=3,

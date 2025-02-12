@@ -1,6 +1,6 @@
 import argparse
 
-from llm_factory import LLMFactory
+from agents.utils.llm_factory import LLMFactory
 from eval.open.beam.beam_search import ParallelBeamSearch, ParallelBeamConfig
 
 import os
@@ -12,8 +12,8 @@ from instance import FactorioInstance
 import concurrent.futures
 from typing import List, Tuple
 
-from eval.open.mcts.formatters.recursive_formatter import RecursiveFormatter
-from eval.open.model.game_state import GameState
+from agents.utils.formatters.recursive_formatter import RecursiveFormatter
+from models.game_state import GameState
 
 os.environ.update({"FORCE_COLOR": "1", "TERM": "xterm-256color"})
 load_dotenv()

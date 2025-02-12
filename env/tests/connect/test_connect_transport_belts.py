@@ -247,9 +247,9 @@ def test_ensure_final_belt_is_the_correct_orientation(game):
 
 
     # Place burner mining drill on copper ore patch
-    game.move_to(copper_ore_patch.bounding_box.center())
+    game.move_to(copper_ore_patch.bounding_box.center)
     copper_drill = game.place_entity(Prototype.BurnerMiningDrill, direction=Direction.RIGHT,
-                                position=copper_ore_patch.bounding_box.center())
+                                position=copper_ore_patch.bounding_box.center)
     assert copper_drill, "Failed to place burner mining drill"
     print(f"Burner mining drill placed at {copper_drill.position}")
 
@@ -284,12 +284,12 @@ def test_no_broken_edges(game):
     # Find a copper ore patch
     copper_ore_patch = game.get_resource_patch(Resource.CopperOre, game.nearest(Resource.CopperOre))
     assert copper_ore_patch, "No copper ore patch found"
-    print(f"copper ore patch found at {copper_ore_patch.bounding_box.center()}")
+    print(f"copper ore patch found at {copper_ore_patch.bounding_box.center}")
 
     # Place burner mining drill on copper ore patch
-    game.move_to(copper_ore_patch.bounding_box.center())
+    game.move_to(copper_ore_patch.bounding_box.center)
     drill = game.place_entity(Prototype.BurnerMiningDrill, direction=Direction.RIGHT,
-                         position=copper_ore_patch.bounding_box.center())
+                         position=copper_ore_patch.bounding_box.center)
     assert drill, "Failed to place burner mining drill"
     print(f"Burner mining drill placed at {drill.position}")
 

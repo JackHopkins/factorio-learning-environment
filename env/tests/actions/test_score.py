@@ -9,4 +9,4 @@ def game(instance):
 
 def test_get_score(game):
     score, _ = game.score()
-    assert score
+    assert isinstance(score, int)

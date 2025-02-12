@@ -180,7 +180,7 @@ def test_multiple(game):
     # Place steam engine next to boiler
     building_box = BuildingBox(width=3, height=5)
     buildable_coords = game.nearest_buildable(Prototype.SteamEngine, building_box, boiler.position)
-    engine_pos = buildable_coords.center() #Position(x=buildable_coords.left_top.x, y=buildable_coords.left_top.y)
+    engine_pos = buildable_coords.center #Position(x=buildable_coords.left_top.x, y=buildable_coords.left_top.y)
     game.move_to(engine_pos)
     steam_engine = game.place_entity(Prototype.SteamEngine, position=engine_pos)
     print(f"Placed steam engine at {steam_engine.position}")

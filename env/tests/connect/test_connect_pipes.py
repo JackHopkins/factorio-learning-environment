@@ -415,11 +415,11 @@ def test_connect_power_system_with_nearest_buildable(game):
                                             center_position=offshore_pump.position)
 
     # Log the found position for the boiler
-    print(f"Found buildable position for boiler: {boiler_bounding_box.center()}")
+    print(f"Found buildable position for boiler: {boiler_bounding_box.center}")
 
     # Move to the center of the bounding box and place the boiler
-    game.move_to(boiler_bounding_box.center())
-    boiler = game.place_entity(Prototype.Boiler, position=boiler_bounding_box.center().left(1))
+    game.move_to(boiler_bounding_box.center)
+    boiler = game.place_entity(Prototype.Boiler, position=boiler_bounding_box.center.left(1))
     print(f"Placed boiler at {boiler.position}")
 
     # Connect the offshore pump to the boiler with pipes

@@ -1,4 +1,9 @@
+import sys
 import pytest
+
+from entities import Position, Direction, Entity
+from game_types import Prototype, RecipeName, prototype_by_name
+from env.src.instance import FactorioInstance
 
 
 @pytest.fixture()
@@ -20,16 +25,16 @@ def game(instance):
         'sulfur': 100,
         'coal': 200,
         'solar-panel': 3,
-        'small-electric-pole': 10
+        'small-electric-pole': 10,
+        "burner-inserter": 25,
+        "transport-belt": 200,
+        "wooden-chest": 5,
+        "copper-plate": 50
+        
     }
     instance.speed(10)
     instance.reset()
-    yield instance.namespace
-
-
-import pytest
-from entities import Position, Direction, Entity
-from game_types import Prototype, RecipeName, prototype_by_name
+    return instance.namespace
 
 
 def _insert_fluid_at_position(game, position, fluid="water"):
@@ -112,6 +117,26 @@ def test_heavy_oil_cracking(game):
 def test_light_oil_cracking(game):
     recipe_setup(game, [RecipeName.LightOilCracking], Prototype.ChemicalPlant)
 
+def test_solid_fuel_from_light_oil(game):
+    recipe_setup(game, [RecipeName.SolidFuelFromLightOil], Prototype.ChemicalPlant)
+
+def test_solid_fuel_from_heavy_oil(game):
+    recipe_setup(game, [RecipeName.SolidFuelFromHeavyOil], Prototype.ChemicalPlant)
+
+def test_solid_fuel_from_petroleum_gas(game):
+    recipe_setup(game, [RecipeName.SolidFuelFromPetroleumGas], Prototype.ChemicalPlant)
+
+def test_lubricant(game):
+    recipe_setup(game, [Prototype.Lubricant], Prototype.ChemicalPlant)
+
+def test_sulfur(game):
+    recipe_setup(game, [Prototype.Sulfur], Prototype.ChemicalPlant)
+
+def test_plastic_bar(game):
+    recipe_setup(game, [Prototype.PlasticBar], Prototype.ChemicalPlant)
+
+def test_battery(game):
+    recipe_setup(game, [Prototype.Battery], Prototype.ChemicalPlant)
 
 def recipe_setup(game, recipes_to_test, prototype, direction=Direction.DOWN):
     """Test setup for various recipes with proper positioning"""
@@ -162,7 +187,7 @@ def recipe_setup(game, recipes_to_test, prototype, direction=Direction.DOWN):
         output_tanks = {}
         current_x = 0
 
-
+        solid_chests = []
         for product in requirements.products:
             if product.type == 'fluid':
                 game.move_to(Position(x=building_position.x + current_x, y=building_position.y + 16))
@@ -173,7 +198,13 @@ def recipe_setup(game, recipes_to_test, prototype, direction=Direction.DOWN):
                 )
                 output_tanks[product.name] = tank.position
                 current_x += 8
-
+            else:
+                game.move_to(building.position)
+                output_inserter = game.place_entity_next_to(Prototype.BurnerInserter, reference_position = building.position,
+                                          direction=Direction.LEFT)
+                output_inserter = game.insert_item(Prototype.Coal, output_inserter, quantity=10)
+                solid_output_chest = game.place_entity(Prototype.WoodenChest, position = output_inserter.drop_position)
+                solid_chests.append((solid_output_chest, product.name))
         for name, position in output_tanks.items():
             game.connect_entities(building, position, connection_type={Prototype.UndergroundPipe, Prototype.Pipe})
 
@@ -195,3 +226,7 @@ def recipe_setup(game, recipes_to_test, prototype, direction=Direction.DOWN):
             assert all(successes), "Some outputs were not detected"
         else:
             assert False, "Not all tanks are filling up"
+        if solid_chests:
+            chest = game.get_entity(Prototype.WoodenChest, solid_chests[0][0].position)
+            chest_inventory = game.inspect_inventory(chest)
+            assert chest_inventory[solid_chests[0][1]] > 0, "Solid output not detected"

@@ -3,7 +3,6 @@ import pytest
 
 from entities import Position, Direction, Entity
 from game_types import Prototype, RecipeName, prototype_by_name
-from env.src.instance import FactorioInstance
 
 
 @pytest.fixture()
@@ -34,7 +33,7 @@ def game(instance):
     }
     instance.speed(10)
     instance.reset()
-    return instance.namespace
+    yield instance.namespace
 
 
 def _insert_fluid_at_position(game, position, fluid="water"):

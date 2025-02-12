@@ -22,14 +22,12 @@ game.sleep(10)
 # Wait for furnace to smelt items
 furnace = place_entity(Prototype.StoneFurnace, position=Position(0, 0))
 insert_item(Prototype.IronOre, furnace, 10)
-sleep(5)  # Wait for smelting to complete
+sleep(15)  # Wait for smelting to complete
 ```
 
 ## Key Behaviors
-- Converts real-time seconds to game ticks (60 ticks = 1 second)
 - Adapts to game speed settings automatically
 - Uses efficient polling to minimize resource usage
-- Maximum sleep duration is 15 seconds
 
 ## Notes
 - Sleep duration is relative to game speed

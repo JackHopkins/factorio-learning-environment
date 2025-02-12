@@ -54,15 +54,17 @@ count = extract_item(Prototype.IronPlate, chest, quantity=5)
 
 ### Extracting from an Assembling Machine
 ```python
-# Set up assembling machine
-assembler = place_entity(Prototype.AssemblingMachine1, position=Position(x=0, y=0))
+# Get the assembling machine entity (assume one exists on the map at Position(x=7, y=110))
+assembler = get_entity(Prototype.AssemblingMachine1, position=Position(x=7, y=110))
 set_entity_recipe(assembler, Prototype.ElectronicCircuit)
 insert_item(Prototype.IronPlate, assembler, quantity=10)
 insert_item(Prototype.CopperCable, assembler, quantity=3)
+print(f"Set the recipe of assembler at {assembler.position} to electronic circuits")
 
+#wait for crafting
+sleep(10)
 # Extract ingredients
-count = extract_item(Prototype.IronPlate, assembler, quantity=2)
-count = extract_item(Prototype.CopperCable, assembler, quantity=2)
+count = extract_item(Prototype.ElectronicCircuit, assembler, quantity=2)
 ```
 
 ## Common Pitfalls
@@ -82,23 +84,28 @@ count = extract_item(Prototype.CopperCable, assembler, quantity=2)
 ## Best Practices
 
 1. **Inventory Verification**
-   ```python
-   # Check inventory before extraction
-   inventory = inspect_inventory(entity)
-   if inventory[Prototype.IronPlate] >= needed_amount:
-       count = extract_item(Prototype.IronPlate, entity, quantity=needed_amount)
-   ```
+Example - Safe smelting ore into plates
+```python
+# move to the position to place the entity
+move_to(position)
+furnace = place_entity(Prototype.StoneFurnace, position=position)
+print(f"Placed the furnace to smelt plates at {furnace.position}")
 
-2. **Error Handling**
-   ```python
-   try:
-       count = extract_item(Prototype.IronPlate, position, quantity=5)
-   except Exception as e:
-       print(f"Extraction failed: {e}")
-       # Handle the error appropriately
-   ```
+# we also update the furnace variable by returning it from the function
+# This ensures it doesnt get stale and the inventory updates are represented in the variable
+furnace = insert_item(Prototype.Coal, furnace, quantity=5)  # Don't forget fuel
+furnace = insert_item(Prototype.IronOre, furnace, quantity=10)
 
-3. **Quantity Management**
-   - Request exact quantities needed
-   - Check return value to confirm extracted amount
-   - Handle cases where fewer items than requested were extracted
+# 3. Wait for smelting (with safety timeout)
+for _ in range(30):  # Maximum 30 seconds wait
+    if inspect_inventory(furnace)[Prototype.IronPlate] >= 10:
+        break
+    sleep(1)
+else:
+    raise Exception("Smelting timeout - check fuel and inputs")
+
+# final check for the inventory of furnace
+iron_plates_in_furnace = inspect_inventory(furnace)[Prototype.IronPlate]
+assert iron_plates_in_furnace>=10, "Not enough iron plates in furnace"
+print(f"Smelted 10 iron plates")
+   ```

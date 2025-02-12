@@ -1091,7 +1091,7 @@ local function connect_entities_with_validation(player_index, source_x, source_y
                 {x = source_x, y = source_y},
                 {x = target_x, y = target_y}
             ) then
-                error("Source and target positions are already connected to the same power network")
+                error("Source and target positions are already connected to the same power network and do not require new connections")
             end
             break
         elseif connection_type:find("belt") then

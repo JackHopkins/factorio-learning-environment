@@ -16,16 +16,16 @@ class ResourceName(enum.Enum):
 class RecipeName(enum.Enum):
     NuclearFuelReprocessing = "nuclear-fuel-reprocessing"
     UraniumProcessing = "uranium-processing"
-    SulfuricAcid = "sulfuric-acid"
-    BasicOilProcessing = "basic-oil-processing"
-    AdvancedOilProcessing = "advanced-oil-processing"
-    CoalLiquefaction = "coal-liquefaction"
-    HeavyOilCracking = "heavy-oil-cracking"
-    LightOilCracking = "light-oil-cracking"
+    SulfuricAcid = "sulfuric-acid" # Recipe for crafting sulfuric acid
+    BasicOilProcessing = "basic-oil-processing" # Recipe for processing petroleum gas from crude oil
+    AdvancedOilProcessing = "advanced-oil-processing" # Recipe for processing petroleum gas, heavy oil and light oil from crude oil
+    CoalLiquefaction = "coal-liquefaction" # Recipe for converting coal into petroleum gas
+    HeavyOilCracking = "heavy-oil-cracking" # Recipe for cracking heavy oil into light oil
+    LightOilCracking = "light-oil-cracking" # Recipe for cracking light oil into petroleum gas
 
-    SolidFuelFromHeavyOil = "solid-fuel-from-heavy-oil"
-    SolidFuelFromLightOil = "solid-fuel-from-light-oil"
-    SolidFuelFromPetroleumGas = "solid-fuel-from-petroleum-gas"
+    SolidFuelFromHeavyOil = "solid-fuel-from-heavy-oil" # Recipe for solid fuel from heavy oil
+    SolidFuelFromLightOil = "solid-fuel-from-light-oil" # Recipe for solid fuel from light oil
+    SolidFuelFromPetroleumGas = "solid-fuel-from-petroleum-gas" # Recipe for solid fuel from petroleum gas
 
     FillCrudeOilBarrel = "fill-crude-oil-barrel"
     FillHeavyOilBarrel = "fill-heavy-oil-barrel"
@@ -72,11 +72,14 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     BurnerInserter = "burner-inserter", BurnerInserter
     FastInserter = "fast-inserter", Inserter
     ExpressInserter = "express-inserter", Inserter
-    LongHandedInserter = "long-handed-inserter", Inserter
-    StackInserter = "stack-inserter", Inserter
-    StackFilterInserter = "stack-filter-inserter", FilterInserter
-    FilterInserter = "filter-inserter", FilterInserter
+
+    LongHandedInserter = "long-handed-inserter", Inserter  # TODO
+    StackInserter = "stack-inserter", Inserter  # TODO
+    StackFilterInserter = "stack-filter-inserter", Inserter  # TODO
+    FilterInserter = "filter-inserter", Inserter  # TODO
+
     Inserter = "inserter", Inserter
+
 
     BurnerMiningDrill = "burner-mining-drill", BurnerMiningDrill
     ElectricMiningDrill = "electric-mining-drill", ElectricMiningDrill
@@ -127,6 +130,7 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     IronOre = "iron-ore", None
     CopperOre = "copper-ore", None
     Stone = "stone", None
+    Concrete = "concrete", None
     UraniumOre = "uranium-ore", None
 
     IronPlate = "iron-plate", None  # Crafting requires smelting 1 iron ore
@@ -141,7 +145,6 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     SulfuricAcid = "sulfuric-acid", None
     Uranium235 = "uranium-235", None
     Uranium238 = "uranium-238", None
-    Concrete = "concrete", None
 
     Lubricant = "lubricant", None
     AdvancedOilProcessing = "advanced-oil-processing", None # These are recipes, not prototypes.

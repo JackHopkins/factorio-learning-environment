@@ -1,6 +1,6 @@
 # connect_entities
 
-The `connect_entities` tool provides functionality to connect different types of Factorio entities using various connection types like transport belts, pipes, power poles and more. This document outlines how to use the tool effectively.
+The `connect_entities` tool provides functionality to connect different types of Factorio entities using various connection types like transport belts, pipes and power poles. This document outlines how to use the tool effectively.
 
 ## Core Concepts
 
@@ -9,7 +9,6 @@ The connect_entities tool can connect:
 - Pipes (including underground pipes) 
 - Power poles
 - Walls
-- Inserters
 
 For each connection type, the tool handles:
 - Pathing around obstacles
@@ -42,18 +41,17 @@ You must specify a connection type prototype:
 connection_type=Prototype.TransportBelt
 
 # Multiple compatible connection types 
+# If you have UndergroundBelts in inventory, use them to simplify above-ground structures
 connection_type={Prototype.TransportBelt, Prototype.UndergroundBelt}
 ```
 
 ## Transport Belt Connections
 
-Transport belts require special consideration for direction and flow:
-
 ```python
-# Connect mining drill output to furnace input
+# Connect mining drill output to a furnace inserter
 belts = connect_entities(
-    drill.drop_position,
-    furnace_inserter.pickup_position, 
+    drill,
+    furnace_inserter, 
     connection_type=Prototype.TransportBelt
 )
 
@@ -63,50 +61,44 @@ print(f"Created belt line with {len(belts.belts)} belts")
 
 Key points:
 - Always use inserters between belts and machines/chests
-- Connect to inserter pickup/drop positions
 - Use underground belts for crossing other belts
 - Belt groups maintain direction and flow information
 
 ## Pipe Connections
 
-Pipes can connect fluid-handling entities:
-
+Pipes connect fluid-handling entities:
 ```python
-# Connect offshore pump to boiler
-pipes = connect_entities(
-    offshore_pump,
-    boiler,
-    connection_type=Prototype.Pipe
-)
+# Water to steam setup
+offshore_pump = get_entity(Prototype.OffshorePump, Position(x= 10, y = 0))
+boiler = get_entity(Prototype.Boiler, Position(x= 0, y = 0))
 
-# Underground pipes for crossing
-pipes = connect_entities(
-    source,
-    target,
-    connection_type={Prototype.Pipe, Prototype.UndergroundPipe}
-)
+# Connect water flow with over and underground pipes
+water_pipes = connect_entities(offshore_pump, boiler, {Prototype.TransportBelt, Prototype.UndergroundBelt})
+print(f"Connected offshore_pump at {offshore_pump.position} to boiler at {boiler.position} with {pipes}")
 ```
 
 Key points:
 - Respects fluid input/output connection points
-- Maintains fluid networks
 - Underground pipes have limited range
 - Pipe groups track fluid system IDs
 
 ## Power Pole Connections
 
-Power poles create electrical networks:
-
+To add power to entities, you need to connect the target entity (drill, assembling machine, oil refinery etc) to a working power source (steam engine, solar panel etc) 
 ```python
-# Connect steam engine to electric drill
+# Create power infrastructure
+# assume there's a working steam engine at Position(x= 10, y = 0)
+steam_engine = get_entity(Prototype.SteamEngine, Position(x= 10, y = 0))
+# assume there's a unpowered electric mining drill at Position(x= 0, y = 0)
+drill = get_entity(Prototype.ElectricMiningDrill, Position(x= 0, y = 0))
+
+# Connect power
 poles = connect_entities(
     steam_engine,
     drill,
-    connection_type=Prototype.SmallElectricPole
+    Prototype.SmallElectricPole
 )
-
-# Power pole coverage matters
-assert poles.poles[0].wire_reach == 7.5
+print(f"Created the connection to power drill at {drill.position} with steam engine at {steam_engine.position}: {poles}")
 ```
 
 Key points:
@@ -115,44 +107,14 @@ Key points:
 - Handles pole to entity connections
 - Power groups track network IDs
 
-## Inserter Connections
-
-Inserters require rotation consideration:
-
-```python
-# Connect two machines with inserter
-inserter = connect_entities(
-    source_machine,
-    target_machine,
-    connection_type=Prototype.BurnerInserter
-)
-
-# Inserter rotates to face target
-assert inserter.direction.value == Direction.DOWN.value
-```
-
-**Key points:**
-- Automatically rotates to face target
-- Requires fuel for burner inserters
-- Position considers machine dimensions
-- Validates pickup/drop positions
-
 ## Best Practices
 
 1. **Pre-check Resources**
 ```python
 inventory = inspect_inventory()
-required_count = 10 # Estimate needed entities
+# use get_connection_amount to see if you have enough
+required_count = get_connection_amount(source.position, target.position, connection_type=Prototype.TransportBelt)
 assert inventory[Prototype.TransportBelt] >= required_count
-```
-
-2. **Error Handling**
-```python
-try:
-    connection = connect_entities(source, target, connection_type=prototype)
-except Exception as e:
-    print(f"Connection failed: {e}")
-    # Handle failure case
 ```
 
 3. **Entity Groups**
@@ -163,63 +125,66 @@ for belt in belt_group.belts:
     print(f"Belt at {belt.position} flowing {belt.direction}")
 ```
 
-4. **Spacing Guidelines**
-- Use 0 spacing for inserters
-- Use 1 spacing for adjacent machines
-- Use 3+ spacing for power/fluid setups
-
-5. **Position Handling**
-```python
-# Adjust positions for better connections
-adjusted_pos = Position(
-    x=math.floor(pos.x) + 0.5,
-    y=math.floor(pos.y) + 0.5
-)
-```
-
 ## Common Patterns
 
-### Resource Mining Setup
+### Many-to-One Connections
+When you need to connect multiple sources to a single target with transport belts
+1. Establish sources and target
+2. Create the main connection by connecting one source to the target with transport belts
+3. Connect all remaining sources to the main connection with transport belts
+NB: NEVER CONNECT MULTIPLE ENTITIES DIRECTLY TO THE SAME TARGET
+You always need to create one main connection and then connect additional entities to the main connection line with transport belts
+
+Example: Connecting multiple source inserters to one target inserter
+Assume we have source_inserter_1, source_inserter_2, source_inserter_3 burner inserter variables as sources on the map at positions Position(x = 1, y = 2), Position(x = 3, y = 2) and Position(x = 5, y = 2)
+Also assume we have target_inserter burner inserter variable as the target on the map at Position(x = 10, y = 28)
 ```python
-# Find resource and place drill
-ore_pos = nearest(Resource.IronOre)
-drill = place_entity(Prototype.BurnerMiningDrill, ore_pos)
+# get the inserter variables
+source_inserter_1 = get_entity(Prototype.BurnerInserter, Position(x = 1, y = 2))
+source_inserter_2 = get_entity(Prototype.BurnerInserter, Position(x = 3, y = 2))
+source_inserter_3 = get_entity(Prototype.BurnerInserter, Position(x = 5, y = 2))
+target_inserter = get_entity(Prototype.BurnerInserter, Position(x = 10, y = 28))
+# log your general idea what you will do next
+print(f"I will create a connection from the inserters at [{source_inserter_1.position}, {source_inserter_2.position}, {source_inserter_3.position}] to the inserter at {target_inserter.position}")
+# create the main connection
+main_connection = connect_entities(source_inserter_1, 
+                                    target_inserter,
+                                    Prototype.TransportBelt)
+# Print out the whole connection for logs
+print(f"Created the main connection between inserter at {source_inserter_1.position} to inserter at {target_inserter.position}: {main_connection}")
 
-# Place chest for collection
-chest = place_entity_next_to(Prototype.WoodenChest, drill.position)
-
-# Connect with transport belt
-belts = connect_entities(
-    drill.drop_position,
-    chest_inserter.pickup_position,
-    Prototype.TransportBelt
-)
+# Connect source_inserter_2 and source_inserter_3 to the main connection
+secondary_sources = [source_inserter_2, source_inserter_3]
+for source in secondary_sources:
+    # connect the source to main connection
+    # Use the first beltgroup from the main connection to connect to
+    # Also override the main_connection to get the newest belt groups
+    main_connection = connect_entities(source, 
+                                    main_connection,
+                                    Prototype.TransportBelt)
+    print(f"Extended main connection to include inserter at {source.position}: {main_connection}")
+print(f"Final connection after connecting all inserters to target: {main_connection}")
 ```
 
-### Power Distribution
+When you want to connect entities to existing power pole groups, similar rules apply
+Assume in this example there is a steam engine at Position(x = 1, y = 2) and the drill is at Position(x = 10, y = 28)
 ```python
-# Create power infrastructure
-steam_engine = place_entity(Prototype.SteamEngine, pos)
-drill = place_entity(Prototype.ElectricMiningDrill, ore_pos)
+# get the variables
+steam_engine = get_entity(Prototype.SteamEngine, Position(x = 1, y = 2))
+drill_1 = get_entity(Prototype.ElectricMiningDrill, Position(x = 10, y = 28))
+# create the main connection
+main_power_connection = connect_entities(steam_engine, 
+                                    drill_1,
+                                    Prototype.SmallElectricPole)
+# Print out the whole connection for logs
+print(f"Created the main connection to power drill at {drill_1.position} with steam engine at {steam_engine.position}: {main_connection}")
 
-# Connect power
-poles = connect_entities(
-    steam_engine,
-    drill,
-    Prototype.SmallElectricPole
-)
-```
-
-### Fluid Systems
-```python
-# Water to steam setup
-offshore_pump = place_entity(Prototype.OffshorePump, water_pos)
-boiler = place_entity_next_to(Prototype.Boiler, pump.position)
-steam_engine = place_entity_next_to(Prototype.SteamEngine, boiler.position)
-
-# Connect water flow
-water_pipes = connect_entities(offshore_pump, boiler, Prototype.Pipe)
-steam_pipes = connect_entities(boiler, steam_engine, Prototype.Pipe)
+# connect the secondary source to the main power connection
+# Use the first ElectricityGroup from the main connection to connect to
+# Also override the main_power_connection to get the newest ElectricityGroups
+main_power_connection = connect_entities(drill_2, 
+                                main_connection,
+                                Prototype.SmallElectricPole)
 ```
 
 ## Troubleshooting
@@ -228,23 +193,13 @@ Common issues and solutions:
 
 ### 1. Connection Failures
 - Verify inventory has required entities
-- Check for obstacles in path
 - Ensure compatible connection types
-- Validate entity positions/spacing
 
-### 2. Flow Issues
-- Check entity rotations
-- Verify pickup/drop positions
-- Ensure power/fuel requirements met
-- Validate network connections
-
-### 3. Performance
+### 2. Performance
 - Use underground variants for long distances
-- Minimize path complexity
-- Group similar connections
 - Clean up unused connections
 
-### 4. Entity Groups
+### 3. Entity Groups
 - Update stale group references
 - Handle group merging properly
 - Track network IDs

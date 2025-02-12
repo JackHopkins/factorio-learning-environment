@@ -298,6 +298,7 @@ class BoundingBox(BaseModel):
     left_bottom: Position
     right_top: Position
 
+    @property
     def center(self) -> Position:
         return Position(
             x=(self.left_top.x + self.right_bottom.x)/2,
@@ -363,7 +364,7 @@ class BurnerType(BaseModel):
     """Type of entity that burns fuel"""
     class Config:
         arbitrary_types_allowed = True
-    fuel: Inventory = Inventory()
+    fuel: Inventory = Inventory() # Use this to check the fuel levels of the entity
 
 class EntityCore(BaseModel):
     #id: Optional[str] = None
@@ -416,15 +417,32 @@ class Entity(EntityCore):
     def _get_prototype(self):
         return self.prototype
 
+    @classmethod
+    @property
+    def width(cls):
+        return cls._width
+        
+    @classmethod
+    @property
+    def height(cls):
+        return cls._height
+
 class StaticEntity(Entity):
     """A static (non-moving) entity in the game."""
     neighbours: Optional[Union[Dict, List[EntityCore]]] = []
+
+class Rail(Entity):
+    """Railway track for trains."""
+    _height: float = 1
+    _width: float = 1
 
 class Splitter(Entity):
     """A belt splitter that divides item flow between outputs."""
     input_positions: List[Position]
     output_positions: List[Position]
     inventory: List[Inventory] = []
+    _height: float = 1
+    _width: float = 2
 
 class TransportBelt(Entity):
     """A conveyor belt for moving items."""
@@ -433,6 +451,8 @@ class TransportBelt(Entity):
     inventory: Inventory = Inventory()
     is_terminus: bool = False
     is_source: bool = False
+    _height: float = 1
+    _width: float = 1
 
     def __repr__(self):
         return f"Belt(({self.input_position}) -> ({self.output_position}), direction={self.direction})"
@@ -464,11 +484,15 @@ class EnergySource(BaseModel):
 class Accumulator(StaticEntity, Electric):
     """Represents an energy storage device"""
     energy_source: Optional[EnergySource] = None
+    _height: float = 2
+    _width: float = 2
 
 class Inserter(StaticEntity, Electric):
     """Represents an inserter that moves items between entities."""
     pickup_position: Optional[Position] = None
     drop_position: Position
+    _width: float = 1
+    _height: float = 1
 
 class Filtered(BaseModel):
     filter: Optional[Any] = None
@@ -477,6 +501,8 @@ class UndergroundBelt(TransportBelt):
     """An underground section of transport belt."""
     is_input: bool
     connected_to: Optional[int] = None
+    _height: float = 1
+    _width: float = 1
 
 class MiningDrill(StaticEntity):
     """Base class for mining drills that extract resources."""
@@ -485,12 +511,21 @@ class MiningDrill(StaticEntity):
 
 class ElectricMiningDrill(MiningDrill, Electric):
     """An electrically-powered mining drill."""
+    _height: float = 3
+    _width: float = 3
+    pass
 
 class BurnerInserter(Inserter, BurnerType):
     """An inserter powered by burnable fuel."""
+    _height: float = 1
+    _width: float = 1
+    pass
 
 class BurnerMiningDrill(MiningDrill, BurnerType):
     """A mining drill powered by burnable fuel."""
+    _width = 2
+    _height = 2
+
 
 class Ammo(BaseModel):
     name: str
@@ -499,6 +534,8 @@ class Ammo(BaseModel):
 
 class GunTurret(StaticEntity):
     turret_ammo: Inventory = Inventory()
+    _height: float = 2
+    _width: float = 2
     kills: Optional[int] = 0
 
 class AssemblingMachine(StaticEntity, Electric):
@@ -507,6 +544,8 @@ class AssemblingMachine(StaticEntity, Electric):
     assembling_machine_input: Inventory = Inventory()
     assembling_machine_output: Inventory = Inventory()
     assembling_machine_modules: Inventory = Inventory()
+    _height: float = 3
+    _width: float = 3
 
 class FluidHandler(StaticEntity):
     """Base class for entities that handle fluids"""
@@ -516,6 +555,8 @@ class FluidHandler(StaticEntity):
 
 class AdvancedAssemblingMachine(FluidHandler, AssemblingMachine):
     """A second and third tier assembling machine that can handle fluids."""
+    _height: float = 3
+    _width: float = 3
 
 class MultiFluidHandler(StaticEntity):
     """Base class for entities that handle multiple fluid types."""
@@ -531,35 +572,60 @@ class FilterInserter(Inserter, Filtered):
 
 class ChemicalPlant(MultiFluidHandler, AssemblingMachine):
     """Represents a chemical plant that processes fluid recipes."""
+    _height: float = 3
+    _width: float = 3
+
 
 class OilRefinery(MultiFluidHandler, AssemblingMachine):
     """An oil refinery for processing crude oil into products."""
+    _height: float = 5
+    _width: float = 5
 
 class PumpJack(MiningDrill, FluidHandler, Electric):
     """A pump jack for extracting crude oil."""
+    _height: float = 3
+    _width: float = 3
+    pass
 
 class SolarPanel(ElectricalProducer):
     """A solar panel for generating power from sunlight."""
+    _height: float = 3
+    _width: float = 3
+
 
 class Boiler(FluidHandler, BurnerType):
     """A boiler that heats water into steam."""
     steam_output_point: Optional[Position] = None
+    _height: float = 2
+    _width: float = 3
 
 class HeatExchanger(Boiler):
     """A nuclear heat exchanger that converts water to steam."""
 
 class Generator(FluidHandler, StaticEntity):
     """A steam generator that produces electricity."""
+    _height: float = 3
+    _width: float = 5
+
 
 class Pump(FluidHandler, Electric):
     """An electrically-powered fluid pump."""
+    _height: float = 1
+    _width: float = 2
+    pass
 
 class OffshorePump(FluidHandler):
     """A pump that extracts water from water tiles."""
+    _height: float = 1
+    _width: float = 2
+    pass
+
 
 class ElectricityPole(Entity, Electric):
     """A power pole for electricity distribution."""
     flow_rate: float
+    _height: float = 1
+    _width: float = 1
 
     def __hash__(self):
         return self.electrical_id
@@ -568,18 +634,28 @@ class Furnace(Entity, BurnerType):
     """A furnace for smelting items"""
     furnace_source: Inventory = Inventory()
     furnace_result: Inventory = Inventory()
+    _height: float = 2
+    _width: float = 2
+
 
 class ElectricFurnace(Electric):
     """An electrically-powered furnace."""
     furnace_source: Inventory = Inventory()
     furnace_result: Inventory = Inventory()
+    _height: float = 3
+    _width: float = 3
 
 class Chest(Entity):
     """A storage chest."""
     inventory: Inventory = Inventory()
+    _height: float = 1
+    _width: float = 1
+
 
 class StorageTank(FluidHandler):
     """A tank for storing fluids."""
+    _height: float = 3
+    _width: float = 3
 
 class RocketSilo(StaticEntity, Electric):
     """A rocket silo that can build and launch rockets."""
@@ -588,7 +664,8 @@ class RocketSilo(StaticEntity, Electric):
     rocket_inventory: Inventory = Inventory()  # Holds satellite or other payload
     rocket_progress: float = 0.0  # Progress of current rocket construction (0-100)
     launch_count: int = 0  # Number of successful launches
-
+    _width: float = 9
+    _height: float = 9
     def __repr__(self) -> str:
         return f"\n\tRocketSilo(position={self.position}, status={self.status}, " \
                f"rocket_parts={self.rocket_parts}, rocket_progress={self.rocket_progress:.1f}%, " \
@@ -610,6 +687,8 @@ class Lab(Entity, Electric):
     lab_input: Inventory = Inventory()
     lab_modules: Inventory = Inventory()
     research: Optional[Any] = None # Technology
+    _height: float = 3
+    _width: float = 3
 
     def __repr__(self) -> str:
         from game_types import technology_by_name
@@ -625,10 +704,13 @@ class Pipe(Entity):
     flow_rate: float
     contents: float
     fluid: Optional[str] = None
+    _height: float = 1
+    _width: float = 1
 
 class Reactor(StaticEntity):
     """A nuclear reactor"""
-    pass
+    _height: float = 5
+    _width: float = 5
 
 class EntityGroup(BaseModel):
     id: int
@@ -655,6 +737,9 @@ class BeltGroup(EntityGroup):
         belt_summary = f"[{len(self.belts)} belts]"
         return f"\n\tBeltGroup(inputs={self.inputs}, outputs={self.outputs}, inventory={self.inventory}, status={self.status}, belts={belt_summary})"
 
+    def __str__(self):
+        return self.__repr__()
+
 class PipeGroup(EntityGroup):
     """A connected group of pipes."""
 
@@ -672,7 +757,9 @@ class PipeGroup(EntityGroup):
         pipe_summary = f"[{','.join(positions)}]"
 
         return f"\n\tPipeGroup(fluid_system={self.id}, {fluid_suffix}position={self.position}, status={self.status}, pipes={pipe_summary})"
-
+    
+    def __str__(self):
+        return self.__repr__()
 class ElectricityGroup(EntityGroup):
     """Represents a connected power network."""
 
@@ -689,3 +776,6 @@ class ElectricityGroup(EntityGroup):
 
     def __hash__(self):
         return self.name+str(self.id)
+    
+    def __str__(self):
+        return self.__repr__()

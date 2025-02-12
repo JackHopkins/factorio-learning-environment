@@ -1,7 +1,8 @@
 import unittest
-from eval.open.model.conversation import Message, Conversation
+from models.conversation import Conversation
+from models.message import Message
 
-from eval.open.mcts.formatters.conversation_formatter import StructurePreservingFormatter, CodeProcessor
+from agents.utils.formatters.conversation_formatter_abc import StructurePreservingFormatter, CodeProcessor
 
 
 class TestStructurePreservingFormatter(unittest.TestCase):

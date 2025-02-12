@@ -27,7 +27,7 @@ from utils.rcon import _lua2python, _get_dir
 from transaction import FactorioTransaction
 from models.research_state import ResearchState
 from rcon.factorio_rcon import RCONClient
-from eval.open.model.game_state import GameState
+from models.game_state import GameState
 from utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 
 CHUNK_SIZE = 32

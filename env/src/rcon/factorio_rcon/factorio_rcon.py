@@ -253,7 +253,7 @@ class RCONClient(RCONSharedBase):
             raise RCONReceiveError(RECEIVE_ERROR) from exc
         return responses
 
-    def send_command(self, command):
+    def send_command(self, command, max_retries=3):
         """Sends a single command to the RCON server
 
         Params:
@@ -273,7 +273,16 @@ class RCONClient(RCONSharedBase):
             it will be much faster as all of the requests can be sent at once.
             This function cannot be called multiple times simultaneously.
         """
-        return self.send_commands(dict(command=command))["command"]
+        for attempt in range(max_retries):
+            try:
+                return self.send_commands(dict(command=command))["command"]
+            except RCONBaseError as e:
+                if attempt == max_retries - 1:  # Last attempt failed
+                    raise  # Re-raise the last error
+                try:
+                    self.connect()  # Attempt reconnection
+                except RCONBaseError:
+                    continue  # If reconnection fails, try again
 
     @handle_socket_errors()
     def send_commands(self, commands):

@@ -2,7 +2,7 @@ import pickle
 import unittest
 
 from eval.open.mcts.chunked_mcts import ChunkedMCTS
-from eval.open.model.game_state import GameState
+from models.game_state import GameState
 from game_types import Prototype
 from instance import FactorioInstance
 

@@ -8,7 +8,7 @@ from tools.agent.connect_entities.resolver import Resolver
 class TransportConnectionResolver(Resolver):
 
     def __init__(self, *args):
-        super().__init__(args)
+        super().__init__(*args)
 
     def _get_transport_belt_adjacent_positions(self, belt, target=False) -> List[Position]:
         source_positions = [belt.output_position] if not target else [belt.input_position]
@@ -32,12 +32,19 @@ class TransportConnectionResolver(Resolver):
         match source:
             case GunTurret() | AssemblingMachine() | Lab() | Chest() | Accumulator() | Furnace():
                 raise Exception(
-                    f"Cannot connect belts directly from a {source.prototype} object, we need to use an inserter to take items from {source.prototype}.")
+                    f"Transport belts cannot be connected directly from a {source.prototype} object as a source. You need to add an inserter that takes items from {source.prototype} and use the inserter as a source entity.")
 
             case BeltGroup():
                 source_positions = self._get_transport_belt_adjacent_positions(source.outputs[0], target=False)
 
             case Inserter():
+                source_position = source.drop_position
+                # check for entities at the source position
+                entities = self.get_entities(position=source_position, radius=0)
+
+                if len(entities) > 0:
+                    entities = [f"{x.name} at {x.position}" for x in entities]
+                    raise Exception(f"Cannot connect to source inserter drop_position position {source_position} as it is already occupied by following entities - {entities}.")
                 source_positions = [source.drop_position]
 
             case MiningDrill():
@@ -54,7 +61,7 @@ class TransportConnectionResolver(Resolver):
 
         match target:
             case GunTurret() | AssemblingMachine() | Lab() | Chest() | Accumulator() | Furnace():
-                raise Exception(f"Cannot connect belts directly to a {target.prototype} object, we need to use an inserter to input items into the {target.prototype}.")
+                raise Exception(f"Transport belts cannot be connected directly to a {target.prototype} object as a target. You need to add an inserter that inputs items into {target.prototype} and use the inserter as the target entity.")
 
             case BeltGroup():
                 #if target.inputs:
@@ -63,6 +70,13 @@ class TransportConnectionResolver(Resolver):
                 #    target_positions = [belt.position for belt in target.belts]
 
             case Inserter():
+                target_position = target.pickup_position
+                # check for entities at the target position
+                entities = self.get_entities(position=target_position, radius=0)
+                entities = [x for x  in entities if x.name != "transport-belt"]
+                if len(entities) > 0:
+                    entities = [f"{x.name} at {x.position}" for x in entities]
+                    raise Exception(f"Cannot connect to target inserter pickup_position position {target_position} as it is already occupied by following entities {entities}.")
                 target_positions = [target.pickup_position]
 
             case MiningDrill():

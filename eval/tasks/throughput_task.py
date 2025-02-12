@@ -9,7 +9,7 @@ import copy
 LAB_PLAY_POPULATED_STARTING_INVENTORY = {"coal": 500, "burner-mining-drill": 50, "wooden-chest": 10, "burner-inserter": 50,"inserter": 50, "transport-belt": 500,
                                 "stone-furnace": 10, "boiler": 2, "offshore-pump": 2, "steam-engine": 2,
                                 "electric-mining-drill": 50, "small-electric-pole": 500, "pipe": 100,
-                                "assembling-machine-2": 10, "electric-furnace": 10}
+                                "assembling-machine-2": 10, "electric-furnace": 10, "solar-panel": 50, "pipe-to-ground": 100, "underground-belt": 100}
 
 
 

@@ -25,7 +25,7 @@ Returns a BoundingBox with these attributes:
 - `right_bottom`: Bottom-right corner Position
 - `left_bottom`: Bottom-left corner Position
 - `right_top`: Top-right corner Position
-- `center()`: Method to get center Position
+- `center`: Center position
 
 ## Building Box Usage
 
@@ -33,7 +33,7 @@ Returns a BoundingBox with these attributes:
 # Simple 1x1 box for chests
 chest_box = BuildingBox(height=1, width=1)
 
-# 3x3 box for mining drills
+# 3x3 box for electric mining drills
 drill_box = BuildingBox(height=3, width=3)
 
 # Larger box for multiple entities
@@ -45,7 +45,7 @@ factory_box = BuildingBox(height=5, width=10)
 ### 1. Basic Entity Placement
 ```python
 # Find place for chest near the origin
-chest_box = BuildingBox(height=1, width=1)
+chest_box = BuildingBox(height=Prototype.WoodenChest.HEIGHT, width=Prototype.WoodenChest.WIDTH)
 buildable_area = nearest_buildable(
     Prototype.WoodenChest,
     chest_box,
@@ -53,136 +53,31 @@ buildable_area = nearest_buildable(
 )
 
 # Place at center of buildable area
-move_to(buildable_area.center())
-chest = place_entity(Prototype.WoodenChest, position=buildable_area.center())
+move_to(buildable_area.center)
+chest = place_entity(Prototype.WoodenChest, position=buildable_area.center)
 ```
 
 ### 2. Mining Drill Placement
 ```python
 # Setup mining drill on ore patch
-def place_mining_drill(resource_pos: Position):
-    # Define area for drill (3x3)
-    drill_box = BuildingBox(height=3, width=3)
-    
-    # Find buildable area
-    buildable_area = nearest_buildable(
-        Prototype.ElectricMiningDrill,
-        drill_box,
-        resource_pos
-    )
-    
-    # Place drill
-    move_to(buildable_area.center())
-    return place_entity(
-        Prototype.ElectricMiningDrill,
-        position=buildable_area.center()
-    )
+resource_pos = nearest(Resource.IronOre)
+# Define area for drill
+drill_box = BuildingBox(height=Prototype.ElectricMiningDrill.HEIGHT, width=Prototype.ElectricMiningDrill.WIDTH)
+
+# Find buildable area
+buildable_area = nearest_buildable(
+    Prototype.ElectricMiningDrill,
+    drill_box,
+    resource_pos
+)
+
+# Place drill
+move_to(buildable_area.center)
+drill = place_entity(
+    Prototype.ElectricMiningDrill,
+    position=buildable_area.center
+)
 ```
-
-### 3. Power Infrastructure
-```python
-# Setup steam engine near water
-def place_steam_engine(water_pos: Position):
-    # Steam engine needs 3x5 area
-    engine_box = BuildingBox(width=5, height=3)
-    
-    buildable_area = nearest_buildable(
-        Prototype.SteamEngine,
-        engine_box,
-        water_pos
-    )
-    
-    move_to(buildable_area.center())
-    return place_entity(
-        Prototype.SteamEngine,
-        position=buildable_area.center(),
-        direction=Direction.RIGHT
-    )
-```
-
-## Best Practices
-
-1. **Size Planning**
-```python
-# Account for entity dimensions and spacing
-def get_building_box(entity_type: Prototype) -> BuildingBox:
-    sizes = {
-        Prototype.WoodenChest: (1, 1),
-        Prototype.ElectricMiningDrill: (3, 3),
-        Prototype.SteamEngine: (5, 3),
-        Prototype.AssemblingMachine1: (3, 3)
-    }
-    width, height = sizes.get(entity_type, (1, 1))
-    return BuildingBox(width=width, height=height)
-```
-
-2. **Resource Coverage**
-```python
-# For mining drills, ensure ore coverage
-def find_mining_position(ore_pos: Position):
-    try:
-        drill_box = BuildingBox(height=3, width=3)
-        area = nearest_buildable(
-            Prototype.ElectricMiningDrill,
-            drill_box,
-            ore_pos
-        )
-        return area.center()
-    except Exception:
-        print("No suitable mining position found")
-        return None
-```
-
-3. **Multiple Entity Placement**
-```python
-def place_drill_line(ore_pos: Position, count: int):
-    drills = []
-    current_pos = ore_pos
-    
-    for _ in range(count):
-        drill_box = BuildingBox(height=3, width=3)
-        area = nearest_buildable(
-            Prototype.ElectricMiningDrill,
-            drill_box,
-            current_pos
-        )
-        
-        move_to(area.center())
-        drill = place_entity(
-            Prototype.ElectricMiningDrill,
-            position=area.center()
-        )
-        drills.append(drill)
-        
-        # Update position for next search
-        current_pos = drill.position.right(3)
-    
-    return drills
-```
-
-## Error Handling
-
-1. **No Buildable Position**
-```python
-try:
-    area = nearest_buildable(entity, box, pos)
-except Exception as e:
-    print(f"Cannot find buildable position: {e}")
-    # Handle alternative placement strategy
-```
-
-2. **Resource Coverage**
-```python
-try:
-    area = nearest_buildable(
-        Prototype.ElectricMiningDrill,
-        BuildingBox(height=3, width=3),
-        ore_pos
-    )
-except Exception:
-    print("Not enough ore coverage for drill")
-```
-
 ## Common Patterns
 
 1. **Factory Section Planning**
@@ -201,49 +96,46 @@ def plan_factory_section(center: Position, width: int, height: int):
         return None
 ```
 
-2. **Mining Outpost Setup**
+2. **Multiple Entity Placement**
+Example: Create a copper plate mining line with 3 drills with inserters for future integration
 ```python
-def setup_mining_outpost(ore_pos: Position):
-    # Find area for multiple drills
-    drill_line = BuildingBox(width=9, height=3)  # Space for 3 drills
-    
-    area = nearest_buildable(
-        Prototype.ElectricMiningDrill,
-        drill_line,
-        ore_pos
-    )
-    
-    # Place drills along the line
-    drills = []
-    for x in range(3):
-        pos = Position(
-            x=area.left_top.x + (x * 3),
-            y=area.left_top.y
-        )
-        move_to(pos)
-        drill = place_entity(
-            Prototype.ElectricMiningDrill,
-            position=pos
-        )
-        drills.append(drill)
-    
-    return drills
+# log your general idea what you will do next
+print(f"I will create a single line of 3 drills to mine copper ore")
+# Find space for a line of 3 miners
+move_to(source_position)
+# define the BuildingBox for the drill. 
+# We need 3 drills so width is 3*drill.WIDTH, height is drill.HEIGHT + furnace.HEIGHT, 3 for drill, one for furnace
+building_box = BuildingBox(width = 3 * Prototype.ElectricMiningDrill.WIDTH, height = Prototype.ElectricMiningDrill.HEIGHT + Prototype.StoneFurnace.HEIGHT)
+# get the nearest buildable area around the source_position
+buildable_coordinates = nearest_buildable(Prototype.BurnerMiningDrill, building_box, source_position)
+
+# Place miners in a line
+# we first get the leftmost coordinate of the buildingbox to start building from
+left_top = buildable_coordinates.left_top
+# first lets move to the left_top to ensure building
+move_to(left_top)
+for i in range(3):
+    # we now iterate from the leftmost point towards the right
+    # take steps of drill.WIDTH
+    drill_pos = Position(x=left_top.x + Prototype.ElectricMiningDrill.WIDTH*i, y=left_top.y)
+    # Place the drill facing down as we start from top coordinate
+    # The drop position will be below the drill as the direction is DOWN
+    drill = place_entity(Prototype.ElectricMiningDrill, position=drill_pos, direction = Direction.DOWN)
+    print(f"Placed ElectricMiningDrill {i} at {drill.position} to mine copper ore")
+    # place a furnace to catch the ore
+    # As a furnace has 2x2 dimensions, we need to use place_entity_next_to to ensure no overlap with drill
+    # We use the Direction.DOWN as the direction, as the drill direction is DOWN which means the drop position is below the drill
+    furnace = place_entity_next_to(Prototype.StoneFurnace, reference_position=drill.position, direction = Direction.DOWN)
+    print(f"Placed furnace at {furnace.position} to smelt the copper ore for drill {i} at {drill.position}")
+    # add inserters for future potential integartion
+    # put them below the furnace as the furnace is below the drill
+    inserter = place_entity_next_to(Prototype.Inserter, reference_position=furnace.position, direction = Direction.DOWN)
+    print(f"Placed inserter at {inserter.position} to get the plates from furnace {i} at {furnace.position}")
 ```
 
-3. **Power Plant Layout**
-```python
-def plan_power_plant(water_pos: Position):
-    # Space for pump, boiler, and engine
-    plant_box = BuildingBox(width=15, height=5)
-    
-    area = nearest_buildable(
-        Prototype.SteamEngine,
-        plant_box,
-        water_pos
-    )
-    
-    return area
-```
+## Best practices
+- Always use Prototype.X.WIDTH and .HEIGHT to plan the buildingboxes
+- When doing power setups or setups with inserters, ensure the buildingbox is large enough to have room for connection types
 
 ## Troubleshooting
 

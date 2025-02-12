@@ -24,46 +24,11 @@ can_place = can_place_entity(
 
 1. Basic placement check:
 ```python
-# Check if we can place a pipe at (5,0)
-can_place = can_place_entity(
-    Prototype.Pipe, 
-    position=Position(x=5, y=0)
-)
-if can_place:
-    place_entity(Prototype.Pipe, position=Position(x=5, y=0))
-```
-
-2. Check with direction:
-```python
-# Check if we can place a mining drill facing down
-can_place = can_place_entity(
-    Prototype.BurnerMiningDrill,
-    direction=Direction.DOWN,
-    position=Position(x=0, y=0)
-)
-```
-
-## Common Use Cases
-
-1. Pre-checking resource patches:
-```python
-copper_ore = nearest(Resource.CopperOre)
-can_build = can_place_entity(
-    Prototype.BurnerMiningDrill,
-    position=copper_ore
-)
-if can_build:
-    move_to(copper_ore)
-    place_entity(Prototype.BurnerMiningDrill, position=copper_ore)
-```
-
-2. Validating build locations:
-```python
 # Check before attempting to place large entities
 target_pos = Position(x=10, y=10)
-if can_place_entity(Prototype.SteamEngine, position=target_pos):
-    move_to(target_pos)
-    place_entity(Prototype.SteamEngine, position=target_pos)
+move_to(target_pos)
+if can_place_entity(Prototype.SteamEngine, position=target_pos, direction=Direction.DOWN):
+    place_entity(Prototype.SteamEngine, position=target_pos, direction=Direction.DOWN)
 else:
     print("Cannot place steam engine at target position")
 ```
@@ -81,34 +46,3 @@ else:
 3. Special Cases
 - Offshore pumps require water tiles
 - Some entities have specific placement requirements
-
-## Best Practices
-
-1. Always check before placing:
-```python
-if can_place_entity(entity, position=pos):
-    move_to(pos)
-    place_entity(entity, position=pos)
-else:
-    # Handle failed placement
-```
-
-2. Consider direction requirements:
-```python
-# For directional entities like inserters
-if can_place_entity(
-    Prototype.BurnerInserter, 
-    direction=Direction.DOWN,
-    position=pos
-):
-    # Safe to place
-```
-
-3. Use with error handling:
-```python
-try:
-    if can_place_entity(entity, position=pos):
-        place_entity(entity, position=pos)
-except Exception as e:
-    print(f"Placement check failed: {e}")
-```

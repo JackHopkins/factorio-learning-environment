@@ -127,7 +127,6 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     IronOre = "iron-ore", None
     CopperOre = "copper-ore", None
     Stone = "stone", None
-    Concrete = "concrete", None
     UraniumOre = "uranium-ore", None
 
     IronPlate = "iron-plate", None  # Crafting requires smelting 1 iron ore

@@ -89,8 +89,8 @@ class PowerConnectionResolver(Resolver):
         """Resolve positions for power connections"""
 
         # First check if source and target are already connected
-        if self._check_existing_network_connection(source, target):
-            raise Exception("Source and target are already connected to the same power network")
+        #if self._check_existing_network_connection(source, target):
+        #    raise Exception("Source and target are already connected to the same power network")
 
         if isinstance(source, ElectricityGroup):
             positions = []

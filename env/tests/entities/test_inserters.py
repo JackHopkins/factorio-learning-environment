@@ -34,14 +34,16 @@ def setup_power_and_chests(game, inserter_type, origin_pos=Position(x=0, y=0)):
     # Place input chest (source)
     input_chest = game.place_entity_next_to(Prototype.SteelChest, pole.position, Direction.DOWN)
 
-    # Place inserter
-    inserter = game.place_entity_next_to(inserter_type, input_chest.position, Direction.RIGHT, spacing=0)
 
 
     # Place output chest (destination)
     if inserter_type != Prototype.LongHandedInserter:
+        # Place inserter
+        inserter = game.place_entity_next_to(inserter_type, input_chest.position, Direction.RIGHT, spacing=0)
         output_chest = game.place_entity_next_to(Prototype.SteelChest, inserter.position, Direction.RIGHT)
     else:
+        # Place inserter
+        inserter = game.place_entity_next_to(inserter_type, input_chest.position, Direction.RIGHT, spacing=1)
         output_chest = game.place_entity_next_to(Prototype.SteelChest, inserter.position, Direction.RIGHT, spacing=1)
     # Connect power
     game.connect_entities(pole, inserter, Prototype.SmallElectricPole)

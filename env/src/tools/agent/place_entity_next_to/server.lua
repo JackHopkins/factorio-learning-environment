@@ -87,13 +87,13 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         if is_inserter then
             -- Inserters should be placed directly adjacent
             if direction == 0 then     -- North
-                new_pos.y = new_pos.y - ref_height/2 - 0.5
+                new_pos.y = new_pos.y - ref_height/2 - 0.5 + effective_gap
             elseif direction == 1 then -- East
-                new_pos.x = new_pos.x + ref_width/2 + 0.5
+                new_pos.x = new_pos.x + ref_width/2 + 0.5 + effective_gap
             elseif direction == 2 then -- South
-                new_pos.y = new_pos.y + ref_height/2 + 0.5
+                new_pos.y = new_pos.y + ref_height/2 + 0.5 + effective_gap
             else  -- West
-                new_pos.x = new_pos.x - ref_width/2 - 0.5
+                new_pos.x = new_pos.x - ref_width/2 - 0.5 + effective_gap
             end
         else
             -- Original spacing calculation for non-inserters

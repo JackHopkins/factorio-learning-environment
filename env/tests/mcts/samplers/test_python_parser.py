@@ -1,6 +1,6 @@
 import unittest
 
-from eval.open.mcts.python_parser import PythonParser
+from agents.utils.python_parser import PythonParser
 
 
 class TestChunkBasedPythonParser(unittest.TestCase):

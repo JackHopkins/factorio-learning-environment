@@ -1,10 +1,10 @@
 from typing import Optional
 
-from agents import Python
+from agents import Python, Policy, PolicyMeta
 from agents.utils.python_parser import PythonParser
 
 
-def parse_response(response) -> Optional[Python]:
+def parse_response(response) -> Optional[Policy]:
     if hasattr(response, 'choices'):
         choice = response.choices[0]
         input_tokens = response.usage.prompt_tokens if hasattr(response, 'usage') else 0
@@ -24,3 +24,7 @@ def parse_response(response) -> Optional[Python]:
 
     if not code:
         return None
+
+    policy = Policy(code=code,
+                    meta=PolicyMeta(output_tokens=output_tokens, input_tokens=input_tokens,total_tokens=total_tokens))
+    return policy

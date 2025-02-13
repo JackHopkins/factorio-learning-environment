@@ -1,7 +1,7 @@
 import ast
 import enum
 from typing import Dict, Any
-
+from pydantic import BaseModel
 from models.achievements import ProductionFlows
 
 
@@ -26,6 +26,16 @@ class Python(str):
             raise ValueError(f'Error parsing Python code: {str(e)}')
 
         return v
+
+
+class PolicyMeta(BaseModel):
+    output_tokens: int
+    input_tokens: int
+    total_tokens: int
+
+class Policy(BaseModel):
+    code: Python
+    meta: PolicyMeta
 
 class TaskResponse:
     meta: Dict[str, Any] = {}

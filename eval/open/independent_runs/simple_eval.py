@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 from agents import Python
 from agents.agent_abc import AgentABC
-from agents.example_agent import ExampleAgent
+from agents.basic_agent import BasicAgent
 from eval.open.beam.run import SYSTEM_PROMPT, OBSERVATION_SPACE, MANUAL
 from eval.open.db_client import DBClient
 from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
@@ -61,55 +61,33 @@ class TrajectoryRunner:
         """Check if model supports batch sampling"""
         return "gpt" in model or 'o1' in model or 'gemini' in model
 
-    async def _create_program(self,
-                              code,
-                              conversation,
-                              messages,
-                              model,
-                              meta=None,
-                              total_tokens=0,
-                              output_tokens=0,
-                              input_tokens=0) -> Optional[Program]:
 
-        """Create a Program instance from a single response"""
-        if not code:
-            return None
-
-        program = Program(
-            code=code,
-            conversation=conversation,
-            response=code,
-            token_usage=total_tokens,
-            completion_token_usage=output_tokens,
-            prompt_token_usage=input_tokens,
-            version=self.config.version,
-            model=model,
-            version_description=self.config.version_description,
-            meta={"model": model, "process_id": self.process_id},
-            depth=len(messages) - 2
-        )
-
-        if meta:
-            program.meta.update(meta)
-
-        return program
-
-    async def _generate_program(self, conversation: Conversation,
-                                       last_response: Response,
-                                       meta={}) -> Program:
+    async def _generate_program(self, conversation: Conversation, response: Response, meta={}) -> Program:
         conversation = copy.deepcopy(conversation)
         try:
-            code = await self.agent.step(conversation, last_response)
+            policy = await self.agent.step(conversation, response)
 
             try:
                 messages = conversation.model_dump()['messages']
             except Exception:
                 messages = conversation.dict()['messages']
 
-            program = await self._create_program(
-                code, conversation, messages,
-                self.agent.model, meta
+            program = Program(
+                code=policy.code,
+                conversation=conversation,
+                response=response.response,
+                token_usage=policy.meta.total_tokens,
+                completion_token_usage=policy.meta.output_tokens,
+                prompt_token_usage=policy.meta.input_tokens,
+                version=self.config.version,
+                model=self.agent.model,
+                version_description=self.config.version_description,
+                meta={"model": self.agent.model, "process_id": self.process_id},
+                depth=len(messages) - 2
             )
+
+            if meta:
+                program.meta.update(meta)
 
             return program
 
@@ -182,7 +160,7 @@ class TrajectoryRunner:
             instance.reset(current_state)
             entities = instance.namespace.get_entities()
             current_conversation = Conversation(messages=[
-                Message(role="system", content=self.config.system_prompt),
+                Message(role="system", content=self.config.agent.system_prompt),
                 Message(role="assistant", content="print(f'Inventory: {inspect_inventory()}')\n"
                                                   "print(f'Entities: {get_entities()}')\n"),
                 Message(role="user", content=f"1: ('Inventory: {current_state.inventory.__dict__}')\n"
@@ -197,9 +175,8 @@ class TrajectoryRunner:
             iteration_start = time.time()
             time.sleep(COURTESY_SLEEP) # courtesy sleep
             try:
-
-
                 program = await self._generate_program(self.agent.conversation, last_response)
+
                 print(f"Generated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "
                       f"Iteration {iteration}/{self.config.trajectory_length}")
@@ -208,7 +185,6 @@ class TrajectoryRunner:
                     continue
 
                 program.parent_id = parent_id
-
 
                 # Evaluate program
                 instance = self.evaluator.instance
@@ -220,7 +196,6 @@ class TrajectoryRunner:
                 print(f"Evaluated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "
                       f"Iteration {iteration}/{self.config.trajectory_length}")
-
 
                 if not evaluated_program:
                     continue
@@ -362,6 +337,16 @@ def main():
     #     {"model": "gpt-4o-mini", "resume_version": 487}
     # ]
 
+    # Create initial state and get system prompt
+    instance = create_factorio_instance(0)
+    initial_state = GameState.from_instance(instance)
+    API_SCHEMA = instance.get_system_prompt()
+    system_prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\n# Observations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
+
+    run_configs = [
+        { "agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": None}
+    ]
+
     # Update resume versions if provided
     if args.resume_versions:
         versions = [int(v.strip()) if v.strip() else None for v in args.resume_versions.split(',')]
@@ -369,36 +354,25 @@ def main():
             if version is not None:
                 model_configs[i]["resume_version"] = version
 
-    # Create initial state and get system prompt
-    instance = create_factorio_instance(0)
-    initial_state = GameState.from_instance(instance)
-
-    API_SCHEMA = instance.get_system_prompt()
-    system_prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\n# Observations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
-
-
-    agent = ExampleAgent("gpt-4o", system_prompt)
 
     # Get starting version number for new runs
     base_version = asyncio.run(get_next_version())
 
     processes = []
-    for model_idx, model_config in enumerate(model_configs):
+    for run_idx, run_config in enumerate(run_configs):
         config = EvalConfig(
-            #model=model_config["model"],
-            #system_prompt=system_prompt,
-            agent=agent,
+            agent=run_config["agent"],
             initial_state=initial_state,
-            version=model_config["resume_version"] if model_config["resume_version"] else base_version + model_idx,
-            version_description=f"model:{model_config['model']}\ntype:simple_trajectory",
-            resume_version=model_config["resume_version"],
+            version=run_config["resume_version"] if run_config["resume_version"] else base_version + run_idx,
+            version_description=f"model:{run_config['model']}\ntype:simple_trajectory",
+            resume_version=run_config["resume_version"],
             trajectory_length=5000
         )
 
         # Start 4 processes for each model
         RUNS_PER_MODEL = 4
         for process_id in range(RUNS_PER_MODEL):
-            global_process_id = (model_idx * RUNS_PER_MODEL) + process_id# + 16
+            global_process_id = (run_idx * RUNS_PER_MODEL) + process_id# + 16
             p = multiprocessing.Process(
                 target=run_process,
                 args=(global_process_id, config)

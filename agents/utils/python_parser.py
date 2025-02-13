@@ -6,7 +6,8 @@ import ast
 class PythonParser:
     """Parser that breaks code into chunks and validates each independently."""
 
-    def _is_valid_python(self, code: str) -> bool:
+    @staticmethod
+    def is_valid_python(code: str) -> bool:
         """Check if a string is valid Python syntax."""
         try:
             ast.parse(code)
@@ -14,7 +15,8 @@ class PythonParser:
         except:
             return False
 
-    def _wrap_in_docstring(self, text: str) -> str:
+    @staticmethod
+    def wrap_in_docstring(text: str) -> str:
         """Wrap text in docstring delimiters."""
         # Clean the text first
         text = text.strip()
@@ -22,7 +24,8 @@ class PythonParser:
             return f'"""\n{text}\n"""'
         return ""
 
-    def _process_chunk(self, chunk: str) -> str:
+    @staticmethod
+    def process_chunk(chunk: str) -> str:
         """Process a single chunk of text."""
         # Skip empty chunks
         if not chunk.strip():
@@ -34,13 +37,14 @@ class PythonParser:
         chunk = re.sub(r'\s*```$', '', chunk)
 
         # If it's valid Python, return as is
-        if self._is_valid_python(chunk):
+        if PythonParser.is_valid_python(chunk):
             return chunk
 
         # Otherwise wrap in docstring
-        return self._wrap_in_docstring(chunk)
+        return PythonParser.wrap_in_docstring(chunk)
 
-    def _extract_markdown_code_blocks(self, content: str) -> Optional[str]:
+    @staticmethod
+    def extract_markdown_code_blocks(content: str) -> Optional[str]:
         """
         Attempt to extract all Python code blocks marked with ```python.
 
@@ -57,17 +61,18 @@ class PythonParser:
         code_blocks = []
         for match in matches:
             code = match.group(1).strip()
-            if code and self._is_valid_python(code):
+            if code and PythonParser.is_valid_python(code):
                 code_blocks.append(code)
 
         if code_blocks:
             combined_code = '\n\n'.join(code_blocks)
-            if self._is_valid_python(combined_code):
+            if PythonParser.is_valid_python(combined_code):
                 return combined_code
 
         return None
 
-    def _extract_all_backtick_blocks(self, content: str) -> Optional[str]:
+    @staticmethod
+    def extract_all_backtick_blocks(content: str) -> Optional[str]:
         """
         Attempt to extract all code blocks between backticks, regardless of language marker.
 
@@ -84,12 +89,12 @@ class PythonParser:
         code_blocks = []
         for match in matches:
             code = match.group(1).strip()
-            if code and self._is_valid_python(code):
+            if code and PythonParser.is_valid_python(code):
                 code_blocks.append(code)
 
         if code_blocks:
             combined_code = '\n\n'.join(code_blocks)
-            if self._is_valid_python(combined_code):
+            if PythonParser.is_valid_python(combined_code):
                 return combined_code
 
         return None
@@ -112,16 +117,16 @@ class PythonParser:
         else:
             raise RuntimeError('Incorrect message format')
 
-        if self._is_valid_python(content):
+        if PythonParser.is_valid_python(content):
             return content, content
 
         # First try to extract all backtick blocks
-        backtick_code = self._extract_all_backtick_blocks(content)
+        backtick_code = PythonParser.extract_all_backtick_blocks(content)
         if backtick_code:
             return backtick_code, content
 
         # First try to extract markdown code blocks
-        markdown_code = self._extract_markdown_code_blocks(content)
+        markdown_code = PythonParser.extract_markdown_code_blocks(content)
         if markdown_code:
             return markdown_code, content
 
@@ -129,14 +134,14 @@ class PythonParser:
         chunks = content.split('\n\n')
         processed_chunks = []
         for chunk in chunks:
-            processed = self._process_chunk(chunk)
+            processed = PythonParser.process_chunk(chunk)
             if processed:
                 processed_chunks.append(processed)
 
         # Combine processed chunks
         if processed_chunks:
             final_code = '\n\n'.join(processed_chunks)
-            if self._is_valid_python(final_code):
+            if PythonParser.is_valid_python(final_code):
                 return final_code, content
             else:
                 raise Exception("Not valid python code")

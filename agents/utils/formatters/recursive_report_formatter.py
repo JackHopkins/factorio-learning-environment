@@ -236,12 +236,14 @@ class RecursiveReportFormatter(ConversationFormatter):
         } for msg in messages if msg.role == "user"], sort_keys=True)
         return hashlib.sha256(chunk_content.encode()).hexdigest()
     
-    async def format_conversation(self, conversation: Conversation) -> List[Message]:
+    async def format_conversation(self, conversation: Conversation) -> Conversation:
         """
         Format conversation by recursively summarizing historical messages from left to right.
         Returns [system_message (if present), historical_summary, recent_messages].
         """
         messages = conversation.messages
+
+        total_length = len(messages)
 
         # First trim conversation to character limit
         messages = self._trim_conversation_to_limit(messages)
@@ -256,25 +258,20 @@ class RecursiveReportFormatter(ConversationFormatter):
         if messages[0].role == "system":
             system_message = messages[0]
             messages = messages[1:]
-        
-        #formatted = [
-        #        self._truncate_entity_data(msg, is_recent=(i >= len(messages) - 1), message_index = int(i/2))
-        #        for i, msg in enumerate(messages)
-        #    ]
+
         new_messages = copy.deepcopy(messages[-self.chunk_size:])
         new_formatted_messages = [
-                    self._truncate_entity_data(msg, is_recent=(i >= len(new_messages) - 1), message_index = int((len(messages)- self.chunk_size)/2) +  int(i/2))
+                    self._truncate_entity_data(msg, is_recent=(i >= len(new_messages) - 1), message_index = int((total_length-len(new_messages))/2) +  int(i/2))
                     for i, msg in enumerate(new_messages)
                 ]
         
         # We turn this off
         if self.summarize_history:
-            nr_of_messages = len(messages)
-            if len(messages) % self.chunk_size == 0:
+            nr_of_messages = total_length-1
+            if nr_of_messages % self.chunk_size == 0:
                 nr_of_messages_in_report = nr_of_messages - self.chunk_size
                 messages_in_report = messages[:nr_of_messages_in_report]
                 if nr_of_messages_in_report > 0:
-                    
                     messages_hash = self._get_chunk_hash(messages_in_report)
                     report = self._load_cached_summary(messages_hash)
                 else:
@@ -299,7 +296,7 @@ class RecursiveReportFormatter(ConversationFormatter):
                 new_formatted_messages = [system_message] + new_formatted_messages
         
 
-        return new_formatted_messages
+        return Conversation(messages=new_formatted_messages)
 
     def format_message(self, message: Message) -> Message:
         """Format a single message - apply entity data truncation if enabled."""

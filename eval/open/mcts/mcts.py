@@ -9,7 +9,7 @@ import psycopg2
 import tenacity
 from tenacity import wait_exponential, retry, retry_if_exception_type
 
-from eval.open.mcts.python_parser import PythonParser
+from agents.utils.python_parser import PythonParser
 from models.conversation import Conversation
 from models.message import Message
 from models.generation_parameters import GenerationParameters

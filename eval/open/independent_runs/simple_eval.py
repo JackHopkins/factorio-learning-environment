@@ -3,10 +3,11 @@ import argparse
 import os
 import copy
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Optional
 import multiprocessing
 from dotenv import load_dotenv
 
+from agents import Python
 from agents.agent_abc import AgentABC
 from agents.example_agent import ExampleAgent
 from eval.open.beam.run import SYSTEM_PROMPT, OBSERVATION_SPACE, MANUAL
@@ -18,7 +19,7 @@ from models.game_state import GameState
 from models.program import Program
 from instance import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
-from eval.open.mcts.python_parser import PythonParser
+from agents.utils.python_parser import PythonParser
 from models.response import Response
 
 load_dotenv()
@@ -52,7 +53,6 @@ class TrajectoryRunner:
         self.db = db_client
         self.evaluator = evaluator
         self.config = config
-        self.parser = PythonParser()
         self.iteration_times = []
         self.process_id = process_id
 
@@ -61,25 +61,17 @@ class TrajectoryRunner:
         """Check if model supports batch sampling"""
         return "gpt" in model or 'o1' in model or 'gemini' in model
 
-    async def _create_program(self, response, conversation, messages, model, meta=None) -> Optional[Program]:
+    async def _create_program(self,
+                              code,
+                              conversation,
+                              messages,
+                              model,
+                              meta=None,
+                              total_tokens=0,
+                              output_tokens=0,
+                              input_tokens=0) -> Optional[Program]:
+
         """Create a Program instance from a single response"""
-        if hasattr(response, 'choices'):
-            choice = response.choices[0]
-            input_tokens = response.usage.prompt_tokens if hasattr(response, 'usage') else 0
-            output_tokens = response.usage.completion_tokens if hasattr(response, 'usage') else 0
-            total_tokens = input_tokens + output_tokens
-        else:
-            choice = response.content[0]
-            input_tokens = response.usage.input_tokens if hasattr(response, 'usage') else 0
-            output_tokens = response.usage.output_tokens if hasattr(response, 'usage') else 0
-            total_tokens = input_tokens + output_tokens
-
-        try:
-            code, text_response = self.parser.extract_code(choice)
-        except Exception as e:
-            print(f"Failed to extract code from choice: {str(e)}")
-            return None
-
         if not code:
             return None
 
@@ -93,7 +85,7 @@ class TrajectoryRunner:
             version=self.config.version,
             model=model,
             version_description=self.config.version_description,
-            meta={"text_response": text_response, "model": model, "process_id": self.process_id},
+            meta={"model": model, "process_id": self.process_id},
             depth=len(messages) - 2
         )
 
@@ -102,39 +94,24 @@ class TrajectoryRunner:
 
         return program
 
-    async def _generate_programs_batch(self, conversation: Conversation,
+    async def _generate_program(self, conversation: Conversation,
                                        last_response: Response,
-                                       meta={}) -> List[Program]:
-        """Generate program using MCTS-style generation logic"""
+                                       meta={}) -> Program:
         conversation = copy.deepcopy(conversation)
-
-
         try:
-            messages = conversation.model_dump()['messages']
-        except Exception:
-            messages = conversation.dict()['messages']
+            code = await self.agent.step(conversation, last_response)
 
-
-        try:
-            # formatted = await self.formatter.format_conversation(conversation)
-            # formatted_messages = self.formatter.to_llm_messages(formatted)
-            #
-            # response = await self.llm.acall(
-            #     messages=formatted_messages,
-            #     n_samples=1,  # We only need one program per iteration
-            #     temperature=generation_params.temperature,
-            #     max_tokens=generation_params.max_tokens,
-            #     model=generation_params.model,
-            #     presence_penalty=0.7
-            # )
-            response = await self.agent.step(conversation, last_response)
+            try:
+                messages = conversation.model_dump()['messages']
+            except Exception:
+                messages = conversation.dict()['messages']
 
             program = await self._create_program(
-                response, conversation, messages,
+                code, conversation, messages,
                 self.agent.model, meta
             )
 
-            return [program] if program else []
+            return program
 
         except Exception as e:
             print(f"Program generation failed: {str(e)}")
@@ -195,6 +172,7 @@ class TrajectoryRunner:
 
         if self.config.resume_version:
             current_state, current_conversation, parent_id, depth = await self.get_resume_state()
+            self.agent.conversation = current_conversation
             if not current_state:
                 return
         else:
@@ -210,7 +188,9 @@ class TrajectoryRunner:
                 Message(role="user", content=f"1: ('Inventory: {current_state.inventory.__dict__}')\n"
                                              f"2: ('Entities: {entities}')"),
             ])
+            self.agent.conversation = current_conversation
             parent_id = None
+
         last_response = None
         # Run trajectory
         for iteration in range(depth, self.config.trajectory_length):
@@ -219,15 +199,14 @@ class TrajectoryRunner:
             try:
 
 
-                programs = await self._generate_programs_batch(current_conversation, last_response)
+                program = await self._generate_program(self.agent.conversation, last_response)
                 print(f"Generated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "
                       f"Iteration {iteration}/{self.config.trajectory_length}")
 
-                if not programs:
+                if not program:
                     continue
 
-                program = programs[0]
                 program.parent_id = parent_id
 
 
@@ -247,6 +226,7 @@ class TrajectoryRunner:
                     continue
 
                 program = evaluated_program
+                self.agent.conversation = program.conversation
 
                 last_response = Response(
                     code=program.code,

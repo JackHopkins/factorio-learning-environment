@@ -752,7 +752,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
             end
 
         end
-        game.print("BLAH ".. current_index.. " "..#path)
+
         -- Place remaining regular entities to finish the connection
         while current_index < #path do
             local current_pos = path[current_index].position
@@ -825,6 +825,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
             -- If we haven't achieved connectivity yet, place one final pole at the target
             if not dry_run and last_pole and target_entity and not are_poles_connected(last_pole, target_entity) then
                 local final_dir = global.utils.get_direction(path[#path].position, end_position)
+                game.print("Placing final pole at "..serpent.line(end_position))
                 place_at_position(player, default_connection_type, end_position,
                         global.utils.get_entity_direction(default_connection_type, final_dir/2),
                         serialized_entities, dry_run, counter_state)
@@ -1091,9 +1092,11 @@ local function connect_entities_with_validation(player_index, source_x, source_y
                 {x = source_x, y = source_y},
                 {x = target_x, y = target_y}
             ) then
-                error("Source and target positions are already connected to the same power network")
+                --error("Source and target positions are already connected to the same power network")
+                --return {}
+                break
             end
-            break
+            --break
         elseif connection_type:find("belt") then
             -- Normalize path first
             local normalized_path = global.utils.normalise_path(path,

@@ -27,6 +27,7 @@ class SimpleFactorioEvaluator:
 
         if logger:
             self.port_to_group = logger.port_to_group
+
     async def evaluate(self, program: Program, start_state: GameState) -> Program:
         try:
             self.instance.reset(start_state)

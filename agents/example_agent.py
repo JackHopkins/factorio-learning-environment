@@ -23,15 +23,15 @@ class ExampleAgent(AgentABC):
            model=model
        )
 
-   def set_conversation(self, conversation: Conversation) -> None:
-       pass
-
    async def step(self, conversation: Conversation, response: Response) -> Python:
-       formatted = await self.formatter.format_conversation(conversation)
-       formatted_messages = self.formatter.to_llm_messages(formatted)
+
+       # We format the conversation every N steps to add a context summary to the system prompt
+       formatted_conversation = await self.formatter.format_conversation(conversation)
+       # We set the new conversation state for external use
+       self.set_conversation(formatted_conversation)
 
        response = await self.llm_factory.acall(
-           messages=formatted_messages,
+           messages=self.formatter.to_llm_messages(formatted_conversation.messages),
            n_samples=1,  # We only need one program per iteration
            temperature=self.generation_params.temperature,
            max_tokens=self.generation_params.max_tokens,

@@ -28,11 +28,11 @@ class SimpleFactorioEvaluator:
         if logger:
             self.port_to_group = logger.port_to_group
 
-    async def evaluate(self, program: Program, start_state: GameState) -> Program:
+    async def evaluate(self, program: Program, start_state: GameState, task) -> Program:
         try:
             self.instance.reset(start_state)
             raw_reward, state, response, entities, achievements, flows, ticks = await self._evaluate_single(self.instance.tcp_port, program, self.instance)
-
+            
             relative_reward = raw_reward  # - holdout_value
 
 
@@ -50,7 +50,10 @@ class SimpleFactorioEvaluator:
             program.achievements = achievements
             program.flows = flows
 
-            return program
+            task_response = task.verify(score=raw_reward, 
+                                                 instance=self.instance, 
+                                                 step_statistics=flows)
+            return program, task_response
 
         except Exception as e:
             print(e)

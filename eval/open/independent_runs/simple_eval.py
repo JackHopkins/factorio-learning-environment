@@ -20,8 +20,10 @@ from models.program import Program
 from instance import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
 from agents.utils.python_parser import PythonParser
-from models.response import Response
-
+from agents.utils import Response
+import json
+from eval.tasks.task_utils import initiate_task_configs, initialise_starting_state
+from eval.tasks.task_abc import TaskABC
 load_dotenv()
 
 COURTESY_SLEEP = 5
@@ -32,11 +34,11 @@ class EvalConfig:
     #model: str
     #system_prompt: str
     agent: AgentABC
-    initial_state: GameState
     version: int
+    task: TaskABC
     version_description: str
     resume_version: Optional[int] = None
-    trajectory_length: int = 1000
+    
 
 
 class TrajectoryRunner:
@@ -154,7 +156,7 @@ class TrajectoryRunner:
             return "calculating..."
 
         avg_iteration_time = sum(self.iteration_times) / len(self.iteration_times)
-        remaining_iterations = self.config.trajectory_length - current_iteration
+        remaining_iterations = self.config.task.trajectory_length - current_iteration
         seconds_remaining = avg_iteration_time * remaining_iterations
 
         # Convert to hours:minutes:seconds
@@ -176,7 +178,7 @@ class TrajectoryRunner:
             if not current_state:
                 return
         else:
-            current_state = self.config.initial_state
+            current_state = self.config.task.starting_game_state
             depth = 0
             instance = self.evaluator.instance
             instance.reset(current_state)
@@ -193,7 +195,7 @@ class TrajectoryRunner:
 
         last_response = None
         # Run trajectory
-        for iteration in range(depth, self.config.trajectory_length):
+        for iteration in range(depth, self.config.task.trajectory_length):
             iteration_start = time.time()
             time.sleep(COURTESY_SLEEP) # courtesy sleep
             try:
@@ -202,7 +204,7 @@ class TrajectoryRunner:
                 program = await self._generate_program(self.agent.conversation, last_response)
                 print(f"Generated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "
-                      f"Iteration {iteration}/{self.config.trajectory_length}")
+                      f"Iteration {iteration}/{self.config.task.trajectory_length}")
 
                 if not program:
                     continue
@@ -213,13 +215,13 @@ class TrajectoryRunner:
                 # Evaluate program
                 instance = self.evaluator.instance
                 instance.reset(current_state)
-                evaluated_program = await self.evaluator.evaluate(program, current_state)
+                evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.task)
 
                 print(program.code + "\n"+"="*50)
                 print("\033[1m\n".join(['>>>\t'+line for line in program.response.strip().replace('\\n', '\n\t').split('\n')]).strip()+"\033[0m")
                 print(f"Evaluated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "
-                      f"Iteration {iteration}/{self.config.trajectory_length}")
+                      f"Iteration {iteration}/{self.config.task.trajectory_length}")
 
 
                 if not evaluated_program:
@@ -237,13 +239,14 @@ class TrajectoryRunner:
                     ticks = program.ticks,
                     flows = program.flows,
                     response=program.response,
+                    task=task_verification_response
                 )
 
                 # Save program
                 saved_program = await self.db.create_program(program)
                 print(f"Saved program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "
-                      f"Iteration {iteration}/{self.config.trajectory_length}")
+                      f"Iteration {iteration}/{self.config.task.trajectory_length}")
 
                 parent_id = saved_program.id
 
@@ -266,7 +269,7 @@ class TrajectoryRunner:
                     eta = self.get_eta(iteration)
                     print(f"\033[92m Process {multiprocessing.current_process().name} - "
                           f"Model: {self.config.agent.model} - "
-                          f"Iteration {iteration}/{self.config.trajectory_length} - "
+                          f"Iteration {iteration}/{self.config.task.trajectory_length} - "
                           f"Value: {program.value:.2f} - "
                           f"Elapsed: {elapsed_str} - "
                           f"ETA: {eta}")
@@ -344,6 +347,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--resume-versions', type=str, help='Comma-separated list of versions to resume from')
     args = parser.parse_args()
+    task_folder = r"eval\tasks\task_definitions"
 
     # Model configurations
     model_configs = [
@@ -362,6 +366,10 @@ def main():
     #     {"model": "gpt-4o-mini", "resume_version": 487}
     # ]
 
+    run_configs = [
+        {"model": "gpt-4o", "resume_version": 532, "task": "iron_gear_wheel_throughput_16"},
+    ]
+
     # Update resume versions if provided
     if args.resume_versions:
         versions = [int(v.strip()) if v.strip() else None for v in args.resume_versions.split(',')]
@@ -371,34 +379,38 @@ def main():
 
     # Create initial state and get system prompt
     instance = create_factorio_instance(0)
-    initial_state = GameState.from_instance(instance)
 
     API_SCHEMA = instance.get_system_prompt()
     system_prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\n# Observations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
-
-
-    agent = ExampleAgent("gpt-4o", system_prompt)
 
     # Get starting version number for new runs
     base_version = asyncio.run(get_next_version())
 
     processes = []
-    for model_idx, model_config in enumerate(model_configs):
+
+
+    for run_idx, run_config in enumerate(run_configs):
+        task_key = run_config["task"]
+        # read in the input task
+        with open(os.path.join(task_folder, f"{task_key}.json"), "r") as f:
+            input_task = json.load(f)
+        task = initiate_task_configs(input_task)
+        task = initialise_starting_state(instance, task)
+        agent = ExampleAgent(run_config["model"], system_prompt)
         config = EvalConfig(
             #model=model_config["model"],
             #system_prompt=system_prompt,
             agent=agent,
-            initial_state=initial_state,
-            version=model_config["resume_version"] if model_config["resume_version"] else base_version + model_idx,
-            version_description=f"model:{model_config['model']}\ntype:simple_trajectory",
-            resume_version=model_config["resume_version"],
-            trajectory_length=5000
+            version=run_config["resume_version"] if run_config["resume_version"] else base_version + model_idx,
+            version_description=f"model:{run_config['model']}\ntype:simple_trajectory",
+            resume_version=run_config["resume_version"],
+            task=task
         )
 
         # Start 4 processes for each model
         RUNS_PER_MODEL = 4
         for process_id in range(RUNS_PER_MODEL):
-            global_process_id = (model_idx * RUNS_PER_MODEL) + process_id# + 16
+            global_process_id = (run_idx * RUNS_PER_MODEL) + process_id# + 16
             p = multiprocessing.Process(
                 target=run_process,
                 args=(global_process_id, config)

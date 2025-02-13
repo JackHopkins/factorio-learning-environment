@@ -2,8 +2,6 @@ import ast
 import enum
 from typing import Dict, Any
 
-from models.achievements import ProductionFlows
-
 
 class Python(str):
     """A custom type that only accepts syntactically valid Python code."""
@@ -26,18 +24,6 @@ class Python(str):
             raise ValueError(f'Error parsing Python code: {str(e)}')
 
         return v
-
-class TaskResponse:
-    meta: Dict[str, Any] = {}
-
-class Response:
-    score: float
-    achievements: Dict[Any, Any]
-    flows: ProductionFlows
-    task: TaskResponse
-    step: int
-    ticks: int
-
 
 class CompletionReason(enum.Enum):
     TIMEOUT = "timeout",

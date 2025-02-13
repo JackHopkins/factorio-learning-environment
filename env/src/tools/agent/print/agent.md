@@ -30,34 +30,30 @@ Returns a string representation of the printed message.
 ```python
 # Print entity details
 drill = place_entity(Prototype.BurnerMiningDrill, position=pos)
-print(drill)  # Shows position, direction, status, etc.
+print(f"Put a burner mining drill at {drill.position}")  # Shows position, direction, status, etc.
 
 # Print multiple entities
 furnace = place_entity(Prototype.StoneFurnace, position=pos)
-print(drill, furnace)  # Shows details of both entities
+print(f"Put a burner mining drill at {drill.position} and a furnace at {furnace.position}")  # Shows details of both entities
 ```
 
 ### 2. Inventory Monitoring
 ```python
 # Check player inventory
 inventory = inspect_inventory()
-print(inventory)  # Shows all items and quantities
+print(f"Inventory: {inventory}")  # Shows all items and quantities
 
 # Check entity inventory
 chest = place_entity(Prototype.WoodenChest, position=pos)
 chest_inventory = inspect_inventory(chest)
-print(chest_inventory)  # Shows chest contents
+print(f"Chest inventory {chest_inventory}")  # Shows chest contents
 ```
 
 ### 3. Position Tracking
 ```python
 # Print positions
 resource_pos = nearest(Resource.Coal)
-print(resource_pos)  # Shows x, y coordinates
-
-# Print position calculations
-target = Position(x=resource_pos.x + 2, y=resource_pos.y)
-print("Original:", resource_pos, "Target:", target)
+print(f"Coal position {resource_pos}")  # Shows x, y coordinates
 ```
 
 ## Best Practices
@@ -68,33 +64,12 @@ def verify_placement(entity: Entity, pos: Position):
     print(f"Attempting to place {entity} at {pos}")
     try:
         placed = place_entity(entity, position=pos)
-        print(f"Successfully placed: {placed}")
+        print(f"Successfully placed {placed.name}: {placed}")
         return placed
     except Exception as e:
         print(f"Placement failed: {e}")
         return None
 ```
-
-2. **Resource Management**
-```python
-def monitor_resources():
-    inventory = inspect_inventory()
-    print("Current resources:")
-    if inventory[Prototype.Coal] < 10:
-        print("Low on coal:", inventory[Prototype.Coal])
-    if inventory[Prototype.IronPlate] < 20:
-        print("Low on iron plates:", inventory[Prototype.IronPlate])
-```
-
-3. **State Changes**
-```python
-def track_entity_state(entity: Entity):
-    print(f"Initial state: {entity}")
-    # Perform operations
-    entity = insert_item(Prototype.Coal, entity, 10)
-    print(f"After fuel addition: {entity}")
-```
-
 ## Common Patterns
 
 1. **Operation Logging**
@@ -108,54 +83,12 @@ def setup_mining_operation():
     
     chest = place_entity_next_to(
         Prototype.WoodenChest,
-        drill.position,
+        drill.drop_position,
         direction=Direction.DOWN
     )
     print(f"Added output chest at {chest.position}")
     
     print("Mining setup complete")
-```
-
-2. **Status Monitoring**
-```python
-def check_production_line(entities: list[Entity]):
-    print("Checking production line status:")
-    for entity in entities:
-        print(f"{entity.prototype}: {entity.status}")
-        
-        if hasattr(entity, 'energy'):
-            print(f"Power level: {entity.energy}")
-            
-        if hasattr(entity, 'inventory'):
-            print(f"Inventory: {inspect_inventory(entity)}")
-```
-
-3. **Debug Information**
-```python
-def debug_entity_placement(entity: Prototype, pos: Position):
-    print(f"Debug info for {entity} placement:")
-    print(f"Target position: {pos}")
-    
-    inventory = inspect_inventory()
-    print(f"Available in inventory: {inventory[entity]}")
-    
-    try:
-        placed = place_entity(entity, position=pos)
-        print(f"Placement successful: {placed}")
-    except Exception as e:
-        print(f"Placement failed: {e}")
-```
-
-## Error Handling
-
-1. **Print in Try-Except Blocks**
-```python
-try:
-    result = potentially_risky_operation()
-    print("Operation succeeded:", result)
-except Exception as e:
-    print("Operation failed:", e)
-    print("Current state:", get_relevant_state())
 ```
 
 2. **Validation Checks**
@@ -174,36 +107,5 @@ def validate_entity(entity: Entity):
     return entity.status == EntityStatus.WORKING
 ```
 
-## Integration Examples
-
-1. **Construction Monitoring**
-```python
-def build_power_system():
-    print("Starting power system construction")
-    
-    # Track each component
-    pump = place_entity(Prototype.OffshorePump, position=water_pos)
-    print("Pump placed:", pump)
-    
-    boiler = place_entity_next_to(
-        Prototype.Boiler,
-        pump.position,
-        direction=Direction.DOWN
-    )
-    print("Boiler placed:", boiler)
-    
-    engine = place_entity_next_to(
-        Prototype.SteamEngine,
-        boiler.position,
-        direction=Direction.DOWN
-    )
-    print("Steam engine placed:", engine)
-    
-    # Print final status
-    print("Power system status:")
-    print(f"Pump: {pump.status}")
-    print(f"Boiler: {boiler.status}")
-    print(f"Engine: {engine.status}")
-```
-
 Remember to use print statements strategically to track important state changes and verify operations are working as expected, but avoid excessive printing that could clutter the output.
+Add alot of details into print statements

@@ -16,12 +16,16 @@ class ResourceName(enum.Enum):
 class RecipeName(enum.Enum):
     NuclearFuelReprocessing = "nuclear-fuel-reprocessing"
     UraniumProcessing = "uranium-processing"
-    SulfuricAcid = "sulfuric-acid"
-    BasicOilProcessing = "basic-oil-processing"
-    AdvancedOilProcessing = "advanced-oil-processing"
-    CoalLiquefaction = "coal-liquefaction"
-    HeavyOilCracking = "heavy-oil-cracking"
-    LightOilCracking = "light-oil-cracking"
+    SulfuricAcid = "sulfuric-acid" # Recipe for crafting sulfuric acid
+    BasicOilProcessing = "basic-oil-processing" # Recipe for processing petroleum gas from crude oil
+    AdvancedOilProcessing = "advanced-oil-processing" # Recipe for processing petroleum gas, heavy oil and light oil from crude oil
+    CoalLiquefaction = "coal-liquefaction" # Recipe for converting coal into petroleum gas
+    HeavyOilCracking = "heavy-oil-cracking" # Recipe for cracking heavy oil into light oil
+    LightOilCracking = "light-oil-cracking" # Recipe for cracking light oil into petroleum gas
+
+    SolidFuelFromHeavyOil = "solid-fuel-from-heavy-oil" # Recipe for solid fuel from heavy oil
+    SolidFuelFromLightOil = "solid-fuel-from-light-oil" # Recipe for solid fuel from light oil
+    SolidFuelFromPetroleumGas = "solid-fuel-from-petroleum-gas" # Recipe for solid fuel from petroleum gas
 
     FillCrudeOilBarrel = "fill-crude-oil-barrel"
     FillHeavyOilBarrel = "fill-heavy-oil-barrel"
@@ -41,7 +45,6 @@ class RecipeName(enum.Enum):
 
 
 class PrototypeMetaclass(enum.EnumMeta):
-
     def __getattr__(cls, name):
         try:
             attr =  super().__getattr__(name)
@@ -69,11 +72,14 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     BurnerInserter = "burner-inserter", BurnerInserter
     FastInserter = "fast-inserter", Inserter
     ExpressInserter = "express-inserter", Inserter
+
     LongHandedInserter = "long-handed-inserter", Inserter
     StackInserter = "stack-inserter", Inserter
     StackFilterInserter = "stack-filter-inserter", FilterInserter
     FilterInserter = "filter-inserter", FilterInserter
+
     Inserter = "inserter", Inserter
+
 
     BurnerMiningDrill = "burner-mining-drill", BurnerMiningDrill
     ElectricMiningDrill = "electric-mining-drill", ElectricMiningDrill
@@ -86,13 +92,14 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     FastSplitter = "fast-splitter", Splitter
     ExpressSplitter = "express-splitter", Splitter
 
+    Rail = "rail", Rail
+
     TransportBelt = "transport-belt", TransportBelt
     FastTransportBelt = "fast-transport-belt", TransportBelt
     ExpressTransportBelt = "express-transport-belt", TransportBelt
     ExpressUndergroundBelt = "express-underground-belt", UndergroundBelt
     FastUndergroundBelt = "fast-underground-belt", UndergroundBelt
     UndergroundBelt = "underground-belt", UndergroundBelt
-
     OffshorePump = "offshore-pump", OffshorePump
     PumpJack = "pumpjack", PumpJack
     Pump = "pump", Pump
@@ -100,8 +107,8 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     OilRefinery = "oil-refinery", OilRefinery
     ChemicalPlant = "chemical-plant", ChemicalPlant
 
-    SolarPanel = "solar-panel", SolarPanel
     SteamEngine = "steam-engine", Generator
+    SolarPanel = "solar-panel", SolarPanel
 
     UndergroundPipe = "pipe-to-ground", Pipe
     HeatPipe = 'heat-pipe', Pipe
@@ -110,6 +117,7 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     SteelChest = "steel-chest", Chest
     IronChest = "iron-chest", Chest
     WoodenChest = "wooden-chest", Chest
+    IronGearWheel = "iron-gear-wheel", Entity
     StorageTank = "storage-tank", StorageTank
 
     SmallElectricPole = "small-electric-pole", ElectricityPole
@@ -122,13 +130,13 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     IronOre = "iron-ore", None
     CopperOre = "copper-ore", None
     Stone = "stone", None
+    Concrete = "concrete", None
     UraniumOre = "uranium-ore", None
 
-    IronPlate = "iron-plate", None  # Crafting requires smelting 1 iron ore, smelts for 0.5 seconds per ore
-    IronGearWheel = "iron-gear-wheel", None
+    IronPlate = "iron-plate", None  # Crafting requires smelting 1 iron ore
     IronStick = "iron-stick", None
-    SteelPlate = "steel-plate", None  # Crafting requires smelting 5 iron plates, smelts for 4 seconds per ore
-    CopperPlate = "copper-plate", None  # Crafting requires smelting 1 copper ore, smelts for 0.5 seconds per ore
+    SteelPlate = "steel-plate", None  # Crafting requires smelting 5 iron plates
+    CopperPlate = "copper-plate", None  # Crafting requires smelting 1 copper ore
     StoneBrick = "stone-brick", None
     CopperCable = "copper-cable", None
     PlasticBar = "plastic-bar", None
@@ -137,17 +145,19 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     SulfuricAcid = "sulfuric-acid", None
     Uranium235 = "uranium-235", None
     Uranium238 = "uranium-238", None
-    Concrete = "concrete", None
 
     Lubricant = "lubricant", None
     AdvancedOilProcessing = "advanced-oil-processing", None # These are recipes, not prototypes.
     CoalLiquifaction = "coal-liquifaction", None # These are recipes, not prototypes.
     SolidFuel = "solid-fuel", None # These are recipes, not prototypes.
+    LightOil = "light-oil", None
+    HeavyOil = "heavy-oil", None
 
     ElectronicCircuit = "electronic-circuit", None
     AdvancedCircuit = "advanced-circuit", None
     ProcessingUnit = "processing-unit", None
     EngineUnit = "engine-unit", None
+    ElectricEngineUnit = "electric-engine-unit", None
 
     Lab = "lab", Lab
     Accumulator = "accumulator", Accumulator
@@ -168,9 +178,16 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
 
     AutomationSciencePack = "automation-science-pack", None
     MilitarySciencePack = "military-science-pack", None
+    LogisticsSciencePack = "logistic-science-pack", None
     ProductionSciencePack = "production-science-pack", None
     UtilitySciencePack = "utility-science-pack", None
     ChemicalSciencePack = "chemical-science-pack", None
+    
+    ProductivityModule = "productivity-module", None
+    ProductivityModule2 = "productivity-module-2", None
+    ProductivityModule3 = "productivity-module-3", None
+
+    FlyingRobotFrame = "flying-robot-frame", None
 
     RocketSilo = "rocket-silo", RocketSilo
     Rocket = "rocket", Rocket
@@ -189,6 +206,13 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
         self.prototype_name = prototype_name
         self.entity_class = entity_class_name
 
+    @property
+    def WIDTH(self):
+        return self.entity_class._width  # Access the class attribute directly
+    
+    @property
+    def HEIGHT(self):
+        return self.entity_class._height
 
 prototype_by_name = {prototype.value[0]: prototype for prototype in Prototype}
 prototype_by_title = {str(prototype): prototype for prototype in Prototype}
@@ -248,7 +272,7 @@ class Technology(enum.Enum):
     EnergyShield2 = "energy-shields-mk2-equipment"
 
     # Train technologies
-    # RailwayTransportation = "railway"
+    RailwayTransportation = "railway"
     # AutomatedRailTransportation = "automated-rail-transportation"
     # RailSignals = "rail-signals"
 
@@ -264,15 +288,15 @@ class Technology(enum.Enum):
     # SpeedModule = "speed-module"
     # SpeedModule2 = "speed-module-2"
     # SpeedModule3 = "speed-module-3"
-    # ProductivityModule = "productivity-module"
-    # ProductivityModule2 = "productivity-module-2"
-    # ProductivityModule3 = "productivity-module-3"
+    ProductivityModule = "productivity-module"
+    ProductivityModule2 = "productivity-module-2"
+    ProductivityModule3 = "productivity-module-3"
     # EfficiencyModule = "efficiency-module"
     # EfficiencyModule2 = "efficiency-module-2"
     # EfficiencyModule3 = "efficiency-module-3"
 
     # Robot technologies
-    # Robotics = "robotics"
+    Robotics = "robotics"
     # ConstructionRobotics = "construction-robotics"
     # LogisticRobotics = "logistic-robotics"
     # LogisticSystem = "logistic-system"

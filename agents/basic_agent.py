@@ -1,30 +1,21 @@
-from agents import Response, Python, CompletionResult
+from agents import Response, CompletionResult, Policy
 from agents.agent_abc import AgentABC
 from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
 from agents.utils.llm_factory import LLMFactory
+from agents.utils.parse_response import parse_response
 from models.conversation import Conversation
 from models.generation_parameters import GenerationParameters
 
 
-class ExampleAgent(AgentABC):
+class BasicAgent(AgentABC):
    def __init__(self, model, system_prompt, *args, **kwargs):
-       super().__init__( model,*args, **kwargs)
+       super().__init__( model,system_prompt, *args, **kwargs)
        self.system_prompt = system_prompt
        self.llm_factory = LLMFactory(model)
-       self.formatter = RecursiveReportFormatter(
-           chunk_size=32,
-           llm_call=self.llm_factory.acall,
-           cache_dir='summary_cache',
-       )
-       self.generation_params = GenerationParameters(
-           n=1,
-           presence_penalty=0.7,
-           max_tokens=2048,
-           model=model
-       )
+       self.formatter = RecursiveReportFormatter(chunk_size=32,llm_call=self.llm_factory.acall,cache_dir='summary_cache')
+       self.generation_params = GenerationParameters(n=1, presence_penalty=0.7, max_tokens=2048, model=model)
 
-   async def step(self, conversation: Conversation, response: Response) -> Python:
-
+   async def step(self, conversation: Conversation, response: Response) -> Policy:
        # We format the conversation every N steps to add a context summary to the system prompt
        formatted_conversation = await self.formatter.format_conversation(conversation)
        # We set the new conversation state for external use
@@ -38,7 +29,9 @@ class ExampleAgent(AgentABC):
            model=self.generation_params.model,
            presence_penalty=0.7
        )
-       return response
+
+       policy = parse_response(response)
+       return policy
 
    async def end(self, conversation: Conversation, completion: CompletionResult):
        pass

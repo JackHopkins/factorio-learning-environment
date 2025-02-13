@@ -41,6 +41,7 @@ iron_plates = inventory[Prototype.IronPlate]
 # Check chest contents
 chest = place_entity(Prototype.IronChest, position=pos)
 chest_inventory = inspect_inventory(entity=chest)
+# Returns combined inventory of all items
 items_in_chest = chest_inventory[Prototype.IronPlate]
 ```
 
@@ -49,6 +50,9 @@ items_in_chest = chest_inventory[Prototype.IronPlate]
 # Inspect furnace for both input and output items
 furnace = place_entity(Prototype.StoneFurnace, position=pos)
 furnace_inventory = inspect_inventory(entity=furnace)
+# Returns combined inventory of:
+# - Input slot (ores/raw materials)
+# - Output slot (plates/products)
 ore_count = furnace_inventory[Prototype.IronOre]
 plate_count = furnace_inventory[Prototype.IronPlate]
 ```
@@ -58,6 +62,9 @@ plate_count = furnace_inventory[Prototype.IronPlate]
 # Check both input and output inventories
 machine = place_entity(Prototype.AssemblingMachine1, position=pos)
 machine_inventory = inspect_inventory(entity=machine)
+# Returns combined inventory of:
+# - Input inventory (ingredients)
+# - Output inventory (products)
 input_count = machine_inventory[Prototype.IronPlate]
 output_count = machine_inventory[Prototype.IronGearWheel]
 ```
@@ -72,154 +79,20 @@ if inventory[Prototype.IronPlate] >= 5:
     craft_item(Prototype.IronGearWheel)
 ```
 
-2. **Verify Resource Availability**
-```python
-# Check if you have enough resources
-inventory = inspect_inventory()
-required_items = {
-    Prototype.IronPlate: 10,
-    Prototype.Coal: 5
-}
-
-has_all = all(inventory.get(item, 0) >= amount 
-             for item, amount in required_items.items())
-```
-
-3. **Monitor Entity Contents**
-```python
-# Check furnace operation
-furnace_inventory = inspect_inventory(entity=furnace)
-if furnace_inventory[Prototype.Coal] < 5:
-    furnace = insert_item(Prototype.Coal, furnace, 10)
-```
-
-## Entity-Specific Behavior
-
-### 1. Chests
-```python
-chest = place_entity(Prototype.IronChest, position=pos)
-chest_inventory = inspect_inventory(entity=chest)
-# Returns combined inventory of all items
-```
-
-### 2. Furnaces
-```python
-furnace = place_entity(Prototype.StoneFurnace, position=pos)
-furnace_inventory = inspect_inventory(entity=furnace)
-# Returns combined inventory of:
-# - Input slot (ores/raw materials)
-# - Fuel slot (coal/wood)
-# - Output slot (plates/products)
-```
-
-### 3. Assembling Machines
-```python
-machine = place_entity(Prototype.AssemblingMachine1, position=pos)
-machine_inventory = inspect_inventory(entity=machine)
-# Returns combined inventory of:
-# - Input inventory (ingredients)
-# - Output inventory (products)
-```
-
-### 4. Labs
+### 2. Labs
 ```python
 lab = place_entity(Prototype.Lab, position=pos)
 lab_inventory = inspect_inventory(entity=lab)
 # Returns science pack inventory
 ```
 
-## Error Handling
-
-1. **Handle Missing Entities**
-```python
-try:
-    inventory = inspect_inventory(entity=position)
-except Exception as e:
-    print(f"Could not inspect inventory: {e}")
-```
-
-2. **Handle Empty Inventories**
-```python
-inventory = inspect_inventory()
-coal_count = inventory.get(Prototype.Coal, 0)  # Safe access with default
-```
-
 ## Common Patterns
 
-1. **Resource Verification Pattern**
+1. **Fuel Monitoring Pattern**
+To monitor fuel for burner types, you need to use the .fuel attribute of burner types
 ```python
-def has_resources(requirements: dict) -> bool:
-    """Check if all required items are in inventory"""
-    inventory = inspect_inventory()
-    return all(inventory.get(item, 0) >= amount 
-              for item, amount in requirements.items())
-
-# Usage
-if has_resources({
-    Prototype.IronPlate: 5,
-    Prototype.Coal: 10
-}):
-    # Proceed with operation
-    pass
+def check_furnace_fuel_levels(furnace: Entity) -> bool:
+    """Monitor furnace fuel levels"""
+    has_fuel = furnace.fuel[Prototype.Coal] > 0
+    return has_fuel 
 ```
-
-2. **Entity Monitoring Pattern**
-```python
-def check_furnace_status(furnace: Entity) -> bool:
-    """Monitor furnace contents"""
-    inventory = inspect_inventory(entity=furnace)
-    has_fuel = inventory[Prototype.Coal] > 0
-    has_ore = inventory[Prototype.IronOre] > 0
-    has_output_space = inventory[Prototype.IronPlate] < 100
-    return has_fuel and has_ore and has_output_space
-```
-
-3. **Resource Management Pattern**
-```python
-def ensure_minimum_resources(minimum_requirements: dict):
-    """Ensure minimum resource levels are maintained"""
-    inventory = inspect_inventory()
-    for item, min_amount in minimum_requirements.items():
-        current = inventory.get(item, 0)
-        if current < min_amount:
-            # Get more resources
-            pass
-```
-
-## Integration with Other Tools
-
-The inspect_inventory tool works well with:
-
-1. `craft_item()` - Check resources before crafting
-2. `insert_item()` - Verify space available
-3. `place_entity()` - Ensure required items exist
-4. `harvest_resource()` - Monitor gathered resources
-
-Example workflow:
-```python
-# Complete resource management workflow
-inventory = inspect_inventory()
-if inventory[Prototype.Coal] < 10:
-    # Get coal position
-    coal_pos = nearest(Resource.Coal)
-    move_to(coal_pos)
-    harvest_resource(coal_pos, 20)
-
-# Verify we got the coal
-inventory = inspect_inventory()
-assert inventory[Prototype.Coal] >= 10
-```
-
-## Performance Tips
-
-1. **Cache Results**
-- Store inventory results if checking multiple items
-- Avoid repeated calls for same entity
-
-2. **Batch Operations**
-- Check all required resources at once
-- Plan operations based on available resources
-
-3. **Smart Checking**
-- Check before expensive operations
-- Verify critical resources first

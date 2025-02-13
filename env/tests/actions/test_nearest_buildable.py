@@ -27,7 +27,7 @@ def test_nearest_buildable_simple(game):
                                       Position(x=5, y=5))
 
 
-    can_build = game.can_place_entity(Prototype.WoodenChest, position = boundingbox_coords.center())
+    can_build = game.can_place_entity(Prototype.WoodenChest, position = boundingbox_coords.center)
     assert can_build is True
 
 def test_nearest_buildable_near_water(game):
@@ -44,7 +44,7 @@ def test_nearest_buildable_near_water(game):
 
 
     # Step 2: Place Steam Engine at Valid Position
-    steam_engine_position = buildable_area.center()
+    steam_engine_position = buildable_area.center
     game.move_to(steam_engine_position.right(5))
 
     steam_engine = game.place_entity(Prototype.SteamEngine, direction=Direction.RIGHT, position=steam_engine_position)
@@ -72,13 +72,13 @@ def test_nearest_buildable_mining_drill(game):
         center_position=game.nearest(Resource.CopperOre)
         #center_position=Position(5, 5)
     )
-    game.move_to(boundingbox_coords.center())
+    game.move_to(boundingbox_coords.center)
     # Verify the position is valid for the entire bounding box
     can_build = game.can_place_entity(
         Prototype.BurnerMiningDrill,
-        position=boundingbox_coords.center()
+        position=boundingbox_coords.center
     )
-    game.place_entity(Prototype.BurnerMiningDrill, position=boundingbox_coords.center())
+    game.place_entity(Prototype.BurnerMiningDrill, position=boundingbox_coords.center)
     #assert can_build is True
 
     boundingbox_coords = game.nearest_buildable(
@@ -89,7 +89,7 @@ def test_nearest_buildable_mining_drill(game):
     can_build = game.can_place_entity(
         Prototype.BurnerMiningDrill,
         direction=Direction.UP,
-        position=boundingbox_coords.center()
+        position=boundingbox_coords.center
     )
     assert can_build is True
 
@@ -159,7 +159,7 @@ def test_nearest_buildable_relative_to_player(game):
 
     buildingbox = BuildingBox(height=3, width=3)
     # Find buildable position
-    position = game.nearest_buildable(Prototype.WoodenChest, buildingbox, player_pos).center()
+    position = game.nearest_buildable(Prototype.WoodenChest, buildingbox, player_pos).center
 
     # Verify found position is reasonably close to player
     distance = ((position.x - player_pos.x) ** 2 +
@@ -184,7 +184,7 @@ def test_nearest_buildable_with_obstacles(game):
     # Find buildable position for another chest
     coords = game.nearest_buildable(Prototype.WoodenChest, chest_box, player_pos)
 
-    position = coords.center()
+    position = coords.center
     # Verify position is valid and different from obstacle positions
     can_build = game.can_place_entity(Prototype.WoodenChest, Direction.UP, position)
     assert can_build is True

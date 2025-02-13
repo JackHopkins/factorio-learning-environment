@@ -159,8 +159,11 @@ class ConnectEntities(Tool):
         source_pos = source.position if not isinstance(source, Position) else source
         target_pos = target.position if not isinstance(target, Position) else target
 
+
+        source_error_message_addition = f"{source}" if isinstance(source, Position) else f"{source.name} at {source.position}"
+        target_error_message_addition = f"{target}" if isinstance(target, Position) else f"{target.name} at {target.position}"
         raise Exception(
-            f"Failed to connect {set([type.name for type in connection_types])} from {source_pos} to {target_pos}. "
+            f"Failed to connect {set([type.name for type in connection_types])} from {source_error_message_addition} to {target_error_message_addition}. "
             f"{self.get_error_message(str(last_exception))}"
         )
 

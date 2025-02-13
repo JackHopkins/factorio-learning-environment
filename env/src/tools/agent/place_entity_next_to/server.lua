@@ -413,7 +413,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         game.print(serpent.line(blocker_names))
 
         error("\'Cannot place entity at the position " .. serpent.line(new_position) .. " with the current direction" ..
-              ". Attempting to place next to: "..ref_entity.name..". There might be a collision with existing entities or this area cannot be placed on (water). Nearby entities that might be blocking the placement - " .. serpent.line(blocker_names) ..
+              ". Attempting to place next to - "..ref_entity.name..". There might be a collision with existing entities or this area cannot be placed on (water). Nearby entities that might be blocking the placement - " .. serpent.line(blocker_names) ..
                 ". Consider increasing the spacing (".. gap.."), changing the direction or changing the reference position (" .. serpent.line(ref_position) .. ")\'")
 
     end

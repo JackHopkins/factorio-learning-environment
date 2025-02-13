@@ -28,7 +28,7 @@ class GetPrototypeRecipe(Tool):
         response, elapsed = self.execute(PLAYER, name)
 
         if not isinstance(response, dict):
-            raise Exception(f"Could not get recipe of {name}", response)
+            raise Exception(f"Could not get recipe of {name} - {response}. You may need to use the RecipeName enum instead.")
 
         parsed_response = self.parse_lua_dict(response)
 

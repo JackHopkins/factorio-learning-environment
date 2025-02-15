@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from utils.controller_loader.code_analyzer import CodeAnalyzer
+from utils.controller_loader.manual_generator import ManualGenerator
 from utils.controller_loader.schema_generator import SchemaGenerator
 from utils.controller_loader.type_definition_processor import TypeDefinitionProcessor
 
@@ -13,7 +14,6 @@ class SystemPromptGenerator:
         self.tool_path = self.base_path / "tools" / "agent"
 
     def generate(self) -> str:
-        """Generate the complete system prompt."""
         # Generate schema
         schema_generator = SchemaGenerator(str(self.tool_path))
         schema = schema_generator.generate_schema(with_docstring=True).replace("temp_module.", "")
@@ -28,8 +28,14 @@ class SystemPromptGenerator:
             str(self.base_path / "entities.py")
         )
 
+        # Load and process the manuals (agent.md files)
+        manual_defs = ManualGenerator.generate_manual(
+            str(self.base_path / "tools")
+        )
+
         # Combine all parts into final prompt
         return (
             f"```types\n{type_defs}\n{entity_defs}\n```\n"
             f"```methods\n{schema}\n```"
+            f"{manual_defs}"
         )

@@ -75,7 +75,7 @@ class EntityStatus(Enum):
 
 class Inventory(BaseModel):
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         arbitrary_types_allowed = True
 
     def __init__(self, **data):

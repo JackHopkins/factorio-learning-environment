@@ -30,7 +30,10 @@ class GetResearchProgress(Tool):
                 raise Exception("No research in progress" if name is None else f"Cannot get progress for {name}")
             else:
                 result = ":".join(success.split(':')[2:]).replace('"', '').strip()
-                raise Exception(result)
+                if result:
+                    raise Exception(result)
+                else:
+                    raise Exception(success)
 
         return [
                 Ingredient(

@@ -10,8 +10,7 @@ class GetFactoryCentroid(Tool):
 
     def __call__(self) -> BoundingBox:
         """
-        Gets the difference in production statistics since the last measurement.
-        Returns a dictionary of item names to net production/consumption counts.
+        Gets the bounding box of the enti factory.
         """
 
         result, _ = self.execute(PLAYER)

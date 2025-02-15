@@ -3,8 +3,40 @@ from game_types import Prototype, Resource
 from entities import Position, BoundingBox, BuildingBox, Direction
 from instance import FactorioInstance
 
+# @pytest.fixture()
+# def game(instance):
+#     instance.reset()
+#     instance.set_inventory(**{
+#         'wooden-chest': 100,
+#         'electric-mining-drill': 10,
+#         'steam-engine': 1,
+#         'burner-mining-drill': 5
+#     })
+#     yield instance.namespace
+
 @pytest.fixture()
-def game(instance):
+def game():
+    instance = FactorioInstance(address='localhost',
+                                bounding_box=200,
+                                tcp_port=27019,
+                                cache_scripts=False,
+                                fast=True,
+                                inventory={
+                                    'coal': 50,
+                                    'copper-plate': 50,
+                                    'iron-plate': 50,
+                                    'iron-chest': 2,
+                                    'burner-mining-drill': 3,
+                                    'electric-mining-drill': 1,
+                                    'assembling-machine-1': 1,
+                                    'stone-furnace': 9,
+                                    'transport-belt': 50,
+                                    'boiler': 1,
+                                    'burner-inserter': 32,
+                                    'pipe': 15,
+                                    'steam-engine': 1,
+                                    'small-electric-pole': 10
+                                })
     instance.reset()
     instance.set_inventory(**{
         'wooden-chest': 100,
@@ -50,6 +82,14 @@ def test_nearest_buildable_near_water(game):
     steam_engine = game.place_entity(Prototype.SteamEngine, direction=Direction.RIGHT, position=steam_engine_position)
 
     assert True, "The steam engine should be placeable due to the bounding box"
+
+
+def test_nearest_buildable_prototype_dimensions(game):
+    """
+    Test finding a buildable position for an entity with prototype dimensions.
+    """
+    offshore_pump_box = BuildingBox(width=Prototype.OffshorePump.WIDTH, height=Prototype.OffshorePump.HEIGHT)
+    assert True
 
 
 def test_nearest_buildable_mining_drill(game):

@@ -127,15 +127,15 @@ class Controller:
 
             parsed, elapsed = _lua2python(invocation, lua_response, start=start)
             if parsed is None:
-                return {}, elapsed
+                return {}, lua_response#elapsed
 
             if not parsed.get('a') and 'b' in parsed and isinstance(parsed['b'], str):
                 if parsed['b'] == 'string':
                     error = lua_response.split(":")[-1].replace("}","").replace("\"","").strip()
-                    return error, elapsed
-                return parsed['b'], elapsed
+                    return error, lua_response#elapsed
+                return parsed['b'], lua_response#elapsed
 
-            return parsed.get('b', {}), elapsed
+            return parsed.get('b', {}), lua_response#elapsed
 
         except Exception as e:
             return {}, -1

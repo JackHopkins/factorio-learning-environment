@@ -21,14 +21,14 @@ global.actions.set_research = function(player_index, technology_name)
         -- Check prerequisites
         for _, prerequisite in pairs(tech.prerequisites) do
             if not prerequisite.researched then
-                return false, "missing prerequisite: " .. prerequisite.name
+                return false, "missing prerequisite - " .. prerequisite.name
             end
         end
 
         -- Check if we have the required research ingredients
         for _, ingredient in pairs(tech.research_unit_ingredients) do
             if not force.recipes[ingredient.name].enabled then
-                return false, "missing required science pack recipe: " .. ingredient.name
+                return false, "missing required science pack recipe - " .. ingredient.name
             end
         end
 

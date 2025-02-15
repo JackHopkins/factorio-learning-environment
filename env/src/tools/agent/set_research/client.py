@@ -33,7 +33,10 @@ class SetResearch(Tool):
                 raise Exception(f"Could not set research to {name} - Technology is invalid or unavailable.")
             else:
                 result = ":".join(success.split(':')[2:]).replace('"', '').strip()
-                raise Exception(result)
+                if not result:
+                    raise Exception(f"Could not set research to {name} - {success}")
+                else:
+                    raise Exception(result)
 
         # Parse the returned ingredients list
         if isinstance(success, list):

@@ -159,9 +159,9 @@ class ConversationFormatter(ABC):
         """Format a single message according to the strategy"""
         pass
 
-    def to_llm_messages(self, formatted_msgs: List[Message]) -> List[Dict[str, str]]:
+    def to_llm_messages(self, formatted_conversation: Conversation) -> List[Dict[str, str]]:
         """Convert formatted messages to LLM-compatible format"""
-        return [{"role": msg.role, "content": msg.content} for msg in formatted_msgs]
+        return [{"role": msg.role, "content": msg.content} for msg in formatted_conversation.messages]
 
 class DefaultFormatter(ConversationFormatter):
     def format_conversation(self, conversation: Conversation) -> List[Message]:

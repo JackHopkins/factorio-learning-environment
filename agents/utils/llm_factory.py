@@ -36,6 +36,25 @@ class LLMFactory:
         max_tokens = kwargs.get('max_tokens', 1500)
         model_to_use = kwargs.get('model', self.model)
 
+        if 'claude' in model_to_use and 'open-router' in model_to_use:
+            client = AsyncOpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=os.getenv('OPEN_ROUTER_API_KEY'),
+            )
+            response = await client.chat.completions.create(
+                model=model_to_use.replace('open-router', '').strip('-'),
+                max_tokens=kwargs.get('max_tokens', 256),
+                temperature=kwargs.get('temperature', 0.3),
+                messages=kwargs.get('messages', None),
+                logit_bias=kwargs.get('logit_bias', None),
+                n=kwargs.get('n_samples', None),
+                stop=kwargs.get('stop_sequences', None),
+                stream=False,
+                presence_penalty=kwargs.get('presence_penalty', None),
+                frequency_penalty=kwargs.get('frequency_penalty', None),
+            )
+            return response
+
         if "claude" in model_to_use:
             # Set up and call the Anthropic API
             api_key = os.getenv('ANTHROPIC_API_KEY')
@@ -83,19 +102,23 @@ class LLMFactory:
 
         elif "deepseek" in model_to_use:
             client = AsyncOpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
-            response = await client.chat.completions.create(
-                model=model_to_use,
-                max_tokens=kwargs.get('max_tokens', 256),
-                temperature=kwargs.get('temperature', 0.3),
-                messages=kwargs.get('messages', None),
-                logit_bias=kwargs.get('logit_bias', None),
-                n=kwargs.get('n_samples', None),
-                stop=kwargs.get('stop_sequences', None),
-                stream=False,
-                presence_penalty=kwargs.get('presence_penalty', None),
-                frequency_penalty=kwargs.get('frequency_penalty', None),
-            )
-            return response
+            try:
+                response = await client.chat.completions.create(
+                    model=model_to_use,
+                    max_tokens=kwargs.get('max_tokens', 256),
+                    temperature=kwargs.get('temperature', 0.3),
+                    messages=kwargs.get('messages', None),
+                    logit_bias=kwargs.get('logit_bias', None),
+                    n=kwargs.get('n_samples', None),
+                    stop=kwargs.get('stop_sequences', None),
+                    stream=False,
+                    presence_penalty=kwargs.get('presence_penalty', None),
+                    frequency_penalty=kwargs.get('frequency_penalty', None),
+                )
+                return response
+            except Exception as e:
+                print(e)
+                raise
 
         elif "gemini" in model_to_use:
             client = AsyncOpenAI(api_key=os.getenv("GEMINI_API_KEY"), base_url="https://generativelanguage.googleapis.com/v1beta/openai/")

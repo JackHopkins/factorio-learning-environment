@@ -85,7 +85,6 @@ class FactorioInstance:
         self.tcp_port = tcp_port
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
         self.all_technologies_researched = all_technologies_researched
-        #self.game_state = ObservationState().with_default(vocabulary)
         self.fast = fast
         self._speed = 1
         self._ticks_elapsed = 0
@@ -97,7 +96,7 @@ class FactorioInstance:
         self.script_dict = {**self.lua_script_manager.lib_scripts, **self.lua_script_manager.tool_scripts}
 
         # Load the python controllers that correspond to the Lua scripts
-        self.setup_tools(self.lua_script_manager)#, self.game_state)
+        self.setup_tools(self.lua_script_manager)
 
         self.initial_inventory = inventory
         self.initialise(fast, **inventory)
@@ -389,7 +388,7 @@ class FactorioInstance:
         bounds: BoundingBox = self.namespace._get_factory_centroid()
         POS_STRING = ""
         if bounds:
-            centroid = bounds.center()
+            centroid = bounds.center
             POS_STRING = ", position={x="+str(centroid.x)+", y="+str(centroid.y)+"}"
 
         self.rcon_client.send_command("/c rendering.clear()")

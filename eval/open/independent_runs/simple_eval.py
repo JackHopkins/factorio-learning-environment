@@ -67,6 +67,9 @@ class TrajectoryRunner:
         try:
             policy = await self.agent.step(conversation, response)
 
+            if not policy:
+                raise Exception("Policy not valid Python. Skipping.")
+
             try:
                 messages = conversation.model_dump()['messages']
             except Exception:
@@ -75,7 +78,7 @@ class TrajectoryRunner:
             program = Program(
                 code=policy.code,
                 conversation=conversation,
-                response=response.response,
+                response=response.response if response else None,
                 token_usage=policy.meta.total_tokens,
                 completion_token_usage=policy.meta.output_tokens,
                 prompt_token_usage=policy.meta.input_tokens,
@@ -321,10 +324,10 @@ def main():
     args = parser.parse_args()
 
     # Model configurations
-    model_configs = [
-        #{"model": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "resume_version": 488},
-        #{"model": "gpt-4o-mini", "resume_version": None},
-        {"model": "gpt-4o", "resume_version": 532},
+    # model_configs = [
+    #     #{"model": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "resume_version": 488},
+    #     #{"model": "gpt-4o-mini", "resume_version": None},
+    #     {"model": "gpt-4o", "resume_version": 532},
        # {"model": "gpt-4o-mini", "resume_version": 505},
         #{"model": "deepseek-chat", "resume_version": 507}
         #{"model": "deepseek-chat", "resume_version": None},#491},
@@ -332,7 +335,7 @@ def main():
         #{"model": "gpt-4o", "resume_version": 524}
         #{"model": "claude-3-5-sonnet-20241022", "resume_version": 527}
         #{"model": 'o3-mini', "resume_version": 510}#509 }#508}
-    ]
+    #]
     # model_configs = [
     #     {"model": "gpt-4o-mini", "resume_version": 487}
     # ]
@@ -340,19 +343,42 @@ def main():
     # Create initial state and get system prompt
     instance = create_factorio_instance(0)
     initial_state = GameState.from_instance(instance)
-    API_SCHEMA = instance.get_system_prompt()
-    system_prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\n# Observations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
+    system_prompt = instance.get_system_prompt()
+    #system_prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\n# Observations:\n' + OBSERVATION_SPACE
 
     run_configs = [
-        { "agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": None}
+        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 551},
+        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 552},
+        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 553},
+        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 554},
+        {"agent": BasicAgent(model="deepseek-chat", system_prompt=system_prompt), "resume_version": 555},
+        {"agent": BasicAgent(model="deepseek-chat", system_prompt=system_prompt), "resume_version": 556},
+        {"agent": BasicAgent(model="deepseek-chat", system_prompt=system_prompt), "resume_version": 557},
+        {"agent": BasicAgent(model="deepseek-chat", system_prompt=system_prompt), "resume_version": 558},
+
+        # {"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": None },
+        # {"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": None},
+        # {"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": None},
+        # {"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": None},
+
+        {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 559},
+        {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 560},
+        {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 561},
+        {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 562},
+
+        # {"agent": BasicAgent(model="claude-3-5-sonnet-20241022-open-router", system_prompt=system_prompt), "resume_version": 559},
+        # {"agent": BasicAgent(model="claude-3-5-sonnet-20241022-open-router", system_prompt=system_prompt), "resume_version": 560},
+        # {"agent": BasicAgent(model="claude-3-5-sonnet-20241022-open-router", system_prompt=system_prompt), "resume_version": 561},
+        # {"agent": BasicAgent(model="claude-3-5-sonnet-20241022-open-router", system_prompt=system_prompt), "resume_version": 562},
+
     ]
 
     # Update resume versions if provided
     if args.resume_versions:
         versions = [int(v.strip()) if v.strip() else None for v in args.resume_versions.split(',')]
-        for i, version in enumerate(versions[:len(model_configs)]):
+        for i, version in enumerate(versions[:len(run_configs)]):
             if version is not None:
-                model_configs[i]["resume_version"] = version
+                run_configs[i]["resume_version"] = version
 
 
     # Get starting version number for new runs
@@ -364,21 +390,17 @@ def main():
             agent=run_config["agent"],
             initial_state=initial_state,
             version=run_config["resume_version"] if run_config["resume_version"] else base_version + run_idx,
-            version_description=f"model:{run_config['model']}\ntype:simple_trajectory",
+            version_description=f"model:{run_config['agent'].model}\ntype:simple_trajectory",
             resume_version=run_config["resume_version"],
-            trajectory_length=5000
+            trajectory_length=3000
         )
 
-        # Start 4 processes for each model
-        RUNS_PER_MODEL = 4
-        for process_id in range(RUNS_PER_MODEL):
-            global_process_id = (run_idx * RUNS_PER_MODEL) + process_id# + 16
-            p = multiprocessing.Process(
-                target=run_process,
-                args=(global_process_id, config)
-            )
-            p.start()
-            processes.append(p)
+        p = multiprocessing.Process(
+            target=run_process,
+            args=(run_idx, config)
+        )
+        p.start()
+        processes.append(p)
 
     # Wait for all processes to complete
     for p in processes:

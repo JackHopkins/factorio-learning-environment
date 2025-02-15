@@ -13,7 +13,7 @@ class Python(str):
         yield cls.validate
 
     @classmethod
-    def validate(cls, v: str) -> str:
+    def validate(cls, v: str, *args) -> str:
         if not isinstance(v, str):
             raise TypeError('string required')
 

@@ -250,7 +250,7 @@ class RecursiveReportFormatter(ConversationFormatter):
 
         # Handle base cases
         if len(messages) <= self.chunk_size: # account for system message
-            return Conversation(messages=[self._truncate_entity_data(msg, is_recent=(i >= len(messages) - 1), message_index = int((i - 1)/2))
+            return Conversation(messages=[self._truncate_entity_data(msg, is_recent=(i >= len(messages) - 1), message_index = int((total_length-len(messages))/2) +  int(i/2))
                     for i, msg in enumerate(messages)])
 
         # Keep system message separate if present

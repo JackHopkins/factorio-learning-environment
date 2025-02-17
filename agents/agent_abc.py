@@ -1,23 +1,42 @@
+from abc import abstractmethod
+
 from agents import Response, Python, CompletionResult, Policy
 from models.conversation import Conversation
 
 
 class AgentABC:
-   model: str
-   system_prompt: str
-   conversation: Conversation
+    model: str
+    system_prompt: str
+    conversation: Conversation
 
-   def __init__(self, model, system_prompt, *args, **kwargs):
+    def __init__(self, model, system_prompt, *args, **kwargs):
        self.model = model
        self.system_prompt = system_prompt
 
-   def set_conversation(self, conversation: Conversation) -> None:
-       self.conversation = conversation
+    def set_conversation(self, conversation: Conversation) -> None:
+        """
+        Overrides the current conversation state for this agent. This is useful for context modification strategies,
+        such as summarisation or injection (i.e RAG).
+        @param conversation: The new conversation state.
+        @return:
+        """
+        self.conversation = conversation
 
-   async def step(self, conversation: Conversation, response: Response) -> Policy:
-       pass
+    @abstractmethod
+    async def step(self, conversation: Conversation, response: Response) -> Policy:
+        """
+        A single step in a trajectory. This method should return the next policy to be executed, based on the last response.
+        @param conversation: The current state of the conversation.
+        @param response: The most recent response from the environment.
+        @return:
+        """
+        pass
 
-   async def end(self, conversation: Conversation, completion: CompletionResult):
-       pass
+    @abstractmethod
+    async def end(self, conversation: Conversation, completion: CompletionResult):
+        """
+        Cleanup for when a trajectory ends
+        """
+        pass
 
 

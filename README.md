@@ -1,13 +1,12 @@
 # ⚙ Factorio Learning Environment
 
+**Factorio Learning Environment** (FLE) is an open source framework for developing and evaluating LLM agents in the game of [Factorio](https://factorio.com/).
 
-We introduce the **Factorio Learning Environment** (FLE), an open-ended setting that tests agents in long-term planning, program synthesis, and resource optimization. 
+FLE tests agent capabilities in long-term planning, program synthesis, and resource optimization against a set of exponentially scaling challenges, ranging from basic automation to complex factories processing millions of resources per second. 
 
-FLE provides exponentially scaling
-challenges, from basic automation to complex factories processing millions of resource units per second. 
 We provide two settings:
 1. **Lab-play**: Eight structured tasks with fixed resources.
-2. **Open-play** Unbounded task of building the largest factory on a procedurally generated map. 
+2. **Open-play** Unbounded task of building the largest possible factory on a procedurally generated map. 
 
 Our results demonstrate that models still lack strong spatial reasoning. In lab-play, we find that while LLMs
 exhibit promising short-horizon skills, they are unable to operate effectively in constrained environments, reflecting limitations in error analysis. In open-play, while LLMs discover automation strategies that improve growth (e.g electric-powered drilling), they fail to achieve complex 
@@ -483,7 +482,7 @@ All submissions require review. We use GitHub pull requests for this purpose:
 
 MIT License
 
-Copyright (c) 2024 Factorio Learning Environment Contributors
+Copyright (c) 2025 Factorio Learning Environment Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -24,6 +24,7 @@ def game(instance):
         'assembling-machine-1': 10,
         'assembling-machine-2': 10,
         'assembling-machine-3': 10,
+        'storage-tank': 3,
         'boiler': 3,
         'steam-engine': 3
     }
@@ -31,6 +32,48 @@ def game(instance):
     yield instance.namespace
     instance.reset()
 
+def test_connect_electricity_bug(game):
+    # First find water
+    water_pos = game.nearest(Resource.Water)
+    print(f"Found water at {water_pos}")
+
+    # Place offshore pump
+    game.move_to(water_pos)
+    offshore_pump = game.place_entity(Prototype.OffshorePump, position=water_pos)
+    print(f"Placed offshore pump at {offshore_pump.position}")
+
+    # Place storage tank for water buffer
+    # Need to find safe spot away from water
+    building_box = BuildingBox(width=Prototype.StorageTank.WIDTH + 4, height=Prototype.StorageTank.HEIGHT + 4)
+    coords = game.nearest_buildable(Prototype.StorageTank, building_box, offshore_pump.position)
+    game.move_to(coords.center)
+    water_tank = game.place_entity(Prototype.StorageTank, position=coords.center)
+    print(f"Placed water storage tank at {water_tank.position}")
+
+    # Connect pump to tank with pipes
+    pipes = game.connect_entities(offshore_pump, water_tank, {Prototype.Pipe, Prototype.UndergroundPipe})
+    print(f"Connected offshore pump to storage tank with pipes")
+
+    print("Setting up power system...")
+    # Place boiler near water tank
+    building_box = BuildingBox(width=Prototype.Boiler.WIDTH + 4, height=Prototype.Boiler.HEIGHT + 4)
+    coords = game.nearest_buildable(Prototype.Boiler, building_box, water_tank.position)
+    game.move_to(coords.center)
+    boiler = game.place_entity(Prototype.Boiler, position=coords.center)
+    print(
+        f"Placed boiler at {boiler.position}")
+
+    # Add steam engine
+    building_box = BuildingBox(width=Prototype.SteamEngine.WIDTH + 4, height=Prototype.SteamEngine.HEIGHT + 4)
+    coords = game.nearest_buildable(Prototype.SteamEngine, building_box, boiler.position)
+    game.move_to(coords.center)
+    steam_engine = game.place_entity(Prototype.SteamEngine, position=coords.center)
+    print(f"Placed steam engine at {steam_engine.position}")
+
+    # Connect water and steam
+    water_pipes = game.connect_entities(water_tank, boiler, {Prototype.Pipe, Prototype.UndergroundPipe})
+    steam_pipes = game.connect_entities(boiler, steam_engine, {Prototype.Pipe, Prototype.UndergroundPipe})
+    print("Connected water and steam pipes")
 
 def test_connect_offshore_pump_to_boiler(game):
     #game.craft_item(Prototype.OffshorePump)

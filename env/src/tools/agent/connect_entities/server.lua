@@ -52,7 +52,7 @@ local function are_positions_in_same_network(pos1, pos2)
     return network1 and network2 and network1 == network2
 end
 
-local function is_position_saturated(position)
+local function is_position_saturated(position, reach)
     -- Get nearby poles
     local nearby_poles = game.surfaces[1].find_entities_filtered{
         position = position,
@@ -62,10 +62,10 @@ local function is_position_saturated(position)
 
     -- Check each corner of a 1x1 tile centered on the position
     local corners = {
-        {x = position.x - 0.4, y = position.y - 0.4},
-        {x = position.x - 0.4, y = position.y + 0.4},
-        {x = position.x + 0.4, y = position.y + 0.4},
-        {x = position.x + 0.4, y = position.y - 0.4}
+        {x = position.x - reach/2, y = position.y - reach/2},
+        {x = position.x - reach/2, y = position.y + reach/2},
+        {x = position.x + reach/2, y = position.y + reach/2},
+        {x = position.x + reach/2, y = position.y - reach/2}
     }
 
     -- For each corner, check if it's within range of any existing pole
@@ -437,8 +437,8 @@ local function place_at_position(player, connection_type, current_position, dir,
     end
 
     if is_electric_pole then
+        if is_position_saturated(current_position, wire_reach[connection_type]) then
 
-        if is_position_saturated(current_position) then
             return -- No need to place another pole
         end
 
@@ -500,13 +500,33 @@ local function place_at_position(player, connection_type, current_position, dir,
             position = placement_position,
             direction = dir,
             force = player.force,
-            type = is_underground_exit and "output" or "input"
+            type = is_underground_exit and "output" or "input",
+            move_stuck_players=true
         }
 
-        local can_place = game.surfaces[1].can_place_entity(entity_variant)
+        --local can_place = global.utils.avoid_entity(1, connection_type, placement_position, dir)
+        --if not can_build then
+        --    error("Cannot place the entity at the specified position: x="..position.x..", y="..position.y)
+        --end
+        local player_position = player.position
+        player.teleport({placement_position.x, placement_position.y}, player.surface)
+        local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)
+        player.teleport(player_position)
 
         if dry_run and not can_place then
-            error("Cannot connect due to placement blockage.")
+            -- Define the area where the entity will be placed
+            local target_area = {
+                {x = placement_position.x - 1 / 2, y = placement_position.y - 1 / 2},
+                {x = placement_position.x + 1 / 2, y = placement_position.y + 1 / 2}
+            }
+
+            -- Check for collision with other entities
+            local entities = player.surface.find_entities_filtered{area = target_area, force = player.force}
+            for _, entity in pairs(entities) do
+                game.print("1 "..entity.name)
+            end
+
+            error("Cannot connect due to placement blockage 1.")
         end
 
         if can_place and not dry_run then
@@ -535,15 +555,32 @@ local function place_at_position(player, connection_type, current_position, dir,
         error("You do not have the required item in their inventory.")
     end
 
-    local can_place = game.surfaces[1].can_place_entity{
-        name = connection_type,
-        position = placement_position,
-        direction = dir,
-        force = player.force
-    }
+    --local can_place = game.surfaces[1].can_place_entity{
+    --    name = connection_type,
+    --    position = placement_position,
+    --    direction = dir,
+    --    force = player.force
+    --}
+    local player_position = player.position
+    player.teleport({placement_position.x, placement_position.y}, player.surface)
+    local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)
+    player.teleport(player_position)
+
+    --local can_place = global.utils.avoid_entity(1, connection_type, placement_position, dir)
     rendering.draw_circle{width = 0.25, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.5, filled = false, target = placement_position, time_to_live = 12000}
 
     if dry_run and can_place == false then
+        local target_area = {
+                {x = placement_position.x - 1 / 2, y = placement_position.y - 1 / 2},
+                {x = placement_position.x + 1 / 2, y = placement_position.y + 1 / 2}
+            }
+
+        -- Check for collision with other entities
+        local entities = player.surface.find_entities_filtered{area = target_area, force = player.force}
+        for _, entity in pairs(entities) do
+            game.print("1: "..entity.name)
+        end
+
         error("Cannot connect due to placement blockage.")
     end
 
@@ -556,7 +593,8 @@ local function place_at_position(player, connection_type, current_position, dir,
             name = connection_type,
             position = placement_position,
             direction = dir,
-            force = player.force
+            force = player.force,
+            move_stuck_players=true
         })
 
         if placed_entity then

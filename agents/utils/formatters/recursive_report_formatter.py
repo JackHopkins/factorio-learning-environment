@@ -73,7 +73,7 @@ class RecursiveReportFormatter(ConversationFormatter):
                  cache_dir: str = ".conversation_cache",
                  truncate_entity_data: bool = True,
                  summarize_history: bool = True,
-                 max_chars: int = 400000):
+                 max_chars: int = 350000):
         """
 
         @param chunk_size:

@@ -1,4 +1,3 @@
-// components/ModelLeaderboard.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -52,7 +51,7 @@ export default function ModelLeaderboard() {
     }
 
     return (
-        <div className="w-full max-w-6xl mx-auto p-4">
+        <div className="w-full max-w-4xl mx-auto p-4">
             <h1 className="text-2xl font-bold mb-6">Model Leaderboard</h1>
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -62,22 +61,10 @@ export default function ModelLeaderboard() {
                             Rank
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            Version
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Model
                         </th>
                         <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Mean Score
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            Std Dev
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            Depth
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            Samples
                         </th>
                         <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Cumulative Score
@@ -86,33 +73,21 @@ export default function ModelLeaderboard() {
                     </thead>
                     <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                     {leaderboardData.map((model, index) => (
-                        <tr key={model.version} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <tr key={model.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                             <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center gap-2">
                                     {index + 1}
                                     {getScoreIndicator(index)}
                                 </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                                v{model.version}
-                            </td>
                             <td className="px-6 py-4 whitespace-nowrap font-mono">
-                                {model.description}
+                                {model.model_name}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right">
-                                {parseFloat(model.mean.toString()).toFixed(3)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                {parseFloat(model.std_dev.toString()).toFixed(3)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                {model.latest_depth}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                {parseInt(model.sample_size.toString()).toLocaleString()}
+                                {model.mean_score.toFixed(3)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right font-semibold">
-                                {parseFloat(model.cumulative_score.toString()).toLocaleString(undefined, {
+                                {model.cumulative_score.toLocaleString(undefined, {
                                     minimumFractionDigits: 0,
                                     maximumFractionDigits: 0
                                 })}

@@ -33,10 +33,10 @@ class LLMFactory:
 
     @retry(wait=wait_exponential(multiplier=2, min=2, max=15))
     async def acall(self, *args, **kwargs):
-        max_tokens = kwargs.get('max_tokens', 1500)
+        max_tokens = kwargs.get('max_tokens', 2000)
         model_to_use = kwargs.get('model', self.model)
 
-        if 'claude' in model_to_use and 'open-router' in model_to_use:
+        if 'open-router' in model_to_use:
             client = AsyncOpenAI(
                 base_url="https://openrouter.ai/api/v1",
                 api_key=os.getenv('OPEN_ROUTER_API_KEY'),

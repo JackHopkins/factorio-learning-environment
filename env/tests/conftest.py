@@ -26,7 +26,7 @@ def instance():
     try:
         instance = FactorioInstance(address='localhost',
                                     bounding_box=200,
-                                    tcp_port=27000,
+                                    tcp_port=27019,
                                     cache_scripts=False,
                                     fast=True,
                                     inventory={

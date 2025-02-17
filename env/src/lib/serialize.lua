@@ -508,7 +508,7 @@ function get_entity_direction(entity, direction)
     if direction == nil then
         return defines.direction.north
     end
-    game.print("Getting direction: " .. entity .. " with direction: " .. direction)
+    --game.print("Getting direction: " .. entity .. " with direction: " .. direction)
 
 
     local prototype = game.entity_prototypes[entity]
@@ -1479,6 +1479,7 @@ global.utils.serialize_entity = function(entity)
 
         -- Add fluid box information
         if entity.fluidbox and #entity.fluidbox > 0 then
+            game.print("There is a fluidbox")
             local fluid = entity.fluidbox[1]
             if fluid then
                 serialized.fluid = string.format("\"%s\"", fluid.name)
@@ -1775,6 +1776,7 @@ global.utils.serialize_entity = function(entity)
         if fluid_box and #fluid_box > 0 then
             serialized.fluid_box = {}
             for i = 1, #fluid_box do
+                game.print("Fluid!")
                 local fluid = fluid_box[i]
                 if fluid then
                     table.insert(serialized.fluid_box, {name = "\""..fluid.name.."\"", amount = fluid.amount, temperature = fluid.temperature})

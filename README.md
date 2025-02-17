@@ -22,6 +22,7 @@ automation (e.g electronic-circuit manufacturing).
 - [Agents Documentation](##agent-documentation)
 - [Tool Documentation](##tool-documentation)
 - [Project Structure](##project-structure)
+- [Benchmarks](##performance)
 - [Contributing Guidelines](##contributing-guidelines)
 - [License Information](##license)
 
@@ -357,6 +358,96 @@ factorio-learning-environment/
             ├── task_abc.py             # Abstract task definition
             └── throughput_task.py      # A basic task checking for a production throughput quota
 ```
+
+## Benchmarks
+
+We measured FLE execution performance across different configurations to measure performance. All benchmarks were run on a Macbook Pro M4 128GB, with 100 iterations per operation on a subset of the existing tools.
+
+### Direct API Calls (Factorio Client)
+Executing tools against the Factorio server, while a Factorio game client is connected.
+
+| Operation            | Operations/Min | Operations/Sec |
+|---------------------|----------------|----------------|
+| place_entity_next_to| 2,578.20       | 42.97         |
+| place_entity        | 12,057.63      | 200.96        | 
+| move_to             | 8,649.89       | 144.16        |
+| harvest_resource    | 16,599.44      | 276.66        |
+| craft_item          | 16,875.14      | 281.25        |
+| connect_entities    | 1,664.70       | 27.74         |
+| rotate_entity       | 12,281.31      | 204.69        | 
+| insert_item         | 13,044.42      | 217.41        | 
+| extract_item        | 17,167.43      | 286.12        |
+| inspect_inventory   | 17,036.32      | 283.94        | 
+| get_resource_patch  | 7,004.49       | 116.74        | 
+| **Total**           | **7,513.29**   | **125.22**    |
+
+### Direct API Calls (Headless)
+Executing tools against the Factorio server without a game client.
+
+| Operation            | Operations/Min | Operations/Sec |
+|---------------------|----------------|----------------|
+| place_entity_next_to| 4,856.51       | 80.94         |
+| place_entity        | 22,332.72      | 372.21        |
+| move_to             | 16,005.59      | 266.76        | 
+| harvest_resource    | 32,727.01      | 545.45        |
+| craft_item          | 36,223.63      | 603.73        | 
+| connect_entities    | 2,926.01       | 48.77         | 
+| rotate_entity       | 23,467.46      | 391.12        | 
+| insert_item         | 25,154.28      | 419.24        | 
+| extract_item        | 32,997.26      | 549.95        |
+| inspect_inventory   | 28,401.56      | 473.36        |
+| get_resource_patch  | 8,736.30       | 145.61        |
+| **Total**           | **13,094.98**  | **218.25**    |
+
+### Python Interpreter (Factorio Client)
+Executing tools as part of a Python policy string, while a Factorio game client is connected.
+
+| Operation            | Operations/Min | Operations/Sec |
+|---------------------|----------------|----------------|
+| place_entity_next_to| 4,714.52       | 78.58         |
+| place_entity        | 4,774.13       | 79.57         |
+| move_to             | 4,005.77       | 66.76         |
+| harvest_resource    | 3,594.59       | 59.91         |
+| craft_item          | 4,985.02       | 83.08         |
+| connect_entities    | 1,497.11       | 24.95         |
+| rotate_entity       | 4,914.69       | 81.91         | 
+| insert_item         | 5,046.99       | 84.12         |
+| extract_item        | 4,743.08       | 79.05         |
+| inspect_inventory   | 4,838.31       | 80.64         |
+| get_resource_patch  | 2,593.11       | 43.22         |
+| **Total**           | **3,639.10**   | **60.65**     |
+
+
+### Python Interpreter (Headless)
+Executing tools as part of a Python policy string, without a game client.
+
+| Operation            | Operations/Min | Operations/Sec |
+|---------------------|----------------|----------------|
+| place_entity_next_to| 5,069.60       | 84.49         |
+| place_entity        | 5,238.61       | 87.31         |
+| move_to             | 4,979.59       | 82.99         |
+| harvest_resource    | 3,247.09       | 54.12         |
+| craft_item          | 5,854.27       | 97.57         |
+| connect_entities    | 2,150.21       | 35.84         |
+| rotate_entity       | 5,370.21       | 89.50         |
+| insert_item         | 5,065.89       | 84.43         |
+| extract_item        | 5,449.07       | 90.82         |
+| inspect_inventory   | 5,638.67       | 93.98         |
+| get_resource_patch  | 2,479.41       | 41.32         |
+| **Total**           | **4,103.53**   | **68.39**     |
+
+
+### Key Observations
+
+1. **Headless vs Client Performance**: The headless server configuration consistently outperforms the client version, with direct API calls showing approximately 74% better throughput (218.25 vs 125.22 ops/sec).
+
+2. **Interpreter Overhead**: Adding the interpreter layer introduces significant overhead:
+   - Headless: Drops from 218.25 to 68.39 ops/sec (~69% reduction)
+   - Client: Drops from 125.22 to 60.65 ops/sec (~52% reduction)
+
+3. **Operation Variability**: Some operations show more significant performance variations:
+   - `connect_entities` is consistently the slowest operation across all configurations (because it relies on pathfinding)
+   - `craft_item` and `extract_item` tend to be among the fastest operations
 
 ## Contributing Guidelines
 

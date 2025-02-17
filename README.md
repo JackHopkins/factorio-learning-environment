@@ -17,14 +17,13 @@ automation (e.g electronic-circuit manufacturing).
 
 
 ## Quick Links
-- [Installation Guide](##installation)
-- [Environment Documentation](##environment-documentation)
-- [Agents Documentation](##agent-documentation)
-- [Tool Documentation](##tool-documentation)
+- [Installation](##installation)
+- [Environment](##environment-documentation)
+- [Agents](##agent-documentation)
+- [Tools](##tool-documentation)
 - [Project Structure](##project-structure)
-- [Benchmarks](##performance)
-- [Contributing Guidelines](##contributing-guidelines)
-- [License Information](##license)
+- [Benchmarks](##benchmarks)
+- [Contributions](##contributing-guidelines)
 
 ## Installation
 
@@ -175,6 +174,7 @@ end(conversation: Conversation, completion: CompletionState) -> None:
 Our default agent is `BasicAgent`, which incorporates some basic mechanisms for managing context over long (+1000 step) runs. Namely:
 1. Every 32 steps, the all older interactions are summarised into a report in the system message.  
 2. Conversations are clipped to remain under 350k characters (~87k tokens).
+3. We strip out all _historical_ observations of game entities, as this both fills up the context, and confuses the agent.
 
 We include some basic utilities for calling different LLMs (`agents/utils/llm_factory.py`), for formatting the conversation history (`agents/utils/formatters/conversation_formatter_abc.py`), and for parsing responses into valid Python (`agents/utils/parse_response.py`)
 
@@ -567,38 +567,8 @@ All submissions require review. We use GitHub pull requests for this purpose:
 - Help others in the community
 - Provide constructive feedback
 - Follow the code of conduct
-- Build an enourmous factory
+- Build an enormous factory
 
-## License
-
-MIT License
-
-Copyright (c) 2025 Factorio Learning Environment Contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-### License Notes
-
-- The MIT License is a permissive license that allows for reuse with minimal restrictions
-- This license applies to the Factorio Learning Environment code and documentation
-- Factorio game assets and code are not covered by this license
-- Contributors should ensure they have the right to license their contributions under MIT
 
 [//]: # (## Data)
 

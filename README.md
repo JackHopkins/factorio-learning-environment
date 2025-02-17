@@ -21,7 +21,8 @@ automation (e.g electronic-circuit manufacturing).
 - [Installation Guide](##installation)
 - [Environment Documentation](##environment-documentation)
 - Agents API Reference
-- Tool Documentation
+- [Tool Documentation](##tool-documentation)
+- [Project Structure](##project-structure)
 - Contributing Guidelines
 - License Information
 
@@ -66,6 +67,9 @@ docker-compose -f docker-compose-1.yml up -d
 - Navigate to _Multiplayer_
 - Connect to `localhost:34197` (default) or your configured address in Docker. 
 
+4. **Run Eval**:
+   1. Open Play: 
+   2. Tasks: 
 ## Environment Documentation
 
 FLE is an agent evaluation environment built on the game of Factorio, a popular resource management simulation game.
@@ -75,32 +79,6 @@ Python code to implement their intended actions, and finally returning useful fe
 
 <!DOCTYPE html>
 <html>
-<head>
-<style>
-  table { 
-    width: 100%;
-    border-collapse: collapse;
-  }
-  td {
-    width: 50%;
-    vertical-align: top;
-    padding: 10px;
-  }
-  .python-code {
-    
-  }
-  .bash-code {
-    background-color: #1e1e1e;
-    color: #ffffff;
-    font-family: monospace;
-  }
-  pre {
-    margin: 0;
-    white-space: pre-wrap;
-    font-family: monospace;
-  }
-</style>
-</head>
 <body>
 <table>
 <tr>
@@ -157,9 +135,9 @@ print(get_entities())
 
 Agents are provided with the Python standard library, and an API comprising [tools](##tool-documentation) designed to balance expressiveness with tractability.
 
-Each tool returns a typed object (e.g an Inventory) which can be stored as a variable in the Python namespace and referenced later in the episode. 
+Each tool returns a typed object (e.g an Inventory) which can be stored as a named **variable** in the Python namespace, and referenced later in the episode. 
 
-The namespace acts as an episodic symbolic memory system, and saved objects represent part of the environment at the moment of query, becoming stale as the game state evolves, requiring the agent to re-query when appropriate.
+The namespace acts as an episodic symbolic memory system, and saved objects represent an observation of the environment at the moment of query.
 This design enables agents to maintain complex state representations and build hierarchical abstractions as the factories scale.
 
 Agents observe **stdout** and **stderr** - the output streams of their program. Thus, agents may intentionally print relevant objects and computations to the output stream to construct observations.
@@ -172,9 +150,75 @@ Agents are able to enhance their internal representation of the game state in tw
 logic
 2. Classes in the namespace to better organize the data retrieved from the game.
 
+## Agent Documentation
+
+The Factorio Learning Environment provides a flexible agent architecture for developing and evaluating AI models that can play Factorio. 
+Agents operate in *episodes*, with each step involving observation, planning, and action execution through Python code synthesis.
+The agent maintains state through a conversation history that includes its actions (_assistant_) and the stdout/stderr from the environment (_user_).
+At each step, agents generate Python code policies that are executed in the environment.
+
+
+### Anatomy of an Agent
+Agents live in `agents`, and implement an abstract base class (AgentABC) that defines the core interface for interacting with the environment. 
+
+The abstract base class defines two methods that all agents must implement:
+```
+# Generates the next action based on conversation history and environment response (including score / achievements etc).
+step(conversation, response) -> Policy:
+
+# Handles cleanup when an episode terminates
+end(conversation, completion):
+```
+
+Our default agent is `BasicAgent`, which incorporates some mechanisms for managing context over long (+1000 step) runs. Namely:
+1. Every 32 steps, the all older interactions are summarised into a report in the system message.  
+2. Conversations are clipped to remain under 350k characters (~87k tokens).
+
+We include some basic utilities for calling different LLMs (`agents/utils/llm_factory.py`), for formatting the conversation history (`agents/utils/formatters/conversation_formatter_abc.py`), and for parsing responses into valid Python (`agents/utils/parse_response.py`)
+
+### Minimal Agent Example
+
+```python
+# ./agents/minimal_agent.py
+
+class MinimalAgent(AgentABC):
+    """
+    This is a minimal Agent implementation, which takes the current conversation (including the most recent response)
+    and generates a simple Python code policy to execute the next step.
+    """
+    def __init__(self, model, system_prompt, *args, **kwargs):
+        super().__init__(model, system_prompt, *args, **kwargs)
+        self.llm_factory = LLMFactory(model)
+    
+    @tenacity.retry(
+       retry=retry_if_exception_type(Exception),
+       wait=wait_exponential(multiplier=1, min=4, max=10)
+    )
+    async def step(self, conversation: Conversation, response: Response) -> Policy:
+        # Generate and return next policy
+        response = await self.llm_factory.acall(
+           messages=self.formatter.to_llm_messages(conversation),
+           n_samples=1,  # We only need one program per iteration
+           temperature=self.generation_params.temperature,
+           max_tokens=self.generation_params.max_tokens,
+           model=self.generation_params.model,
+       )
+        
+       # Parse LLM response into a Policy object
+       policy = parse_response(response)
+       if not policy:
+           raise Exception("Not a valid Python policy")
+
+       return policy
+
+    async def end(self, conversation: Conversation, completion: CompletionResult):
+        pass
+```
+
+
 ## Tool Documentation
 
-Agents interact with the game using tools. 
+Agents interact with the game using _tools_, which represent a narrow API into the game.
 
 ### Anatomy of a Tool
 
@@ -217,9 +261,43 @@ flowchart LR
     B -. Observation .-> A
 ```
 
+### Creating a custom Tool
+
+1. Create a new directory in `env/src/tools/agent`, e.g `env/src/tools/agent/my_tool`
+2. Add a `client.py` file, which should contain a class inheriting `Tool` and implementing a `__call__` function to treat the class as a callable function. The method signature should contain type annotations. This function _must_ call `self.execute` to invoke the server-side logic.
+3. Add a `server.lua` file, containing a function structured like `global.actions.my_tool = function(arg1, arg2, ...)`. This file should invoke the [Factorio API](https://lua-api.factorio.com/1.1.110/) to perform the desired action, and return a table that will be serialized and sent back to the client.
+4. Add an `agent.md` file, which should contain a markdown description of the tool. This file will be used by the agent to understand how to use the tool
+
+Next time you run an eval, the tool will automatically be available to the agent and documented in the agent context.
+
 ### Core Tools
 
-### Adding a Tool
+| Tool | Description                                      | Key Features |
+|------|--------------------------------------------------|--------------|
+|  `inspect_inventory` | Checks contents of player or entity inventories  | - Supports various inventory types (chests, furnaces, etc.)<br>- Returns Inventory object with count methods<br>- Can query specific items |
+|  `insert_item` | Places items from player inventory into entities | - Works with machines, chests, belts<br>- Validates item compatibility<br>- Returns updated entity |
+|  `extract_item` | Removes items from entity inventories            | - Supports all inventory types<br>- Auto-transfers to player inventory<br>- Returns quantity extracted |
+|  `place_entity` | Places entities in the world                     | - Handles direction and positioning<br>- Validates placement requirements<br>- Returns placed Entity object |
+|  `place_entity_next_to` | Places entities relative to others               | - Automatic spacing/alignment<br>- Handles entity dimensions<br>- Supports all entity types |
+|  `pickup_entity` | Removes entities from the world                  | - Returns items to inventory<br>- Handles entity groups<br>- Supports all placeable items |
+|  `rotate_entity` | Changes entity orientation                       | - Affects entity behavior (e.g., inserter direction)<br>- Validates rotation rules<br>- Returns updated entity |
+|  `get_entity` | Retrieves entity objects at positions            | - Updates stale references<br>- Returns typed Entity objects<br>- Handles all entity types |
+|  `get_entities` | Finds multiple entities in an area               | - Supports filtering by type<br>- Returns List[Entity]<br>- Groups connected entities |
+|  `nearest` | Locates closest resources/entities               | - Finds ores, water, trees<br>- Returns Position object<br>- 500 tile search radius |
+|  `get_resource_patch` | Analyzes resource deposits                       | - Returns size and boundaries<br>- Supports all resource types<br>- Includes total resource amount |
+|  `harvest_resource` | Gathers resources from the world                 | - Supports ores, trees, rocks<br>- Auto-collects to inventory<br>- Returns amount harvested |
+|  `connect_entities` | Creates connections between entities             | - Handles belts, pipes, power<br>- Automatic pathfinding<br>- Returns connection group |
+|  `get_connection_amount` | Calculates required connection items             | - Pre-planning tool<br>- Works with all connection types<br>- Returns item count needed |
+|  `set_entity_recipe` | Configures machine crafting recipes              | - Works with assemblers/chemical plants<br>- Validates recipe requirements<br>- Returns updated entity |
+|  `get_prototype_recipe` | Retrieves crafting requirements                  | - Shows ingredients/products<br>- Includes crafting time<br>- Returns Recipe object |
+|  `craft_item` | Creates items from components                    | - Handles recursive crafting<br>- Validates technology requirements<br>- Returns crafted amount |
+|  `set_research` | Initiates technology research                    | - Validates prerequisites<br>- Returns required ingredients<br>- Handles research queue |
+|  `get_research_progress` | Monitors research status                         | - Shows remaining requirements<br>- Tracks progress percentage<br>- Returns ingredient list |
+|  `move_to` | Moves player to position                         | - Pathfinds around obstacles<br>- Can place items while moving<br>- Returns final position |
+|  `nearest_buildable` | Finds valid building locations                   | - Respects entity dimensions<br>- Handles resource requirements<br>- Returns buildable position |
+|  `sleep` | Pauses execution                                 | - Waits for actions to complete<br>- Adapts to game speed<br>- Maximum 15 second duration |
+|  `launch_rocket` | Controls rocket silo launches                    | - Validates launch requirements<br>- Handles launch sequence<br>- Returns updated silo state |
+|  `print` | Outputs debug information to stdout              | - Supports various object types<br>- Useful for monitoring state<br>- Returns formatted string |
 
 ## Project Structure
 

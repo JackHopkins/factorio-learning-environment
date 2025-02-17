@@ -45,7 +45,7 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
 
     -- iterate over entities and remove any with the player_character name
     for i = #entities, 1, -1 do
-        if entities[i].name == "character" then
+        if entities[i].name == "character" or entities[i].name == 'item-on-ground' then
             table.remove(entities, i)
         end
     end

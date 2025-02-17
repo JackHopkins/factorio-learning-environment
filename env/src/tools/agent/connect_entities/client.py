@@ -131,6 +131,7 @@ class ConnectEntities(Tool):
         # Resolve positions into entities if they exist
         if isinstance(source, Position):
             source = self._resolve_position_into_entity(source)
+
         if isinstance(target, Position):
             target = self._resolve_position_into_entity(target)
 
@@ -166,6 +167,7 @@ class ConnectEntities(Tool):
             f"Failed to connect {set([type.name for type in connection_types])} from {source_error_message_addition} to {target_error_message_addition}. "
             f"{self.get_error_message(str(last_exception))}"
         )
+
 
     def _resolve_position_into_entity(self, position: Position):
         entities = self.get_entities(position=position, radius=0.5)

@@ -208,11 +208,11 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
 
     @property
     def WIDTH(self):
-        return self.entity_class._width  # Access the class attribute directly
+        return self.entity_class._width.default  # Access the class attribute directly
     
     @property
     def HEIGHT(self):
-        return self.entity_class._height
+        return self.entity_class._height.default
 
 prototype_by_name = {prototype.value[0]: prototype for prototype in Prototype}
 prototype_by_title = {str(prototype): prototype for prototype in Prototype}

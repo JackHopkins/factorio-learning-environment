@@ -2,7 +2,7 @@ from typing import Union, Tuple, cast, List, Optional
 
 from entities import FluidHandler, Position, Entity, Generator, Boiler, OffshorePump, Pipe, OilRefinery, \
     ChemicalPlant, IndexedPosition, MultiFluidHandler, PipeGroup
-from game_types import Prototype
+from game_types import Prototype, prototype_by_name
 from tools.agent.connect_entities.resolver import Resolver
 
 
@@ -24,7 +24,19 @@ class FluidConnectionResolver(Resolver):
         entities = self.get_entities(position=pos, radius=0.5)
         return bool(entities)
 
+    def _refresh_entity(self, entity: Entity):
+        entity = self.get_entities({prototype_by_name[entity.name]},position=entity.position, radius=0.5)[0]
+        return entity
+
+
     def _get_source_fluid(self, entity: FluidHandler) -> str:
+        entity = self._refresh_entity(entity)
+
+        # If the entity is producing an output liquid (i.e in a chemical plant or oil refinery, choose the first output)
+        if hasattr(entity, 'output_connection_points'):
+            if entity.output_connection_points:
+                return entity.output_connection_points[0].type
+
         if entity.fluid_box:
             fluid_box = entity.fluid_box[0]
             return fluid_box['name']
@@ -105,11 +117,20 @@ class FluidConnectionResolver(Resolver):
                     sorted_positions = self._get_all_connection_points(
                         cast(FluidHandler, target),
                         source_positions[0],  # Use first source pos for initial sorting
-                        target.connection_points
+                        target.connection_points,
+                        source_fluid=source_fluid
                     )
                     target_positions = sorted_positions if sorted_positions else [target.position]
                 else:
-                    target_positions = [target.steam_output_point]
+                    if source_fluid == 'water':
+                        target_positions = self._get_all_connection_points(
+                            cast(FluidHandler, target),
+                            source_positions[0],  # Use first source pos for initial sorting
+                            target.connection_points,
+                            source_fluid=source_fluid
+                        )
+                    else:
+                        target_positions = [target.steam_output_point]
 
             case OilRefinery() | ChemicalPlant():
                 sorted_positions = self._get_all_connection_points(
@@ -126,7 +147,8 @@ class FluidConnectionResolver(Resolver):
                 sorted_positions = self._get_all_connection_points(
                     cast(FluidHandler, target),
                     source_positions[0],
-                    target.connection_points
+                    target.connection_points,
+                    source_fluid=source_fluid
                 )
                 target_positions = sorted_positions if sorted_positions else [target.position]
 

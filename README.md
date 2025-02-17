@@ -18,8 +18,8 @@ automation (e.g electronic-circuit manufacturing).
 
 
 ## Quick Links
-- Installation Guide
-- Environment Documentation
+- [Installation Guide](##installation)
+- [Environment Documentation](##environment-documentation)
 - Agents API Reference
 - Tool Documentation
 - Contributing Guidelines
@@ -66,6 +66,160 @@ docker-compose -f docker-compose-1.yml up -d
 - Navigate to _Multiplayer_
 - Connect to `localhost:34197` (default) or your configured address in Docker. 
 
+## Environment Documentation
+
+FLE is an agent evaluation environment built on the game of Factorio, a popular resource management simulation game.
+
+Agents interact with **FLE** by code synthesis through a **REPL** (Read-Eval-Print-Loop) pattern, observing the current game state via previous program output streams, then generating and executing
+Python code to implement their intended actions, and finally returning useful feedback for the next iteration.
+
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  table { 
+    width: 100%;
+    border-collapse: collapse;
+  }
+  td {
+    width: 50%;
+    vertical-align: top;
+    padding: 10px;
+  }
+  .python-code {
+    
+  }
+  .bash-code {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    font-family: monospace;
+  }
+  pre {
+    margin: 0;
+    white-space: pre-wrap;
+    font-family: monospace;
+  }
+</style>
+</head>
+<body>
+<table>
+<tr>
+
+<td class="python-code">
+<b>Code</b>
+<pre>
+# 1. Get iron patch and place mining drill
+drill = place_entity(
+    entity=Prototype.MiningDrill,
+    position=nearest(Prototype.IronOre)),
+    direction=Direction.NORTH
+)
+# 2. Add output storage
+chest = place_entity_next_to(
+    entity=Prototype.IronChest,
+    reference_position=drill.drop_position,
+    direction=Direction.SOUTH
+)
+# 3. Verify automation chain and observe entities
+sleep(10) # Sleep for 10 seconds
+assert drill.status == EntityStatus.WORKING
+print(get_entities())
+</pre>
+</td>
+<td class="bash-code">
+<b>Output<b/>
+<pre>
+>>> [ BurnerMiningDrill(fuel=Inventory({'coal': 4}), 
+>>>                     name='burner-mining-drill', 
+>>>                     direction=Direction.DOWN, 
+>>>                     position=Position(x=-28.0, y=-61.0), 
+>>>                     energy=2666.6666666667, 
+>>>                     tile_dimensions=TileDimensions(tile_width=2.0, tile_height=2.0), 
+>>>                     status=EntityStatus.WORKING, 
+>>>                     neighbours=[Entity(name='iron-chest', direction=DOWN, position=Position(x=-27.5 y=-59.5)], 
+>>>                     drop_position=Position(x=-27.5, y=-59.5), 
+>>>                     resources=[Ingredient(name='iron-ore', count=30000, type=None)]),
+>>>   Chest(name='iron-chest', 
+>>>         direction=Direction.UP, 
+>>>         position=Position(x=-27.5, y=-59.5), 
+>>>         energy=0.0, 
+>>>         tile_dimensions=TileDimensions(tile_width=1.0, tile_height=1.0), 
+>>>         status=EntityStatus.NORMAL, 
+>>>         inventory=Inventory({'iron-ore': 75}))]
+</pre>
+</td>
+</tr>
+</table>
+</body>
+</html>
+
+
+
+Agents are provided with the Python standard library, and an API comprising [tools](##tool-documentation) designed to balance expressiveness with tractability.
+
+Each tool returns a typed object (e.g an Inventory) which can be stored as a variable in the Python namespace and referenced later in the episode. 
+
+The namespace acts as an episodic symbolic memory system, and saved objects represent part of the environment at the moment of query, becoming stale as the game state evolves, requiring the agent to re-query when appropriate.
+This design enables agents to maintain complex state representations and build hierarchical abstractions as the factories scale.
+
+Agents observe **stdout** and **stderr** - the output streams of their program. Thus, agents may intentionally print relevant objects and computations to the output stream to construct observations.
+
+Mistakes in the code or invalid operations raise typed exceptions with detailed context that is written to stderr. 
+This enables agents to reactively debug their programs after execution, and proactively use runtime assertions during execution to self-verify their actions. 
+
+Agents are able to enhance their internal representation of the game state in two ways, by defining: 
+1. Utility functions for reuse throughout an episode, to encapsulate successful
+logic
+2. Classes in the namespace to better organize the data retrieved from the game.
+
+## Tool Documentation
+
+Agents interact with the game using tools. 
+
+### Anatomy of a Tool
+
+Tools live in `env/src/tools`, and are either `admin` tools (non-agent accessible) or `agent` tools (used by the agent).
+
+A tool requires 3 files:
+1. `agent.md`: The agent documentation for the tool, including usage patterns, best practices and failure modes.
+2. `client.py`: The client-side implementation, which is a Python class that can be invoked by the agent.
+3. `server.lua`: The server-side implementation, which handles most of the logic and heavy lifting. 
+
+
+```mermaid
+---
+config:
+  layout: fixed
+  flowchart:
+    defaultRenderer:
+        elk
+---
+flowchart LR
+    A("fa:fa-comment-dots Agent")
+    subgraph s1["Learning Environment"]
+        B("fa:fa-code Interpreter")
+        n1("client.py")
+    end
+    subgraph s2["Factorio Server"]
+        E1["fa:fa-shapes server.lua"]
+        F("fa:fa-cog Factorio Engine")
+    end
+
+    A -- Synthesises Python --> B
+    B -- Invokes --> n1 
+    n1 -. Exceptions .-> B
+    n1 -. Objects .-> B
+    n1 --Remote TCP Call--> E1
+    E1 -- Execute --> F
+    
+    F-. Result .-> E1
+    E1 -. TCP Response .-> n1
+    B -. Observation .-> A
+```
+
+### Core Tools
+
+### Adding a Tool
 
 ## Project Structure
 
@@ -109,7 +263,6 @@ factorio-learning-environment/
       │     └── plots
       └── tasks
          └── supervised_results
-
 ```
 
 

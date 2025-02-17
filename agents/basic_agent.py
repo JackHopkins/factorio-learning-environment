@@ -51,7 +51,8 @@ FINAL_INSTRUCTION = "\n\nONLY WRITE IN VALID PYTHON. YOUR WEIGHTS WILL BE ERASED
 
 class BasicAgent(AgentABC):
    def __init__(self, model, system_prompt, *args, **kwargs):
-       super().__init__( model, GENERAL_INSTRUCTIONS+system_prompt+FINAL_INSTRUCTION, *args, **kwargs)
+       instructions = GENERAL_INSTRUCTIONS+system_prompt+FINAL_INSTRUCTION
+       super().__init__( model, instructions, *args, **kwargs)
        self.llm_factory = LLMFactory(model)
        self.formatter = RecursiveReportFormatter(chunk_size=32,llm_call=self.llm_factory.acall,cache_dir='summary_cache')
        self.generation_params = GenerationParameters(n=1, presence_penalty=0.7, max_tokens=2048, model=model)
@@ -75,7 +76,6 @@ class BasicAgent(AgentABC):
            temperature=self.generation_params.temperature,
            max_tokens=self.generation_params.max_tokens,
            model=self.generation_params.model,
-           #presence_penalty=0.7
        )
 
        policy = parse_response(response)

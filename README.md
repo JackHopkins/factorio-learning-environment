@@ -20,11 +20,11 @@ automation (e.g electronic-circuit manufacturing).
 ## Quick Links
 - [Installation Guide](##installation)
 - [Environment Documentation](##environment-documentation)
-- Agents API Reference
+- [Agents Documentation](##agent-documentation)
 - [Tool Documentation](##tool-documentation)
 - [Project Structure](##project-structure)
-- Contributing Guidelines
-- License Information
+- [Contributing Guidelines](##contributing-guidelines)
+- [License Information](##license)
 
 ## Installation
 
@@ -70,12 +70,15 @@ docker-compose -f docker-compose-1.yml up -d
 4. **Run Eval**:
    1. Open Play: 
    2. Tasks: 
+   
 ## Environment Documentation
 
 FLE is an agent evaluation environment built on the game of Factorio, a popular resource management simulation game.
 
-Agents interact with **FLE** by code synthesis through a **REPL** (Read-Eval-Print-Loop) pattern, observing the current game state via previous program output streams, then generating and executing
-Python code to implement their intended actions, and finally returning useful feedback for the next iteration.
+Agents interact with **FLE** by code synthesis through a **REPL** (Read-Eval-Print-Loop) pattern:
+1. **Observation**: The agent observes the world through the output streams (stderr/stdout) of their last program.
+2. **Action**: The agent generates a Python program to perform their desired action.
+3. **Feedback**: The environment executes the program, assigns variables, add classes/functions to the namespace, and provides an output stream.
 
 <!DOCTYPE html>
 <html>
@@ -84,7 +87,7 @@ Python code to implement their intended actions, and finally returning useful fe
 <tr>
 
 <td class="python-code">
-<b>Code</b>
+<b>Action</b>
 <pre>
 # 1. Get iron patch and place mining drill
 drill = place_entity(
@@ -105,7 +108,7 @@ print(get_entities())
 </pre>
 </td>
 <td class="bash-code">
-<b>Output<b/>
+<b>Feedback<b/>
 <pre>
 >>> [ BurnerMiningDrill(fuel=Inventory({'coal': 4}), 
 >>>                     name='burner-mining-drill', 
@@ -132,7 +135,6 @@ print(get_entities())
 </html>
 
 
-
 Agents are provided with the Python standard library, and an API comprising [tools](##tool-documentation) designed to balance expressiveness with tractability.
 
 Each tool returns a typed object (e.g an Inventory) which can be stored as a named **variable** in the Python namespace, and referenced later in the episode. 
@@ -142,17 +144,17 @@ This design enables agents to maintain complex state representations and build h
 
 Agents observe **stdout** and **stderr** - the output streams of their program. Thus, agents may intentionally print relevant objects and computations to the output stream to construct observations.
 
-Mistakes in the code or invalid operations raise typed exceptions with detailed context that is written to stderr. 
+Mistakes in the code or invalid operations raise typed **exceptions** with detailed context that is written to stderr. 
 This enables agents to reactively debug their programs after execution, and proactively use runtime assertions during execution to self-verify their actions. 
 
-Agents are able to enhance their internal representation of the game state in two ways, by defining: 
-1. Utility functions for reuse throughout an episode, to encapsulate successful
-logic
+Agents are able to enhance their internal representation of the game state by defining: 
+1. Utility functions for reuse throughout an episode, to encapsulate previously successful logic
 2. Classes in the namespace to better organize the data retrieved from the game.
 
 ## Agent Documentation
 
-The Factorio Learning Environment provides a flexible agent architecture for developing and evaluating AI models that can play Factorio. 
+The Factorio Learning Environment provides a straightforward agent architecture for developing and evaluating AI models that can play Factorio.
+
 Agents operate in *episodes*, with each step involving observation, planning, and action execution through Python code synthesis.
 The agent maintains state through a conversation history that includes its actions (_assistant_) and the stdout/stderr from the environment (_user_).
 At each step, agents generate Python code policies that are executed in the environment.
@@ -164,13 +166,13 @@ Agents live in `agents`, and implement an abstract base class (AgentABC) that de
 The abstract base class defines two methods that all agents must implement:
 ```
 # Generates the next action based on conversation history and environment response (including score / achievements etc).
-step(conversation, response) -> Policy:
+step(conversation: Conversation, response: Response) -> Policy:
 
-# Handles cleanup when an episode terminates
-end(conversation, completion):
+# Handles cleanup when an episode terminates, i.e for reporting results etc.
+end(conversation: Conversation, completion: CompletionState) -> None:
 ```
 
-Our default agent is `BasicAgent`, which incorporates some mechanisms for managing context over long (+1000 step) runs. Namely:
+Our default agent is `BasicAgent`, which incorporates some basic mechanisms for managing context over long (+1000 step) runs. Namely:
 1. Every 32 steps, the all older interactions are summarised into a report in the system message.  
 2. Conversations are clipped to remain under 350k characters (~87k tokens).
 
@@ -185,6 +187,8 @@ class MinimalAgent(AgentABC):
     """
     This is a minimal Agent implementation, which takes the current conversation (including the most recent response)
     and generates a simple Python code policy to execute the next step.
+    
+    Note: This will blow up context length on longer runs, without some context pruning/management.
     """
     def __init__(self, model, system_prompt, *args, **kwargs):
         super().__init__(model, system_prompt, *args, **kwargs)
@@ -241,6 +245,7 @@ config:
 flowchart LR
     A("fa:fa-comment-dots Agent")
     subgraph s1["Learning Environment"]
+    
         B("fa:fa-code Interpreter")
         n1("client.py")
     end
@@ -269,6 +274,8 @@ flowchart LR
 4. Add an `agent.md` file, which should contain a markdown description of the tool. This file will be used by the agent to understand how to use the tool
 
 Next time you run an eval, the tool will automatically be available to the agent and documented in the agent context.
+
+5. (Optional) Create a test suite in `env/tests/actions` for your new tool. 
 
 ### Core Tools
 
@@ -299,50 +306,209 @@ Next time you run an eval, the tool will automatically be available to the agent
 |  `launch_rocket` | Controls rocket silo launches                    | - Validates launch requirements<br>- Handles launch sequence<br>- Returns updated silo state |
 |  `print` | Outputs debug information to stdout              | - Supports various object types<br>- Useful for monitoring state<br>- Returns formatted string |
 
-## Project Structure
-
+# Project Structure
+Below is an overview of how the project is structured. Some directories also contain more detailed readmes. 
 ```
 factorio-learning-environment/
-├── cluster/ # Contains  
-│     ├── docker/
-│     │     ├── config/
-│     │     └── mods/
-│     ├── local/
-│     │     └── assets/
-│     ├── remote/
-│     └── scenarios/
+├── agents/                            # Factorio Learning Environment
+│     ├── utils/                          # Some utilities for building an agent
+│     ├── agent_abc.py                    # Abstract class to extend
+│     └── basic_agent.py                  # Agent implementation we used for our experiments
+├── env/                            # Factorio Learning Environment
+│     ├── src/                          # Main implementation
+│     │     ├── exceptions/                 # Custom exceptions (WIP)
+│     │     ├── gym/                        # Gym environment wrapper (deprecated but possibly useful)
+│     │     ├── lib/                        # General purpose Lua utilities (e.g serialization etc)
+│     │     ├── models/                     # Core objects used during eval
+│     │     ├── rcon/                       # RCON wrapper for communicating with the game
+│     │     ├── tools/                      # Agent and admin tools
+│     │     │    ├── admin/                     # ~17 Tools for managing state, persistence, scoring etc 
+│     │     │    └── agent/                     # ~27 Tools that the agent can use
+│     │     ├── utils/                      # Python utilities
+│     │     ├── entities.py                 # Python object model of the game entities
+│     │     ├── game_types.py               # Technologies, Recipes, Resources
+│     │     ├── instance.py                 # Environment state manager
+│     │     └── namespace.py                # Namespace the agent can read/write variables to. 
+│     └── tests/                        # ~350 test cases
+├── cluster/                        # Everything needed to launch Factorio servers
+│     ├── docker/                       # Docker container definition of the Factorio server
+│     │     ├── config/                     # Factorio server configuration files
+│     │     └── mods/                       # Mods (deprecated)
+│     ├── local/                        # Tools for dynamically creating Docker Compose files for clusters
+│     ├── remote/                       # Tools for deploying Factorio clusters onto AWS 
+│     └── scenarios/                    # Factorio scenarios for Lab-play and Open-play
 │         ├── default_lab_scenario/
 │         └── open_world/
-├── data/
-│     ├── blueprints_to_policies/
-│     ├── icons/
-│     ├── prompts/
-│     ├── recipes/
-│     └── scripts/
-├── docs/
-│     └── assets/
-├── env/
-│     ├── src/
-│     │     ├── exceptions/
-│     │     ├── gym/
-│     │     ├── lib/
-│     │     ├── models/
-│     │     ├── rcon/
-│     │     ├── tools/
-│     │     └── utils/
-│     └── tests/
+├── data/                           # Miscellaneous data
+│     ├── blueprints_to_policies/       # Code to scrape Factorio blueprint sites and create Python policies
+│     ├── icons/                        # Icons for Factorio entities and items
+│     ├── prompts/                      # Prompts (deprecated)
+│     ├── recipes/                      # Factorio recipes in JSONL format
+│     └── scripts/                      # Misc Lua scripts (deprecated)
+├── docs/                           # Website
+│     └── assets/                       # Videos / Images
 └── eval/
-      ├── open/
-      │     ├── auto_curriculum/
-      │     ├── beam/
-      │     ├── independent_runs/
-      │     ├── mcts/
-      │     ├── model/
-      │     └── plots
-      └── tasks
-         └── supervised_results
+      ├── open/                     # Implementations for running agents in the open game
+      │     ├── beam/                   # Implementation for Beam sampling
+      │     ├── independent_runs/       # Implementation for independent eval runs
+      │     ├── mcts/                   # Implementation for MCTS sampling
+      │     └── plots/                  # Run results and plots
+      └── tasks                     # Implementations for running agents against lab-play tasks
+            ├── task_definitions/       # JSON definition of task
+            ├── task_abc.py             # Abstract task definition
+            └── throughput_task.py      # A basic task checking for a production throughput quota
 ```
 
+## Contributing Guidelines
+
+We welcome contributions to the Factorio Learning Environment! Here's how you can help:
+
+### Getting Started
+
+1. Fork the repository and clone your fork
+2. Create a new branch for your feature or bug fix: `git checkout -b feature/your-feature-name`
+3. Make your changes
+4. Commit your changes with clear, descriptive commit messages
+5. Push to your fork and submit a pull request
+
+### Code Style and Standards
+
+- Follow PEP 8 style guide for Python code
+- Use type hints for all function parameters and return values
+- Document new functions and classes using docstrings
+- Add unit tests for new functionality in `env/tests/`
+- Keep line length to 100 characters or less
+- Use meaningful variable and function names
+
+### Pull Request Process
+
+1. Ensure your code passes all existing tests
+2. Add tests for new functionality
+3. Update documentation as needed
+4. Link any related issues in your pull request description
+5. Wait for review from maintainers
+
+### Adding New Tools
+
+When adding new tools to the environment:
+
+1. Follow the structure outlined in the [Tool Documentation](##tool-documentation) section
+2. Include comprehensive docstrings and type hints
+3. Add examples in the tool's `agent.md` file
+4. Create appropriate test cases
+5. Update the core tools table in the main README if applicable
+
+### Creating New Agents
+
+When implementing new agents:
+
+1. Create a new file in the `agents/` directory
+2. Inherit from `AgentABC` base class
+3. Implement required methods:
+   - `step(conversation: Conversation, response: Response) -> Policy`
+   - `end(conversation: Conversation, completion: CompletionState) -> None`
+4. Document your agent's:
+   - Architecture and key components
+   - Required dependencies
+   - Prompt engineering approach (if applicable)
+   - Performance characteristics
+5. Add evaluation results to `eval/` directory
+6. Provide baseline performance metrics on standard tasks (128 steps) and open-world scenarios (3,000 steps).
+
+Key considerations:
+- Handle context management for long episodes
+- Implement proper error handling and recovery
+- Document any assumptions about the environment
+- Consider resource usage and optimization
+- Test with both lab-play and open-play scenarios
+
+### Creating New Tasks
+
+When adding new evaluation tasks:
+
+1. Create a new file in `eval/tasks/task_definitions/`
+2. Inherit from `TaskABC` base class
+3. Define task components:
+   - Initial conditions and environment setup
+   - Success criteria and metrics
+   - Time limits and resource constraints
+   - Scoring mechanism
+4. Implement required methods:
+   - `setup(instance: FactorioInstance)`: Initialize task environment
+   - `verify(self, score: float, step: int, instance: FactorioInstance, step_statistics: Dict) -> bool:`: Verify task completion based on score and step count at step N.
+5. Document the task:
+   - Purpose and learning objectives
+   - Expected agent behavior
+   - Failure modes and edge cases
+   - Performance benchmarks
+6. Add test cases in `eval/tasks/tests/`
+
+Best practices:
+- Design clear, measurable success criteria
+- Include progressive difficulty levels
+- Provide example solutions
+- Document required tools and resources
+- Consider computational requirements
+- Test with multiple agent types
+
+### Bug Reports and Feature Requests
+
+- Use the GitHub issue tracker
+- Provide detailed descriptions and steps to reproduce for bugs
+- Include example code or scenarios when possible
+- Label issues appropriately
+- Check existing issues before creating new ones
+
+### Code Review Process
+
+All submissions require review. We use GitHub pull requests for this purpose:
+
+1. Maintainers will review your code for:
+   - Functionality
+   - Code style
+   - Test coverage
+   - Documentation
+2. Changes may be requested before merging
+3. Once approved, maintainers will merge your PR
+
+### Community Guidelines
+
+- Be respectful and inclusive
+- Help others in the community
+- Provide constructive feedback
+- Follow the code of conduct
+- Build an enourmous factory
+
+## License
+
+MIT License
+
+Copyright (c) 2024 Factorio Learning Environment Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+### License Notes
+
+- The MIT License is a permissive license that allows for reuse with minimal restrictions
+- This license applies to the Factorio Learning Environment code and documentation
+- Factorio game assets and code are not covered by this license
+- Contributors should ensure they have the right to license their contributions under MIT
 
 [//]: # (## Data)
 

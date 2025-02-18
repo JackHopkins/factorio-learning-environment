@@ -63,25 +63,3 @@ water_patch = get_resource_patch(
 )
 print(f"Water area contains {water_patch.size} tiles")
 ```
-
-## Common Use Cases
-
-### 1. Mining Site Planning
-```python
-def plan_mining_site(resource_type, position):
-    patch = get_resource_patch(resource_type, position)
-    
-    # Calculate mining coverage
-    width = patch.bounding_box.width()
-    height = patch.bounding_box.height()
-    
-    # Estimate number of miners needed
-    miner_width = Prototype.ElectricMiningDrill.WIDTH  # Electric mining drill width
-    miners_needed = math.ceil(width / miner_width) * math.ceil(height / miner_width)
-    
-    return {
-        'total_resource': patch.size,
-        'miners_needed': miners_needed,
-        'dimensions': (width, height)
-    }
-```

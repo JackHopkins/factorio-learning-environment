@@ -27,18 +27,6 @@ Returns a BoundingBox with these attributes:
 - `right_top`: Top-right corner Position
 - `center`: Center position
 
-## Building Box Usage
-
-```python
-# Simple 1x1 box for chests
-chest_box = BuildingBox(height=1, width=1)
-
-# 3x3 box for electric mining drills
-drill_box = BuildingBox(height=3, width=3)
-
-# Larger box for multiple entities
-factory_box = BuildingBox(height=5, width=10)
-```
 
 ## Common Use Cases
 
@@ -80,23 +68,7 @@ drill = place_entity(
 ```
 ## Common Patterns
 
-1. **Factory Section Planning**
-```python
-def plan_factory_section(center: Position, width: int, height: int):
-    box = BuildingBox(width=width, height=height)
-    try:
-        area = nearest_buildable(
-            Prototype.AssemblingMachine1,
-            box,
-            center
-        )
-        return area
-    except Exception:
-        print("Cannot fit factory section")
-        return None
-```
-
-2. **Multiple Entity Placement**
+1. **Multiple Entity Placement**
 Example: Create a copper plate mining line with 3 drills with inserters for future integration
 ```python
 # log your general idea what you will do next
@@ -123,7 +95,6 @@ for i in range(3):
     drill = place_entity(Prototype.ElectricMiningDrill, position=drill_pos, direction = Direction.DOWN)
     print(f"Placed ElectricMiningDrill {i} at {drill.position} to mine copper ore")
     # place a furnace to catch the ore
-    # As a furnace has 2x2 dimensions, we need to use place_entity_next_to to ensure no overlap with drill
     # We use the Direction.DOWN as the direction, as the drill direction is DOWN which means the drop position is below the drill
     furnace = place_entity_next_to(Prototype.StoneFurnace, reference_position=drill.position, direction = Direction.DOWN)
     print(f"Placed furnace at {furnace.position} to smelt the copper ore for drill {i} at {drill.position}")

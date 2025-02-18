@@ -114,7 +114,7 @@ class SimpleFactorioEvaluator:
 
             post_production_flows = ProductionFlows.from_dict(instance.namespace._get_production_stats())
 
-            achievements = get_achievements(start_production_flows, post_production_flows)
+            achievements = get_achievements(start_production_flows.__dict__, post_production_flows.__dict__)
             flows = start_production_flows.get_new_flows(post_production_flows)#
 
             return final_reward, state, result, entities, achievements, flows, ticks

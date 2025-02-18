@@ -134,7 +134,118 @@ class ProgressionVisualizer:
                 'label': data['label']
             }
 
-    def load_data(self, versions: List[int], labels: Dict[int, str]):
+    def load_data(self, version_groups: Dict[str, List[int]], labels: Dict[str, str]):
+        """
+        Load and process data for multiple version groups, using cache if available
+
+        Args:
+            version_groups: Dict mapping model names to lists of version numbers
+            labels: Dict mapping model names to display labels
+        """
+        if os.path.exists(self.cache_file):
+            try:
+                with open(self.cache_file, 'rb') as f:
+                    cached_data = pickle.load(f)
+                    if cached_data.get('version_groups') == version_groups:
+                        self._deserialize_version_data(cached_data['data'])
+                        self.achievements = cached_data['achievements']
+                        return
+            except Exception as e:
+                print(f"Error loading cache: {e}")
+                os.remove(self.cache_file)
+
+        for model_name, versions in version_groups.items():
+            print(f"\nLoading model {model_name} (versions: {versions})")
+
+            # Load and merge nodes from all versions for this model
+            all_nodes = []
+            for version in versions:
+                nodes = self._load_version_from_db(version)
+                if nodes:
+                    all_nodes.extend(nodes)
+
+            if all_nodes:
+                gdps = [self._calculate_gdp(root) for root in all_nodes]
+                print(f"Mean GDP across all versions: {np.mean(gdps):.1f}")
+                print(f"STD GDP across all versions: {np.std(gdps):.1f}")
+
+                self.versions[model_name] = {
+                    'nodes': all_nodes,
+                    'label': f"{labels[model_name]}"
+                }
+
+                # Process achievements across all versions
+                self._process_merged_achievements(model_name, versions)
+
+        # Cache the loaded data
+        try:
+            with open(self.cache_file, 'wb') as f:
+                pickle.dump({
+                    'version_groups': version_groups,
+                    'data': self._serialize_version_data(),
+                    'achievements': self.achievements
+                }, f)
+        except Exception as e:
+            print(f"Error saving cache: {e}")
+
+    def _process_merged_achievements(self, model_name: str, versions: List[int]):
+        """Process achievements across multiple versions of the same model"""
+        print(f"\nProcessing achievements for model {model_name}")
+
+        with open('recipes.jsonl', 'r') as f:
+            recipes = {r['name']: r for r in map(json.loads, f)}
+
+        seen = set()
+        model_achievements = []
+
+        # Process achievements across all versions
+        for version in versions:
+            for root in self._load_version_from_db(version):
+                cumulative_ticks = 0
+                current_path = []
+                stack = [(root, 0, [])]
+
+                while stack:
+                    node, depth, path = stack.pop()
+                    current_path = path + [node]
+                    path_ticks = sum(n.metrics['ticks'] for n in current_path)
+
+                    for achievements_dict, is_dynamic in [(node.static_achievements, False),
+                                                          (node.dynamic_achievements, True)]:
+                        for item, quantity in achievements_dict.items():
+                            achievement_key = (version, item)
+                            if achievement_key not in seen:
+                                print(f"\nProcessing achievement: {item} (version {version})")
+                                print(f"Original ticks: {path_ticks}, depth: {depth}")
+
+                                model_achievements.append(Achievement(
+                                    depth=depth,
+                                    ticks=path_ticks,
+                                    item_name=item,
+                                    ingredients=self._count_ingredients(recipes.get(item, {})),
+                                    is_dynamic=is_dynamic
+                                ))
+                                seen.add(achievement_key)
+
+                    for child in reversed(node.children):
+                        stack.append((child, depth + 1, current_path))
+
+        # Store earliest achievement for each item across all versions
+        earliest_achievements = {}
+        for achievement in model_achievements:
+            key = achievement.item_name
+            if key not in earliest_achievements or (
+                    achievement.ticks < earliest_achievements[key].ticks or
+                    (achievement.ticks == earliest_achievements[key].ticks and
+                     achievement.depth < earliest_achievements[key].depth)
+            ):
+                earliest_achievements[key] = achievement
+
+        self.achievements[model_name] = list(earliest_achievements.values())
+        print(f"Total unique achievements processed for model {model_name}: {len(earliest_achievements)}")
+
+
+    def load_data2(self, versions: List[int], labels: Dict[int, str]):
         """Load and process data for multiple versions, using cache if available"""
         if os.path.exists(self.cache_file):
             try:
@@ -494,7 +605,7 @@ class ProgressionVisualizer:
         )
         fig.add_artist(polygon)
 
-    def export_split_visualization(self, output_file: str, max_depth: int = 990):
+    def export_split_visualization(self, output_file: str, max_depth: int = 2950):
         """Export a visualization with main progression chart and final GDP scatter plot"""
         plt.rcParams['figure.dpi'] = 150
         plt.rcParams['savefig.dpi'] = 300
@@ -515,9 +626,9 @@ class ProgressionVisualizer:
             ax1.set_xlim(1e3, 1e8)
             ax1.set_xlabel('Ticks', fontsize=12)
         else:
-            ax1.set_xlim(1, 1e3)
+            ax1.set_xlim(1, 3e3)
             ax1.set_xlabel('Steps', fontsize=12)
-        ax1.set_ylim(1e1, 3e5)
+        ax1.set_ylim(1e1, 1e6)
         ax1.set_ylabel('Production Score', fontsize=12)
 
         # Store final values for scatter plot
@@ -544,7 +655,7 @@ class ProgressionVisualizer:
 
             # Store final values for scatter plot
             if means:
-                target_step = 990
+                target_step = 2950
                 if self.x_axis == "steps":
                     target_idx = next((idx for idx, x in enumerate(x_coords) if x >= target_step), -1)
                 else:
@@ -793,20 +904,38 @@ async def main():
                                     recipes_file="/data/recipes/recipes.jsonl")
 
         # Configure versions to plot
-        versions = {
-            492: "Claude",
-            490: "GPT-4o",
+        # versions = {
+        #     492: "Claude",
+        #     490: "GPT-4o",
+        #
+        #     #487: "GPT-4-Mini",
+        #     505: "GPT-4o-Mini",
+        #     488: "LLaMA-70B",
+        #     508: 'o3-mini'
+        #     #491: "DeepSeek",
+        # }
 
-            #487: "GPT-4-Mini",
-            505: "GPT-4o-Mini",
-            488: "LLaMA-70B",
-            508: 'o3-mini'
-            #491: "DeepSeek",
-
+        version_groups = {
+            "Claude": [559, 560, 561, 562],  # Multiple Claude versions
+            "LLaMA-70B": [550],
+            "GPT-4": [551, 552, 553, 554],  # Multiple GPT-4 versions
+            "Deepseek-v3": [555, 556, 557, 558],
+            "GPT-4-Mini": [548]
+            # "LLaMA-70B": [488],  # Single version
+            # "GPT-4-Mini": [505],
+            # "o3-mini": [508]
+        }
+        labels = {
+            "Claude": "Claude",
+            "GPT-4": "GPT-4",
+            "LLaMA-70B": "LLaMA-70B",
+            "GPT-4-Mini": "GPT-4-Mini",
+            "o3-mini": "o3-mini",
+            "Deepseek-v3":"Deepseek-v3"
         }
 
         # Generate visualization
-        viz.load_data(list(versions.keys()), versions)
+        viz.load_data(version_groups, labels)
         #viz.export_visualization(f"progression_{x_axis}.png", reference_version=492)
         viz.export_split_visualization(f"progression_{x_axis}_split.png")
         # Generate new achievement stack visualization

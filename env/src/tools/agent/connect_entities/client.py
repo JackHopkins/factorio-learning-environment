@@ -160,8 +160,7 @@ class ConnectEntities(Tool):
         # try to do the modified straight line connection
         if ((isinstance(target, ChemicalPlant) or isinstance(target, OilRefinery)) \
                          or (isinstance(source, ChemicalPlant) or isinstance(source, OilRefinery))): 
-            for point_idx, point_tuple in enumerate(prioritised_list_of_position_pairs):
-                source_pos, target_pos = point_tuple
+            for source_pos, target_pos in prioritised_list_of_position_pairs:
                 try:
                     connection = self._create_modified_straight_connection(
                         source_pos, target_pos,

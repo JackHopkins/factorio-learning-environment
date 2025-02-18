@@ -20,18 +20,18 @@ global.actions.load_research_state = function(player_index, research_state)
             if tech.level ~= tech_state.level then
                 tech.level = tech_state.level
             end
-            -- Restore saved progress if it exists and the tech isn't already researched
-            if tech_state.saved_progress and not tech.researched and tech_state.saved_progress < 100 then
-                force.set_saved_technology_progress(tech.name, tech_state.saved_progress)
-            end
         end
+    end
+
+    for name, progress in pairs(research_state.progress) do
+        force.set_saved_technology_progress(name, progress)
     end
 
     -- Restore current research and progress
     if research_state.current_research then
-        if force.current_research then
-            force.cancel_current_research()
-        end
+        --if force.current_research then
+        --    force.cancel_current_research()
+        --end
         force.add_research(research_state.current_research)
         force.research_progress = research_state.research_progress
     end

@@ -132,7 +132,8 @@ class FactorioInstance:
                     technologies={},
                     research_progress=0,
                     current_research=None,
-                    research_queue=[]
+                    research_queue=[],
+                    progress={}
                 ))
         else:
             # Reset the game instance

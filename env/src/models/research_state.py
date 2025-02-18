@@ -11,4 +11,5 @@ class ResearchState:
     current_research: Optional[str]
     research_progress: float
     research_queue: List[str]
+    progress: Dict
 

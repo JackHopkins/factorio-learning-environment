@@ -42,9 +42,11 @@ global.actions.set_research = function(player_index, technology_name)
         error(string.format("\"Cannot research %s because %s\"",
             technology_name, result))
     end
-
+    if force.current_research then
+        force.set_saved_technology_progress(force.current_research.name, force.research_progress)
+    end
     -- Cancel current research if any
-    force.cancel_current_research()
+    --force.cancel_current_research()
 
     -- Set new research using add_research
     local success = force.add_research(technology_name)

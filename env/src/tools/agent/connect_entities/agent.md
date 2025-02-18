@@ -68,10 +68,6 @@ Key points:
 
 Pipes connect fluid-handling entities:
 ```python
-# Water to steam setup
-offshore_pump = get_entity(Prototype.OffshorePump, Position(x= 10, y = 0))
-boiler = get_entity(Prototype.Boiler, Position(x= 0, y = 0))
-
 # Connect water flow with over and underground pipes
 water_pipes = connect_entities(offshore_pump, boiler, {Prototype.TransportBelt, Prototype.UndergroundBelt})
 print(f"Connected offshore_pump at {offshore_pump.position} to boiler at {boiler.position} with {pipes}")
@@ -86,12 +82,6 @@ Key points:
 
 To add power to entities, you need to connect the target entity (drill, assembling machine, oil refinery etc) to a working power source (steam engine, solar panel etc) 
 ```python
-# Create power infrastructure
-# assume there's a working steam engine at Position(x= 10, y = 0)
-steam_engine = get_entity(Prototype.SteamEngine, Position(x= 10, y = 0))
-# assume there's a unpowered electric mining drill at Position(x= 0, y = 0)
-drill = get_entity(Prototype.ElectricMiningDrill, Position(x= 0, y = 0))
-
 # Connect power
 poles = connect_entities(
     steam_engine,
@@ -132,12 +122,8 @@ When you need to connect multiple sources to a single target with transport belt
 1. Establish sources and target
 2. Create the main connection by connecting one source to the target with transport belts
 3. Connect all remaining sources to the main connection with transport belts
-NB: NEVER CONNECT MULTIPLE ENTITIES DIRECTLY TO THE SAME TARGET
-You always need to create one main connection and then connect additional entities to the main connection line with transport belts
 
 Example: Connecting multiple source inserters to one target inserter
-Assume we have source_inserter_1, source_inserter_2, source_inserter_3 burner inserter variables as sources on the map at positions Position(x = 1, y = 2), Position(x = 3, y = 2) and Position(x = 5, y = 2)
-Also assume we have target_inserter burner inserter variable as the target on the map at Position(x = 10, y = 28)
 ```python
 # get the inserter variables
 source_inserter_1 = get_entity(Prototype.BurnerInserter, Position(x = 1, y = 2))
@@ -169,9 +155,6 @@ print(f"Final connection after connecting all inserters to target: {main_connect
 When you want to connect entities to existing power pole groups, similar rules apply
 Assume in this example there is a steam engine at Position(x = 1, y = 2) and the drill is at Position(x = 10, y = 28)
 ```python
-# get the variables
-steam_engine = get_entity(Prototype.SteamEngine, Position(x = 1, y = 2))
-drill_1 = get_entity(Prototype.ElectricMiningDrill, Position(x = 10, y = 28))
 # create the main connection
 main_power_connection = connect_entities(steam_engine, 
                                     drill_1,
@@ -194,10 +177,6 @@ Common issues and solutions:
 ### 1. Connection Failures
 - Verify inventory has required entities
 - Ensure compatible connection types
-
-### 2. Performance
-- Use underground variants for long distances
-- Clean up unused connections
 
 ### 3. Entity Groups
 - Update stale group references

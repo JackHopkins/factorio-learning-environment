@@ -43,34 +43,3 @@ except Exception as e:
 assembler = set_entity_recipe(assembler, Prototype.IronGearWheel)
 assembler = rotate_entity(assembler, Direction.RIGHT)
 ```
-
-## Common Use Cases
-
-1. **Smelting Setup**
-```python
-# Place furnace
-furnace = place_entity(
-    Prototype.StoneFurnace,
-    position=start_pos
-)
-print(f"Put furnace at {furnace.position}")
-# Input inserter on the left, facing right
-input_inserter = place_entity_next_to(
-    Prototype.BurnerInserter,
-    furnace.position,
-    Direction.LEFT
-)
-input_inserter = rotate_entity(
-    input_inserter,
-    Direction.RIGHT
-)
-print(f"Put input inserter to input items into furnace at {input_inserter.position}")
-# Output inserter on the right,
-# dont need to rotate as its taking from the furnace
-output_inserter = place_entity_next_to(
-    Prototype.BurnerInserter,
-    furnace.position,
-    Direction.RIGHT
-)
-print(f"Put output inserter to get items from furnace at {output_inserter.position}")
-```

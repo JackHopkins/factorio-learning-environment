@@ -52,16 +52,3 @@ pole_count = get_connection_amount(
 
 print(f"Need {pole_count} small electric poles to connect power")
 ```
-
-
-## Tips for Effective Usage
-
-1. **Always verify before building**
-   - Calculate requirements first
-   - Check inventory availability
-   - Consider alternative paths if count is too high
-
-2. **Resource management**
-   - Calculate total requirements upfront
-   - Include buffer for repairs/changes
-   - Consider alternative connection types

@@ -45,41 +45,7 @@ chest_inventory = inspect_inventory(entity=chest)
 items_in_chest = chest_inventory[Prototype.IronPlate]
 ```
 
-3. **Check Furnace Contents**
-```python
-# Inspect furnace for both input and output items
-furnace = place_entity(Prototype.StoneFurnace, position=pos)
-furnace_inventory = inspect_inventory(entity=furnace)
-# Returns combined inventory of:
-# - Input slot (ores/raw materials)
-# - Output slot (plates/products)
-ore_count = furnace_inventory[Prototype.IronOre]
-plate_count = furnace_inventory[Prototype.IronPlate]
-```
-
-4. **Check Assembling Machine**
-```python
-# Check both input and output inventories
-machine = place_entity(Prototype.AssemblingMachine1, position=pos)
-machine_inventory = inspect_inventory(entity=machine)
-# Returns combined inventory of:
-# - Input inventory (ingredients)
-# - Output inventory (products)
-input_count = machine_inventory[Prototype.IronPlate]
-output_count = machine_inventory[Prototype.IronGearWheel]
-```
-
-## Best Practices
-
-1. **Always Check Before Operations**
-```python
-# Check inventory before crafting
-inventory = inspect_inventory()
-if inventory[Prototype.IronPlate] >= 5:
-    craft_item(Prototype.IronGearWheel)
-```
-
-### 2. Labs
+### 3. Labs
 ```python
 lab = place_entity(Prototype.Lab, position=pos)
 lab_inventory = inspect_inventory(entity=lab)

@@ -36,18 +36,6 @@ belt_group = connect_entities(start_pos, end_pos, Prototype.UndergroundBelt)
 pickup_entity(belt_group)  # Picks up all belts in group
 ```
 
-## Important Rules
-
-1. **Entity vs Position Usage**
-```python
-# When using Prototype, position is required
-pickup_entity(Prototype.Boiler, Position(x=0, y=0))
-
-# When using Entity, position should be None
-boiler = place_entity(Prototype.Boiler, position=pos)
-pickup_entity(boiler)  # No position needed
-```
-
 ## Best Practices
 
 1. **Group Cleanup**

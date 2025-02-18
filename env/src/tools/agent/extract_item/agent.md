@@ -20,18 +20,8 @@ The function returns the number of items successfully extracted. The extracted i
 - `source`: Either a Position or Entity to extract from (required)
 - `quantity`: Number of items to extract (default=5)
 
-## Important Behaviors
 
-1. **Position vs Entity Source**
-   - You can provide either a Position or an Entity as the source
-   - When using a Position, the tool will find the closest valid entity containing the item
-   - When using an Entity, it will extract directly from that specific entity
-
-2. **Multiple Inventory Types**
-   - The tool can extract from various inventory types (chest, furnace, assembling machine, etc.)
-   - It automatically handles different inventory slots (input, output, fuel, etc.)
-
-3. **Quantity Handling**
+**Quantity Handling**
    - If requested quantity exceeds available items, it extracts all available items
    - Returns actual number of items extracted
 
@@ -52,32 +42,13 @@ count = extract_item(Prototype.IronPlate, chest, quantity=5)
 # count will be 5, items move to player inventory
 ```
 
-### Extracting from an Assembling Machine
-```python
-# Get the assembling machine entity (assume one exists on the map at Position(x=7, y=110))
-assembler = get_entity(Prototype.AssemblingMachine1, position=Position(x=7, y=110))
-set_entity_recipe(assembler, Prototype.ElectronicCircuit)
-insert_item(Prototype.IronPlate, assembler, quantity=10)
-insert_item(Prototype.CopperCable, assembler, quantity=3)
-print(f"Set the recipe of assembler at {assembler.position} to electronic circuits")
-
-#wait for crafting
-sleep(10)
-# Extract ingredients
-count = extract_item(Prototype.ElectronicCircuit, assembler, quantity=2)
-```
-
 ## Common Pitfalls
 
-1. **Invalid Positions**
-   - Ensure the position has a valid entity containing the item
-   - The tool searches within a 10-tile radius of the given position
-
-2. **Empty Inventories**
+1. **Empty Inventories**
    - Attempting to extract from empty inventories will raise an exception
    - Always verify item existence before extraction
 
-3. **Distance Limitations**
+2. **Distance Limitations**
    - Player must be within range of the target entity
    - Move closer if extraction fails due to distance
 

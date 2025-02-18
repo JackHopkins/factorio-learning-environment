@@ -56,16 +56,6 @@ except Exception as e:
     print("No coal within 500 tiles")
 ```
 
-2. **Water Finding**
-```python
-# Water positions are tile-based
-water_pos = nearest(Resource.Water)
-# move to water pos
-move_to(water_pos)
-# Use for placing offshore pumps
-pump = place_entity(Prototype.OffshorePump, position=water_pos)
-```
-
 ## Common Patterns
 
 1. **Resource Collection Pattern**
@@ -78,15 +68,3 @@ def collect_resource(resource_type: Resource, amount: int):
     # Harvest it
     harvest_resource(resource_pos, amount)
 ```
-
-## Troubleshooting
-
-1. "No resource found"
-   - Check search radius (500 tiles)
-   - Move to explore new areas
-   - Verify resource type exists on map
-
-2. "Invalid resource type"
-   - Check resource enum spelling
-   - Verify resource type is supported
-   - Use correct Resource enum

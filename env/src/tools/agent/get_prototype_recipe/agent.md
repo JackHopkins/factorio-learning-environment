@@ -20,7 +20,6 @@ recipe = get_prototype_recipe(Prototype.IronGearWheel)
 for ingredient in recipe.ingredients:
     print(f"Need {ingredient.count} {ingredient.name}")
 ```
-
 ### Parameters
 
 The tool accepts one of:
@@ -48,35 +47,4 @@ recipe = get_prototype_recipe(Prototype.IronGearWheel)
 print("Recipe for Iron Gear Wheel:")
 for ingredient in recipe.ingredients:
     print(f"Need: {ingredient.count} {ingredient.name}")
-```
-
-## Best Practices
-
-1. **Always Check Recipe Before Crafting**
-```python
-# Print recipe before attempting to craft
-def print_recipe_requirements(prototype):
-    recipe = get_prototype_recipe(prototype)
-    print(f"Requirements for {recipe.name}:")
-    for ingredient in recipe.ingredients:
-        print(f"- {ingredient.count}x {ingredient.name}")
-```
-
-## Example Recipes
-
-Here are some common recipe examples:
-
-### Basic Items
-```python
-# Advanced Circuit
-recipe = get_prototype_recipe(Prototype.AdvancedCircuit)
-# Requires: Electronic Circuits, Copper Cable, Plastic
-
-# Processing Unit
-recipe = get_prototype_recipe(Prototype.ProcessingUnit)
-# Requires: Advanced Circuits, Electronic Circuits, Sulfuric Acid
-
-# Sulfuric acid
-recipe = get_prototype_recipe(RecipeName.SulfuricAcid)
-# Requires: Iron Plates, SUlfur, Water
 ```

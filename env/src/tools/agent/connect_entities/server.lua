@@ -1,5 +1,11 @@
 -- connect_entities
 
+local MAX_SERIALIZATION_ITERATIONS = 1000  -- Maximum iterations for serializing belt groups
+local MAX_PLACEMENT_ATTEMPTS = 50  -- Maximum attempts to find placeable positions
+local MAX_PATH_LENGTH = 1000  -- Maximum number of path points to process
+local MAX_STRAIGHT_SECTIONS = 100
+local MAX_UNDERGROUND_SEGMENTS = 50
+
 -- Wire reach values for different electric pole types
 local wire_reach = {
     ['small-electric-pole'] = 4,
@@ -137,8 +143,16 @@ local function split_section_into_underground_segments(section, path, range, max
 
     local current_start = effective_start
     local segment_count = 0
+    local iteration_count = 0
+    local MAX_ITERATIONS = math.min(section.length * 2, MAX_UNDERGROUND_SEGMENTS) -- Prevent excessive iterations
+
 
     while current_start + 1 < effective_end and segment_count < max_segments do
+        iteration_count = iteration_count + 1
+        if iteration_count > MAX_ITERATIONS then
+            game.print("Warning: Maximum iterations reached while splitting underground segments")
+            break
+        end
         -- Calculate end index for this segment
         local end_index = math.min(current_start + range, effective_end)
 
@@ -235,6 +249,7 @@ local function serialize_belt_group(entity)
 
     local serialized = {}
     local seen = {}
+    local iteration_count = 0
 
     local function get_connected_belt_entities(belt, is_output)
         local connected_entities = {}
@@ -269,6 +284,12 @@ local function serialize_belt_group(entity)
     end
 
     local function serialize_connected_belts(belt, is_output)
+        iteration_count = iteration_count + 1
+        if iteration_count > MAX_SERIALIZATION_ITERATIONS then
+            game.print("Warning: Belt serialization reached iteration limit")
+            return
+        end
+
         if not belt or not belt.valid or seen[belt.unit_number] then
             return
         end
@@ -464,7 +485,7 @@ local function place_at_position(player, connection_type, current_position, dir,
     if existing_entity then
         game.print("Existing entity "..existing_entity.name)
         -- Get the existing network ID before any modifications
-        local existing_network_id = has_valid_fluidbox(existing_entity) and existing_entity.fluidbox[1].get_fluid_system_id()
+        --local existing_network_id = has_valid_fluidbox(existing_entity) and existing_entity.fluidbox[1].get_fluid_system_id()
 
         -- Update direction if needed
         if existing_entity.name ~= connection_type then
@@ -503,15 +524,21 @@ local function place_at_position(player, connection_type, current_position, dir,
             type = is_underground_exit and "output" or "input",
             move_stuck_players=true
         }
+        local can_place = game.surfaces[1].can_place_entity{
+            name = connection_type,
+            position = placement_position,
+            direction = dir,
+            force = player.force
+        }
 
         --local can_place = global.utils.avoid_entity(1, connection_type, placement_position, dir)
         --if not can_build then
         --    error("Cannot place the entity at the specified position: x="..position.x..", y="..position.y)
         --end
-        local player_position = player.position
-        player.teleport({placement_position.x, placement_position.y}, player.surface)
-        local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)
-        player.teleport(player_position)
+        --local player_position = player.position
+       -- player.teleport({placement_position.x, placement_position.y}, player.surface)
+        --local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)
+        --player.teleport(player_position)
 
         if dry_run and not can_place then
             -- Define the area where the entity will be placed
@@ -555,16 +582,16 @@ local function place_at_position(player, connection_type, current_position, dir,
         error("You do not have the required item in their inventory.")
     end
 
-    --local can_place = game.surfaces[1].can_place_entity{
-    --    name = connection_type,
-    --    position = placement_position,
-    --    direction = dir,
-    --    force = player.force
-    --}
-    local player_position = player.position
-    player.teleport({placement_position.x, placement_position.y}, player.surface)
-    local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)
-    player.teleport(player_position)
+    local can_place = game.surfaces[1].can_place_entity{
+        name = connection_type,
+        position = placement_position,
+        direction = dir,
+        force = player.force
+    }
+    --local player_position = player.position
+    --player.teleport({placement_position.x, placement_position.y}, player.surface)
+    --local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)
+    --player.teleport(player_position)
 
     --local can_place = global.utils.avoid_entity(1, connection_type, placement_position, dir)
     rendering.draw_circle{width = 0.25, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.5, filled = false, target = placement_position, time_to_live = 12000}
@@ -587,7 +614,7 @@ local function place_at_position(player, connection_type, current_position, dir,
 
     -- Place entity
     if can_place and not dry_run then
-        global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
+        --global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
 
         local placed_entity = game.surfaces[1].create_entity({
             name = connection_type,
@@ -725,6 +752,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
                 break
             end
 
+            local MAX_INDEX_PLACEMENT = 200
             -- Place regular entities up to the section
             while current_index < section.start_index do
                 local current_pos = path[current_index].position
@@ -734,6 +762,9 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
                         global.utils.get_entity_direction(default_connection_type, dir/2),
                         serialized_entities, dry_run, counter_state, false)
                 current_index = current_index + 1
+                if current_index > MAX_INDEX_PLACEMENT then
+                    break
+                end
             end
 
             -- Place initial surface entity for direction change

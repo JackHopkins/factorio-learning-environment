@@ -22,12 +22,16 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
             y = math.max(start_y, goal_y) + 10
         }
     }
+    rendering.draw_circle{width = 1, color = {r = 0.5, g = 0, b = 0.5}, surface = player.surface, radius = 0.303, filled = false, target = {x=start_x, y=start_y}, time_to_live = 12000}
+    rendering.draw_circle{width = 1, color = {r = 0, g = 0.5, b = 0.5}, surface = player.surface, radius = 0.303, filled = false, target = {x=goal_x, y=goal_y }, time_to_live = 12000}
+
 
     -- Add temporary collision entities
     --local clearance_entities = add_pipe_clearance_entities(surface, force, region)
 
-    local clearance_entities = {}--add_pipe_clearance_entities(surface, force, region)
-
+    -- Ensure the goal is not blocked by the character, or another entity
+    local clearance_entities = {}
+    global.utils.avoid_entity(player_index, "iron-chest", {y = goal_y, x = goal_x})
     local goal_position = player.surface.find_non_colliding_position(
         "iron-chest",
         {y = goal_y, x = goal_x},

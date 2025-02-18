@@ -144,13 +144,13 @@ global.utils.get_boiler_connection_points = function(entity)
 
     local dx, dy = 0, 0
     if orientation == defines.direction.north then
-        dx, dy = 1, 0
+        dx, dy = 1.5, 0.5
     elseif orientation == defines.direction.south then
-        dx, dy = -1, 0
+        dx, dy = -1.5, -0.5
     elseif orientation == defines.direction.east then
-        dx, dy = 0, 1
+        dx, dy = 0.5, 1.5
     elseif orientation == defines.direction.west then
-        dx, dy = 0, -1
+        dx, dy = -0.5, -1.5
     end
     --local water_inputs = {}
     --water_inputs[1] = {x = x + 1*dx, y = y + 1*dy}

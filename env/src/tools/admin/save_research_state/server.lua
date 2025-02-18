@@ -17,6 +17,9 @@ global.actions.save_research_state = function(player_index)
             })
         end
 
+        -- Get saved progress if any exists
+        local saved_progress = force.get_saved_technology_progress(tech.name)
+
         return {
             name = "\""..tech.name.."\"",
             researched = tech.researched,
@@ -26,7 +29,8 @@ global.actions.save_research_state = function(player_index)
             research_unit_count = tech.research_unit_count,
             research_unit_energy = tech.research_unit_energy,
             prerequisites = prerequisites,
-            ingredients = ingredients
+            ingredients = ingredients,
+            saved_progress = saved_progress  -- This will be nil if no progress is saved
         }
     end
 

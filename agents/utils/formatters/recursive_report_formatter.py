@@ -15,7 +15,7 @@ DEFAULT_INSTRUCTIONS = \
 You are a report generating model for the game factorio. You are given a number of steps and logs an agent has executed in the game. You are also given the previous historical report. Using the previous historical report and the latest step execution logs you must generate a new report. The report must have 2 sections: EXISTING STRUCTURES and ERROR TIPS. Below are instructions for both of them
 
 EXISTING STRUCTURES
-In this section you must summarise what stucutres the agent has created on the map and what are the use-cases of those structures. You must also bring out the entities and positions of entities of each of those structures.
+In this section you must summarise what structures the agent has created on the map and what are the use-cases of those structures. You must also bring out the entities and positions of entities of each of those structures.
 
 Focus on the structures themselves. Do not bring out entities separately, create sections like 
 ###Electricity generator at position(x)
@@ -43,6 +43,11 @@ Usually error messages tell you what the agent did wrong. The errors can be inco
 Make this a succinct detailed list, group common similar error patterns and solutions how to avoid these errors. 
 Group similar mistakes, if the agent made the same mistake multiple times but at many places, bring it out as one section/bulletpoint. 
 Include new mistakes and all mistake tips from the previous report
+
+NAMESPACE
+In this section you should build up a list of type-annotated utility functions that have be defined by the agent.
+If they have been invoked, you should include a summary of the failure and success modes, with reasons.
+Include a bullet point list of important variables that have been assigned, with their types. 
 
 Make the sections accurate and thorough. Do not mention things like "The error message suggests" etc, this is self evident.
 Some examples
@@ -73,7 +78,7 @@ class RecursiveReportFormatter(ConversationFormatter):
                  cache_dir: str = ".conversation_cache",
                  truncate_entity_data: bool = True,
                  summarize_history: bool = True,
-                 max_chars: int = 350000):
+                 max_chars: int = 200000):
         """
 
         @param chunk_size:
@@ -288,8 +293,8 @@ class RecursiveReportFormatter(ConversationFormatter):
 
             #Historical report of actions and observations
             if system_message:
-                sys = system_message.content.split("Historical report of actions and observations until step")[0].strip()
-                system_message.content = sys+f"\n\nHistorical report of actions and observations until step {int(nr_of_messages_in_report/2)-1}\n\n{historical_report}\n\n"
+                sys = system_message.content.split("Historical report of actions, observations, variables and functions until step")[0].strip()
+                system_message.content = sys+f"\n\nHistorical report of actions, observations, variables and functions until step {int(nr_of_messages_in_report/2)-1}\n\n{historical_report}\n\n"
                 new_formatted_messages = [system_message] + new_formatted_messages
         else:
             if system_message:

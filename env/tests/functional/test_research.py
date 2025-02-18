@@ -27,7 +27,7 @@ def game(instance):
     }
     instance = FactorioInstance(address='localhost',
                                          bounding_box=200,
-                                         tcp_port=27000,
+                                         tcp_port=27019,
                                          fast=True,
                                          all_technologies_researched=False,
                                          inventory=initial_inventory)
@@ -99,4 +99,6 @@ def test_craft_automation_packs_and_research(game):
 
     game.instance.reset(n_game_state)
 
-    pass
+    game.sleep(5)
+
+    game.instance.reset(n_game_state)

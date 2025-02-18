@@ -6,6 +6,7 @@ global.actions.load_research_state = function(player_index, research_state)
     -- Reset all research first
     for _, tech in pairs(force.technologies) do
         tech.researched = false
+        force.set_saved_technology_progress(tech.name, nil)
         --tech.enabled = false
     end
 
@@ -18,6 +19,10 @@ global.actions.load_research_state = function(player_index, research_state)
             -- Level might need special handling for infinite research
             if tech.level ~= tech_state.level then
                 tech.level = tech_state.level
+            end
+            -- Restore saved progress if it exists and the tech isn't already researched
+            if tech_state.saved_progress and not tech.researched and tech_state.saved_progress < 100 then
+                force.set_saved_technology_progress(tech.name, tech_state.saved_progress)
             end
         end
     end

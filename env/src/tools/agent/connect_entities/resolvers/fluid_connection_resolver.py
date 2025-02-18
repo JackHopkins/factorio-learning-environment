@@ -29,26 +29,26 @@ class FluidConnectionResolver(Resolver):
         return entity
 
 
-    def _get_source_fluid(self, entity: FluidHandler) -> str:
+    def _get_source_fluids(self, entity: FluidHandler) -> List[str]:
         entity = self._refresh_entity(entity)
 
         # If the entity is producing an output liquid (i.e in a chemical plant or oil refinery, choose the first output)
         if hasattr(entity, 'output_connection_points'):
             if entity.output_connection_points:
-                return entity.output_connection_points[0].type
+                return [position.type for position in entity.output_connection_points]
 
         if entity.fluid_box:
-            fluid_box = entity.fluid_box[0]
-            return fluid_box['name']
+            #fluid_box = entity.fluid_box[0]
+            return [fluid_box['name'] for fluid_box in entity.fluid_box]
         return None
 
     def resolve(self, source: Union[Position, Entity], target: Union[Position, Entity]) -> List[Tuple[Position, Position]]:
         """Returns prioritized list of source/target position pairs to attempt connections."""
 
-        source_fluid = None
+        source_fluids = None
 
         if isinstance(source, (MultiFluidHandler, FluidHandler)):
-            source_fluid = self._get_source_fluid(source)
+            source_fluids = self._get_source_fluids(source)
 
         # Get source positions in priority order
         match (source, target):
@@ -83,7 +83,7 @@ class FluidConnectionResolver(Resolver):
                     cast(FluidHandler, source),
                     target.position,
                     source.output_connection_points,
-                    source_fluid
+                    source_fluids
                 )
                 source_positions = sorted_positions if sorted_positions else [target.position]
 
@@ -118,26 +118,28 @@ class FluidConnectionResolver(Resolver):
                         cast(FluidHandler, target),
                         source_positions[0],  # Use first source pos for initial sorting
                         target.connection_points,
-                        source_fluid=source_fluid
+                        source_fluids=source_fluids
                     )
                     target_positions = sorted_positions if sorted_positions else [target.position]
                 else:
-                    if source_fluid == 'water':
+                    if 'water' in source_fluids :
                         target_positions = self._get_all_connection_points(
                             cast(FluidHandler, target),
                             source_positions[0],  # Use first source pos for initial sorting
                             target.connection_points,
-                            source_fluid=source_fluid
+                            source_fluids=source_fluids
                         )
-                    else:
+                    elif 'steam' in source_fluids:
                         target_positions = [target.steam_output_point]
+                    else:
+                        pass
 
             case OilRefinery() | ChemicalPlant():
                 sorted_positions = self._get_all_connection_points(
                     cast(FluidHandler, target),
                     source_positions[0],
                     target.input_connection_points,
-                    source_fluid
+                    source_fluids=source_fluids
                 )
                 if not sorted_positions:
                     raise Exception(f"Cannot connect to a {target.prototype} until a recipe has been set.")
@@ -148,7 +150,7 @@ class FluidConnectionResolver(Resolver):
                     cast(FluidHandler, target),
                     source_positions[0],
                     target.connection_points,
-                    source_fluid=source_fluid
+                    source_fluids=source_fluids
                 )
                 target_positions = sorted_positions if sorted_positions else [target.position]
 
@@ -185,11 +187,11 @@ class FluidConnectionResolver(Resolver):
                                    fluid_handler: FluidHandler,
                                    reference_pos: Position,
                                    connection_points,
-                                   source_fluid: Optional[str] = None) -> List[Position]:
+                                   source_fluids: Optional[List[str]] = None) -> List[Position]:
         """Get all possible connection points sorted by distance."""
 
-        if source_fluid and isinstance(connection_points[0], IndexedPosition):
-            connection_points = list(filter(lambda x: x.type == source_fluid, connection_points))
+        if source_fluids and isinstance(connection_points[0], IndexedPosition):
+            connection_points = list(filter(lambda x: x.type in source_fluids, connection_points))
 
         # Sort all connection points by distance to reference position
         sorted_points = sorted(

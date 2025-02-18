@@ -133,7 +133,7 @@ def capture_screenshots(program_ids, output_dir: str, instance: FactorioInstance
 
 def main():
     # Default version for running in IDE
-    DEFAULT_VERSION = 551
+    DEFAULT_VERSION = 560
 
     parser = argparse.ArgumentParser(description='Capture Factorio program evolution screenshots')
     parser.add_argument('--version', '-v', type=int, default=DEFAULT_VERSION,

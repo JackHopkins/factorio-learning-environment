@@ -1,0 +1,12 @@
+
+{                          
+    "task_type": "populated_lab_play",
+    "config": {
+        "task":"Create an automatic crude-oil factory that produces 16 crude-oil per 60 ingame seconds.",
+        "throughput_entity":"crude-oil",
+        "quota":16,
+        "trajectory_length": 16,
+        "holdout_wait_period": 60,
+        "pre_holdout_wait_period": 60
+    }
+}

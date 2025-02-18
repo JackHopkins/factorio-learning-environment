@@ -61,9 +61,9 @@ def test_connect_pipes_with_underground_pipes_loop(game):
     """
     This should ensure that pipe groups are always returned - instead of pipes themselves.
     """
-    position_1 = Position(x=0, y=0)
-    position_2 = Position(x=0, y=10)
-    position_3 = Position(x=10, y=10)
-    position_4 = Position(x=10, y=0)
+    position_1 = Position(x=10, y=0)
+    position_2 = Position(x=10, y=10)
+    position_3 = Position(x=20, y=10)
+    position_4 = Position(x=20, y=0)
     pipes = game.connect_entities(position_1, position_2, position_3, position_4, { Prototype.Pipe, Prototype.UndergroundPipe })
     assert len(pipes.pipes) == 18

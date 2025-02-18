@@ -3,8 +3,8 @@ from env.src.entities import Inventory, Entity
 from env.src.instance import FactorioInstance
 
 class TaskABC:
-    def __init__(self, maximum_steps, starting_inventory: Inventory, task: str):
-        self.maximum_steps = maximum_steps
+    def __init__(self, trajectory_length, starting_inventory: Inventory, task: str):
+        self.trajectory_length = trajectory_length
         self.starting_inventory = starting_inventory
         self.task = task
     

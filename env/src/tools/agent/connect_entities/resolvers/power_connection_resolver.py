@@ -5,7 +5,7 @@ from tools.agent.connect_entities.resolver import Resolver
 
 class PowerConnectionResolver(Resolver):
     def __init__(self, *args):
-        super().__init__(args)
+        super().__init__(*args)
 
     def _check_existing_network_connection(self, source_entity, target_entity) -> bool:
         """

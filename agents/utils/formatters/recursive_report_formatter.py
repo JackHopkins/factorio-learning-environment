@@ -44,11 +44,6 @@ Make this a succinct detailed list, group common similar error patterns and solu
 Group similar mistakes, if the agent made the same mistake multiple times but at many places, bring it out as one section/bulletpoint. 
 Include new mistakes and all mistake tips from the previous report
 
-NAMESPACE
-In this section you should build up a list of type-annotated utility functions that have be defined by the agent.
-If they have been invoked, you should include a summary of the failure and success modes, with reasons.
-Include a bullet point list of important variables that have been assigned, with their types. 
-
 Make the sections accurate and thorough. Do not mention things like "The error message suggests" etc, this is self evident.
 Some examples
 
@@ -56,6 +51,15 @@ Some examples
  -  Make sure to move to the target entity where you want to extract from before extracting items
 ### Errors when placing into a tile which is occupied by another entity
 - Ensure you can place a entity to a tile before attempting placing
+
+NAMESPACE
+In this section you should build up a list of type-annotated utility functions that have be defined by the agent.
+If they have been invoked, you should include a summary of the failure and success modes, with reasons.
+Include a bullet point list of important variables that have been assigned, with their types.
+
+Only include functions that have been defined by the agent, not any of the built-in functions.
+Do not include any of the code of the functions, only the signature
+If the agent has not defined any functions, do not include this section
 
 Only output the report, nothing else
 Make the report concise, accurate and informative

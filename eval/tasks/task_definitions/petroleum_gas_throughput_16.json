@@ -1,0 +1,12 @@
+
+{                          
+    "task_type": "populated_lab_play",
+    "config": {
+        "task":"Create an automatic petroleum-gas factory that produces 200 petroleum-gas per 60 ingame seconds.",
+        "throughput_entity":"petroleum-gas",
+        "quota":200,
+        "trajectory_length": 16,
+        "holdout_wait_period": 60,
+        "pre_holdout_wait_period": 60
+    }
+}

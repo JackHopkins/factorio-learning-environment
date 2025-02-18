@@ -119,14 +119,31 @@ def initiate_task_configs(input_task):
     task_config = ThroughputTask(**input_task["config"])
     return task_config
 
-def initialise_starting_state(instance, task, reset_game_state):
-    # reset the instance
-    instance.reset(reset_game_state)
+def initialise_starting_state(instance, task):
     # reset the game state but with the new inventory
     task.setup(instance)
     return task
 
-
+def construct_manual(master_tool_path):
+    agent_tool_path = os.path.join(master_tool_path, "agent")
+    # get all the folders in tool_paths
+    tool_folders = [f for f in os.listdir(agent_tool_path) if os.path.isdir(os.path.join(agent_tool_path, f))]
+    manual = "Instructions for tools available to you\n\n"
+    for folder in tool_folders:
+        # check if it has a agent.md file
+        agent_path = os.path.join(agent_tool_path, folder, "agent.md")
+        if os.path.exists(agent_path):
+            with open(agent_path, "r") as f:
+                manual += f"## {folder} instructions\n"
+                manual += f.read()
+                manual += "\n\n"
+        else:
+            continue
+    # read in the agent.md in master_tool_path
+    with open(os.path.join(master_tool_path, "agent.md"), "r") as f:
+        manual += f"## General useful patterns\n"
+        manual += f.read()
+    return manual
 def create_factorio_instance(instance_id: int) -> FactorioInstance:
     """Create a single Factorio instance"""
     ips, udp_ports, tcp_ports = get_local_container_ips()
@@ -166,7 +183,7 @@ SYSTEM_PROMPT = \
 
     For example: "I should move to position 0, 0 ```python move_to(Position(x=0, y=0))```"
     
-    IMPORTANT: Always create small and modular policies that are easy to debug. For instance, if you want to create a resource mine, policy 1) Put down drill line, policy 2) Put down furnace line with inserters, policy 3) Connect drill line with furnace line and check that the factory works
+    IMPORTANT: Always create small and modular policies (usually less than 30 lines of code) that are easy to debug. For instance, if you want to create a resource mine, policy 1) Put down drill line, policy 2) Put down furnace line with inserters, policy 3) Connect drill line with furnace line and check that the factory works
 
     Small and modular policies are easy to carry out, debug when they arent working and understand. They also allow you to make small changes to the factory without breaking the entire system.
 
@@ -200,9 +217,8 @@ OBSERVATION_SPACE = \
     
     This response indicates that `print(get_entities())` was called at line 78 to get state of the entities on the map. There are four stone furnaces, two of which are working and two of which have no ingredients to smelt. Non-working entities can be determined by checking the `warnings` and `status` fields."""
 
-path = Path(__file__).parent.parent / "MANUAL_short.md"
-with open(path, "r") as f:
-    MANUAL = f.read()
+#with open("eval\open\MANUAL_short.md", "r") as f:
+#    MANUAL = f.read()
 
 
 async def main():
@@ -230,10 +246,14 @@ async def main():
         print(
             "\033[91mError initialising Factorio instances. Are the docker containers running, and have they been activated?\033[91m")
         return
-    
+    master_tool_path = r"env\src\tools"
+    MANUAL = construct_manual(master_tool_path)
     API_SCHEMA = instances[0].get_system_prompt()
-    prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\nObservations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
-    zero_state = GameState.from_instance(instances[0])
+    useful_info_path = r"eval\open\useful_info_for_tasks.md"
+    with open(useful_info_path, "r") as f:
+        useful_info = f.read()
+    prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\nObservations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n\n' + useful_info + '\n\n'
+    
 
     model_to_evaluate = "claude-3-5-sonnet-20241022"
     #model_to_evaluate = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
@@ -246,15 +266,14 @@ async def main():
     llm_factory = LLMFactory(model=model_to_evaluate)
     version_description = "eval_agentic_supervised"
 
-    task_folder = Path(__file__).parent.parent.parent / "tasks" / "task_definitions"
-    result_path = Path(__file__).parent.parent.parent / "tasks" / "supervised_results"
-
-    tasks = ["steel_plate_throughput_16"]
+    task_folder = r"eval\tasks\task_definitions"
+    result_path = r"eval\tasks\supervised_results"
+    tasks = ["plastic_bar_throughput_16"]
     search_type = "beam_supervised"
     search_iterations = 1
 
     formatter = RecursiveReportFormatter(
-        chunk_size=128,
+        chunk_size=64,
         llm_call=llm_factory.acall,
         cache_dir='./summary_cache',
     )
@@ -269,10 +288,6 @@ async def main():
     now = datetime.now()
     dt_string = now.strftime("%Y%m%d_%H%M%S")
     
-    save_path = os.path.join(result_path, search_type, model_to_evaluate, dt_string)
-    # check if the path exists
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
 
     executor = initiate_executor(configs[search_type], instances, version, db_client, version_description, llm_factory, formatter)
     
@@ -281,12 +296,19 @@ async def main():
         with open(os.path.join(task_folder, f"{task_key}.json"), "r") as f:
             input_task = json.load(f)
         task = initiate_task_configs(input_task)
-        task = initialise_starting_state(instances[0], task, zero_state)
+        task = initialise_starting_state(instances[0], task)
+        run_id = f"{task_key}_{dt_string}"
+        save_path = os.path.join(result_path, search_type, model_to_evaluate, run_id)
+        # check if the path exists
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+
+
         config_dict = {"iterations": search_iterations,
                    "executor_kwargs": executor.config._to_dict(),
                    "task_config": task._to_dict()}
         # save the config dict
-        with open(os.path.join(save_path, f"{task_key}_config.json"), "w") as f:
+        with open(os.path.join(save_path, f"config.json"), "w") as f:
             json.dump(config_dict, f)
         print(f"Starting MCTS search for task {task.task}")
         results = await executor.search_supervised(

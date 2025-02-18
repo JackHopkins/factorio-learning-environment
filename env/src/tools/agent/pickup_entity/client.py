@@ -1,6 +1,6 @@
 from typing import Tuple, Union, Optional
 
-from entities import Position, Entity, BeltGroup, PipeGroup, EntityGroup, UndergroundBelt, Direction
+from entities import Position, Entity, BeltGroup, PipeGroup, EntityGroup, UndergroundBelt, Direction, ElectricityGroup
 from instance import PLAYER
 from game_types import Prototype
 from tools.tool import Tool
@@ -41,6 +41,13 @@ class PickupEntity(Tool):
                 pipes = entity.pipes
                 for pipe in pipes:
                     resp = self.__call__(pipe)
+                    if not resp: return False
+                return True
+            
+            elif isinstance(entity, ElectricityGroup):
+                poles = entity.poles
+                for pole in poles:
+                    resp = self.__call__(pole)
                     if not resp: return False
                 return True
 

@@ -42,6 +42,7 @@ class SaveResearchState(Tool):
                 current_research=state["current_research"] if "current_research" in state else None,
                 research_progress=state["research_progress"],
                 research_queue=[x for x in state["research_queue"].values()],
+                progress=state["progress"] if "progress" in state else None,
             )
 
         except Exception as e:

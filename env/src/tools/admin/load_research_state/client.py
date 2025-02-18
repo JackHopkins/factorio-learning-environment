@@ -39,7 +39,8 @@ class LoadResearchState(Tool):
             },
             "current_research": state.current_research,
             "research_progress": state.research_progress,
-            "research_queue": state.research_queue
+            "research_queue": state.research_queue,
+            "progress": state.progress
         }
 
         return self.execute(PLAYER, raw_state)

@@ -21,10 +21,6 @@ def base_game(instance):
                                   'burner-mining-drill': 5}
     instance.reset()
     instance.speed(10)
-    instance.add_command('/c local oil_resources = game.surfaces[1].find_entities_filtered{name="crude-oil"}\nfor _, oil in pairs(oil_resources) do\n\toil.destroy()\nend', raw=True)
-    instance.execute_transaction()
-    instance.add_command('/c game.surfaces[1].create_entity{name="crude-oil", position={x=-10, y=-5}}', raw=True)
-    instance.execute_transaction()
     yield instance.namespace
 
 @pytest.fixture()
@@ -81,7 +77,7 @@ def test_build_chemical_plant(game):
                                  direction=Direction.DOWN,
                                  position=Position(x=0, y=-6))
 
-    refinery = game.set_entity_recipe(refinery, RecipeName.BasicOilProcessing)
+    refinery = game.set_entity_recipe(refinery, RecipeName.AdvancedOilProcessing)
     # Start at the origin
     game.move_to(Position(x=0, y=0))
 

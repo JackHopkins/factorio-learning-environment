@@ -754,15 +754,15 @@ class ConnectEntities(Tool):
         # underground pipes can do at most 10 distance
         max_distance = 10 - margin
         pathing_radius = 0.5
-        offset_dict = {"UP": {"x": 0, "y": 1}, 
-                       "DOWN": {"x": 0, "y": -1}, 
-                       "LEFT": {"x": 1, "y": 0}, 
-                       "RIGHT": {"x": -1, "y": 0}}
+        offset_dict = {"UP": {"x": 0, "y": -1}, 
+                       "DOWN": {"x": 0, "y": 1}, 
+                       "LEFT": {"x": -1, "y": 0}, 
+                       "RIGHT": {"x": 1, "y": 0}}
 
         # do +1 bc python is exclusive for the end of loop
         # first get the target straight line
         for target_run_idx in range(1, max_distance + 1):
-            target_straight_line_path_dict = self.create_straight_line_dict(target_entity, target_pos, offset_dict, margin, target_run_idx, num_available)
+            target_straight_line_path_dict = self.create_straight_line_dict(target_entity, target_pos, offset_dict, margin, target_run_idx, num_available, offset_sign=-1)
             if not target_straight_line_path_dict:
                     continue    
             # then for each target straight line, we get the source straight line
@@ -817,13 +817,15 @@ class ConnectEntities(Tool):
             connection_pos = input_path_dict["connection_position"]
         return connection_pos
 
-    def create_straight_line_dict(self, input_entity, input_pos, offset_dict, margin, run_idx, num_available):
+    def create_straight_line_dict(self, input_entity, input_pos, offset_dict, margin, run_idx, num_available, offset_sign = 1):
         entity_direction = input_entity.direction
         if isinstance(input_entity, ChemicalPlant) or isinstance(input_entity, OilRefinery):
             if entity_direction.name not in offset_dict:
                 raise Exception(f"Invalid direction for {input_entity.name}")
             # get the offsets from the directions
             offset = offset_dict[entity_direction.name]
+            offset["x"] = offset["x"] * offset_sign
+            offset["y"] = offset["y"] * offset_sign
             output_dict = self.get_straight_line_path(input_pos, offset, margin, run_idx, num_available)
             if not output_dict["success"]:
                 return None
@@ -834,7 +836,7 @@ class ConnectEntities(Tool):
     def get_straight_line_path(self, starting_pos, offset, margin, distance, num_available):
         new_straigth_line_end_pos = Position(starting_pos.x + offset["x"] * (distance + margin) , starting_pos.y + offset["y"] * (distance + margin))
         # continue if new target pos is blocked or surrounded by things
-        if self._is_blocked(new_straigth_line_end_pos, 3):
+        if self._is_blocked(new_straigth_line_end_pos, 1.5):
             return {"success": False, "connection_position": None, "path": None}
         # try to find a path from the source to the new target pos
         # Solely use underground pipes

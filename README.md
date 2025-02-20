@@ -237,7 +237,7 @@ The abstract base class defines three methods that all tasks must implement:
 verify(self, score: float, step: int, instance: FactorioInstance, step_statistics: Dict) -> bool:
 """ Return true if the task is completed"""
 
-setup(self, instance):
+setup_instance(self, instance):
 """Code to provision the initial game state for the task environment"""
 
 enchance_response_with_task_output(self, response: str, task_response: TaskResponse) -> str:
@@ -292,7 +292,7 @@ class OpenPlayTask(TaskABC):
             "initial_state": self.starting_game_state.to_raw() if self.starting_game_state else None,
         }
 
-    def setup(self, instance):
+    def setup_instance(self, instance):
         """Code to provision the task environment"""
         pass
 ```

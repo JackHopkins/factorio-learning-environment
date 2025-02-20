@@ -2,7 +2,12 @@ global.actions.regenerate_resources = function(player_index)
     local player = game.get_player(player_index)
     local surface = player.surface
     for _, ore in pairs(surface.find_entities_filtered({type="resource"})) do
-        ore.amount = 10000
+      -- skip oil
+        if ore.name ~= "crude-oil" then
+          ore.amount = 10000
+        else
+          ore.amount = 300000
+        end
     end
     player.force.reset()
 end

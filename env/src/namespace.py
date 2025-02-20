@@ -11,7 +11,7 @@ from exceptions.hinting_name_error import get_value_type_str
 from entities import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe, BuildingBox, PipeGroup, \
     ElectricityGroup, Pipe
 
-from game_types import Prototype, Resource, Technology, prototype_by_name
+from game_types import Prototype, Resource, Technology, prototype_by_name, RecipeName
 from models.serializable_function import SerializableFunction
 from models.game_state import GameState
 
@@ -81,6 +81,7 @@ class FactorioNamespace:
         self.ElectricityGroup = ElectricityGroup
         self.BeltGroup = BeltGroup
         self.Pipe = Pipe
+        self.RecipeName = RecipeName
 
         # TODO - We need to add all entity objects to the namespace, e.g 'Chest'
 

@@ -15,9 +15,9 @@ from tenacity import retry, wait_exponential
 from eval.open.mcts.planning_mcts import get_mining_setup
 from eval.tasks.throughput_task import ThroughputTask
 logger = logging.basicConfig(level=logging.INFO)
-
-
-
+from agents import TaskResponse
+import os
+import json
 
 class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
     def __init__(self,
@@ -27,7 +27,8 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
                  llm_factory: Any,
                  config: SupervisedExecutorConfig,
                  version=None,
-                 version_description=""
+                 version_description="",
+                 debug_folder = None
                  ):
         """
         Initialize parallel planning MCTS
@@ -44,7 +45,7 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
         self.model_to_evaluate = config.model_to_evaluate
         self.system_prompt = config.supervised_kwargs["system_prompt"]
         self.formatter = formatter
-        
+        self.debug_folder = debug_folder
 
         self.beam_unification_steps = config.supervised_kwargs.get("beam_unification_steps", 0)
     async def generate_plans(self, task: ThroughputTask, 
@@ -56,7 +57,7 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
             instance = instances[idx]
             instance.reset(task.starting_game_state)
             # plan id coincides with instance id it will be evaluated on
-            plan_output = PlanOutput(task=TaskOutput(task=task.task), meta={"plan_id": idx})
+            plan_output = PlanOutput(task=TaskOutput(goal_description=task.goal_description), meta={"plan_id": idx})
             entities = instance.namespace.get_entities()
             inventory = instance.namespace.inspect_inventory()
             dummy_program_code = "print(f'Inventory: {inspect_inventory()}')\nprint(f'Entities: {get_entities()}')\n"
@@ -90,7 +91,7 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
                 
                 saved_step_ids = []
                 output_dicts = {}
-                for step_idx in range(task.maximum_steps):
+                for step_idx in range(task.trajectory_length):
                     if step_idx == 0:
                         group.plans = await self.generate_plans(task, 
                                                                 nr_of_beams=len(group.active_instances),
@@ -112,6 +113,20 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
                                 if plan_idx not in output_dicts:
                                     output_dicts[plan_idx] = []
                                 output_dicts[plan_idx].append(output_dict)
+                                if self.debug_folder:
+                                    # save the game state, policy and result to the debug folder
+                                    full_trace_debug_folder = self.debug_folder + f"\\{step_to_save.program.meta['model']}\\{run_id}\\{plan.meta['plan_id']}"
+                                    if not os.path.exists(full_trace_debug_folder):
+                                        os.makedirs(full_trace_debug_folder)
+                                    datapoint_to_save = {
+                                    "game_state": step_to_save.start_state.to_raw(),
+                                     "code": step_to_save.program.code,
+                                     "response": step_to_save.program.response,
+                                     "program_id": step_to_save.program.id,
+                                     "holdout_achievements": step_to_save.program.meta.get("holdout_achievements", None),}
+                                    with open(full_trace_debug_folder + f"\\{len(plan.steps)}.json", "w") as f:
+                                        json.dump(datapoint_to_save, f)
+
                         except Exception as e:
                             print("Could not save step - possibly missing (in case of skipping errors)")
                             print(e)
@@ -150,7 +165,7 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
             
             steps = plan_output.steps
             system_message = self.system_prompt
-            system_message += f"\n\nOBJECTIVE\n\nThe factory you MUST create as follows\nOBJECTIVE: {task.task}."
+            system_message += f"\n\nOBJECTIVE\n\nThe factory you MUST create as follows\nOBJECTIVE: {task.goal_description}."
             conversation = Conversation(messages=[Message(role="system", content=system_message)])
             for step in steps:
                 assistant_str = step.program.meta["text_response"] if step.program.meta.get("text_response", None) else ""
@@ -176,6 +191,11 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
         responses = await asyncio.gather(*step_outputs)
         step_output_objects = {}
         for idx, response in enumerate(responses):
+            if len(response) == 0:
+                step_output_objects[plan_id] = Step(candidate_language_outputs=[],
+                                                     start_state=start_states[plan_id],
+                                                     sampled_programs = [])
+                continue
             output = response[0]
             plan_id = output.meta["plan_id"]
             # We need to create a new step object
@@ -236,7 +256,7 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
             for program in step.sampled_programs:
                 # reset the instance to the start state
                 instance.reset(step.start_state)
-                final_reward, state, result, entities, achievements, ticks = await group.evaluator._evaluate_single(
+                final_reward, state, result, entities, achievements, ticks, error = await group.evaluator._evaluate_single(
                     instance_id,
                     program,
                     instance
@@ -265,7 +285,7 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
         # first we check if judge has been done on this step
         # If not, then its the final output step
         # we need to save all the programs but we need to add some meta fields
-        objective = plan.task.task
+        objective = plan.task.goal_description
         initial_plan = plan.initial_plan.initial_plan if plan.initial_plan else None
         parent_id = original_parent.id if original_parent else None
 
@@ -293,6 +313,7 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
                 "starting_inventory": step.program.meta["starting_inventory"],
                 "holdout_achievements": step.program.meta.get("holdout_achievements", None),
                 "task_success": step.program.meta.get("task_success", None),
+                "model": step.program.meta["model"]
                 }
 
         program = step.program
@@ -324,9 +345,10 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
                 raise Exception("Found error in response. Skipping step.")
             
             plan.steps[-1] = step_to_process
-            task_success, achievements = self.evaluate_task(plan=plan, group=group, task=task)
+            task_response = self.evaluate_task(plan=plan, group=group, task=task)
+            achievements = task_response.meta["achievements"]
             plan.steps[-1].program.meta["holdout_achievements"] = achievements
-            plan.steps[-1].program.meta["task_success"] = task_success
+            plan.steps[-1].program.meta["task_success"] = task_response.success
             throughput_str = f"Here is the current througphut of your factory: {achievements['dynamic']} created per 60 seconds"
             plan.steps[-1].program.response += f"\n{throughput_str}"
             return plan
@@ -342,15 +364,14 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
     def evaluate_task(self, 
                             plan: PlanOutput,
                             group: PlanningGroupV2,
-                            task: ThroughputTask) -> bool:
+                            task: ThroughputTask) -> TaskResponse:
         instance_id = plan.meta["plan_id"]
         instance = group.evaluator.instances[instance_id]
         check_state = plan.steps[-1].end_state
         instance.reset(check_state)
 
-        task_success, achievements = task.verify(score=plan.steps[-1].program.value, 
-                                                 step=len(plan.steps), 
+        task_response = task.verify(score=plan.steps[-1].program.value, 
                                                  instance=instance, 
                                                  step_statistics=plan.steps[-1].program.meta["post_production_flows"])
 
-        return task_success, achievements
+        return task_response

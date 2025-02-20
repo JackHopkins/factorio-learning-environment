@@ -29,7 +29,7 @@ from models.research_state import ResearchState
 from rcon.factorio_rcon import RCONClient
 from models.game_state import GameState
 from utils.controller_loader.system_prompt_generator import SystemPromptGenerator
-
+from concurrent.futures import ThreadPoolExecutor
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000
 
@@ -287,20 +287,20 @@ class FactorioInstance:
 
     def eval_with_error(self, expr, timeout=60):
         """ Evaluate an expression with a timeout, and return the result without error handling"""
-        # with ThreadPoolExecutor(max_workers=1) as executor:
-        #     future = executor.submit(self._eval_with_timeout, expr)
-        #     score, goal, result = future.result(timeout)
-        #     return score, goal, result
-        def handler(signum, frame):
-            raise TimeoutError()
-
-        signal.signal(signal.SIGALRM, handler)
-        signal.alarm(timeout)
-
-        try:
-            return self.namespace.eval_with_timeout(expr)
-        finally:
-            signal.alarm(0)
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(self.namespace.eval_with_timeout, expr)
+            score, goal, result = future.result(timeout)
+            return score, goal, result
+        #def handler(signum, frame):
+        #    raise TimeoutError()
+#
+        #signal.signal(signal.SIGALRM, handler)
+        #signal.alarm(timeout)
+#
+        #try:
+        #    return self.namespace.eval_with_timeout(expr)
+        #finally:
+        #    signal.alarm(0)
 
 
     def eval(self, expr, timeout=60):

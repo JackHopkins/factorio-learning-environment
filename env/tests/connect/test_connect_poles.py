@@ -1,6 +1,6 @@
 import pytest
 
-from entities import Entity, Position, EntityStatus
+from entities import Entity, Position, EntityStatus, BuildingBox
 from instance import Direction
 from game_types import Prototype, Resource
 
@@ -77,7 +77,13 @@ def test_connect_power_poles_without_blocking_mining_drill(game):
     print(f"Offshore pump placed at {offshore_pump.position}")
 
     # Place boiler next to offshore pump
-    boiler = game.place_entity_next_to(Prototype.Boiler, offshore_pump.position, Direction.UP, spacing=2)
+    building_box = BuildingBox(width = Prototype.Boiler.WIDTH + 4, height = Prototype.Boiler.HEIGHT + 4)
+
+    coords = game.nearest_buildable(Prototype.Boiler,building_box,offshore_pump.position)
+    # place the boiler at the centre coordinate
+    # first move to the center coordinate
+    game.move_to(coords.center)
+    boiler = game.place_entity(Prototype.Boiler, position = coords.center, direction = Direction.LEFT)
     assert boiler, "Failed to place boiler"
     print(f"Boiler placed at {boiler.position}")
     print(f"Current inventory: {game.inspect_inventory()}")
@@ -92,7 +98,13 @@ def test_connect_power_poles_without_blocking_mining_drill(game):
     print(f"Pipes placed between offshore pump and boiler")
 
     # Place steam engine next to boiler
-    steam_engine = game.place_entity_next_to(Prototype.SteamEngine, boiler.position, Direction.UP, spacing=2)
+    building_box = BuildingBox(width = Prototype.SteamEngine.WIDTH + 4, height = Prototype.SteamEngine.HEIGHT + 4)
+
+    coords = game.nearest_buildable(Prototype.SteamEngine, building_box,boiler.position)
+    # place the boiler at the centre coordinate
+    # first move to the center coordinate
+    game.move_to(coords.center)
+    steam_engine = game.place_entity(Prototype.SteamEngine, position = coords.center)
     assert steam_engine, "Failed to place steam engine"
     print(f"Steam engine placed at {steam_engine.position}")
 

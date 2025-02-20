@@ -90,6 +90,7 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
             {x = pipe.position.x, y = pipe.position.y - 1}
         }
         for _, pos in pairs(pipe_positions) do
+            --table.insert(all_positions, pos)
             if not is_excluded_position(pos) then
                 table.insert(all_positions, pos)
             end

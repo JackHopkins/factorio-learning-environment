@@ -223,7 +223,7 @@ def test_build_iron_gear_factory_from_scratch(game):
     # place the boiler next to the offshore pump
     boiler = game.place_entity_next_to(Prototype.Boiler,
                                        reference_position=offshore_pump.position,
-                                       direction=Direction.LEFT,
+                                       direction=Direction.UP,
                                        spacing=2)
 
 

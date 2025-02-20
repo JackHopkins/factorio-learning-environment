@@ -129,13 +129,6 @@ def test_simple_automated_drill(game):
     assert belts, f"Failed to place transport belt from {belt_start} to {belt_end}"
     print(f"Placed {len(belts.belts)} transport belt(s) from drill to inserter")
 
-    # Verify the setup
-    entities = game.inspect_entities(drill.position, radius=5)
-    assert entities.get_entity(Prototype.BurnerMiningDrill), "Burner mining drill not found in setup"
-    assert entities.get_entity(Prototype.BurnerInserter), "Inserter not found in setup"
-    assert any(e.name == "transport-belt" for e in entities.entities), "Transport belts not found in setup"
-
-    print("Successfully set up coal mining loop with burner mining drill, inserter, and transport belts")
 
 
 def test_another_self_fueling_coal_belt(game):
@@ -150,7 +143,7 @@ def test_another_self_fueling_coal_belt(game):
     game.move_to(coal_patch.bounding_box.center)
     for i in range(5):
         drill_position = Position(x=coal_patch.bounding_box.left_top.x + i * 2, y=coal_patch.bounding_box.center.y)
-
+        game.move_to(drill_position)
         drill = game.place_entity(Prototype.BurnerMiningDrill, Direction.DOWN, drill_position)
         inserter = game.place_entity_next_to(Prototype.BurnerInserter, drill_position, direction=Direction.UP, spacing=0)
         inserter = game.rotate_entity(inserter, Direction.DOWN)

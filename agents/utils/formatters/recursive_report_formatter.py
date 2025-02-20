@@ -54,6 +54,7 @@ Some examples
 
 NAMESPACE
 In this section you should build up a list of type-annotated utility functions that have be defined by the agent.
+Only include the function signature (function name, input-output variables and typehints) and a brief description of what the function does.
 If they have been invoked, you should include a summary of the failure and success modes, with reasons.
 Include a bullet point list of important variables that have been assigned, with their types.
 
@@ -254,13 +255,12 @@ class RecursiveReportFormatter(ConversationFormatter):
 
         total_length = len(messages)
 
-        # First trim conversation to character limit
-        messages = self._trim_conversation_to_limit(messages)
-
         # Handle base cases
         if len(messages) <= self.chunk_size: # account for system message
-            return Conversation(messages=[self._truncate_entity_data(msg, is_recent=(i >= len(messages) - 1), message_index = int((total_length-len(messages))/2) +  int(i/2))
-                    for i, msg in enumerate(messages)])
+            messages=[self._truncate_entity_data(msg, is_recent=(i >= len(messages) - 1), message_index = int((total_length-len(messages))/2) +  int(i/2))
+                    for i, msg in enumerate(messages)]
+            messages = self._trim_conversation_to_limit(messages)
+            return Conversation(messages=messages)
 
         # Keep system message separate if present
         system_message = None
@@ -304,7 +304,8 @@ class RecursiveReportFormatter(ConversationFormatter):
             if system_message:
                 new_formatted_messages = [system_message] + new_formatted_messages
         
-
+        # First trim conversation to character limit
+        new_formatted_messages = self._trim_conversation_to_limit(new_formatted_messages)
         return Conversation(messages=new_formatted_messages)
 
     def format_message(self, message: Message) -> Message:

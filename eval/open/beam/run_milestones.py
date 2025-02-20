@@ -1,3 +1,8 @@
+import sys
+sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser")
+sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\env")
+sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\env\src")
+
 import asyncio
 import json
 import os
@@ -99,7 +104,7 @@ def plot_throughput_timeseries(data, file_path, task):
         # save the plot to the file path
         plt.savefig(file_path)
 
-def initiate_executor(config, instances, version, db_client, version_description, llm_factory, formatter):
+def initiate_executor(config, instances, version, db_client, version_description, llm_factory, formatter, debug_folder):
     executor = config["executor"](
         instances=instances,
         version=version,
@@ -107,14 +112,14 @@ def initiate_executor(config, instances, version, db_client, version_description
         version_description=version_description,
         llm_factory=llm_factory,
         config = config["config"],
-        formatter=formatter
+        formatter=formatter,
+        debug_folder = debug_folder
     )
     return executor
 
 
 def initiate_task_configs(input_task):
     if input_task["task_type"] == "populated_lab_play":
-        input_task["config"]["starting_inventory"] = LAB_PLAY_POPULATED_STARTING_INVENTORY
         return ThroughputTask(**input_task["config"])
     task_config = ThroughputTask(**input_task["config"])
     return task_config
@@ -125,6 +130,8 @@ def initialise_starting_state(instance, task):
     return task
 
 def construct_manual(master_tool_path):
+    import tiktoken
+    enc = tiktoken.get_encoding("o200k_base")
     agent_tool_path = os.path.join(master_tool_path, "agent")
     # get all the folders in tool_paths
     tool_folders = [f for f in os.listdir(agent_tool_path) if os.path.isdir(os.path.join(agent_tool_path, f))]
@@ -135,14 +142,25 @@ def construct_manual(master_tool_path):
         if os.path.exists(agent_path):
             with open(agent_path, "r") as f:
                 manual += f"## {folder} instructions\n"
-                manual += f.read()
+                tool_manual = f.read()
+                manual += tool_manual
+                tokens = enc.encode(tool_manual)
+                print(f"Tool: {folder} has {len(tokens)} tokens")
                 manual += "\n\n"
+                manual_tokens= enc.encode(manual)
+                print(f"Total tokens: {len(manual_tokens)}")
         else:
             continue
     # read in the agent.md in master_tool_path
     with open(os.path.join(master_tool_path, "agent.md"), "r") as f:
         manual += f"## General useful patterns\n"
-        manual += f.read()
+        tool_manual = f.read()
+        tool_tokens= enc.encode(tool_manual)
+        print(f"General useful patterns has {len(tool_tokens)} tokens")
+        manual += tool_manual
+        manual_tokens = enc.encode(manual)
+        print(f"Total tokens: {len(manual_tokens)}")
+        
     return manual
 def create_factorio_instance(instance_id: int) -> FactorioInstance:
     """Create a single Factorio instance"""
@@ -252,7 +270,7 @@ async def main():
     useful_info_path = r"eval\open\useful_info_for_tasks.md"
     with open(useful_info_path, "r") as f:
         useful_info = f.read()
-    prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\nObservations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n\n' + useful_info + '\n\n'
+    prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\nObservations:\n' + OBSERVATION_SPACE + '\n\n'
     
 
     model_to_evaluate = "claude-3-5-sonnet-20241022"
@@ -267,8 +285,8 @@ async def main():
     version_description = "eval_agentic_supervised"
 
     task_folder = r"eval\tasks\task_definitions"
-    result_path = r"eval\tasks\supervised_results"
-    tasks = ["plastic_bar_throughput_16"]
+    result_path = r"eval\tasks\supervised_results\\beam_supervised"
+    tasks = ["lubricant_throughput_16"]
     search_type = "beam_supervised"
     search_iterations = 1
 
@@ -289,16 +307,16 @@ async def main():
     dt_string = now.strftime("%Y%m%d_%H%M%S")
     
 
-    executor = initiate_executor(configs[search_type], instances, version, db_client, version_description, llm_factory, formatter)
+    executor = initiate_executor(configs[search_type], instances, version, db_client, version_description, llm_factory, formatter, result_path)
     
     for task_key in tasks:
         # read in the input task
         with open(os.path.join(task_folder, f"{task_key}.json"), "r") as f:
             input_task = json.load(f)
-        task = initiate_task_configs(input_task)
+        task = ThroughputTask(**input_task)
         task = initialise_starting_state(instances[0], task)
         run_id = f"{task_key}_{dt_string}"
-        save_path = os.path.join(result_path, search_type, model_to_evaluate, run_id)
+        save_path = os.path.join(result_path, model_to_evaluate, run_id)
         # check if the path exists
         if not os.path.exists(save_path):
             os.makedirs(save_path)
@@ -310,14 +328,14 @@ async def main():
         # save the config dict
         with open(os.path.join(save_path, f"config.json"), "w") as f:
             json.dump(config_dict, f)
-        print(f"Starting MCTS search for task {task.task}")
+        print(f"Starting MCTS search for task {task.goal_description}")
         results = await executor.search_supervised(
         n_iterations=search_iterations,
         skip_failures=False,
         task=task,
         run_id = f"{task_key}_{dt_string}"
         )
-        print(f"Task: {task.task} has been completed")
+        print(f"Task: {task.goal_description} has been completed")
         result_dict = {"results" :results,
                        "starting_inventory": task.starting_inventory,
                        "target_entity": task.throughput_entity,}

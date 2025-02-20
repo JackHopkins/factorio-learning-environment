@@ -13,7 +13,6 @@ craft_item(Prototype.IronChest)
 # Craft multiple items
 craft_item(Prototype.CopperCable, quantity=20)
 ```
-
 ## Key Features
 
 ### Automatic Resource Management
@@ -37,12 +36,6 @@ The tool supports recursive crafting of intermediate components. For example:
 - Raw resources like iron ore and copper ore cannot be crafted
 - These must be mined using mining tools instead
 - Attempting to craft raw resources will result in an error
-
-### Resource Requirements
-Before crafting, ensure:
-1. You have sufficient raw materials in your inventory
-2. Required technologies are researched
-3. The item is craftable by hand (some items require machines)
 
 
 ## Examples

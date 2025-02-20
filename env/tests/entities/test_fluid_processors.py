@@ -1,7 +1,7 @@
 import pytest
 
 from entities import Position, Direction, Entity
-from game_types import Prototype, RecipeName, prototype_by_name
+from game_types import Prototype, RecipeName, prototype_by_name, Resource
 from env.src.instance import FactorioInstance
 
 
@@ -28,7 +28,8 @@ def game(instance):
         "burner-inserter": 25,
         "transport-belt": 200,
         "wooden-chest": 5,
-        "copper-plate": 50
+        "copper-plate": 50,
+        "pumpjack": 1,
         
     }
     instance.speed(10)
@@ -138,6 +139,67 @@ def test_plastic_bar(game):
 
 def test_battery(game):
     recipe_setup(game, [Prototype.Battery], Prototype.ChemicalPlant)
+
+def test_end_to_end_lubricant_tanks(game):
+    pumpjack_pos = game.nearest(Resource.CrudeOil)
+    game.move_to(pumpjack_pos)
+    game.move_to(Position(pumpjack_pos.x, pumpjack_pos.y - 5))
+    pumpjack = game.place_entity(Prototype.PumpJack, position = pumpjack_pos)
+
+
+    setup_power(game, pumpjack_pos.up(10), pumpjack)
+
+    oil_refinery_pos = Position(pumpjack_pos.x + 15, pumpjack_pos.y)
+    game.move_to(oil_refinery_pos)
+    oil_refinery = game.place_entity(Prototype.OilRefinery, position = oil_refinery_pos)
+    game.set_entity_recipe(oil_refinery, RecipeName.AdvancedOilProcessing)
+
+    setup_power(game, oil_refinery_pos.up(10), oil_refinery)
+
+    game.connect_entities(pumpjack, oil_refinery, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+
+    storage_tank_1_pos = Position(oil_refinery_pos.x + 10, oil_refinery_pos.y)
+    game.move_to(storage_tank_1_pos)
+    storage_tank_1 = game.place_entity(Prototype.StorageTank, position = storage_tank_1_pos)
+    game.connect_entities(oil_refinery, storage_tank_1, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+
+    storage_tank_2_pos = Position(oil_refinery_pos.x + 10, oil_refinery_pos.y + 5)
+    game.move_to(storage_tank_2_pos)
+    storage_tank_2 = game.place_entity(Prototype.StorageTank, position = storage_tank_2_pos)
+    game.connect_entities(storage_tank_1, storage_tank_2, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+
+    storage_tank_3_pos = Position(oil_refinery_pos.x + 10, oil_refinery_pos.y - 5)
+    game.move_to(storage_tank_3_pos)
+    storage_tank_3 = game.place_entity(Prototype.StorageTank, position = storage_tank_3_pos)
+    game.connect_entities(storage_tank_1, storage_tank_3, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+
+
+def test_end_to_end_lubricant_direct(game):
+    pumpjack_pos = game.nearest(Resource.CrudeOil)
+    game.move_to(pumpjack_pos)
+    game.move_to(Position(pumpjack_pos.x, pumpjack_pos.y - 5))
+    pumpjack = game.place_entity(Prototype.PumpJack, position = pumpjack_pos)
+
+
+    setup_power(game, pumpjack_pos.up(10), pumpjack)
+
+    oil_refinery_pos = Position(pumpjack_pos.x + 15, pumpjack_pos.y)
+    game.move_to(oil_refinery_pos)
+    oil_refinery = game.place_entity(Prototype.OilRefinery, position = oil_refinery_pos)
+    oil_refinery = game.set_entity_recipe(oil_refinery, RecipeName.AdvancedOilProcessing)
+
+    setup_power(game, oil_refinery_pos.up(10), oil_refinery)
+
+    game.connect_entities(pumpjack, oil_refinery, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+
+    chemical_plant_pos = Position(pumpjack_pos.x + 25, pumpjack_pos.y)
+    game.move_to(chemical_plant_pos)
+    chem_plant = game.place_entity(Prototype.ChemicalPlant, position = chemical_plant_pos)
+    chem_plant = game.set_entity_recipe(chem_plant, Prototype.Lubricant)
+
+    setup_power(game, chemical_plant_pos.up(10), chem_plant)
+    game.connect_entities(oil_refinery, chem_plant, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+    game.sleep(10)
 
 def recipe_setup(game, recipes_to_test, prototype, direction=Direction.DOWN):
     """Test setup for various recipes with proper positioning"""

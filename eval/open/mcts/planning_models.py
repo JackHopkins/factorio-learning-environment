@@ -24,7 +24,7 @@ class LanguageOutput(BaseModel):
     version_description: str = ""
 
 class TaskOutput(BaseModel):
-    task: str
+    goal_description: str
     language_output: Optional[LanguageOutput]
 
 class InitialPlanOutput(BaseModel):

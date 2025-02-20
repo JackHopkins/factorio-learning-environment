@@ -137,7 +137,7 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     IronStick = "iron-stick", None
     SteelPlate = "steel-plate", None  # Crafting requires smelting 5 iron plates
     CopperPlate = "copper-plate", None  # Crafting requires smelting 1 copper ore
-    StoneBrick = "stone-brick", None
+    StoneBrick = "stone-brick", None # Crafting requires smelting 2 stone
     CopperCable = "copper-cable", None
     PlasticBar = "plastic-bar", None
     EmptyBarrel = "empty-barrel", None
@@ -209,11 +209,11 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
 
     @property
     def WIDTH(self):
-        return self.entity_class._width.default  # Access the class attribute directly
+        return self.entity_class._width  # Access the class attribute directly
     
     @property
     def HEIGHT(self):
-        return self.entity_class._height.default
+        return self.entity_class._height
 
 prototype_by_name = {prototype.value[0]: prototype for prototype in Prototype}
 prototype_by_title = {str(prototype): prototype for prototype in Prototype}

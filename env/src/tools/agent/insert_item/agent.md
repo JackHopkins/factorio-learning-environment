@@ -50,48 +50,11 @@ if inventory[Prototype.Coal] >= 10:
 - Can accept fuels (coal, wood)
 - Can accept smeltable items (ores)
 - Cannot mix different ores in same furnace (extract ores and plates of different types before inputting new ones)
-```python
-# Add fuel first
-furnace = insert_item(Prototype.Coal, furnace, 10)
-# Then add ore
-furnace = insert_item(Prototype.IronOre, furnace, 50)
-```
 
 ### 2. Burner Entities
 - Can only accept fuel items
 - Common with BurnerInserter, BurnerMiningDrill
-```python
-# Correct - inserting fuel
-inserter = insert_item(Prototype.Coal, burner_inserter, 10)
-```
 
 ### 3. Assembling Machines
 - Must have recipe set first
 - Can only accept ingredients for current recipe
-- Can insert products into output inventory
-```python
-# Set recipe first
-assembler = set_entity_recipe(assembler, Prototype.IronGearWheel)
-# Insert ingredients
-assembler = insert_item(Prototype.IronPlate, assembler, 100)
-```
-
-### 4. Chests
-- Can accept any item
-- Limited by inventory space
-```python
-chest = insert_item(Prototype.IronPlate, chest, 100)
-```
-
-## Common Patterns
-
-1. **Setting Up a Smelting Line**
-```python
-# Place and fuel multiple furnaces
-for pos in furnace_positions:
-    furnace = place_entity(Prototype.StoneFurnace, position=pos)
-    # Add fuel
-    furnace = insert_item(Prototype.Coal, furnace, 20)
-    # Add ore
-    furnace = insert_item(Prototype.IronOre, furnace, 50)
-```

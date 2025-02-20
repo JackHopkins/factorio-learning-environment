@@ -1,7 +1,7 @@
 from typing import Union, Tuple, cast, List, Optional
 
 from entities import FluidHandler, Position, Entity, Generator, Boiler, OffshorePump, Pipe, OilRefinery, \
-    ChemicalPlant, IndexedPosition, MultiFluidHandler, PipeGroup, PumpJack
+    ChemicalPlant, IndexedPosition, MultiFluidHandler, PipeGroup, PumpJack, AdvancedAssemblingMachine
 from game_types import Prototype, prototype_by_name
 from tools.agent.connect_entities.resolver import Resolver
 
@@ -10,15 +10,18 @@ class FluidConnectionResolver(Resolver):
     def __init__(self, *args):
         super().__init__(*args)
 
-    def _adjust_connection_point(self, point: Position, entity: Entity) -> Position:
+    def _adjust_connection_point(self, point: Union[Position, IndexedPosition], entity: Union[Entity, Position]) -> Position:
+        if not isinstance(entity, Entity):
+            return point
         x, y = point.x, point.y
 
         if x % 1 == 0:
             x += 0.5 if x > entity.position.x else -0.5 if x < entity.position.x else 0
         if y % 1 == 0:
             y += 0.5 if y > entity.position.y else -0.5 if y < entity.position.y else 0
-
-        return Position(x=x, y=y)
+        point.x = x
+        point.y = y
+        return point
 
     def _is_blocked(self, pos: Position) -> bool:
         entities = self.get_entities(position=pos, radius=0.5)
@@ -30,12 +33,12 @@ class FluidConnectionResolver(Resolver):
 
 
     def _get_source_fluid(self, entity: FluidHandler) -> str:
-         # update the source entity
+        # update the source entity
         updated_source_entity = self.get_entities(position = entity.position, radius=0)
         if len(updated_source_entity) == 1:
             entity = updated_source_entity[0]
 
-        # If the entity is producing an output liquid (i.e in a chemical plant or oil refinery, choose the first output)
+        # If the entity is producing an output liquid (i.e in a chemical plant or oil refinery, go through the output
         if hasattr(entity, 'output_connection_points'):
             if entity.output_connection_points:
                 return [x.type for x in entity.output_connection_points]
@@ -52,145 +55,53 @@ class FluidConnectionResolver(Resolver):
     def resolve(self, source: Union[Position, Entity], target: Union[Position, Entity]) -> List[Tuple[Position, Position]]:
         """Returns prioritized list of source/target position pairs to attempt connections."""
 
-        source_fluids = None
+        if isinstance(target, Entity):
+            updated_targets = self.get_entities(position = target.position, radius=0)
+            if len(updated_targets) == 1:
+                target = updated_targets[0]
 
-        if isinstance(source, (MultiFluidHandler, FluidHandler)):
-            source_fluids = self._get_source_fluid(source)
-            
-        # Get source positions in priority order
-        match (source, target):
-            case (OffshorePump(), _):
-                source_positions = source.connection_points
+        if isinstance(source, Entity):
+            updated_sources = self.get_entities(position = source.position, radius=0)
+            if len(updated_sources) == 1:
+                source = updated_sources[0]
+        
+        source_fluid_positions = self.get_source_fluid_positions(source)
+        target_fluid_positions = self.get_target_fluid_positions(target)
 
-            case (Boiler(), Generator() | OilRefinery()):
-                source_positions = [source.steam_output_point]
-                source_fluids = ["steam"]
-            case (Boiler(), ChemicalPlant()):
-                raise Exception(f"Cannot connect a {source.prototype} to a {target.prototype}. This connection is not allowed")
-            case (Boiler(), Boiler() | OffshorePump()):
-                sorted_positions = self._get_all_connection_points(
-                    cast(FluidHandler, source),
-                    target.position,
-                    source.connection_points
-                )
-                source_positions = sorted_positions if sorted_positions else [source.position]
-
-            case (FluidHandler(), _):
-                sorted_positions = self._get_all_connection_points(
-                    cast(FluidHandler, source),
-                    target.position,
-                    source.connection_points,
-                )
-                source_positions = sorted_positions if sorted_positions else [source.position]
-
-            case (Pipe(), _):
-                source_positions = [source.position, source.position.up(), source.position.down(), source.position.left(), source.position.right()]
-
-            case (OilRefinery() | ChemicalPlant(), _):
-
-                sorted_positions = self._get_all_connection_points(
-                    cast(FluidHandler, source),
-                    target.position,
-                    source.output_connection_points,
-                )
-                source_positions = sorted_positions if sorted_positions else [source.position]
-
-            case (Position(), _):
-                source_positions = [source]
-
-            case (Entity(), _):
-                source_positions = [source.position]
-
-            case (PipeGroup(), _):
-                underground_positions = set([pipe.position for pipe in source.pipes if pipe.prototype == Prototype.UndergroundPipe])
-                positions = [pipe.position for pipe in source.pipes if pipe.prototype == Prototype.Pipe]
-                source_positions = []
-                for position in positions:
-                    source_positions.append(position)
-                    if position.up() not in underground_positions:
-                        source_positions.append(position.up())
-                    if position.down() not in underground_positions:
-                        source_positions.append(position.down())
-                    if position.left() not in underground_positions:
-                        source_positions.append(position.left())
-                    if position.right() not in underground_positions:
-                        source_positions.append(position.right())
-            case _:
-                raise Exception(f"{type(source)} is not a supported source object")
-
-        # Get target positions in priority order
-        match target:
-            case Boiler():
-                if isinstance(source, (OffshorePump, Boiler)):
-                    sorted_positions = self._get_all_connection_points(
-                        cast(FluidHandler, target),
-                        source_positions[0],  # Use first source pos for initial sorting
-                        target.connection_points,
-                        source_fluids=source_fluids
-                    )
-                    target_positions = sorted_positions if sorted_positions else [target.position]
-                else:
-                    if 'water' in source_fluids :
-                        target_positions = self._get_all_connection_points(
-                            cast(FluidHandler, target),
-                            source_positions[0],  # Use first source pos for initial sorting
-                            target.connection_points,
-                            source_fluids=source_fluids
-                        )
-                    elif 'steam' in source_fluids:
-                        target_positions = [target.steam_output_point]
-                    else:
-                        pass
-
-            case OilRefinery() | ChemicalPlant():
-                #if isinstance(source, Boiler):
-                #    raise Exception(f"Cannot connect a {source.prototype} to a {target.prototype}. This connection is not allowed")
-                self.check_for_recipe_requirement(target, source_fluids)
-                sorted_positions = self._get_all_connection_points(
-                    cast(FluidHandler, target),
-                    source_positions[0],
-                    target.input_connection_points,
-                    source_fluids=source_fluids
-                )
-                
-                if not sorted_positions:
-                    if target.recipe :
-                        if isinstance(source, Entity):
-                            raise Exception(f"Cannot connect to a {target.prototype} at {target.position} from {source.prototype} at {source.position} - No unblocked valid connection points found")
-                        else:
-                            raise Exception(f"Cannot connect to a {target.prototype} at {target.position} from {source} - No unblocked valid connection points found")
-                    raise Exception(f"Cannot connect to a {target.prototype} until a recipe has been set.")
-                target_positions = sorted_positions if sorted_positions else [target.position]
-
-            case FluidHandler():
-                sorted_positions = self._get_all_connection_points(
-                    cast(FluidHandler, target),
-                    source_positions[0],
-                    target.connection_points,
-                    source_fluids=source_fluids
-                )
-                target_positions = sorted_positions if sorted_positions else [target.position]
-
-            case Position():
-                target_positions = [target]
-
-            case Pipe():
-                target_positions = [target.position, target.position.up(), target.position.down(),
-                                    target.position.left(), target.position.right()]
-
-            case Entity():
-                target_positions = [target.position]
-
-            case _:
-                raise Exception("Not supported target object")
+        if isinstance(target, MultiFluidHandler):
+            self.check_for_recipe_requirement(target, source_fluid_positions)
 
         # Generate all possible combinations, sorted by combined distance
-        connection_pairs = [
-            (src_pos, tgt_pos)
-            for src_pos in source_positions
-            for tgt_pos in target_positions
-        ]
-
+        connection_pairs = []
+        for target_position in target_fluid_positions:
+            adjusted_target_position = self._adjust_connection_point(target_position, target)
+            if self._is_blocked(adjusted_target_position):
+                continue
+            # if we expect a type of fluid, search for that type of fluid in the source
+            if target_position.type:
+                valid_source_positions = [self._adjust_connection_point(x, source) for x in source_fluid_positions if (x.type == target_position.type or x.type == "all")]
+                for source_position in valid_source_positions:
+                    if not self._is_blocked(source_position):
+                        connection_pairs.append((source_position, adjusted_target_position))
+            # else we can connect any type of fluid
+            else:
+                adjusted_source_positions = [self._adjust_connection_point(x, source) for x in source_fluid_positions]
+                for source_position in adjusted_source_positions:
+                    if not self._is_blocked(source_position):
+                        connection_pairs.append((source_position, adjusted_target_position))
+        if not connection_pairs:
+            source_location = f"{source.prototype} at {source.position}" if isinstance(source, Entity) else f"{source}"
+            target_location = f"{target.prototype} at {target.position}" if isinstance(target, Entity) else f"{target}"
+            
+            # first check if target expects fluids but source does not have them
+            target_fluids = [x.type for x in target_fluid_positions if x.type]
+            source_fluids = [x.type for x in source_fluid_positions if x.type]
+            intersection = set(target_fluids).intersection(set(source_fluids))
+            # if target expects fluids but source does not have them
+            if target_fluids and not intersection:
+                raise Exception(f"Fluids currently at source {source_location}: {source_fluids} not needed and expected by the target {target_location}")
+            # generate a generic error message
+            raise Exception(f"Did not find any valid connections between source {source_location} and target {target_location}. Make sure none of the source or target connections points are blocked and the target is able to receive the fluid from the source")
         # Sort pairs by total Manhattan distance
         return sorted(
             connection_pairs,
@@ -229,7 +140,8 @@ class FluidConnectionResolver(Resolver):
         return valid_points
     
 
-    def check_for_recipe_requirement(self, target_entity, source_fluids):
+    def check_for_recipe_requirement(self, target_entity, source_fluid_positions):
+        source_fluids = [x.type for x in source_fluid_positions if x.type]
         if not source_fluids:
             raise Exception(f"The source does not have fluid in it. Cannot connect an empty source to a {target_entity.prototype}. The {target_entity.prototype} input handlers are fluid specific so source entity needs to have fluid in it")
         if not target_entity.recipe:
@@ -240,3 +152,90 @@ class FluidConnectionResolver(Resolver):
         if not fluid_intersections:
             raise Exception(f"Fluids currently at source entity {source_fluids} not needed and expected by the recipe at {target_entity.name} at {target_entity.position}")
         return True
+    def get_source_fluid_positions(self, source):
+        match source:
+            case OffshorePump():
+                source_positions = [IndexedPosition(x=pos.x, y=pos.y, type="water") for pos in source.connection_points]
+            case Boiler() :
+                source_steam_positions = [IndexedPosition(x=source.steam_output_point.x, y=source.steam_output_point.y, type="steam")]
+                source_water_positions = [IndexedPosition(x=pos.x, y=pos.y, type="water") for pos in source.connection_points]
+                source_positions = source_steam_positions + source_water_positions
+            case Generator():
+                source_positions = [IndexedPosition(x=pos.x, y=pos.y, type="steam") for pos in source.connection_points]
+            case MultiFluidHandler():
+                source_positions = source.output_connection_points
+            case PumpJack():
+                source_positions = [IndexedPosition(x=pos.x, y=pos.y, type="crude-oil") for pos in source.connection_points]
+            
+            case FluidHandler():
+                liquid =  [fluid['name'] for fluid in source.fluid_box]
+                source_liquid = liquid[0] if liquid else ""
+                source_positions = [IndexedPosition(x=pos.x, y=pos.y, type=source_liquid) for pos in source.connection_points]
+            
+            case Pipe():
+                source_liquid = source.fluid if source.fluid else ""
+                source_positions = [IndexedPosition(x=pos.x, y=pos.y, type=source_liquid) for pos in source.connection_points]
+            case Position():
+                # allow all connections from this source
+                source_positions = [IndexedPosition(x=source.x, y=source.y, type="all")]
+
+            case Entity():
+                source_positions = [IndexedPosition(x=source.position.x, y=source.position.y, type="")]
+
+            case PipeGroup():
+                pipes = [pipe for pipe in source.pipes if pipe.prototype == Prototype.Pipe]
+                source_positions = []
+                underground_positions = set([pipe.position for pipe in source.pipes if pipe.prototype == Prototype.UndergroundPipe])
+                for pipe in pipes:
+                    source_positions.append(IndexedPosition(x=pipe.position.x, y=pipe.position.y, type=pipe.fluid if pipe.fluid else ""))
+                    if pipe.position.up() not in underground_positions:
+                        source_positions.append(IndexedPosition(x=pipe.position.up().x, y=pipe.position.up().y, type=pipe.fluid if pipe.fluid else ""))
+                    if pipe.position.down() not in underground_positions:
+                        source_positions.append(IndexedPosition(x=pipe.position.down().x, y=pipe.position.down().y, type=pipe.fluid if pipe.fluid else ""))
+                    if pipe.position.left() not in underground_positions:
+                        source_positions.append(IndexedPosition(x=pipe.position.left().x, y=pipe.position.left().y, type=pipe.fluid if pipe.fluid else ""))
+                    if pipe.position.right() not in underground_positions:
+                        source_positions.append(IndexedPosition(x=pipe.position.right().x, y=pipe.position.right().y, type=pipe.fluid if pipe.fluid else ""))
+            case _:
+                raise Exception(f"{type(source)} is not a supported source object for fluid connection")
+        return source_positions
+            
+
+    def get_target_fluid_positions(self, target):
+        """
+        Get the target fluid positions
+        if type is "", then any input fluid connection is allowed to that position
+        """
+        match target:
+            case OffshorePump() | Boiler():
+                target_positions = [IndexedPosition(x=pos.x, y=pos.y, type="water") for pos in target.connection_points]
+            case Generator():
+                target_positions = [IndexedPosition(x=pos.x, y=pos.y, type="steam") for pos in target.connection_points]
+            case MultiFluidHandler():
+                target_positions = target.input_connection_points
+            case FluidHandler():
+                target_positions = [IndexedPosition(x=pos.x, y=pos.y, type="") for pos in target.connection_points]
+            case Pipe():
+                target_positions = [IndexedPosition(x=pos.x, y=pos.y, type="") for pos in target.connection_points]
+            case Position():
+                target_positions = [IndexedPosition(x=target.x, y=target.y, type="")]
+
+            case Entity():
+                target_positions = [IndexedPosition(x=target.position.x, y=target.position.y, type="")]
+            case PipeGroup():
+                pipes = [pipe for pipe in target.pipes if pipe.prototype == Prototype.Pipe]
+                target_positions = []
+                underground_positions = set([pipe.position for pipe in target.pipes if pipe.prototype == Prototype.UndergroundPipe])
+                for pipe in pipes:
+                    target_positions.append(IndexedPosition(x=pipe.position.x, y=pipe.position.y, type=""))
+                    if pipe.position.up() not in underground_positions:
+                        target_positions.append(IndexedPosition(x=pipe.position.up().x, y=pipe.position.up().y, type=""))
+                    if pipe.position.down() not in underground_positions:
+                        target_positions.append(IndexedPosition(x=pipe.position.down().x, y=pipe.position.down().y, type=""))
+                    if pipe.position.left() not in underground_positions:
+                        target_positions.append(IndexedPosition(x=pipe.position.left().x, y=pipe.position.left().y, type=""))
+                    if pipe.position.right() not in underground_positions:
+                        target_positions.append(IndexedPosition(x=pipe.position.right().x, y=pipe.position.right().y, type=""))
+            case _:
+                raise Exception(f"{type(target)} is not a supported target object for fluid connection")
+        return target_positions

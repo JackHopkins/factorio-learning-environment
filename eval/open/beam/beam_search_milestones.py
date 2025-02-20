@@ -15,7 +15,7 @@ from tenacity import retry, wait_exponential
 from eval.open.mcts.planning_mcts import get_mining_setup
 from eval.tasks.throughput_task import ThroughputTask
 logger = logging.basicConfig(level=logging.INFO)
-from agents.utils import TaskResponse
+from agents import TaskResponse
 import os
 import json
 
@@ -57,7 +57,7 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
             instance = instances[idx]
             instance.reset(task.starting_game_state)
             # plan id coincides with instance id it will be evaluated on
-            plan_output = PlanOutput(task=TaskOutput(task=task.task), meta={"plan_id": idx})
+            plan_output = PlanOutput(task=TaskOutput(goal_description=task.goal_description), meta={"plan_id": idx})
             entities = instance.namespace.get_entities()
             inventory = instance.namespace.inspect_inventory()
             dummy_program_code = "print(f'Inventory: {inspect_inventory()}')\nprint(f'Entities: {get_entities()}')\n"
@@ -122,7 +122,8 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
                                     "game_state": step_to_save.start_state.to_raw(),
                                      "code": step_to_save.program.code,
                                      "response": step_to_save.program.response,
-                                     "program_id": step_to_save.program.id,}
+                                     "program_id": step_to_save.program.id,
+                                     "holdout_achievements": step_to_save.program.meta.get("holdout_achievements", None),}
                                     with open(full_trace_debug_folder + f"\\{len(plan.steps)}.json", "w") as f:
                                         json.dump(datapoint_to_save, f)
 
@@ -164,7 +165,7 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
             
             steps = plan_output.steps
             system_message = self.system_prompt
-            system_message += f"\n\nOBJECTIVE\n\nThe factory you MUST create as follows\nOBJECTIVE: {task.task}."
+            system_message += f"\n\nOBJECTIVE\n\nThe factory you MUST create as follows\nOBJECTIVE: {task.goal_description}."
             conversation = Conversation(messages=[Message(role="system", content=system_message)])
             for step in steps:
                 assistant_str = step.program.meta["text_response"] if step.program.meta.get("text_response", None) else ""
@@ -284,7 +285,7 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
         # first we check if judge has been done on this step
         # If not, then its the final output step
         # we need to save all the programs but we need to add some meta fields
-        objective = plan.task.task
+        objective = plan.task.goal_description
         initial_plan = plan.initial_plan.initial_plan if plan.initial_plan else None
         parent_id = original_parent.id if original_parent else None
 

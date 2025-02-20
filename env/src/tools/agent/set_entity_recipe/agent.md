@@ -56,14 +56,3 @@ The tool will raise exceptions in the following cases:
 ## Notes
 - The tool uses the Factorio game engine's recipe system, so all standard game recipe rules apply
 - Recipes must be unlocked through research before they can be set
-
-## Best Practices
-1. Verify the assembling machine exists before attempting to set its recipe
-2. Ensure the recipe is appropriate for the machine type
-3. Handle potential errors when setting recipes
-4. Update your local entity reference with the returned entity
-
-## Related Components
-- `Prototype` enum: Contains valid item and recipe definitions
-- `RecipeName` enum: Contains specialized recipe names. 
-- `Entity` class: Represents game entities including assembling machines

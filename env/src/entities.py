@@ -541,7 +541,8 @@ class GunTurret(StaticEntity):
     kills: Optional[int] = 0
 
 class AssemblingMachine(StaticEntity, Electric):
-    """A machine that crafts items from ingredients."""
+    """A machine that crafts items from ingredients.
+    Requires power to operate"""
     recipe: Optional[Recipe] = None  # Prototype
     assembling_machine_input: Inventory = Inventory()
     assembling_machine_output: Inventory = Inventory()
@@ -557,6 +558,7 @@ class FluidHandler(StaticEntity):
 
 class AdvancedAssemblingMachine(FluidHandler, AssemblingMachine):
     """A second and third tier assembling machine that can handle fluids.
+    Requires power to operate
     A recipe first needs to be set and then the input fluid source can be connected with pipes"""
     _height: float = 3
     _width: float = 3

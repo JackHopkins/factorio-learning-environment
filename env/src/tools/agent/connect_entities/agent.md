@@ -152,7 +152,8 @@ for source in secondary_sources:
 print(f"Final connection after connecting all inserters to target: {main_connection}")
 ```
 
-When you want to connect entities to existing power pole groups, similar rules apply
+When you want to connect entities to existing power pole groups, similar rules apply.
+
 Assume in this example there is a steam engine at Position(x = 1, y = 2) and the drill is at Position(x = 10, y = 28)
 ```python
 # create the main connection

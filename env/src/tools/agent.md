@@ -47,6 +47,7 @@ Power typically involves:
 -> SteamEngine
 
 IMPORTANT: We also need to be very careful and check where we can place boiler and steam engine as they cannot be on water
+We will do this in 3 separate code examples
 ```python
 # log your general idea what you will do next
 print(f"I will create a power generation setup with a steam engine")
@@ -71,10 +72,13 @@ coords = nearest_buildable(Prototype.Boiler,building_box,offshore_pump.position)
 # first move to the center coordinate
 move_to(coords.center)
 boiler = place_entity(Prototype.Boiler, position = coords.center, direction = Direction.LEFT)
-print(f"Placed boiler to generate steam at {boiler.position}. This will be connected to the offshore pump at {offshore_pump.position}")
+print(f"Placed boiler to generate steam at {boiler.position}. This will be connected to the offshore pump at {offshore_pump.position}") # placed boiler at Position(x = 10, y = 0)
 # add coal to boiler to start the power generation
 boiler = insert_item(Prototype.Coal, boiler, 10)
+```
 
+```python
+boiler = get_entity(Prototype.Boiler, Position(x = 10, y = 0))
 # Finally we need to place the steam engine close to the boiler
 # use the prototype width and height attributes 
 # add 4 to ensure no overlap
@@ -88,8 +92,13 @@ steam_engine = place_entity(Prototype.SteamEngine,
                             position = coords.center,
                             direction = Direction.LEFT)
 
-print(f"Placed steam_engine to generate electricity at {steam_engine.position}. This will be connected to the boiler at {boiler.position} to generate electricity")
+print(f"Placed steam_engine to generate electricity at {steam_engine.position}. This will be connected to the boiler at {boiler.position} to generate electricity") # Placed at Position(x = 10, y = 10)
+```
 
+```python
+offshore_pump = get_entity(Prototype.OffshorePump, Position(x = 1, y = 0))
+boiler = get_entity(Prototype.Boiler, Position(x = 10, y = 0))
+steam_engine = get_entity(Prototype.SteamEngine, Position(x = 10, y = 10))
 # Connect entities in order
 water_pipes = connect_entities(offshore_pump, boiler, Prototype.Pipe)
 print(f"Connected offshore pump at {offshore_pump.position} to boiler at {boiler.position} with pipes {water_pipes}")
@@ -146,6 +155,7 @@ output_inserter = place_entity_next_to(Prototype.BurnerInserter,
                                            assembler.position,
                                            direction=Direction.LEFT,
                                            spacing=0)
+output_chest = place_entity(Prototype.WoodenChest, position = output_inserter.drop_position)
 # add coal to inserters
 output_inserter = insert_item(Prototype.Coal, output_inserter, quantity = 5)
 input_inserter = insert_item(Prototype.Coal, input_inserter, quantity = 5)
@@ -160,16 +170,16 @@ assembler = get_entity(Prototype.AssemblingMachine1, assembler.position)
 assert assembler.energy > 0, f"Assembling machine at {assembler.position} is not receiving power" 
 # Connect input belt
 belts = connect_entities(furnace_output_inserter,
-                     ass_machine_input_inserter,
+                     assembly_machine_input_inserter,
                      Prototype.TransportBelt)
 print(f"Connected assembling machine at {assembler.position} to furnace_output_inserter with {belts}")
 
-# wait for 15 seconds to if structure works and machine is creating copper cables
+# wait for 15 seconds to if structure works and machine is creating copper cables into the output chest
 sleep(15)
-assembler = get_entity(Prototype.AssemblingMachine1, assembler.position)
-inventory = inspect_inventory(assembler)
-print(f"Inventory of assembler: {inventory}") 
-
+output_chest = get_entity(Prototype.WoodenChest, output_chest.position)
+inventory = inspect_inventory(output_chest)
+copper_cables_in_inventory = inventory[Prototype.CopperCable]
+assert copper_cables_in_inventory > 0, f"No copper cables created"
 ```
 
 ### 4. Research Systems
@@ -221,6 +231,7 @@ Set recipe for chemical plant and connect to input and output storage tanks
 chemical_plant = get_entity(Prototype.ChemicalPlant, position=Position(x=0, y=0))
 
 # Set the recipe to craft solid fuel from heavy oil
+# IMPORTANT: The recipe for chemical plants and oil refineries must be set before connecting to inputs and outputs
 chemical_plant = set_entity_recipe(chemical_plant, RecipeName.HeavyOilCracking)
 print(f"Set the recipe of chemical plant at {chemical_plant.position} to HeavyOilCracking")
 
@@ -247,12 +258,12 @@ pumpjack = get_entity(Prototype.PumpJack, position=Position(x=-50, y=0))
 oil_refinery = get_entity(Prototype.Oilrefinery, position = Position(x = -25, y = 10))
 
 # Set the recipe to basc oil processing
+# IMPORTANT: The recipe for chemical plants and oil refineries must be set before connecting to inputs and outputs
 oil_refinery = set_entity_recipe(oil_refinery, RecipeName.BasicOilProcessing)
 print(f"Set the recipe of oil refinery at {oil_refinery.position} to BasicOilProcessing")
 
 # connect with underground and overground pipes to the pumpjack
-# the order matters as the storage tank will be connected to recipe inputs
-pipes = connect_entities(pumpjack, chemical_plant, connection_type={Prototype.UndergroundPipe, Prototype.Pipe})
+pipes = connect_entities(pumpjack, oil_refinery, connection_type={Prototype.UndergroundPipe, Prototype.Pipe})
 print(f"Connected the pumpjack at {pumpjack.position} to oil refinery at {oil_refinery.position} with {pipes}")
 
 ```

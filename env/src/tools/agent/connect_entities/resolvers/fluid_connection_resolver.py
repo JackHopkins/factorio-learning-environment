@@ -55,16 +55,16 @@ class FluidConnectionResolver(Resolver):
     def resolve(self, source: Union[Position, Entity], target: Union[Position, Entity]) -> List[Tuple[Position, Position]]:
         """Returns prioritized list of source/target position pairs to attempt connections."""
 
-        if isinstance(target, Entity):
-            updated_targets = self.get_entities(position = target.position, radius=0)
-            if len(updated_targets) == 1:
-                target = updated_targets[0]
-
-        if isinstance(source, Entity):
-            updated_sources = self.get_entities(position = source.position, radius=0)
-            if len(updated_sources) == 1:
-                source = updated_sources[0]
-        
+        #if isinstance(target, Entity):
+        #    updated_targets = self.get_entities(position = target.position, radius=0)
+        #    if len(updated_targets) == 1:
+        #        target = updated_targets[0]
+#
+        #if isinstance(source, Entity):
+        #    updated_sources = self.get_entities(position = source.position, radius=0)
+        #    if len(updated_sources) == 1:
+        #        source = updated_sources[0]
+        #
         source_fluid_positions = self.get_source_fluid_positions(source)
         target_fluid_positions = self.get_target_fluid_positions(target)
         source_fluid_positions, target_fluid_positions = self.deal_with_edge_cases(source, source_fluid_positions, target, target_fluid_positions)

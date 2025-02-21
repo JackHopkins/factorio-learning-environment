@@ -4,7 +4,7 @@ from typing import Union, Optional, List, Dict, cast, Set
 import numpy
 
 from entities import EntityGroup, Entity, Position, BeltGroup, PipeGroup, ElectricityGroup, TransportBelt, \
-    Pipe, FluidHandler, MiningDrill, Inserter, ChemicalPlant, OilRefinery
+    Pipe, FluidHandler, MiningDrill, Inserter, ChemicalPlant, OilRefinery, MultiFluidHandler
 from instance import PLAYER, Direction
 from game_types import Prototype, prototype_by_name
 from tools.admin.clear_collision_boxes.client import ClearCollisionBoxes
@@ -131,9 +131,14 @@ class ConnectEntities(Tool):
         # Resolve positions into entities if they exist
         if isinstance(source, Position):
             source = self._resolve_position_into_entity(source)
-
+        else:
+            # update the entity
+            source = self._refresh_entity(source)
         if isinstance(target, Position):
             target = self._resolve_position_into_entity(target)
+        else:
+            # update the entity
+            target = self._refresh_entity(target)
 
         # Get resolver for this connection type
         resolver = self.resolvers[self._get_connection_type(list(connection_types)[0])]
@@ -188,7 +193,17 @@ class ConnectEntities(Tool):
         )
 
 
+    def _refresh_entity(self, entity: Entity) -> Entity:
+        updated_entities = self.get_entities(position = entity.position, radius=0)
+        if len(updated_entities) == 1:
+            return updated_entities[0]
+        return entity
+
     def _resolve_position_into_entity(self, position: Position):
+        # first try the hacky way to get fluid handlers
+        entity = self._check_for_fluidhandlers(position)
+        if entity:
+            return entity
         # first try to get exact positions
         entities = self.get_entities(position=position, radius=0)
         if not entities:
@@ -210,6 +225,34 @@ class ConnectEntities(Tool):
                     if belt.position.is_close(position, tolerance=0.707):
                         return belt
         return entities[0]
+    
+
+    def _check_for_fluidhandlers(self, position: Position):
+        """
+        A very hacky way for now to check if the agent sent a multifluid or fluid handler input/output point
+        We then use that entity but use strictly that position for connection
+        """
+        # first try to get exact positions
+        entities = self.get_entities(position=position, radius=1)
+        for entity in entities:
+            if isinstance(entity, MultiFluidHandler):
+                for connection_point in entity.input_connection_points:
+                    if connection_point.is_close(position, tolerance=0.01):
+                        entity.input_connection_points = [connection_point]
+                        return entity
+                for connection_point in entity.output_connection_points:
+                    if connection_point.is_close(position, tolerance=0.01):
+                        entity.output_connection_points = [connection_point]
+                        return entity
+            elif isinstance(entity, FluidHandler):
+                for connection_point in entity.connection_points:
+                    if connection_point.is_close(position, tolerance=0.005):
+                        entity.connection_points = [connection_point]
+                        return entity
+                
+        return None
+
+        
 
     def _infer_connection_type(self,
                                source: Union[Position, Entity, EntityGroup],

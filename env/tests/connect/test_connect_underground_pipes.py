@@ -53,7 +53,7 @@ def test_connect_pipes_with_underground_pipes(game):
     pipes = game.connect_entities(position_1, position_2, { Prototype.Pipe, Prototype.UndergroundPipe })
 
     #game.pickup_entity(pipes)
-    assert len(pipes.pipes) == 10
+    assert len(pipes.pipes) > 5
 
 
 

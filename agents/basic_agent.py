@@ -174,8 +174,8 @@ class BasicAgent(AgentABC):
         instructions += f"\n\n### Goal\n{goal}\n\n"
         super().__init__( model, instructions, *args, **kwargs)
         self.llm_factory = LLMFactory(model)
-        self.formatter = RecursiveReportFormatter(chunk_size=64,llm_call=self.llm_factory.acall,cache_dir='summary_cache')
-        self.generation_params = GenerationParameters(n=1, presence_penalty=0.7, max_tokens=2048, model=model)
+        self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.llm_factory.acall,cache_dir='summary_cache')
+        self.generation_params = GenerationParameters(n=1, max_tokens=2048, model=model)
 
    async def step(self, conversation: Conversation, response: Response) -> Policy:
        

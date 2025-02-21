@@ -141,6 +141,12 @@ def test_battery(game):
     recipe_setup(game, [Prototype.Battery], Prototype.ChemicalPlant)
 
 def test_end_to_end_lubricant_tanks(game):
+
+    water_pos = game.nearest(Resource.Water)
+    game.move_to(water_pos)
+    pump = game.place_entity(Prototype.OffshorePump, position = water_pos)
+
+
     pumpjack_pos = game.nearest(Resource.CrudeOil)
     game.move_to(pumpjack_pos)
     game.move_to(Position(pumpjack_pos.x, pumpjack_pos.y - 5))
@@ -154,27 +160,104 @@ def test_end_to_end_lubricant_tanks(game):
     oil_refinery = game.place_entity(Prototype.OilRefinery, position = oil_refinery_pos)
     game.set_entity_recipe(oil_refinery, RecipeName.AdvancedOilProcessing)
 
-    setup_power(game, oil_refinery_pos.up(10), oil_refinery)
+    setup_power(game, oil_refinery_pos.down(10), oil_refinery)
 
     game.connect_entities(pumpjack, oil_refinery, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+    game.connect_entities(pump, oil_refinery, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+
 
     storage_tank_1_pos = Position(oil_refinery_pos.x + 10, oil_refinery_pos.y)
     game.move_to(storage_tank_1_pos)
     storage_tank_1 = game.place_entity(Prototype.StorageTank, position = storage_tank_1_pos)
-    game.connect_entities(oil_refinery, storage_tank_1, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
 
     storage_tank_2_pos = Position(oil_refinery_pos.x + 10, oil_refinery_pos.y + 5)
     game.move_to(storage_tank_2_pos)
     storage_tank_2 = game.place_entity(Prototype.StorageTank, position = storage_tank_2_pos)
-    game.connect_entities(storage_tank_1, storage_tank_2, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
 
     storage_tank_3_pos = Position(oil_refinery_pos.x + 10, oil_refinery_pos.y - 5)
     game.move_to(storage_tank_3_pos)
     storage_tank_3 = game.place_entity(Prototype.StorageTank, position = storage_tank_3_pos)
-    game.connect_entities(storage_tank_1, storage_tank_3, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
 
+    game.connect_entities(oil_refinery, storage_tank_1, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+    game.connect_entities(oil_refinery, storage_tank_2, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+    game.connect_entities(oil_refinery, storage_tank_3, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+
+    chemical_plant_pos = storage_tank_2_pos.right(10)
+    game.move_to(chemical_plant_pos)
+    chem_plant = game.place_entity(Prototype.ChemicalPlant, position = chemical_plant_pos)
+    chem_plant = game.set_entity_recipe(chem_plant, Prototype.Lubricant)
+    setup_power(game, chemical_plant_pos.up(10), chem_plant)
+    
+    error = True
+    try:
+        game.connect_entities(storage_tank_1, chem_plant, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+        error = False
+    except Exception as e:
+        pass
+    assert error, "Connection between storage tank 1 and chemical plant should not be possible"
+
+
+    error = True
+    try:
+        game.connect_entities(storage_tank_2, chem_plant, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+        error = False
+    except Exception as e:
+        pass
+    assert error, "Connection between storage tank 2 and chemical plant should not be possible"
+
+
+    game.connect_entities(storage_tank_3, chem_plant, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+
+    game.sleep(10)
+    chem_plant = game.get_entity(Prototype.ChemicalPlant, chem_plant.position)
+    for fluid_box in chem_plant.fluid_box:
+        if fluid_box["name"] == "lubricant":
+            assert fluid_box["amount"] > 0, "Lubricant not detected"
+    
 
 def test_end_to_end_lubricant_direct(game):
+    water_pos = game.nearest(Resource.Water)
+    game.move_to(water_pos)
+    pump = game.place_entity(Prototype.OffshorePump, position = water_pos)
+
+    pumpjack_pos = game.nearest(Resource.CrudeOil)
+    game.move_to(pumpjack_pos)
+    game.move_to(Position(pumpjack_pos.x, pumpjack_pos.y - 5))
+    pumpjack = game.place_entity(Prototype.PumpJack, position = pumpjack_pos)
+    setup_power(game, pumpjack_pos.up(10), pumpjack)
+
+    oil_refinery_pos = Position(pumpjack_pos.x + 15, pumpjack_pos.y)
+    game.move_to(oil_refinery_pos)
+    oil_refinery = game.place_entity(Prototype.OilRefinery, position = oil_refinery_pos)
+    game.set_entity_recipe(oil_refinery, RecipeName.AdvancedOilProcessing)
+
+    setup_power(game, oil_refinery_pos.down(10), oil_refinery)
+
+    game.connect_entities(pumpjack, oil_refinery, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+    game.connect_entities(pump, oil_refinery, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+
+    chemical_plant_pos = oil_refinery_pos.right(10)
+    game.move_to(chemical_plant_pos)
+    chem_plant = game.place_entity(Prototype.ChemicalPlant, position = chemical_plant_pos)
+    chem_plant = game.set_entity_recipe(chem_plant, Prototype.Lubricant)
+    setup_power(game, chemical_plant_pos.up(10), chem_plant)
+    
+    game.connect_entities(oil_refinery, chem_plant, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+
+    game.sleep(10)
+    chem_plant = game.get_entity(Prototype.ChemicalPlant, chem_plant.position)
+    for fluid_box in chem_plant.fluid_box:
+        if fluid_box["name"] == "lubricant":
+            assert fluid_box["amount"] > 0, "Lubricant not detected"
+
+
+def test_multiple_positions_to_tanks_with_positions(game):
+
+    water_pos = game.nearest(Resource.Water)
+    game.move_to(water_pos)
+    pump = game.place_entity(Prototype.OffshorePump, position = water_pos)
+
+
     pumpjack_pos = game.nearest(Resource.CrudeOil)
     game.move_to(pumpjack_pos)
     game.move_to(Position(pumpjack_pos.x, pumpjack_pos.y - 5))
@@ -183,23 +266,132 @@ def test_end_to_end_lubricant_direct(game):
 
     setup_power(game, pumpjack_pos.up(10), pumpjack)
 
-    oil_refinery_pos = Position(pumpjack_pos.x + 15, pumpjack_pos.y)
+    oil_refinery_pos = Position(x = 32.5, y = 40.5)
     game.move_to(oil_refinery_pos)
     oil_refinery = game.place_entity(Prototype.OilRefinery, position = oil_refinery_pos)
-    oil_refinery = game.set_entity_recipe(oil_refinery, RecipeName.AdvancedOilProcessing)
+    game.set_entity_recipe(oil_refinery, RecipeName.AdvancedOilProcessing)
+    oil_refinery = game.get_entity(Prototype.OilRefinery, oil_refinery.position)
+    setup_power(game, oil_refinery_pos.down(10), oil_refinery)
 
-    setup_power(game, oil_refinery_pos.up(10), oil_refinery)
+    input_water_connection_point = [x for x in oil_refinery.input_connection_points if x.type == "water"][0]
+    input_oil_connection_point = [x for x in oil_refinery.input_connection_points if x.type == "crude-oil"][0]
+    game.connect_entities(pumpjack.connection_points[0], input_oil_connection_point, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+    game.connect_entities(pump.connection_points[0], input_water_connection_point, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
 
-    game.connect_entities(pumpjack, oil_refinery, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+    game.sleep(5)
+    oil_refinery = game.get_entity(Prototype.OilRefinery, oil_refinery.position)
+    fluids = [x for x in oil_refinery.fluid_box if x["amount"] > 0]
+    assert len(fluids) >= 2, "Not all fluids are detected"
 
-    chemical_plant_pos = Position(pumpjack_pos.x + 25, pumpjack_pos.y)
+
+    storage_tank_1_pos = Position(oil_refinery_pos.x + 10, oil_refinery_pos.y)
+    game.move_to(storage_tank_1_pos)
+    storage_tank_1 = game.place_entity(Prototype.StorageTank, position = storage_tank_1_pos)
+
+    storage_tank_2_pos = Position(oil_refinery_pos.x + 10, oil_refinery_pos.y + 5)
+    game.move_to(storage_tank_2_pos)
+    storage_tank_2 = game.place_entity(Prototype.StorageTank, position = storage_tank_2_pos)
+
+    storage_tank_3_pos = Position(oil_refinery_pos.x + 10, oil_refinery_pos.y - 5)
+    game.move_to(storage_tank_3_pos)
+    storage_tank_3 = game.place_entity(Prototype.StorageTank, position = storage_tank_3_pos)
+
+    output_heavy_oil_connection_point = [x for x in oil_refinery.output_connection_points if x.type == "heavy-oil"][0]
+    output_light_oil_connection_point = [x for x in oil_refinery.output_connection_points if x.type == "light-oil"][0]
+    output_petroleum_gas_connection_point = [x for x in oil_refinery.output_connection_points if x.type == "petroleum-gas"][0]
+    
+    game.connect_entities(output_petroleum_gas_connection_point, storage_tank_3, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+    game.connect_entities(output_heavy_oil_connection_point, storage_tank_1, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+    game.connect_entities(output_light_oil_connection_point, storage_tank_2, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+    
+    chemical_plant_pos = Position(x = 52.5, y = 45.5)
     game.move_to(chemical_plant_pos)
     chem_plant = game.place_entity(Prototype.ChemicalPlant, position = chemical_plant_pos)
     chem_plant = game.set_entity_recipe(chem_plant, Prototype.Lubricant)
-
     setup_power(game, chemical_plant_pos.up(10), chem_plant)
-    game.connect_entities(oil_refinery, chem_plant, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+    chem_plant = game.get_entity(Prototype.ChemicalPlant, chem_plant.position)
+
+    error = True
+    try:
+        game.connect_entities(storage_tank_3, chem_plant, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+        error = False
+    except Exception as e:
+        pass
+    assert error, "Connection between storage tank 3 and chemical plant should not be possible"
+
+
+    error = True
+    try:
+        game.connect_entities(storage_tank_2, chem_plant, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+        error = False
+    except Exception as e:
+        pass
+    assert error, "Connection between storage tank 2 and chemical plant should not be possible"
+
+    input_oil_connection_point = [x for x in chem_plant.input_connection_points if x.type == "heavy-oil"][0]
+    game.connect_entities(storage_tank_1, input_oil_connection_point, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+
     game.sleep(10)
+    chem_plant = game.get_entity(Prototype.ChemicalPlant, chem_plant.position)
+    for fluid_box in chem_plant.fluid_box:
+        if fluid_box["name"] == "lubricant":
+            assert fluid_box["amount"] > 0, "Lubricant not detected"
+
+
+
+def test_direct_lubricant_with_positions(game):
+
+    water_pos = game.nearest(Resource.Water)
+    game.move_to(water_pos)
+    pump = game.place_entity(Prototype.OffshorePump, position = water_pos)
+
+
+    pumpjack_pos = game.nearest(Resource.CrudeOil)
+    game.move_to(pumpjack_pos)
+    game.move_to(Position(pumpjack_pos.x, pumpjack_pos.y - 5))
+    pumpjack = game.place_entity(Prototype.PumpJack, position = pumpjack_pos)
+
+
+    setup_power(game, pumpjack_pos.up(10), pumpjack)
+
+    oil_refinery_pos = Position(x = 32.5, y = 40.5)
+    game.move_to(oil_refinery_pos)
+    oil_refinery = game.place_entity(Prototype.OilRefinery, position = oil_refinery_pos)
+    game.set_entity_recipe(oil_refinery, RecipeName.AdvancedOilProcessing)
+    oil_refinery = game.get_entity(Prototype.OilRefinery, oil_refinery.position)
+    setup_power(game, oil_refinery_pos.down(10), oil_refinery)
+
+    input_water_connection_point = [x for x in oil_refinery.input_connection_points if x.type == "water"][0]
+    input_oil_connection_point = [x for x in oil_refinery.input_connection_points if x.type == "crude-oil"][0]
+    game.connect_entities(pumpjack.connection_points[0], input_oil_connection_point, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+    game.connect_entities(pump.connection_points[0], input_water_connection_point, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+
+    game.sleep(5)
+    oil_refinery = game.get_entity(Prototype.OilRefinery, oil_refinery.position)
+    fluids = [x for x in oil_refinery.fluid_box if x["amount"] > 0]
+    assert len(fluids) >= 2, "Not all fluids are detected"
+
+
+
+    output_heavy_oil_connection_point = [x for x in oil_refinery.output_connection_points if x.type == "heavy-oil"][0]
+
+    chemical_plant_pos = Position(x = 52.5, y = 45.5)
+    game.move_to(chemical_plant_pos)
+    chem_plant = game.place_entity(Prototype.ChemicalPlant, position = chemical_plant_pos)
+    chem_plant = game.set_entity_recipe(chem_plant, Prototype.Lubricant)
+    setup_power(game, chemical_plant_pos.up(10), chem_plant)
+    chem_plant = game.get_entity(Prototype.ChemicalPlant, chem_plant.position)
+
+    input_oil_connection_point = [x for x in chem_plant.input_connection_points if x.type == "heavy-oil"][0]
+    game.connect_entities(output_heavy_oil_connection_point, input_oil_connection_point, connection_type={Prototype.Pipe, Prototype.UndergroundPipe})
+
+    game.sleep(10)
+    chem_plant = game.get_entity(Prototype.ChemicalPlant, chem_plant.position)
+    for fluid_box in chem_plant.fluid_box:
+        if fluid_box["name"] == "lubricant":
+            assert fluid_box["amount"] > 0, "Lubricant not detected"
+
+
 
 def recipe_setup(game, recipes_to_test, prototype, direction=Direction.DOWN):
     """Test setup for various recipes with proper positioning"""

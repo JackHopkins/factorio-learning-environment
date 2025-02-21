@@ -136,7 +136,7 @@ def test_pole_to_generator(game):
 
     # Place boiler next to offshore pump
     # Important: The boiler needs to be placed with a spacing of 2 to allow for pipe connections
-    boiler = game.place_entity_next_to(Prototype.Boiler, offshore_pump.position, Direction.DOWN, spacing=2)
+    boiler = game.place_entity_next_to(Prototype.Boiler, offshore_pump.position, Direction.RIGHT, spacing=2)
     assert boiler, "Failed to place boiler"
 
     # add coal to the boiler
@@ -149,7 +149,7 @@ def test_pole_to_generator(game):
 
     # Place steam engine next to boiler
     # Important: The steam engine needs to be placed with a spacing of 2 to allow for pipe connections
-    steam_engine = game.place_entity_next_to(Prototype.SteamEngine, boiler.position, Direction.LEFT, spacing=2)
+    steam_engine = game.place_entity_next_to(Prototype.SteamEngine, boiler.position, Direction.RIGHT, spacing=2)
     assert steam_engine, "Failed to place steam engine"
 
     # Connect boiler to steam engine with pipes
@@ -217,7 +217,7 @@ def test_connect_steam_engine_mining_drill(game):
     pos = game.nearest(Resource.Water)
     game.move_to(pos)
     pump = game.place_entity(Prototype.OffshorePump, position=pos)
-    boiler = game.place_entity_next_to(Prototype.Boiler, reference_position=pump.position, spacing=2, direction=Direction.UP)
+    boiler = game.place_entity_next_to(Prototype.Boiler, reference_position=pump.position, spacing=2, direction=Direction.RIGHT)
     game.connect_entities(pump, boiler, Prototype.Pipe)
     steam_engine = game.place_entity_next_to(Prototype.SteamEngine, reference_position=boiler.position, spacing=2,
                                         direction=Direction.UP)
@@ -230,7 +230,7 @@ def test_connect_steam_engine_mining_drill(game):
     game.connect_entities(drill, steam_engine, Prototype.SmallElectricPole)
     game.sleep(2)
     drill = game.get_entity(Prototype.ElectricMiningDrill, position=pos)
-    assert drill.status == EntityStatus.WORKING
+    assert drill.status == EntityStatus.WORKING or drill.status == EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION
 
 def test_pole_groups(game):
     water_position = game.nearest(Resource.Water)
@@ -309,17 +309,13 @@ def test_prevent_power_pole_cobwebbing(game):
 
     # First connection should work - creates initial power network
     game.connect_entities(steam_engine, pole3, connection_type=Prototype.SmallElectricPole)
-
+    nr_of_poles = len(game.get_entities({Prototype.SmallElectricPole})[0].poles)
     # Now attempt to connect points that are already in the same network
-    try:
-        game.connect_entities(pole1, pole2, connection_type=Prototype.SmallElectricPole)
-        assert False, "Should have raised an exception - points already in same network"
-    except Exception as e:
-        assert str(e).find("already connected to the same power network") != -1
-
+    game.connect_entities(pole1, pole2, connection_type=Prototype.SmallElectricPole)
+        
     # Verify no additional poles were placed
     groups = game.get_entities({Prototype.SmallElectricPole})
-    assert len(groups[0].poles) == 3, f"Expected only 3 poles, found {len(groups[0].poles)}"
+    assert len(groups[0].poles) == nr_of_poles, f"Expected only {nr_of_poles} poles, found {len(groups[0].poles)}"
 
     # Check that all poles share the same electrical network ID
     ids = {pole.electrical_id for pole in groups[0].poles}

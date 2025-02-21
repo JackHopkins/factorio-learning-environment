@@ -324,9 +324,9 @@ def test_no_broken_edges(game):
                                        connection_type=Prototype.TransportBelt)
     assert belt_group, "Failed to connect entities with transport belts"
 
-    # Verify all belts are facing either UP or LEFT
-    for belt in belt_group.belts:
-        assert belt.direction.value in [Direction.UP.value, Direction.LEFT.value], f"Found belt with direction {belt.direction}"
+    game.sleep(60)
+    chest = game.get_entity(Prototype.WoodenChest, chest.position)
+    assert chest.inventory.get(Prototype.CopperOre, 0) > 0, "Chest is empty"
 
 def test_connecting_transport_belts_around_sharp_edges(game):
     water_patch: ResourcePatch = game.get_resource_patch(Resource.Water, game.nearest(Resource.Water))

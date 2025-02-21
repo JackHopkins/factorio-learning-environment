@@ -1,0 +1,12 @@
+
+{                          
+    "task_type": "populated_lab_play",
+    "config": {
+        "task":"Create an automatic copper plate factory that produces 16 copper plate per 60 ingame seconds. Useful information for this task: One burner mining drill mines 15 resources and one electric mining drill mines 30 resources per 60 ingame seconds. One stone furnace smelts 18 copper plates per 60 ingame seconds and electric furnace smelts 32 copper plates per 60 ingame seconds.",
+        "throughput_entity":"copper-plate",
+        "quota":16,
+        "maximum_steps": 16,
+        "holdout_wait_period": 60,
+        "pre_holdout_wait_period": 60
+    }
+}

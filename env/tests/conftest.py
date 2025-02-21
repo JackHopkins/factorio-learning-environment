@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from cluster.local.cluster_ips import get_local_container_ips
 from instance import FactorioInstance
 
 # Add the src directory to the Python path
@@ -23,10 +24,11 @@ if str(project_root / 'src') not in sys.path:
 @pytest.fixture()#scope="session")
 def instance():
     #from gym import FactorioInstance
+    ips, udp_ports, tcp_ports = get_local_container_ips()
     try:
         instance = FactorioInstance(address='localhost',
                                     bounding_box=200,
-                                    tcp_port=27019,
+                                    tcp_port=tcp_ports[-1],#27019,
                                     cache_scripts=False,
                                     fast=True,
                                     inventory={

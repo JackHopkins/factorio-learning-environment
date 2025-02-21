@@ -23,17 +23,11 @@ class MoveTo(Tool):
         :param position: Position to move to.
         :return: Your final position
         """
-        #        :param laying: Entity to lay down behind you as you move. e.g. 'Prototype.TransportBelt', facing away from you.
-        #        :param leading: Entity to lay down in front of you as you move. e.g. 'Prototype.TransportBelt', facing towards you.
-        #       example move_to(nearest(Prototype.StoneFurnace), laying=Prototype.TransportBelt)
-        #
+
         X_OFFSET, Y_OFFSET = 0.5, 0
 
         x, y = math.floor(position.x*4)/4 + X_OFFSET, math.floor(position.y*4)/4 + Y_OFFSET
         nposition = Position(x=x, y=y)
-
-        #if nposition.is_close(Position(x=self.game_state.player_location[0], y=self.game_state.player_location[1]), tolerance=0.5):
-        #    return True
 
         path_handle = self.request_path(start=Position(x=self.game_state.player_location.x,
                                                        y=self.game_state.player_location.y), finish=nposition,

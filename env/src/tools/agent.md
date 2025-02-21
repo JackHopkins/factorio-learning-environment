@@ -1,4 +1,4 @@
-# Factorio Implementation Guide
+# Patterns
 
 ## Core Systems Implementation
 
@@ -199,7 +199,7 @@ def build_research_facility(power_source, lab):
     return lab, inserter, chest
 ```
 
-## Key Implementation Patterns
+# Key Implementation Patterns
 
 ## Error Handling and Recovery
 
@@ -260,7 +260,7 @@ print(f"Connected the pumpjack at {pumpjack.position} to oil refinery at {oil_re
 
 ## TIPS WHEN CREATING STRUCTURES
 - When a entity has status "WAITING_FOR_SPACE_IN_DESTINATION", it means the there is no space in the drop position. For instance, a mining drill will have status WAITING_FOR_SPACE_IN_DESTINATION when the entities it mines are not being properly collected by a furnace or a chest or transported away from drop position with transport belts
-- Make sure to always put enough fuel into all entities that require fuel. It's easy to mine more coal, so it's better to insert in abundance 
-- Keep it simple! Minimise the usage of transport belts if you don't need them. Use chests and furnaces to catch the ore directly from drills
+- Make sure to always put 20+ fuel into all entities that require fuel. It's easy to mine more coal, so it's better to insert in abundance 
+- Keep it simple! Only use transport belts if you need them. Use chests and furnaces to catch the ore directly from drills
 - Inserters put items into entities or take items away from entities. You need to add inserters when items need to be automatically put into entities like chests, assembling machines, furnaces, boilers etc. The only exception is you can put a chest directly at drills drop position, that catches the ore directly or a furnace with place_entity_next_to(drill.drop_position), where the furnace will be fed the ore
-- have atleast 10-20 spaces between different mininig sections
+- have at least 10 spaces between different factory sections

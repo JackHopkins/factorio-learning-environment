@@ -1,4 +1,6 @@
 import pytest
+
+from cluster.local.cluster_ips import get_local_container_ips
 from game_types import Prototype, Resource
 from entities import Position, BoundingBox, BuildingBox, Direction
 from instance import FactorioInstance
@@ -16,9 +18,11 @@ from instance import FactorioInstance
 
 @pytest.fixture()
 def game():
+    ips, udp_ports, tcp_ports = get_local_container_ips()
+
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27019,
+                                tcp_port=tcp_ports[-1],
                                 cache_scripts=False,
                                 fast=True,
                                 inventory={

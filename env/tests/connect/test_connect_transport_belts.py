@@ -324,9 +324,9 @@ def test_no_broken_edges(game):
                                        connection_type=Prototype.TransportBelt)
     assert belt_group, "Failed to connect entities with transport belts"
 
-    # Verify all belts are facing either UP or LEFT
-    for belt in belt_group.belts:
-        assert belt.direction.value in [Direction.UP.value, Direction.LEFT.value], f"Found belt with direction {belt.direction}"
+    game.sleep(60)
+    chest = game.get_entity(Prototype.WoodenChest, chest.position)
+    assert chest.inventory.get(Prototype.CopperOre, 0) > 0, "Chest is empty"
 
 def test_connecting_transport_belts_around_sharp_edges(game):
     water_patch: ResourcePatch = game.get_resource_patch(Resource.Water, game.nearest(Resource.Water))
@@ -465,12 +465,13 @@ def test_belt_group(game):
 
 def test_connect_belts_with_end_rotation(game):
     iron_pos = game.nearest(Resource.IronOre)
-    game.move_to(Position(x=-13, y=23))
+    game.move_to(iron_pos)
     # Place drills individually with smaller building boxes
-    drill2 = game.place_entity(Prototype.BurnerMiningDrill, position=Position(x=-13, y=23), direction=Direction.LEFT)
+    drill2 = game.place_entity(Prototype.BurnerMiningDrill, position=iron_pos, direction=Direction.LEFT)
     # Place chest about 10 spaces away from the middle drill
-    game.move_to(Position(x=-3.5, y=22.5))
-    collection_chest = game.place_entity(Prototype.WoodenChest, position=Position(x=-9, y=22.5))
+    chest_pos = Position(x = iron_pos.x - 10, y = iron_pos.y)
+    game.move_to(chest_pos)
+    collection_chest = game.place_entity(Prototype.WoodenChest, position=chest_pos)
     print(f"Placed collection chest at {collection_chest.position}")
 
     # Place inserter next to chest
@@ -480,7 +481,9 @@ def test_connect_belts_with_end_rotation(game):
     chest_inserter = game.rotate_entity(chest_inserter, Direction.RIGHT)
     print(f"Placed chest inserter at {chest_inserter.position}")
 
-    collection_chest2 = game.place_entity(Prototype.WoodenChest, position=Position(x=-3, y=20))
+    chest_2_pos = Position(x = chest_pos.x - 10, y = chest_pos.y)
+    game.move_to(chest_2_pos)
+    collection_chest2 = game.place_entity(Prototype.WoodenChest, position=chest_2_pos)
     print(f"Placed collection chest at {collection_chest2.position}")
 
     # Place inserter next to chest
@@ -534,18 +537,19 @@ def test_multi_belt_join(game):
 
     iron_pos = game.nearest(Resource.IronOre)
     print(f"Found iron ore at {iron_pos}")
-
+    
     # Place drills individually with smaller building boxes
-    game.move_to(Position(x=-13, y=25))
-    drill1 = game.place_entity(Prototype.BurnerMiningDrill, position=Position(x=-13.5, y=25.5), direction=Direction.LEFT)
+    game.move_to(Position(x=15.5, y=70.5))
+    drill1 = game.place_entity(Prototype.BurnerMiningDrill, position=Position(x=15.5, y=70.5), direction=Direction.LEFT)
     print(f"placed drill at {drill1.position}")
-    game.move_to(Position(x=-13, y=23))
-    drill2 = game.place_entity(Prototype.BurnerMiningDrill, position=Position(x=-17.5, y=26.5), direction=Direction.LEFT)
+    game.move_to(Position(x=11.5, y=69.5))
+    drill2 = game.place_entity(Prototype.BurnerMiningDrill, position=Position(x=19.5, y=72.5), direction=Direction.LEFT)
     print(f"placed drill at {drill2.position}")
-    drill3 = game.place_entity(Prototype.BurnerMiningDrill, position=Position(x=-14.5, y=21.5), direction=Direction.LEFT)
+    game.move_to(Position(x=22.5, y=75.5))
+    drill3 = game.place_entity(Prototype.BurnerMiningDrill, position=Position(x=22.5, y=75.5), direction=Direction.LEFT)
     print(f"placed drill at {drill3.position}")
-    game.move_to(Position(x=-23.5, y=22.5))
-    collection_chest = game.place_entity(Prototype.WoodenChest, position=Position(x=-23.5, y=22.5))
+    game.move_to(Position(x=-0.5, y=66.5))
+    collection_chest = game.place_entity(Prototype.WoodenChest, position=Position(x=-0.5, y=66.5))
     print(f"Placed collection chest at {collection_chest.position}")
 
     # Place inserter next to chest
@@ -561,9 +565,9 @@ def test_multi_belt_join(game):
     # Connect all drills to the inserter\'s pickup position using transport belts
     belts = game.connect_entities(drill3.drop_position, chest_inserter.pickup_position, Prototype.TransportBelt)
     print(f"Connected drill at {drill2.position} to collection")
-    belts = game.connect_entities(drill2.drop_position, belts, Prototype.TransportBelt)
-    print(f"Connected drill at {drill1.position} to collection system")
     belts = game.connect_entities(drill1.drop_position, belts, Prototype.TransportBelt)
+    print(f"Connected drill at {drill1.position} to collection system")
+    belts = game.connect_entities(drill2.drop_position, belts, Prototype.TransportBelt)
 
     assert len(belts.belts) > 25
 

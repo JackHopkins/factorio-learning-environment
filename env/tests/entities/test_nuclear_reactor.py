@@ -36,7 +36,7 @@ def test_centrifuge(game):
 
     # Place and connect basic power setup
     pump = game.place_entity(Prototype.OffshorePump, position=water_pos)
-    boiler = game.place_entity_next_to(Prototype.Boiler, pump.position, Direction.DOWN, spacing=5)
+    boiler = game.place_entity_next_to(Prototype.Boiler, pump.position, Direction.RIGHT, spacing=5)
     engine = game.place_entity_next_to(Prototype.SteamEngine, boiler.position, Direction.DOWN, spacing=5)
 
     # Connect water system

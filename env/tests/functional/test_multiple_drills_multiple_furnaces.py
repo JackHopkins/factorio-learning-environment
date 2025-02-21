@@ -27,14 +27,14 @@ def test_multi_drill_multi_furnace(game):
     print(f"Placed first drill at {drill1.position}")
 
     # Place second drill
-    drill2_pos = Position(x=drill1.position.x + 3, y=drill1.position.y)
+    drill2_pos = Position(x=drill1.position.x - 3, y=drill1.position.y)
     game.move_to(drill2_pos)
     drill2 = game.place_entity(Prototype.BurnerMiningDrill, position=drill2_pos)
     drill2 = game.insert_item(Prototype.Coal, drill2, quantity=5)
     print(f"Placed second drill at {drill2.position}")
 
     # Place third drill
-    drill3_pos = Position(x=drill2.position.x + 3, y=drill2.position.y)
+    drill3_pos = Position(x=drill2.position.x - 3, y=drill2.position.y)
     game.move_to(drill3_pos)
     drill3 = game.place_entity(Prototype.BurnerMiningDrill, position=drill3_pos)
     drill3 = game.insert_item(Prototype.Coal, drill3, quantity=5)

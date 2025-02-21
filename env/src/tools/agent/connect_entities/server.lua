@@ -731,6 +731,37 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
     local source_entity = global.utils.get_closest_entity(player, {x = source_x, y = source_y})
     local target_entity = global.utils.get_closest_entity(player, {x = target_x, y = target_y})
 
+
+    if #connection_types == 1 and connection_types[1] == 'pipe-to-ground' then
+        
+        -- Calculate the direction from start to end.
+        local dir = global.utils.get_direction(start_position, end_position)
+        local entrance_dir = global.utils.get_entity_direction(underground_type, dir / 2)
+        
+        -- Place the underground entrance at the start position.
+        place_at_position(player, underground_type, start_position, entrance_dir,
+                          serialized_entities, dry_run, counter_state, false)
+        
+        local exit_dir
+        if underground_type == "pipe-to-ground" then
+          -- For pipe-to-ground, rotate the direction 180° for the exit.
+          exit_dir = global.utils.get_entity_direction(underground_type, (dir / 2 + 2) % 4)
+        else
+          exit_dir = global.utils.get_entity_direction(underground_type, dir / 2)
+        end
+        
+        -- Place the underground exit at the end position.
+        place_at_position(player, underground_type, end_position, exit_dir,
+                          serialized_entities, dry_run, counter_state, true)
+        
+        return {
+          entities = serialized_entities,
+          connected = true,
+          number_of_entities = counter_state.place_counter
+        }
+    end
+
+
     if underground_type then
         -- Calculate maximum possible underground sections based on inventory
         local max_underground_sections = calculate_max_underground_sections(player, underground_type)

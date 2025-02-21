@@ -70,7 +70,7 @@ docker-compose -f docker-compose-1.yml up -d
    1. Open Play: 
    2. Tasks: 
    
-## Environment Documentation
+## Environment
 
 FLE is an agent evaluation environment built on the game of Factorio, a popular resource management simulation game.
 
@@ -134,23 +134,25 @@ print(get_entities())
 </html>
 
 
-Agents are provided with the Python standard library, and an API comprising [tools](##tool-documentation) designed to balance expressiveness with tractability.
+Agents are provided with the Python standard library, and an API comprising [tools](##tool-documentation) that they can use.
 
-Each tool returns a typed object (e.g an Inventory) which can be stored as a named **variable** in the Python namespace, and referenced later in the episode. 
+Tools are functions that perform a game action and return a typed object (e.g an Inventory), which can be stored as a named **variable** in the Python namespace for later use. 
 
 The namespace acts as an episodic symbolic memory system, and saved objects represent an observation of the environment at the moment of query.
-This design enables agents to maintain complex state representations and build hierarchical abstractions as the factories scale.
 
-Agents observe **stdout** and **stderr** - the output streams of their program. Thus, agents may intentionally print relevant objects and computations to the output stream to construct observations.
+This enables agents to maintain complex state representations and build hierarchical abstractions as the factories scale.
+
+Agents observe **stdout** and **stderr** - the output streams of their program. Agents may intentionally choose to print relevant objects and computations to the output stream to construct observations.
 
 Mistakes in the code or invalid operations raise typed **exceptions** with detailed context that is written to stderr. 
+
 This enables agents to reactively debug their programs after execution, and proactively use runtime assertions during execution to self-verify their actions. 
 
 Agents are able to enhance their internal representation of the game state by defining: 
 1. Utility functions for reuse throughout an episode, to encapsulate previously successful logic
 2. Classes in the namespace to better organize the data retrieved from the game.
 
-## Agent Documentation
+## Agents
 
 The Factorio Learning Environment provides a straightforward agent architecture for developing and evaluating AI models that can play Factorio.
 
@@ -171,9 +173,9 @@ step(conversation: Conversation, response: Response) -> Policy:
 end(conversation: Conversation, completion: CompletionState) -> None:
 ```
 
-Our default agent is `BasicAgent`, which incorporates some basic mechanisms for managing context over long (+1000 step) runs. Namely:
+Our default agent is `BasicAgent`, which incorporates some basic mechanisms for managing context over long (+1000 step) runs:
 1. Every 32 steps, the all older interactions are summarised into a report in the system message.  
-2. Conversations are clipped to remain under 350k characters (~87k tokens).
+2. Conversations are clipped to remain under 200k characters (~87k tokens).
 3. We strip out all _historical_ observations of game entities, as this both fills up the context, and confuses the agent.
 
 We include some basic utilities for calling different LLMs (`agents/utils/llm_factory.py`), for formatting the conversation history (`agents/utils/formatters/conversation_formatter_abc.py`), and for parsing responses into valid Python (`agents/utils/parse_response.py`)

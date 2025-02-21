@@ -86,7 +86,7 @@ class ProgressionVisualizer:
         self.y_base = y_base
         self.versions = {}
         self.achievements = defaultdict(list)
-        self.colors = ['#4477AA', '#EE6677', '#228833', '#CCBB44']
+        self.colors = ['#8fd7d7', '#FFCD8E', '#00b0be', '#ff8ca1', '#f45f74', '#bdd373', '#98c127', '#ffb255']
         self.use_value_gdp = use_value_gdp
         self.value_calculator = ValueCalculator(recipes_file) if use_value_gdp else None
         self.use_log_scale = use_log_scale  # Store the scale preference
@@ -605,7 +605,7 @@ class ProgressionVisualizer:
         )
         fig.add_artist(polygon)
 
-    def export_split_visualization(self, output_file: str, max_depth: int = 2950):
+    def export_split_visualization(self, output_file: str, max_depth: int = 4950):
         """Export a visualization with main progression chart and final GDP scatter plot"""
         plt.rcParams['figure.dpi'] = 150
         plt.rcParams['savefig.dpi'] = 300
@@ -626,7 +626,7 @@ class ProgressionVisualizer:
             ax1.set_xlim(1e3, 1e8)
             ax1.set_xlabel('Ticks', fontsize=12)
         else:
-            ax1.set_xlim(1, 3e3)
+            ax1.set_xlim(100, 5e3)
             ax1.set_xlabel('Steps', fontsize=12)
         ax1.set_ylim(1e1, 1e6)
         ax1.set_ylabel('Production Score', fontsize=12)
@@ -916,11 +916,13 @@ async def main():
         # }
 
         version_groups = {
-            "Claude": [559, 560, 561, 562],  # Multiple Claude versions
-            "LLaMA-70B": [550],
-            "GPT-4": [551, 552, 553, 554],  # Multiple GPT-4 versions
+            "Claude": [559, 560, 561, 562, 574],  # Multiple Claude versions
+            "LLaMA-70B": [550, 599, 600, 601, 602],
+            "GPT-4": [551, 552, 553, 554, 564],  # Multiple GPT-4 versions
             "Deepseek-v3": [555, 556, 557, 558],
-            "GPT-4-Mini": [548]
+            "GPT-4-Mini": [548, 575, 576, 577, 578],
+            "Gemini-2": [595, 596, 597, 598 ],
+
             # "LLaMA-70B": [488],  # Single version
             # "GPT-4-Mini": [505],
             # "o3-mini": [508]
@@ -931,7 +933,8 @@ async def main():
             "LLaMA-70B": "LLaMA-70B",
             "GPT-4-Mini": "GPT-4-Mini",
             "o3-mini": "o3-mini",
-            "Deepseek-v3":"Deepseek-v3"
+            "Deepseek-v3":"Deepseek-v3",
+            "Gemini-2": "Gemini-2"
         }
 
         # Generate visualization

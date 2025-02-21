@@ -25,6 +25,13 @@ class CodeAnalyzer:
                 self.current_indent = 0
                 self.lines = []
 
+            def _get_docstring(self, node) -> str | None:
+                """Extract docstring from a node if present."""
+                if (node.body and isinstance(node.body[0], ast.Expr) and
+                        isinstance(node.body[0].value, ast.Str)):
+                    return node.body[0].value.s
+                return None
+
             def visit_ClassDef(self, node: ast.ClassDef) -> None:
                 # Build class definition with inheritance
                 bases = [ast.unparse(base) for base in node.bases]
@@ -36,6 +43,21 @@ class CodeAnalyzer:
 
                 # Process class body with increased indentation
                 self.current_indent += 1
+
+                # Add class docstring if present
+                docstring = self._get_docstring(node)
+                if docstring:
+                    # Format multi-line docstrings properly
+                    formatted_docstring = f'"""'
+                    if '\n' in docstring:
+                        formatted_docstring += '\n' + ('    ' * self.current_indent)
+                        formatted_docstring += docstring.strip() + '\n'
+                        formatted_docstring += '    ' * self.current_indent
+                    else:
+                        formatted_docstring += docstring
+                    formatted_docstring += '"""'
+                    self.lines.append(f"{'    ' * self.current_indent}{formatted_docstring}")
+
                 for item in node.body:
                     self.visit(item)
                 self.current_indent -= 1

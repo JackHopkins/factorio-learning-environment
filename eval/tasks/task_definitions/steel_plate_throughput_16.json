@@ -1,12 +1,10 @@
 
 {                          
-    "task_type": "populated_lab_play",
-    "config": {
-        "task":"Create an automatic steel plate factory that produces 16 steel plates per 60 ingame seconds. Useful information for this task: One burner mining drill mines 15 resources and one electric mining drill mines 30 resources per 60 in-game seconds. One stone furnace smelts 18 iron plates per 60 ingame seconds and electric furnace smelts 32 iron plates per 60 ingame seconds. One stone furnace smelts 4 steel plates per 60 in-game seconds and electric furnace smelts 7.5 steel plates per 60 in-game seconds.",
-        "throughput_entity":"steel-plate",
-        "quota":16,
-        "maximum_steps": 16,
-        "holdout_wait_period": 60,
-        "pre_holdout_wait_period": 60
-    }
+    "goal_description":"Create an automatic steel plate factory that produces 16 steel plates per 60 ingame seconds.",
+    "throughput_entity":"steel-plate",
+    "quota":16,
+    "trajectory_length": 128,
+    "holdout_wait_period": 60,
+    "pre_holdout_wait_period": 60,
+    "task_key": "steel_plate_throughput_16"
 }

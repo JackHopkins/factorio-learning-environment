@@ -609,7 +609,9 @@ class PumpJack(MiningDrill, FluidHandler, Electric):
     pass
 
 class SolarPanel(ElectricalProducer):
-    """A solar panel for generating power from sunlight."""
+    """A solar panel for generating power from sunlight.
+    This entity generated power during the day
+    Thus it can be directly connected to a entity to power it"""
     _height: float = 3
     _width: float = 3
 

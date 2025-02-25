@@ -6,7 +6,7 @@ import statistics
 import threading
 from typing import Optional, Dict, Any, List
 from contextlib import contextmanager
-
+from abc import ABC
 import psycopg2
 import tenacity
 from psycopg2.extras import DictCursor
@@ -18,7 +18,7 @@ from models.program import Program
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class DBClient:
+class DBClient(ABC):
     def __init__(self, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20, **db_config):
         self.db_config = db_config
         self.max_conversation_length = max_conversation_length
@@ -34,44 +34,12 @@ class DBClient:
 
     async def initialize(self):
         """Initialize the connection pool"""
-        if self._pool is None:
-            async with self._lock:
-                if self._pool is None:  # Double check pattern
-                    self._pool = ThreadedConnectionPool(
-                        self.min_connections,
-                        self.max_connections,
-                        **self.db_config
-                    )
-
-    def _ensure_pool(self):
-        """Ensure connection pool exists with proper locking"""
-        if self._pool is None:
-            with self._lock:
-                if self._pool is None:
-                    self._pool = ThreadedConnectionPool(
-                        self.min_connections,
-                        self.max_connections,
-                        **self.db_config
-                    )
+        pass
 
     @contextmanager
     def get_connection(self):
         """Regular context manager for database connections"""
-        self._ensure_pool()
-        conn = None
-        try:
-            conn = self._pool.getconn()
-            yield conn
-        finally:
-            if conn:
-                try:
-                    self._pool.putconn(conn)
-                except Exception as e:
-                    print(f"Error returning connection to pool: {e}")
-                    try:
-                        self._pool.putconn(conn, close=True)
-                    except:
-                        pass
+        pass
 
     # @contextmanager
     # def get_connection2(self):
@@ -420,3 +388,49 @@ class DBClient:
         except Exception as e:
             print(f"Error updating program: {e}")
             raise e
+
+
+class PostgresDBClient(DBClient):
+    def __init__(self, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20, **db_config):
+        super().__init__(max_conversation_length, min_connections, max_connections, **db_config)
+
+    async def initialize(self):
+        """Initialize the connection pool"""
+        if self._pool is None:
+            async with self._lock:
+                if self._pool is None:  # Double check pattern
+                    self._pool = ThreadedConnectionPool(
+                        self.min_connections,
+                        self.max_connections,
+                        **self.db_config
+                    )
+
+    def _ensure_pool(self):
+        """Ensure connection pool exists with proper locking"""
+        if self._pool is None:
+            with self._lock:
+                if self._pool is None:
+                    self._pool = ThreadedConnectionPool(
+                        self.min_connections,
+                        self.max_connections,
+                        **self.db_config
+                    )
+
+    @contextmanager
+    def get_connection(self):
+        """Regular context manager for database connections"""
+        self._ensure_pool()
+        conn = None
+        try:
+            conn = self._pool.getconn()
+            yield conn
+        finally:
+            if conn:
+                try:
+                    self._pool.putconn(conn)
+                except Exception as e:
+                    print(f"Error returning connection to pool: {e}")
+                    try:
+                        self._pool.putconn(conn, close=True)
+                    except:
+                        pass

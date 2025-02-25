@@ -11,7 +11,7 @@ from agents import Python
 from agents.agent_abc import AgentABC
 from agents.basic_agent import BasicAgent
 from eval.open.beam.run import SYSTEM_PROMPT, OBSERVATION_SPACE, MANUAL
-from eval.open.db_client import DBClient
+from eval.open.db_client import PostgresDBClient
 from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
 from models.conversation import Conversation
 from models.message import Message
@@ -46,7 +46,7 @@ class TrajectoryRunner:
     def __init__(self,
                  #llm_factory: LLMFactory,
                  agent: AgentABC,
-                 db_client: DBClient,
+                 db_client: PostgresDBClient,
                  evaluator: SimpleFactorioEvaluator,
                  config: EvalConfig,
                  process_id: int):
@@ -272,9 +272,9 @@ def create_factorio_instance(instance_id: int) -> FactorioInstance:
     return instance
 
 
-async def create_db_client() -> DBClient:
+async def create_db_client() -> PostgresDBClient:
     """Create database client with connection pool"""
-    return DBClient(
+    return PostgresDBClient(
         max_conversation_length=40,
         min_connections=2,
         max_connections=5,

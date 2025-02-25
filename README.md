@@ -361,6 +361,54 @@ factorio-learning-environment/
             └── throughput_task.py      # A basic task checking for a production throughput quota
 ```
 
+## Database
+To run long trajectories in FLE, we support checkpointing at every agent step using a SQL database. The `db_client` implements the interface for saving and loading agent outputs, environment feedbacks, game states and histories of the current trajectory. We support out of the box Postgres and SQLite databases. The easiest way how to set up a FLE-compatible databse is to use SQLite and setup the programs tale
+
+```
+# create the db file
+sqlite3 mydatabase.db
+
+# create the programs table
+CREATE TABLE programs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL,
+    value REAL DEFAULT 0.0,
+    visits INTEGER DEFAULT 0,
+    parent_id INTEGER,
+    state_json TEXT,
+    conversation_json TEXT NOT NULL,
+    completion_token_usage INTEGER,
+    prompt_token_usage INTEGER,
+    token_usage INTEGER,
+    response TEXT,
+    holdout_value REAL,
+    raw_reward REAL,
+    version INTEGER DEFAULT 1,
+    version_description TEXT DEFAULT '',
+    model TEXT DEFAULT 'gpt-4o',
+    meta TEXT,
+    achievements_json TEXT,
+    instance INTEGER DEFAULT -1,
+    depth REAL DEFAULT 0.0,
+    advantage REAL DEFAULT 0.0,
+    ticks INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+The SQLite database can then be instantied as follows
+
+```
+from eval.open.db_client import SQLliteDBClient
+SQLliteDBClient(
+        max_conversation_length=40,
+        min_connections=2,
+        max_connections=5,
+        # Provide the SQLite database file path
+        database_file="mydatabase.db"
+    )
+```
+
 ## Benchmarks
 
 We measured FLE execution performance across different configurations to measure performance. All benchmarks were run on a Macbook Pro M4 128GB, with 100 iterations per operation on a subset of the existing tools.

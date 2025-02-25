@@ -13,14 +13,14 @@ from psycopg2.extras import DictCursor
 from psycopg2.pool import ThreadedConnectionPool
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
 from models.program import Program
+import sqlite3
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class DBClient(ABC):
-    def __init__(self, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20, **db_config):
-        self.db_config = db_config
+    def __init__(self, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20):
         self.max_conversation_length = max_conversation_length
         # Don't store connection as instance variable
         # Instead create connection pool
@@ -392,8 +392,9 @@ class DBClient(ABC):
 
 class PostgresDBClient(DBClient):
     def __init__(self, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20, **db_config):
-        super().__init__(max_conversation_length, min_connections, max_connections, **db_config)
-
+        super().__init__(max_conversation_length, min_connections, max_connections)
+        self.db_config = db_config
+        
     async def initialize(self):
         """Initialize the connection pool"""
         if self._pool is None:
@@ -434,3 +435,31 @@ class PostgresDBClient(DBClient):
                         self._pool.putconn(conn, close=True)
                     except:
                         pass
+
+
+class SQLliteDBClient(DBClient):
+    def __init__(self,database_file, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20):
+        super().__init__(max_conversation_length, min_connections, max_connections)
+        self.database_file = database_file
+
+    async def initialize(self):
+        """Initialize the connection pool"""
+        if self._pool is None:
+            async with self._lock:
+                if self._pool is None:  # Double check pattern
+                    self._pool = ThreadedConnectionPool(
+                        self.min_connections,
+                        self.max_connections,
+                        **self.db_config
+                    )
+
+    @contextmanager
+    def get_connection(self):
+        """Context manager for SQLite database connections"""
+        conn = None
+        try:
+            conn = sqlite3.connect(self.database_file)
+            yield conn
+        finally:
+            if conn:
+                conn.close()

@@ -230,7 +230,7 @@ class MinimalAgent(AgentABC):
 Each agent is given a `task`, which specifies the goal the agent will carry out in FLE. A task consists of a task object defining the core interface of the task category and a json file specifying the parameters of the task.
 
 ### Anatomy of a Task
-Tasks live in `eval/tasks`, and implement an abstract base class (TaskABC) that defines the core interface for defining the task, setting up the environment and verifying success
+Tasks live in `eval/tasks`, and implement an abstract base class in `eval/tasks/task_abc.py` that defines the core interface for defining the task, setting up the environment and verifying success
 
 The abstract base class defines three methods that all tasks must implement:
 ```

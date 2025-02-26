@@ -469,36 +469,6 @@ class PostgresDBClient(DBClient):
                     except:
                         pass
     
-    async def get_resume_state(self, resume_version, process_id) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
-        """Get the state to resume from"""
-        try:
-            # Get most recent successful program to resume from
-            query = """
-            SELECT * FROM programs 
-            WHERE version = %s
-            AND state_json IS NOT NULL
-            AND value IS NOT NULL
-            -- AND meta->>'process_id' = %s::text
-            ORDER BY created_at DESC
-            LIMIT 1
-            """
-
-            with self.db.get_connection() as conn:
-                with conn.cursor() as cur:
-                    cur.execute(query, (resume_version, process_id))
-                    results = cur.fetchall()
-
-            if not results:
-                print(f"No valid programs found for version {resume_version}")
-                return None, None, None, None
-
-            # Choose a program to resume from
-            program = Program.from_row(dict(zip([desc[0] for desc in cur.description], results[0])))
-            return program.state, program.conversation, program.id, program.depth
-
-        except Exception as e:
-            print(f"Error getting resume state: {e}")
-            return None, None, None, None
 
 class SQLliteDBClient(DBClient):
     def __init__(self, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20, **db_config):

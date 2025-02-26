@@ -230,7 +230,7 @@ class MinimalAgent(AgentABC):
 Each agent is given a `task`, which specifies the goal the agent will carry out in FLE. A task consists of a task object defining the core interface of the task category and a json file specifying the parameters of the task.
 
 ### Anatomy of a Task
-Tasks live in `tasks`, and implement an abstract base class (TaskABC) that defines the core interface for defining the task, setting up the environment and verifying success
+Tasks live in `eval/tasks`, and implement an abstract base class in `eval/tasks/task_abc.py` that defines the core interface for defining the task, setting up the environment and verifying success
 
 The abstract base class defines three methods that all tasks must implement:
 ```
@@ -272,7 +272,7 @@ Examples of task json
 
 }
 ```
-Example open play task object can be seen below. The throughput task object can be found here [INSERT_LINK]
+Example open play task object can be seen below. The throughput task object can be found here `eval/tasks/throughput_task.py`
 ```
 class OpenPlayTask(TaskABC):
     def __init__(self, trajectory_length, goal_description: str, task_key: str):
@@ -298,7 +298,7 @@ class OpenPlayTask(TaskABC):
 ```
 
 ### Running tasks
-The entrypoint to run tasks is `run.py`. We supply a `construct_task_object` helper method to construct the task object using the task json. The helper method reads in the task json files from `eval\tasks\task_definitions` folder.
+The entrypoint to run tasks is `eval\open\independent_runs\simple_eval.py`. We supply a `construct_task_object` helper method to construct the task object using the task json. The helper method reads in the task json files from `eval\tasks\task_definitions` folder.
 
 ```
 # Open play task
@@ -309,7 +309,6 @@ gear_wheel_task = construct_task_object(task_folder, "iron_gear_wheel_throughput
 
 ```
 
-TO BE RE-WRITTEN AFTER RUN.PY REFACTO
 For each task execution a run-config must be constructed, where the task object is supplied. One example
 ```
 {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt, goal_description = gear_wheel_task.goal_description), "task": gear_wheel_task},

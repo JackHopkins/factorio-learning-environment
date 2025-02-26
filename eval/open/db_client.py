@@ -553,9 +553,9 @@ class SQLliteDBClient(DBClient):
         
     
 
-    #@tenacity.retry(
-    #retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.DatabaseError)),
-    #wait=wait_random_exponential(multiplier=1, min=4, max=10))
+    @tenacity.retry(
+    retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.DatabaseError)),
+    wait=wait_random_exponential(multiplier=1, min=4, max=10))
     async def create_program(self, program: Program) -> Program:
         """Create a new program, now with connection management"""
         try:

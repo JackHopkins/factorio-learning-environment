@@ -13,6 +13,8 @@ from psycopg2.extras import DictCursor
 from psycopg2.pool import ThreadedConnectionPool
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
 from models.program import Program
+from models.conversation import Conversation
+from models.game_state import GameState
 import sqlite3
 
 # Configure logging
@@ -20,7 +22,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class DBClient(ABC):
-    def __init__(self, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20):
+    def __init__(self, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20, **db_config):
         self.max_conversation_length = max_conversation_length
         # Don't store connection as instance variable
         # Instead create connection pool
@@ -30,6 +32,7 @@ class DBClient(ABC):
         self.min_connections = min_connections
         self.max_connections = max_connections
         self._lock = threading.Lock()
+        self.db_config = db_config
 
 
     async def initialize(self):
@@ -388,12 +391,42 @@ class DBClient(ABC):
         except Exception as e:
             print(f"Error updating program: {e}")
             raise e
+        
+    async def get_resume_state(self, resume_version, process_id) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
+        """Get the state to resume from"""
+        try:
+            # Get most recent successful program to resume from
+            query = """
+            SELECT * FROM programs 
+            WHERE version = %s
+            AND state_json IS NOT NULL
+            AND value IS NOT NULL
+            -- AND meta->>'process_id' = %s::text
+            ORDER BY created_at DESC
+            LIMIT 1
+            """
+
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(query, (resume_version, process_id))
+                    results = cur.fetchall()
+
+            if not results:
+                print(f"No valid programs found for version {resume_version}")
+                return None, None, None, None
+
+            # Choose a program to resume from
+            program = Program.from_row(dict(zip([desc[0] for desc in cur.description], results[0])))
+            return program.state, program.conversation, program.id, program.depth
+
+        except Exception as e:
+            print(f"Error getting resume state: {e}")
+            return None, None, None, None
 
 
 class PostgresDBClient(DBClient):
     def __init__(self, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20, **db_config):
-        super().__init__(max_conversation_length, min_connections, max_connections)
-        self.db_config = db_config
+        super().__init__(max_conversation_length, min_connections, max_connections, **db_config)
         
     async def initialize(self):
         """Initialize the connection pool"""
@@ -435,12 +468,42 @@ class PostgresDBClient(DBClient):
                         self._pool.putconn(conn, close=True)
                     except:
                         pass
+    
+    async def get_resume_state(self, resume_version, process_id) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
+        """Get the state to resume from"""
+        try:
+            # Get most recent successful program to resume from
+            query = """
+            SELECT * FROM programs 
+            WHERE version = %s
+            AND state_json IS NOT NULL
+            AND value IS NOT NULL
+            -- AND meta->>'process_id' = %s::text
+            ORDER BY created_at DESC
+            LIMIT 1
+            """
 
+            with self.db.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(query, (resume_version, process_id))
+                    results = cur.fetchall()
+
+            if not results:
+                print(f"No valid programs found for version {resume_version}")
+                return None, None, None, None
+
+            # Choose a program to resume from
+            program = Program.from_row(dict(zip([desc[0] for desc in cur.description], results[0])))
+            return program.state, program.conversation, program.id, program.depth
+
+        except Exception as e:
+            print(f"Error getting resume state: {e}")
+            return None, None, None, None
 
 class SQLliteDBClient(DBClient):
-    def __init__(self,database_file, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20):
-        super().__init__(max_conversation_length, min_connections, max_connections)
-        self.database_file = database_file
+    def __init__(self, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20, **db_config):
+        super().__init__(max_conversation_length, min_connections, max_connections, **db_config)
+        self.database_file = self.db_config.get('database_file')
 
     async def initialize(self):
         """Initialize the connection pool"""
@@ -463,3 +526,113 @@ class SQLliteDBClient(DBClient):
         finally:
             if conn:
                 conn.close()
+
+    @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
+                    wait=wait_exponential(multiplier=1, min=4, max=10))
+    async def get_largest_version(self) -> int:
+        query = """
+            SELECT MAX(version)
+            FROM programs
+        """
+
+        try:
+            with self.get_connection() as conn:
+                cur = conn.cursor()
+                cur.execute(query)
+                result = cur.fetchone()
+                return result[0] if result[0] else 0
+        except Exception as e:
+            print(f"Error fetching largest version: {e}")
+
+
+    async def get_resume_state(self, resume_version, process_id) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
+        """Get the state to resume from"""
+        try:
+            # Get most recent successful program to resume from
+            query = """
+            SELECT * FROM programs 
+            WHERE version = ?
+            AND state_json IS NOT NULL
+            AND value IS NOT NULL
+            AND json_extract(meta, '$.process_id') = ?
+            ORDER BY created_at DESC
+            LIMIT 1
+            """
+
+            with self.get_connection() as conn:
+                cur = conn.cursor()
+                cur.execute(query, (resume_version, process_id))
+                results = cur.fetchall()
+
+            if not results:
+                print(f"No valid programs found for version {resume_version}")
+                return None, None, None, None
+            resulting_program_dict = dict(zip([desc[0] for desc in cur.description], results[0]))
+            # make meta, state_json achievements_json and conversation_json table a dict 
+            resulting_program_dict['meta'] = json.loads(resulting_program_dict['meta'])
+            resulting_program_dict['achievements_json'] = json.loads(resulting_program_dict['achievements_json'])
+            resulting_program_dict['conversation_json'] = json.loads(resulting_program_dict['conversation_json'])
+            resulting_program_dict["state_json"] = json.loads(resulting_program_dict["state_json"])
+            # Choose a program to resume from
+            program = Program.from_row(resulting_program_dict)
+            return program.state, program.conversation, program.id, program.depth
+
+        except Exception as e:
+            print(f"Error getting resume state: {e}")
+            return None, None, None, None
+        
+    
+
+    #@tenacity.retry(
+    #retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.DatabaseError)),
+    #wait=wait_random_exponential(multiplier=1, min=4, max=10))
+    async def create_program(self, program: Program) -> Program:
+        """Create a new program, now with connection management"""
+        try:
+            with self.get_connection() as conn:
+                cur = conn.cursor()
+    
+                # Insert the program data
+                cur.execute("""
+                    INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, 
+                                          completion_token_usage, prompt_token_usage, token_usage, response, 
+                                          holdout_value, raw_reward, version, version_description, model, meta, 
+                                          achievements_json, instance, depth, advantage, ticks)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    program.code,
+                    program.value,
+                    0,  # Assuming visits is initially set to 0
+                    program.parent_id,
+                    program.state.to_raw() if program.state else None,
+                    json.dumps(program.conversation.dict()),
+                    program.completion_token_usage,
+                    program.prompt_token_usage,
+                    program.token_usage,
+                    program.response,
+                    program.holdout_value,
+                    program.raw_reward,
+                    program.version,
+                    program.version_description,
+                    program.model,
+                    json.dumps(program.meta),
+                    json.dumps(program.achievements),
+                    program.instance,
+                    program.depth / 2,
+                    program.advantage,
+                    program.ticks
+                ))
+
+                # Get the last inserted row ID
+                program.id = cur.lastrowid
+
+                # Retrieve the created_at timestamp
+                cur.execute("SELECT created_at FROM programs WHERE id = ?", (program.id,))
+                program.created_at = cur.fetchone()[0]
+                conn.commit()
+                # Return the updated program object
+                return program
+        except Exception as e:
+            conn.rollback()
+            print(f"Error creating program: {e}")
+            raise e

@@ -8,6 +8,7 @@ from eval.tasks.task_factory import TaskFactory
 from pathlib import Path
 import json
 load_dotenv()
+from cluster.local.cluster_ips import get_local_container_ips
 
 def main():
     parser = argparse.ArgumentParser()
@@ -24,6 +25,10 @@ def main():
     except Exception as e:
         raise(f"Error creating Factorio instance: {e}")
     
+    # check if we have more containers than run_configs
+    ips, udp_ports, tcp_ports = get_local_container_ips()
+    if len(tcp_ports) < len(run_configs):
+        raise ValueError(f"Not enough containers for {len(run_configs)} runs. Only {len(ips)} containers available.")
     version_offset = 0
     # Get starting version number for new runs
     base_version = asyncio.run(get_next_version())

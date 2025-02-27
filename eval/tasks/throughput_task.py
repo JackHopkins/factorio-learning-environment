@@ -115,9 +115,9 @@ class ThroughputTask(TaskABC):
         """Code to provision the task environment"""
         pass
 
-    def enchance_response_with_task_output(self, response: str, task_response: TaskResponse) -> str:
+    def enhance_response_with_task_output(self, response: str, task_response: TaskResponse) -> str:
         task_throughputs = task_response.meta.get("achievements", None)
         if task_throughputs:
-            response += f"\n\nHere is the current througphut of your factory: {task_throughputs['dynamic']} created per 60 seconds"
+            response += f"\n\nHere is the current throughput of your factory: {task_throughputs['dynamic']} created per 60 seconds"
         
         return response

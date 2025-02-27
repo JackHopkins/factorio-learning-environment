@@ -1,0 +1,10 @@
+
+{                          
+    "goal_description":"Create an automatic lubricant factory that produces 200 lubricant per 60 ingame seconds.",
+    "throughput_entity":"lubricant",
+    "quota":200,
+    "trajectory_length": 128,
+    "holdout_wait_period": 60,
+    "pre_holdout_wait_period": 60,
+    "task_key": "lubricant_throughput_16"
+}

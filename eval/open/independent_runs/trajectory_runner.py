@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 from agents import Python
 from agents.agent_abc import AgentABC
 from agents.basic_agent import BasicAgent
-from eval.open.beam.run import SYSTEM_PROMPT, OBSERVATION_SPACE, MANUAL
 from eval.open.db_client import DBClient
 from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
 from models.conversation import Conversation
@@ -20,9 +19,13 @@ from models.program import Program
 from instance import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
 from agents.utils.python_parser import PythonParser
-from models.response import Response
+#from models.response import EnvironmentResponse
 from namespace import FactorioNamespace
 
+from agents import Response
+import json
+from eval.tasks.task_utils import initiate_task_configs, initialise_starting_state
+from eval.tasks.task_abc import TaskABC
 load_dotenv()
 
 COURTESY_SLEEP = 5
@@ -33,11 +36,10 @@ class EvalConfig:
     #model: str
     #system_prompt: str
     agent: AgentABC
-    initial_state: GameState
+    task: TaskABC
     version: int
     version_description: str
     resume_version: Optional[int] = None
-    trajectory_length: int = 1000
 
 
 class TrajectoryRunner:
@@ -120,11 +122,11 @@ class TrajectoryRunner:
 
             if not results:
                 print(f"No valid programs found for version {self.config.resume_version}")
-                return None, None, None, None
+                return None, None, None, None, None
 
             # Choose a program to resume from
             program = Program.from_row(dict(zip([desc[0] for desc in cur.description], results[0])))
-            return program.state, program.conversation, program.id, program.depth
+            return program.state, program.conversation, program.id, program.depth, program.meta
 
         except Exception as e:
             print(f"Error getting resume state: {e}")
@@ -136,7 +138,7 @@ class TrajectoryRunner:
             return "calculating..."
 
         avg_iteration_time = sum(self.iteration_times) / len(self.iteration_times)
-        remaining_iterations = self.config.trajectory_length - current_iteration
+        remaining_iterations = self.config.task.trajectory_length - current_iteration
         seconds_remaining = avg_iteration_time * remaining_iterations
 
         # Convert to hours:minutes:seconds
@@ -151,14 +153,13 @@ class TrajectoryRunner:
         # Initialize state based on resume or fresh start
         import time
         self.start_time = time.time()
-
+        current_state = None
         if self.config.resume_version:
-            current_state, current_conversation, parent_id, depth = await self.get_resume_state()
+            current_state, current_conversation, parent_id, depth , meta = await self.get_resume_state()
             self.agent.conversation = current_conversation
-            if not current_state:
-                return
-        else:
-            current_state = self.config.initial_state
+            
+        if not current_state:
+            current_state = self.config.task.starting_game_state
             depth = 0
             instance = self.evaluator.instance
             instance.reset(current_state)
@@ -175,7 +176,7 @@ class TrajectoryRunner:
 
         last_response = None
         # Run trajectory
-        for iteration in range(depth, self.config.trajectory_length):
+        for iteration in range(depth, self.config.task.trajectory_length):
             iteration_start = time.time()
             time.sleep(COURTESY_SLEEP) # courtesy sleep
             try:
@@ -183,7 +184,7 @@ class TrajectoryRunner:
 
                 print(f"Generated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "
-                      f"Iteration {iteration}/{self.config.trajectory_length}")
+                      f"Iteration {iteration}/{self.config.task.trajectory_length}")
 
                 if not program:
                     continue
@@ -193,20 +194,19 @@ class TrajectoryRunner:
                 # Evaluate program
                 instance = self.evaluator.instance
                 instance.reset(current_state)
-                evaluated_program = await self.evaluator.evaluate(program, current_state)
-
+                evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.task)
                 print(program.code + "\n"+"="*50)
                 print("\033[1m\n".join(['>>>\t'+line for line in program.response.strip().replace('\\n', '\n\t').split('\n')]).strip()+"\033[0m")
                 print(f"Evaluated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "
-                      f"Iteration {iteration}/{self.config.trajectory_length}")
+                      f"Iteration {iteration}/{self.config.task.trajectory_length}")
 
                 if not evaluated_program:
                     continue
 
                 program = evaluated_program
                 self.agent.conversation = program.conversation
-
+                program.meta["task_key"] = self.config.task.task_key
                 last_response = Response(
                     code=program.code,
                     created_at=program.created_at,
@@ -216,13 +216,14 @@ class TrajectoryRunner:
                     ticks = program.ticks,
                     flows = program.flows,
                     response=program.response,
+                    task=task_verification_response
                 )
 
                 # Save program
                 saved_program = await self.db.create_program(program)
                 print(f"Saved program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "
-                      f"Iteration {iteration}/{self.config.trajectory_length}")
+                      f"Iteration {iteration}/{self.config.task.trajectory_length}")
 
                 parent_id = saved_program.id
 
@@ -245,7 +246,7 @@ class TrajectoryRunner:
                     eta = self.get_eta(iteration)
                     print(f"\033[92m Process {multiprocessing.current_process().name} - "
                           f"Model: {self.config.agent.model} - "
-                          f"Iteration {iteration}/{self.config.trajectory_length} - "
+                          f"Iteration {iteration}/{self.config.task.trajectory_length} - "
                           f"Value: {program.value:.2f} - "
                           f"Elapsed: {elapsed_str} - "
                           f"ETA: {eta}")
@@ -266,7 +267,7 @@ def create_factorio_instance(instance_id: int) -> FactorioInstance:
         fast=True,
         cache_scripts=True,
         inventory={},
-        all_technologies_researched=False
+        all_technologies_researched=True
     )
     instance.speed(10)
     return instance
@@ -318,116 +319,9 @@ async def get_next_version() -> int:
     await db_client.cleanup()
     return version + 1
 
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--resume-versions', type=str, help='Comma-separated list of versions to resume from')
-    args = parser.parse_args()
-
-    # Model configurations
-    # model_configs = [
-    #     #{"model": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "resume_version": 488},
-    #     #{"model": "gpt-4o-mini", "resume_version": None},
-    #     {"model": "gpt-4o", "resume_version": 532},
-       # {"model": "gpt-4o-mini", "resume_version": 505},
-        #{"model": "deepseek-chat", "resume_version": 507}
-        #{"model": "deepseek-chat", "resume_version": None},#491},
-        #{"model": "claude-3-5-sonnet-20241022", "resume_version": None}#517}#516}
-        #{"model": "gpt-4o", "resume_version": 524}
-        #{"model": "claude-3-5-sonnet-20241022", "resume_version": 527}
-        #{"model": 'o3-mini', "resume_version": 510}#509 }#508}
-    #]
-    # model_configs = [
-    #     {"model": "gpt-4o-mini", "resume_version": 487}
-    # ]
-
-    # Create initial state and get system prompt
-    instance = create_factorio_instance(0)
-    initial_state = GameState.from_instance(instance)
-    system_prompt = instance.get_system_prompt()
-    #system_prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\n# Observations:\n' + OBSERVATION_SPACE
-
-    run_configs = [
-        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 551},
-        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 564},
-
-        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 554},
-
-        {"agent": BasicAgent(model="deepseek/deepseek-chat-open-router", system_prompt=system_prompt), "resume_version": 555},
-        {"agent": BasicAgent(model="deepseek/deepseek-chat-open-router", system_prompt=system_prompt), "resume_version": 556},
-        #{"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 560},
-        #{"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 561},
-        {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 574},
-
-        #{"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": 575 },
-        #{"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": 576 },
-        #{"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": 577 },
-        #{"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": 578 },
-
-        {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 595},
-        #{"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 596},
-        {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 597},
-        {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 598},
-
-        #{"agent": BasicAgent(model="meta-llama/llama-3.3-70b-instruct-open-router", system_prompt=system_prompt), "resume_version": 599},
-        {"agent": BasicAgent(model="meta-llama/llama-3.3-70b-instruct-open-router", system_prompt=system_prompt), "resume_version": 600},
-        #{"agent": BasicAgent(model="meta-llama/llama-3.3-70b-instruct-open-router", system_prompt=system_prompt), "resume_version": 601},
-        {"agent": BasicAgent(model="meta-llama/llama-3.3-70b-instruct-open-router", system_prompt=system_prompt), "resume_version": 602},
-
-        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 797},
-        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 798},
-        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 799},
-        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 800},
-        {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 801},
-        {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 802},
-        {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 803},
-        {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 804},
-        {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 805},
-        {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 806},
-        {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 807},
-        {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 808}
-        # {"agent": BasicAgent(model="claude-3-5-sonnet-20241022-open-router", system_prompt=system_prompt), "resume_version": 559},
-        # {"agent": BasicAgent(model="claude-3-5-sonnet-20241022-open-router", system_prompt=system_prompt), "resume_version": 560},
-        # {"agent": BasicAgent(model="claude-3-5-sonnet-20241022-open-router", system_prompt=system_prompt), "resume_version": 561},
-        # {"agent": BasicAgent(model="claude-3-5-sonnet-20241022-open-router", system_prompt=system_prompt), "resume_version": 562},
-
-    ]
-    # meta-llama/llama-3.3-70b-instruct-open-router
-
-    # Update resume versions if provided
-    if args.resume_versions:
-        versions = [int(v.strip()) if v.strip() else None for v in args.resume_versions.split(',')]
-        for i, version in enumerate(versions[:len(run_configs)]):
-            if version is not None:
-                run_configs[i]["resume_version"] = version
-
-
-    # Get starting version number for new runs
-    base_version = asyncio.run(get_next_version())
-
-    processes = []
-    for run_idx, run_config in enumerate(run_configs):
-        config = EvalConfig(
-            agent=run_config["agent"],
-            initial_state=initial_state,
-            version=run_config["resume_version"] if run_config["resume_version"] else base_version + run_idx,
-            version_description=f"model:{run_config['agent'].model}\ntype:simple_trajectory",
-            resume_version=run_config["resume_version"],
-            trajectory_length=5000
-        )
-
-        p = multiprocessing.Process(
-            target=run_process,
-            args=(run_idx, config)
-        )
-        p.start()
-        processes.append(p)
-
-    # Wait for all processes to complete
-    for p in processes:
-        p.join()
-
-
-if __name__ == "__main__":
-    multiprocessing.set_start_method('spawn')
-    main()
+def construct_task_object(tasks_folder, task_key, instance, task_object):
+    with open(os.path.join(tasks_folder, f"{task_key}.json"), "r") as f:
+            input_task = json.load(f)
+    task = task_object(**input_task)
+    task = initialise_starting_state(instance, task)
+    return task

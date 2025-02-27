@@ -17,5 +17,5 @@ class TypeDefinitionProcessor:
         cleaned_content = cleaned_content.replace("\n\n\n", "\n").replace("\n\n", "\n").strip()
 
         # Extract from Prototype class onwards
-        prototype_index = cleaned_content.find("class Prototype(enum.Enum")
+        prototype_index = cleaned_content.find("class RecipeName(enum.Enum)")
         return cleaned_content[prototype_index:] if prototype_index >= 0 else cleaned_content

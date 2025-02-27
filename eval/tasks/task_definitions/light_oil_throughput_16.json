@@ -1,0 +1,10 @@
+
+{                          
+    "goal_description":"Create an automatic light oil factory that produces 200 light oil per 60 ingame seconds.",
+    "throughput_entity":"light-oil",
+    "quota":200,
+    "trajectory_length": 128,
+    "holdout_wait_period": 60,
+    "pre_holdout_wait_period": 60,
+    "task_key": "light_oil_throughput_16"
+}

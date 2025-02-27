@@ -10,7 +10,10 @@ from agents import TaskResponse
 
 class DefaultTask(TaskABC):
     def __init__(self, trajectory_length, goal_description: str, task_key: str):
-        super().__init__(trajectory_length, starting_inventory = {}, goal_description=goal_description, task_key = task_key)
+        super().__init__(trajectory_length, starting_inventory = {}, 
+                         goal_description=goal_description, 
+                         task_key = task_key,
+                         all_technology_reserached=False)
         self.starting_game_state = None
         
     

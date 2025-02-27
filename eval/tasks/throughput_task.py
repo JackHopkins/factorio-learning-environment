@@ -75,7 +75,11 @@ class ThroughputTask(TaskABC):
                   throughput_entity: Entity, quota: int, holdout_wait_period: int, pre_holdout_wait_period: int = 0):
         goal_description += f"\n{INSTRUCTIONS}"
         goal_description += "\n\n##Useful statistics\n" + CRAFTING_STATISTICS
-        super().__init__(trajectory_length, starting_inventory = LAB_PLAY_POPULATED_STARTING_INVENTORY, goal_description=goal_description, task_key = task_key)
+        super().__init__(trajectory_length, 
+                            starting_inventory = LAB_PLAY_POPULATED_STARTING_INVENTORY,
+                            goal_description=goal_description, 
+                            task_key = task_key,
+                            all_technology_reserached = True)
         self.throughput_entity = throughput_entity
         self.quota = quota
         self.holdout_wait_period = holdout_wait_period

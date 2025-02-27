@@ -1,8 +1,3 @@
-import sys
-sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser")
-sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\env")
-sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\env\src")
-
 import asyncio
 import argparse
 import multiprocessing
@@ -20,7 +15,6 @@ def main():
     args = parser.parse_args()
     # read in run_config
     run_config_location = args.run_config
-    run_config_location = r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\eval\open\independent_runs\run_config.json"
     with open(run_config_location, 'r') as f:
         run_configs = json.load(f)
     # Create initial state and get system prompt

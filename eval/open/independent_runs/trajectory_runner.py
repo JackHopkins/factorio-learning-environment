@@ -20,6 +20,7 @@ from instance import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
 from agents.utils.python_parser import PythonParser
 #from models.response import EnvironmentResponse
+from namespace import FactorioNamespace
 
 from agents import Response
 import json
@@ -64,10 +65,10 @@ class TrajectoryRunner:
         return "gpt" in model or 'o1' in model or 'gemini' in model
 
 
-    async def _generate_program(self, conversation: Conversation, response: Response, meta={}) -> Program:
+    async def _generate_program(self, conversation: Conversation, response: Response, namespace: FactorioNamespace, meta={}) -> Program:
         conversation = copy.deepcopy(conversation)
         try:
-            policy = await self.agent.step(conversation, response)
+            policy = await self.agent.step(conversation, response, namespace)
 
             if not policy:
                 raise Exception("Policy not valid Python. Skipping.")
@@ -109,7 +110,7 @@ class TrajectoryRunner:
             WHERE version = %s
             AND state_json IS NOT NULL
             AND value IS NOT NULL
-            AND meta->>'process_id' = %s::text
+            -- AND meta->>'process_id' = %s::text
             ORDER BY created_at DESC
             LIMIT 1
             """
@@ -179,7 +180,7 @@ class TrajectoryRunner:
             iteration_start = time.time()
             time.sleep(COURTESY_SLEEP) # courtesy sleep
             try:
-                program = await self._generate_program(self.agent.conversation, last_response)
+                program = await self._generate_program(self.agent.conversation, last_response, self.evaluator.instance.namespace)
 
                 print(f"Generated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "

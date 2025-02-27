@@ -1,15 +1,18 @@
 import ast
 import builtins
+import inspect
 import math
 import pickle
+import sys
 import traceback
 import types
 from difflib import get_close_matches
 from typing import Optional, Union, List, Dict, Tuple, Set, Any
+from pydantic import BaseModel
 
 from exceptions.hinting_name_error import get_value_type_str
 from entities import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe, BuildingBox, PipeGroup, \
-    ElectricityGroup, Pipe
+    ElectricityGroup, Pipe, Entity
 
 from game_types import Prototype, Resource, Technology, prototype_by_name
 from models.serializable_function import SerializableFunction
@@ -60,6 +63,55 @@ class FactorioNamespace:
 
         self.loop_context = LoopContext()
 
+        # Add all builtins to the namespace
+        for name in dir(builtins):
+            if not name.startswith('_'):  # Skip private/special names
+                try:
+                    setattr(self, name, getattr(builtins, name))
+                    self.persistent_vars[name] = getattr(builtins, name)
+                except Exception as e:
+                    print(f"Failed to add builtin {name}: {e}")
+
+        # Define assert function
+        def assert_(expr, msg=None):
+            if not expr:
+                raise AssertionError(msg)
+
+        # Add specific builtins that we definitely want to expose to the agent
+        self.essential_builtins = {
+            'print': print,
+            'len': len,
+            'range': range,
+            'int': int,
+            'str': str,
+            'float': float,
+            'bool': bool,
+            'list': list,
+            'dict': dict,
+            'tuple': tuple,
+            'set': set,
+            'sum': sum,
+            'min': min,
+            'max': max,
+            'enumerate': enumerate,
+            'zip': zip,
+            'map': map,
+            'filter': filter,
+            'any': any,
+            'all': all,
+            'sorted': sorted,
+            'reversed': reversed,
+            'round': round,
+            'abs': abs,
+            'isinstance': isinstance,
+            'type': type,
+            'assert': assert_
+        }
+
+        for name, func in self.essential_builtins.items():
+            setattr(self, name, func)
+            self.persistent_vars[name] = func
+
         # Turn this on to capture the outputs of all statements, rather than just `print` statement logs.
         self.capture_whole_output = False
 
@@ -85,6 +137,9 @@ class FactorioNamespace:
         # TODO - We need to add all entity objects to the namespace, e.g 'Chest'
 
         self.prototype_by_name = prototype_by_name
+        for name, value in self.prototype_by_name.items():
+            if value.entity_class:
+                setattr(self, value.name, value.entity_class)
 
         # Statically named directions
         self.UP, self.ABOVE, self.TOP = [Direction.UP] * 3
@@ -111,14 +166,37 @@ class FactorioNamespace:
         self.Tuple = Tuple
         self.Set = Set
 
+        # Get all classes from the entities module
+        entity_module = sys.modules[Entity.__module__]
 
-        # Python built-ins
+        # Find all classes that inherit from BaseModel (which includes Entity and its subclasses)
+        entity_classes = inspect.getmembers(
+            entity_module,
+            lambda member: (
+                    inspect.isclass(member) and
+                    issubclass(member, BaseModel) and
+                    member != BaseModel
+            )
+        )
+
+        # Add each entity class to both the namespace and persistent vars
+        for name, entity_class in entity_classes:
+            setattr(self, name, entity_class)
 
         # Add all the members of this class as static members so they can be accessed by the agent program.
         self._static_members = [attr for attr in dir(self)
                                 if not callable(getattr(self, attr))
                                 and not attr.startswith("__")]
         pass
+
+    def get_functions(self) -> List[SerializableFunction]:
+        """
+        Gets all defined functions mapped from their attribute name in the namespace.
+        @return:
+        """
+        #return [SerializableFunction(name=name, func=getattr(self, name)) for name in dir(self) if callable(getattr(self, name)) and not name.startswith("__")]
+        return list(filter(lambda x: isinstance(x, SerializableFunction), self.persistent_vars.values()))
+
 
     def load(self, game_state: GameState):
         try:
@@ -387,11 +465,16 @@ class FactorioNamespace:
                 'args': arg_annotations
             })
 
+            function_namespace = {
+                **self.essential_builtins,
+                **eval_dict
+            }
+
             wrapped_node = ast.Module([node], type_ignores=[])
             compiled = compile(wrapped_node, 'file', 'exec')
-            exec(compiled, eval_dict)
+            exec(compiled, function_namespace)
 
-            func = eval_dict[node.name]
+            func = function_namespace[node.name]
 
             if hasattr(node, '__annotations__'):
                 func.__annotations__ = getattr(node, '__annotations__')
@@ -451,9 +534,40 @@ class FactorioNamespace:
         elif isinstance(node, ast.Expr):
 
             # For expressions (including function calls)
-            compiled = compile(ast.Expression(node.value), 'file', 'eval')
+            # compiled = compile(ast.Expression(node.value), 'file', 'eval')
+            #
+            # try:
+            #     response = eval(compiled, eval_dict, eval_dict)
+            # except Exception as e:
+            #     pass
 
-            response = eval(compiled, eval_dict)
+            # For expressions (including function calls)
+            if isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name):
+                func_name = node.value.func.id
+                if func_name in eval_dict:
+                    # Get the function from eval_dict
+                    func = eval_dict[func_name]
+
+                    # # If it's a serializable function, bind it
+                    # if isinstance(func, SerializableFunction):
+                    #     func = func.bind(self)
+
+                    # Evaluate the arguments
+                    args = []
+                    kwargs = {}
+                    for arg in node.value.args:
+                        args.append(eval(compile(ast.Expression(arg), 'file', 'eval'), eval_dict, eval_dict))
+                    for keyword in node.value.keywords:
+                        key = keyword.arg
+                        value = eval(compile(ast.Expression(keyword.value), 'file', 'eval'), eval_dict, eval_dict)
+                        kwargs[key] = value
+
+                    # Call the function and let exceptions propagate
+                    response = func(*args, **kwargs)
+            else:
+                # For non-function call expressions
+                compiled = compile(ast.Expression(node.value), 'file', 'eval')
+                response = eval(compiled, eval_dict, eval_dict)
 
             # Only log if it's not a print statement (which has already been converted to log)
             if self.capture_whole_output:
@@ -538,6 +652,11 @@ class FactorioNamespace:
             **self.persistent_vars
         }
 
+        # Bind any SerializableFunction objects
+        for key, value in eval_dict.items():
+            if isinstance(value, SerializableFunction):
+                eval_dict[key] = value.bind(self)
+
         last_successful_state = None
         had_error = False
 
@@ -578,6 +697,10 @@ class FactorioNamespace:
                 break
 
             eval_dict.update(self.persistent_vars)
+            # Re-bind any new SerializableFunction objects after dict update
+            for key, value in eval_dict.items():
+                if isinstance(value, SerializableFunction):
+                    eval_dict[key] = value.bind(self)
 
         score, goal = self.score()
         result_output = parse_result_into_str(self.logging_results)

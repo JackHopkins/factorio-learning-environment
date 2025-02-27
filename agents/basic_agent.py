@@ -174,9 +174,10 @@ FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON. YOUR WEIGHTS WILL BE ERASED 
 
 
 class BasicAgent(AgentABC):
-   def __init__(self, model, system_prompt, goal, *args, **kwargs):
+   def __init__(self, model, system_prompt, task, *args, **kwargs):
         instructions = GENERAL_INSTRUCTIONS+system_prompt+FINAL_INSTRUCTION
-        instructions += f"\n\n### Goal\n{goal}\n\n"
+        self.task = task
+        instructions += f"\n\n### Goal\n{task.goal_description}\n\n"
         super().__init__( model, instructions, *args, **kwargs)
         self.llm_factory = LLMFactory(model)
         self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.llm_factory.acall,cache_dir='summary_cache')

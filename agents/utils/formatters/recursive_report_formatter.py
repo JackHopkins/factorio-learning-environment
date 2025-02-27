@@ -10,6 +10,8 @@ from models.conversation import Conversation
 from models.message import Message
 import copy
 
+from namespace import FactorioNamespace
+
 DEFAULT_INSTRUCTIONS = \
     """
 You are a report generating model for the game factorio. You are given a number of steps and logs an agent has executed in the game. You are also given the previous historical report. Using the previous historical report and the latest step execution logs you must generate a new report. The report must have 2 sections: EXISTING STRUCTURES and ERROR TIPS. Below are instructions for both of them
@@ -246,7 +248,7 @@ class RecursiveReportFormatter(ConversationFormatter):
         } for msg in messages if msg.role == "user"], sort_keys=True)
         return hashlib.sha256(chunk_content.encode()).hexdigest()
     
-    async def format_conversation(self, conversation: Conversation) -> Conversation:
+    async def format_conversation(self, conversation: Conversation, namespace: FactorioNamespace) -> Conversation:
         """
         Format conversation by recursively summarizing historical messages from left to right.
         Returns [system_message (if present), historical_summary, recent_messages].
@@ -267,6 +269,13 @@ class RecursiveReportFormatter(ConversationFormatter):
         if messages[0].role == "system":
             system_message = messages[0]
             messages = messages[1:]
+
+        # Add defined functions to system prompt
+        function_definitions = namespace.get_functions()
+
+        # Add function definitions to system prompt
+        if function_definitions:
+            system_message.content += "# Your utility functions:\n\n" + "\n\n".join([str(f) for f in function_definitions])
 
         new_messages = copy.deepcopy(messages[-self.chunk_size:])
         new_formatted_messages = [

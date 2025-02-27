@@ -13,7 +13,28 @@ class ResourceName(enum.Enum):
     CrudeOil = "crude-oil"
     UraniumOre = "uranium-ore"
 
+class PrototypeMetaclass(enum.EnumMeta):
+    def __getattr__(cls, name):
+        try:
+            attr =  super().__getattr__(name)
+            return attr
+        except AttributeError:
+            # Get all valid prototype names
+            valid_names = [member.name for member in cls]
+
+            # Find closest matches
+            matches = get_close_matches(name, valid_names, n=3, cutoff=0.6)
+
+            suggestion_msg = ""
+            if matches:
+                suggestion_msg = f". Did you mean: {', '.join(matches)}?"
+
+            raise AttributeError(f"'{cls.__name__}' has no attribute '{name}'{suggestion_msg}")
+
 class RecipeName(enum.Enum):
+    """
+    Recipe names that can be used in the game for fluids
+    """
     NuclearFuelReprocessing = "nuclear-fuel-reprocessing"
     UraniumProcessing = "uranium-processing"
     SulfuricAcid = "sulfuric-acid" # Recipe for crafting sulfuric acid
@@ -43,24 +64,6 @@ class RecipeName(enum.Enum):
     EmptySulfuricAcidBarrel = "empty-sulfuric-acid-barrel"
     EmptyWaterBarrel = "empty-water-barrel"
 
-
-class PrototypeMetaclass(enum.EnumMeta):
-    def __getattr__(cls, name):
-        try:
-            attr =  super().__getattr__(name)
-            return attr
-        except AttributeError:
-            # Get all valid prototype names
-            valid_names = [member.name for member in cls]
-
-            # Find closest matches
-            matches = get_close_matches(name, valid_names, n=3, cutoff=0.6)
-
-            suggestion_msg = ""
-            if matches:
-                suggestion_msg = f". Did you mean: {', '.join(matches)}?"
-
-            raise AttributeError(f"'{cls.__name__}' has no attribute '{name}'{suggestion_msg}")
 
 class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
 

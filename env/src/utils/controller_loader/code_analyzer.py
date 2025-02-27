@@ -56,6 +56,15 @@ class CodeAnalyzer:
                 signature = f"{'    ' * self.current_indent}def {node.name}({', '.join(args)}){returns}:"
                 self.lines.append(signature)
 
+<<<<<<< HEAD
+=======
+            def visit_Expr(self, node: ast.Expr) -> None:
+                # Build function arguments with type annotations
+                value = node.value.value
+                if value and  isinstance(value, str):
+                    self.lines.append(f'"""\n{value}\n"""')
+
+>>>>>>> cfa9431 (updated prompt generator)
             def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
                 # Handle annotated assignments (type hints)
                 target = ast.unparse(node.target)

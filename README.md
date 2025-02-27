@@ -240,7 +240,7 @@ verify(self, score: float, step: int, instance: FactorioInstance, step_statistic
 setup_instance(self, instance):
 """Code to provision the initial game state for the task environment"""
 
-enchance_response_with_task_output(self, response: str, task_response: TaskResponse) -> str:
+enhance_response_with_task_output(self, response: str, task_response: TaskResponse) -> str:
 """Add task specific information to the environment response if needed"""
 
 ```

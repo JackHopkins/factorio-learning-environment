@@ -18,7 +18,7 @@ class TaskABC:
         """Code to provision the task environment"""
         pass
     
-    def enchance_response_with_task_output(self, response: str, task_response: TaskResponse) -> str:
+    def enhance_response_with_task_output(self, response: str, task_response: TaskResponse) -> str:
         """Add task specific information to the environment response"""
         return response
     

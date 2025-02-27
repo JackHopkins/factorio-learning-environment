@@ -81,7 +81,7 @@ class CodeAnalyzer:
             def visit_Expr(self, node: ast.Expr) -> None:
                 # Build function arguments with type annotations
                 value = node.value.value
-                if value and  isinstance(value, str):
+                if value and isinstance(value, str):
                     self.lines.append(f'"""\n{value}\n"""')
 
             def visit_AnnAssign(self, node: ast.AnnAssign) -> None:

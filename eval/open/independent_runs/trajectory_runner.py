@@ -24,7 +24,6 @@ from namespace import FactorioNamespace
 
 from agents import Response
 import json
-from eval.tasks.task_utils import initiate_task_configs, initialise_starting_state
 from eval.tasks.task_abc import TaskABC
 load_dotenv()
 
@@ -33,13 +32,9 @@ COURTESY_SLEEP = 5
 @dataclass
 class EvalConfig:
     """Configuration for evaluation"""
-    #model: str
-    #system_prompt: str
     agent: AgentABC
-    task: TaskABC
     version: int
     version_description: str
-    resume_version: Optional[int] = None
 
 
 class TrajectoryRunner:
@@ -117,11 +112,11 @@ class TrajectoryRunner:
 
             with self.db.get_connection() as conn:
                 with conn.cursor() as cur:
-                    cur.execute(query, (self.config.resume_version, self.process_id))
+                    cur.execute(query, (self.config.version, self.process_id))
                     results = cur.fetchall()
 
             if not results:
-                print(f"No valid programs found for version {self.config.resume_version}")
+                print(f"No valid programs found for version {self.config.version}")
                 return None, None, None, None, None
 
             # Choose a program to resume from
@@ -138,7 +133,7 @@ class TrajectoryRunner:
             return "calculating..."
 
         avg_iteration_time = sum(self.iteration_times) / len(self.iteration_times)
-        remaining_iterations = self.config.task.trajectory_length - current_iteration
+        remaining_iterations = self.config.agent.task.trajectory_length - current_iteration
         seconds_remaining = avg_iteration_time * remaining_iterations
 
         # Convert to hours:minutes:seconds
@@ -154,12 +149,12 @@ class TrajectoryRunner:
         import time
         self.start_time = time.time()
         current_state = None
-        if self.config.resume_version:
+        if self.config.version:
             current_state, current_conversation, parent_id, depth , meta = await self.get_resume_state()
             self.agent.conversation = current_conversation
             
         if not current_state:
-            current_state = self.config.task.starting_game_state
+            current_state = self.config.agent.task.starting_game_state
             depth = 0
             instance = self.evaluator.instance
             instance.reset(current_state)
@@ -176,7 +171,7 @@ class TrajectoryRunner:
 
         last_response = None
         # Run trajectory
-        for iteration in range(depth, self.config.task.trajectory_length):
+        for iteration in range(depth, self.config.agent.task.trajectory_length):
             iteration_start = time.time()
             time.sleep(COURTESY_SLEEP) # courtesy sleep
             try:
@@ -184,7 +179,7 @@ class TrajectoryRunner:
 
                 print(f"Generated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "
-                      f"Iteration {iteration}/{self.config.task.trajectory_length}")
+                      f"Iteration {iteration}/{self.config.agent.task.trajectory_length}")
 
                 if not program:
                     continue
@@ -194,19 +189,19 @@ class TrajectoryRunner:
                 # Evaluate program
                 instance = self.evaluator.instance
                 instance.reset(current_state)
-                evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.task)
+                evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.agent.task)
                 print(program.code + "\n"+"="*50)
                 print("\033[1m\n".join(['>>>\t'+line for line in program.response.strip().replace('\\n', '\n\t').split('\n')]).strip()+"\033[0m")
                 print(f"Evaluated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "
-                      f"Iteration {iteration}/{self.config.task.trajectory_length}")
+                      f"Iteration {iteration}/{self.config.agent.task.trajectory_length}")
 
                 if not evaluated_program:
                     continue
 
                 program = evaluated_program
                 self.agent.conversation = program.conversation
-                program.meta["task_key"] = self.config.task.task_key
+                program.meta["task_key"] = self.config.agent.task.task_key
                 last_response = Response(
                     code=program.code,
                     created_at=program.created_at,
@@ -223,7 +218,7 @@ class TrajectoryRunner:
                 saved_program = await self.db.create_program(program)
                 print(f"Saved program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "
-                      f"Iteration {iteration}/{self.config.task.trajectory_length}")
+                      f"Iteration {iteration}/{self.config.agent.task.trajectory_length}")
 
                 parent_id = saved_program.id
 
@@ -246,7 +241,7 @@ class TrajectoryRunner:
                     eta = self.get_eta(iteration)
                     print(f"\033[92m Process {multiprocessing.current_process().name} - "
                           f"Model: {self.config.agent.model} - "
-                          f"Iteration {iteration}/{self.config.task.trajectory_length} - "
+                          f"Iteration {iteration}/{self.config.agent.task.trajectory_length} - "
                           f"Value: {program.value:.2f} - "
                           f"Elapsed: {elapsed_str} - "
                           f"ETA: {eta}")
@@ -301,6 +296,9 @@ async def run_trajectory(process_id: int, config: EvalConfig):
         error_penalty=0
     )
 
+    # setup the instance
+    task = config.agent.task
+    task.setup(instance)
     runner = TrajectoryRunner(config.agent, db_client, evaluator, config, process_id)
     await runner.run()
 
@@ -319,9 +317,3 @@ async def get_next_version() -> int:
     await db_client.cleanup()
     return version + 1
 
-def construct_task_object(tasks_folder, task_key, instance, task_object):
-    with open(os.path.join(tasks_folder, f"{task_key}.json"), "r") as f:
-            input_task = json.load(f)
-    task = task_object(**input_task)
-    task = initialise_starting_state(instance, task)
-    return task

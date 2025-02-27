@@ -44,7 +44,7 @@ class SimpleFactorioEvaluator:
             program.ticks = ticks
             conversation = copy.deepcopy(program.conversation)
 
-            final_response = task.enchance_response_with_task_output(response, task_response)
+            final_response = task.enhance_response_with_task_output(response, task_response)
             conversation.add_result(program.code, final_response, score=raw_reward, advantage=relative_reward,
                                     objectives=program.meta[
                                         'objectives'] if 'objectives' in program.meta else [])  #
@@ -76,9 +76,6 @@ class SimpleFactorioEvaluator:
             initial_value, start_time = instance.namespace.score()
             reward, time, result = instance.eval(program.code, timeout=60)
 
-
-            #save_path = Path(f"../../../data/screenshots/{program.version}/{self.instance.tcp_port}/{program.get_step()}.png")
-            #self.instance.screenshot(save_path=save_path, center_on_factory=True)
 
             entities = instance.namespace.get_entities()
             final_inventory = instance.namespace.inspect_inventory()

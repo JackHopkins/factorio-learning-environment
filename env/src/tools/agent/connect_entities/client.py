@@ -163,8 +163,9 @@ class ConnectEntities(Tool):
                 pass
         
         # try to do the modified straight line connection
-        if ((isinstance(target, ChemicalPlant) or isinstance(target, OilRefinery)) \
-                         or (isinstance(source, ChemicalPlant) or isinstance(source, OilRefinery))): 
+        if Prototype.UndergroundPipe in connection_types\
+            and ((isinstance(target, ChemicalPlant) or isinstance(target, OilRefinery)) \
+            or (isinstance(source, ChemicalPlant) or isinstance(source, OilRefinery))): 
             for source_pos, target_pos in prioritised_list_of_position_pairs:
                 try:
                     connection = self._create_modified_straight_connection(
@@ -344,15 +345,12 @@ class ConnectEntities(Tool):
                            target_entity: Optional[Entity] = None) -> List[Union[Entity, EntityGroup]]:
         """Create a connection between two positions"""
 
-        connection_type_names = {}
-        names_to_type = {}
-        metaclasses = {}
-
-        for connection_type in connection_types:
-            connection_prototype, metaclass = connection_type.value
-            metaclasses[connection_prototype] = metaclass
-            connection_type_names[connection_type] = connection_prototype
-            names_to_type[connection_prototype] = connection_type
+        connection_info = self._get_connection_info(connection_types)
+        connection_prototype = connection_info["last_connection_prototype"]
+        connection_type = connection_info["last_connection_type"]
+        connection_type_names = connection_info["connection_names"]
+        names_to_type = connection_info["names_to_types"]
+        metaclasses = connection_info["metaclasses"]
 
         inventory = self.inspect_inventory()
         num_available = inventory.get(connection_prototype, 0)
@@ -417,6 +415,34 @@ class ConnectEntities(Tool):
                 "number_of_entities_available": num_available
             }
 
+        groupable_entities, path = self._get_groupable_entities(result, metaclasses, names_to_type)
+        # Process entity groups based on connection type
+        entity_groups = self._process_entity_groups(
+            connection_type, groupable_entities,
+            source_entity, target_entity, source_pos
+        )
+
+        return _deduplicate_entities(path) + entity_groups
+
+
+    def _get_connection_info(self, connection_types: Set[Prototype]):
+        connection_type_names = {}
+        names_to_type = {}
+        metaclasses = {}
+        for connection_type in connection_types:
+            connection_prototype, metaclass = connection_type.value
+            metaclasses[connection_prototype] = metaclass
+            connection_type_names[connection_type] = connection_prototype
+            names_to_type[connection_prototype] = connection_type
+        return {"connection_names": connection_type_names,
+                "names_to_types": names_to_type,
+                 "metaclasses": metaclasses,
+                  "last_connection_prototype": connection_prototype,
+                  "last_connection_type": connection_type}
+
+
+    def _get_groupable_entities(self, result, metaclasses, names_to_type):
+
         # Process created entities
         path = []
         groupable_entities = []
@@ -441,15 +467,8 @@ class ConnectEntities(Tool):
             except Exception as e:
                 if entity_data:
                     raise Exception(
-                        f"Failed to create {connection_prototype} object from response: {result.raw_response}") from e
-
-        # Process entity groups based on connection type
-        entity_groups = self._process_entity_groups(
-            connection_type, groupable_entities,
-            source_entity, target_entity, source_pos
-        )
-
-        return _deduplicate_entities(path) + entity_groups
+                        f"Failed to create {entity_data['name']} object from response: {result.raw_response}") from e
+        return groupable_entities, path
 
     def _create_modified_straight_connection(self,
                            source_pos: Position,
@@ -459,15 +478,12 @@ class ConnectEntities(Tool):
                            target_entity: Optional[Entity] = None) -> List[Union[Entity, EntityGroup]]:
         """Create a connection between two positions"""
 
-        connection_type_names = {}
-        names_to_type = {}
-        metaclasses = {}
-
-        for connection_type in connection_types:
-            connection_prototype, metaclass = connection_type.value
-            metaclasses[connection_prototype] = metaclass
-            connection_type_names[connection_type] = connection_prototype
-            names_to_type[connection_prototype] = connection_type
+        connection_info = self._get_connection_info(connection_types)
+        connection_prototype = connection_info["last_connection_prototype"]
+        connection_type = connection_info["last_connection_type"]
+        connection_type_names = connection_info["connection_names"]
+        names_to_type = connection_info["names_to_types"]
+        metaclasses = connection_info["metaclasses"]
 
         inventory = self.inspect_inventory()
         num_available = inventory.get(connection_prototype, 0)
@@ -487,31 +503,7 @@ class ConnectEntities(Tool):
             return None
 
         # Process created entities
-        path = []
-        groupable_entities = []
-
-        for entity_data in result.entities.values():
-            if not isinstance(entity_data, dict):
-                continue
-
-            try:
-                self._process_warnings(entity_data)
-                entity = metaclasses[entity_data['name']](prototype=names_to_type[entity_data['name']], **entity_data)
-
-                if entity.prototype in (Prototype.TransportBelt, Prototype.UndergroundBelt,
-                                        Prototype.FastTransportBelt, Prototype.FastUndergroundBelt,
-                                        Prototype.ExpressTransportBelt, Prototype.ExpressUndergroundBelt,
-                                        Prototype.StoneWall,
-                                        Prototype.Pipe,Prototype.UndergroundPipe,
-                                        Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole):
-                    groupable_entities.append(entity)
-                else:
-                    path.append(entity)
-            except Exception as e:
-                if entity_data:
-                    raise Exception(
-                        f"Failed to create {connection_prototype} object from response: {result.raw_response}") from e
-
+        groupable_entities, path = self._get_groupable_entities(result, metaclasses, names_to_type)
         # Process entity groups based on connection type
         entity_groups = self._process_entity_groups(
             connection_type, groupable_entities,

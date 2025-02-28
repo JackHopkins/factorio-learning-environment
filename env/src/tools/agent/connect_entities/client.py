@@ -162,7 +162,8 @@ class ConnectEntities(Tool):
                 trace_back = e.__traceback__
                 pass
         
-        # try to do the modified straight line connection
+        # try to do the modified straight line connection if original connection failed
+        # and the connection types are pipes and underground pipes and one of the entities is a chemical plant or oil refinery
         if (Prototype.UndergroundPipe in connection_types and Prototype.Pipe in connection_types)\
             and ((isinstance(target, ChemicalPlant) or isinstance(target, OilRefinery)) \
             or (isinstance(source, ChemicalPlant) or isinstance(source, OilRefinery))): 
@@ -478,6 +479,8 @@ class ConnectEntities(Tool):
                            target_entity: Optional[Entity] = None) -> List[Union[Entity, EntityGroup]]:
         """Create a connection between two positions"""
 
+        # get the connection info
+        # same as normal pathing in the _create_connection method
         connection_info = self._get_connection_info(connection_types)
         connection_prototype = connection_info["last_connection_prototype"]
         connection_type = connection_info["last_connection_type"]
@@ -490,7 +493,7 @@ class ConnectEntities(Tool):
         pathing_radius = 0.5
         connection_type_names_values = list(connection_type_names.values())
         result = None
-        # Determine connection strategy based on type
+        # try to do the actual straight line pathing
         try:
             result = self.try_straight_line_pathing(source_pos, target_pos,
                         connection_type_names_values, num_available,
@@ -503,6 +506,7 @@ class ConnectEntities(Tool):
             return None
 
         # Process created entities
+        # same as in normal pathing in the _create_connection method
         groupable_entities, path = self._get_groupable_entities(result, metaclasses, names_to_type)
         # Process entity groups based on connection type
         entity_groups = self._process_entity_groups(
@@ -774,9 +778,17 @@ class ConnectEntities(Tool):
                 return entity.outputs[0].output_position
         return pos
 
-    def try_straight_line_pathing(self, source_pos, target_pos,
-                        connection_type_names_values, num_available,
-                        pathing_radius, target_entity, source_entity, names_to_type, metaclasses):
+    def try_straight_line_pathing(self, source_pos: Position, target_pos: Position,
+                        connection_type_names_values:List[str], num_available: int,
+                        pathing_radius: int, target_entity: Entity, source_entity: Entity,
+                        names_to_type: Dict[str, Prototype], metaclasses: Dict[str, Entity]) -> PathResult:
+        """
+        Try to create a path between source and target with a straight line extension
+        This helps to avoid blockages using underground pipes
+        First try to find unblocked areas for source and target and then connect them
+        """
+        # first get the required number of pipes
+        # 2 pipes for each chemical plant or oil refinery
         required_pipes = 0
         if isinstance(target_entity, ChemicalPlant) or isinstance(target_entity, OilRefinery):
             required_pipes += 2
@@ -787,6 +799,7 @@ class ConnectEntities(Tool):
         underground_pipes = inventory.get("pipe-to-ground", 0)
         if underground_pipes < required_pipes:
             return None
+        # set margin as 3, the closest point away from blockage without risk of merging
         margin = 3
         # underground pipes can do at most 10 distance
         max_distance = 10 - margin
@@ -796,23 +809,34 @@ class ConnectEntities(Tool):
                        "LEFT": {"x": -1, "y": 0}, 
                        "RIGHT": {"x": 1, "y": 0}}
 
-        # do +1 bc python is exclusive for the end of loop
+        # Loop through possible distances for target extension
         # first get the target straight line
         for target_run_idx in range(1, max_distance + 1):
+            # try to create the target straight line extension if needed
+            # we extend the target position in a straight line by the offset usng the target_run_idx as the distance to try
+            # extension is only needed if the target is a chemical plant or oil refinery
+            # if the target is not oil refinery or a chemical plant, we just return the original target pos without any extension
             target_straight_line_path_dict = self.create_straight_line_dict(target_entity, target_pos, offset_dict, margin, target_run_idx, num_available, offset_sign=-1)
+            # if failed, try the next distance for target extension
             if not target_straight_line_path_dict:
                     continue    
-            # then for each target straight line, we get the source straight line
+            # then for each target straight line extension, we get the source straight line
             for source_run_idx in range(1, max_distance + 1):
+                # same logic as for target, just for source
                 source_straight_line_path_dict = self.create_straight_line_dict(source_entity, source_pos, offset_dict, margin, source_run_idx, num_available)
                 if not source_straight_line_path_dict:
                         continue
-                # if both are successful, we try to connect them
+                # if both are successful, i.e we have both source and target positions successfully
+                # We then connect the new source and target positions
                 if source_straight_line_path_dict["success"] and target_straight_line_path_dict["success"]:
+                    # get the final connection positions
+                    # if there was a extension, we need to do one more offset to make the connectin point one before the underground pipe entry
+                    # otherwise (no extension), we just use the original connection position
                     source_pos = self.get_final_connection_pos(source_straight_line_path_dict, offset_dict, source_entity)
                     target_pos = self.get_final_connection_pos(target_straight_line_path_dict, offset_dict, target_entity)
                     
                     try:
+                        # try to find a path from the new source to the new target pos
                         self._extend_collision_boxes(source_pos, target_pos)
                         inbetween_path = self._attempt_path_finding(
                                     source_pos, target_pos,
@@ -821,8 +845,8 @@ class ConnectEntities(Tool):
                                 )
                     finally:
                         self._clear_collision_boxes()
-                    # if success, we combinethe 2 paths and return
-                    # Else we pickup the straight line pipes and try again with a longer distance
+                    # if success, we combine the 2 paths and return
+                    # Else we pickup the straight line pipes and try again with a longer distance for source and target
                     if inbetween_path.is_success:
                         if source_straight_line_path_dict["path"]:
                             # add the underground pipes to the source_to_underground_start result
@@ -832,6 +856,7 @@ class ConnectEntities(Tool):
                             # add the underground pipes to the underground_end_to_target result
                             for value in target_straight_line_path_dict["path"].entities.values():
                                 inbetween_path.entities[len(inbetween_path.entities)+1] = value
+                        # return the final path
                         return inbetween_path
                     
                     
@@ -844,7 +869,13 @@ class ConnectEntities(Tool):
                 self.pickup_entities(target_straight_line_path_dict["path"], metaclasses, names_to_type)
         return None
     
-    def get_final_connection_pos(self, input_path_dict, offset_dict, input_entity):
+    def get_final_connection_pos(self, input_path_dict: Dict, offset_dict: Dict[str, int], input_entity: Entity):
+        """
+        Get the final connection point for the input path dict
+        if it has a path parameter, it means it's a straight line extension and hence need to do one more offset and make that as the connection point
+        this prevents the pathing to do any weird paths where the underground exit won't be merged with
+        othersiwe we can just return the original connection position
+        """
         if input_path_dict["path"]:
             # do one more offset
             connection_pos = input_path_dict["connection_position"]
@@ -854,7 +885,14 @@ class ConnectEntities(Tool):
             connection_pos = input_path_dict["connection_position"]
         return connection_pos
 
-    def create_straight_line_dict(self, input_entity, input_pos, offset_dict, margin, run_idx, num_available, offset_sign = 1):
+    def create_straight_line_dict(self, input_entity: Entity, input_pos: Position, offset_dict: Dict[str, int], 
+                                  margin: int, run_idx: int, num_available: int, offset_sign: int = 1):
+        """
+        Create a straight line extension for the input entity if it is a chemical plant or oil refinery
+        The offset sign is used to specify which direction to extend the straight line
+        By default, we use calibrated offsets for source directions
+        Hence when connecting target entity, we need to flip the offsets
+        """
         entity_direction = input_entity.direction
         if isinstance(input_entity, ChemicalPlant) or isinstance(input_entity, OilRefinery):
             if entity_direction.name not in offset_dict:
@@ -872,7 +910,12 @@ class ConnectEntities(Tool):
             output_dict = {"success": True, "connection_position": input_pos, "path": None}
         return output_dict
     
-    def get_straight_line_path(self, starting_pos, offset, margin, distance, num_available):
+    def get_straight_line_path(self, starting_pos: Position, offset:Dict[str, int], margin: int, 
+                               distance: int, num_available: int):
+        """
+        Create the straight line path for the input starting position
+        Offset it by the given direction and distance and use pipe-to-ground to connect
+        """
         new_straigth_line_end_pos = Position(starting_pos.x + offset["x"] * (distance + margin) , starting_pos.y + offset["y"] * (distance + margin))
         # continue if new target pos is blocked or surrounded by things
         if self._is_blocked(new_straigth_line_end_pos, 1.5):
@@ -893,10 +936,15 @@ class ConnectEntities(Tool):
         raise Exception("Failed to connect straight line")
     
     def _is_blocked(self, pos: Position, radius = 0.5) -> bool:
+        """
+        Check if the position is blocked by entities"""
         entities = self.get_entities(position=pos, radius=radius)
         return bool(entities)
     
-    def pickup_entities(self, path_data, metaclasses, names_to_type):
+    def pickup_entities(self, path_data: dict, metaclasses: Dict[str, Entity], names_to_type: Dict[str, Prototype]):
+        """
+        Pickup the entities in the path data
+        """
         for entity_data in path_data.entities.values():
             if not isinstance(entity_data, dict):
                 continue

@@ -396,7 +396,7 @@ CREATE TABLE programs (
 );
 ```
 
-The SQLite database can then be instantied as follows
+The SQLite database can then be instantiated as follows
 
 ```
 from eval.open.db_client import SQLliteDBClient

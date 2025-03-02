@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from agents import Python
 from agents.agent_abc import AgentABC
 from agents.basic_agent import BasicAgent
-from eval.open.db_client import DBClient
+from eval.open.db_client import PostgresDBClient, SQLliteDBClient
 from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
 from models.conversation import Conversation
 from models.message import Message
@@ -43,7 +43,7 @@ class TrajectoryRunner:
     def __init__(self,
                  #llm_factory: LLMFactory,
                  agent: AgentABC,
-                 db_client: DBClient,
+                 db_client: PostgresDBClient,
                  evaluator: SimpleFactorioEvaluator,
                  config: EvalConfig,
                  process_id: int):
@@ -96,37 +96,6 @@ class TrajectoryRunner:
             print(f"Program generation failed: {str(e)}")
             return []
 
-    async def get_resume_state(self) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
-        """Get the state to resume from"""
-        try:
-            # Get most recent successful program to resume from
-            query = """
-            SELECT * FROM programs 
-            WHERE version = %s
-            AND state_json IS NOT NULL
-            AND value IS NOT NULL
-            -- AND meta->>'process_id' = %s::text
-            ORDER BY created_at DESC
-            LIMIT 1
-            """
-
-            with self.db.get_connection() as conn:
-                with conn.cursor() as cur:
-                    cur.execute(query, (self.config.version, self.process_id))
-                    results = cur.fetchall()
-
-            if not results:
-                print(f"No valid programs found for version {self.config.version}")
-                return None, None, None, None, None
-
-            # Choose a program to resume from
-            program = Program.from_row(dict(zip([desc[0] for desc in cur.description], results[0])))
-            return program.state, program.conversation, program.id, program.depth, program.meta
-
-        except Exception as e:
-            print(f"Error getting resume state: {e}")
-            return None, None, None, None
-
     def get_eta(self, current_iteration):
         """Calculate estimated time remaining"""
         if not self.iteration_times:
@@ -148,9 +117,10 @@ class TrajectoryRunner:
         # Initialize state based on resume or fresh start
         import time
         self.start_time = time.time()
+
         current_state = None
         if self.config.version:
-            current_state, current_conversation, parent_id, depth , meta = await self.get_resume_state()
+            current_state, current_conversation, parent_id, depth = await self.db.get_resume_state(resume_version = self.config.resume_version, process_id = self.process_id)
             self.agent.conversation = current_conversation
             
         if not current_state:
@@ -268,9 +238,9 @@ def create_factorio_instance(instance_id: int) -> FactorioInstance:
     return instance
 
 
-async def create_db_client() -> DBClient:
+async def create_db_client() -> PostgresDBClient:
     """Create database client with connection pool"""
-    return DBClient(
+    return PostgresDBClient(
         max_conversation_length=40,
         min_connections=2,
         max_connections=5,

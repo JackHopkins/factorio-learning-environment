@@ -101,9 +101,20 @@ class ConnectEntities(Tool):
 
         assert len(waypoints) > 1, "Need more than one waypoint"
         connection = waypoints[0]
+        dry_run = kwargs.get('dry_run', False)
+        # this is a bit hacky and we should rethink how to do dry runs
+        # right now the type of the connection output changes if its a dry run
+        if dry_run:
+            total_required_entities = 0
         for _, target in zip(waypoints[:-1], waypoints[1:]):
-            connection = self._connect_pair_of_waypoints(connection, target, connection_types=connection_types)
+            connection = self._connect_pair_of_waypoints(connection, target, connection_types=connection_types, dry_run=dry_run)
+            if dry_run:
+                total_required_entities += connection["number_of_entities_required"]
+                entities_available = connection["number_of_entities_available"]
             #sleep(0.01) # Sleep for 250ms to ensure that the game updates
+        if dry_run:
+            return {"number_of_entities_required": total_required_entities,
+                    "number_of_entities_available": entities_available}
         return connection
 
     def _validate_connection_types(self, connection_types: Set[Prototype]):
@@ -116,7 +127,8 @@ class ConnectEntities(Tool):
     def _connect_pair_of_waypoints(self,
                                    source: Union[Position, Entity, EntityGroup],
                                    target: Union[Position, Entity, EntityGroup],
-                                   connection_types: Set[Prototype] = {}) -> Union[Entity, EntityGroup]:
+                                   connection_types: Set[Prototype] = {},
+                                   dry_run: bool = False) -> Union[Entity, EntityGroup]:
         """Connect two entities or positions."""
 
         # Resolve connection type if not provided
@@ -152,11 +164,11 @@ class ConnectEntities(Tool):
             try:
                 connection = self._create_connection(
                     source_pos, target_pos,
-                    connection_types, False,
+                    connection_types, dry_run,
                     source_entity=source if isinstance(source, (Entity, EntityGroup)) else None,
                     target_entity=target if isinstance(target, (Entity, EntityGroup)) else None
                 )
-                return connection[0]
+                return connection[0] if not dry_run else connection
             except Exception as e:
                 last_exception = e
                 trace_back = e.__traceback__
@@ -165,8 +177,9 @@ class ConnectEntities(Tool):
         # try to do the modified straight line connection if original connection failed
         # and the connection types are pipes and underground pipes and one of the entities is a chemical plant or oil refinery
         if (Prototype.UndergroundPipe in connection_types and Prototype.Pipe in connection_types)\
-            and ((isinstance(target, ChemicalPlant) or isinstance(target, OilRefinery)) \
-            or (isinstance(source, ChemicalPlant) or isinstance(source, OilRefinery))): 
+            and (isinstance(target, (ChemicalPlant, OilRefinery)) \
+            or isinstance(source, (ChemicalPlant, OilRefinery)))\
+                and not dry_run: 
             for source_pos, target_pos in prioritised_list_of_position_pairs:
                 try:
                     connection = self._create_modified_straight_connection(
@@ -196,6 +209,9 @@ class ConnectEntities(Tool):
 
 
     def _refresh_entity(self, entity: Entity) -> Entity:
+        # we dont need to update if its a beltgroup, polegroup or pipegroup
+        if isinstance(entity, (BeltGroup, ElectricityGroup, PipeGroup)):
+            return entity
         updated_entities = self.get_entities(position = entity.position, radius=0)
         if len(updated_entities) == 1:
             return updated_entities[0]
@@ -341,7 +357,7 @@ class ConnectEntities(Tool):
                            source_pos: Position,
                            target_pos: Position,
                            connection_types: Set[Prototype],
-                           dry_run: bool,
+                           dry_run: bool = False,
                            source_entity: Optional[Entity] = None,
                            target_entity: Optional[Entity] = None) -> List[Union[Entity, EntityGroup]]:
         """Create a connection between two positions"""
@@ -384,11 +400,13 @@ class ConnectEntities(Tool):
                     # Retry with modified parameters for belts
                     source_pos_adjusted = self._adjust_belt_position(source_pos, source_entity)
                     target_pos_adjusted = self._adjust_belt_position(target_pos, target_entity)
-                    result = self._attempt_path_finding(
+                    adjusted_result = self._attempt_path_finding(
                         source_pos_adjusted, target_pos_adjusted,
                         connection_type_names_values, num_available,
                         2, dry_run, False
                     )
+                    if adjusted_result.is_success:
+                        result = adjusted_result
                     pass
 
             case _:  # Power poles
@@ -790,9 +808,9 @@ class ConnectEntities(Tool):
         # first get the required number of pipes
         # 2 pipes for each chemical plant or oil refinery
         required_pipes = 0
-        if isinstance(target_entity, ChemicalPlant) or isinstance(target_entity, OilRefinery):
+        if isinstance(target_entity, (ChemicalPlant, OilRefinery)):
             required_pipes += 2
-        if isinstance(source_entity, ChemicalPlant) or isinstance(source_entity, OilRefinery):
+        if isinstance(source_entity, (ChemicalPlant, OilRefinery)):
             required_pipes += 2
         # check that inventory has atleast 4 underground pipes
         inventory = self.inspect_inventory()

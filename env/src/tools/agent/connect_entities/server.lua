@@ -564,6 +564,9 @@ local function place_at_position(player, connection_type, current_position, dir,
                 table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
                 return placed_entity
             end
+        elseif can_place and dry_run then
+            counter_state.place_counter = counter_state.place_counter + 1
+            return nil
         end
     end
 
@@ -630,6 +633,11 @@ local function place_at_position(player, connection_type, current_position, dir,
             table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
             return placed_entity
         end
+    
+    elseif can_place and dry_run then
+        counter_state.place_counter = counter_state.place_counter + 1
+        return nil
+
     else
         -- game.print("Avoiding entity at " .. placement_position.x.. ", " .. placement_position.y)
         -- global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
@@ -1235,7 +1243,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
         game.print("Required count: " .. required_count)
         game.print("Available count: " .. number_of_connection_entities)
         if number_of_connection_entities < required_count then
-            error("\"You do not have enough " .. connection_type .. " in you inventory to complete this connection. Required number - " .. required_count .. ", Available in inventory - " .. number_of_connection_entities.."\"")
+            error("\"You do not have enough " .. connection_type_string .. " in you inventory to complete this connection. Required number - " .. required_count .. ", Available in inventory - " .. number_of_connection_entities.."\"")
         end
         result = connect_entities_with_validation(player_index, source_x, source_y, target_x, target_y, path_handle, connection_types, false)
     end

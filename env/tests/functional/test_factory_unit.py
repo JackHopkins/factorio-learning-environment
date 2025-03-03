@@ -35,9 +35,9 @@ def test_steam_engines(game):
 
     coal_inserter = game.place_entity_next_to(Prototype.BurnerInserter,
                                               reference_position=boiler.position,
-                                              direction=Direction.RIGHT,
+                                              direction=Direction.DOWN,
                                               spacing=0)
-    coal_inserter = game.rotate_entity(coal_inserter, Direction.LEFT)
+    coal_inserter = game.rotate_entity(coal_inserter, Direction.UP)
     game.move_to(game.nearest(Resource.Coal))
 
     burner_mining_drill = game.place_entity(Prototype.BurnerMiningDrill, position=game.nearest(Resource.Coal))
@@ -56,7 +56,7 @@ def test_steam_engines(game):
 
     assembler = game.place_entity_next_to(Prototype.AssemblingMachine1,
                                           reference_position=steam_engine.position,
-                                          direction=Direction.LEFT,
+                                          direction=Direction.UP,
                                           spacing=5)
 
     steam_engine_to_assembler_poles = game.connect_entities(assembler, steam_engine, connection_type=Prototype.SmallElectricPole)

@@ -10,7 +10,7 @@ from game_types import Prototype, Resource
 
 @pytest.fixture()
 def game(instance):
-    instance.initial_inventory = {'stone-furnace': 1, 'boiler': 1, 'steam-engine': 1, 'pipe': 100, 'iron-plate': 10}
+    instance.initial_inventory = {'stone-furnace': 1, 'boiler': 5, 'steam-engine': 5, 'pipe': 100, 'iron-plate': 10}
     #instance.rcon_client.send_command('game.reset_game_state()')
     #instance.rcon_client.send_command('game.reload_script()')
     instance.reset()
@@ -67,9 +67,9 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
     boilers_in_inventory = game.inspect_inventory()[Prototype.Boiler]
     steam_engines_in_inventory = game.inspect_inventory()[Prototype.SteamEngine]
     pipes_in_inventory = game.inspect_inventory()[Prototype.Pipe]
-
+    game.move_to(Position(x=0, y=0))
     boiler: Entity = game.place_entity(Prototype.Boiler, position=Position(x=0, y=0))
-    game.move_to(Position(x=0, y=10))
+    game.move_to(Position(x=0, y=5))
     steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=Position(x=0, y=10))
 
     try:
@@ -78,13 +78,13 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
     except Exception as e:
         print(e)
         assert True
-    game.reset()
+    game.pickup_entity(steam_engine)
+    game.pickup_entity(connection)
 
     # Define the offsets for the four cardinal directions
-    offsets = [Position(x=10, y=0), Position(x=0, y=-10), Position(x=-10, y=0)]  # Up, Right, Down, Left  (0, -10),
+    offsets = [Position(x=5, y=0), Position(x=0, y=5), Position(x=-5, y=0), Position(x = 0, y = -5)]  # Up, Right, Down, Left  (0, -10),
 
     for offset in offsets:
-        boiler: Entity = game.place_entity(Prototype.Boiler, position=Position(x=0, y=0))
         game.move_to(offset)
 
         steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=offset)
@@ -99,9 +99,10 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
 
         current_pipes_in_inventory = game.inspect_inventory()[Prototype.Pipe]
         spent_pipes = (pipes_in_inventory - current_pipes_in_inventory)
-        assert spent_pipes == len(connection[0].pipes)
+        assert spent_pipes == len(connection.pipes)
 
-        game.reset()  # Reset the game state after each iteration
+        game.pickup_entity(steam_engine)
+        game.pickup_entity(connection)
 
 
 def test_build_iron_gear_factory(game):
@@ -224,6 +225,8 @@ def test_build_iron_gear_factory(game):
                 craft_recursive(game, ingredient.name, required - available)
 
     def craft_recursive(game, item_name, quantity):
+        if item_name in ["copper-ore", "iron-ore", "wood", "copper-plate", "iron-plate"]:
+            return
         recipe = game.get_prototype_recipe(item_name)
         ensure_ingredients(game, recipe, quantity)
         game.craft_item(item_name, quantity=quantity)

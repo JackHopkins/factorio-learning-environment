@@ -1,5 +1,6 @@
 import unittest
 
+from cluster.local.cluster_ips import get_local_container_ips
 from instance import FactorioInstance
 
 embedded_function = """
@@ -34,9 +35,10 @@ expected_result = "{'iron-chest': 2, 'transport-belt': 50, 'burner-inserter': 32
 #                            inventory=inventory)
 
 def test_nested_functions():
+    ips, udp_ports, tcp_ports = get_local_container_ips()
     instance = FactorioInstance(address='localhost',
                                 bounding_box=200,
-                                tcp_port=27000,
+                                tcp_port=tcp_ports[-1],
                                 fast=True,
                                 # cache_scripts=False,
                                 inventory={})

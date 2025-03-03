@@ -118,7 +118,7 @@ class GameState:
                 'current_research': self.research.current_research,
                 'research_progress': self.research.research_progress,
                 'research_queue': self.research.research_queue,
-                "progress": self.research.progress
+                'progress': self.research.progress
             }
 
         return json.dumps(data)

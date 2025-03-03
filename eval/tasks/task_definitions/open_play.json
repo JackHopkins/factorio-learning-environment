@@ -1,0 +1,8 @@
+
+{   "task_type": "default",
+    "config": {                         
+        "goal_description":"- Build the biggest possible factory\n- Maximise automation, efficiency and scale",
+        "trajectory_length": 5000,
+        "task_key": "open_play"
+    }
+}

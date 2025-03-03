@@ -7,6 +7,44 @@ global.actions.craft_item = function(player_index, entity, count)
         return math.ceil(ticks_per_craft * crafts_count)
     end
 
+    local function check_inventory_space(player, item_name, count)
+        -- Get the prototype of the item
+        local item_prototype = game.item_prototypes[item_name]
+        if not item_prototype then
+            return false, "Invalid item prototype"
+        end
+
+        -- Calculate how many slots this would need
+        local stack_size = item_prototype.stack_size
+        local slots_needed = math.ceil(count / stack_size)
+
+        -- Check if player has enough free inventory slots
+        local inventory = player.get_main_inventory()
+        if not inventory then
+            return false, "Cannot access player inventory"
+        end
+
+        -- Count free slots and partially filled slots of the same item
+        local available_slots = 0
+        for i = 1, #inventory do
+            local stack = inventory[i]
+            if not stack.valid_for_read then
+                -- Empty slot
+                available_slots = available_slots + 1
+            elseif stack.name == item_name and stack.count < stack_size then
+                -- Partially filled slot of the same item
+                available_slots = available_slots + 1
+            end
+        end
+
+        if available_slots < slots_needed then
+            return false, "Inventory is full - requires " .. slots_needed .. " slots but only " .. available_slots .. " available"
+        end
+
+        return true
+    end
+
+
     local function get_missing_ingredients(player, recipe, count)
         local missing_ingredients = {}
         local crafts_needed = math.ceil(count / recipe.products[1].amount)
@@ -105,6 +143,12 @@ global.actions.craft_item = function(player_index, entity, count)
         if global.fast then
             -- Only add ticks in fast mode since in slow mode they are added naturally
             global.elapsed_ticks = global.elapsed_ticks + crafting_ticks
+
+            -- Add inventory space check here
+            local can_insert, error_msg = check_inventory_space(player, entity_name, actual_craft_count)
+            if not can_insert then
+                return 0, error_msg
+            end
 
             -- Fast crafting implementation
             local missing = get_missing_ingredients(player, recipe, actual_craft_count)

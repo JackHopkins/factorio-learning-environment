@@ -20,6 +20,7 @@ automation (e.g electronic-circuit manufacturing).
 - [Installation](##installation)
 - [Environment](##environment-documentation)
 - [Agents](##agent-documentation)
+- [Tasks](##task-documentation)
 - [Tools](##tool-documentation)
 - [Project Structure](##project-structure)
 - [Benchmarks](##benchmarks)
@@ -173,6 +174,8 @@ step(conversation: Conversation, response: Response) -> Policy:
 end(conversation: Conversation, completion: CompletionState) -> None:
 ```
 
+Each agent takes input a task (discussed in the next section) which specifies the goal of the agent.
+
 Our default agent is `BasicAgent`, which incorporates some basic mechanisms for managing context over long (+1000 step) runs:
 1. Every 32 steps, the all older interactions are summarised into a report in the system message.  
 2. Conversations are clipped to remain under 200k characters (~87k tokens).
@@ -192,7 +195,8 @@ class MinimalAgent(AgentABC):
     
     Note: This will blow up context length on longer runs, without some context pruning/management.
     """
-    def __init__(self, model, system_prompt, *args, **kwargs):
+    def __init__(self, model, system_prompt, goal_description, *args, **kwargs):
+        system_prompt += f"\n\n### Goal\n{goal_description}\n\n"
         super().__init__(model, system_prompt, *args, **kwargs)
         self.llm_factory = LLMFactory(model)
     
@@ -221,6 +225,94 @@ class MinimalAgent(AgentABC):
         pass
 ```
 
+## Tasks
+
+Each agent is given a `task`, which specifies the goal the agent will carry out in FLE. A task consists of a task object defining the core interface of the task category and a json file specifying the parameters of the task.
+
+### Anatomy of a Task
+Tasks live in `eval/tasks`, and implement an abstract base class in `eval/tasks/task_abc.py` that defines the core interface for defining the task, setting up the environment and verifying success
+
+The abstract base class defines three methods that all tasks must implement:
+```
+verify(self, score: float, step: int, instance: FactorioInstance, step_statistics: Dict) -> bool:
+""" Return true if the task is completed"""
+
+setup_instance(self, instance):
+"""Code to provision the initial game state for the task environment"""
+
+enhance_response_with_task_output(self, response: str, task_response: TaskResponse) -> str:
+"""Add task specific information to the environment response if needed"""
+
+```
+
+We provide two default tasks: 
+1. OpenPlayTask - Task for the open-play setting, where the agent plays the game until a specified number of steps is finished. The verify function will always return False
+2. ThroughputTask - Task for requiring the agent to build a factory that achieves a specified throughput in the holdout period. The verify function will return True if the holdout period throughput is above the threshold
+
+The task jsons specifies all required attributes to substantiate the respective task object. Each task must at minimum define the "goal_description", "trajectory_length" and "task_key" parameters.
+Examples of task json
+```
+# Open play task json
+
+{                          
+    "goal_description":"- Build the biggest possible factory\n- Maximise automation, efficiency and scale",
+    "trajectory_length": 5000,
+    "task_key": "open_play"
+}
+# One example of a throughput task json
+{                          
+
+    "goal_description":"Create an automatic iron gear wheel factory that produces 16 iron gear wheel per 60 ingame seconds",
+    "throughput_entity":"iron-gear-wheel",
+    "quota":16,
+    "trajectory_length": 128,
+    "holdout_wait_period": 60,
+    "pre_holdout_wait_period": 60,
+    "task_key": "iron_gear_wheel_throughput_16"
+
+}
+```
+Example open play task object can be seen below. The throughput task object can be found here `eval/tasks/throughput_task.py`
+```
+class OpenPlayTask(TaskABC):
+    def __init__(self, trajectory_length, goal_description: str, task_key: str):
+        super().__init__(trajectory_length, starting_inventory = {}, goal_description=goal_description, task_key = task_key)
+        self.starting_game_state = None
+        
+    
+    def verify(self, score: float, instance: FactorioInstance, step_statistics: Dict) -> TaskResponse:
+        return TaskResponse(success = False,
+                            meta = {})
+            
+    def _to_dict(self) -> Dict[str, Any]:
+        return {
+            "goal_description": self.goal_description,
+            "trajectory_length": self.trajectory_length,
+            "starting_inventory": self.starting_inventory,
+            "initial_state": self.starting_game_state.to_raw() if self.starting_game_state else None,
+        }
+
+    def setup_instance(self, instance):
+        """Code to provision the task environment"""
+        pass
+```
+
+### Running tasks
+The entrypoint to run tasks is `eval\open\independent_runs\simple_eval.py`. We supply a `construct_task_object` helper method to construct the task object using the task json. The helper method reads in the task json files from `eval\tasks\task_definitions` folder.
+
+```
+# Open play task
+open_play_task = construct_task_object(task_folder, "open_play", instance, OpenPlayTask)
+
+# Iron gear wheel task object
+gear_wheel_task = construct_task_object(task_folder, "iron_gear_wheel_throughput_16", instance, ThroughputTask)
+
+```
+
+For each task execution a run-config must be constructed, where the task object is supplied. One example
+```
+{"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt, goal_description = gear_wheel_task.goal_description), "task": gear_wheel_task},
+```
 
 ## Tool Documentation
 
@@ -359,6 +451,54 @@ factorio-learning-environment/
             ├── task_definitions/       # JSON definition of task
             ├── task_abc.py             # Abstract task definition
             └── throughput_task.py      # A basic task checking for a production throughput quota
+```
+
+## Database
+To run long trajectories in FLE, we support checkpointing at every agent step using a SQL database. The `db_client` implements the interface for saving and loading agent outputs, environment feedbacks, game states and histories of the current trajectory. We support out of the box Postgres and SQLite databases. The easiest way how to set up a FLE-compatible databse is to use SQLite and setup the programs tale
+
+```
+# create the db file
+sqlite3 mydatabase.db
+
+# create the programs table
+CREATE TABLE programs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL,
+    value REAL DEFAULT 0.0,
+    visits INTEGER DEFAULT 0,
+    parent_id INTEGER,
+    state_json TEXT,
+    conversation_json TEXT NOT NULL,
+    completion_token_usage INTEGER,
+    prompt_token_usage INTEGER,
+    token_usage INTEGER,
+    response TEXT,
+    holdout_value REAL,
+    raw_reward REAL,
+    version INTEGER DEFAULT 1,
+    version_description TEXT DEFAULT '',
+    model TEXT DEFAULT 'gpt-4o',
+    meta TEXT,
+    achievements_json TEXT,
+    instance INTEGER DEFAULT -1,
+    depth REAL DEFAULT 0.0,
+    advantage REAL DEFAULT 0.0,
+    ticks INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+The SQLite database can then be instantiated as follows
+
+```
+from eval.open.db_client import SQLliteDBClient
+SQLliteDBClient(
+        max_conversation_length=40,
+        min_connections=2,
+        max_connections=5,
+        # Provide the SQLite database file path
+        database_file="mydatabase.db"
+    )
 ```
 
 ## Benchmarks

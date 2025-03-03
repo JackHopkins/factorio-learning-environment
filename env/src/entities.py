@@ -393,7 +393,7 @@ class Entity(EntityCore):
         all_fields = self.__dict__
 
         # Filter out private attributes and excluded fields
-        excluded_fields = {'dimensions', 'prototype', 'type', 'health', 'game', 'id'}
+        excluded_fields = {'dimensions', 'prototype', 'type', 'health', 'game', 'id', 'tile_dimensions'}
         rename_fields = {}
         repr_dict = {}
 
@@ -410,6 +410,8 @@ class Entity(EntityCore):
                     if (clean_key == 'warnings' and value) or clean_key != 'warnings': # Don't show empty warnings list
                         repr_dict[clean_key] = value
 
+        repr_dict['height'] = self.tile_dimensions.tile_height
+        repr_dict['width'] = self.tile_dimensions.tile_width
 
         # Convert to string format
         items = [f"{k}={v!r}" for k, v in repr_dict.items()]
@@ -455,7 +457,7 @@ class TransportBelt(Entity):
     _width: float = 1
 
     def __repr__(self):
-        return f"Belt(({self.input_position}) -> ({self.output_position}), direction={self.direction})"
+        return f"Belt(({self.position})->, direction={self.direction})"
 
     def __hash__(self):
         return hash((self.position.x, self.position.y))
@@ -598,7 +600,7 @@ class OilRefinery(MultiFluidHandler, AssemblingMachine):
 
 
 class PumpJack(MiningDrill, FluidHandler, Electric):
-    """A pump jack for extracting crude oil. Requires electricity
+    """A pump jack for extracting crude oil. Requires electricity.
     This needs to be placed on crude oil and oil needs to be extracted with pipes
     Oil can be sent to a storage tank, oil refinery or a chemical plant
     Oil can also be sent to assmbling machine to be made into oil barrels
@@ -609,7 +611,9 @@ class PumpJack(MiningDrill, FluidHandler, Electric):
     pass
 
 class SolarPanel(ElectricalProducer):
-    """A solar panel for generating power from sunlight."""
+    """A solar panel for generating power from sunlight.
+    This entity generated power during the day
+    Thus it can be directly connected to a entity to power it"""
     _height: float = 3
     _width: float = 3
 
@@ -783,6 +787,7 @@ class PipeGroup(EntityGroup):
     
     def __str__(self):
         return self.__repr__()
+
 class ElectricityGroup(EntityGroup):
     """Represents a connected power network."""
 

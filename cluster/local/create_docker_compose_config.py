@@ -98,7 +98,7 @@ def setup_docker_compose(num_instances: int, map: str):
     time.sleep(10)
 
 if __name__ == "__main__":
-    num_instances = 1
+    num_instances = 33
     map = "open_world" # or default_lab_scenario
     if len(sys.argv) != 2:
         print("Usage: python create_docker_compose_config.py <number_of_instances>")

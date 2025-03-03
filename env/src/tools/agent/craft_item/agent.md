@@ -32,10 +32,8 @@ The tool supports recursive crafting of intermediate components. For example:
 
 ## Important Considerations
 
-### Raw Resources
-- Raw resources like iron ore and copper ore cannot be crafted
-- These must be mined using mining tools instead
-- Attempting to craft raw resources will result in an error
+- Raw resources like iron ore and copper ore cannot be crafted. These must be mined using mining tools instead. Attempting to craft raw resources will result in an error.
+- Crafting if your inventory is full will also result in an error.
 
 
 ## Examples

@@ -175,6 +175,7 @@ class PythonParser:
         if backtick_code:
             return backtick_code, content
 
+        content = content.replace("```python", "").replace("```", "")
         code = PythonParser.extract_all_valid_python_chunks(content)
         if code:
             return code, content

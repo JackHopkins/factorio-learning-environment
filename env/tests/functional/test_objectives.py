@@ -69,7 +69,7 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
     pipes_in_inventory = game.inspect_inventory()[Prototype.Pipe]
     game.move_to(Position(x=0, y=0))
     boiler: Entity = game.place_entity(Prototype.Boiler, position=Position(x=0, y=0))
-    game.move_to(Position(x=0, y=10))
+    game.move_to(Position(x=0, y=5))
     steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=Position(x=0, y=10))
 
     try:
@@ -78,14 +78,13 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
     except Exception as e:
         print(e)
         assert True
-    game.reset()
+    game.pickup_entity(steam_engine)
+    game.pickup_entity(connection)
 
     # Define the offsets for the four cardinal directions
-    offsets = [Position(x=10, y=0), Position(x=0, y=-10), Position(x=-10, y=0)]  # Up, Right, Down, Left  (0, -10),
+    offsets = [Position(x=5, y=0), Position(x=0, y=5), Position(x=-5, y=0), Position(x = 0, y = -5)]  # Up, Right, Down, Left  (0, -10),
 
     for offset in offsets:
-        game.move_to(Position(x=10, y=0))
-        boiler: Entity = game.place_entity(Prototype.Boiler, position=Position(x=10, y=0))
         game.move_to(offset)
 
         steam_engine: Entity = game.place_entity(Prototype.SteamEngine, position=offset)
@@ -100,9 +99,10 @@ def test_connect_steam_engines_to_boilers_using_pipes(game):
 
         current_pipes_in_inventory = game.inspect_inventory()[Prototype.Pipe]
         spent_pipes = (pipes_in_inventory - current_pipes_in_inventory)
-        assert spent_pipes == len(connection[0].pipes)
+        assert spent_pipes == len(connection.pipes)
 
-        game.reset()  # Reset the game state after each iteration
+        game.pickup_entity(steam_engine)
+        game.pickup_entity(connection)
 
 
 def test_build_iron_gear_factory(game):

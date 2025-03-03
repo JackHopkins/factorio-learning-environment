@@ -61,7 +61,8 @@ class GameState:
                 },
                 current_research=data['research']['current_research'],
                 research_progress=data['research']['research_progress'],
-                research_queue=data['research']['research_queue']
+                research_queue=data['research']['research_queue'],
+                progress=data['research']['progress'] if 'progress' in data['research'] else {}
             )
 
         return cls(

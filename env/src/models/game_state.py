@@ -61,7 +61,8 @@ class GameState:
                 },
                 current_research=data['research']['current_research'],
                 research_progress=data['research']['research_progress'],
-                research_queue=data['research']['research_queue']
+                research_queue=data['research']['research_queue'],
+                progress=data['research']['progress'] if 'progress' in data['research'] else {}
             )
 
         return cls(
@@ -117,7 +118,7 @@ class GameState:
                 'current_research': self.research.current_research,
                 'research_progress': self.research.research_progress,
                 'research_queue': self.research.research_queue,
-                "progress": self.research.progress
+                'progress': self.research.progress
             }
 
         return json.dumps(data)

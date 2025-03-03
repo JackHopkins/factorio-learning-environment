@@ -28,11 +28,13 @@ class SimpleFactorioEvaluator:
         if logger:
             self.port_to_group = logger.port_to_group
 
-    async def evaluate(self, program: Program, start_state: GameState) -> Program:
+    async def evaluate(self, program: Program, start_state: GameState, task) -> Program:
         try:
             self.instance.reset(start_state)
             raw_reward, state, response, entities, achievements, flows, ticks = await self._evaluate_single(self.instance.tcp_port, program, self.instance)
-
+            task_response = task.verify(score=raw_reward, 
+                                                 instance=self.instance, 
+                                                 step_statistics=flows)
             relative_reward = raw_reward  # - holdout_value
 
 
@@ -42,7 +44,8 @@ class SimpleFactorioEvaluator:
             program.ticks = ticks
             conversation = copy.deepcopy(program.conversation)
 
-            conversation.add_result(program.code, response, score=raw_reward, advantage=relative_reward,
+            final_response = task.enhance_response_with_task_output(response, task_response)
+            conversation.add_result(program.code, final_response, score=raw_reward, advantage=relative_reward,
                                     objectives=program.meta[
                                         'objectives'] if 'objectives' in program.meta else [])  #
             program.conversation = conversation
@@ -50,7 +53,8 @@ class SimpleFactorioEvaluator:
             program.achievements = achievements
             program.flows = flows
 
-            return program
+            program.meta['task_response'] = task_response.dict()
+            return program, task_response
 
         except Exception as e:
             print(e)
@@ -72,9 +76,6 @@ class SimpleFactorioEvaluator:
             initial_value, start_time = instance.namespace.score()
             reward, time, result = instance.eval(program.code, timeout=60)
 
-
-            save_path = Path(f"../../../data/screenshots/{program.version}/{self.instance.tcp_port}/{program.get_step()}.png")
-            self.instance.screenshot(save_path=save_path, center_on_factory=True)
 
             entities = instance.namespace.get_entities()
             final_inventory = instance.namespace.inspect_inventory()

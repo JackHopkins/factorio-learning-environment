@@ -14,7 +14,7 @@ def game(instance):
                                   'boiler': 1, 'steam-engine': 1, 'offshore-pump': 1, 'pipe': 100, 'iron-plate': 50, 'copper-plate': 20, 'coal': 50}
 
     instance.reset()
-
+    instance.speed(10)
     yield instance.namespace
 
 def test_create_offshore_pump_to_steam_engine(game):
@@ -223,7 +223,7 @@ def test_build_iron_gear_factory_from_scratch(game):
     # place the boiler next to the offshore pump
     boiler = game.place_entity_next_to(Prototype.Boiler,
                                        reference_position=offshore_pump.position,
-                                       direction=Direction.LEFT,
+                                       direction=Direction.UP,
                                        spacing=2)
 
 
@@ -236,7 +236,7 @@ def test_build_iron_gear_factory_from_scratch(game):
     steam_engine = game.place_entity_next_to(Prototype.SteamEngine,
                                              reference_position=boiler.position,
                                              direction=Direction.LEFT,
-                                             spacing=2)
+                                             spacing=5)
 
     # connect the steam engine and assembly machine with power poles
 

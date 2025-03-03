@@ -130,12 +130,14 @@ def test_nearest_buildable_mining_drill(game):
         building_box=drill_box,
         center_position=Position(5, 5)
     )
+    game.move_to(boundingbox_coords.center)
     can_build = game.can_place_entity(
         Prototype.BurnerMiningDrill,
         direction=Direction.UP,
         position=boundingbox_coords.center
     )
     assert can_build is True
+    game.place_entity(Prototype.BurnerMiningDrill, direction=Direction.UP, position=boundingbox_coords.center)
 
 def test_nearest_buildable_invalid_position(game):
     """

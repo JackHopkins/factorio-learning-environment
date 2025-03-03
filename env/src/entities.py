@@ -543,7 +543,8 @@ class GunTurret(StaticEntity):
     kills: Optional[int] = 0
 
 class AssemblingMachine(StaticEntity, Electric):
-    """A machine that crafts items from ingredients."""
+    """A machine that crafts items from ingredients.
+    Requires power to operate"""
     recipe: Optional[Recipe] = None  # Prototype
     assembling_machine_input: Inventory = Inventory()
     assembling_machine_output: Inventory = Inventory()
@@ -559,6 +560,7 @@ class FluidHandler(StaticEntity):
 
 class AdvancedAssemblingMachine(FluidHandler, AssemblingMachine):
     """A second and third tier assembling machine that can handle fluids.
+    Requires power to operate
     A recipe first needs to be set and then the input fluid source can be connected with pipes"""
     _height: float = 3
     _width: float = 3
@@ -579,11 +581,11 @@ class FilterInserter(Inserter, Filtered):
 
 class ChemicalPlant(MultiFluidHandler, AssemblingMachine):
     """Represents a chemical plant that processes fluid recipes.
-    Requires powering and accepts input fluids (from storage tanks etc) and solids
+    Requires powering and accepts input fluids (from storage tanks etc) and solids (with inserters)
     Outputs either:
         solids (battery, plastic) that need to be extracted with inserters
         fluids (sulfuric acid, oil) that need to be extracted with pipes
-    First a recipe needs to be set and then the fluid sources can be connected to the plant"""
+    IMPORTANT: First a recipe needs to be set and then the fluid sources can be connected to the plant"""
     _height: float = 3
     _width: float = 3
     pass
@@ -593,7 +595,6 @@ class OilRefinery(MultiFluidHandler, AssemblingMachine):
     """An oil refinery for processing crude oil into products.
     Requires powering and accepts input fluids (from pumpjacks, storage tanks etc) and solids
     First a recipe needs to be set and then the fluid sources can be connected to the refinery"""
-    """Represents a chemical plant that processes fluid recipes."""
     _height: float = 5
     _width: float = 5
 
@@ -603,6 +604,7 @@ class PumpJack(MiningDrill, FluidHandler, Electric):
     This needs to be placed on crude oil and oil needs to be extracted with pipes
     Oil can be sent to a storage tank, oil refinery or a chemical plant
     Oil can also be sent to assmbling machine to be made into oil barrels
+    Important: The PumpJack needs to be placed on exact crude oil tiles
     """
     _height: float = 3
     _width: float = 3
@@ -638,7 +640,8 @@ class Pump(FluidHandler, Electric):
     pass
 
 class OffshorePump(FluidHandler):
-    """A pump that extracts water from water tiles."""
+    """A pump that extracts water from water tiles. 
+    Can be used in power generation setups and to supply water to chemical plants and oil refineries."""
     _height: float = 1
     _width: float = 2
     pass
@@ -661,7 +664,7 @@ class Furnace(Entity, BurnerType):
     _width: float = 2
 
 
-class ElectricFurnace(Electric):
+class ElectricFurnace(Entity, Electric):
     """An electrically-powered furnace."""
     furnace_source: Inventory = Inventory()
     furnace_result: Inventory = Inventory()

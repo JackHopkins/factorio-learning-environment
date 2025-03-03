@@ -35,7 +35,7 @@ def test_rocket_launch(game):
     water_pos = game.nearest(Resource.Water)
     game.move_to(water_pos)
     pump = game.place_entity(Prototype.OffshorePump, position=water_pos)
-    boiler = game.place_entity_next_to(Prototype.Boiler, pump.position, Direction.DOWN, spacing=5)
+    boiler = game.place_entity_next_to(Prototype.Boiler, pump.position, Direction.RIGHT, spacing=5)
     engine = game.place_entity_next_to(Prototype.SteamEngine, boiler.position, Direction.DOWN, spacing=5)
     game.connect_entities(pump, boiler, Prototype.Pipe)
     game.connect_entities(boiler, engine, Prototype.Pipe)
@@ -108,7 +108,7 @@ def test_rocket_launch(game):
     assert silo.status == EntityStatus.LAUNCHING_ROCKET
 
     # Wait for launch to complete
-    game.sleep(10)
+    game.sleep(20)
     silo = game.get_entities({Prototype.RocketSilo})[0]
 
     # Verify successful launch

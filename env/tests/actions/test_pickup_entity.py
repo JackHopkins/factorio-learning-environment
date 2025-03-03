@@ -72,7 +72,7 @@ def test_place_pickup(game):
 
 def test_place_pickup_pipe_group(game):
     game.move_to(Position(x=0, y=0))
-    water_pipes = game.connect_entities(Position(x=0, y=0), Position(x=10, y=0), connection_type=Prototype.Pipe)
+    water_pipes = game.connect_entities(Position(x=0, y=1), Position(x=10, y=1), connection_type=Prototype.Pipe)
 
     game.pickup_entity(water_pipes)
     assert game.inspect_inventory()[Prototype.Pipe] == 100

@@ -378,6 +378,7 @@ class ConnectEntities(Tool):
             case _ if connection_types & {Prototype.Pipe, Prototype.UndergroundPipe}:
                 pathing_radius = 0.5
                 self._extend_collision_boxes(source_pos, target_pos)
+                num_available = inventory.get(Prototype.Pipe, 0)
                 try:
                     result = self._attempt_path_finding(
                         source_pos, target_pos,

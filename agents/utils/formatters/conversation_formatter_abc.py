@@ -3,6 +3,7 @@ from typing import List, Dict, Tuple, Optional
 
 from models.conversation import Conversation
 from models.message import Message
+from namespace import FactorioNamespace
 
 PLANNING_ADDITION_PROMPT = \
 """
@@ -147,7 +148,7 @@ class ConversationFormatter(ABC):
     """Abstract base class for conversation formatting strategies"""
 
     @abstractmethod
-    def format_conversation(self, conversation: Conversation) -> List[Message]:
+    def format_conversation(self, conversation: Conversation, namespace: FactorioNamespace) -> List[Message]:
         """
         Format a conversation according to the specific strategy.
         Returns a list of formatted messages ready for LLM consumption.
@@ -164,7 +165,7 @@ class ConversationFormatter(ABC):
         return [{"role": msg.role, "content": msg.content} for msg in formatted_conversation.messages]
 
 class DefaultFormatter(ConversationFormatter):
-    def format_conversation(self, conversation: Conversation) -> List[Message]:
+    def format_conversation(self, conversation: Conversation, namespace: FactorioNamespace) -> List[Message]:
         return conversation.messages
 
     def format_message(self, message: Message) -> Message:
@@ -223,7 +224,7 @@ class StructurePreservingFormatter(ConversationFormatter):
 
         return None
 
-    def format_conversation(self, conversation: Conversation) -> List[Message]:
+    def format_conversation(self, conversation: Conversation, namespace: FactorioNamespace) -> List[Message]:
         formatted = []
 
         # Handle system message if present

@@ -26,6 +26,27 @@ def test_fail_to_craft_item(game):
     except Exception as e:
         assert True
 
+
+def test_craft_with_full_inventory(game):
+    """
+    Test that crafting fails appropriately when the inventory is full.
+    This test fills the inventory with iron plates, then attempts to craft iron chests.
+    It should raise an exception due to insufficient inventory space.
+    """
+    # First, ensure inventory is empty
+    game.reset()
+
+    # Fill inventory with iron plates (assuming a reasonable inventory limit, e.g. 100 slots)
+    # We'll use a large number to ensure we hit the inventory limit
+    game.set_inventory(**{'iron-plate': 5000})
+
+    # Attempt to craft iron chests when inventory is full
+    try:
+        game.craft_item(Prototype.IronChest, quantity=1)
+        assert False, "Should have raised an exception due to full inventory"
+    except Exception as e:
+        assert "inventory is full" in str(e).lower(), f"Wrong error message: {str(e)}"
+
 def test_craft_item(game):
     """
     Craft an iron chest and assert that the iron plate has been deducted and the iron chest has been added.

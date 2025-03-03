@@ -22,7 +22,7 @@ def game(instance):
         'automation-science-pack': 1,
         'gun-turret': 1,
         'firearm-magazine': 5,
-        'transport-belt': 50,
+        'transport-belt': 200,
         'boiler': 1,
         'pipe': 20,
     }

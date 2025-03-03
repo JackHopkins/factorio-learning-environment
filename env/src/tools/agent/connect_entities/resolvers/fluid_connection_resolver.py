@@ -23,7 +23,9 @@ class FluidConnectionResolver(Resolver):
         point.y = y
         return point
 
-    def _is_blocked(self, pos: Position) -> bool:
+    def _is_blocked(self, pos: Position, entity = None) -> bool:
+        #if isinstance(entity, Pipe) or isinstance(entity, PipeGroup):
+        #    return False
         entities = self.get_entities(position=pos, radius=0.5)
         return bool(entities)
 
@@ -76,19 +78,21 @@ class FluidConnectionResolver(Resolver):
         connection_pairs = []
         for target_position in target_fluid_positions:
             adjusted_target_position = self._adjust_connection_point(target_position, target)
-            if self._is_blocked(adjusted_target_position):
+            if self._is_blocked(adjusted_target_position, target):
                 continue
             # if we expect a type of fluid, search for that type of fluid in the source
             if target_position.type:
                 valid_source_positions = [self._adjust_connection_point(x, source) for x in source_fluid_positions if (x.type == target_position.type or x.type == "all")]
                 for source_position in valid_source_positions:
-                    if not self._is_blocked(source_position):
+                    if not self._is_blocked(source_position, source):
                         connection_pairs.append((source_position, adjusted_target_position))
             # else we can connect any type of fluid
             else:
                 adjusted_source_positions = [self._adjust_connection_point(x, source) for x in source_fluid_positions]
                 for source_position in adjusted_source_positions:
-                    if not self._is_blocked(source_position):
+                    # check for blocking
+                    # If source is pipe or pipegroup, then dont need to check for blocking
+                    if not self._is_blocked(source_position, source):
                         connection_pairs.append((source_position, adjusted_target_position))
         if not connection_pairs:
             source_location = f"{source.prototype} at {source.position}" if isinstance(source, Entity) else f"{source}"
@@ -174,8 +178,8 @@ class FluidConnectionResolver(Resolver):
                 source_positions = [IndexedPosition(x=pos.x, y=pos.y, type=source_liquid) for pos in source.connection_points]
             
             case Pipe():
-                source_liquid = source.fluid if source.fluid else ""
-                source_positions = [IndexedPosition(x=pos.x, y=pos.y, type=source_liquid) for pos in source.connection_points]
+                fluid = source.fluid if source.fluid else ""
+                source_positions = self.get_pipe_connection_positions(source, set(), fluid)
             case Position():
                 # allow all connections from this source
                 source_positions = [IndexedPosition(x=source.x, y=source.y, type="all")]
@@ -188,19 +192,25 @@ class FluidConnectionResolver(Resolver):
                 source_positions = []
                 underground_positions = set([pipe.position for pipe in source.pipes if pipe.prototype == Prototype.UndergroundPipe])
                 for pipe in pipes:
-                    source_positions.append(IndexedPosition(x=pipe.position.x, y=pipe.position.y, type=pipe.fluid if pipe.fluid else ""))
-                    if pipe.position.up() not in underground_positions:
-                        source_positions.append(IndexedPosition(x=pipe.position.up().x, y=pipe.position.up().y, type=pipe.fluid if pipe.fluid else ""))
-                    if pipe.position.down() not in underground_positions:
-                        source_positions.append(IndexedPosition(x=pipe.position.down().x, y=pipe.position.down().y, type=pipe.fluid if pipe.fluid else ""))
-                    if pipe.position.left() not in underground_positions:
-                        source_positions.append(IndexedPosition(x=pipe.position.left().x, y=pipe.position.left().y, type=pipe.fluid if pipe.fluid else ""))
-                    if pipe.position.right() not in underground_positions:
-                        source_positions.append(IndexedPosition(x=pipe.position.right().x, y=pipe.position.right().y, type=pipe.fluid if pipe.fluid else ""))
+                    fluid = pipe.fluid if pipe.fluid else ""
+                    surrounding_positions = self.get_pipe_connection_positions(pipe, underground_positions, fluid)
+                    source_positions += surrounding_positions
             case _:
                 raise Exception(f"{type(source)} is not a supported source object for fluid connection")
         return source_positions
-            
+    
+    def get_pipe_connection_positions(self, pipe, underground_positions, fluid):
+        positions = [IndexedPosition(x=pipe.position.x, y=pipe.position.y, type=fluid)]
+        if pipe.position.up() not in underground_positions:
+            positions.append(IndexedPosition(x=pipe.position.up().x, y=pipe.position.up().y, type=fluid))
+        if pipe.position.down() not in underground_positions:
+            positions.append(IndexedPosition(x=pipe.position.down().x, y=pipe.position.down().y, type=fluid))
+        if pipe.position.left() not in underground_positions:
+            positions.append(IndexedPosition(x=pipe.position.left().x, y=pipe.position.left().y, type=fluid))
+        if pipe.position.right() not in underground_positions:
+            positions.append(IndexedPosition(x=pipe.position.right().x, y=pipe.position.right().y, type=fluid))
+        return positions
+
 
     def get_target_fluid_positions(self, target):
         """
@@ -223,7 +233,7 @@ class FluidConnectionResolver(Resolver):
             case FluidHandler():
                 target_positions = [IndexedPosition(x=pos.x, y=pos.y, type="") for pos in target.connection_points]
             case Pipe():
-                target_positions = [IndexedPosition(x=pos.x, y=pos.y, type="") for pos in target.connection_points]
+                target_positions = self.get_pipe_connection_positions(target, set(), "")
             case Position():
                 target_positions = [IndexedPosition(x=target.x, y=target.y, type="")]
 
@@ -234,15 +244,8 @@ class FluidConnectionResolver(Resolver):
                 target_positions = []
                 underground_positions = set([pipe.position for pipe in target.pipes if pipe.prototype == Prototype.UndergroundPipe])
                 for pipe in pipes:
-                    target_positions.append(IndexedPosition(x=pipe.position.x, y=pipe.position.y, type=""))
-                    if pipe.position.up() not in underground_positions:
-                        target_positions.append(IndexedPosition(x=pipe.position.up().x, y=pipe.position.up().y, type=""))
-                    if pipe.position.down() not in underground_positions:
-                        target_positions.append(IndexedPosition(x=pipe.position.down().x, y=pipe.position.down().y, type=""))
-                    if pipe.position.left() not in underground_positions:
-                        target_positions.append(IndexedPosition(x=pipe.position.left().x, y=pipe.position.left().y, type=""))
-                    if pipe.position.right() not in underground_positions:
-                        target_positions.append(IndexedPosition(x=pipe.position.right().x, y=pipe.position.right().y, type=""))
+                    pipe_positions = self.get_pipe_connection_positions(pipe, underground_positions, "")
+                    target_positions += pipe_positions
             case _:
                 raise Exception(f"{type(target)} is not a supported target object for fluid connection")
         return target_positions

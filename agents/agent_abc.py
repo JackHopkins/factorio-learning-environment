@@ -2,6 +2,7 @@ from abc import abstractmethod
 
 from agents import Response, Python, CompletionResult, Policy
 from models.conversation import Conversation
+from namespace import FactorioNamespace
 
 
 class AgentABC:
@@ -23,11 +24,12 @@ class AgentABC:
         self.conversation = conversation
 
     @abstractmethod
-    async def step(self, conversation: Conversation, response: Response) -> Policy:
+    async def step(self, conversation: Conversation, response: Response, namespace: FactorioNamespace) -> Policy:
         """
         A single step in a trajectory. This method should return the next policy to be executed, based on the last response.
         @param conversation: The current state of the conversation.
         @param response: The most recent response from the environment.
+        @param namespace: The current namespace of the conversation, containing declared variables and functions.
         @return:
         """
         pass

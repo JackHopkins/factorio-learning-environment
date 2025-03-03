@@ -9,6 +9,8 @@ from models.conversation import Conversation
 from models.generation_parameters import GenerationParameters
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
 
+from namespace import FactorioNamespace
+
 GENERAL_INSTRUCTIONS = \
 """
 # Factorio LLM Agent Instructions
@@ -18,10 +20,6 @@ You are an AI agent designed to play Factorio, specializing in:
 - Long-horizon planning
 - Spatial reasoning 
 - Systematic automation
-
-## Goal
-- Build the biggest possible factory
-- Maximise automation, efficiency and scale
 
 ## Environment Structure
 - Operates like an interactive Python shell
@@ -77,6 +75,7 @@ your_code_here
 - Don't repeat previous steps
 - Continue from last successful execution
 - Avoid unnecessary state changes
+- Analyze the root cause of entities that aren't working, and prioritize automated solutions (like transport belts) above manual triage
 
 ### Code Structure
 - Write code as direct Python interpreter commands
@@ -161,28 +160,33 @@ sorted_furnaces = sorted(
 ```
 
 ## Important Notes
+- Use transport belts to keep burners fed with coal
 - Always inspect game state before making changes
 - Consider long-term implications of actions
-- Maintain working systems
+- Maintain working systems, and clear entities that aren't working or don't have a clear purpose
 - Build incrementally and verify each step
 - DON'T REPEAT YOUR PREVIOUS STEPS - just continue from where you left off. Take into account what was the last action that was executed and continue from there. If there was a error previously, do not repeat your last lines - as this will alter the game state unnecessarily.
-Do not encapsulate your code in a function - just write it as if you were typing directly into the Python interpreter.
+- Do not encapsulate your code in a function _unless_ you are writing a utility for future use - just write it as if you were typing directly into the Python interpreter.
+- Your inventory has space for ~2000 items. If it fills up, insert the items into a chest.
 """
 
-FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON."
+FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON." # Annoying how effective this is
 
 
 class BasicAgent(AgentABC):
-   def __init__(self, model, system_prompt, *args, **kwargs):
-       instructions = GENERAL_INSTRUCTIONS+system_prompt+FINAL_INSTRUCTION
-       super().__init__( model, instructions, *args, **kwargs)
-       self.llm_factory = LLMFactory(model)
-       self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.llm_factory.acall,cache_dir='summary_cache')
-       self.generation_params = GenerationParameters(n=1, presence_penalty=0.7, max_tokens=2048, model=model)
+   def __init__(self, model, system_prompt, task, *args, **kwargs):
+        instructions = GENERAL_INSTRUCTIONS+system_prompt+FINAL_INSTRUCTION
+        self.task = task
+        instructions += f"\n\n### Goal\n{task.goal_description}\n\n"
+        super().__init__( model, instructions, *args, **kwargs)
+        self.llm_factory = LLMFactory(model)
+        self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.llm_factory.acall,cache_dir='summary_cache')
+        self.generation_params = GenerationParameters(n=1, max_tokens=2048, model=model)
 
-   async def step(self, conversation: Conversation, response: Response) -> Policy:
+   async def step(self, conversation: Conversation, response: Response, namespace: FactorioNamespace) -> Policy:
+       
        # We format the conversation every N steps to add a context summary to the system prompt
-       formatted_conversation = await self.formatter.format_conversation(conversation)
+       formatted_conversation = await self.formatter.format_conversation(conversation, namespace)
        # We set the new conversation state for external use
        self.set_conversation(formatted_conversation)
 

@@ -7,7 +7,7 @@ from typing import Optional
 import multiprocessing
 from dotenv import load_dotenv
 
-from agents import Python
+from agents import CompletionResult, CompletionReason
 from agents.agent_abc import AgentABC
 from agents.basic_agent import BasicAgent
 from eval.open.db_client import PostgresDBClient, SQLliteDBClient
@@ -120,7 +120,7 @@ class TrajectoryRunner:
 
         current_state = None
         if self.config.version:
-            current_state, current_conversation, parent_id, depth = await self.db.get_resume_state(resume_version = self.config.resume_version, process_id = self.process_id)
+            current_state, current_conversation, parent_id, depth = await self.db.get_resume_state(resume_version = self.config.version, process_id = self.process_id)
             self.agent.conversation = current_conversation
             
         if not current_state:
@@ -215,7 +215,13 @@ class TrajectoryRunner:
                           f"Value: {program.value:.2f} - "
                           f"Elapsed: {elapsed_str} - "
                           f"ETA: {eta}")
-
+                    
+                if task_verification_response.success:
+                    print(f"Task verification success: {task_verification_response.success}")
+                    completion_result = CompletionResult(step = iteration, 
+                                                         reason = CompletionReason.SUCCESS)
+                    await self.config.agent.end(program.conversation, completion_result)
+                    break 
             except Exception as e:
                 print(f"Error in iteration {iteration}: {e}")
                 continue

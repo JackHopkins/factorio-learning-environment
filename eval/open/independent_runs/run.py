@@ -12,7 +12,7 @@ from cluster.local.cluster_ips import get_local_container_ips
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--run_config', type=str, help='Path of the run config file')
+    parser.add_argument('--run_config', type=str, help='Path of the run config file', default=Path("eval", "open", "independent_runs","run_config.json"))
     args = parser.parse_args()
     # read in run_config
     run_config_location = args.run_config

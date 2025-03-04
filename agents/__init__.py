@@ -59,7 +59,7 @@ class CompletionReason(enum.Enum):
     SUCCESS = "success",
     RUNTIME_ERROR = "runtime_error"
 
-class CompletionResult:
+class CompletionResult(BaseModel):
     step: int
     reason: CompletionReason
     metadata: Dict[str, Any] = {}

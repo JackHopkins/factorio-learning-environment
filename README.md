@@ -249,26 +249,29 @@ We provide two default tasks:
 1. OpenPlayTask - Task for the open-play setting, where the agent plays the game until a specified number of steps is finished. The verify function will always return False
 2. ThroughputTask - Task for requiring the agent to build a factory that achieves a specified throughput in the holdout period. The verify function will return True if the holdout period throughput is above the threshold
 
-The task jsons specifies all required attributes to substantiate the respective task object. Each task must at minimum define the "goal_description", "trajectory_length" and "task_key" parameters.
+The task jsons specifies the "task_type" and the "config" parameters. `task_type` specifies the mapping from the json to the task type (the creation of task objects from the json is done in `eval\tasks\task_factory.py`). `config` specifies all required attributes to substantiate the respective task object. Each config must at minimum define the "goal_description", "trajectory_length" and "task_key" parameters.
 Examples of task json
 ```
 # Open play task json
 
-{                          
-    "goal_description":"- Build the biggest possible factory\n- Maximise automation, efficiency and scale",
-    "trajectory_length": 5000,
-    "task_key": "open_play"
+{   "task_type": "default",
+    "config": {                         
+        "goal_description":"- Build the biggest possible factory\n- Maximise automation, efficiency and scale",
+        "trajectory_length": 5000,
+        "task_key": "open_play"
+    }
 }
 # One example of a throughput task json
 {                          
-
-    "goal_description":"Create an automatic iron gear wheel factory that produces 16 iron gear wheel per 60 ingame seconds",
-    "throughput_entity":"iron-gear-wheel",
-    "quota":16,
-    "trajectory_length": 128,
-    "holdout_wait_period": 60,
-    "pre_holdout_wait_period": 60,
-    "task_key": "iron_gear_wheel_throughput_16"
+    "task_type": "throughput",
+    "config":
+        {"goal_description":"Create an automatic iron gear wheel factory that produces 16 iron gear wheel per 60 ingame seconds",
+        "throughput_entity":"iron-gear-wheel",
+        "quota":16,
+        "trajectory_length": 128,
+        "holdout_wait_period": 60,
+        "pre_holdout_wait_period": 60,
+        "task_key": "iron_gear_wheel_throughput_16"}
 
 }
 ```
@@ -298,22 +301,23 @@ class OpenPlayTask(TaskABC):
 ```
 
 ### Running tasks
-The entrypoint to run tasks is `eval\open\independent_runs\simple_eval.py`. We supply a `construct_task_object` helper method to construct the task object using the task json. The helper method reads in the task json files from `eval\tasks\task_definitions` folder.
+The entrypoint to run tasks is `eval\open\independent_runs\run.py` which reads in a run config json file, runs the tasks specified in parallel and saves each generated program with the environment output and task verification result into the database. The location of the run config json is sent in through the `--run_config` inline argument. If no argument is sent, the default run config `eval\open\independent_runs\run_config.json` is used. 
+
+The run config json is a list of dictionaries specifying the task_json location, model and version (optional). One example to run 3 tasks in parallel
 
 ```
-# Open play task
-open_play_task = construct_task_object(task_folder, "open_play", instance, OpenPlayTask)
-
-# Iron gear wheel task object
-gear_wheel_task = construct_task_object(task_folder, "iron_gear_wheel_throughput_16", instance, ThroughputTask)
+[
+{"task": "iron_gear_wheel_throughput_16.json",
+"model": "gpt-4o-mini-2024-07-18",
+"version": 768},
+{"task": "plastic_bar_throughput_16.json",
+"model": "anthropic/claude-3.5-sonnet-open-router"},
+{"task": "open_play.json",
+"model": "gpt-4o-mini-2024-07-18"}
+]
 
 ```
-
-For each task execution a run-config must be constructed, where the task object is supplied. One example
-```
-{"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt, goal_description = gear_wheel_task.goal_description), "task": gear_wheel_task},
-```
-
+Each task is run until either `verify` returns True or the maximum number of steps (`trajectory_length`) is reached
 ## Tool Documentation
 
 Agents interact with the game using _tools_, which represent a narrow API into the game.

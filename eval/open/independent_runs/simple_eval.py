@@ -348,44 +348,44 @@ def main():
     #system_prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\n# Observations:\n' + OBSERVATION_SPACE
 
     run_configs = [
-        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 551},
-        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 564},
 
-        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 554},
-
-        {"agent": BasicAgent(model="deepseek/deepseek-chat-open-router", system_prompt=system_prompt), "resume_version": 555},
-        {"agent": BasicAgent(model="deepseek/deepseek-chat-open-router", system_prompt=system_prompt), "resume_version": 556},
-        #{"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 560},
-        #{"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 561},
-        {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 574},
-
-        #{"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": 575 },
-        #{"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": 576 },
-        #{"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": 577 },
-        #{"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": 578 },
-
-        {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 595},
-        #{"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 596},
-        {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 597},
-        {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 598},
-
-        #{"agent": BasicAgent(model="meta-llama/llama-3.3-70b-instruct-open-router", system_prompt=system_prompt), "resume_version": 599},
-        {"agent": BasicAgent(model="meta-llama/llama-3.3-70b-instruct-open-router", system_prompt=system_prompt), "resume_version": 600},
-        #{"agent": BasicAgent(model="meta-llama/llama-3.3-70b-instruct-open-router", system_prompt=system_prompt), "resume_version": 601},
-        {"agent": BasicAgent(model="meta-llama/llama-3.3-70b-instruct-open-router", system_prompt=system_prompt), "resume_version": 602},
-
-        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 797},
-        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 798},
-        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 799},
-        {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 800},
-        {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 801},
-        {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 802},
-        {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 803},
-        {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 804},
-        {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 805},
-        {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 806},
-        {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 807},
-        {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 808}
+        # {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 564},
+        #
+        # {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 554},
+        #
+        # {"agent": BasicAgent(model="deepseek/deepseek-chat-open-router", system_prompt=system_prompt), "resume_version": 555},
+        # {"agent": BasicAgent(model="deepseek/deepseek-chat-open-router", system_prompt=system_prompt), "resume_version": 556},
+        # #{"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 560},
+        # #{"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 561},
+        # {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 574},
+        #
+        # #{"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": 575 },
+        # #{"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": 576 },
+        # #{"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": 577 },
+        # #{"agent": BasicAgent(model="gpt-4o-mini", system_prompt=system_prompt), "resume_version": 578 },
+        #
+        # {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 595},
+        # #{"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 596},
+        # {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 597},
+        # {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 598},
+        #
+        # #{"agent": BasicAgent(model="meta-llama/llama-3.3-70b-instruct-open-router", system_prompt=system_prompt), "resume_version": 599},
+        # {"agent": BasicAgent(model="meta-llama/llama-3.3-70b-instruct-open-router", system_prompt=system_prompt), "resume_version": 600},
+        # #{"agent": BasicAgent(model="meta-llama/llama-3.3-70b-instruct-open-router", system_prompt=system_prompt), "resume_version": 601},
+        # {"agent": BasicAgent(model="meta-llama/llama-3.3-70b-instruct-open-router", system_prompt=system_prompt), "resume_version": 602},
+        #
+        # {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 797},
+        # {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 798},
+        # {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 799},
+        # {"agent": BasicAgent(model="gpt-4o", system_prompt=system_prompt), "resume_version": 800},
+        # {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 801},
+        # {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 802},
+        # {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 803},
+        # {"agent": BasicAgent(model="anthropic/claude-3.5-sonnet-open-router", system_prompt=system_prompt), "resume_version": 804},
+        # {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 805},
+        # {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 806},
+        # {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 807},
+        # {"agent": BasicAgent(model="google/gemini-2.0-flash-001-open-router", system_prompt=system_prompt), "resume_version": 808}
         # {"agent": BasicAgent(model="claude-3-5-sonnet-20241022-open-router", system_prompt=system_prompt), "resume_version": 559},
         # {"agent": BasicAgent(model="claude-3-5-sonnet-20241022-open-router", system_prompt=system_prompt), "resume_version": 560},
         # {"agent": BasicAgent(model="claude-3-5-sonnet-20241022-open-router", system_prompt=system_prompt), "resume_version": 561},

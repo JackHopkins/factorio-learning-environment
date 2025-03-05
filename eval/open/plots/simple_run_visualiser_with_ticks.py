@@ -90,7 +90,9 @@ class ProgressionVisualizerWithTicks:
         self.versions = {}
         self.achievements = defaultdict(list)
         #self.colors = [ '#EE6677', '#228833', '#CCBB44', '#4477AA']
+        #self.colors = ['#8fd7d7', '#FFCD8E', '#00b0be', '#ff8ca1', '#f45f74', '#bdd373', '#98c127', '#ffb255']
         self.colors = ['#8fd7d7', '#FFCD8E', '#00b0be', '#ff8ca1', '#f45f74', '#bdd373', '#98c127', '#ffb255']
+
         self.use_value_gdp = use_value_gdp
         self.value_calculator = ValueCalculator(recipes_file) if use_value_gdp else None
         self.use_log_scale = use_log_scale  # Store the scale preference
@@ -756,7 +758,7 @@ class ProgressionVisualizerWithTicks:
         else:
             ax1.set_xlim(100, 5e3)
             ax1.set_xlabel('Steps', fontsize=12)
-        ax1.set_ylim(1e3, 3e5)
+        ax1.set_ylim(1e3, 4e5)
 
         # Create main y-label with two parts
         ax1.set_ylabel('Reward\nCumulative Production Score',
@@ -833,7 +835,7 @@ class ProgressionVisualizerWithTicks:
             ax1.fill_between(x_coords, sem_lower, sem_upper, color=color, alpha=0.2)
 
             # Calculate final values and standard errors at target step
-            target_step = 990
+            target_step = 4990
             if means:
                 if self.x_axis == "steps":
                     target_idx = next((idx for idx, x in enumerate(x_coords) if x >= target_step), -1)
@@ -1271,22 +1273,28 @@ async def main():
 
         # Configure versions to plot
         version_groups = {
-            "Claude": [559, 560, 561, 562, 574, 801, 802, 803, 804],  # Multiple Claude versions
-            "LLaMA-70B": [550, 599, 600, 601, 602],
-            "GPT-4": [551, 552, 553, 554, 564, 797, 798, 799, 800],  # Multiple GPT-4 versions
             "Deepseek-v3": [555, 556, 557, 558],
-            "GPT-4-Mini": [548, 575, 576, 577, 578],
+            "GPT-4o-Mini": [548, 575, 576, 577, 578],
+            "LLaMA-70B": [550, 599, 600, 601, 602],
             "Gemini-2": [595, 596, 597, 598, 805, 806, 807, 808],
-
+            "GPT-4o": [551, 552, 553, 554, 564, 797, 798, 799, 800],  # Multiple GPT-4 versions
+            "Claude": [559, 560, 561, 562, 574, 801, 802, 803, 804],  # Multiple Claude versions
             # "LLaMA-70B": [488],  # Single version
             # "GPT-4-Mini": [505],
             # "o3-mini": [508]
         }
+
+        final_values = [48584.5, 26756.25, 54998.0, 115781.6, 87599.25, 293206.8]
+        final_confidence_intervals = [(33196.05479548047, 63972.94520451953), (22158.66958505618, 31353.83041494382),
+         (32339.065691431995, 77656.934308568), (68869.72848979183, 174369.3576567665),
+         (59074.448683042945, 116124.05131695705), (255855.04995650135, 330558.55004349863)]
+
+
         labels = {
             "Claude": "Claude",
-            "GPT-4": "GPT-4",
+            "GPT-4o": "GPT-4o",
             "LLaMA-70B": "LLaMA-70B",
-            "GPT-4-Mini": "GPT-4-Mini",
+            "GPT-4o-Mini": "GPT-4o-Mini",
             "o3-mini": "o3-mini",
             "Deepseek-v3": "Deepseek-v3",
             "Gemini-2": "Gemini-2"

@@ -103,13 +103,147 @@ def create_factorio_instance() -> FactorioInstance:
     )
     return instance
 
+def get_existing_screenshots(output_dir: Path) -> set:
+    """Get a set of indices for screenshots that already exist"""
+    existing = set()
+    for file in output_dir.glob("*.png"):
+        try:
+            # Extract the index from filename (e.g., "000123.png" -> 123)
+            idx = int(file.stem)
+            existing.add(idx)
+        except ValueError:
+            continue
+    return existing
 
-def capture_screenshots(program_ids, output_dir: str, instance: FactorioInstance, conn):
-    """Capture screenshots for each program state"""
+
+def capture_screenshots_with_hooks(program_ids, output_dir: str, instance: FactorioInstance, conn, max_steps=1000):
+    """
+    Capture screenshots for each program state and after each entity placement,
+    using sequential integer filenames.
+    """
+    from pathlib import Path
+    import os
+
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
+    # Find the highest existing screenshot number
+    def get_highest_screenshot_number():
+        existing_files = list(output_path.glob("*.png"))
+        if not existing_files:
+            return -1
+
+        highest = -1
+        for file in existing_files:
+            try:
+                num = int(file.stem)
+                highest = max(highest, num)
+            except ValueError:
+                continue
+        return highest
+
+    # Initialize the screenshot counter
+    screenshot_counter = get_highest_screenshot_number() + 1
+    print(f"Starting screenshot numbering from {screenshot_counter}")
+
+    # Reset camera settings
+    instance.rcon_client.send_command(f'/c global.camera = nil')
+
+    def capture_after_placement(tool_instance, result):
+        nonlocal screenshot_counter
+
+        # Format screenshot name with the current counter value
+        screenshot_filename = f"{screenshot_counter:06d}.png"
+        screenshot_path = str(output_path / screenshot_filename)
+
+        # Take the screenshot
+        instance.screenshot(
+            save_path=screenshot_path,
+            resolution="1920x1080",
+            center_on_factory=True
+        )
+        print(f"Captured placement screenshot: {screenshot_filename}")
+
+        # Increment the counter for the next screenshot
+        screenshot_counter += 1
+
+    # Register post-tool hook for place_entity
+    for tool in ["place_entity", "place_entity_next_to", "connect_entities", "harvest_resource", "move_to", "rotate_entity", "shift_entity"]:
+        instance.register_post_tool_hook(tool, capture_after_placement)
+
+    # Process each program
     for idx, (program_id, created_at) in enumerate(program_ids):
+        if idx >= max_steps:
+            break
+
+        # Load program state JIT
+        program = get_program_state(conn, program_id)
+        if not program or not program.state:
+            print(f"Skipping program {program_id} - no state available")
+            continue
+
+        # Reset game state
+        instance.reset(program.state)
+
+        # Execute the program code which will trigger our hook for each place_entity call
+        instance.eval(program.code)
+
+        # Take main program screenshot using the current counter value
+        screenshot_filename = f"{screenshot_counter:06d}.png"
+        screenshot_path = output_path / screenshot_filename
+
+        instance.screenshot(
+            save_path=str(screenshot_path),
+            resolution="1920x1080",
+            center_on_factory=True
+        )
+        print(f"Captured final program screenshot: {screenshot_filename}")
+
+        # Increment counter for the next screenshot
+        screenshot_counter += 1
+
+    for i in range(30):
+        # Execute the program code which will trigger our hook for each place_entity call
+        instance.eval('sleep(15)')
+
+        # Take main program screenshot using the current counter value
+        screenshot_filename = f"{screenshot_counter:06d}.png"
+        screenshot_path = output_path / screenshot_filename
+
+        instance.screenshot(
+            save_path=str(screenshot_path),
+            resolution="1920x1080",
+            center_on_factory=True
+        )
+        print(f"Captured final program screenshot: {screenshot_filename}")
+
+        # Increment counter for the next screenshot
+        screenshot_counter += 1
+
+
+def capture_screenshots(program_ids, output_dir: str, instance: FactorioInstance, conn, max_steps=1000):
+    """Capture screenshots for each program state, skipping existing ones"""
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    # Get set of existing screenshot indices
+    existing_screenshots = get_existing_screenshots(output_path)
+    total_needed = len(program_ids)
+    existing_count = len(existing_screenshots)
+
+    print(f"Found {existing_count} existing screenshots out of {total_needed} needed")
+
+    instance.rcon_client.send_command(f'/c global.camera = nil')
+
+    for idx, (program_id, created_at) in enumerate(program_ids):
+        # Skip if screenshot already exists
+        if idx in existing_screenshots:
+            print(f"Skipping existing screenshot {idx + 1}/{total_needed}")
+            continue
+
+        if idx > max_steps:
+            continue
+
         # Load program state JIT
         program = get_program_state(conn, program_id)
         if not program or not program.state:
@@ -118,6 +252,7 @@ def capture_screenshots(program_ids, output_dir: str, instance: FactorioInstance
 
         # Load game state
         instance.reset(program.state)
+
 
         instance.eval(program.code)
 
@@ -128,58 +263,63 @@ def capture_screenshots(program_ids, output_dir: str, instance: FactorioInstance
             resolution="1920x1080",
             center_on_factory=True
         )
-        print(f"Captured screenshot {idx + 1}/{len(program_ids)}")
+        print(f"Captured screenshot {idx + 1}/{total_needed}")
+
 
 
 def main():
     # Default version for running in IDE
-    DEFAULT_VERSION = 598
+    DEFAULT_VERSION = 807 #803 next
+    #703 -> 796
 
-    parser = argparse.ArgumentParser(description='Capture Factorio program evolution screenshots')
-    parser.add_argument('--version', '-v', type=int, default=DEFAULT_VERSION,
-                        help=f'Program version to capture (default: {DEFAULT_VERSION})')
-    parser.add_argument('--output-dir', '-o', default='screenshots',
-                        help='Output directory for screenshots and video')
-    parser.add_argument('--framerate', '-f', type=int, default=30,
-                        help='Framerate for output video')
+    #718
+    for version in [2213]:#range(1892, 1895):#range(755, 775):#[764]:#[804, 798, 800, 598, 601, 576, 559 ]:
 
-    # When running in IDE, use no args. When running from command line, parse args
-    import sys
-    if len(sys.argv) > 1:
-        args = parser.parse_args()
-    else:
-        args = parser.parse_args([])
+        parser = argparse.ArgumentParser(description='Capture Factorio program evolution screenshots')
+        parser.add_argument('--version', '-v', type=int, default=version,
+                            help=f'Program version to capture (default: {version})')
+        parser.add_argument('--output-dir', '-o', default='screenshots',
+                            help='Output directory for screenshots and video')
+        parser.add_argument('--framerate', '-f', type=int, default=30,
+                            help='Framerate for output video')
 
-    # Create output directory structure
-    output_base = Path(args.output_dir)
-    version_dir = output_base / str(args.version)
-    version_dir.mkdir(parents=True, exist_ok=True)
+        # When running in IDE, use no args. When running from command line, parse args
+        import sys
+        if len(sys.argv) > 1:
+            args = parser.parse_args()
+        else:
+            args = parser.parse_args([])
 
-    # Connect to database
-    conn = get_db_connection()
-    try:
-        # Get program chain
-        print(f"Getting program chain for version {args.version}")
-        program_ids = get_program_chain(conn, args.version)
-        if not program_ids:
-            print(f"No programs found for version {args.version}")
-            return
+        # Create output directory structure
+        output_base = Path(args.output_dir)
+        version_dir = output_base / str(args.version)
+        version_dir.mkdir(parents=True, exist_ok=True)
 
-        print(f"Found {len(program_ids)} programs")
+        # Connect to database
+        conn = get_db_connection()
+        try:
+            # Get program chain
+            print(f"Getting program chain for version {args.version}")
+            program_ids = get_program_chain(conn, args.version)
+            if not program_ids:
+                print(f"No programs found for version {args.version}")
+                return
 
-        # Create Factorio instance
-        instance = create_factorio_instance()
+            print(f"Found {len(program_ids)} programs")
 
-        # Capture screenshots
-        capture_screenshots(program_ids, str(version_dir), instance, conn)
+            # Create Factorio instance
+            instance = create_factorio_instance()
 
-        # Convert to video
-        output_video = version_dir / "output.mp4"
-        png_to_mp4(str(version_dir), str(output_video), args.framerate)
-        print(f"Created video: {output_video}")
+            # Capture screenshots
+            capture_screenshots_with_hooks(program_ids, str(version_dir), instance, conn)
 
-    finally:
-        conn.close()
+            # Convert to video
+            output_video = version_dir / "output.mp4"
+            png_to_mp4(str(version_dir), str(output_video), args.framerate)
+            print(f"Created video: {output_video}")
+
+        finally:
+            conn.close()
 
 
 if __name__ == "__main__":

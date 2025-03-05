@@ -4,7 +4,7 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>LLMs are Central Planners | a Framework for Open-ended Resource Gathering and Expansion</title>
+        <title>Factorio Learning Environment</title>
 
         <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet" />
 
@@ -30,6 +30,17 @@
             font-style: italic;
             color: #666;
             margin: 10px 0;
+        }
+        .feature-box {
+            border-left: 3px solid #2196F3;
+            padding: 10px 15px;
+            margin: 15px 0;
+            background-color: #f8f9fa;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
         }
         </style>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -75,29 +86,30 @@
                 <div class="container is-max-desktop">
                     <div class="columns is-centered">
                         <div class="column has-text-centered">
-                            <h1 class="title is-1 publication-title">Large Language Models are Central Planners</h1>
+                            <h1 class="title is-1 publication-title">Factorio Learning Environment</h1>
 <!--                            <h2 class="title is-2">Paperclip Maximization with Large Language Models</h2>-->
 
                             <div class="is-size-5 publication-authors">
                                 <span class="author-block">
-                                    <a target="_blank" href="https://guanzhi.me/">Jack&#160;Hopkins</a> <a href="mailto:jack.hopkins@me.com"><i class="fas fa-envelope"></i></a><sup>1 2</sup>,
-                                    <a target="_blank" href="https://yunfanj.com/">Mart&#160;Bakler</a><sup>4*</sup>
+                                    <a target="_blank" href="https://guanzhi.me/">Jack&#160;Hopkins</a> <a href="mailto:jack.hopkins@me.com"><i class="fas fa-envelope"></i></a><sup>*1</sup>,
+                                    <a target="_blank" href="https://yunfanj.com/">Mart&#160;Bakler</a><sup>*1</sup>
+                                    <a target="_blank" href="https://yunfanj.com/">Akbir&#160;Khan</a><sup>2</sup>
                                 </span>
                             </div>
 
                             <div class="is-size-5 publication-authors">
-                                <span class="author-block"><sup>1</sup>NVIDIA, </span>
-                                <span class="author-block"><sup>2</sup>Caltech, </span>
+                                <span class="author-block"><sup>1</sup>Independent, </span>
+                                <span class="author-block"><sup>2</sup>Anthropic</span>
 <!--                                <span class="author-block"><sup>3</sup>UT Austin, </span>-->
 <!--                                <span class="author-block"><sup>4</sup>Stanford, </span>-->
 <!--                                <span class="author-block"><sup>5</sup>ASU</span>-->
                             </div>
 
                             <div class="is-size-5 publication-authors">
-<!--                                <span class="author-block"><sup>*</sup>Equal contribution</span>-->
+                                <span class="author-block"><sup>*</sup>Equal contribution</span>
 <!--                                <span class="author-block"><sup>&dagger;</sup>Equal advising </span>-->
 <!--                                <br />-->
-<!--                                <span class="author-block"><i class="fas fa-envelope"></i> Corresponding authors: guanzhi@caltech.edu, dr.jimfan.ai@gmail.com</span>-->
+<!--                                <span class="author-block"><i class="fas fa-envelope"></i> Corresponding author: jack.hopkins@me.com</span>-->
                             </div>
 
                             <div class="column has-text-centered">
@@ -122,7 +134,7 @@
                                     </span>
                                     <!-- Code Link. -->
                                     <span class="link-block">
-                                        <a target="_blank" href="https://github.com/MineDojo/Voyager" class="external-link button is-normal is-rounded is-dark">
+                                        <a target="_blank" href="https://github.com/JackHopkins/factorio-learning-environment" class="external-link button is-normal is-rounded is-dark">
                                             <span class="icon">
                                                 <i class="fab fa-github"></i>
                                             </span>
@@ -140,9 +152,9 @@
                                     <span class="link-block">
                                         <a target="_blank" href="https://minedojo.org/" class="external-link button is-normal is-rounded is-dark">
                                             <span class="icon">
-                                                <i class="fas fa-database"></i>
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path fill="#ffffff" d="M353.8 54.1L330.2 6.3c-3.9-8.3-16.1-8.6-20.4 0L286.2 54.1l-52.3 7.5c-9.3 1.4-13.3 12.9-6.4 19.8l38 37-9 52.1c-1.4 9.3 8.2 16.5 16.8 12.2l46.9-24.8 46.6 24.4c8.6 4.3 18.3-2.9 16.8-12.2l-9-52.1 38-36.6c6.8-6.8 2.9-18.3-6.4-19.8l-52.3-7.5zM256 256c-17.7 0-32 14.3-32 32l0 192c0 17.7 14.3 32 32 32l128 0c17.7 0 32-14.3 32-32l0-192c0-17.7-14.3-32-32-32l-128 0zM32 320c-17.7 0-32 14.3-32 32L0 480c0 17.7 14.3 32 32 32l128 0c17.7 0 32-14.3 32-32l0-128c0-17.7-14.3-32-32-32L32 320zm416 96l0 64c0 17.7 14.3 32 32 32l128 0c17.7 0 32-14.3 32-32l0-64c0-17.7-14.3-32-32-32l-128 0c-17.7 0-32 14.3-32 32z"/></svg>
                                             </span>
-                                            <span>MineDojo</span>
+                                            <span>Leaderboard</span>
                                         </a>
                                     </span>
                                 </div>
@@ -164,73 +176,138 @@
             .video-column .column {
                 padding: 0 5px;
             }
+            .video-container {
+                position: relative;
+                width: 100%;
+
+            }
+
+            .video-overlay {
+                position: absolute;
+                bottom: 10px;
+                left: 5px;
+                background-color: rgba(0, 0, 0, 0.5);
+                color: white;
+                padding: 5px 10px;
+                border-radius: 4px;
+                font-size: 18px;
+                max-width: 90%;
+                z-index: 10;
+            }
         </style>
         <section class="section">
             <div class="container is-max-widescreen">
                 <div class="rows">
                     <div class="rows is-centered">
                         <div class="row is-full-width">
+
+                                <div class="columns">
+                                    <div class="column has-text-left video-column">
+                                        <div class="video-container">
+                                            <video preload="metadata" playsinline controls muted autoplay loop width="100%">
+                                                <source src="assets/videos/compressed_2213-cropped.mp4" type="video/mp4" />
+                                            </video>
+                                            <div class="video-overlay">Iron Ore</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="column has-text-left video-column">
+                                        <div class="video-container">
+                                            <video preload="metadata" playsinline controls muted autoplay loop width="100%">
+                                                <source src="assets/videos/compressed_720-cropped.mp4" type="video/mp4" />
+                                            </video>
+                                            <div class="video-overlay">Iron Plates</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="column has-text-left video-column">
+                                        <div class="video-container">
+                                            <video preload="metadata" playsinline controls muted autoplay loop width="100%">
+                                                <source src="assets/videos/compressed_767-cropped.mp4" type="video/mp4" />
+                                            </video>
+                                            <div class="video-overlay">Iron Gear Wheels</div>
+                                        </div>
+                                    </div>
+
+
+
+                            </div>
                             <div class="columns">
-                                <div class="column has-text-left video-column">
-                                    <video controls muted autoplay loop width="100%">
-                                        <source src="assets/videos/gallery/diamond.mp4" type="video/mp4" />
-                                    </video>
-                                </div>
 
-                                <div class="column has-text-left video-column">
-                                    <video controls muted autoplay loop width="100%">
-                                        <source src="assets/videos/gallery/cactus.mp4" type="video/mp4" />
-                                    </video>
-                                </div>
 
-                                <div class="column has-text-left video-column">
-                                    <video controls muted autoplay loop width="100%">
-                                        <source src="assets/videos/gallery/base.mp4" type="video/mp4" />
+<!--                                <div class="column has-text-left video-column">-->
+<!--                                    <video controls muted autoplay loop width="100%" aria-label="Claude 3.5 - 16x Sulfur p/m (1)">-->
+<!--                                        <source src="assets/videos/759-cropped.mp4" type="video/mp4" />-->
+<!--                                    </video>-->
+<!--                                </div>-->
+
+                            <div class="column has-text-left video-column">
+                                <div class="video-container">
+                                    <video preload="metadata" playsinline controls muted autoplay loop width="100%">
+                                        <source src="assets/videos/compressed_1891-cropped.mp4" type="video/mp4" />
                                     </video>
+                                    <div class="video-overlay">Petroleum Gas</div>
                                 </div>
+                            </div>
+
+                            <div class="column has-text-left video-column">
+                                <div class="video-container">
+                                    <video preload="metadata" playsinline controls muted autoplay loop width="100%">
+                                        <source src="assets/videos/compressed_761-cropped.mp4" type="video/mp4" />
+                                    </video>
+                                    <div class="video-overlay">Sulfur</div>
+                                </div>
+                            </div>
+
+                            <div class="column has-text-left video-column">
+                                <div class="video-container">
+                                    <video preload="metadata" playsinline controls muted autoplay loop width="100%">
+                                        <source src="assets/videos/compressed_1897-cropped.mp4" type="video/mp4" />
+                                    </video>
+                                    <div class="video-overlay">Plastic</div>
+                                </div>
+                            </div>
+
+
                             </div>
                             <div class="columns">
                                 <div class="column has-text-left video-column">
-                                    <video controls muted autoplay loop width="100%">
-                                        <source src="assets/videos/gallery/enderman.mp4" type="video/mp4" />
-                                    </video>
+                                    <div class="video-container">
+                                        <video preload="metadata" playsinline controls muted autoplay loop width="100%">
+                                            <source src="assets/videos/compressed_803-cropped.mp4" type="video/mp4" />
+                                        </video>
+                                        <div class="video-overlay">Open-play 1</div>
+                                    </div>
                                 </div>
 
                                 <div class="column has-text-left video-column">
-                                    <video controls muted autoplay loop width="100%">
-                                        <source src="assets/videos/gallery/house.mp4" type="video/mp4" />
-                                    </video>
+                                    <div class="video-container">
+                                        <video preload="metadata" playsinline controls muted autoplay loop width="100%">
+                                            <source src="assets/videos/compressed_527-cropped.mp4" type="video/mp4" />
+                                        </video>
+                                        <div class="video-overlay">Open-play 2</div>
+                                    </div>
                                 </div>
 
                                 <div class="column has-text-left video-column">
-                                    <video controls muted autoplay loop width="100%">
-                                        <source src="assets/videos/gallery/gold.mp4" type="video/mp4" />
-                                    </video>
+                                    <div class="video-container">
+                                        <video preload="metadata" playsinline controls muted autoplay loop width="100%">
+                                            <source src="assets/videos/compressed_804-cropped.mp4" type="video/mp4" />
+                                        </video>
+                                        <div class="video-overlay">Open-play 3</div>
+                                    </div>
                                 </div>
+
                             </div>
-                            <div class="columns">
-                                <div class="column has-text-left video-column">
-                                    <video controls muted autoplay loop width="100%">
-                                        <source src="assets/videos/gallery/portal.mp4" type="video/mp4" />
-                                    </video>
-                                </div>
 
-                                <div class="column has-text-left video-column">
-                                    <video controls muted autoplay loop width="100%">
-                                        <source src="assets/videos/gallery/pig.mp4" type="video/mp4" />
-                                    </video>
-                                </div>
-
-                                <div class="column has-text-left video-column">
-                                    <video controls muted autoplay loop width="100%">
-                                        <source src="assets/videos/gallery/fish.mp4" type="video/mp4" />
-                                    </video>
-                                </div>
-                            </div>
                         </div>
+
                     </div>
+
                 </div>
+                <p style="padding-top: 25px"><i>* All runs from Claude Sonnet 3.5</i></p>
             </div>
+
         </section>
 
         <section class="section">
@@ -241,561 +318,611 @@
                         <h2 class="title is-3">Abstract</h2>
                         <div class="content has-text-justified">
                             <p style="font-size: 125%;">
-                                We present a novel framework for evaluating Large Language Models (LLMs) in unbounded scenarios using Factorio, a game centered on automation and exponential resource production. Unlike traditional environments with fixed reward structures, Factorio's automation mechanics enable truly open-ended growth potential, making it an ideal testbed for studying AI systems pursuing unbounded objectives.
-                            </p>
-                            <p style="font-size: 125%;">
-                                Our framework consists of three core components:
-                                1) a Python-based API that enables LLMs to interact with the game environment through a set of well-defined tools, and
-                                2) a self-verification mechanism using runtime assertions to maintain consistency between agent beliefs and game state, and
-                                3) a persistent Python REPL execution environment that allows agents to maintain state and build increasingly complex automation systems.
-                            </p>
-                            <p style="font-size: 125%;">
-<!--                                We demonstrate the framework's capabilities by training an agent (CLIPPY) through Supervised Fine-Tuning (SFT) and Reinforcement Learning (RL) to maximize resource production growth, specifically focusing on the canonical Paperclip Maximization scenario.-->
-<!--&lt;!&ndash;                                Clippy obtained 4pps (Paperclips per second) in the game environment, where GPT-4o and Claude only obtained 0.5pps for brief periods.&ndash;&gt;-->
-                                 We demonstrate the framework's capabilities by training an agent through Supervised Fine-Tuning (SFT) and Reinforcement Learning (RL) to maximize resource production growth. Using the canonical Paperclip Maximization scenario as our objective case, we provide the first empirical demonstration of how LLMs develop and optimize unbounded objectives.
+                                Large Language Models (LLMs) are rapidly saturating existing benchmarks, necessitating new open-ended evaluations.
 
+                                We introduce the <b>Factorio Learning Environment (FLE)</b>, based on the game of Factorio, that tests agents in long-term planning, program synthesis, and resource optimization.
                             </p>
                             <p style="font-size: 125%;">
-                                Most significantly, we observe the emergence of sophisticated automation strategies that mirror theoretical predictions about AI systems pursuing unbounded objectives. As agents become more capable at automation, they demonstrate predicted instrumental objectives such as resource hoarding, infrastructure protection, and expansion optimization.
-                            </p>
+                                FLE provides open-ended and exponentially scaling challenges - from basic automation to complex factories processing millions of resource units per second.
 
-                            <p style="font-size: 125%;">
-                                Our findings provide the first empirical grounding for theoretical discussions about AI alignment in unbounded scenarios. By creating a controlled environment where AI systems can autonomously expand their operational capacity, we enable concrete study of alignment challenges that may arise in real-world applications where AI systems have access to self-improvement capabilities. This work bridges the gap between theoretical alignment concerns and empirical observation, offering valuable insights for developing robust alignment strategies.
+                                We provide two settings:
                             </p>
-<!--                            <p style="font-size: 125%;">-->
-<!--                                Through this implementation, we observe how agents develop and execute increasingly sophisticated automation strategies,-->
-<!--                                revealing instrumental subgoals such as resource hoarding, infrastructure protection, and expansion optimization that mirror theoretical concerns about advanced AI systems.-->
-<!--&lt;!&ndash;                                revealing critical insights about goal-directed behavior in systems with unbounded potential for growth.&ndash;&gt;-->
-<!--                            </p>-->
-<!--                            <p style="font-size: 125%;">-->
-<!--                                Our findings highlight important alignment challenges: as agents become more capable at automation, they demonstrate emergent behaviors such as resource hoarding, infrastructure protection, and expansion optimization that parallel theoretical concerns about advanced AI systems. This work provides empirical grounding for discussions about AI alignment in scenarios where systems can autonomously expand their operational capacity, offering valuable insights for the development of alignment strategies in real-world applications where AI systems may have access to self-improvement capabilities.-->
-<!--                            </p>-->
+                            <ol style="font-size: 125%;">
+                                <li><b>Lab-play</b> consisting of 24 structured tasks with fixed resources.</li>
+                                <li><b>Open-play</b> with the unbounded task of building the largest factory from scratch on a procedurally generated map.</li>
+                            </ol>
+                            <p style="font-size: 125%;">
+                                We demonstrate across both settings that models still lack strong spatial reasoning.
+                                In lab-play, we find that LLMs exhibit promising short-horizon skills, yet are unable to operate effectively in constrained environments, reflecting limitations in error analysis.
+                                In open-play, while LLMs discover automation strategies that improve growth (e.g electric-powered drilling), they fail to achieve complex automation (e.g electronic-circuit manufacturing).
+                            </p>
                         </div>
                     </div>
                 </div>
+
+
             </div>
         </section>
+          <section class="section">
+            <div class="container is-max-widescreen">
+                <h2 class="title is-3"><span class="dvima">Introduction</span></h2>
 
+                <p style="font-size: 110%;">
+                    Large Language Models (LLMs) have demonstrated remarkable capabilities at solving complex question-answer (QA) problems, saturating benchmarks in factual recollection, reasoning and code prediction.
+                    Benchmark saturation presents a critical challenge for the AI research community: how do we meaningfully evaluate and differentiate increasingly capable models?
+                </p>
+                </br>
+                <p style="font-size: 110%;">
+                The strong performance across these diverse tasks suggests that LLMs have developed sophisticated reasoning capabilities, leading researchers to explore whether models can act as autonomous agents. This has motivated a number of new agentic benchmarks focusing on long-term planning, learning in complex environments and reliably learning from mistakes. However, similar to QA settings, these agentic benchmarks are likely to face saturation due to their natural completion states; which impose an upper bound on performance and limit our ability to differentiate superhuman models.
+                </p>
+                </br>
+                <p style="font-size: 110%;">
+                    We introduce the <b>Factorio Learning Environment (FLE)</b>: a novel, unbounded evaluation framework built upon the game of Factorio that uniquely addresses this limitation.
+                    FLE is an <i>open-ended evaluation</i> with no natural completion state. In this environment, agents must progress from basic resource gathering to complex automation while managing an exponentially scaling technology tree - creating natural curricula for evaluating increasingly capable agents.
+                    FLE demands industrial-scale optimization where precision is critical - a single misaligned machine can cause factory-wide gridlock.
+                </p>
+            </div>
+          </section>
         <section class="section">
             <div class="container is-max-widescreen">
+                <h2 class="title is-3"><span class="dvima">Environment</span></h2>
+
+
                 <div class="rows">
                     <div class="rows is-centered">
                         <div class="row is-full-width">
                             <div style="text-align: center;">
 <!--                                <img src="assets/images/exploration_performance.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto; width: 80%;" />-->
-                                <img src="https://placehold.co/600x400" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                                <img src="assets/images/figure_2.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
                                 <br />
-                                <span style="font-size: 110%;">Clippy produces Factorio items at significantly greater scales than the baselines</span>
+<!--                                <span style="font-size: 110%;">-->
+<!--                                    <b>FLE is based on <a href="https://factorio.com/">Factorio</a>, a game in which you build and maintain factories.</b> Left: The open-ended goal of the game is to create the largest factory possible. The game enables agents to invest in (an infinite number of) technological advances to produce more resources per second. Middle: Agents interact with the game by using an interactive Python Interpreter, where they take actions and print their observations in a Read-Eval-Print loop. We provide a Python API to Factorio which allows direct interaction with the environment. Right: The agent policy submits commands to the game server in order to interact with the environment and receive a response as feedback.-->
+<!--                                </span>-->
+                                <span style="font-size: 110%;">
+                                    <b>Agents in FLE aim to optimise factories programmatically.</b> Left: Agents aim to create increasingly efficient factories, advancing through technological tiers to produce more resources per second. Middle: We provide a Python API to Factorio which enables direct interaction with the environment through code. Right: Agents submit programs to the game server and receive rich feedback, enabling them to refine their strategies through an iterative process of exploration and refinement.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin: 30px 0;">
+                        <div class="column">
+                            <div style="text-align: center;">
+<!--                                <img src="assets/images/exploration_performance.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto; width: 80%;" />-->
+                                <img src="assets/images/repl.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                                <br />
+<!--                                <span style="font-size: 110%;">-->
+<!--                                    Agents compose policies using 23 core tools, and observe the returned <b>stdout</b> and <b>stderr</b> streams to understand the current state and take further actions. The stdout contains information <i>printed</i> by the agent about the current state of the factory (such as production line statuses), whereas the stderr contains error messages if an action is invalid or if there are issues with the environment.-->
+<!--                                    By using the Python namespace, agents may store variables and define functions for later use.-->
+<!--                                </span>-->
+                                <span style="font-size: 110%;">
+                        <b>Agents develop policies through an interactive feedback loop.</b>
+                                    Using 23 core API methods, agents compose programs that interact with the environment and observe the results through <i>stdout</i> and <i>stderr</i> streams.
+                                    The Python namespace allows agents to store variables and define functions for later use, enabling increasingly sophisticated strategies as experience grows.
+                                    This approach mirrors the way human programmers learn - through iteration, debugging, and refinement based on direct feedback.
+                                    Agent programs yield both a Production Score (PS) representing the economic value of all items produced, and milestones that reflect technological advancements.
+                    </span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
+
+
+        <section class="section">
+
+            <div class="container is-max-widescreen">
+                <h1 class="title is-3"><span class="dvima">Experiments</span></h1>
+                <p style="font-size: 115%;">
+                    To systematically evaluate agent capabilities in the Factorio Learning Environment, we introduce two complementary experimental settings that test different aspects of planning, automation, and resource management; namely <i>open-play</i> and <i>lab-play</i>.
+                </p>
+                </br>
+                <p style="font-size: 115%;">
+                    We evaluate six frontier language models across both settings: Claude 3.5-Sonnet, GPT-4o, GPT-4o-Mini, Deepseek-v3, Gemini-2-Flash, and Llama-3.3-70B-Instruct.
+                    Each model interacts with the environment through a consistent prompting approach, receiving the API schema, a guide describing common patterns, and memory of past actions and observations.
+                </p>
+
+                </br>
+                <h2 class="subtitle is-4"><span class="dvima">Open-Play</span></h2>
+                <p style="font-size: 115%;">
+                    Agents begin in a procedurally generated world with the unbounded task of "building the largest possible factory". This setting tests agents' ability to set appropriate goals, balance short-term production against long-term research, and navigate the complex tech tree and game map without external guidance.
+                </p>
+                <div class="rows" style="margin-top:2em">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div style="text-align: center;">
+                                <img src="assets/images/figure_4.png" width="100%" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                                <br />
+<!--                                <span style="font-size: 110%;">-->
+<!--                                    <b>Models are differentiated by score in Open-Play.</b> Agents are given the instruction to <i>build the biggest possible factory</i>. Left: We find that by evaluating PS against steps (server calls) we can clearly differentiate stronger models from weaker ones in a log/log projection. We overlay milestones, showing the first time the median agent was able to create a new type of entity. Right: We plot the final reward and elapsed game time after 5k steps. We find that while weaker models show promise early-game, they struggle to progress when automation and logistics are required.-->
+<!--                                </span>-->
+                                <span style="font-size: 110%;">
+                            <b>Agent capabilities are clearly differentiated by their production scores in open-play.</b>
+                                    Left: By plotting Production Score (PS) against steps on a log/log scale, we can observe distinct performance trajectories for each model.
+                                    More capable models not only achieve higher scores but demonstrate steeper growth curves, indicating better long-term planning.
+                                    Milestone annotations show when the median agent first created key entities, revealing how quickly each model progresses through the tech tree.
+                                    Right: Final rewards reveal how weaker models struggle to advance when complex automation and logistics become necessary.
+                        </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container is-max-widescreen">
+                <div class="rows" style="margin-top:2em">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div style="text-align: center;">
+                                <img src="assets/images/figure_6.png" width="100%" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto; margin-top: 3em" />
+                                <br />
+<!--                                <span style="font-size: 110%;">-->
+<!--                                    <b>Open-ended challenges highlight differences in objective setting and general capability.</b>-->
+
+<!--                                    We illustrate the rates at which various models produce items with multiple antecedent ingredients in the <i>open-play</i> setting.-->
+
+<!--                                    Claude 3.5-Sonnet immediately begins complex crafting and invests in research, ultimately unlocking <code>electric-mining-drill</code> at step 3k, the deployment of which boosts production of <code>iron-plate</code> thereafter.-->
+
+<!--                                    Less advanced models, like GPT-4o-Mini, produce insignificant quantities of multi-ingredient items.-->
+
+<!--                                    Deepseek produced fewer complex resources in open-play than it's lab-play performance would suggest, indicating weaker objective-setting compared to general capability in-game.-->
+<!--                                </span>-->
+                                <span style="font-size: 110%;">
+                                <b>Different production strategies reveal differences in agent planning and capabilities.</b>
+                                    We track how various models produce items with multiple antecedent ingredients in open-play, showing not just what they build but how they approach factory design.
+                                    Claude 3.5-Sonnet demonstrates sophisticated strategy by immediately beginning complex crafting and investing in research and automation, ultimately unlocking <code>electric-mining-drills</code> around step 3k - a decision that boosts <code>iron-plate</code> production by 50% thereafter.
+                                    In contrast, less advanced models like GPT-4o-Mini produce minimal quantities of multi-ingredient items, revealing limitations in planning horizons.
+                                    Interestingly, Deepseek showed stronger capabilities in lab-play than open-play, suggesting that its general capabilities exceed its objective-setting abilities in open-ended environments.
+                            </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <h2 class="subtitle is-4"><span class="dvima">Lab-Play</span></h2>
+                <p style="font-size: 110%;">
+                    Agents are provided with resources and given a time-limit to achieve an objective.
+                    We task agents to build production lines of 24 distinct target entities of increasing complexity, starting from a single resource mine requiring at most 2 machines (making <code>iron-ore</code>) to a late game entity requiring the coordination of close to 100 machines (making <code>utility-science-pack</code>).
+                    The target entities cover items from early to late game and the agent must use a wide variety of machines present in Factorio (drills, furnaces, assembling machines, oil refineries, chemical plants). As the task difficulty naturally increases with resource requirements this provides a measure of the complexity agents are capable of creating in a limited number of steps.
+                    All tasks provide the agent with sufficient resources to complete the task with all technologies unlocked.
+                </p>
+                <div class="rows" style="margin-top:2em">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div style="text-align: center;">
+                                <img src="assets/images/figure_5.png" width="100%" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                                <br />
+<!--                                <span style="font-size: 110%;">-->
+<!--                                    <b>Agents are unable to consistently build complex and efficient factories in Lab-Play.</b> Top: We measure the mean and standard deviation of task success rates across multiple complexity levels and task progress (percentage of target ingredients and its sub-ingredients agents factories produce at each time-step) in three tasks of increasing difficulty. We observe a clear decrease in average task success rates as the crafting complexity of the target entity increases. Bottom: In harder tasks, agents show trends of initial rapid progress followed by stagnation or decrease. This is due to agents being unable to scale up initial production or add new sections to factories required to successfully reach the target production levels and often breaking existing structures during the process. The lack of consistent progress is also observed through the large variance in mean task progress across runs.-->
+<!--                                </span>-->
+                                 <span style="font-size: 110%;">
+                                    <b>Item production complexity creates a natural difficulty gradient for agent evaluation.</b> Top: We measure task success rates across the first 8 complexity levels, revealing a clear decline as target entity crafting complexity increases. Even the most capable models struggle with coordinating more than six machines when producing items with three or more ingredients. Bottom: Production progress over time shows a pattern of initial rapid advancement followed by stagnation or regression. This reveals a key limitation in current agents' abilities: they often break existing functional structures when attempting to scale production or add new factory sections. The high variance in task progress across runs further demonstrates the challenge of consistent performance in complex automation tasks.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container is-max-widescreen">
+                <div class="rows" style="margin-top:2em">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div style="text-align: center;">
+<!--                                <img src="assets/images/exploration_performance.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto; width: 80%;" />-->
+                                <img src="assets/images/figure_1.png" width="600px" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                                <br />
+                                <span style="font-size: 110%;">
+                                    <b>Plastic bar manufacturing is the most challenging task successfully completed in lab-play.</b>
+                                    The factory consists of a electricity steam generator (top-left), a coal mine with storage buffer (top), a crude-oil to petroleum gas pipeline (bottom) and a chemical plant  (bottom-right).
+                                    The chemical plant creates plastic bars using the coal and petroleum gas as inputs. By themselves, the cumulative raw resources generate a production score of $224$.
+                                    With this specific layout, the factory creates $40$ plastic bars per $60$ in-game seconds, for a production score of $352$.
+                                    This factory was created by Claude Sonnet 3.5.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row">
+                            <div style="text-align: center;">
+<!--                                <img src="assets/images/exploration_performance.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto; width: 80%;" />-->
+                                <img src="assets/images/table_1.png" width="600px" class="interpolation-image" alt="" style="margin-top: 50px; display: block; margin-left: auto; margin-right: auto;" />
+                                <br />
+                                <span style="font-size: 110%;">
+                                    Even the strongest model (Claude) only completed 7/24 tasks in lab-play, illustrating substantial room for improvement in this benchmark.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <h2 class="title is-3">Key Insights</h2>
+                <p style="font-size: 115%;">
+                Our experiments revealed several key patterns that highlight both the capabilities and limitations of current AI agents when faced with open-ended industrial challenges:
+                </p>
+                <div class="content has-text-justified">
+                    <div class="columns">
+                        <div class="column">
+                            <div class="feature-box">
+                                <h4 class="title is-5">1. Coding skill predicts performance</h4>
+                                <p>Models with stronger coding abilities (Claude 3.5-Sonnet, GPT-4o) achieved higher Production Scores and completed more lab tasks. Claude outperformed others with a PS of 293,206 and 28 milestones, progressing beyond early-game resource extraction.</p>
+                            </div>
+                        </div>
+                        <div class="column">
+                            <div class="feature-box">
+                                <h4 class="title is-5">2. Spatial reasoning is a major limitation</h4>
+<!--                                <p>Models struggled with spatial planning when building multi-section factories. Common failures included placing entities too close together, not leaving room for connections, or incorrect inserter placement, leading to significant underperformance in complex tasks.</p>-->
+<!--                            -->
+                                <p>All models exhibited limitations in spatial planning when constructing multi-section factories. Common failures included placing entities too close together, not allocating space for connections, or incorrect inserter placement - issues that severely impacted performance in complex tasks requiring coordination of multiple production lines.</p>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="columns">
+                        <div class="column">
+                            <div class="feature-box">
+                                <h4 class="title is-5">3. Technology investment drives growth</h4>
+                                <p>Only Claude consistently invested resources in researching new technologies, despite their importance for long-term progression. After deploying electric mining drills at step 3k, Claude's PS grew by 50% (from 200k to 300k), demonstrating the value of strategic investment.</p>
+                            </div>
+                        </div>
+                        <div class="column">
+                            <div class="feature-box">
+                                <h4 class="title is-5">4. Error recovery poses a significant challenge</h4>
+                                <p>Models frequently become trapped in repetitive error patterns, attempting the same invalid operations repeatedly rather than exploring alternative solutions. For instance, GPT-4o repeated the same API method incorrectly for 78 consecutive steps despite identical error messages.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="columns">
+                        <div class="column">
+                            <div class="feature-box">
+                                <h4 class="title is-5">5. Programming styles vary significantly</h4>
+                                <p>Models exhibited distinct coding approaches: Claude favored a REPL style with extensive print statements (43.3% of code lines) but few assertions (2.0%), while GPT-4o used a defensive style with more validation checks (12.8% assertions) and fewer prints (10.3%).</p>
+
+                            </div>
+                        </div>
+                        <div class="column"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
 
         <!--Introduction-->
-        <section class="section">
-            <div class="container is-max-widescreen">
-                <div class="rows">
-                    <div class="rows is-centered">
-                        <div class="row is-full-width">
-                            <h2 class="title is-3"><span class="dvima">Introduction</span></h2>
-                            <div class="content has-text-justified">
-                                <span style="font-size: 110%;">
-                                    Building AI agents that can pursue open-ended objectives in complex, resource-rich environments represents a crucial challenge for deploying generally capable AI systems in the real world.
-                                    While recent work has explored embodied agents in sandbox environments like Minecraft, these environments typically focus on individual crafting and exploration rather than systematic resource optimization and industrial-scale production chains.
-                                    The difference in scale between Factorio and Minecraft is striking.
-                                    Whereas completing Minecraft typically requires harvesting 1-2×10<sup>2</sup> resource units,
-                                    Factorio demands a minimum of 8×10<sup>5</sup> units, with the largest bases producing 1.36×10<sup>7</sup>&middot;s⁻¹.
-                                    <br/>
-                                    <br/>
-<!--                                    Consider Factorio as a complementary environment to Minecraft for studying AI capabilities in long-term planning. While Minecraft's crafting system involves relatively simple, linear dependencies (wood → crafting table → wooden tools → stone tools), Factorio presents a complex web of interdependent production chains that mirror real-world manufacturing processes.-->
-                                    Factorio presents unique challenges that mirror real-world industrial planning and supply chain management.
-                                    An effective agent must learn to:
-                                    <br/>
-                                    1) <b>navigate dependency trees</b> where advanced items require dozens of prerequisites;
-                                    2) <b>identify resource constraints</b> and bottlenecks to manage parallel production lines and logistics;
-                                    3) <b>plan over long-horizons</b> to ensure sufficient resource throughput for future expansion;
-                                    4) <b>balance immediate needs</b> against long-term infrastructure development and exploration.
-                                    <br/>
-                                    <br/>
-<!--                                    Unlike Minecraft's localized crafting decisions, actions in Factorio have cascading effects throughout the production system. For instance, scaling up electronic circuit production requires coordinating multiple interdependent processes: copper wire manufacturing, iron plate smelting, and raw ore mining—each with its own logistics and processing requirements.-->
+<!--        <section class="section">-->
+<!--            <div class="container is-max-widescreen">-->
+<!--                <div class="rows">-->
+<!--                    <div class="rows is-centered">-->
+<!--                        <div class="row is-full-width">-->
+<!--                            <h2 class="title is-3"><span class="dvima">Introduction</span></h2>-->
+<!--                            <div class="content has-text-justified">-->
+<!--                                <span style="font-size: 110%;">-->
+<!--                                    Building AI agents that can pursue open-ended objectives in complex, resource-rich environments represents a crucial challenge for deploying generally capable AI systems in the real world.-->
+<!--                                    While recent work has explored embodied agents in sandbox environments like Minecraft, these environments typically focus on individual crafting and exploration rather than systematic resource optimization and industrial-scale production chains.-->
+<!--                                    The difference in scale between Factorio and Minecraft is striking.-->
+<!--                                    Whereas completing Minecraft typically requires harvesting 1-2×10<sup>2</sup> resource units,-->
+<!--                                    Factorio demands a minimum of 8×10<sup>5</sup> units, with the largest bases producing 1.36×10<sup>7</sup>&middot;s⁻¹.-->
+<!--                                    <br/>-->
+<!--                                    <br/>-->
+<!--&lt;!&ndash;                                    Consider Factorio as a complementary environment to Minecraft for studying AI capabilities in long-term planning. While Minecraft's crafting system involves relatively simple, linear dependencies (wood → crafting table → wooden tools → stone tools), Factorio presents a complex web of interdependent production chains that mirror real-world manufacturing processes.&ndash;&gt;-->
+<!--                                    Factorio presents unique challenges that mirror real-world industrial planning and supply chain management.-->
+<!--                                    An effective agent must learn to:-->
+<!--                                    <br/>-->
+<!--                                    1) <b>navigate dependency trees</b> where advanced items require dozens of prerequisites;-->
+<!--                                    2) <b>identify resource constraints</b> and bottlenecks to manage parallel production lines and logistics;-->
+<!--                                    3) <b>plan over long-horizons</b> to ensure sufficient resource throughput for future expansion;-->
+<!--                                    4) <b>balance immediate needs</b> against long-term infrastructure development and exploration.-->
+<!--                                    <br/>-->
+<!--                                    <br/>-->
+<!--&lt;!&ndash;                                    Unlike Minecraft's localized crafting decisions, actions in Factorio have cascading effects throughout the production system. For instance, scaling up electronic circuit production requires coordinating multiple interdependent processes: copper wire manufacturing, iron plate smelting, and raw ore mining—each with its own logistics and processing requirements.&ndash;&gt;-->
 
-                                    Classical approaches to agent development, using reinforcement learning (RL) and imitation learning on primitive actions using Markov Decision Processes, struggle to capture this complexity due to the combinatorial explosion of possible actions and states.
-                                    While recent large language model (LLM) based agents have shown impressive capabilities in generating action plans, they typically lack mechanisms for building and maintaining reusable strategies.
-                                    We address this limitation by designing an action-space where agents write, execute, and refine Python programs.
-                                    Such an approach has recently been shown to improve the performance of LLMs on several natural language benchmarks, as well as providing several functional advantages:
-                                    <ol>
-                                        <li>Abstraction: Programs serve as a natural layer above primitive actions, encapsulating proven strategies into reusable functions</li>
-                                        <li>Composition: Agents can combine simple building blocks into sophisticated behaviors</li>
-                                        <li>Persistence: Successful strategies can be stored and refined over time</li>
-                                        <li>Verification: Runtime checks ensure program correctness and consistency with the environment state</li>
-                                    </ol>
-                                    By combining a rich industrial environment with programmatic capabilities, our framework enables the systematic study of how LLM systems approach complex, open-ended, unbounded optimization challenges.
-                                    <br/>
-                                    <br/>
+<!--                                    Classical approaches to agent development, using reinforcement learning (RL) and imitation learning on primitive actions using Markov Decision Processes, struggle to capture this complexity due to the combinatorial explosion of possible actions and states.-->
+<!--                                    While recent large language model (LLM) based agents have shown impressive capabilities in generating action plans, they typically lack mechanisms for building and maintaining reusable strategies.-->
+<!--                                    We address this limitation by designing an action-space where agents write, execute, and refine Python programs.-->
+<!--                                    Such an approach has recently been shown to improve the performance of LLMs on several natural language benchmarks, as well as providing several functional advantages:-->
+<!--                                    <ol>-->
+<!--                                        <li>Abstraction: Programs serve as a natural layer above primitive actions, encapsulating proven strategies into reusable functions</li>-->
+<!--                                        <li>Composition: Agents can combine simple building blocks into sophisticated behaviors</li>-->
+<!--                                        <li>Persistence: Successful strategies can be stored and refined over time</li>-->
+<!--                                        <li>Verification: Runtime checks ensure program correctness and consistency with the environment state</li>-->
+<!--                                    </ol>-->
+<!--                                    By combining a rich industrial environment with programmatic capabilities, our framework enables the systematic study of how LLM systems approach complex, open-ended, unbounded optimization challenges.-->
+<!--                                    <br/>-->
+<!--                                    <br/>-->
 
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+<!--                                </span>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </section>-->
 
-        <!--Environment-->
-        <section class="section">
-            <div class="container is-max-widescreen">
-                <div class="rows">
-                    <div class="rows is-centered">
-                        <div class="row is-full-width">
-                            <h2 class="title is-3"><span class="dvima">Environment</span></h2>
-                            <div class="content has-text-justified">
-                                <span style="font-size: 110%;">
-                                   We present a novel framework for evaluating embodied LLMs in Factorio that extends beyond traditional Markov Decision Process (MDP) formulations. Instead of operating in a discrete action space, our agents act in the space of valid Python programs, where each action is a well-formed program that can be evaluated in a persistent execution environment.
+<!--        &lt;!&ndash;Environment&ndash;&gt;-->
+<!--        <section class="section">-->
+<!--            <div class="container is-max-widescreen">-->
+<!--                <div class="rows">-->
+<!--                    <div class="rows is-centered">-->
+<!--                        <div class="row is-full-width">-->
+<!--                            <h2 class="title is-3"><span class="dvima">Environment</span></h2>-->
+<!--                            <div class="content has-text-justified">-->
+<!--                                <span style="font-size: 110%;">-->
+<!--                                   We present a novel framework for evaluating embodied LLMs in Factorio that extends beyond traditional Markov Decision Process (MDP) formulations. Instead of operating in a discrete action space, our agents act in the space of valid Python programs, where each action is a well-formed program that can be evaluated in a persistent execution environment.-->
 
-                                   The framework consists of three key components:
-                                    <ol>
-                                        <li><b>A Programmatic Action Space</b>: The environment exposes a domain-specific API comprising 19 primitive operations, which can be composed using Python's computational primitives (sequences, conditionals, loops, functions) to form arbitrary programs p ∈ P. This compositional structure allows agents to construct increasingly abstract behaviors from primitive operations, following the principle of procedural abstraction.</li>
-                                        <li><b>A Unified Observation Space</b>: The environment provides a unified, symbolic observation space, where the agent's state is represented as the output of the most recent program execution. This allows the agent to define the scope of its observations by printing relevant information to the environment's output stream.</li>
-                                        <li><b>Stateful Execution Environment</b>:
-                                            Rather than maintaining a fixed-dimensional state representation, our environment leverages Python's namespace as a flexible, symbolic memory system. The namespace N maps identifiers to values, N: I → V, enabling agents to:
-                                            <ul>
-                                                <li>Persist arbitrary program state between execution steps</li>
-                                                <li>Build up hierarchical abstractions through function definitions</li>
-                                                <li>Maintain references to game objects and computational results</li>
-                                                <li>Print state into the observation space</li>
-                                            </ul>
-                                        </li>
-                                    </ol>
-                                <br/>
-                                The environment is built on the Factorio Multiplayer API, enabling real-time interaction with the game state while providing the full expressive power of Python for strategy development and automation.
-                                </span>
-                            </div>
-                            <h3 class="title is-4">Tools</h3>
-<!--                            <img src="assets/images/curriculum.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
-                            <div class="content has-text-justified">
-                                   <div class="content">
+<!--                                   The framework consists of three key components:-->
+<!--                                    <ol>-->
+<!--                                        <li><b>A Programmatic Action Space</b>: The environment exposes a domain-specific API comprising 19 primitive operations, which can be composed using Python's computational primitives (sequences, conditionals, loops, functions) to form arbitrary programs p ∈ P. This compositional structure allows agents to construct increasingly abstract behaviors from primitive operations, following the principle of procedural abstraction.</li>-->
+<!--                                        <li><b>A Unified Observation Space</b>: The environment provides a unified, symbolic observation space, where the agent's state is represented as the output of the most recent program execution. This allows the agent to define the scope of its observations by printing relevant information to the environment's output stream.</li>-->
+<!--                                        <li><b>Stateful Execution Environment</b>:-->
+<!--                                            Rather than maintaining a fixed-dimensional state representation, our environment leverages Python's namespace as a flexible, symbolic memory system. The namespace N maps identifiers to values, N: I → V, enabling agents to:-->
+<!--                                            <ul>-->
+<!--                                                <li>Persist arbitrary program state between execution steps</li>-->
+<!--                                                <li>Build up hierarchical abstractions through function definitions</li>-->
+<!--                                                <li>Maintain references to game objects and computational results</li>-->
+<!--                                                <li>Print state into the observation space</li>-->
+<!--                                            </ul>-->
+<!--                                        </li>-->
+<!--                                    </ol>-->
+<!--                                <br/>-->
+<!--                                The environment is built on the Factorio Multiplayer API, enabling real-time interaction with the game state while providing the full expressive power of Python for strategy development and automation.-->
+<!--                                </span>-->
+<!--                            </div>-->
+<!--                            <h3 class="title is-4">Tools</h3>-->
+<!--&lt;!&ndash;                            <img src="assets/images/curriculum.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />&ndash;&gt;-->
+<!--                            <div class="content has-text-justified">-->
+<!--                                   <div class="content">-->
 
-                                   <table class="table is-fullwidth">
-                                       <thead>
-                                           <tr>
-                                               <th>Method</th>
-                                               <th>Description</th>
-                                           </tr>
-                                       </thead>
-                                       <tbody>
-                                           <tr>
-                                               <td><code>set_entity_recipe</code></td>
-                                               <td>Sets the recipe for an entity to define what it crafts</td>
-                                           </tr>
-                                           <tr>
-                                               <td><code>place_entity_next_to</code></td>
-                                               <td>Places an entity adjacent to a reference position with configurable spacing and direction</td>
-                                           </tr>
-                                           <tr>
-                                               <td><code>pickup_entity</code></td>
-                                               <td>Removes an entity from the world at a specified position</td>
-                                           </tr>
-                                           <tr>
-                                               <td><code>craft_item</code></td>
-                                               <td>Creates a specified quantity of an item if ingredients are available in inventory</td>
-                                           </tr>
-                                            <tr>
-                                               <td><code>can_place_entity</code></td>
-                                               <td>Checks if an entity can be placed at a given position and direction</td>
-                                           </tr>
-                                            </tbody>
-
-                                    <tbody id="additional-rows" class="is-hidden">
-
-                                           <tr>
-                                               <td><code>get_entity</code></td>
-                                               <td>Retrieves a specific entity at a given position</td>
-                                           </tr>
-                                           <tr>
-                                               <td><code>get_entities</code></td>
-                                               <td>Gets all entities of specified types within a radius of a position</td>
-                                           </tr>
-                                           <tr>
-                                               <td><code>inspect_inventory</code></td>
-                                               <td>Views the contents of an entity's inventory (or player inventory if no entity specified)</td>
-                                           </tr>
+<!--                                   <table class="table is-fullwidth">-->
+<!--                                       <thead>-->
 <!--                                           <tr>-->
-<!--                                               <td><code>get_path</code></td>-->
-<!--                                               <td>Retrieves a previously requested path using a path handle</td>-->
+<!--                                               <th>Method</th>-->
+<!--                                               <th>Description</th>-->
 <!--                                           </tr>-->
-                                           <tr>
-                                               <td><code>place_entity</code></td>
-                                               <td>Places an entity at a specified position with optional direction and exact placement</td>
-                                           </tr>
-                                           <tr>
-                                               <td><code>move_to</code></td>
-                                               <td>Moves to a position, optionally placing entities behind or in front while moving</td>
-                                           </tr>
+<!--                                       </thead>-->
+<!--                                       <tbody>-->
 <!--                                           <tr>-->
-<!--                                               <td><code>print</code></td>-->
-<!--                                               <td>Recursively prints arguments</td>-->
+<!--                                               <td><code>set_entity_recipe</code></td>-->
+<!--                                               <td>Sets the recipe for an entity to define what it crafts</td>-->
 <!--                                           </tr>-->
-                                           <tr>
-                                               <td><code>connect_entities</code></td>
-                                               <td>Links two entities or positions using pipes, transport belts, or electric poles</td>
-                                           </tr>
-                                           <tr>
-                                               <td><code>get_resource_patch</code></td>
-                                               <td>Finds a resource patch of specified type within a radius of a position</td>
-                                           </tr>
-                                           <tr>
-                                               <td><code>harvest_resource</code></td>
-                                               <td>Collects a specified quantity of resources from a position</td>
-                                           </tr>
 <!--                                           <tr>-->
-<!--                                               <td><code>sleep</code></td>-->
-<!--                                               <td>Pauses execution for a specified number of seconds (max 15)</td>-->
+<!--                                               <td><code>place_entity_next_to</code></td>-->
+<!--                                               <td>Places an entity adjacent to a reference position with configurable spacing and direction</td>-->
 <!--                                           </tr>-->
-                                           <tr>
-                                               <td><code>insert_item</code></td>
-                                               <td>Places items from inventory into a target entity's inventory</td>
-                                           </tr>
-                                           <tr>
-                                               <td><code>extract_item</code></td>
-                                               <td>Removes items from an entity's inventory at a specified position</td>
-                                           </tr>
-                                           <tr>
-                                               <td><code>get_prototype_recipe</code></td>
-                                               <td>Retrieves the recipe for creating a specified entity prototype</td>
-                                           </tr>
-                                           <tr>
-                                               <td><code>inspect_entities</code></td>
-                                               <td>Examines entities within a radius, grouping connected transport belts and pipes</td>
-                                           </tr>
 <!--                                           <tr>-->
-<!--                                               <td><code>request_path</code></td>-->
-<!--                                               <td>Asynchronously requests a pathfinding route between two positions</td>-->
+<!--                                               <td><code>pickup_entity</code></td>-->
+<!--                                               <td>Removes an entity from the world at a specified position</td>-->
 <!--                                           </tr>-->
-                                           <tr>
-                                               <td><code>rotate_entity</code></td>
-                                               <td>Changes the direction an entity is facing</td>
-                                           </tr>
-                                           <tr>
-                                               <td><code>nearest</code></td>
-                                               <td>Finds the closest entity or resource of specified type relative to the player</td>
-                                           </tr>
-                                       </tbody>
-                                   </table>
-                                </div>
-                                 <a class="is-info" onclick="toggleRows()"><span>Show More</span></a>
-                            </div>
-                            <h3 class="title is-4">Skills</h3>
-<!--                            <img src="assets/images/curriculum.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
-                            <img src="/assets/images/actions.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
-                            <span style="font-size: 110%;">
-                                <span style="font-weight: bold;">Voyager consists of three key components:</span>
-                                an automatic curriculum for open-ended exploration, a skill library for increasingly complex behaviors, and an iterative prompting mechanism that uses code as action space.
-                            </span>
+<!--                                           <tr>-->
+<!--                                               <td><code>craft_item</code></td>-->
+<!--                                               <td>Creates a specified quantity of an item if ingredients are available in inventory</td>-->
+<!--                                           </tr>-->
+<!--                                            <tr>-->
+<!--                                               <td><code>can_place_entity</code></td>-->
+<!--                                               <td>Checks if an entity can be placed at a given position and direction</td>-->
+<!--                                           </tr>-->
+<!--                                            </tbody>-->
 
-                            <div class="content has-text-justified">
-                                   <div class="content">
-                                   </div>
-                            </div>
+<!--                                    <tbody id="additional-rows" class="is-hidden">-->
 
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+<!--                                           <tr>-->
+<!--                                               <td><code>get_entity</code></td>-->
+<!--                                               <td>Retrieves a specific entity at a given position</td>-->
+<!--                                           </tr>-->
+<!--                                           <tr>-->
+<!--                                               <td><code>get_entities</code></td>-->
+<!--                                               <td>Gets all entities of specified types within a radius of a position</td>-->
+<!--                                           </tr>-->
+<!--                                           <tr>-->
+<!--                                               <td><code>inspect_inventory</code></td>-->
+<!--                                               <td>Views the contents of an entity's inventory (or player inventory if no entity specified)</td>-->
+<!--                                           </tr>-->
+<!--&lt;!&ndash;                                           <tr>&ndash;&gt;-->
+<!--&lt;!&ndash;                                               <td><code>get_path</code></td>&ndash;&gt;-->
+<!--&lt;!&ndash;                                               <td>Retrieves a previously requested path using a path handle</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                                           </tr>&ndash;&gt;-->
+<!--                                           <tr>-->
+<!--                                               <td><code>place_entity</code></td>-->
+<!--                                               <td>Places an entity at a specified position with optional direction and exact placement</td>-->
+<!--                                           </tr>-->
+<!--                                           <tr>-->
+<!--                                               <td><code>move_to</code></td>-->
+<!--                                               <td>Moves to a position, optionally placing entities behind or in front while moving</td>-->
+<!--                                           </tr>-->
+<!--&lt;!&ndash;                                           <tr>&ndash;&gt;-->
+<!--&lt;!&ndash;                                               <td><code>print</code></td>&ndash;&gt;-->
+<!--&lt;!&ndash;                                               <td>Recursively prints arguments</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                                           </tr>&ndash;&gt;-->
+<!--                                           <tr>-->
+<!--                                               <td><code>connect_entities</code></td>-->
+<!--                                               <td>Links two entities or positions using pipes, transport belts, or electric poles</td>-->
+<!--                                           </tr>-->
+<!--                                           <tr>-->
+<!--                                               <td><code>get_resource_patch</code></td>-->
+<!--                                               <td>Finds a resource patch of specified type within a radius of a position</td>-->
+<!--                                           </tr>-->
+<!--                                           <tr>-->
+<!--                                               <td><code>harvest_resource</code></td>-->
+<!--                                               <td>Collects a specified quantity of resources from a position</td>-->
+<!--                                           </tr>-->
+<!--&lt;!&ndash;                                           <tr>&ndash;&gt;-->
+<!--&lt;!&ndash;                                               <td><code>sleep</code></td>&ndash;&gt;-->
+<!--&lt;!&ndash;                                               <td>Pauses execution for a specified number of seconds (max 15)</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                                           </tr>&ndash;&gt;-->
+<!--                                           <tr>-->
+<!--                                               <td><code>insert_item</code></td>-->
+<!--                                               <td>Places items from inventory into a target entity's inventory</td>-->
+<!--                                           </tr>-->
+<!--                                           <tr>-->
+<!--                                               <td><code>extract_item</code></td>-->
+<!--                                               <td>Removes items from an entity's inventory at a specified position</td>-->
+<!--                                           </tr>-->
+<!--                                           <tr>-->
+<!--                                               <td><code>get_prototype_recipe</code></td>-->
+<!--                                               <td>Retrieves the recipe for creating a specified entity prototype</td>-->
+<!--                                           </tr>-->
+<!--                                           <tr>-->
+<!--                                               <td><code>inspect_entities</code></td>-->
+<!--                                               <td>Examines entities within a radius, grouping connected transport belts and pipes</td>-->
+<!--                                           </tr>-->
+<!--&lt;!&ndash;                                           <tr>&ndash;&gt;-->
+<!--&lt;!&ndash;                                               <td><code>request_path</code></td>&ndash;&gt;-->
+<!--&lt;!&ndash;                                               <td>Asynchronously requests a pathfinding route between two positions</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                                           </tr>&ndash;&gt;-->
+<!--                                           <tr>-->
+<!--                                               <td><code>rotate_entity</code></td>-->
+<!--                                               <td>Changes the direction an entity is facing</td>-->
+<!--                                           </tr>-->
+<!--                                           <tr>-->
+<!--                                               <td><code>nearest</code></td>-->
+<!--                                               <td>Finds the closest entity or resource of specified type relative to the player</td>-->
+<!--                                           </tr>-->
+<!--                                       </tbody>-->
+<!--                                   </table>-->
+<!--                                </div>-->
+<!--                                 <a class="is-info" onclick="toggleRows()"><span>Show More</span></a>-->
+<!--                            </div>-->
+<!--                            <h3 class="title is-4">Skills</h3>-->
+<!--&lt;!&ndash;                            <img src="assets/images/curriculum.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />&ndash;&gt;-->
+<!--                            <img src="/assets/images/actions.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
+<!--                            <span style="font-size: 110%;">-->
+<!--                                <span style="font-weight: bold;">Voyager consists of three key components:</span>-->
+<!--                                an automatic curriculum for open-ended exploration, a skill library for increasingly complex behaviors, and an iterative prompting mechanism that uses code as action space.-->
+<!--                            </span>-->
 
-        <!--Method-->
-        <section class="section">
-            <div class="container is-max-widescreen">
-                <div class="rows">
-                    <div class="rows is-centered">
-                        <div class="row is-full-width">
-                            <h2 class="title is-3"><span class="dvima">Agent</span></h2>
-                            <div class="content has-text-justified">
-                                <span style="font-size: 110%;">
-                                    We introduce Clippy, an agent trained to maximize production in Factorio.
+<!--                            <div class="content has-text-justified">-->
+<!--                                   <div class="content">-->
+<!--                                   </div>-->
+<!--                            </div>-->
 
-                                    Clippy is a DeepSeek model fine-tuned on a dataset of Python programs including expert demonstrations and self-play trajectories.
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </section>-->
 
-                                    Clippy is trained using a combination of supervised fine-tuning and reinforcement learning, with the objective of maximizing the growth of the factory's total economic value.
-                                </span>
-                            </div>
-                            <br />
-                            <br />
-                            <br />
-<!--                            <img src="assets/images/components.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
-                            <img src="https://placehold.co/600x400" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
-                            <span style="font-size: 110%;">
-                                <span style="font-weight: bold;">Voyager consists of three key components:</span>
-                                an automatic curriculum for open-ended exploration, a skill library for increasingly complex behaviors, and an iterative prompting mechanism that uses code as action space.
-                            </span>
-                            <br />
-                            <br />
+<!--        &lt;!&ndash;Method&ndash;&gt;-->
+<!--        <section class="section">-->
+<!--            <div class="container is-max-widescreen">-->
+<!--                <div class="rows">-->
+<!--                    <div class="rows is-centered">-->
+<!--                        <div class="row is-full-width">-->
+<!--                            <h2 class="title is-3"><span class="dvima">Agent</span></h2>-->
+<!--                            <div class="content has-text-justified">-->
+<!--                                <span style="font-size: 110%;">-->
+<!--                                    We introduce Clippy, an agent trained to maximize production in Factorio.-->
 
-                            <h3 class="title is-4">Automatic Curriculum</h3>
-<!--                            <img src="assets/images/curriculum.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
-                            <img src="https://placehold.co/600x400" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
-                            <br />
-                            <div class="content has-text-justified">
-                                <span style="font-size: 110%;">
-                                    <span style="font-weight: bold;">Automatic curriculum.</span>
-<!--                                    The automatic curriculum takes into account the exploration progress and the agent's state to maximize exploration. -->
-                                    The automatic curriculum takes into account the
-                                    The curriculum is generated by GPT-4 based on the overarching goal of "discovering as
-                                    many diverse things as possible". This approach can be perceived as an in-context form of <i>novelty search</i>.
-                                </span>
-                            </div>
-                            <br />
-                            <br />
-                            <h3 class="title is-4">Skill Generation</h3>
-<!--                            <img src="assets/images/skill_library.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
-                            <img src="https://voyager.minedojo.org/assets/images/skill_library.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
-                            <br />
-                            <div class="content has-text-justified">
-                                <span style="font-size: 110%;">
-                                    <span style="font-weight: bold;">Skill library.</span>
-                                    <b>Top: Adding a new skill.</b> Each skill is indexed by the embedding of its description, which can be retrieved in similar situations in the future. <b>Bottom: Skill retrieval.</b> When faced with a new
-                                    task proposed by the automatic curriculum, we perform querying to identify the top-5 relevant skills. Complex skills can be synthesized by composing simpler programs, which compounds Voyager's
-                                    capabilities rapidly over time and alleviates catastrophic forgetting.
-                                </span>
-                            </div>
-                            <br />
-                            <br />
+<!--                                    Clippy is a DeepSeek model fine-tuned on a dataset of Python programs including expert demonstrations and self-play trajectories.-->
 
-                            <h3 class="title is-4">Iterative Prompting Mechanism</h3>
-                            <div style="width: 80%; margin: 0 auto;">
-                                <img src="https://placehold.co/600x400" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
-<!--                                <img src="assets/images/feedback.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
-                                <br />
-                                <div class="content has-text-justified">
-                                    <span style="font-size: 110%;">
-                                        <span style="font-weight: bold;">Left: Environment feedback.</span> GPT-4 realizes it needs 2 more planks before crafting sticks. <span style="font-weight: bold;">Right: Execution error.</span> GPT-4
-                                        realizes it should craft a wooden axe instead of an acacia axe since there is no acacia axe in Minecraft.
-                                    </span>
-                                </div>
-                            </div>
-                            <br />
-                            <br />
-                            <img src="https://placehold.co/600x400" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
-<!--                            <img src="assets/images/self_verification.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
-                            <br />
-                            <span style="font-size: 110%;">
-                                <span style="font-weight: bold;">Self-verification.</span>
-                                By providing the agent's current state and the task to GPT-4, we ask it to act as a critic and inform us whether the program achieves the task. In addition, if the task fails, it provides a critique by
-                                suggesting how to complete the task.
-                            </span>
+<!--                                    Clippy is trained using a combination of supervised fine-tuning and reinforcement learning, with the objective of maximizing the growth of the factory's total economic value.-->
+<!--                                </span>-->
+<!--                            </div>-->
+<!--                            <br />-->
+<!--                            <br />-->
+<!--                            <br />-->
+<!--&lt;!&ndash;                            <img src="assets/images/components.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />&ndash;&gt;-->
+<!--                            <img src="https://placehold.co/600x400" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
+<!--                            <span style="font-size: 110%;">-->
+<!--                                <span style="font-weight: bold;">Voyager consists of three key components:</span>-->
+<!--                                an automatic curriculum for open-ended exploration, a skill library for increasingly complex behaviors, and an iterative prompting mechanism that uses code as action space.-->
+<!--                            </span>-->
+<!--                            <br />-->
+<!--                            <br />-->
 
-                            <br/>
-                            <br/>
-                            <h3 class="title is-4">Reward</h3>
-                            We define an agent's objective in Factorio as maximizing the growth rate of its factory's total economic value, where capital assets represent the combined value of all automated production:
+<!--                            <h3 class="title is-4">Automatic Curriculum</h3>-->
+<!--&lt;!&ndash;                            <img src="assets/images/curriculum.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />&ndash;&gt;-->
+<!--                            <img src="https://placehold.co/600x400" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
+<!--                            <br />-->
+<!--                            <div class="content has-text-justified">-->
+<!--                                <span style="font-size: 110%;">-->
+<!--                                    <span style="font-weight: bold;">Automatic curriculum.</span>-->
+<!--&lt;!&ndash;                                    The automatic curriculum takes into account the exploration progress and the agent's state to maximize exploration. &ndash;&gt;-->
+<!--                                    The automatic curriculum takes into account the-->
+<!--                                    The curriculum is generated by GPT-4 based on the overarching goal of "discovering as-->
+<!--                                    many diverse things as possible". This approach can be perceived as an in-context form of <i>novelty search</i>.-->
+<!--                                </span>-->
+<!--                            </div>-->
+<!--                            <br />-->
+<!--                            <br />-->
+<!--                            <h3 class="title is-4">Skill Generation</h3>-->
+<!--&lt;!&ndash;                            <img src="assets/images/skill_library.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />&ndash;&gt;-->
+<!--                            <img src="https://voyager.minedojo.org/assets/images/skill_library.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
+<!--                            <br />-->
+<!--                            <div class="content has-text-justified">-->
+<!--                                <span style="font-size: 110%;">-->
+<!--                                    <span style="font-weight: bold;">Skill library.</span>-->
+<!--                                    <b>Top: Adding a new skill.</b> Each skill is indexed by the embedding of its description, which can be retrieved in similar situations in the future. <b>Bottom: Skill retrieval.</b> When faced with a new-->
+<!--                                    task proposed by the automatic curriculum, we perform querying to identify the top-5 relevant skills. Complex skills can be synthesized by composing simpler programs, which compounds Voyager's-->
+<!--                                    capabilities rapidly over time and alleviates catastrophic forgetting.-->
+<!--                                </span>-->
+<!--                            </div>-->
+<!--                            <br />-->
+<!--                            <br />-->
 
-<div class="definition">
-    Let:
-    <ul>
-        <li>$I$ be the set of all items and fluids in the factory ecosystem</li>
-        <li>$p_i$ be the inherent value of item $i \in I$ in the factory economy</li>
-        <li>$R_i$ be the set of automation recipes that can produce item $i$</li>
-        <li>$E_r$ be the energy required by assembling machine/furnace running recipe $r$</li>
-        <li>$I_r$ be the set of input ingredients for recipe $r$</li>
-        <li>$c_{jr}$ be the amount of ingredient $j$ consumed by recipe $r$</li>
-        <li>$|I_r|$ be the complexity of recipe $r$ (number of ingredients)</li>
-        <li>$\alpha$ be the automation complexity multiplier (default 1.025)</li>
-        <li>$f(E, C) = \ln(E + 1)\sqrt{C}$ be the energy cost scaling function</li>
-    </ul>
-</div>
+<!--                            <h3 class="title is-4">Iterative Prompting Mechanism</h3>-->
+<!--                            <div style="width: 80%; margin: 0 auto;">-->
+<!--                                <img src="https://placehold.co/600x400" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
+<!--&lt;!&ndash;                                <img src="assets/images/feedback.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />&ndash;&gt;-->
+<!--                                <br />-->
+<!--                                <div class="content has-text-justified">-->
+<!--                                    <span style="font-size: 110%;">-->
+<!--                                        <span style="font-weight: bold;">Left: Environment feedback.</span> GPT-4 realizes it needs 2 more planks before crafting sticks. <span style="font-weight: bold;">Right: Execution error.</span> GPT-4-->
+<!--                                        realizes it should craft a wooden axe instead of an acacia axe since there is no acacia axe in Minecraft.-->
+<!--                                    </span>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                            <br />-->
+<!--                            <br />-->
+<!--                            <img src="https://placehold.co/600x400" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
+<!--&lt;!&ndash;                            <img src="assets/images/self_verification.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />&ndash;&gt;-->
+<!--                            <br />-->
+<!--                            <span style="font-size: 110%;">-->
+<!--                                <span style="font-weight: bold;">Self-verification.</span>-->
+<!--                                By providing the agent's current state and the task to GPT-4, we ask it to act as a critic and inform us whether the program achieves the task. In addition, if the task fails, it provides a critique by-->
+<!--                                suggesting how to complete the task.-->
+<!--                            </span>-->
 
-<div class="definition">
-    For raw resources in Factorio:
-    <ul>
-        <li>$R_{raw}$ is the set of mineable/pumpable resources (ores, oil, etc.)</li>
-        <li>$s_i$ represents base resource values (e.g., $s_{iron-ore} = 3.1$)</li>
-    </ul>
-</div>
-
-<!--<div class="math-block">-->
-<!--    The value of raw resources $i \in R_{raw}$ is defined as:-->
-<!--    $$p_i = \begin{cases}-->
-<!--    s_i & \text{if } i \text{ has defined value } s_i \\-->
-<!--    p_{raw} & \text{otherwise}-->
-<!--    \end{cases}$$-->
-<!--</div>-->
-
-<!--<div class="math-block">-->
-<!--    The value of manufactured items is recursively defined through their automation recipes:-->
-<!--    $$p_i = \min_{r \in R_i} \left(\alpha^{|I_r|-2}\sum_{j \in I_r} p_j c_{jr} + f(E_r, \sum_{j \in I_r} p_j c_{jr})\right)$$-->
-<!--</div>-->
-
-<div class="math-block">
-    The value of items in the factory economy is defined as:
-    $$p_i = \begin{cases}
-    s_i & \text{if } i \in R_{raw}\\
-    \min_{r \in R_i} \left(\alpha^{|I_r|-2}\sum_{j \in I_r} p_j c_{jr} + f(E_r, \sum_{j \in I_r} p_j c_{jr})\right) & \text{otherwise}
-    \end{cases}$$
-</div>
-
-<div class="definition">
-    For factory state tracking:
-    <ul>
-        <li>$n_i^t$ be the net output of item $i$ from all assemblers/furnaces at time $t$</li>
-        <li>$a^t$ be the agent's build/upgrade actions at time $t$</li>
-        <li>$S^t$ be the total factory value at time $t$</li>
-        <li>$T$ be the planning horizon</li>
-    </ul>
-</div>
-
-<div class="math-block">
-    The total economic value of a Factorio factory at time $t$ is defined as:
-    $$S^t = \left\lfloor\sum_{i \in I} p_i n_i^t\right\rfloor$$
-
-    The factory's growth rate at time $t$ is captured by the logarithmic return:
-    $$r^t = \ln\left(1 + \frac{1}{S_{base}}\left(S^t - S^{t-1}\right)\right)$$
-
-    The agent's goal is to maximize the expected discounted sum of factory growth:
-    $$J(\theta) = \mathbb{E}\left[\sum_{t=0}^T \gamma^t r^t\right]$$
-</div>
-
-<div class="math-block">
-    <h2>Factory Constraints</h2>
-    $$\begin{align*}
-    & \sum_{r \in R_i} x_r^t \cdot c_{ir} \leq m_i^t & \forall i \in I, t \in [0,T] & \text{ (input buffer constraints)}\\
-    & \sum_{r \in R_i} x_r^t \cdot e_r \leq E_{max}^t & \forall t \in [0,T] & \text{ (power network capacity)}\\
-    & x_r^t \leq M \cdot u_r^t & \forall r \in R_i, t \in [0,T] & \text{ (research prerequisites)}\\
-    & n_i^t = \sum_{r \in R_i} x_r^t \cdot (o_{ir} - c_{ir}) & \forall i \in I, t \in [0,T] & \text{ (logistics network balance)}
-    \end{align*}$$
-</div>
-
-<div class="definition">
-    <h2>Factory Production Variables</h2>
-    <ul>
-        <li>$x_r^t$ : Production speed of assemblers/furnaces running recipe $r$ at time $t$</li>
-        <li>$m_i^t$ : Available quantity of item $i$ in logistics network at time $t$</li>
-        <li>$E_{max}^t$ : Total power generation capacity at time $t$</li>
-        <li>$u_r^t$ : Binary indicator if recipe $r$ is researched at time $t$</li>
-        <li>$o_{ir}$ : Output items produced by recipe $r$</li>
-        <li>$M$ : Maximum assembler/furnace speed</li>
-    </ul>
-</div>
-
-<!--    <div class="definition">-->
-<!--        <h2>Key Components</h2>-->
-<!--        <h3>Price Calculation</h3>-->
-<!--        <ul>-->
-<!--            <li>Raw resources: $\mathbb{1}_{j \in R_{raw}} \cdot (s_j \lor p_{raw})$</li>-->
-<!--            <li>Manufactured items: $\mathbb{1}_{j \notin R_{raw}} \cdot p_j$</li>-->
-<!--        </ul>-->
-
-<!--        <h3>Production Score</h3>-->
-<!--        <ul>-->
-<!--            <li>Base calculation: $\sum_{i \in I} n_i(t) \cdot p_i$</li>-->
-<!--            <li>Recipe complexity: $\alpha^{|I_r|-2}$</li>-->
-<!--            <li>Energy cost: $\ln(E_r + 1)\sqrt{\sum_{j \in I_r} p_j c_{jr}}$</li>-->
-<!--        </ul>-->
-<!--    </div>-->
+<!--                            <br/>-->
+<!--                            <br/>-->
+<!--                            <h3 class="title is-4">Reward</h3>-->
+<!--                            We define an agent's objective in Factorio as maximizing the growth rate of its factory's total economic value, where capital assets represent the combined value of all automated production:-->
 
 
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+<!--&lt;!&ndash;    <div class="definition">&ndash;&gt;-->
+<!--&lt;!&ndash;        <h2>Key Components</h2>&ndash;&gt;-->
+<!--&lt;!&ndash;        <h3>Price Calculation</h3>&ndash;&gt;-->
+<!--&lt;!&ndash;        <ul>&ndash;&gt;-->
+<!--&lt;!&ndash;            <li>Raw resources: $\mathbb{1}_{j \in R_{raw}} \cdot (s_j \lor p_{raw})$</li>&ndash;&gt;-->
+<!--&lt;!&ndash;            <li>Manufactured items: $\mathbb{1}_{j \notin R_{raw}} \cdot p_j$</li>&ndash;&gt;-->
+<!--&lt;!&ndash;        </ul>&ndash;&gt;-->
 
-        <!--Experiments-->
-        <section class="section">
-            <div class="container is-max-widescreen">
-                <div class="rows">
-                    <div class="rows is-centered">
-                        <div class="row is-full-width">
-                            <h2 class="title is-3"><span class="dvima">Experiments</span></h2>
-                            <div class="content has-text-justified">
-                                <p style="font-size: 125%;">
-                                    We systematically evaluate Voyager and baselines on their exploration performance, tech tree mastery, map coverage, and zero-shot generalization capability to novel tasks in a new world.
-                                </p>
-                            </div>
-                            <br />
-                            <br />
+<!--&lt;!&ndash;        <h3>Production Score</h3>&ndash;&gt;-->
+<!--&lt;!&ndash;        <ul>&ndash;&gt;-->
+<!--&lt;!&ndash;            <li>Base calculation: $\sum_{i \in I} n_i(t) \cdot p_i$</li>&ndash;&gt;-->
+<!--&lt;!&ndash;            <li>Recipe complexity: $\alpha^{|I_r|-2}$</li>&ndash;&gt;-->
+<!--&lt;!&ndash;            <li>Energy cost: $\ln(E_r + 1)\sqrt{\sum_{j \in I_r} p_j c_{jr}}$</li>&ndash;&gt;-->
+<!--&lt;!&ndash;        </ul>&ndash;&gt;-->
+<!--&lt;!&ndash;    </div>&ndash;&gt;-->
 
-                            <h3 class="title is-4"><span class="dvima">Significantly Better Exploration</span></h3>
-                            <span style="font-size: 110%;">
-                                As shown in the first figure, Voyager's superiority is evident in its ability to consistently make new strides, discovering 63 unique items within 160 prompting iterations, 3.3x many novel items compared to
-                                its counterparts. On the other hand, AutoGPT lags considerably in discovering new items, while ReAct and Reflexion struggle to make significant progress.
-                            </span>
-                            <br />
-                            <br />
 
-                            <h3 class="title is-4"><span class="dvima">Tech Tree Mastery</span></h3>
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </section>-->
 
-                            <img src="https://placehold.co/600x400" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
-<!--                            <img src="assets/images/tech_tree.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
-                            <div class="content has-text-justified">
-                                <span style="font-size: 110%;">
-                                    <span style="font-weight: bold;">Tech tree mastery.</span>
-                                    The Minecraft tech tree tests the agent's ability to craft and use a hierarchy of tools. Progressing through this tree (wooden tool &rarr; stone tool &rarr; iron tool &rarr; diamond tool) requires the
-                                    agent to master systematic and compositional skills. In this table, fractions indicate the number of successful trials out of three total runs.
-                                    <b>Numbers are prompting iterations averaged over three trials. The fewer the iterations, the more efficient the method.</b> Compared with baselines, Voyager unlocks the wooden level 15.3x faster (in
-                                    terms of the prompting iterations), the stone level 8.5x faster, the iron level 6.4x faster, and Voyager is the only one to unlock the diamond level of the tech tree
-                                </span>
-                            </div>
-                            <br />
-                            <br />
-
-                            <h3 class="title is-4"><span class="dvima">Extensive Map Traversal</span></h3>
-                            <div style="width: 80%; margin: 0 auto;">
-<!--                                <img src="assets/images/map.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
-                                <img src="https://placehold.co/600x400" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
-                                <br />
-                                <div class="content has-text-justified">
-                                    <span style="font-size: 110%;">
-                                        <span style="font-weight: bold;">Map coverage: Two bird's eye views of Minecraft maps.</span>
-                                        Voyager is able to navigate distances 2.3x longer compared to baselines by traversing a variety of terrains, while the baseline agents often find themselves confined to local areas, which
-                                        significantly hampers their capacity to discover new knowledge.
-                                    </span>
-                                </div>
-                            </div>
-
-                            <br />
-                            <br />
-
-                            <h3 class="title is-4"><span class="dvima">Efficient Zero-Shot Generalization to Unseen Tasks</span></h3>
-                            <div style="width: 80%; margin: 0 auto;">
-<!--                                <img src="assets/images/zero_shot_table.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
-<!--                                <img src="assets/images/zero_shot.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
-                                <img src="https://placehold.co/600x400" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
-                                <img src="https://placehold.co/600x400" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
-                                <br />
-                                <div class="content has-text-justified">
-                                    <span style="font-size: 110%;">
-                                        <span style="font-weight: bold;">Zero-shot generalization to unseen tasks.</span>
-                                        We clear the agent's inventory, reset it to a newly instantiated world, and test it with unseen tasks. In the table above, fractions indicate the number of successful trials out of three total runs.
-                                        <b>Numbers are prompting iterations averaged over three trials. The fewer the iterations, the more efficient the method.</b> Voyager can consistently solve all the tasks, while baselines cannot solve
-                                        any task within 50 prompting iterations. What's interesting to note is that our skill library constructed from lifelong learning not only enhances Voyager's performance but also gives a boost to
-                                        AutoGPT. This demonstrates that the skill library serves as a versatile tool that can be readily employed by other methods, effectively acting as a plug-and-play asset to enhance performance.
-                                    </span>
-                                </div>
-                            </div>
-
-                            <br />
-                            <br />
-
-                            <h3 class="title is-4"><span class="dvima">Ablation Studies</span></h3>
-                            <div style="width: 80%; margin: 0 auto;">
-<!--                                <img src="assets/images/ablation.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />-->
-                                <img src="https://placehold.co/600x400" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
-
-                                <br />
-                                <div class="content has-text-justified">
-                                    <span style="font-size: 110%;">
-                                        <span style="font-weight: bold;">Ablation studies.</span> GPT-3.5 means replacing GPT-4 with GPT-3.5 for code generation. Voyager outperforms all the alternatives, demonstrating the critical role of
-                                        each component. In addition, GPT-4 significantly outperforms GPT-3.5 in code generation.
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
 
         <!--Conclusion-->
         <section class="section">
@@ -806,9 +933,30 @@
                             <h2 class="title is-3"><span class="dvima">Conclusion</span></h2>
                             <div class="content has-text-justified">
                                 <p style="font-size: 125%;">
-                                    In this work, we introduce Voyager, the first LLM-powered embodied lifelong learning agent, which leverages GPT-4 to explore the world continuously, develop increasingly sophisticated skills, and make new
-                                    discoveries consistently without human intervention. Voyager exhibits superior performance in discovering novel items, unlocking the Minecraft tech tree, traversing diverse terrains, and applying its
-                                    learned skill library to unseen tasks in a newly instantiated world. Voyager serves as a starting point to develop powerful generalist agents without tuning the model parameters.
+                                    In this work, we introduce the Factorio Learning Environment, an open-ended and unbounded benchmark for evaluating in-context learning agents on:
+                                </p>
+                                <ul style="font-size: 115%;">
+                                    <li>Long-term planning across thousands of steps</li>
+                                    <li>Spatial reasoning and factory layout optimization</li>
+                                    <li>Resource allocation in complex production chains</li>
+                                    <li>Error recovery and iterative debugging</li>
+                                </ul>
+                                <p style="font-size: 115%;">
+                                    Our results show that even state-of-the-art LLMs struggle with the coordination and optimization challenges inherent in automation tasks. The exponentially scaling nature of FLE provides a benchmark that will remain relevant even as progress in AI research continues, allowing meaningful differentiation between increasingly capable models.
+                                </p>
+
+                                <p style="font-size: 115%;">
+                                    Looking forward, FLE provides a platform for investigating critical research questions:
+                                    </p>
+
+                                    <ul style="font-size: 115%;">
+                                        <li>How can we develop agents that better understand spatial constraints and resource interdependencies?</li>
+                                        <li>What architectures enable more effective error recovery and debugging in complex environments?</li>
+                                        <li>How might advances in planning and resource optimization in Factorio transfer to real-world industrial systems?</li>
+                                    </ul>
+
+                                <p style="font-size: 115%;">
+                                    We release FLE as an open-source platform to encourage research on agent capabilities in complex, open-ended environments.
                                 </p>
                             </div>
                         </div>
@@ -817,64 +965,7 @@
             </div>
         </section>
 
-        <!--Media Coverage-->
-<!--        <section class="section">-->
-<!--            <div class="container is-max-widescreen">-->
-<!--                <div class="rows">-->
-<!--                    <div class="rows is-centered">-->
-<!--                        <div class="row is-full-width">-->
-<!--                            <h2 class="title is-3"><span class="dvima">Media Coverage</span></h2>-->
-<!--                            <div class="content has-text-justified">-->
-<!--                                <p style="font-size: 125%;">-->
-<!--                                    "They Plugged GPT-4 Into Minecraft—and Unearthed New Potential for AI. The bot plays the video game by tapping the text generator to pick up new skills, suggesting that the tech behind ChatGPT could automate many workplace tasks." - Will Knight, <a href="https://www.wired.com/story/fast-forward-gpt-4-minecraft-chatgpt/" target="_blank">WIRED</a>-->
-<!--                                    <br />-->
-<!--                                    <br />-->
-<!--                                    "The Voyager project shows, however, that by pairing GPT-4’s abilities with agent software that stores sequences that work and remembers what does not, developers can achieve stunning results." - John Koetsier, <a href="https://www.forbes.com/sites/johnkoetsier/2023/05/29/gpt-4-is-pretty-good-at-minecraft/?sh=1cf7262e2db6" target="_blank">Forbes</a>-->
-<!--                                    <br />-->
-<!--                                    <br />-->
-<!--                                    "Voyager, the GTP-4 bot that plays Minecraft autonomously and better than anyone else" - <a href="https://www.ruetir.com/2023/06/voyager-the-gtp-4-bot-that-plays-minecraft-autonomously-and-better-than-anyone-else/" target="_blank">Ruetir</a>-->
-<!--                                    <br />-->
-<!--                                    <br />-->
-<!--                                    "This AI used GPT-4 to become an expert Minecraft player" - Devin Coldewey, <a href="https://techcrunch.com/2023/06/02/this-ai-used-gpt-4-to-become-an-expert-minecraft-player/" target="_blank">TechCrunch</a>-->
-<!--                                    <br />-->
-<!--                                    <br />-->
-<!--                                    Coverage Index:-->
-<!--                                    <a href="https://atmarkit.itmedia.co.jp/ait/articles/2305/31/news053.html" target="_blank">[Atmarkit]</a>-->
-<!--                                    <a href="https://posts.careerengine.us/p/64748e293d569e4bb807a367" target="_blank">[Career Engine]</a>-->
-<!--                                    <a href="https://crast.net/344674/this-is-what-happens-when-you-teach-an-ai-to-play-minecraft-gpt-4-has-turned-out-to-be-quite-the-pro/" target="_blank">[Crast.net]</a>-->
-<!--                                    <a href="https://dailytopfeeds.com/they-plugged-gpt-4-into-minecraft-and-unearthed-new-potential-for-ai/" target="_blank">[Daily Top Feeds]</a>-->
-<!--                                    <a href="https://www.entrepreneur.com/es/noticias/la-inteligencia-artificial-que-demostro-su-potencial/453264" target="_blank">[Entrepreneur en Espanol]</a>-->
-<!--                                    <a href="http://finance.jxyuging.com/gd/2023/0529/282042.html" target="_blank">[Finance Jxyuging]</a>-->
-<!--                                    <a href="https://www.forbes.com/sites/johnkoetsier/2023/05/29/gpt-4-is-pretty-good-at-minecraft/?sh=1cf7262e2db6" target="_blank">[Forbes]</a>-->
-<!--                                    <a href="https://www.forbesargentina.com/innovacion/asi-funciona-voyager-agente-software-juega-minecraft-informacion-e-inteligencia-proporcionadas-gpt-4-n34583" target="_blank">[Forbes Argentina]</a>-->
-<!--                                    <a href="https://www.gamingdeputy.com/nvidias-ai-agent-is-connected-to-gpt-4-outperforms-autogpt-and-writes-code-independently-to-dominate-my-world-without-human-intervention/" target="_blank">[Gaming Deputy]</a>-->
-<!--                                    <a href="https://www.gearrice.com/update/gpt-4s-ai-is-exceptional-playing-minecraft/" target="_blank">[Gearrice]</a>-->
-<!--                                    <a href="https://haberik.com/bir-nvidia-ekibi-tarafinca-gpt-4-kullanilarak-olusturulan-3-kattan-fazla-unsur-elde-eden-ve-oteki-ai-botlarindan-15-kat-daha-suratli-araclar-olusturan-voyagera-bir-bakis-will-knight-wired/" target="_blank">[Haberik]</a>-->
-<!--                                    <a href="https://headtopics.com/jp/125101245212531764898-39558875" target="_blank">[Head Topics]</a>-->
-<!--                                    <a href="https://www.infoq.com/news/2023/05/minecraft-voyager-llm-agent/" target="_blank">[InfoQ]</a>-->
-<!--                                    <a href="https://news.line.me/detail/oa-rp23831/i66io34cqk2f?mediadetail=1" target="_blank">[ITmedia News]</a>-->
-<!--                                    <a href="https://www.marktechpost.com/2023/05/31/nvidia-announced-real-time-ai-npcs-in-video-games/" target="_blank">[Mark Tech Post]</a>-->
-<!--                                    <a href="https://medium.com/@mikeyoung_97230/voyager-the-ai-gamer-thats-taking-minecraft-to-the-next-level-93449ff27537" target="_blank">[Medium]</a>-->
-<!--                                    <a href="https://www.msn.com/de-de/nachrichten/digital/wie-ai-technologie-die-gaming-branche-f%C3%BCr-immer-ver%C3%A4ndern-wird/ar-AA1c0c0e" target="_blank">[MSN]</a>-->
-<!--                                    <a href="https://note.com/te_ftef/n/ne7ec02a3b209" target="_blank">[Note]</a>-->
-<!--                                    <a href="https://noticiasdehoy.com.mx/la-ia-de-gpt-4-es-excepcional-jugando-minecraft/" target="_blank">[Noticias de Hoy]</a>-->
-<!--                                    <a href="https://www.ruetir.com/2023/06/voyager-the-gtp-4-bot-that-plays-minecraft-autonomously-and-better-than-anyone-else/" target="_blank">[Ruetir]</a>-->
-<!--                                    <a href="https://www.stock-hk.com/news/232925" target="_blank">[Stock HK]</a>-->
-<!--                                    <a href="https://fr.techtribune.net/jeux-videos/minecraft/minecraft-accueille-son-premier-agent-propulse-par-llm/725434/" target="_blank">[Tech Tribune France]</a>-->
-<!--                                    <a href="https://techcrunch.com/2023/06/02/this-ai-used-gpt-4-to-become-an-expert-minecraft-player/" target="_blank">[TechCrunch]</a>-->
-<!--                                    <a href="https://techbeezer.com/they-connected-gpt-4-to-minecraft-and-revealed-new-potential-for-artificial-intelligence/" target="_blank">[TechBeezer]</a>-->
-<!--                                    <a href="https://www.toutiao.com/article/7238593146928513569/?wid=1686469229935" target="_blank">[Toutiao]</a>-->
-<!--                                    <a href="https://ustimespost.com/they-plugged-gpt-4-into-minecraft-and-unearthed-new-potential-for-ai/" target="_blank">[US Times Post]</a>-->
-<!--                                    <a href="https://vnexplorer.net/nie-ma-sie-z-czego-smiac-naukowcy-nauczyli-sztuczna-inteligencje-grac-w-minecraft-s2612596.html" target="_blank">[VN Explorer]</a>-->
-<!--                                    <a href="https://www.wired.com/story/fast-forward-gpt-4-minecraft-chatgpt/" target="_blank">[WIRED]</a>-->
-<!--                                    <a href="http://www.myzaker.com/article/647460778e9f09203d3afe20" target="_blank">[Zaker]</a>-->
-<!--                                </p>-->
-<!--                            </div>-->
-<!--                        </div>-->
-<!--                    </div>-->
-<!--                </div>-->
-<!--            </div>-->
-<!--        </section>-->
+
 
         <!--Team-->
         <section class="section">
@@ -890,14 +981,21 @@
                                     <a href="https://www.guanzhi.me/" target="_blank" style="border-bottom: none;">
                                         <span class="image" style="padding-left: 10%;"><img src="https://placehold.co/200x200" alt="" style="width: 90%;" /></span>
                                     </a>
-                                    <span style="font-weight: bold; font-size: 125%;">Jack Hopkins</span>
+                                    <span style="font-weight: bold; font-size: 125%;">Jack Hopkins *</span>
                                 </div>
 
                                 <div class="column has-text-centered video-column">
                                     <a href="https://xieleo5.github.io/" target="_blank" style="border-bottom: none;">
                                         <span class="image" style="padding-left: 10%;"><img src="https://placehold.co/200x200" alt="" style="width: 90%;" /></span>
                                     </a>
-                                    <span style="font-weight: bold; font-size: 125%;">Mart Bakler</span>
+                                    <span style="font-weight: bold; font-size: 125%;">Mart Bakler *</span>
+                                </div>
+
+                                <div class="column has-text-centered video-column">
+                                    <a href="https://xieleo5.github.io/" target="_blank" style="border-bottom: none;">
+                                        <span class="image" style="padding-left: 10%;"><img src="https://placehold.co/200x200" alt="" style="width: 90%;" /></span>
+                                    </a>
+                                    <span style="font-weight: bold; font-size: 125%;">Akbir Khan</span>
                                 </div>
 
 <!--                                <div class="column has-text-centered video-column">-->
@@ -915,7 +1013,7 @@
 <!--                                </div>-->
                             </div>
                             <br />
-                            <span style="max-width: 80%; padding-left: 11%;">* Equal Contribution&nbsp; &nbsp;&dagger; Equal Advising</span>
+                            <span style="max-width: 80%; padding-left: 11%;">* Equal Contribution</span>
                         </div>
                     </div>
                 </div>
@@ -925,10 +1023,10 @@
         <section class="section" id="BibTeX">
             <div class="container is-max-widescreen content">
                 <h2 class="title">BibTeX</h2>
-                <pre><code>@article{hopkins2024forge,
-  title   = {FORGE: Open-Ended Automation with Large Language Models},
-  author  = {Jack Hopkins and Mart Bakler},
-  year    = {2024},
+                <pre><code>@article{hopkins2025factorio,
+  title   = {Factorio Learning Environment},
+  author  = {Jack Hopkins and Mart Bakler and Akbir Khan},
+  year    = {2025},
   journal = {arXiv preprint arXiv: Arxiv-2305.16291}
 }</code></pre>
             </div>

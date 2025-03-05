@@ -120,9 +120,9 @@ def create_custom_legend_with_icons(ax, sorted_items, item_complexities, colors,
     legend_bbox = ax.get_position()
     legend_ax = ax.figure.add_axes([
         legend_bbox.x1 + 0.01,  # x position
-        legend_bbox.y0,  # y position
-        0.1,  # width
-        legend_bbox.height  # height
+        legend_bbox.y0 + 0.02,  # y position
+        0.2,  # width
+        legend_bbox.height*2.5  # height
     ])
     legend_ax.axis('off')  # Hide axes
 
@@ -178,6 +178,15 @@ def create_custom_legend_with_icons(ax, sorted_items, item_complexities, colors,
 
     return legend_ax
 
+@dataclass
+class ModelVersionGroup:
+    """Represents a group of versions belonging to the same model"""
+    model_name: str
+    version_ids: List[int]
+    color: str
+    label: str
+
+
 class ProgressionVisualizer:
     """Creates publication-quality visualizations of agent progression"""
 
@@ -185,30 +194,23 @@ class ProgressionVisualizer:
     HORIZONTAL_OFFSET_PIXELS = 0
 
     def __init__(self, db_client, icons_path: str, x_axis: Literal["steps", "ticks"] = "steps",
-                 cache_file: str = "viz_cache.pkl", x_base: float = 10, y_base: float = 10, use_value_gdp=False,
-                 recipes_file="recipes.jsonl", use_log_scale: bool = True):  # Added use_log_scale parameter
+                 cache_file: str = "viz_cache_combined.pkl", x_base: float = 10, y_base: float = 10,
+                 use_value_gdp=False, recipes_file="recipes.jsonl", use_log_scale: bool = True):
         self.db_client = db_client
         self.icons_path = icons_path
         self.x_axis = x_axis
         self.cache_file = cache_file
         self.x_base = x_base
         self.y_base = y_base
-        self.versions = {}
+        self.model_groups = {}  # Maps model name to ModelVersionGroup
+        self.versions = {}  # Keeps existing version data structure
+        self.labels_count = {}
         self.achievements = defaultdict(list)
-
-        # versions = {
-        #     492: "Claude",
-        #     490: "GPT-4",
-        #
-        #     505: "GPT-4-Mini",
-        #     488: "LLaMA-70B",
-        #
-        # }
-        self.colors = ['#228833', '#CCBB44',  '#EE6677', '#4477AA' ]
-        #self.colors = ['#4477AA', '#EE6677', '#228833', '#CCBB44']
+        # self.colors = ['#228833', '#CCBB44', '#EE6677', '#4477AA']
+        self.colors = ['#8fd7d7', '#FFCD8E', '#00b0be', '#ff8ca1', '#f45f74', '#bdd373', '#98c127', '#ffb255']
         self.use_value_gdp = use_value_gdp
         self.value_calculator = ValueCalculator(recipes_file) if use_value_gdp else None
-        self.use_log_scale = use_log_scale  # Store the scale preference
+        self.use_log_scale = use_log_scale
 
     def _serialize_version_data(self):
         """Convert version data to cacheable format"""
@@ -253,43 +255,103 @@ class ProgressionVisualizer:
                 'label': data['label']
             }
 
-    def load_data(self, versions: List[int], labels: Dict[int, str]):
-        """Load and process data for multiple versions, using cache if available"""
+    def load_data(self, model_groups: Dict[str, List[int]], model_labels: Dict[str, str]):
+        """
+        Load and process data for multiple model groups
+
+        Args:
+            model_groups: Dict mapping model names to lists of version IDs
+            model_labels: Dict mapping model names to display labels
+        """
+        print("\nStarting data load process...")
+
+        # First, try to load from cache
         if os.path.exists(self.cache_file):
             try:
                 with open(self.cache_file, 'rb') as f:
                     cached_data = pickle.load(f)
-                    if cached_data.get('versions') == versions:
+                    # Check if cached groups match current groups
+                    if all([cached_data.get('model_groups')[model].version_ids == model_groups[model] for model in model_groups.keys()]):
+                        print("Found matching cache data, loading...")
                         self._deserialize_version_data(cached_data['data'])
                         self.achievements = cached_data['achievements']
+                        self.model_groups = cached_data['model_groups']
+
+                        # Verify loaded data
+                        for model_name, group in self.model_groups.items():
+                            print(f"\nModel: {model_name}")
+                            self.labels_count[model_name] = len(group.version_ids)
+                            for version_id in group.version_ids:
+                                if version_id in self.versions:
+                                    print(f"  Version {version_id}: {len(self.versions[version_id]['nodes'])} nodes")
+                                else:
+                                    print(f"  Version {version_id}: Not found in data")
+
                         return
             except Exception as e:
                 print(f"Error loading cache: {e}")
                 os.remove(self.cache_file)
 
-        for version in versions:
-            print(f"\nLoading version {version}")
-            nodes = self._load_version_from_db(version)
-            if nodes:
-                gdps = [self._calculate_gdp(root) for root in nodes]
-                self.versions[version] = {
-                    'nodes': nodes,
-                    'label': f"{labels[version]}"# (~GDP: {np.mean(gdps):.1f})"
-                }
-                self._process_achievements(version)
+        print("\nNo valid cache found, loading from database...")
 
+        # Initialize model groups with colors
+        for idx, (model_name, version_ids) in enumerate(model_groups.items()):
+            color = self.colors[idx % len(self.colors)]
+            self.model_groups[model_name] = ModelVersionGroup(
+                model_name=model_name,
+                version_ids=version_ids,
+                color=color,
+                label=model_labels[model_name]
+            )
+
+        # Load data for each version
+        total_versions = sum(len(group.version_ids) for group in self.model_groups.values())
+        versions_loaded = 0
+
+        for model_name, group in self.model_groups.items():
+            print(f"\nLoading data for model: {model_name}")
+            for version in group.version_ids:
+                print(f"  Loading version {version}...")
+                nodes = self._load_version_from_db(version)
+                versions_loaded += 1
+                print(f"  Progress: {versions_loaded}/{total_versions} versions")
+
+                if nodes:
+                    print(f"  Found {len(nodes)} root nodes")
+                    gdps = [self._calculate_gdp(root) for root in nodes]
+                    self.versions[version] = {
+                        'nodes': nodes,
+                        'label': f"{group.label} (v{version})"
+                    }
+                    if group.label not in self.labels_count:
+                        self.labels_count[group.label] = 0
+                    self.labels_count[group.label] += len(nodes)
+
+                    self._process_achievements(version)
+                else:
+                    print(f"  No nodes found for version {version}")
+
+        print("\nData loading complete. Summary:")
+        for model_name, group in self.model_groups.items():
+            print(f"\nModel: {model_name}")
+            success_count = sum(1 for v in group.version_ids if v in self.versions)
+            print(f"Successfully loaded {success_count}/{len(group.version_ids)} versions")
 
         # Cache the loaded data
         try:
+            print("\nSaving to cache...")
             with open(self.cache_file, 'wb') as f:
                 pickle.dump({
-                    'versions': versions,
+                    #'model_groups': model_groups,
                     'data': self._serialize_version_data(),
-                    'achievements': self.achievements
+                    'achievements': self.achievements,
+                    'model_groups': self.model_groups
                 }, f)
+            print("Cache saved successfully")
         except Exception as e:
             print(f"Error saving cache: {e}")
 
+        print("\nAll data loading operations complete")
 
 
     def _load_version_from_db(self, version: int) -> List[Node]:
@@ -468,19 +530,13 @@ class ProgressionVisualizer:
         # Extend the y-axis limit to show the full bracket and text
         ax.set_ylim(min(ax.get_ylim()[0], text_height - 0.1), ax.get_ylim()[1])
 
-    def export_combined_visualization(self, output_file: str, versions: List[int],
+    def export_combined_visualization(self, output_file: str,
+                                      model_names: List[str],
                                       achievement_params: dict = None,
                                       production_params: dict = None,
                                       layout: Literal["side-by-side", "stacked"] = "stacked"):
         """
         Create a combined visualization with achievement stack and production volumes.
-
-        Args:
-            output_file: Path to save the output figure
-            versions: List of version numbers to plot
-            achievement_params: Dictionary of parameters for achievement visualization
-            production_params: Dictionary of parameters for production volumes visualization
-            layout: Either "side-by-side" or "stacked" layout
         """
         # Set default parameters if not provided
         if achievement_params is None:
@@ -507,17 +563,16 @@ class ProgressionVisualizer:
         plt.rcParams['figure.dpi'] = 150
         plt.rcParams['savefig.dpi'] = 300
 
-        # Create figure with layout-dependent size
         if layout == "side-by-side":
-            fig = plt.figure(figsize=(16, 8))
-            # Create side-by-side grid
-            gs = fig.add_gridspec(2, 3, width_ratios=[2, 1, 1],
-                                  height_ratios=[1, 1],
+            # Side-by-side layout with reduced height for production plots
+            fig = plt.figure(figsize=(20, 10))  # Reduced height from 12 to 10
+            gs = fig.add_gridspec(3, 3,
+                                  width_ratios=[2, 1, 1],
+                                  height_ratios=[1.5, 0.75, 0.75],  # Adjusted ratios to reduce production plot height
                                   left=0.05, right=0.95,
                                   bottom=0.1, top=0.9,
-                                  wspace=0.15, hspace=0.2)
+                                  wspace=0.3, hspace=0.4)  # Increased spacing
 
-            # Create axes for achievement stack (spans both rows)
             achievement_ax = fig.add_subplot(gs[:, 0])
             icon_ax = fig.add_axes(achievement_ax.get_position())
             icon_ax.set_position([achievement_ax.get_position().x0,
@@ -525,23 +580,26 @@ class ProgressionVisualizer:
                                   achievement_ax.get_position().width,
                                   0.05])
 
-            # Create axes for production volumes (2x2 grid)
             production_axes = [
-                fig.add_subplot(gs[0, 1]),  # top left
-                fig.add_subplot(gs[0, 2]),  # top right
-                fig.add_subplot(gs[1, 1]),  # bottom left
-                fig.add_subplot(gs[1, 2])  # bottom right
+                fig.add_subplot(gs[0, 1]),
+                fig.add_subplot(gs[0, 2]),
+                fig.add_subplot(gs[1, 1]),
+                fig.add_subplot(gs[1, 2]),
+                fig.add_subplot(gs[2, 1]),
+                fig.add_subplot(gs[2, 2]),
             ]
 
         else:  # stacked layout
-            fig = plt.figure(figsize=(16, 6))
-            # Create stacked grid
-            gs = fig.add_gridspec(2, 4, height_ratios=[0.6, 0.6],
+            fig = plt.figure(figsize=(16, 10))  # Reduced height from 12 to 10
+
+            # Create a 3-row grid with reduced height for production plots
+            gs = fig.add_gridspec(3, 3,
+                                  height_ratios=[1.5, 0.75, 0.75],  # Adjusted ratios to reduce production plot height
                                   left=0.05, right=0.95,
                                   bottom=0.1, top=0.9,
-                                  wspace=0.15, hspace=0.25)
+                                  wspace=0.3, hspace=0.4)  # Increased spacing
 
-            # Create axes for achievement stack (spans all columns in first row)
+            # Achievement stack spans all columns in first row
             achievement_ax = fig.add_subplot(gs[0, :])
             icon_ax = fig.add_axes(achievement_ax.get_position())
             icon_ax.set_position([achievement_ax.get_position().x0,
@@ -549,66 +607,75 @@ class ProgressionVisualizer:
                                   achievement_ax.get_position().width,
                                   0.05])
 
-            # Create axes for production volumes (1x4 grid in second row)
+            # Production plots in 2x3 grid (rows 2 and 3)
             production_axes = [
-                fig.add_subplot(gs[1, 0]),  # left
-                fig.add_subplot(gs[1, 1]),  # middle-left
-                fig.add_subplot(gs[1, 2]),  # middle-right
-                fig.add_subplot(gs[1, 3])  # right
+                fig.add_subplot(gs[1, 0]),  # Top left
+                fig.add_subplot(gs[1, 1]),  # Top middle
+                fig.add_subplot(gs[1, 2]),  # Top right
+                fig.add_subplot(gs[2, 0]),  # Bottom left
+                fig.add_subplot(gs[2, 1]),  # Bottom middle
+                fig.add_subplot(gs[2, 2]),  # Bottom right
             ]
 
         # Plot achievement stack
-        self._plot_achievement_stack(achievement_ax, icon_ax, versions,layout=layout, **achievement_params)
+        self._plot_achievement_stack(achievement_ax, icon_ax, model_names,
+                                     layout=layout, **achievement_params)
 
         # Plot production volumes
-        self._plot_production_volumes(production_axes, versions, layout=layout, **production_params)
+        self._plot_production_volumes(production_axes, model_names,
+                                      layout=layout, **production_params)
 
         # Save figure
         plt.savefig(output_file, bbox_inches='tight', dpi=300)
         plt.close()
 
-    def _plot_achievement_stack(self, ax, icon_ax, versions, render_complexity=False, minimum_complexity=2, fontsize=16, layout="stacked"):
+    def _plot_achievement_stack(self, ax, icon_ax, model_names, render_complexity=False, minimum_complexity=2, fontsize=16, layout="stacked"):
         """Helper method to plot achievement stack on given axes"""
         from collections import defaultdict
 
         # Define raw resources that should appear first
         RAW_RESOURCES = {'coal', 'copper-ore', 'iron-ore', 'water', 'stone', 'wood'}
 
-        # Get achievement counts and complexities
-        model_achievement_counts = {}
+        # Similar to original but using model_groups for aggregation
+        model_achievement_counts = defaultdict(dict)
         all_achievements = set()
         achievement_complexities = {}
 
-        # Count total occurrences of each achievement across all runs
-        for version in versions:
+        # Count achievements across all versions of each model
+        for model_name in model_names:
             counts = defaultdict(int)
+            group = self.model_groups[model_name]
 
-            # For each root node (representing a run)
-            for root in self.versions[version]['nodes']:
-                run_achievements = defaultdict(int)
-                stack = [root]
+            for version in group.version_ids:
+                if version not in self.versions:
+                    continue
 
-                while stack:
-                    node = stack.pop()
-                    for item, quantity in node.static_achievements.items():
-                        run_achievements[item] += quantity
-                    for item, quantity in node.dynamic_achievements.items():
-                        run_achievements[item] += quantity
-                    stack.extend(node.children)
+                for root in self.versions[version]['nodes']:
+                    run_achievements = defaultdict(int)
+                    stack = [root]
 
-                # Add this run's counts to total counts
-                for item, quantity in run_achievements.items():
-                    counts[item] += quantity
-                    all_achievements.add(item)
+                    while stack:
+                        node = stack.pop()
+                        for item, quantity in node.static_achievements.items():
+                            run_achievements[item] += quantity
+                        for item, quantity in node.dynamic_achievements.items():
+                            run_achievements[item] += quantity
+                        stack.extend(node.children)
 
-            model_achievement_counts[version] = counts
+                    # Add this run's counts to total counts
+                    for item, quantity in run_achievements.items():
+                        counts[item] += quantity
+                        all_achievements.add(item)
+                        if item not in model_achievement_counts[model_name]:
+                            model_achievement_counts[model_name][item] = 0
+                        model_achievement_counts[model_name][item] += quantity
 
-            # Get complexities
-            for achievement in self.achievements[version]:
-                if achievement.item_name in RAW_RESOURCES:
-                    achievement_complexities[achievement.item_name] = 0
-                else:
-                    achievement_complexities[achievement.item_name] = achievement.ingredients
+                # Get complexities
+                for achievement in self.achievements[version]:
+                    if achievement.item_name in RAW_RESOURCES:
+                        achievement_complexities[achievement.item_name] = 0
+                    else:
+                        achievement_complexities[achievement.item_name] = achievement.ingredients
 
         # Filter achievements based on minimum complexity
         if minimum_complexity > 0:
@@ -630,12 +697,13 @@ class ProgressionVisualizer:
 
         # Calculate x positions for achievements
         x_positions = np.arange(len(sorted_achievements))
-        bar_width = 0.2
+        bar_width = 0.15
+        spacing_factor = 1
 
         # Plot bars for each model
         for idx, (version, counts) in enumerate(model_achievement_counts.items()):
             color = self.colors[idx % len(self.colors)]
-            x_offset = (idx - (len(versions) - 1) / 2) * bar_width
+            x_offset = (idx - (len(model_names) - 1) / 2) * bar_width * spacing_factor
 
             heights = [counts.get(ach, 0) for ach in sorted_achievements]
             nonzero_mask = np.array(heights) > 0
@@ -643,7 +711,7 @@ class ProgressionVisualizer:
                 ax.bar(x_positions + x_offset,
                        heights,
                        bar_width, color=color, alpha=0.7,
-                       label=self.versions[version]['label'])
+                       label=version) #self.versions[version]['label'])
 
         # Add separator after raw resources
         raw_resources_shown = len([r for r in RAW_RESOURCES if r in sorted_achievements])
@@ -671,7 +739,7 @@ class ProgressionVisualizer:
         ax.set_ylim(bottom=0.9)
 
         # Calculate the exact x-axis limits based on data and bar width
-        num_versions = len(versions)
+        num_versions = len(model_names)
         total_width = bar_width * num_versions * 1.1
         x_min = -total_width / 2
         x_max = len(sorted_achievements) - 1 + total_width / 2
@@ -735,43 +803,55 @@ class ProgressionVisualizer:
         # Add legend
         #ax.legend(bbox_to_anchor=(1.02, 1), loc='upper left')
 
-
-    def _plot_production_volumes(self, axes, versions, step_size=25, step_proportion=0.9,
+    def _plot_production_volumes(self, axes, model_names, step_size=25, step_proportion=0.9,
                                  show_fractions=False, use_log_scale=False,
                                  min_total_volume=1e-6, min_complexity=2,
                                  cumulative=True, groupby_complexity=False,
                                  unified_y_axis=True, chart_type='line', fontsize=16, layout="stacked"):
-        """Helper method to plot production volumes on given axes"""
-        from collections import namedtuple
+        """Helper method to plot production volumes on given axes using median values"""
+        from collections import namedtuple, defaultdict
+        import numpy as np
         StackItem = namedtuple('StackItem', ['node', 'step'])
 
-        # Collect all items across all versions
         all_items = set()
-        for version in versions:
-            if version not in self.versions:
-                print(f"Version {version} not found in data")
+        model_versions_found = defaultdict(list)
+
+        # Initial setup remains the same...
+        for model_name in model_names:
+            if model_name not in self.model_groups:
+                print(f"Model {model_name} not found in model_groups")
                 continue
 
-            for root in self.versions[version]['nodes']:
-                stack = [StackItem(node=root, step=0)]
-                while stack:
-                    current = stack.pop()
-                    all_items.update(current.node.static_achievements.keys())
-                    all_items.update(current.node.dynamic_achievements.keys())
-                    for child in current.node.children:
-                        stack.append(StackItem(node=child, step=current.step + 1))
+            model_group = self.model_groups[model_name]
+            for version_id in model_group.version_ids:
+                if version_id not in self.versions:
+                    print(f"Version {version_id} for model {model_name} not found in data")
+                    continue
+
+                model_versions_found[model_name].append(version_id)
+                for root in self.versions[version_id]['nodes']:
+                    stack = [StackItem(node=root, step=0)]
+                    while stack:
+                        current = stack.pop()
+                        all_items.update(current.node.static_achievements.keys())
+                        all_items.update(current.node.dynamic_achievements.keys())
+                        for child in current.node.children:
+                            stack.append(StackItem(node=child, step=current.step + 1))
 
         # Remove water and steam
         all_items = {item for item in all_items if item not in ('water', 'steam')}
 
-        # Get complexities for all items
+        # Get complexities and sort items (same as before)
         item_complexities = {}
-        for version in versions:
-            for achievement in self.achievements[version]:
-                if achievement.item_name in all_items:
-                    item_complexities[achievement.item_name] = achievement.ingredients
+        for model_name in model_names:
+            if model_name not in model_versions_found:
+                continue
+            for version in model_versions_found[model_name]:
+                if version in self.achievements:
+                    for achievement in self.achievements[version]:
+                        if achievement.item_name in all_items:
+                            item_complexities[achievement.item_name] = achievement.ingredients
 
-        # Filter and sort items by complexity
         sorted_items = sorted(
             [item for item in all_items if item_complexities.get(item, 0) >= min_complexity],
             key=lambda x: item_complexities.get(x, 0)
@@ -781,7 +861,7 @@ class ProgressionVisualizer:
             print(f"No items found with complexity >= {min_complexity}")
             return
 
-        # Group items by complexity if requested
+        # Setup for grouping and colors remains the same...
         if groupby_complexity:
             complexity_groups = {}
             for item in sorted_items:
@@ -796,290 +876,333 @@ class ProgressionVisualizer:
         else:
             color_map = plt.cm.viridis(np.linspace(0, 1, len(sorted_items)))
 
-        # Track global y-axis limits
         global_ymin = float('inf')
         global_ymax = float('-inf')
 
-        # Process each version
-        for ax_idx, version in enumerate(versions):
-            if version not in self.versions:
+        # Process each model
+        for ax_idx, model_name in enumerate(model_names):
+            print(f"\nPlotting for axis {ax_idx}, model {model_name}")
+            if ax_idx >= len(axes):
+                print(f"ERROR: Not enough axes for model {model_name}")
                 continue
 
-            # Initialize production tracking
-            production_by_step = defaultdict(lambda: defaultdict(int))
-            num_trajectories = len(self.versions[version]['nodes'])
+
+
+            model_group = self.model_groups[model_name]
+
+            # Initialize production tracking with lists for calculating medians
+            production_by_step = defaultdict(lambda: defaultdict(list))
 
             # Get all possible steps
             all_steps = set()
-            for root in self.versions[version]['nodes']:
-                stack = [StackItem(node=root, step=0)]
-                while stack:
-                    current = stack.pop()
-                    step_bucket = (current.step // step_size) * step_size
-                    all_steps.add(step_bucket)
-                    for child in current.node.children:
-                        stack.append(StackItem(node=child, step=current.step + 1))
+            for version in model_group.version_ids:
+                if version not in self.versions:
+                    continue
+
+                for root in self.versions[version]['nodes']:
+                    stack = [StackItem(node=root, step=0)]
+                    while stack:
+                        current = stack.pop()
+                        step_bucket = (current.step // step_size) * step_size
+                        all_steps.add(step_bucket)
+                        for child in current.node.children:
+                            stack.append(StackItem(node=child, step=current.step + 1))
+
             all_steps = sorted(all_steps)
 
             if cumulative:
-                # Initialize tracking for cumulative values
-                max_cumulative_by_step = defaultdict(lambda: defaultdict(int))
+                # Track cumulative values for each trajectory separately
+                for version in model_group.version_ids:
+                    if version not in self.versions:
+                        continue
 
-                # Process each root node
-                for root in self.versions[version]['nodes']:
-                    # Track cumulative values for this trajectory
-                    trajectory_cumulative = defaultdict(int)
-                    stack = [StackItem(node=root, step=0)]
+                    for root in self.versions[version]['nodes']:
+                        trajectory_cumulative = defaultdict(int)
+                        stack = [StackItem(node=root, step=0)]
 
-                    while stack:
-                        current = stack.pop()
-                        step_bucket = (current.step // step_size) * step_size
+                        while stack:
+                            current = stack.pop()
+                            step_bucket = (current.step // step_size) * step_size
 
-                        # Update cumulative totals with static achievements
-                        for item, quantity in current.node.static_achievements.items():
-                            if item in sorted_items:
-                                trajectory_cumulative[item] += quantity
+                            # Update cumulative totals for this trajectory
+                            for achievements_dict in [current.node.static_achievements,
+                                                      current.node.dynamic_achievements]:
+                                for item, quantity in achievements_dict.items():
+                                    if item in sorted_items:
+                                        trajectory_cumulative[item] += quantity# / self.labels_count[self.versions[version]['label'].split(" ")[0]]
 
-                        # Update cumulative totals with dynamic achievements
-                        for item, quantity in current.node.dynamic_achievements.items():
-                            if item in sorted_items:
-                                trajectory_cumulative[item] += quantity
+                            # Store the cumulative values for this trajectory at this step
+                            for item, total in trajectory_cumulative.items():
+                                production_by_step[step_bucket][item].append(total)
+                                # Update future steps with the same cumulative value
+                                for future_step in range(step_bucket + step_size,
+                                                         max(all_steps) + step_size, step_size):
+                                    production_by_step[future_step][item].append(total )
 
-                        # Update max cumulative values for current and future step buckets
-                        for item in trajectory_cumulative:
-                            total = trajectory_cumulative[item]
-                            # Update current step bucket
-                            max_cumulative_by_step[step_bucket][item] = max(
-                                max_cumulative_by_step[step_bucket][item],
-                                total
-                            )
-
-                            # Update all future step buckets
-                            for future_step in range(step_bucket + step_size, max(all_steps) + step_size, step_size):
-                                max_cumulative_by_step[future_step][item] = max(
-                                    max_cumulative_by_step[future_step][item],
-                                    total
-                                )
-
-                        # Add children to stack
-                        for child in current.node.children:
-                            stack.append(StackItem(node=child, step=current.step + 1))
-
-                # Use the max cumulative values for production
-                production_by_step = max_cumulative_by_step
+                            for child in current.node.children:
+                                stack.append(StackItem(node=child, step=current.step + 1))
 
             else:
-                # Non-cumulative logic
-                for root in self.versions[version]['nodes']:
-                    stack = [StackItem(node=root, step=0)]
-                    while stack:
-                        current = stack.pop()
-                        step_bucket = (current.step // step_size) * step_size
+                # Non-cumulative tracking
+                for version in model_group.version_ids:
+                    if version not in self.versions:
+                        continue
 
-                        for item, quantity in current.node.static_achievements.items():
-                            if item in sorted_items:
-                                production_by_step[step_bucket][item] += quantity
+                    for root in self.versions[version]['nodes']:
+                        stack = [StackItem(node=root, step=0)]
+                        while stack:
+                            current = stack.pop()
+                            step_bucket = (current.step // step_size) * step_size
 
-                        for item, quantity in current.node.dynamic_achievements.items():
-                            if item in sorted_items:
-                                production_by_step[step_bucket][item] += quantity
+                            step_production = defaultdict(int)
+                            for achievements_dict in [current.node.static_achievements,
+                                                      current.node.dynamic_achievements]:
+                                for item, quantity in achievements_dict.items():
+                                    if item in sorted_items:
+                                        step_production[item] += quantity# / len(self.versions[version]['nodes'])
 
-                        for child in current.node.children:
-                            stack.append(StackItem(node=child, step=current.step + 1))
+                            # Store the production values for this trajectory at this step
+                            for item, quantity in step_production.items():
+                                production_by_step[step_bucket][item].append(quantity)
 
-                # Average if not cumulative
-                if not cumulative:
-                    for step in production_by_step:
-                        for item in production_by_step[step]:
-                            production_by_step[step][item] /= num_trajectories
+                            for child in current.node.children:
+                                stack.append(StackItem(node=child, step=current.step + 1))
 
-            # Process values for plotting
+            # Calculate median values
+            total_values = {}
+            for step in all_steps:
+                total_values[step] = {}
+                for item in sorted_items:
+                    values = production_by_step[step][item]
+                    if values:
+                        # Sum all values instead of taking the mean
+                        total_values[step][item] = max(values)#np.mean(values)
+                    else:
+                        total_values[step][item] = 0
+
+            # Process values for plotting using median values
             processed_values = {}
-            raw_values = {}
-
             if groupby_complexity:
                 for complexity in complexity_groups:
                     values = np.zeros(len(all_steps))
-                    raw_group_values = np.zeros(len(all_steps))
                     for item in complexity_groups[complexity]:
-                        item_values = [production_by_step[step].get(item, 0) for step in all_steps]
+                        item_values = [total_values[step].get(item, 0) for step in all_steps]
                         values += item_values
-                        raw_group_values += item_values
                     processed_values[complexity] = values
-                    raw_values[complexity] = raw_group_values
             else:
                 for item in sorted_items:
-                    values = [production_by_step[step].get(item, 0) for step in all_steps]
-                    raw_values[item] = values.copy()
+                    values = [total_values[step].get(item, 0) for step in all_steps]
+                    if use_log_scale:
+                        values = [np.log10(v + 1) for v in values]
                     processed_values[item] = values
 
-                if show_fractions:
-                    totals = np.zeros(len(all_steps))
-                    for key in processed_values:
-                        totals += processed_values[key]
+            ax = axes[ax_idx]
+            ax.set_aspect('auto')
 
-                    for key in processed_values:
-                        values = np.array(processed_values[key])
-                        values = np.where(totals > min_total_volume,
-                                          values / np.maximum(totals, min_total_volume),
-                                          0)
-                        processed_values[key] = values
-                elif use_log_scale:
-                    for key in processed_values:
-                        processed_values[key] = [np.log10(v + 1) for v in processed_values[key]]
-
-                    # Get current axis
-                ax = axes[ax_idx]
-                ax.set_aspect(aspect='auto')
-
-                if groupby_complexity:
-                    values_for_stack = [processed_values[complexity] for complexity in unique_complexities]
-                    labels = [f"Complexity {complexity}" for complexity in unique_complexities]
-                    colors = [complexity_colors[complexity] for complexity in unique_complexities]
+            def format_large_number(x, pos):
+                """Format large numbers with commas for readability"""
+                if abs(x) >= 1e6:
+                    return f'{int(x / 1e6):,}M'
+                elif abs(x) >= 1e3:
+                    return f'{int(x / 1e3):,}K'
                 else:
-                    values_for_stack = [processed_values[item] for item in sorted_items]
-                    labels = [f"{item} (complexity: {item_complexities[item]})" for item in sorted_items]
-                    colors = color_map
-
-                # Create the appropriate chart type
-                if chart_type.lower() == 'bar':
-                    bottom = np.zeros(len(all_steps))
-                    for i, (values, color) in enumerate(zip(values_for_stack, colors)):
-                        if ax_idx == len(versions) - 1:
-                            bar = ax.bar(all_steps, values, bottom=bottom,
-                                         label=labels[i], color=color, alpha=0.7,
-                                         width=step_size * step_proportion)
-                        else:
-                            bar = ax.bar(all_steps, values, bottom=bottom,
-                                         color=color, alpha=0.7,
-                                         width=step_size * step_proportion)
-                        bottom += values
-                else:  # 'line' chart
-                    if ax_idx == len(versions) - 1:
-                        stack_plot = ax.stackplot(all_steps, values_for_stack,
-                                                  labels=labels,
-                                                  colors=colors,
-                                                  alpha=0.7)
-                    else:
-                        stack_plot = ax.stackplot(all_steps, values_for_stack,
-                                                  colors=colors,
-                                                  alpha=0.7)
-
-                # Update global y-axis limits
-                if unified_y_axis:
-                    ymin, ymax = ax.get_ylim()
-                    global_ymin = min(global_ymin, ymin)
-                    global_ymax = 7000  # max(global_ymax, ymax)
-
-                # Position y-axis label based on layout
-                if layout == "stacked":
-                    if ax_idx == 0:  # First plot in stacked layout
-                        if show_fractions:
-                            ax.set_ylabel('Fraction of Total Production', fontsize=fontsize)
-                        else:
-                            y_label = 'Log10(Production Volume + 1)' if use_log_scale else 'Item Production'
-                            ax.set_ylabel(y_label, fontsize=fontsize-2)
-                    # Show x-axis ticks and labels for all plots in stacked mode
-                    ax.tick_params(axis='x', which='both', labelsize=fontsize-2)
-
-                else:  # side-by-side layout
-                    if ax_idx in [3]:  # Left side plots
-                        ax.yaxis.set_label_position("right")
-                        ax.yaxis.set_label_coords(1.05, 0.5)
-                        if show_fractions:
-                            ax.set_ylabel('Fraction of Total Production', fontsize=fontsize)
-                        else:
-                            y_label = 'Log10(Production Volume + 1)' if use_log_scale else 'Item Production'
-                            ax.set_ylabel(y_label, fontsize=fontsize-2)
-
-                ax.set_xlabel('Step', fontsize=fontsize - 2)
-
-                # Add grid
-                ax.grid(True, which='major', linestyle='-', alpha=0.2)
-                ax.grid(True, which='minor', linestyle='--', alpha=0.1)
-
-                # Update current axis formatting
-                #ax.yaxis.set_major_formatter(formatter)
+                    return f'{int(x):,}'
 
 
-                # Configure axis ticks for better readability
-                #ax.yaxis.set_major_locator(LogLocator(base=10))  # For log scale
+            # Additionally, to ensure larger numbers don't use scientific notation:
+            # ax.ticklabel_format(style='plain', axis='x')
 
-                # Set axis limits
-                #ax.set_xlim(min(all_steps) - step_size / 2, max(all_steps) + step_size / 2)
+            if groupby_complexity:
+                values_for_stack = [processed_values[complexity] for complexity in unique_complexities]
+                labels = [f"Complexity {complexity}" for complexity in unique_complexities]
+                colors = [complexity_colors[complexity] for complexity in unique_complexities]
+            else:
+                values_for_stack = [processed_values[item] for item in sorted_items]
+                labels = [f"{item}" for item in sorted_items]
+                colors = color_map
+
+            if chart_type.lower() == 'line':
+                stack_plot = ax.stackplot(all_steps, values_for_stack,
+                                          labels=labels if ax_idx == len(model_names) - 1 else [],
+                                          colors=colors,
+                                          alpha=0.7)
+            else:  # 'bar' chart
+                bottom = np.zeros(len(all_steps))
+                for values, label, color in zip(values_for_stack, labels, colors):
+                    ax.bar(all_steps, values, bottom=bottom,
+                           label=label if ax_idx == len(model_names) - 1 else None,
+                           color=color, alpha=0.7,
+                           width=step_size * step_proportion)
+                    bottom += values
+
+
+
+            # Configure axis labels and appearance
+            for ax_idx, ax in enumerate(axes):
+                # Format axes consistently
+                if use_log_scale:
+                    ax.set_yscale('log')
+                    ax.yaxis.set_major_formatter(plt.LogFormatter(base=10))
+                    ax.yaxis.set_major_locator(plt.LogLocator(base=10.0))
+                    ax.yaxis.set_minor_locator(plt.LogLocator(base=10.0, subs=np.arange(2, 10)))
+
+                ax.set_title("")
+
+                # Update global y-axis limits with this plot's limits
+                ymin, ymax = ax.get_ylim()
+                global_ymin = min(global_ymin, ymin)
+                global_ymax = max(global_ymax, ymax)
+
+                # Set consistent grid style
+                ax.grid(True, axis='y', linestyle='--', alpha=0.3)
+                ax.set_axisbelow(True)
+
+                ax.xaxis.set_major_formatter(plt.FuncFormatter(format_large_number))
+                ax.yaxis.set_major_formatter(plt.FuncFormatter(format_large_number))
+
+                # Ensure x-axis limits are identical
                 ax.set_xlim(min(all_steps), max(all_steps))
-                if show_fractions:
-                    ax.set_ylim(0, 1)
 
-        # After all plots are done, set unified y-axis
-        if unified_y_axis and not show_fractions:
-            for ax in axes:
-                ax.set_ylim(0, global_ymax)
+                # Set labels based on position
+                if layout == "stacked":
+                    if ax_idx == 0:
+                        ax.set_ylabel('Item Production', fontsize=fontsize - 2)
+                else:  # side-by-side layout
+                    if ax_idx in [0, 2, 4]:
+                        ax.set_ylabel('Item Production', fontsize=fontsize - 2)
 
-        # Now add titles after all axes are finalized
-        for ax_idx, (ax, version) in enumerate(zip(axes, versions)):
-            if version not in self.versions:
-                continue
+                ax.set_xlabel('Steps', fontsize=fontsize - 2)
 
-            # Force matplotlib to update the plot
-            ax.figure.canvas.draw()
+                # Add title with proper positioning
+                if ax_idx < len(model_names):
+                    title_text = self.model_groups[model_names[ax_idx]].label
+                    color = self.model_groups[model_names[ax_idx]].color
 
-            # Get the current axis limits after all adjustments
+                    # Get position for title
+                    ax_pos = ax.get_position()
+                    title_y = ax_pos.y1 - 0.03  # Move title above the plot
+
+                    # Add colored dash
+                    ax.figure.text(
+                        ax_pos.x0 + (ax_pos.width * 0.02),
+                        title_y,
+                        '—',
+                        color=color,
+                        fontsize=fontsize + 4,  # Reduced from +8
+                        fontweight='bold',
+                        horizontalalignment='left',
+                        verticalalignment='bottom',
+                        zorder=10
+                    )
+
+                    # Add title text
+                    ax.figure.text(
+                        ax_pos.x0 + (ax_pos.width * 0.08),  # Reduced from 0.12
+                        title_y + 0.003,
+                        title_text,
+                        fontsize=fontsize - 4,  # Smaller to avoid overlap
+                        horizontalalignment='left',
+                        verticalalignment='bottom',
+                        zorder=10
+                    )
+
+            # ax.set_xlabel('Step', fontsize=fontsize - 2)
+            # ax.tick_params(axis='both', which='major', labelsize=fontsize - 2)
+            ax.grid(True, which='major', linestyle='-', alpha=0.2)
+            ax.grid(True, which='minor', linestyle='--', alpha=0.1)
+
+            # Set axis limits
+            ax.set_xlim(min(all_steps), max(all_steps))
+            if show_fractions:
+                ax.set_ylim(0, 1)
+
+            # Title placement
+            title_text = model_group.label
+            color = model_group.color
             ylims = ax.get_ylim()
             xlims = ax.get_xlim()
 
-            color = self.colors[ax_idx % len(self.colors)]
-            title_text = self.versions[version]["label"]
+            title_x = xlims[0] + (xlims[1] - xlims[0]) * 0.02
+            #title_y = ylims[1] + (ylims[1] - ylims[0]) * 0.05
+            title_y = ax.get_position().y1 - 0.04
 
-            # Calculate position for title
-            title_x = xlims[0] + (xlims[1] - xlims[0]) * 0.4  # 2% from left edge
-            title_y = ylims[1] - (ylims[1] - ylims[0]) * 0.05  # 5% from top
+            # ax.text(title_x, title_y, '—',
+            #         color=color,
+            #         fontsize=fontsize + 8,
+            #         fontweight='bold',
+            #         horizontalalignment='left',
+            #         verticalalignment='bottom',
+            #         transform=ax.transData,
+            #         zorder=10)
+            #
+            # ax.text(title_x + (xlims[1] - xlims[0]) * 0.05, title_y,
+            #         title_text,
+            #         fontsize=fontsize - 2,
+            #         horizontalalignment='left',
+            #         verticalalignment='bottom',
+            #         transform=ax.transData,
+            #         zorder=10)
+            #
+            # ax.margins(y=0.2)
+            # Place title using figure coordinates instead of data coordinates
+            # ax.figure.text(
+            #     ax.get_position().x0 + (ax.get_position().width * 0.02),  # x position
+            #     title_y,  # y position
+            #     '—',
+            #     color=color,
+            #     fontsize=fontsize + 8,
+            #     fontweight='bold',
+            #     horizontalalignment='left',
+            #     verticalalignment='bottom',
+            #     zorder=10
+            # )
+            #
+            # ax.figure.text(
+            #     ax.get_position().x0 + (ax.get_position().width * 0.12),  # x position
+            #     title_y + 0.005 ,  # y position
+            #     title_text,
+            #     fontsize=fontsize - 2,
+            #     horizontalalignment='left',
+            #     verticalalignment='bottom',
+            #     zorder=10
+            # )
 
-            # Add colored line prefix and title
-            ax.text(title_x, title_y+300, '—',
-                    color=color,
-                    fontsize=fontsize + 16,
-                    fontweight='bold',
-                    horizontalalignment='right',
-                    verticalalignment='top',
-                    zorder=10)
+            # Set scientific notation for y-axis when using log scale
+            if use_log_scale:
+                ax.set_yscale('log')
+                ax.yaxis.set_major_formatter(plt.LogFormatter(base=10))
 
-            ax.text(title_x + (xlims[1] - xlims[0]) * 0.02, title_y + 0.15,
-                    title_text,
-                    fontsize=fontsize,
-                    horizontalalignment='left',
-                    verticalalignment='top',
-                    zorder=10)
+                # Ensure we use standard log ticks
+                ax.yaxis.set_major_locator(plt.LogLocator(base=10.0))
+                ax.yaxis.set_minor_locator(plt.LogLocator(base=10.0, subs=np.arange(2, 10)))
 
-        # Add legend to the last subplot if needed
-        if layout == "stacked":
-            if groupby_complexity:
-                legend_title = "Complexity Groups"
-                # Add white background to complexity groups legend
-                legend = axes[-1].legend(title=legend_title,
-                                         bbox_to_anchor=(0.02, 0.98),  # Position inside plot
-                                         loc='upper left',
-                                         fontsize='small',
-                                         title_fontsize='medium',
-                                         facecolor='white',
-                                         edgecolor='lightgray',
-                                         framealpha=0.9)
+            ymin, ymax = ax.get_ylim()
+            global_ymin = min(global_ymin, ymin)
+            global_ymax = max(global_ymax, ymax)
+
+            ax.margins(y=0.01)
+
+        # After all plots are done, set unified y-axis if requested
+        # if unified_y_axis and not show_fractions:
+        #     for ax in axes:
+        #         ax.set_ylim(0, global_ymax)
+        if unified_y_axis and not show_fractions:
+            # Add extra space to avoid clipping
+            padding = (global_ymax - global_ymin) * 0.1
+            for ax in axes:
+                ax.set_ylim(global_ymin, global_ymax + padding)
+
+        # Add legend
+        if not groupby_complexity:
+            if layout == "stacked":
+                create_custom_legend_with_icons(axes[-1], sorted_items,
+                                                item_complexities, colors,
+                                                fontsize, layout == "stacked")
             else:
-                # Create legend in first production volume chart
-                create_custom_legend_with_icons(axes[-1], sorted_items, item_complexities, colors, fontsize, layout=="stacked")
-        else:  # side-by-side layout
-            if groupby_complexity:
-                legend_title = "Complexity Groups"
-                legend = axes[-3].legend(title=legend_title,
-                                         bbox_to_anchor=(1.02, 1),
-                                         loc='upper left',
-                                         fontsize='small',
-                                         title_fontsize='medium',
-                                         facecolor='white',
-                                         edgecolor='lightgray',
-                                         framealpha=0.9)
-            else:
-                create_custom_legend_with_icons(axes[-3], sorted_items, item_complexities, colors, fontsize, layout=="stacked")
+                create_custom_legend_with_icons(axes[-3], sorted_items,
+                                                item_complexities, colors,
+                                                fontsize, layout == "stacked")
+
 
 
 async def main():
@@ -1097,31 +1220,47 @@ async def main():
 
     for x_axis in ["steps", "ticks"]:
         viz = ProgressionVisualizer(db_client, icons_path, x_axis,
-                                    use_log_scale = x_axis != "ticks",
+                                    use_log_scale=x_axis != "ticks",
                                     use_value_gdp=False,
                                     recipes_file="/data/recipes/recipes.jsonl")
 
-        # Configure versions to plot
-        versions = {
-            492: "Claude",
-            490: "GPT-4",
-
-            #487: "GPT-4-Mini",
-            505: "GPT-4-Mini",
-            488: "LLaMA-70B",
-            #491: "DeepSeek",
-
+        # Configure model groups and their versions
+        model_groups = {
+            # 'Claude': [492],  # Single version for Claude
+            # 'GPT-4': [490],  # Single version for GPT-4
+            # 'GPT-4-Mini': [505],  # Using newer version
+            # 'LLaMA-70B': [488]
+            "Deepseek-v3": [555, 556, 557, 558],
+            "GPT-4o-Mini": [548, 575, 576, 577, 578],
+            "LLaMA-70B": [550, 600, 601, 602],  # 599
+            "Gemini-2": [595, 596, 597, 598, 805, 806, 807, 808],
+            "GPT-4o": [551, 552, 553, 554, 564, 797, 798, 799, 800],
+            "Claude": [559, 560, 561, 562, 574, 801, 802, 803, 804],
         }
 
-        # Generate visualization
-        viz.load_data(list(versions.keys()), versions)
+
+        # Define labels for each model
+        model_labels = {
+
+            'Deepseek-v3': 'Deepseek-v3',
+            'GPT-4o-Mini': 'GPT-4-Mini',
+            'LLaMA-70B': 'LLaMA-70B',
+
+            'Gemini-2': 'Gemini-2',
+            'GPT-4o': 'GPT-4',
+            'Claude': 'Claude',
+        }
+
+        # Load data using new model grouping approach
+        viz.load_data(model_groups, model_labels)
 
         achievement_params = {
             'render_complexity': False,
             'minimum_complexity': 2
         }
+
         production_params = {
-            'step_size': 50,
+            'step_size': 25,
             'cumulative': True,
             'show_fractions': False,
             'use_log_scale': False,
@@ -1131,13 +1270,20 @@ async def main():
             'chart_type': 'line'
         }
 
-        viz.export_combined_visualization('combined_analysis_stacked.png', [505, 488, 490, 492],
-                                      achievement_params=achievement_params,
-                                      production_params=production_params, layout="stacked")
-        viz.export_combined_visualization('combined_analysis_side.png', [505, 488, 490, 492],
-                                          achievement_params=achievement_params,
-                                          production_params=production_params, layout="side-by-side")
+        # Generate visualizations using model names instead of version numbers
+        model_names = ['Deepseek-v3','GPT-4o-Mini','LLaMA-70B', 'Gemini-2', 'GPT-4o', 'Claude']  # Same order as before
 
+        viz.export_combined_visualization('combined_analysis_stacked.png',
+                                          model_names=model_names,
+                                          achievement_params=achievement_params,
+                                          production_params=production_params,
+                                          layout="stacked")
+
+        viz.export_combined_visualization('combined_analysis_side.png',
+                                          model_names=model_names,
+                                          achievement_params=achievement_params,
+                                          production_params=production_params,
+                                          layout="side-by-side")
 
 if __name__ == "__main__":
     asyncio.run(main())

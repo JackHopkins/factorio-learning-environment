@@ -919,7 +919,7 @@ async def main():
             "Claude": [559, 560, 561, 562, 574],  # Multiple Claude versions
             "LLaMA-70B": [550, 599, 600, 601, 602],
             "GPT-4": [551, 552, 553, 554, 564],  # Multiple GPT-4 versions
-            "Deepseek-v3": [555, 556, 557, 558],
+
             "GPT-4-Mini": [548, 575, 576, 577, 578],
             "Gemini-2": [595, 596, 597, 598 ],
 

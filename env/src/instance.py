@@ -22,6 +22,7 @@ from slpp import slpp as lua
 
 from entities import *
 from lua_manager import LuaScriptManager
+from models.camera import Camera
 from namespace import FactorioNamespace
 from utils.rcon import _lua2python, _get_dir
 from transaction import FactorioTransaction
@@ -95,12 +96,17 @@ class FactorioInstance:
         self.lua_script_manager = LuaScriptManager(self.rcon_client, cache_scripts)
         self.script_dict = {**self.lua_script_manager.lib_scripts, **self.lua_script_manager.tool_scripts}
 
+        # Initialize hooks as dictionaries to organize callbacks by tool name
+        self.pre_tool_hooks = {}
+        self.post_tool_hooks = {}
+
         # Load the python controllers that correspond to the Lua scripts
         self.setup_tools(self.lua_script_manager)
 
         self.initial_inventory = inventory
         self.initialise(fast, **inventory)
         self.initial_score = 0
+
 
         try:
             self.namespace.score()
@@ -150,12 +156,6 @@ class FactorioInstance:
 
             # Load variables / functions from game state
             self.namespace.load(game_state)
-
-        # try:
-        #     self.namespace.observe_all()
-        # except Exception as e:
-        #     print(e)
-        #     pass
 
         try:
             self.initial_score, goal = self.namespace.score()
@@ -236,6 +236,31 @@ class FactorioInstance:
         def snake_to_camel(snake_str):
             return "".join(word.capitalize() for word in snake_str.split("_"))
 
+        # Create a function that wraps a tool's call method to execute hooks
+        def create_hook_wrapper(tool_name, original_callable):
+            from functools import wraps
+
+            @wraps(original_callable)
+            def wrapper(*args, **kwargs):
+                # Execute pre-tool hooks
+                try:
+                    self.execute_pre_tool_hooks(tool_name, original_callable, *args, **kwargs)
+                except Exception as e:
+                    print(f"Error in pre-tool hook for {tool_name}: {e}")
+
+                # Execute the original callable
+                result = original_callable(*args, **kwargs)
+
+                # Execute post-tool hooks
+                try:
+                    self.execute_post_tool_hooks(tool_name, original_callable, result)
+                except Exception as e:
+                    print(f"Error in post-tool hook for {tool_name}: {e}")
+
+                return result
+
+            return wrapper
+
         # Walk through all subdirectories
         for dirpath, _, filenames in os.walk(tool_dir):
             # Skip the root directory
@@ -273,14 +298,17 @@ class FactorioInstance:
                     callable_class = getattr(module, class_name)
                     callable_instance = callable_class(lua_script_manager, self.namespace)
 
+                    # Create a wrapper that will execute hooks
+                    wrapped_instance = create_hook_wrapper(tool_name.lower(), callable_instance)
+
                     # Store the controller and add it to namespace
                     self.controllers[tool_name.lower()] = callable_instance
 
                     if directory_name == 'admin':
                         # If this is an admin method, we hide it in the namespace by adding a shebang
-                        setattr(self.namespace, f"_{tool_name.lower()}", callable_instance)
+                        setattr(self.namespace, f"_{tool_name.lower()}", wrapped_instance)
                     else:
-                        setattr(self.namespace, tool_name.lower(), callable_instance)
+                        setattr(self.namespace, tool_name.lower(), wrapped_instance)
 
                 except Exception as e:
                     raise Exception(f"Could not instantiate {class_name} from {client_file}. {e}")
@@ -371,6 +399,7 @@ class FactorioInstance:
 
         return round(optimal_zoom, 2)
 
+
     def screenshot(self, resolution="1920x1080", save_path=None, zoom=None, center_on_factory=False, script_output_path="/Users/jackhopkins/Library/Application Support/factorio/script-output"):
         """
         Take a screenshot in game and optionally save it to a specific location.
@@ -386,19 +415,19 @@ class FactorioInstance:
             str: Path to the saved screenshot, or None if failed
         """
         # Clear rendering
-        bounds: BoundingBox = self.namespace._get_factory_centroid()
+        camera: Camera = self.namespace._get_factory_centroid()
         POS_STRING = ""
-        if bounds:
-            centroid = bounds.center
+        if camera:
+            centroid = camera.position
             POS_STRING = ", position={x="+str(centroid.x)+", y="+str(centroid.y)+"}"
 
         self.rcon_client.send_command("/c rendering.clear()")
 
-        # Calculate optimal zoom if not specified
-        if zoom is None:
-            zoom = self.calculate_optimal_zoom(bounds, resolution)
+        # # Calculate optimal zoom if not specified
+        # if zoom is None:
+        #     zoom = self.calculate_optimal_zoom(bounds, resolution)
 
-        command = "/c game.take_screenshot({player=1, zoom="+str(zoom)+", show_entity_info=true, hide_clouds=true, hide_fog=true "+POS_STRING+"})"
+        command = "/c game.take_screenshot({player=1, zoom="+str(camera.zoom)+", show_entity_info=true, hide_clouds=true, hide_fog=true "+POS_STRING+"})"
         response = self.rcon_client.send_command(command)
         time.sleep(1)
         # if not response:
@@ -714,10 +743,144 @@ class FactorioInstance:
             if clean:
                 self.cleanup()
 
+    def register_post_tool_hook(self, tool_name, callback=None):
+        """
+        Register a hook to be called after a specific tool is executed.
+        Can be used as a regular function or as a decorator.
+
+        Args:
+            tool_name (str): Name of the tool to hook into
+            callback (callable, optional): Function to call after the tool is executed.
+                                          Will receive the tool instance and the result as arguments.
+
+        Returns:
+            If used as a regular function (with callback provided), returns the callback.
+            If used as a decorator (without callback), returns a decorator function.
+        """
+        # When used as a decorator without parentheses: @register_post_tool_hook
+        if tool_name is not None and callback is None and callable(tool_name):
+            callback = tool_name
+            tool_name = callback.__name__
+            if not hasattr(self, 'post_tool_hooks'):
+                self.post_tool_hooks = {}
+            if tool_name not in self.post_tool_hooks:
+                self.post_tool_hooks[tool_name] = []
+            self.post_tool_hooks[tool_name].append(callback)
+            return callback
+
+        # When used as a decorator with arguments: @register_post_tool_hook("tool_name")
+        if callback is None:
+            def decorator(func):
+                if not hasattr(self, 'post_tool_hooks'):
+                    self.post_tool_hooks = {}
+                if tool_name not in self.post_tool_hooks:
+                    self.post_tool_hooks[tool_name] = []
+                self.post_tool_hooks[tool_name].append(func)
+                return func
+
+            return decorator
+
+        # When used as a regular function: register_post_tool_hook("tool_name", callback_func)
+        if not callable(callback):
+            raise TypeError("Callback must be callable")
+
+        if not hasattr(self, 'post_tool_hooks'):
+            self.post_tool_hooks = {}
+        if tool_name not in self.post_tool_hooks:
+            self.post_tool_hooks[tool_name] = []
+
+        self.post_tool_hooks[tool_name].append(callback)
+        return callback
+
+    def register_pre_tool_hook(self, tool_name, callback=None):
+        """
+        Register a hook to be called before a specific tool is executed.
+        Can be used as a regular function or as a decorator.
+
+        Args:
+            tool_name (str): Name of the tool to hook into
+            callback (callable, optional): Function to call before the tool is executed.
+                                          Will receive the tool instance and the arguments as parameters.
+
+        Returns:
+            If used as a regular function (with callback provided), returns the callback.
+            If used as a decorator (without callback), returns a decorator function.
+        """
+        # When used as a decorator without parentheses: @register_pre_tool_hook
+        if tool_name is not None and callback is None and callable(tool_name):
+            callback = tool_name
+            tool_name = callback.__name__
+            if not hasattr(self, 'pre_tool_hooks'):
+                self.pre_tool_hooks = {}
+            if tool_name not in self.pre_tool_hooks:
+                self.pre_tool_hooks[tool_name] = []
+            self.pre_tool_hooks[tool_name].append(callback)
+            return callback
+
+        # When used as a decorator with arguments: @register_pre_tool_hook("tool_name")
+        if callback is None:
+            def decorator(func):
+                if not hasattr(self, 'pre_tool_hooks'):
+                    self.pre_tool_hooks = {}
+                if tool_name not in self.pre_tool_hooks:
+                    self.pre_tool_hooks[tool_name] = []
+                self.pre_tool_hooks[tool_name].append(func)
+                return func
+
+            return decorator
+
+        # When used as a regular function: register_pre_tool_hook("tool_name", callback_func)
+        if not callable(callback):
+            raise TypeError("Callback must be callable")
+
+        if not hasattr(self, 'pre_tool_hooks'):
+            self.pre_tool_hooks = {}
+        if tool_name not in self.pre_tool_hooks:
+            self.pre_tool_hooks[tool_name] = []
+
+        self.pre_tool_hooks[tool_name].append(callback)
+        return callback
+
+    def execute_post_tool_hooks(self, tool_name, tool_instance, result):
+        """
+        Execute all hooks registered for a tool after it has been executed.
+
+        Args:
+            tool_name (str): Name of the tool
+            tool_instance: The tool instance that was executed
+            result: The result of the tool execution
+        """
+        if tool_name in self.post_tool_hooks:
+            for callback in self.post_tool_hooks[tool_name]:
+                try:
+                    callback(tool_instance, result)
+                except Exception as e:
+                    print(f"Error in post-tool hook for {tool_name}: {e}")
+
+    def execute_pre_tool_hooks(self, tool_name, tool_instance, *args, **kwargs):
+        """
+        Execute all hooks registered for a tool before it is executed.
+
+        Args:
+            tool_name (str): Name of the tool
+            tool_instance: The tool instance to be executed
+            *args, **kwargs: The arguments passed to the tool
+        """
+        if tool_name in self.pre_tool_hooks:
+            for callback in self.pre_tool_hooks[tool_name]:
+                try:
+                    callback(tool_instance, *args, **kwargs)
+                except Exception as e:
+                    print(f"Error in pre-tool hook for {tool_name}: {e}")
+
+
     def cleanup(self):
         # Close the RCON connection
         if hasattr(self, 'rcon_client') and self.rcon_client:
             self.rcon_client.close()
+
+        self.post_tool_hooks = {}
+        self.pre_tool_hooks = {}
 
         # Join all non-daemon threads
         for thread in threading.enumerate():

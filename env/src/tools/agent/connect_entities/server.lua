@@ -524,6 +524,8 @@ local function place_at_position(player, connection_type, current_position, dir,
             type = is_underground_exit and "output" or "input",
             move_stuck_players=true
         }
+        -- We can just teleport away here to avoid collision as we dont adhere by distance rules in connect_entities
+        player.teleport({placement_position.x+2, placement_position.y+2}, player.surface)
         local can_place = game.surfaces[1].can_place_entity{
             name = connection_type,
             position = placement_position,
@@ -585,6 +587,8 @@ local function place_at_position(player, connection_type, current_position, dir,
         error("You do not have the required item in their inventory.")
     end
 
+    -- We can just teleport away here to avoid collision as we dont adhere by distance rules in connect_entities
+    player.teleport({placement_position.x+2, placement_position.y+2}, player.surface)
     local can_place = game.surfaces[1].can_place_entity{
         name = connection_type,
         position = placement_position,

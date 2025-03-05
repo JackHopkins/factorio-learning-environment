@@ -87,13 +87,13 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         if is_inserter then
             -- Inserters should be placed directly adjacent
             if direction == 0 then     -- North
-                new_pos.y = new_pos.y - ref_height/2 - 0.5 + effective_gap
+                new_pos.y = new_pos.y - ref_height/2 - 0.5
             elseif direction == 1 then -- East
-                new_pos.x = new_pos.x + ref_width/2 + 0.5 + effective_gap
+                new_pos.x = new_pos.x + ref_width/2 + 0.5
             elseif direction == 2 then -- South
-                new_pos.y = new_pos.y + ref_height/2 + 0.5 + effective_gap
+                new_pos.y = new_pos.y + ref_height/2 + 0.5
             else  -- West
-                new_pos.x = new_pos.x - ref_width/2 - 0.5 + effective_gap
+                new_pos.x = new_pos.x - ref_width/2 - 0.5
             end
         else
             -- Original spacing calculation for non-inserters
@@ -374,7 +374,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         item.destroy()
     end
 
-    global.utils.avoid_entity(player_index, entity, new_position, orientation)
+    global.utils.avoid_entity(player_index, entity, new_position, direction)
     local can_build = player.surface.can_place_entity({
         name = entity,
         position = new_position,

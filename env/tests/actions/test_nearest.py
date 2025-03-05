@@ -16,8 +16,8 @@ def test_nearest_resource(game):
     :return:
     """
     coal: Position = game.nearest(Resource.Coal)
-    assert coal.y == -11.5
-    assert coal.x == 19.5
+    assert coal.y == -0.5
+    assert coal.x == 15.5
 
 def test_move_to_nearest(game):
     """

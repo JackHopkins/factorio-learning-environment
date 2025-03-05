@@ -564,6 +564,9 @@ local function place_at_position(player, connection_type, current_position, dir,
                 table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
                 return placed_entity
             end
+        elseif can_place and dry_run then
+            counter_state.place_counter = counter_state.place_counter + 1
+            return nil
         end
     end
 
@@ -630,6 +633,11 @@ local function place_at_position(player, connection_type, current_position, dir,
             table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
             return placed_entity
         end
+    
+    elseif can_place and dry_run then
+        counter_state.place_counter = counter_state.place_counter + 1
+        return nil
+
     else
         -- game.print("Avoiding entity at " .. placement_position.x.. ", " .. placement_position.y)
         -- global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
@@ -730,6 +738,37 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
     -- Get source and target entities
     local source_entity = global.utils.get_closest_entity(player, {x = source_x, y = source_y})
     local target_entity = global.utils.get_closest_entity(player, {x = target_x, y = target_y})
+
+
+    if #connection_types == 1 and connection_types[1] == 'pipe-to-ground' then
+        
+        -- Calculate the direction from start to end.
+        local dir = global.utils.get_direction(start_position, end_position)
+        local entrance_dir = global.utils.get_entity_direction(underground_type, dir / 2)
+        
+        -- Place the underground entrance at the start position.
+        place_at_position(player, underground_type, start_position, entrance_dir,
+                          serialized_entities, dry_run, counter_state, false)
+        
+        local exit_dir
+        if underground_type == "pipe-to-ground" then
+          -- For pipe-to-ground, rotate the direction 180° for the exit.
+          exit_dir = global.utils.get_entity_direction(underground_type, (dir / 2 + 2) % 4)
+        else
+          exit_dir = global.utils.get_entity_direction(underground_type, dir / 2)
+        end
+        
+        -- Place the underground exit at the end position.
+        place_at_position(player, underground_type, end_position, exit_dir,
+                          serialized_entities, dry_run, counter_state, true)
+        
+        return {
+          entities = serialized_entities,
+          connected = true,
+          number_of_entities = counter_state.place_counter
+        }
+    end
+
 
     if underground_type then
         -- Calculate maximum possible underground sections based on inventory
@@ -1204,7 +1243,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
         game.print("Required count: " .. required_count)
         game.print("Available count: " .. number_of_connection_entities)
         if number_of_connection_entities < required_count then
-            error("\"You do not have enough " .. connection_type .. " in you inventory to complete this connection. Required number - " .. required_count .. ", Available in inventory - " .. number_of_connection_entities.."\"")
+            error("\"You do not have enough " .. connection_type_string .. " in you inventory to complete this connection. Required number - " .. required_count .. ", Available in inventory - " .. number_of_connection_entities.."\"")
         end
         result = connect_entities_with_validation(player_index, source_x, source_y, target_x, target_y, path_handle, connection_types, false)
     end

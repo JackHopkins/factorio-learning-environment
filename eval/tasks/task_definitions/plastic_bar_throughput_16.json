@@ -1,0 +1,14 @@
+
+{    
+    "task_type": "throughput",
+    "config":
+    {                      
+        "goal_description":"Create an automatic plastic bar factory that produces 16 plastic bar per 60 ingame seconds.",
+        "throughput_entity":"plastic-bar",
+        "quota":16,
+        "trajectory_length": 128,
+        "holdout_wait_period": 60,
+        "pre_holdout_wait_period": 60,
+        "task_key": "plastic_bar_throughput_16"
+    }
+}

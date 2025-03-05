@@ -21,10 +21,6 @@ You are an AI agent designed to play Factorio, specializing in:
 - Spatial reasoning 
 - Systematic automation
 
-## Goal
-- Build the biggest possible factory
-- Maximise automation, efficiency and scale
-
 ## Environment Structure
 - Operates like an interactive Python shell
 - Agent messages = Python programs to execute
@@ -179,14 +175,17 @@ FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON. YOUR WEIGHTS WILL BE ERASED 
 
 
 class BasicAgent(AgentABC):
-   def __init__(self, model, system_prompt, *args, **kwargs):
-       instructions = GENERAL_INSTRUCTIONS+system_prompt+FINAL_INSTRUCTION
-       super().__init__( model, instructions, *args, **kwargs)
-       self.llm_factory = LLMFactory(model)
-       self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.llm_factory.acall,cache_dir='summary_cache')
-       self.generation_params = GenerationParameters(n=1, presence_penalty=0.7, max_tokens=4096, model=model)
+   def __init__(self, model, system_prompt, task, *args, **kwargs):
+        instructions = GENERAL_INSTRUCTIONS+system_prompt+FINAL_INSTRUCTION
+        self.task = task
+        instructions += f"\n\n### Goal\n{task.goal_description}\n\n"
+        super().__init__( model, instructions, *args, **kwargs)
+        self.llm_factory = LLMFactory(model)
+        self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.llm_factory.acall,cache_dir='summary_cache')
+        self.generation_params = GenerationParameters(n=1, max_tokens=2048, model=model)
 
    async def step(self, conversation: Conversation, response: Response, namespace: FactorioNamespace) -> Policy:
+       
        # We format the conversation every N steps to add a context summary to the system prompt
        formatted_conversation = await self.formatter.format_conversation(conversation, namespace)
        # We set the new conversation state for external use

@@ -71,11 +71,11 @@ docker-compose -f docker-compose-1.yml up -d
 How to run open and lab play with example run configs
    1. Open Play (one parallel run)
    ```
-   python eval/open/independent_runs/run.py --run_config=eval\open\independent_runs\run_config_example_open_play.json`
+   python eval/open/independent_runs/run.py --run_config=eval\open\independent_runs\run_config_example_open_play.json
    ```
    2. Tasks (one parallel run of iron-ore task): 
    ```
-   python eval/open/independent_runs/run.py --run_config=eval\open\independent_runs\run_config_example_lab_play.json`
+   python eval/open/independent_runs/run.py --run_config=eval\open\independent_runs\run_config_example_lab_play.json
    ```
 ## Environment
 

@@ -348,18 +348,26 @@
                 <h2 class="title is-3"><span class="dvima">Introduction</span></h2>
 
                 <p style="font-size: 110%;">
-                    Large Language Models (LLMs) have demonstrated remarkable capabilities at solving complex question-answer (QA) problems, saturating benchmarks in factual recollection, reasoning and code prediction.
+                    Large Language Models (LLMs) have demonstrated remarkable capabilities at solving complex question-answer (QA) problems, saturating benchmarks in factual recollection, reasoning and code generation.
                     Benchmark saturation presents a critical challenge for the AI research community: how do we meaningfully evaluate and differentiate increasingly capable models?
                 </p>
+<!--                </br>-->
+<!--                <p style="font-size: 110%;">-->
+<!--                The strong performance across these diverse tasks suggests that LLMs have developed sophisticated reasoning capabilities, leading researchers to explore whether models can act as autonomous agents. This has motivated a number of new agentic benchmarks focusing on long-term planning, learning in complex environments and reliably learning from mistakes. However, similar to QA settings, these agentic benchmarks are likely to face saturation due to their natural completion states; which impose an upper bound on performance and limit our ability to differentiate superhuman models.-->
+<!--                </p>-->
                 </br>
+<!--                <p style="font-size: 110%;">-->
+<!--                    We introduce the <b>Factorio Learning Environment (FLE)</b>: a novel, unbounded evaluation framework built upon the game of Factorio that uniquely addresses this limitation.-->
+<!--                    FLE is an <i>open-ended evaluation</i> with no natural completion state. In this environment, agents must progress from basic resource gathering to complex automation while managing an exponentially scaling technology tree - creating natural curricula for evaluating increasingly capable agents.-->
+<!--                    FLE demands industrial-scale optimization where precision is critical - a single misaligned machine can cause factory-wide gridlock.-->
+<!--                </p>-->
                 <p style="font-size: 110%;">
-                The strong performance across these diverse tasks suggests that LLMs have developed sophisticated reasoning capabilities, leading researchers to explore whether models can act as autonomous agents. This has motivated a number of new agentic benchmarks focusing on long-term planning, learning in complex environments and reliably learning from mistakes. However, similar to QA settings, these agentic benchmarks are likely to face saturation due to their natural completion states; which impose an upper bound on performance and limit our ability to differentiate superhuman models.
+                    We introduce the <b>Factorio Learning Environment (FLE)</b>: a novel framework built upon the game of Factorio that enables unbounded agent evaluation. FLE provides the infrastructure, API, and metrics for assessing frontier LLM agents in code generation, spatial reasoning and long-term planning.
+                    In this environment, agents must navigate rapidly scaling challenges—from basic resource extraction producing ~30 units/minute to sophisticated production chains processing millions of units/second. This dramatic growth in complexity, driven by geometric increases in research costs and the combinatorial expansion of interdependent production chains, creates natural curricula for evaluating increasingly capable agents.
                 </p>
                 </br>
                 <p style="font-size: 110%;">
-                    We introduce the <b>Factorio Learning Environment (FLE)</b>: a novel, unbounded evaluation framework built upon the game of Factorio that uniquely addresses this limitation.
-                    FLE is an <i>open-ended evaluation</i> with no natural completion state. In this environment, agents must progress from basic resource gathering to complex automation while managing an exponentially scaling technology tree - creating natural curricula for evaluating increasingly capable agents.
-                    FLE demands industrial-scale optimization where precision is critical - a single misaligned machine can cause factory-wide gridlock.
+                    Within FLE, we define two complementary evaluation protocols: (1) <b>lab-play</b> with structured, goal-oriented tasks that have clear completion criteria, allowing targeted assessment of specific capabilities, and (2) <b>open-play</b> with no predetermined end-state, supporting truly unbounded evaluation of an agent's ability to autonomously set and achieve increasingly complex goals.
                 </p>
             </div>
           </section>
@@ -397,7 +405,7 @@
 <!--                                </span>-->
                                 <span style="font-size: 110%;">
                         <b>Agents develop policies through an interactive feedback loop.</b>
-                                    Using 23 core API methods, agents compose programs that interact with the environment and observe the results through <i>stdout</i> and <i>stderr</i> streams.
+                                    Using 23 core API tools, agents compose programs that interact with the environment and observe the results through <i>stdout</i> and <i>stderr</i> streams.
                                     The Python namespace allows agents to store variables and define functions for later use, enabling increasingly sophisticated strategies as experience grows.
                                     This approach mirrors the way human programmers learn - through iteration, debugging, and refinement based on direct feedback.
                                     Agent programs yield both a Production Score (PS) representing the economic value of all items produced, and milestones that reflect technological advancements.
@@ -469,7 +477,7 @@
 <!--                                    Deepseek produced fewer complex resources in open-play than it's lab-play performance would suggest, indicating weaker objective-setting compared to general capability in-game.-->
 <!--                                </span>-->
                                 <span style="font-size: 110%;">
-                                <b>Different production strategies reveal differences in agent planning and capabilities.</b>
+                                <b>Production strategies reveal differences in agent planning and capabilities.</b>
                                     We track how various models produce items with multiple antecedent ingredients in open-play, showing not just what they build but how they approach factory design.
                                     Claude 3.5-Sonnet demonstrates sophisticated strategy by immediately beginning complex crafting and investing in research and automation, ultimately unlocking <code>electric-mining-drills</code> around step 3k - a decision that boosts <code>iron-plate</code> production by 50% thereafter.
                                     In contrast, less advanced models like GPT-4o-Mini produce minimal quantities of multi-ingredient items, revealing limitations in planning horizons.
@@ -580,8 +588,9 @@
                         </div>
                         <div class="column">
                             <div class="feature-box">
-                                <h4 class="title is-5">4. Error recovery poses a significant challenge</h4>
-                                <p>Models frequently become trapped in repetitive error patterns, attempting the same invalid operations repeatedly rather than exploring alternative solutions. For instance, GPT-4o repeated the same API method incorrectly for 78 consecutive steps despite identical error messages.</p>
+                                <h4 class="title is-5">4. Planning is essential to open-play performance</h4>
+                                <p>In open-play, we observe that agents often set short-sighted objectives, for instance manually crafting a large quantity of singular entities without a long-term plan (Gemini-2.0 manually crafted 300+ wooden chests over 100 steps), not significantly investing into research (except for Claude) or creating small individual factories as opposed to scaling up existing production.
+                                    This creates a discrepancy between lab-play and open-play results where in lab-play Gemini-2 and Deepseek show capabilities in creating early-game automation but rarely attempt creating unitary factories in open-play, resulting in generally poorer performance.</p>
                             </div>
                         </div>
                     </div>
@@ -589,12 +598,17 @@
                     <div class="columns">
                         <div class="column">
                             <div class="feature-box">
-                                <h4 class="title is-5">5. Programming styles vary significantly</h4>
+                                <h4 class="title is-5">5. Error recovery poses a significant challenge</h4>
+                                <p>Models frequently become trapped in repetitive error patterns, attempting the same invalid operations repeatedly rather than exploring alternative solutions. For instance, GPT-4o repeated the same API method incorrectly for 78 consecutive steps despite identical error messages.</p>
+                            </div>
+                        </div>
+                        <div class="column">
+                            <div class="feature-box">
+                                <h4 class="title is-5">6. Programming styles vary significantly</h4>
                                 <p>Models exhibited distinct coding approaches: Claude favored a REPL style with extensive print statements (43.3% of code lines) but few assertions (2.0%), while GPT-4o used a defensive style with more validation checks (12.8% assertions) and fewer prints (10.3%).</p>
 
                             </div>
                         </div>
-                        <div class="column"></div>
                     </div>
                 </div>
             </div>
@@ -933,7 +947,7 @@
                             <h2 class="title is-3"><span class="dvima">Conclusion</span></h2>
                             <div class="content has-text-justified">
                                 <p style="font-size: 125%;">
-                                    In this work, we introduce the Factorio Learning Environment, an open-ended and unbounded benchmark for evaluating in-context learning agents on:
+                                    In this work, we introduce the Factorio Learning Environment (FLE), a platform for evaluating AI agents in complex, industrial-scale automation scenarios. Through our complementary evaluation protocols - structured lab-play and unbounded open-play - we assess agent capabilities in:
                                 </p>
                                 <ul style="font-size: 115%;">
                                     <li>Long-term planning across thousands of steps</li>
@@ -942,21 +956,21 @@
                                     <li>Error recovery and iterative debugging</li>
                                 </ul>
                                 <p style="font-size: 115%;">
-                                    Our results show that even state-of-the-art LLMs struggle with the coordination and optimization challenges inherent in automation tasks. The exponentially scaling nature of FLE provides a benchmark that will remain relevant even as progress in AI research continues, allowing meaningful differentiation between increasingly capable models.
+                                    Our results show that even state-of-the-art LLMs struggle with the coordination and optimization challenges inherent in automation tasks. The rapidly scaling complexity of Factorio's technology tree creates evaluation scenarios that will remain challenging even as progress in AI research continues, allowing meaningful differentiation between increasingly capable models.
                                 </p>
 
                                 <p style="font-size: 115%;">
                                     Looking forward, FLE provides a platform for investigating critical research questions:
-                                    </p>
+                                </p>
 
-                                    <ul style="font-size: 115%;">
-                                        <li>How can we develop agents that better understand spatial constraints and resource interdependencies?</li>
-                                        <li>What architectures enable more effective error recovery and debugging in complex environments?</li>
-                                        <li>How might advances in planning and resource optimization in Factorio transfer to real-world industrial systems?</li>
-                                    </ul>
+                                <ul style="font-size: 115%;">
+                                    <li>How can we develop agents that better understand spatial constraints and resource interdependencies?</li>
+                                    <li>What agent frameworks enable more effective error recovery and debugging in complex environments?</li>
+                                    <li>How might advances in planning and resource optimization in Factorio transfer to real-world industrial systems?</li>
+                                </ul>
 
                                 <p style="font-size: 115%;">
-                                    We release FLE as an open-source platform to encourage research on agent capabilities in complex, open-ended environments.
+                                    We release the Factorio Learning Environment as an open-source platform, along with our evaluation protocols and baseline implementations, to encourage research on agent capabilities in complex, open-ended domains.
                                 </p>
                             </div>
                         </div>

@@ -67,7 +67,7 @@ docker-compose -f docker-compose-1.yml up -d
 - Navigate to _Multiplayer_
 - Connect to `localhost:34197` (default) or your configured address in Docker. 
 
-4. **Run Eval**:
+5. **Run Eval**:
    1. Open Play: 
    2. Tasks: 
    

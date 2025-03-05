@@ -13,37 +13,6 @@ class ResourceName(enum.Enum):
     CrudeOil = "crude-oil"
     UraniumOre = "uranium-ore"
 
-class RecipeName(enum.Enum):
-    NuclearFuelReprocessing = "nuclear-fuel-reprocessing"
-    UraniumProcessing = "uranium-processing"
-    SulfuricAcid = "sulfuric-acid" # Recipe for crafting sulfuric acid
-    BasicOilProcessing = "basic-oil-processing" # Recipe for processing petroleum gas from crude oil
-    AdvancedOilProcessing = "advanced-oil-processing" # Recipe for processing petroleum gas, heavy oil and light oil from crude oil
-    CoalLiquefaction = "coal-liquefaction" # Recipe for converting coal into petroleum gas
-    HeavyOilCracking = "heavy-oil-cracking" # Recipe for cracking heavy oil into light oil
-    LightOilCracking = "light-oil-cracking" # Recipe for cracking light oil into petroleum gas
-
-    SolidFuelFromHeavyOil = "solid-fuel-from-heavy-oil" # Recipe for solid fuel from heavy oil
-    SolidFuelFromLightOil = "solid-fuel-from-light-oil" # Recipe for solid fuel from light oil
-    SolidFuelFromPetroleumGas = "solid-fuel-from-petroleum-gas" # Recipe for solid fuel from petroleum gas
-
-    FillCrudeOilBarrel = "fill-crude-oil-barrel"
-    FillHeavyOilBarrel = "fill-heavy-oil-barrel"
-    FillLightOilBarrel = "fill-light-oil-barrel"
-    FillLubricantBarrel = "fill-lubricant-barrel"
-    FillPetroleumGasBarrel = "fill-petroleum-gas-barrel"
-    FillSulfuricAcidBarrel = "fill-sulfuric-acid-barrel"
-    FillWaterBarrel = "fill-water-barrel"
-
-    EmptyCrudeOilBarrel = "empty-crude-oil-barrel"
-    EmptyHeavyOilBarrel = "empty-heavy-oil-barrel"
-    EmptyLightOilBarrel = "empty-light-oil-barrel"
-    EmptyLubricantBarrel = "empty-lubricant-barrel"
-    EmptyPetroleumGasBarrel = "empty-petroleum-gas-barrel"
-    EmptySulfuricAcidBarrel = "empty-sulfuric-acid-barrel"
-    EmptyWaterBarrel = "empty-water-barrel"
-
-
 class PrototypeMetaclass(enum.EnumMeta):
     def __getattr__(cls, name):
         try:
@@ -61,6 +30,40 @@ class PrototypeMetaclass(enum.EnumMeta):
                 suggestion_msg = f". Did you mean: {', '.join(matches)}?"
 
             raise AttributeError(f"'{cls.__name__}' has no attribute '{name}'{suggestion_msg}")
+
+class RecipeName(enum.Enum):
+    """
+    Recipe names that can be used in the game for fluids
+    """
+    NuclearFuelReprocessing = "nuclear-fuel-reprocessing"
+    UraniumProcessing = "uranium-processing"
+    SulfuricAcid = "sulfuric-acid" # Recipe for producing sulfuric acid with a chemical plant
+    BasicOilProcessing = "basic-oil-processing" # Recipe for producing petroleum gas with a oil refinery
+    AdvancedOilProcessing = "advanced-oil-processing" # Recipe for producing petroleum gas, heavy oil and light oil with a oil refinery
+    CoalLiquefaction = "coal-liquefaction" # Recipe for producing petroleum gas in a oil refinery
+    HeavyOilCracking = "heavy-oil-cracking" # Recipe for producing light oil in a chemical plant
+    LightOilCracking = "light-oil-cracking" # Recipe for producing petroleum gas in a chemical plant
+
+    SolidFuelFromHeavyOil = "solid-fuel-from-heavy-oil" # Recipe for producing solid fuel in a chemical plant
+    SolidFuelFromLightOil = "solid-fuel-from-light-oil" # Recipe for producing solid fuel in a chemical plant
+    SolidFuelFromPetroleumGas = "solid-fuel-from-petroleum-gas" # Recipe for producing solid fuel in a chemical plant
+
+    FillCrudeOilBarrel = "fill-crude-oil-barrel"
+    FillHeavyOilBarrel = "fill-heavy-oil-barrel"
+    FillLightOilBarrel = "fill-light-oil-barrel"
+    FillLubricantBarrel = "fill-lubricant-barrel"
+    FillPetroleumGasBarrel = "fill-petroleum-gas-barrel"
+    FillSulfuricAcidBarrel = "fill-sulfuric-acid-barrel"
+    FillWaterBarrel = "fill-water-barrel"
+
+    EmptyCrudeOilBarrel = "empty-crude-oil-barrel"
+    EmptyHeavyOilBarrel = "empty-heavy-oil-barrel"
+    EmptyLightOilBarrel = "empty-light-oil-barrel"
+    EmptyLubricantBarrel = "empty-lubricant-barrel"
+    EmptyPetroleumGasBarrel = "empty-petroleum-gas-barrel"
+    EmptySulfuricAcidBarrel = "empty-sulfuric-acid-barrel"
+    EmptyWaterBarrel = "empty-water-barrel"
+
 
 class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
 
@@ -137,7 +140,7 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     IronStick = "iron-stick", None
     SteelPlate = "steel-plate", None  # Crafting requires smelting 5 iron plates
     CopperPlate = "copper-plate", None  # Crafting requires smelting 1 copper ore
-    StoneBrick = "stone-brick", None
+    StoneBrick = "stone-brick", None # Crafting requires smelting 2 stone
     CopperCable = "copper-cable", None
     PlasticBar = "plastic-bar", None
     EmptyBarrel = "empty-barrel", None
@@ -147,6 +150,7 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     Uranium238 = "uranium-238", None
 
     Lubricant = "lubricant", None
+    PetroleumGas = "petroleum-gas", None
     AdvancedOilProcessing = "advanced-oil-processing", None # These are recipes, not prototypes.
     CoalLiquifaction = "coal-liquifaction", None # These are recipes, not prototypes.
     SolidFuel = "solid-fuel", None # These are recipes, not prototypes.

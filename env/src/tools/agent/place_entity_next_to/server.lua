@@ -392,7 +392,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         local blocker_names = {}
         for _, e in ipairs(entities) do
             game.print(e.type)
-            table.insert(blocker_names, e.name.."("..serpent.line(e.position)..")")
+            table.insert(blocker_names, e.type.."("..serpent.line(e.position)..")")
         end
         game.print(serpent.line(blocker_names))
 

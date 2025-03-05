@@ -1,0 +1,13 @@
+
+{                          
+    "task_type": "throughput",
+    "config":{
+        "goal_description":"Create an automatic petroleum-gas factory that produces 250 petroleum-gas per 60 ingame seconds.",
+        "throughput_entity":"petroleum-gas",
+        "quota":250,
+        "trajectory_length": 128,
+        "holdout_wait_period": 60,
+        "pre_holdout_wait_period": 60,
+        "task_key": "petroleum_gas_throughput_16"
+    }
+}

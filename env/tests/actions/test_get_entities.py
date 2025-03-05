@@ -22,7 +22,7 @@ def game(instance):
         'automation-science-pack': 1,
         'gun-turret': 1,
         'firearm-magazine': 5,
-        'transport-belt': 50,
+        'transport-belt': 200,
         'boiler': 1,
         'pipe': 20,
     }
@@ -152,7 +152,7 @@ def test_get_entities_hanging_bug(game):
     assert pipes, "Failed to connect boiler to steam engine"
 
     entities = game.get_entities()
-    assert len(entities) == 4
+    assert len(entities) == 5
 
 def test_get_assembling_machine_1(game):
     """

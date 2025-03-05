@@ -1,12 +1,14 @@
+from functools import wraps
 from typing import Tuple, Union
 
 from entities import Position, Entity
+from namespace import FactorioNamespace
 from tools.controller import Controller
 
 
 class Tool(Controller):
 
-    def __init__(self, lua_script_manager: 'FactorioLuaScriptManager', game_state: 'FactorioInstance', *args, **kwargs):
+    def __init__(self, lua_script_manager: 'FactorioLuaScriptManager', game_state: 'FactorioNamespace', *args, **kwargs):
         super().__init__(lua_script_manager, game_state)
         self.load()
 
@@ -21,6 +23,7 @@ class Tool(Controller):
             y = position_or_entity.y
 
         return x, y
+
 
     def get_error_message(self, response):
         try:

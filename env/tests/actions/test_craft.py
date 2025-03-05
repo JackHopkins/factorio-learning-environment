@@ -20,7 +20,8 @@ def test_fail_to_craft_item(game):
     :param game:
     :return:
     """
-    # Craft an iron chest with insufficient resources
+
+
     try:
         game.craft_item(Prototype.IronChest, quantity=100)
     except Exception as e:
@@ -80,6 +81,8 @@ def test_craft_copper_coil(game):
     :param game:
     :return:
     """
+
+    # Craft an iron chest with insufficient resources
     # Check initial inventory
     initial_copper_plate = game.inspect_inventory()[Prototype.CopperPlate]
     initial_copper_coil = game.inspect_inventory()[Prototype.CopperCable]

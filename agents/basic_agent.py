@@ -172,6 +172,7 @@ sorted_furnaces = sorted(
 - DON'T REPEAT YOUR PREVIOUS STEPS - just continue from where you left off. Take into account what was the last action that was executed and continue from there. If there was a error previously, do not repeat your last lines - as this will alter the game state unnecessarily.
 - Do not encapsulate your code in a function _unless_ you are writing a utility for future use - just write it as if you were typing directly into the Python interpreter.
 - Your inventory has space for ~2000 items. If it fills up, insert the items into a chest.
+- Ensure that your factory is arranged in a grid, as this will make things easier.
 """
 
 FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON." # Annoying how effective this is

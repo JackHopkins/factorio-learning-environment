@@ -24,23 +24,34 @@ jobs:
         with:
           node-version: '16'
 
-      - name: Create processed directory
-        run: mkdir -p leaderboard/processed
-
       - name: Process results
         run: |
+          mkdir -p leaderboard/processed
           node .github/scripts/process-results.js
+
+      - name: Save processed results
+        run: |
+          # Save the processed results temporarily
+          mkdir -p /tmp/processed
+          cp -r leaderboard/processed/* /tmp/processed/ || true
 
       - name: Fetch and checkout results branch
         run: |
-          git fetch origin results:results || git checkout -b results
-          git checkout results
-          git pull origin results || true
+          # Discard any local changes
+          git reset --hard HEAD
+          
+          # Fetch the results branch or create it if it doesn't exist
+          git fetch origin results || true
+          git checkout results 2>/dev/null || git checkout -b results
+          
+          # If the branch exists remotely, reset to its state
+          git fetch origin results && git reset --hard origin/results || true
 
-      - name: Copy processed results
+      - name: Copy processed results back
         run: |
+          # Copy the processed results back
           mkdir -p leaderboard/processed
-          cp -r leaderboard/processed/* leaderboard/processed/ || true
+          cp -r /tmp/processed/* leaderboard/processed/ || true
 
       - name: Commit and push to results branch
         run: |
@@ -48,7 +59,7 @@ jobs:
           git config --local user.name "GitHub Action"
           git add leaderboard/processed
           git commit -m "Update processed leaderboard results" || echo "No changes to commit"
-          git push origin results
+          git push -f origin results
 
       # Trigger the deploy workflow
       - name: Trigger deploy workflow

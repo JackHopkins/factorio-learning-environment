@@ -180,7 +180,7 @@ def test_build_iron_plate_factory(game):
         # Connect furnaces with coal belt
         above_current_drill = Position(x=miner.position.x, y=miner.position.y - miner.dimensions.height - 1)
         #game.connect_entities(next_coal_belt_position, above_current_drill, Prototype.TransportBelt)
-
+        game.move_to(Position(x=miner.drop_position.x, y=above_current_drill.y + 1))
         miner_coal_inserter = game.place_entity(Prototype.BurnerInserter, Direction.UP, Position(x=miner.drop_position.x, y=above_current_drill.y + 1))
         miner_coal_inserter = game.rotate_entity(miner_coal_inserter, Direction.DOWN)
         next_coal_belt_position = above_current_drill

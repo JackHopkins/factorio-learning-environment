@@ -90,9 +90,8 @@ def test_place_entities_of_different_sizes(game):
         for spacing in range(3):
             for direction in [Direction.LEFT, Direction.DOWN, Direction.RIGHT, Direction.UP]:
                 ref_entity = game.place_entity(ref_proto, direction=Direction.RIGHT, position=starting_position)
-                game.move_to(Position(x=starting_position.x + 10, y=starting_position.y - 10))
+                game.move_to(Position(x=starting_position.x + 3, y=starting_position.y - 3))
                 placed_entity = game.place_entity_next_to(placed_proto, ref_entity.position, direction, spacing)
-
                 expected_position = calculate_expected_position(ref_entity.position, direction, spacing, ref_entity,
                                                                 placed_entity)
                 assert placed_entity.position.is_close(expected_position, tolerance=1), \

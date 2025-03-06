@@ -82,39 +82,23 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
 
         -- Check if the entity to place is an inserter
         local entity_prototype = game.entity_prototypes[entity_to_place]
-        local is_inserter = entity_prototype.type == "inserter"
-        -- For inserters, use special spacing rules
-        if is_inserter then
-            -- Inserters should be placed directly adjacent
-            if direction == 0 then     -- North
-                new_pos.y = new_pos.y - ref_height/2 - 0.5 + effective_gap
-            elseif direction == 1 then -- East
-                new_pos.x = new_pos.x + ref_width/2 + 0.5 + effective_gap
-            elseif direction == 2 then -- South
-                new_pos.y = new_pos.y + ref_height/2 + 0.5 + effective_gap
-            else  -- West
-                new_pos.x = new_pos.x - ref_width/2 - 0.5 + effective_gap
-            end
-        else
-            -- Original spacing calculation for non-inserters
-            local entity_width, entity_height
-            if direction == 1 or direction == 3 then  -- East or West
-                entity_width = entity_prototype.tile_height
-                entity_height = entity_prototype.tile_width
-            else  -- North or South
-                entity_width = entity_prototype.tile_width
-                entity_height = entity_prototype.tile_height
-            end
-
-            if direction == 0 then     -- North
-                new_pos.y = new_pos.y - (math.ceil(ref_height + entity_height)/2 + effective_gap)
-            elseif direction == 1 then -- East
-                new_pos.x = new_pos.x + (math.ceil(ref_width + entity_width)/2 + effective_gap)
-            elseif direction == 2 then -- South
-                new_pos.y = new_pos.y + (math.ceil(ref_height + entity_height)/2 + effective_gap)
-            else  -- West
-                new_pos.x = new_pos.x - (math.ceil(ref_width + entity_width)/2 + effective_gap)
-            end
+        -- Original spacing calculation for non-inserters
+        local entity_width, entity_height
+        if direction == 1 or direction == 3 then  -- East or West
+            entity_width = entity_prototype.tile_height
+            entity_height = entity_prototype.tile_width
+        else  -- North or South
+            entity_width = entity_prototype.tile_width
+            entity_height = entity_prototype.tile_height
+        end
+        if direction == 0 then     -- North
+            new_pos.y = new_pos.y - (math.ceil(ref_height + entity_height)/2 + effective_gap)
+        elseif direction == 1 then -- East
+            new_pos.x = new_pos.x + (math.ceil(ref_width + entity_width)/2 + effective_gap)
+        elseif direction == 2 then -- South
+            new_pos.y = new_pos.y + (math.ceil(ref_height + entity_height)/2 + effective_gap)
+        else  -- West
+            new_pos.x = new_pos.x - (math.ceil(ref_width + entity_width)/2 + effective_gap)
         end
 
         -- Round the position to the nearest 0.5 to align with Factorio's grid
@@ -374,7 +358,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         item.destroy()
     end
 
-    global.utils.avoid_entity(player_index, entity, new_position, orientation)
+    global.utils.avoid_entity(player_index, entity, new_position, direction)
     local can_build = player.surface.can_place_entity({
         name = entity,
         position = new_position,

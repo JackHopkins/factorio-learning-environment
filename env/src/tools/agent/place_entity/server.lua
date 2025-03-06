@@ -216,7 +216,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 end
             end
         end
-
+        global.utils.avoid_entity(player_index, entity, position, direction)
         local can_build = player.can_place_entity{
             name = entity,
             force = player.force,
@@ -246,6 +246,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                             for dy = -radius, radius do
                                 if dx == -radius or dx == radius or dy == -radius or dy == radius then
                                     new_position = {x = position.x + dx, y = position.y + dy}
+                                    global.utils.avoid_entity(player_index, entity, position, direction)
                                     can_build = player.can_place_entity{
                                         name = entity,
                                         force = player.force,
@@ -300,7 +301,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 end
             end
 
-            global.utils.avoid_entity(player_index, entity, position)
+            global.utils.avoid_entity(player_index, entity, position, direction)
 
             can_build = player.can_place_entity{
                 name = entity,

@@ -66,3 +66,4 @@ environment/src/skills/ground_truth_skills/*
 /eval/open/plots/
 *.mp4
 !/docs/assets/videos/*.mp4
+/leaderboard/node_modules/

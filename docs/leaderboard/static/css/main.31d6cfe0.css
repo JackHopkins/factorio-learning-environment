@@ -1,0 +1,282 @@
+/* index.css for Factorio Leaderboard */
+
+:root {
+  --factorio-dark: #1a1a1a;
+  --factorio-medium: #2d2d2d;
+  --factorio-light: #3d3d3d;
+  --factorio-accent: #ff9d00;
+  --factorio-accent-light: #ffc266;
+  --factorio-text: #e6e6e6;
+  --factorio-highlight: #7dcff4;
+  --border-color: #444;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--factorio-dark);
+  color: var(--factorio-text);
+  line-height: 1.6;
+  padding: 0;
+  margin: 0;
+}
+
+/* Back to documentation link */
+.documentation-link {
+  display: block;
+  padding: 8px 16px;
+  background-color: var(--factorio-medium);
+  color: var(--factorio-text);
+  text-decoration: none;
+  border-bottom: 2px solid var(--factorio-accent);
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.documentation-link:hover {
+  background-color: var(--factorio-light);
+  color: var(--factorio-accent-light);
+}
+
+.documentation-link:before {
+  content: "←";
+  margin-right: 8px;
+}
+
+/* Main content container */
+.App {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Leaderboard container */
+.max-w-4xl {
+  width: 100%;
+  max-width: 1024px;
+  margin: 0 auto;
+}
+
+.bg-white {
+  background-color: var(--factorio-medium);
+  color: var(--factorio-text);
+}
+
+.rounded-lg {
+  border-radius: 8px;
+}
+
+.shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+}
+
+.p-4 {
+  padding: 1rem;
+}
+
+/* Headings */
+h2.text-2xl {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--factorio-accent);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--factorio-accent);
+  padding-bottom: 10px;
+}
+
+h3.text-lg {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--factorio-highlight);
+}
+
+/* Model filters */
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+/* Filter buttons */
+button {
+  cursor: pointer;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.bg-blue-600 {
+  background-color: var(--factorio-accent);
+  color: #fff;
+}
+
+.bg-gray-200 {
+  background-color: var(--factorio-light);
+  color: var(--factorio-text);
+}
+
+.text-white {
+  color: white;
+}
+
+.text-gray-700 {
+  color: #e0e0e0;
+}
+
+/* Charts */
+.mb-8 {
+  margin-bottom: 2rem;
+}
+
+.h-64 {
+  height: 16rem;
+}
+
+/* Chart tooltips and text */
+.recharts-tooltip-wrapper {
+  background-color: var(--factorio-medium) !important;
+  border: 1px solid var(--factorio-accent) !important;
+  border-radius: 4px;
+}
+
+.recharts-tooltip-item-name,
+.recharts-tooltip-item-value {
+  color: var(--factorio-text) !important;
+}
+
+.recharts-cartesian-axis-tick-value {
+  fill: var(--factorio-text) !important;
+}
+
+.recharts-legend-item-text {
+  color: var(--factorio-text) !important;
+}
+
+/* Tables */
+.overflow-x-auto {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+}
+
+th {
+  background-color: var(--factorio-light);
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 2px solid var(--factorio-accent);
+  color: var(--factorio-highlight);
+  font-weight: 600;
+}
+
+th.cursor-pointer:hover {
+  background-color: var(--factorio-accent);
+  color: var(--factorio-dark);
+}
+
+td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.bg-gray-50 {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Status indicators */
+.text-green-600 {
+  color: #48bb78;
+}
+
+.text-yellow-600 {
+  color: #ecc94b;
+}
+
+/* Footer text */
+.text-gray-600 {
+  color: #a0aec0;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+/* Loading and error states */
+.text-center {
+  text-align: center;
+}
+
+.text-red-600 {
+  color: #e53e3e;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .p-4 {
+    padding: 0.75rem;
+  }
+
+  th, td {
+    padding: 0.5rem;
+  }
+
+  .h-64 {
+    height: 12rem;
+  }
+}
+
+/* Factorio-themed scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--factorio-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--factorio-accent);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--factorio-accent-light);
+}

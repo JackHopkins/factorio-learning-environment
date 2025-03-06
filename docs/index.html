@@ -15,6 +15,7 @@
         <link rel="stylesheet" href="./static/css/academicons.min.css" />
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" />
         <link rel="stylesheet" href="./static/css/index.css" />
+        <link rel='shortcut icon' type='image/x-icon' href='./favicon.ico' />
         <style>
         .math-block {
             margin: 20px 0;
@@ -103,7 +104,7 @@
                                     </span>
 
                                     <span class="link-block">
-                                        <a target="_blank" href="assets/documents/voyager.pdf" class="external-link button is-normal is-rounded is-dark">
+                                        <a target="_blank" href="assets/documents/paper.pdf" class="external-link button is-normal is-rounded is-dark">
                                             <span class="icon">
                                                 <i class="fas fa-file-pdf"></i>
                                             </span>
@@ -217,7 +218,7 @@
                                             <source src="assets/videos/compressed_2213-cropped-h264.mp4" type="video/mp4">
                                             Your browser does not support the video tag.
                                         </video>
-                                        <div class="video-overlay">Mine 16 Iron Ore /min</div>
+                                        <div class="video-overlay"><span>Mine 16 Iron Ore</span></br><span style="font-size: 85%; padding-top: -10px">per minute</span></div>
                                     </div>
                                 </div>
 
@@ -227,7 +228,7 @@
                                             <!-- MP4 for desktop devices -->
                                             <source src="assets/videos/compressed_720-cropped-h264.mp4" type="video/mp4">
                                         </video>
-                                        <div class="video-overlay">Smelt 16 Iron Plates /min</div>
+                                        <div class="video-overlay"><span>Smelt 16 Iron Plates</span></br><span style="font-size: 85%; padding-top: -10px">per minute</span></div>
                                     </div>
                                 </div>
 
@@ -237,7 +238,7 @@
                                             <!-- MP4 for desktop devices -->
                                             <source src="assets/videos/compressed_767-cropped-h264.mp4" type="video/mp4">
                                         </video>
-                                        <div class="video-overlay">Make 16 Iron Gears /min</div>
+                                        <div class="video-overlay"><span>Make 16 Iron Gears</span></br><span style="font-size: 85%; padding-top: -10px">per minute</span></div>
                                     </div>
                                 </div>
                             </div>
@@ -248,7 +249,7 @@
                                             <!-- MP4 for desktop devices -->
                                             <source src="assets/videos/compressed_1891-cropped-h264.mp4" type="video/mp4">
                                         </video>
-                                        <div class="video-overlay">Extract 250 Petroleum Gas /min</div>
+                                        <div class="video-overlay"><span>Extract 250 Petroleum Gas</span></br><span style="font-size: 85%; padding-top: -10px">per minute</span></div>
                                     </div>
                                 </div>
 
@@ -258,7 +259,7 @@
                                             <!-- MP4 for desktop devices -->
                                             <source src="assets/videos/compressed_761-cropped-h264.mp4" type="video/mp4">
                                         </video>
-                                        <div class="video-overlay">Refine 16 Sulfur /min</div>
+                                        <div class="video-overlay"><span>Refine 16 Sulfur</span></br><span style="font-size: 85%; padding-top: -10px">per minute</span></div>
                                     </div>
                                 </div>
 
@@ -268,7 +269,7 @@
                                             <!-- MP4 for desktop devices -->
                                             <source src="assets/videos/compressed_1897-cropped-h264.mp4" type="video/mp4">
                                         </video>
-                                        <div class="video-overlay">Make 16 Plastic bars /min</div>
+                                        <div class="video-overlay"><span>Make 16 Plastic bars</span></br><span style="font-size: 85%; padding-top: -10px">per minute</span></div>
                                     </div>
                                 </div>
                             </div>
@@ -585,15 +586,13 @@
                                 <p>Models with stronger coding abilities (Claude 3.5-Sonnet, GPT-4o) achieved higher Production Scores and completed more lab tasks. Claude outperformed others with a PS of 293,206 and 28 milestones, progressing beyond early-game resource extraction.</p>
                             </div>
                         </div>
-                        <div class="column">
+                         <div class="column">
                             <div class="feature-box">
-                                <h4 class="title is-5">2. Spatial reasoning is a major limitation</h4>
-<!--                                <p>Models struggled with spatial planning when building multi-section factories. Common failures included placing entities too close together, not leaving room for connections, or incorrect inserter placement, leading to significant underperformance in complex tasks.</p>-->
-<!--                            -->
-                                <p>All models exhibited limitations in spatial planning when constructing multi-section factories. Common failures included placing entities too close together, not allocating space for connections, or incorrect inserter placement - issues that severely impacted performance in complex tasks requiring coordination of multiple production lines.</p>
-
+                                <h4 class="title is-5">4. Planning is essential in open-play</h4>
+                                <p>In open-play, agents frequently pursue short-sighted objectives — like Gemini-2.0 manually crafting 300+ wooden chests over 100 steps — rather than investing in research or scaling existing production. This reveals a telling discrepancy: while Gemini-2 and Deepseek demonstrate early-game automation capabilities in structured lab-play, they rarely attempt to create cohesive factories during open-ended exploration, resulting in poorer overall performance.</p>
                             </div>
                         </div>
+
                     </div>
 
                     <div class="columns">
@@ -603,10 +602,13 @@
                                 <p>Only Claude consistently invested resources in researching new technologies, despite their importance for long-term progression. After deploying electric mining drills at step 3k, Claude's PS grew by 50% (from 200k to 300k), demonstrating the value of strategic investment.</p>
                             </div>
                         </div>
-                        <div class="column">
+                       <div class="column">
                             <div class="feature-box">
-                                <h4 class="title is-5">4. Planning is essential in open-play</h4>
-                                <p>In open-play, agents frequently pursue short-sighted objectives — like Gemini-2.0 manually crafting 300+ wooden chests over 100 steps — rather than investing in research or scaling existing production. This reveals a telling discrepancy: while Gemini-2 and Deepseek demonstrate early-game automation capabilities in structured lab-play, they rarely attempt to create cohesive factories during open-ended exploration, resulting in poorer overall performance.</p>
+                                <h4 class="title is-5">2. Spatial reasoning is a major limitation</h4>
+<!--                                <p>Models struggled with spatial planning when building multi-section factories. Common failures included placing entities too close together, not leaving room for connections, or incorrect inserter placement, leading to significant underperformance in complex tasks.</p>-->
+<!--                            -->
+                                <p>All models exhibited limitations in spatial planning when constructing multi-section factories. Common failures included placing entities too close together, not allocating space for connections, or incorrect inserter placement - issues that severely impacted performance in complex tasks requiring coordination of multiple production lines.</p>
+
                             </div>
                         </div>
                     </div>

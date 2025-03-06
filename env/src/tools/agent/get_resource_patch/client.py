@@ -14,7 +14,7 @@ class GetResourcePatch(Tool):
     def __call__(self,
                  resource: Resource,
                  position: Position,
-                 radius: int = 10,
+                 radius: int = 30,
                  ) -> Optional[ResourcePatch]:
         """
         Get the resource patch at position (x, y) if it exists in the radius.

@@ -27,14 +27,17 @@ jobs:
       
       - name: Build
         working-directory: ./leaderboard/src
-        run: npm run build
+        run: |
+          sed -i 's/"build": "react-scripts build && cp -r leaderboard build\/"/"build": "react-scripts build"/' package.json
+          npm run build
       
       - name: Create docs directory if it doesn't exist
         run: mkdir -p docs
-      
+
       - name: Copy build to docs/leaderboard
         run: |
           mkdir -p docs/leaderboard
+          # Make sure the path to the build directory is correct
           cp -r leaderboard/src/build/* docs/leaderboard/
           mkdir -p docs/leaderboard/processed
           cp -r leaderboard/processed/* docs/leaderboard/processed/

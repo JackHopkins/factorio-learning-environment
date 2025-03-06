@@ -46,3 +46,11 @@ jobs:
           git add leaderboard/processed/combined-results.json
           git commit -m "Update processed leaderboard results" || echo "No changes to commit"
           git push
+
+      # Add this step to trigger the deploy workflow
+      - name: Trigger deploy workflow
+        if: steps.branch-check.outputs.is_main == 'true'
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: trigger-deploy-leaderboard

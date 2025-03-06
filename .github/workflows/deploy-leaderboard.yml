@@ -1,4 +1,3 @@
-# .github/workflows/deploy-leaderboard.yml
 name: Build and Deploy Leaderboard
 
 on:
@@ -7,36 +6,39 @@ on:
       - main
     paths:
       - 'leaderboard/src/**'
-      - 'leaderboard/processed/**'
+  repository_dispatch:
+    types: [trigger-deploy-leaderboard]
 
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
     steps:
+      # Rest of your workflow remains the same
       - uses: actions/checkout@v2
-
+      
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
           node-version: '16'
-
+      
       - name: Install dependencies
         working-directory: ./leaderboard/src
-        run: npm install  # Changed from npm ci to npm install
-
+        run: npm install
+      
       - name: Build
         working-directory: ./leaderboard/src
         run: npm run build
-
+      
       - name: Create docs directory if it doesn't exist
         run: mkdir -p docs
-
+      
       - name: Copy build to docs/leaderboard
         run: |
           mkdir -p docs/leaderboard
           cp -r leaderboard/src/build/* docs/leaderboard/
-          cp -r leaderboard/processed docs/leaderboard/
-
+          mkdir -p docs/leaderboard/processed
+          cp -r leaderboard/processed/* docs/leaderboard/processed/
+      
       - name: Commit and push
         run: |
           git config --local user.email "action@github.com"

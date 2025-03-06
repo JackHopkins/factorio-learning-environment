@@ -8,7 +8,7 @@ from game_types import Prototype, Resource, RecipeName
 @pytest.fixture()
 def base_game(instance):
     instance.initial_inventory = {'pumpjack': 1,
-                                  'pipe': 100,
+                                  'pipe': 150,
                                   'burner-inserter': 6,
                                   'coal': 50,
                                   'boiler': 1,

@@ -144,33 +144,61 @@
         </section>
 
         <style>
-            .video-column {
-                margin-left: -10px;
-                margin-right: -10px;
-                margin-bottom: -15px;
-                padding-bottom: 0px;
-            }
-
-            .video-column .column {
-                padding: 0 5px;
-            }
+            /* Improve video loading and display */
             .video-container {
                 position: relative;
                 width: 100%;
-
+                min-height: 150px; /* Prevents layout shift while loading */
+                /*margin-bottom: 10px;*/
+                background-color: #fff; /* Placeholder color while loading */
             }
 
+            .video-container video {
+                width: 100%;
+                /*height: auto;*/
+                aspect-ratio: 4/3; /* Maintain consistent aspect ratio */
+                object-fit: cover;
+                background-color: #fff;
+            }
+
+            /* Improved video overlay styling */
             .video-overlay {
                 position: absolute;
                 bottom: 10px;
                 left: 5px;
-                background-color: rgba(0, 0, 0, 0.5);
+                background-color: rgba(0, 0, 0, 0.4); /* Darker background for better readability */
                 color: white;
                 padding: 5px 10px;
                 border-radius: 4px;
-                font-size: 18px;
+                font-size: 16px;
                 max-width: 90%;
                 z-index: 10;
+                font-weight: 500; /* Slightly bolder text */
+                box-shadow: 0 1px 3px rgba(0,0,0,0.3); /* Subtle shadow for better visibility */
+            }
+
+            /* Responsive adjustments */
+            @media (max-width: 767px) {
+                .video-container {
+                    min-height: 120px; /* Smaller minimum height on mobile */
+                }
+
+                .video-overlay {
+                    font-size: 14px; /* Smaller font on mobile */
+                    padding: 4px 8px;
+                }
+
+                /* Optimize columns for mobile */
+                .columns .column.video-column {
+                    padding: 0 3px; /* Tighter spacing on mobile */
+                }
+            }
+
+            /* Fix for Safari video playback */
+            @supports (-webkit-appearance:none) {
+                .video-container video {
+                    will-change: transform; /* Helps with Safari rendering */
+                }
             }
         </style>
         <section class="section">
@@ -182,27 +210,42 @@
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
                                         <video preload="metadata" playsinline controls muted autoplay loop width="100%">
-                                            <source src="assets/videos/compressed_2213-cropped.mp4" type="video/mp4" />
+                                            <!-- MP4 for desktop devices (loads first on desktop) -->
+                                            <source src="assets/videos/compressed_2213-cropped.mp4" type="video/mp4" media="(min-width: 768px)">
+                                            <!-- WebM for mobile devices (loads first on mobile) -->
+                                            <source src="assets/videos/compressed_2213-cropped.webm" type="video/webm" media="(max-width: 767px)">
+                                            <!-- Fallback for all devices -->
+                                            <source src="assets/videos/compressed_2213-cropped.webm" type="video/webm">
                                         </video>
-                                        <div class="video-overlay">Iron Ore</div>
+                                        <div class="video-overlay">Mine 16 Iron Ore /min</div>
                                     </div>
                                 </div>
 
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
                                         <video preload="metadata" playsinline controls muted autoplay loop width="100%">
-                                            <source src="assets/videos/compressed_720-cropped.mp4" type="video/mp4" />
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_720-cropped.mp4" type="video/mp4" media="(min-width: 768px)">
+                                            <!-- WebM for mobile devices -->
+                                            <source src="assets/videos/compressed_720-cropped.webm" type="video/webm" media="(max-width: 767px)">
+                                            <!-- Fallback for all devices -->
+                                            <source src="assets/videos/compressed_720-cropped.webm" type="video/webm">
                                         </video>
-                                        <div class="video-overlay">Iron Plates</div>
+                                        <div class="video-overlay">Smelt 16 Iron Plates /min</div>
                                     </div>
                                 </div>
 
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
                                         <video preload="metadata" playsinline controls muted autoplay loop width="100%">
-                                            <source src="assets/videos/compressed_767-cropped.mp4" type="video/mp4" />
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_767-cropped.mp4" type="video/mp4" media="(min-width: 768px)">
+                                            <!-- WebM for mobile devices -->
+                                            <source src="assets/videos/compressed_767-cropped.webm" type="video/webm" media="(max-width: 767px)">
+                                            <!-- Fallback for all devices -->
+                                            <source src="assets/videos/compressed_767-cropped.webm" type="video/webm">
                                         </video>
-                                        <div class="video-overlay">Iron Gear Wheels</div>
+                                        <div class="video-overlay">Make 16 Iron Gears /min</div>
                                     </div>
                                 </div>
                             </div>
@@ -210,27 +253,42 @@
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
                                         <video preload="metadata" playsinline controls muted autoplay loop width="100%">
-                                            <source src="assets/videos/compressed_1891-cropped.mp4" type="video/mp4" />
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_1891-cropped.mp4" type="video/mp4" media="(min-width: 768px)">
+                                            <!-- WebM for mobile devices -->
+                                            <source src="assets/videos/compressed_1891-cropped.webm" type="video/webm" media="(max-width: 767px)">
+                                            <!-- Fallback for all devices -->
+                                            <source src="assets/videos/compressed_1891-cropped.webm" type="video/webm">
                                         </video>
-                                        <div class="video-overlay">Petroleum Gas</div>
+                                        <div class="video-overlay">Extract 250 Petroleum Gas /min</div>
                                     </div>
                                 </div>
 
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
                                         <video preload="metadata" playsinline controls muted autoplay loop width="100%">
-                                            <source src="assets/videos/compressed_761-cropped.mp4" type="video/mp4" />
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_761-cropped.mp4" type="video/mp4" media="(min-width: 768px)">
+                                            <!-- WebM for mobile devices -->
+                                            <source src="assets/videos/compressed_761-cropped.webm" type="video/webm" media="(max-width: 767px)">
+                                            <!-- Fallback for all devices -->
+                                            <source src="assets/videos/compressed_761-cropped.webm" type="video/webm">
                                         </video>
-                                        <div class="video-overlay">Sulfur</div>
+                                        <div class="video-overlay">Refine 16 Sulfur /min</div>
                                     </div>
                                 </div>
 
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
                                         <video preload="metadata" playsinline controls muted autoplay loop width="100%">
-                                            <source src="assets/videos/compressed_1897-cropped.mp4" type="video/mp4" />
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_1897-cropped.mp4" type="video/mp4" media="(min-width: 768px)">
+                                            <!-- WebM for mobile devices -->
+                                            <source src="assets/videos/compressed_1897-cropped.webm" type="video/webm" media="(max-width: 767px)">
+                                            <!-- Fallback for all devices -->
+                                            <source src="assets/videos/compressed_1897-cropped.webm" type="video/webm">
                                         </video>
-                                        <div class="video-overlay">Plastic</div>
+                                        <div class="video-overlay">Make 16 Plastic bars /min</div>
                                     </div>
                                 </div>
                             </div>
@@ -238,37 +296,109 @@
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
                                         <video preload="metadata" playsinline controls muted autoplay loop width="100%">
-                                            <source src="assets/videos/compressed_803-cropped.mp4" type="video/mp4" />
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_803-cropped.mp4" type="video/mp4" media="(min-width: 768px)">
+                                            <!-- WebM for mobile devices -->
+                                            <source src="assets/videos/compressed_803-cropped.webm" type="video/webm" media="(max-width: 767px)">
+                                            <!-- Fallback for all devices -->
+                                            <source src="assets/videos/compressed_803-cropped.webm" type="video/webm">
                                         </video>
-                                        <div class="video-overlay">Open-play 1</div>
+                                        <div class="video-overlay">Build the largest possible factory</div>
                                     </div>
                                 </div>
 
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
                                         <video preload="metadata" playsinline controls muted autoplay loop width="100%">
-                                            <source src="assets/videos/compressed_527-cropped.mp4" type="video/mp4" />
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_527-cropped.mp4" type="video/mp4" media="(min-width: 768px)">
+                                            <!-- WebM for mobile devices -->
+                                            <source src="assets/videos/compressed_527-cropped.webm" type="video/webm" media="(max-width: 767px)">
+                                            <!-- Fallback for all devices -->
+                                            <source src="assets/videos/compressed_527-cropped.webm" type="video/webm">
                                         </video>
-                                        <div class="video-overlay">Open-play 2</div>
+                                        <div class="video-overlay">Build the largest possible factory</div>
                                     </div>
                                 </div>
 
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
                                         <video preload="metadata" playsinline controls muted autoplay loop width="100%">
-                                            <source src="assets/videos/compressed_804-cropped.mp4" type="video/mp4" />
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_804-cropped.mp4" type="video/mp4" media="(min-width: 768px)">
+                                            <!-- WebM for mobile devices -->
+                                            <source src="assets/videos/compressed_804-cropped.webm" type="video/webm" media="(max-width: 767px)">
+                                            <!-- Fallback for all devices -->
+                                            <source src="assets/videos/compressed_804-cropped.webm" type="video/webm">
                                         </video>
-                                        <div class="video-overlay">Open-play 3</div>
+                                        <div class="video-overlay">Build the largest possible factory</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <p style="padding-top: 25px"><i>* All runs from Claude Sonnet 3.5</i></p>
+                <p style="padding-top: 25px; font-size:110%"><i>* Claude Sonnet 3.5 builds factories</i></p>
             </div>
-
         </section>
+
+        <!-- Add this script to help with video loading -->
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if the browser likely supports WebM
+            function supportsWebM() {
+                const video = document.createElement('video');
+                return video.canPlayType('video/webm; codecs="vp8, vorbis"') !== '';
+            }
+
+            // Check if we're on a mobile device
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+            // Get all videos
+            const videos = document.querySelectorAll('.video-container video');
+
+            videos.forEach(video => {
+                // If WebM is not supported, remove WebM sources
+                if (!supportsWebM()) {
+                    const webmSources = video.querySelectorAll('source[type="video/webm"]');
+                    webmSources.forEach(source => source.remove());
+                }
+
+                // Handle errors by trying alternate sources
+                video.addEventListener('error', function() {
+                    const currentSrc = video.currentSrc;
+
+                    // Try another source if available
+                    const sources = Array.from(video.querySelectorAll('source'));
+                    const otherSources = sources.filter(s => s.src !== currentSrc);
+
+                    if (otherSources.length > 0) {
+                        // Try the next source
+                        video.src = otherSources[0].src;
+                        video.load();
+                    }
+                });
+
+                // Optimize performance by pausing videos when not in viewport
+                window.addEventListener('scroll', function() {
+                    const rect = video.getBoundingClientRect();
+                    const isVisible = (
+                        rect.top < window.innerHeight &&
+                        rect.bottom > 0
+                    );
+
+                    if (!isVisible && !video.paused) {
+                        video.pause();
+                    } else if (isVisible && video.paused && video.getAttribute('autoplay') !== null) {
+                        // Try to play if in viewport and has autoplay attribute
+                        video.play().catch(e => {
+                            // Autoplay might be blocked, don't throw errors
+                        });
+                    }
+                }, { passive: true });
+            });
+        });
+        </script>
 
         <section class="section">
             <div class="container is-max-desktop">
@@ -370,7 +500,7 @@
                 </br>
                 <h2 class="subtitle is-4"><span class="dvima">Open-Play</span></h2>
                 <p style="font-size: 115%;">
-                    Agents begin in a procedurally generated world with the unbounded task of "building the largest possible factory". This setting tests agents' ability to set appropriate goals, balance short-term production against long-term research, and navigate the complex tech tree and game map without external guidance.
+                    Agents begin in a procedurally generated world with instruction to "build the largest possible factory". This setting tests agents' ability to set appropriate goals, balance short-term production against long-term research, and navigate the complex tech tree and game map without external guidance.
                 </p>
                 <div class="rows" style="margin-top:2em">
                     <div class="rows is-centered">
@@ -622,11 +752,15 @@
                             </div>
                             <br />
                             <span style="max-width: 80%; padding-left: 11%;">* Equal Contribution</span>
+                            <br />
+                            <br />
+                            <span>With thanks to Jack Kleeman and Minqi Jiang for their invaluable help with setting up compute resources and advice in development of this project.</span>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
+
 
         <section class="section" id="BibTeX">
             <div class="container is-max-widescreen content">

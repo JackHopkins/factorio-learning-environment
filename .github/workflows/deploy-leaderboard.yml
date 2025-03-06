@@ -1,0 +1,45 @@
+name: Build and Deploy Leaderboard
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'leaderboard/src/**'
+      - 'leaderboard/processed/**'
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        working-directory: ./leaderboard/src
+        run: npm ci
+
+      - name: Build
+        working-directory: ./leaderboard/src
+        run: npm run build
+
+      - name: Create docs directory if it doesn't exist
+        run: mkdir -p docs
+
+      - name: Copy build to docs/leaderboard
+        run: |
+          mkdir -p docs/leaderboard
+          cp -r leaderboard/src/build/* docs/leaderboard/
+          cp -r leaderboard/processed docs/leaderboard/
+
+      - name: Commit and push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add docs/leaderboard
+          git commit -m "Update leaderboard" || echo "No changes to commit"
+          git push

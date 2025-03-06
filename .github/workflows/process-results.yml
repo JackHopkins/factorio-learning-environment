@@ -1,0 +1,48 @@
+name: Process Leaderboard Results
+
+on:
+  pull_request:
+    paths:
+      - 'leaderboard/results/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'leaderboard/results/**'
+
+jobs:
+  process-results:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Create processed directory
+        run: mkdir -p leaderboard/processed
+
+      - name: Process results
+        run: |
+          node .github/scripts/process-results.js
+
+      - name: Check if PR or main
+        id: branch-check
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "is_main=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_main=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push processed results
+        if: steps.branch-check.outputs.is_main == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add leaderboard/processed/combined-results.json
+          git commit -m "Update processed leaderboard results" || echo "No changes to commit"
+          git push

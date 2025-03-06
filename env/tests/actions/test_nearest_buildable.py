@@ -281,3 +281,6 @@ def test_nearest_buildable_pumpjack(game):
     buildable_coords = game.nearest_buildable(Prototype.PumpJack, building_box, crude_oil_pos)
     game.move_to(buildable_coords.center)
     pumpjack = game.place_entity(Prototype.PumpJack, position=buildable_coords.center, direction=Direction.DOWN)
+
+    entities = game.get_entities()
+    assert len(entities) == 1

@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'leaderboard/**'
+      - '!leaderboard/results/**'
+      - '!leaderboard/processed/**'
   repository_dispatch:
     types: [trigger-deploy-leaderboard]
 
@@ -14,6 +16,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
+      # Fetch the results branch for processed data
+      - name: Fetch results branch
+        run: |
+          git fetch origin results:results
+
+      - name: Copy processed results from results branch
+        run: |
+          mkdir -p leaderboard/processed
+          git checkout results -- leaderboard/processed || echo "No processed results found"
 
       - name: Setup Node
         uses: actions/setup-node@v2

@@ -16,6 +16,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Fetch all history for all branches
 
       - name: Set up Node.js
         uses: actions/setup-node@v2
@@ -29,27 +31,25 @@ jobs:
         run: |
           node .github/scripts/process-results.js
 
-      - name: Check if PR or main
-        id: branch-check
+      - name: Checkout results branch
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "is_main=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_main=false" >> $GITHUB_OUTPUT
-          fi
+          git checkout results || git checkout -b results
 
-      - name: Commit and push processed results
-        if: steps.branch-check.outputs.is_main == 'true'
+      - name: Copy processed results to results branch
+        run: |
+          mkdir -p leaderboard/processed
+          cp -r leaderboard/processed/* leaderboard/processed/ || true
+
+      - name: Commit and push to results branch
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add leaderboard/processed/combined-results.json
+          git add leaderboard/processed
           git commit -m "Update processed leaderboard results" || echo "No changes to commit"
-          git push
+          git push origin results
 
-      # Add this step to trigger the deploy workflow
+      # Trigger the deploy workflow
       - name: Trigger deploy workflow
-        if: steps.branch-check.outputs.is_main == 'true'
         uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'leaderboard/src/**'
+      - 'leaderboard/**'
   repository_dispatch:
     types: [trigger-deploy-leaderboard]
 
@@ -13,34 +13,30 @@ jobs:
   build-deploy:
     runs-on: ubuntu-latest
     steps:
-      # Rest of your workflow remains the same
       - uses: actions/checkout@v2
-      
+
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
           node-version: '16'
-      
+
       - name: Install dependencies
-        working-directory: ./leaderboard/src
+        working-directory: ./leaderboard
         run: npm install
-      
+
       - name: Build
-        working-directory: ./leaderboard/src
-        run: |
-          sed -i 's/"build": "react-scripts build && cp -r leaderboard build\/"/"build": "react-scripts build"/' package.json
-          npm run build
-      
+        working-directory: ./leaderboard
+        run: npm run build
+
       - name: Create docs directory if it doesn't exist
         run: mkdir -p docs
 
       - name: Copy build to docs/leaderboard
         run: |
           mkdir -p docs/leaderboard
-          # Make sure the path to the build directory is correct
-          cp -r leaderboard/src/build/* docs/leaderboard/
+          cp -r leaderboard/build/* docs/leaderboard/
           mkdir -p docs/leaderboard/processed
-          cp -r leaderboard/processed/* docs/leaderboard/processed/
+          cp -r leaderboard/processed/* docs/leaderboard/processed/ || true
       
       - name: Commit and push
         run: |

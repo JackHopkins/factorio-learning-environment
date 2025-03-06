@@ -66,17 +66,12 @@ docker-compose -f docker-compose-1.yml up -d
 - Open Factorio client
 - Navigate to _Multiplayer_
 - Connect to `localhost:34197` (default) or your configured address in Docker. 
+  - You may disconnect from each server once it has been activated
 
 5. **Run Eval**:
 How to run open and lab play with example run configs
-   1. Open Play (one parallel run)
-   ```
-   python eval/open/independent_runs/run.py --run_config=eval\open\independent_runs\run_config_example_open_play.json
-   ```
-   2. Tasks (one parallel run of iron-ore task): 
-   ```
-   python eval/open/independent_runs/run.py --run_config=eval\open\independent_runs\run_config_example_lab_play.json
-   ```
+   1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
+   2. Tasks (one parallel run of iron-ore task): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_lab_play.json`
 ## Environment
 
 FLE is an agent evaluation environment built on the game of Factorio, a popular resource management simulation game.
@@ -464,7 +459,7 @@ factorio-learning-environment/
 ```
 
 ## Database
-To run long trajectories in FLE, we support checkpointing at every agent step using a SQL database. The `db_client` implements the interface for saving and loading agent outputs, environment feedbacks, game states and histories of the current trajectory. We support out of the box Postgres and SQLite databases. The easiest way how to set up a FLE-compatible databse is to use SQLite and setup the programs tale
+To run long trajectories in FLE, we support checkpointing at every agent step using a SQL database. The `db_client` implements the interface for saving and loading agent outputs, environment feedbacks, game states and histories of the current trajectory. We support out of the box Postgres and SQLite databases. The easiest way how to set up a FLE-compatible databse is to use SQLite and setup the programs table:
 
 ```
 # create the db file

@@ -94,14 +94,14 @@
                             <div class="column has-text-centered">
                                 <div class="publication-links">
                                     <!-- TODO PDF Link. -->
-                                    <span class="link-block">
-                                        <a target="_blank" href="https://arxiv.org/abs/2305.16291" class="external-link button is-normal is-rounded is-dark">
-                                            <span class="icon">
-                                                <i class="ai ai-arxiv"></i>
-                                            </span>
-                                            <span>arXiv</span>
-                                        </a>
-                                    </span>
+<!--                                    <span class="link-block">-->
+<!--                                        <a target="_blank" href="https://arxiv.org/abs/2305.16291" class="external-link button is-normal is-rounded is-dark">-->
+<!--                                            <span class="icon">-->
+<!--                                                <i class="ai ai-arxiv"></i>-->
+<!--                                            </span>-->
+<!--                                            <span>arXiv</span>-->
+<!--                                        </a>-->
+<!--                                    </span>-->
 
                                     <span class="link-block">
                                         <a target="_blank" href="assets/documents/paper.pdf" class="external-link button is-normal is-rounded is-dark">
@@ -120,14 +120,14 @@
                                             <span>Code</span>
                                         </a>
                                     </span>
-                                    <span class="link-block">
-                                        <a target="_blank" href="https://twitter.com/DrJimFan/status/1662115266933972993" class="external-link button is-normal is-rounded is-dark">
-                                            <span class="icon">
-                                                <i class="fab fa-twitter"></i>
-                                            </span>
-                                            <span>Tweet</span>
-                                        </a>
-                                    </span>
+<!--                                    <span class="link-block">-->
+<!--                                        <a target="_blank" href="https://twitter.com/DrJimFan/status/1662115266933972993" class="external-link button is-normal is-rounded is-dark">-->
+<!--                                            <span class="icon">-->
+<!--                                                <i class="fab fa-twitter"></i>-->
+<!--                                            </span>-->
+<!--                                            <span>Tweet</span>-->
+<!--                                        </a>-->
+<!--                                    </span>-->
                                     <span class="link-block">
                                         <a target="_blank" href="./leaderboard" class="external-link button is-normal is-rounded is-dark">
                                             <span class="icon">
@@ -307,7 +307,7 @@
                         </div>
                     </div>
                 </div>
-                <p style="padding-top: 5px; padding-left: 5px; font-size:110%">Claude Sonnet 3.5 builds factories</p>
+                <p style="padding-top: 10px; padding-left: 5px; font-size:110%">Claude Sonnet 3.5 builds factories</p>
             </div>
         </section>
 
@@ -517,7 +517,7 @@
                 <p style="font-size: 110%;">
                     Agents are provided with resources and given a time-limit to achieve an objective.
                     We task agents to build production lines of 24 distinct target entities of increasing complexity, starting from a single resource mine requiring at most 2 machines (making <code>iron-ore</code>) to a late game entity requiring the coordination of close to 100 machines (making <code>utility-science-pack</code>).
-                    The target entities cover items from early to late game, requiring agents to use a wide variety of machines present in Factorio (drills, furnaces, assembling machines, oil refineries, chemical plants). As the task difficulty naturally increases with resource requirements, this provides a measure of the complexity agents are capable of creating in a limited number of steps.
+                    The target entities cover items from early to late game, requiring agents to use a wide variety of machines present in Factorio (drills, furnaces, assembling machines, oil refineries, chemical plants). As the task difficulty naturally increases with resource requirements, this provides a measure of the complexity that agents are capable of creating in a limited number of steps.
                     All tasks provide the agent with sufficient resources to complete the task with all technologies unlocked.
                 </p>
                 <div class="rows" style="margin-top:2em">
@@ -586,10 +586,11 @@
                                 <p>Models with stronger coding abilities (Claude 3.5-Sonnet, GPT-4o) achieved higher Production Scores and completed more lab tasks. Claude outperformed others with a PS of 293,206 and 28 milestones, progressing beyond early-game resource extraction.</p>
                             </div>
                         </div>
-                         <div class="column">
+
+                        <div class="column">
                             <div class="feature-box">
-                                <h4 class="title is-5">4. Planning is essential in open-play</h4>
-                                <p>In open-play, agents frequently pursue short-sighted objectives — like Gemini-2.0 manually crafting 300+ wooden chests over 100 steps — rather than investing in research or scaling existing production. This reveals a telling discrepancy: while Gemini-2 and Deepseek demonstrate early-game automation capabilities in structured lab-play, they rarely attempt to create cohesive factories during open-ended exploration, resulting in poorer overall performance.</p>
+                                <h4 class="title is-5">2. Technology investment drives growth</h4>
+                                <p>Only Claude consistently invested resources in researching new technologies, despite their importance for long-term progression. After deploying electric mining drills at step 3k, Claude's PS grew by 50% (from 200k to 300k), demonstrating the value of strategic investment.</p>
                             </div>
                         </div>
 
@@ -598,13 +599,14 @@
                     <div class="columns">
                         <div class="column">
                             <div class="feature-box">
-                                <h4 class="title is-5">3. Technology investment drives growth</h4>
-                                <p>Only Claude consistently invested resources in researching new technologies, despite their importance for long-term progression. After deploying electric mining drills at step 3k, Claude's PS grew by 50% (from 200k to 300k), demonstrating the value of strategic investment.</p>
+                                <h4 class="title is-5">3. Planning is essential in open-play</h4>
+                                <p>In open-play, agents frequently pursue short-sighted objectives — like Gemini-2.0 manually crafting 300+ wooden chests over 100 steps — rather than investing in research or scaling existing production. This reveals a telling discrepancy: while Gemini-2 and Deepseek demonstrate early-game automation capabilities in structured lab-play, they rarely attempt to create cohesive factories during open-ended exploration, resulting in poorer overall performance.</p>
                             </div>
                         </div>
+
                        <div class="column">
                             <div class="feature-box">
-                                <h4 class="title is-5">2. Spatial reasoning is a major limitation</h4>
+                                <h4 class="title is-5">4. Spatial reasoning is a major limitation</h4>
 <!--                                <p>Models struggled with spatial planning when building multi-section factories. Common failures included placing entities too close together, not leaving room for connections, or incorrect inserter placement, leading to significant underperformance in complex tasks.</p>-->
 <!--                            -->
                                 <p>All models exhibited limitations in spatial planning when constructing multi-section factories. Common failures included placing entities too close together, not allocating space for connections, or incorrect inserter placement - issues that severely impacted performance in complex tasks requiring coordination of multiple production lines.</p>
@@ -640,32 +642,33 @@
                         <div class="row is-full-width">
                             <h2 class="title is-3"><span class="dvima">Conclusion</span></h2>
                             <div class="content has-text-justified">
-                                <p style="font-size: 125%;">
-                                    In this work, we introduce the Factorio Learning Environment (FLE), a platform for evaluating AI agents in complex, industrial-scale automation scenarios. Through our complementary evaluation protocols - structured lab-play and unbounded open-play - we assess agent capabilities in:
-                                </p>
-                                <ul style="font-size: 115%;">
-                                    <li>Long-term planning across thousands of steps</li>
-                                    <li>Spatial reasoning and factory layout optimization</li>
-                                    <li>Resource allocation in complex production chains</li>
-                                    <li>Error recovery and iterative debugging</li>
-                                </ul>
+<!--                                <p style="font-size: 125%;">-->
+<!--                                    In this work, we introduce the Factorio Learning Environment (FLE), a platform for evaluating AI agents in complex, industrial-scale automation scenarios. Through our complementary evaluation protocols - structured lab-play and unbounded open-play - we assess agent capabilities in:-->
+<!--                                </p>-->
+<!--                                <ul style="font-size: 115%;">-->
+<!--                                    <li>Long-term planning across thousands of steps</li>-->
+<!--                                    <li>Spatial reasoning and factory layout optimization</li>-->
+<!--                                    <li>Resource allocation in complex production chains</li>-->
+<!--                                    <li>Error recovery and iterative debugging</li>-->
+<!--                                </ul>-->
                                 <p style="font-size: 115%;">
                                     Our results show that even state-of-the-art LLMs struggle with the coordination and optimization challenges inherent in automation tasks. The rapidly scaling complexity of Factorio's technology tree creates evaluation scenarios that will remain challenging even as progress in AI research continues, allowing meaningful differentiation between increasingly capable models.
                                 </p>
 
-                                <p style="font-size: 115%;">
-                                    Looking forward, FLE provides a platform for investigating critical research questions:
-                                </p>
+<!--                                <p style="font-size: 115%;">-->
+<!--                                    Looking forward, FLE provides a platform for investigating critical research questions:-->
+<!--                                </p>-->
 
-                                <ul style="font-size: 115%;">
-                                    <li>How can we develop agents that better understand spatial constraints and resource interdependencies?</li>
-                                    <li>What agent frameworks enable more effective error recovery and debugging in complex environments?</li>
-                                    <li>How might advances in planning and resource optimization in Factorio transfer to real-world industrial systems?</li>
-                                </ul>
+<!--                                <ul style="font-size: 115%;">-->
+<!--                                    <li>How can we develop agents that better understand spatial constraints and resource interdependencies?</li>-->
+<!--                                    <li>What agent frameworks enable more effective error recovery and debugging in complex environments?</li>-->
+<!--                                    <li>How might advances in planning and resource optimization in Factorio transfer to real-world industrial systems?</li>-->
+<!--                                </ul>-->
 
                                 <p style="font-size: 115%;">
                                     We release the Factorio Learning Environment as an open-source platform, along with our evaluation protocols and baseline implementations, to encourage research on agent capabilities in complex, open-ended domains.
                                 </p>
+
                             </div>
                         </div>
                     </div>
@@ -681,50 +684,50 @@
                 <div class="rows">
                     <div class="rows is-centered">
                         <div class="row is-full-width">
-                            <h2 class="title is-3"><span class="dvima">Team</span></h2>
+<!--                            <h2 class="title is-3"><span class="dvima">Team</span></h2>-->
 
-                            <div class="columns" style="max-width: 80%; padding-left: 10%;">
-                                <div class="column has-text-centered video-column">
-                                    <!-- Modified class -->
-                                    <a href="https://www.unicef.org.uk/donate/donate-now-to-protect-children-in-ukraine/" target="_blank" style="border-bottom: none;">
-                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/team/jack.png" alt="" style="width: 90%;" /></span>
-                                    </a>
-                                    <span style="font-weight: bold; font-size: 125%;">Jack Hopkins *</span>
-                                </div>
-
-                                <div class="column has-text-centered video-column">
-                                    <a href="https://www.linkedin.com/in/m%C3%A4rt-bakler/" target="_blank" style="border-bottom: none;">
-                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/team/mart.png" alt="" style="width: 82%;" /></span>
-                                    </a>
-                                    <span style="font-weight: bold; font-size: 125%;">Mart Bakler *</span>
-                                </div>
-
-                                <div class="column has-text-centered video-column">
-                                    <a href="https://akbir.dev/" target="_blank" style="border-bottom: none;">
-                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/team/akbir.png" alt="" style="width: 90%;" /></span>
-                                    </a>
-                                    <span style="font-weight: bold; font-size: 125%;">Akbir Khan</span>
-                                </div>
-
+<!--                            <div class="columns" style="max-width: 80%; padding-left: 10%;">-->
 <!--                                <div class="column has-text-centered video-column">-->
-<!--                                    <a href="https://yunfanj.com/" target="_blank" style="border-bottom: none;">-->
-<!--                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/avatars/yunfan.jpg" alt="" style="width: 90%;" /></span>-->
+<!--                                    &lt;!&ndash; Modified class &ndash;&gt;-->
+<!--                                    <a href="https://www.unicef.org.uk/donate/donate-now-to-protect-children-in-ukraine/" target="_blank" style="border-bottom: none;">-->
+<!--                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/team/jack.png" alt="" style="width: 90%;" /></span>-->
 <!--                                    </a>-->
-<!--                                    <span style="font-weight: bold; font-size: 125%;">Yunfan Jiang<sup>*</sup></span>-->
+<!--                                    <span style="font-weight: bold; font-size: 125%;">Jack Hopkins *</span>-->
 <!--                                </div>-->
 
 <!--                                <div class="column has-text-centered video-column">-->
-<!--                                    <a href="https://ai.stanford.edu/~amandlek/" target="_blank" style="border-bottom: none;">-->
-<!--                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/avatars/ajay.jpeg" alt="" style="width: 90%;" /></span>-->
+<!--                                    <a href="https://www.linkedin.com/in/m%C3%A4rt-bakler/" target="_blank" style="border-bottom: none;">-->
+<!--                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/team/mart.png" alt="" style="width: 82%;" /></span>-->
 <!--                                    </a>-->
-<!--                                    <span style="font-weight: bold; font-size: 125%;">Ajay Mandlekar<sup>*</sup></span>-->
+<!--                                    <span style="font-weight: bold; font-size: 125%;">Mart Bakler *</span>-->
 <!--                                </div>-->
-                            </div>
-                            <br />
-                            <span style="max-width: 80%; padding-left: 11%;">* Equal Contribution</span>
-                            <br />
-                            <br />
-                            <span>With thanks to Jack Kleeman and Minqi Jiang for their invaluable help with setting up compute resources and advice in development of this project.</span>
+
+<!--                                <div class="column has-text-centered video-column">-->
+<!--                                    <a href="https://akbir.dev/" target="_blank" style="border-bottom: none;">-->
+<!--                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/team/akbir.png" alt="" style="width: 90%;" /></span>-->
+<!--                                    </a>-->
+<!--                                    <span style="font-weight: bold; font-size: 125%;">Akbir Khan</span>-->
+<!--                                </div>-->
+
+<!--&lt;!&ndash;                                <div class="column has-text-centered video-column">&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <a href="https://yunfanj.com/" target="_blank" style="border-bottom: none;">&ndash;&gt;-->
+<!--&lt;!&ndash;                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/avatars/yunfan.jpg" alt="" style="width: 90%;" /></span>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    </a>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <span style="font-weight: bold; font-size: 125%;">Yunfan Jiang<sup>*</sup></span>&ndash;&gt;-->
+<!--&lt;!&ndash;                                </div>&ndash;&gt;-->
+
+<!--&lt;!&ndash;                                <div class="column has-text-centered video-column">&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <a href="https://ai.stanford.edu/~amandlek/" target="_blank" style="border-bottom: none;">&ndash;&gt;-->
+<!--&lt;!&ndash;                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/avatars/ajay.jpeg" alt="" style="width: 90%;" /></span>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    </a>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <span style="font-weight: bold; font-size: 125%;">Ajay Mandlekar<sup>*</sup></span>&ndash;&gt;-->
+<!--&lt;!&ndash;                                </div>&ndash;&gt;-->
+<!--                            </div>-->
+<!--                            <br />-->
+<!--                            <span style="max-width: 80%; padding-left: 11%;">* Equal Contribution</span>-->
+<!--                            <br />-->
+<!--                            <br />-->
+<!--                            <span>With thanks to Jack Kleeman and Minqi Jiang for their invaluable help with setting up compute resources and advice in development of this project.</span>-->
                         </div>
                     </div>
                 </div>
@@ -741,7 +744,12 @@
   year    = {2025},
   journal = {arXiv preprint arXiv: Arxiv-2305.16291}
 }</code></pre>
+                <div class="rows">
+                    <div class="rows is-centered">With thanks to Jack Kleeman and Minqi Jiang for their invaluable help with setting up compute resources and advice during the inception of this project.
+                    </div>
             </div>
+            </div>
+
         </section>
 
         <footer class="footer">

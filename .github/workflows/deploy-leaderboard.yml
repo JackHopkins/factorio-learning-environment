@@ -1,3 +1,4 @@
+# .github/workflows/deploy-leaderboard.yml
 name: Build and Deploy Leaderboard
 
 on:
@@ -21,7 +22,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./leaderboard/src
-        run: npm ci
+        run: npm install  # Changed from npm ci to npm install
 
       - name: Build
         working-directory: ./leaderboard/src

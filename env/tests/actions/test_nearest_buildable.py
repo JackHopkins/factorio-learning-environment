@@ -39,14 +39,16 @@ def game():
                                     'burner-inserter': 32,
                                     'pipe': 15,
                                     'steam-engine': 1,
-                                    'small-electric-pole': 10
+                                    'small-electric-pole': 10,
+                                    "pumpjack": 1,
                                 })
     instance.reset()
     instance.set_inventory(**{
         'wooden-chest': 100,
         'electric-mining-drill': 10,
         'steam-engine': 1,
-        'burner-mining-drill': 5
+        'burner-mining-drill': 5,
+        "pumpjack": 1,
     })
     yield instance.namespace
 
@@ -267,3 +269,15 @@ def test_drill_groups(game):
 
     entities = game.get_entities()
     assert len(entities) == 3
+
+
+def test_nearest_buildable_pumpjack(game):
+    # Find crude oil patch
+    crude_oil_pos = game.nearest(Resource.CrudeOil)
+    print(f"Found crude oil patch at {crude_oil_pos}")
+
+    # place one pumpjack
+    building_box = BuildingBox(width=5, height=5)
+    buildable_coords = game.nearest_buildable(Prototype.PumpJack, building_box, crude_oil_pos)
+    game.move_to(buildable_coords.center)
+    pumpjack = game.place_entity(Prototype.PumpJack, position=buildable_coords.center, direction=Direction.DOWN)

@@ -156,7 +156,7 @@
             .video-container video {
                 width: 100%;
                 /*height: auto;*/
-                aspect-ratio: 4/3; /* Maintain consistent aspect ratio */
+                /*aspect-ratio: 4/3; !* Maintain consistent aspect ratio *!*/
                 object-fit: cover;
                 background-color: #fff;
             }
@@ -175,6 +175,9 @@
                 z-index: 10;
                 font-weight: 500; /* Slightly bolder text */
                 box-shadow: 0 1px 3px rgba(0,0,0,0.3); /* Subtle shadow for better visibility */
+            }
+            .columns .column.video-column {
+                    padding: 0 3px; /* Tighter spacing on mobile */
             }
 
             /* Responsive adjustments */
@@ -209,9 +212,10 @@
                             <div class="columns">
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
-                                        <video controls muted autoplay loop width="100%">
+                                        <video playsinline muted autoplay loop width="100%">
                                             <!-- MP4 for desktop devices (loads first on desktop) -->
-                                            <source src="assets/videos/compressed_2213-cropped.mp4" type="video/mp4">
+                                            <source src="assets/videos/compressed_2213-cropped-h264.mp4" type="video/mp4">
+                                            Your browser does not support the video tag.
                                         </video>
                                         <div class="video-overlay">Mine 16 Iron Ore /min</div>
                                     </div>
@@ -219,9 +223,9 @@
 
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
-                                        <video controls muted autoplay loop width="100%">
+                                        <video playsinline muted autoplay loop width="100%">
                                             <!-- MP4 for desktop devices -->
-                                            <source src="assets/videos/compressed_720-cropped.mp4" type="video/mp4">
+                                            <source src="assets/videos/compressed_720-cropped-h264.mp4" type="video/mp4">
                                         </video>
                                         <div class="video-overlay">Smelt 16 Iron Plates /min</div>
                                     </div>
@@ -229,9 +233,9 @@
 
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
-                                        <video controls muted autoplay loop width="100%">
+                                        <video playsinline muted autoplay loop width="100%">
                                             <!-- MP4 for desktop devices -->
-                                            <source src="assets/videos/compressed_767-cropped.mp4" type="video/mp4">
+                                            <source src="assets/videos/compressed_767-cropped-h264.mp4" type="video/mp4">
                                         </video>
                                         <div class="video-overlay">Make 16 Iron Gears /min</div>
                                     </div>
@@ -240,9 +244,9 @@
                             <div class="columns">
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
-                                        <video controls muted autoplay loop width="100%">
+                                        <video playsinline muted autoplay loop width="100%">
                                             <!-- MP4 for desktop devices -->
-                                            <source src="assets/videos/compressed_1891-cropped.mp4" type="video/mp4">
+                                            <source src="assets/videos/compressed_1891-cropped-h264.mp4" type="video/mp4">
                                         </video>
                                         <div class="video-overlay">Extract 250 Petroleum Gas /min</div>
                                     </div>
@@ -250,9 +254,9 @@
 
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
-                                        <video controls muted autoplay loop width="100%">
+                                        <video playsinline muted autoplay loop width="100%">
                                             <!-- MP4 for desktop devices -->
-                                            <source src="assets/videos/compressed_761-cropped.mp4" type="video/mp4">
+                                            <source src="assets/videos/compressed_761-cropped-h264.mp4" type="video/mp4">
                                         </video>
                                         <div class="video-overlay">Refine 16 Sulfur /min</div>
                                     </div>
@@ -260,9 +264,9 @@
 
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
-                                        <video controls muted autoplay loop width="100%">
+                                        <video playsinline muted autoplay loop width="100%">
                                             <!-- MP4 for desktop devices -->
-                                            <source src="assets/videos/compressed_1897-cropped.mp4" type="video/mp4">
+                                            <source src="assets/videos/compressed_1897-cropped-h264.mp4" type="video/mp4">
                                         </video>
                                         <div class="video-overlay">Make 16 Plastic bars /min</div>
                                     </div>
@@ -271,9 +275,9 @@
                             <div class="columns">
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
-                                        <video controls muted autoplay loop width="100%">
+                                        <video playsinline muted autoplay loop width="100%">
                                             <!-- MP4 for desktop devices -->
-                                            <source src="assets/videos/compressed_803-cropped.mp4" type="video/mp4">
+                                            <source src="assets/videos/compressed_803-cropped-h264.mp4" type="video/mp4">
                                         </video>
                                         <div class="video-overlay">Build the largest possible factory</div>
                                     </div>
@@ -281,9 +285,9 @@
 
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
-                                        <video controls muted autoplay loop width="100%">
+                                        <video playsinline muted autoplay loop width="100%">
                                             <!-- MP4 for desktop devices -->
-                                            <source src="assets/videos/compressed_527-cropped.mp4" type="video/mp4">
+                                            <source src="assets/videos/compressed_527-cropped-h264.mp4" type="video/mp4">
                                         </video>
                                         <div class="video-overlay">Build the largest possible factory</div>
                                     </div>
@@ -291,9 +295,9 @@
 
                                 <div class="column has-text-left video-column">
                                     <div class="video-container">
-                                        <video controls muted autoplay loop width="100%">
+                                        <video playsinline muted autoplay loop width="100%">
                                             <!-- MP4 for desktop devices -->
-                                            <source src="assets/videos/compressed_804-cropped.mp4" type="video/mp4">
+                                            <source src="assets/videos/compressed_804-cropped-h264.mp4" type="video/mp4">
                                         </video>
                                         <div class="video-overlay">Build the largest possible factory</div>
                                     </div>
@@ -302,7 +306,7 @@
                         </div>
                     </div>
                 </div>
-                <p style="padding-top: 25px; font-size:110%"><i>* Claude Sonnet 3.5 builds factories</i></p>
+                <p style="padding-top: 5px; padding-left: 5px; font-size:110%">Claude Sonnet 3.5 builds factories</p>
             </div>
         </section>
 

@@ -31,11 +31,13 @@ jobs:
         run: |
           node .github/scripts/process-results.js
 
-      - name: Checkout results branch
+      - name: Fetch and checkout results branch
         run: |
-          git checkout results || git checkout -b results
+          git fetch origin results:results || git checkout -b results
+          git checkout results
+          git pull origin results || true
 
-      - name: Copy processed results to results branch
+      - name: Copy processed results
         run: |
           mkdir -p leaderboard/processed
           cp -r leaderboard/processed/* leaderboard/processed/ || true

@@ -1,0 +1,10 @@
+{
+  "name": "Gemini-2-Flash",
+  "productionScore": 115782,
+  "milestones": 20,
+  "automation-milestones": 6,
+  "labTasksSuccessRate": 13.0,
+  "mostComplexItem": "iron-gear-wheel",
+  "submittedBy": "JackHopkins",
+  "submissionDate": "2025-03-07"
+}

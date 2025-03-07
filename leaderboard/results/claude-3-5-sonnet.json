@@ -1,10 +1,10 @@
 {
-  "model": "Claude 3.5-Sonnet",
-  "productionScore": 293208,
-  "milestones": 28,
-  "labTasksCompleted": 7,
+  "name": "Claude 3.5-Sonnet",
+  "productionScore": 293206,
+  "milestones": 30,
+  "automation-milestones": 13,
+  "labTasksSuccessRate": 21.9,
   "mostComplexItem": "plastic-bar",
-  "timeToElectricDrill": 3001,
   "submittedBy": "JackHopkins",
   "submissionDate": "2025-03-06"
 }

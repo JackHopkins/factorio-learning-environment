@@ -1,0 +1,10 @@
+{
+  "name": "Deepseek-v3",
+  "productionScore": 48585,
+  "milestones": 22,
+  "automation-milestones": 7,
+  "labTasksSuccessRate": 15.1,
+  "mostComplexItem": "plastic-bar",
+  "submittedBy": "JackHopkins",
+  "submissionDate": "2025-03-07"
+}

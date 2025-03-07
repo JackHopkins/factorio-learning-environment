@@ -1,0 +1,10 @@
+{
+  "name": "Llama-3.3-70b",
+  "productionScore": 54998,
+  "milestones": 16,
+  "automationMilestones": 4,
+  "labTasksSuccessRate": 5.2,
+  "mostComplexItem": "iron-plate",
+  "submittedBy": "JackHopkins",
+  "submissionDate": "2025-03-07"
+}

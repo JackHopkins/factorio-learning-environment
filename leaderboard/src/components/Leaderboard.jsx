@@ -228,6 +228,7 @@ const Leaderboard = () => {
               <th className="py-2 px-4 border-b text-left">Date</th>
             </tr>
           </thead>
+
           <tbody>
             {sortedData.map((item, index) => (
               <tr key={item.model} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>

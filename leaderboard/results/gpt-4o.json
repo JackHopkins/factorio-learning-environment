@@ -1,0 +1,10 @@
+{
+  "name": "GPT4o",
+  "productionScore": 87599,
+  "milestones": 30,
+  "automation-milestones": 9,
+  "labTasksSuccessRate": 16.6,
+  "mostComplexItem": "plastic-bar",
+  "submittedBy": "JackHopkins",
+  "submissionDate": "2025-03-07"
+}

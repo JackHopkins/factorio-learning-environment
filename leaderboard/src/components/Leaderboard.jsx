@@ -22,8 +22,24 @@ const Leaderboard = () => {
         return response.json();
       })
       .then(data => {
-        setModelData(data);
-        setActiveModels(data.map(d => d.model));
+        // Map the data to ensure compatibility with new format
+        const processedData = data.map(item => ({
+          // Support both "name" and "model" fields for backwards compatibility
+          model: item.name || item.model,
+          productionScore: item.productionScore || 0,
+          milestones: item.milestones || 0,
+          automationMilestones: item['automation-milestones'] || 0,
+          labTasksSuccessRate: item.labTasksSuccessRate || 0,
+          labTasksCompleted: item.labTasksCompleted || 0, // For backward compatibility
+          mostComplexItem: item.mostComplexItem || 'none',
+          submittedBy: item.submittedBy || 'Unknown',
+          submissionDate: item.submissionDate || 'Unknown',
+          verified: item.verified || false,
+          url: item.url || null
+        }));
+
+        setModelData(processedData);
+        setActiveModels(processedData.map(d => d.model));
         setLoading(false);
       })
       .catch(err => {
@@ -62,6 +78,34 @@ const Leaderboard = () => {
     } else {
       setActiveModels([...activeModels, model]);
     }
+  };
+
+  // Format submission date
+  const formatDate = (dateString) => {
+    if (!dateString || dateString === 'Unknown') return 'Unknown';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
+    } catch (e) {
+      return dateString;
+    }
+  };
+
+  // Render model name with optional URL
+  const renderModelName = (model, url) => {
+    if (url) {
+      return (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-factorio-highlight hover:text-factorio-accent underline"
+        >
+          {model}
+        </a>
+      );
+    }
+    return model;
   };
 
   if (loading) {
@@ -114,6 +158,23 @@ const Leaderboard = () => {
       </div>
 
       <div className="mb-8">
+        <h3 className="text-lg font-medium mb-2">Milestone Comparison</h3>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={sortedData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="model" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="milestones" fill="#82ca9d" name="Total Milestones" />
+              <Bar dataKey="automationMilestones" fill="#ff9d00" name="Automation Milestones" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="mb-8">
         <h3 className="text-lg font-medium mb-2">Log Scale Comparison</h3>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
@@ -125,6 +186,7 @@ const Leaderboard = () => {
               <Legend />
               <Line type="monotone" dataKey="productionScore" stroke="#8884d8" name="Production Score" />
               <Line type="monotone" dataKey="milestones" stroke="#82ca9d" name="Milestones" />
+              <Line type="monotone" dataKey="labTasksSuccessRate" stroke="#ff9d00" name="Lab Success Rate (%)" />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -151,29 +213,36 @@ const Leaderboard = () => {
               </th>
               <th
                 className="py-2 px-4 border-b text-left cursor-pointer hover:bg-gray-200"
-                onClick={() => handleSort('labTasksCompleted')}
+                onClick={() => handleSort('automationMilestones')}
               >
-                Lab Tasks {sortField === 'labTasksCompleted' && (sortDirection === 'asc' ? '↑' : '↓')}
+                Automation {sortField === 'automationMilestones' && (sortDirection === 'asc' ? '↑' : '↓')}
+              </th>
+              <th
+                className="py-2 px-4 border-b text-left cursor-pointer hover:bg-gray-200"
+                onClick={() => handleSort('labTasksSuccessRate')}
+              >
+                Lab Success % {sortField === 'labTasksSuccessRate' && (sortDirection === 'asc' ? '↑' : '↓')}
               </th>
               <th className="py-2 px-4 border-b text-left">Most Complex Item</th>
-              <th className="py-2 px-4 border-b text-left">Status</th>
+              <th className="py-2 px-4 border-b text-left">Submitted By</th>
+              <th className="py-2 px-4 border-b text-left">Date</th>
             </tr>
           </thead>
           <tbody>
             {sortedData.map((item, index) => (
               <tr key={item.model} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                 <td className="py-2 px-4 border-b">{index + 1}</td>
-                <td className="py-2 px-4 border-b font-medium">{item.model}</td>
+                <td className="py-2 px-4 border-b font-medium">
+                  {renderModelName(item.model, item.url)}
+                  {item.verified && <span className="ml-2 text-green-600" title="Verified">✓</span>}
+                </td>
                 <td className="py-2 px-4 border-b">{item.productionScore.toLocaleString()}</td>
                 <td className="py-2 px-4 border-b">{item.milestones}</td>
-                <td className="py-2 px-4 border-b">{item.labTasksCompleted}</td>
+                <td className="py-2 px-4 border-b">{item.automationMilestones}</td>
+                <td className="py-2 px-4 border-b">{item.labTasksSuccessRate}%</td>
                 <td className="py-2 px-4 border-b">{item.mostComplexItem}</td>
-                <td className="py-2 px-4 border-b">
-                  {item.verified ?
-                    <span className="text-green-600">✓ Verified</span> :
-                    <span className="text-yellow-600">⚠ Pending</span>
-                  }
-                </td>
+                <td className="py-2 px-4 border-b">{item.submittedBy}</td>
+                <td className="py-2 px-4 border-b">{formatDate(item.submissionDate)}</td>
               </tr>
             ))}
           </tbody>

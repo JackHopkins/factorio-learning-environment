@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 0  # Fetch all history so we can merge changes later
+          fetch-depth: 0  # Fetch all history for all branches
 
       # Fetch the results branch for processed data
       - name: Fetch results branch
@@ -52,12 +52,12 @@ jobs:
           mkdir -p docs/leaderboard/processed
           cp -r leaderboard/processed/* docs/leaderboard/processed/ || true
 
-      - name: Commit and push with retry
+      - name: Commit and push with improved handling
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # Add changes
+          # Stage all changes first
           git add docs/leaderboard
           
           # Check if there are changes to commit
@@ -66,33 +66,38 @@ jobs:
             exit 0
           fi
           
-          # Try to commit and push, handling potential conflicts
-          max_attempts=3
-          attempt=1
+          # Commit the changes
+          git commit -m "Update leaderboard [skip ci]"
           
-          while [ $attempt -le $max_attempts ]; do
-            echo "Attempt $attempt to commit and push changes"
-            
-            # Try to commit
-            git commit -m "Update leaderboard [skip ci]"
-            
-            # Pull latest changes with rebase to avoid merge commits
-            git pull --rebase origin main
-            
-            # Try to push
-            if git push origin main; then
-              echo "Successfully pushed changes on attempt $attempt"
-              exit 0
-            fi
-            
-            echo "Push failed on attempt $attempt. Retrying..."
-            attempt=$((attempt + 1))
-            
-            if [ $attempt -le $max_attempts ]; then
-              # Wait before retrying
-              sleep 5
-            fi
-          done
+          # Try to push directly first
+          if git push origin main; then
+            echo "Successfully pushed changes on first attempt"
+            exit 0
+          fi
           
-          echo "Failed to push after $max_attempts attempts"
-          exit 1
+          echo "Direct push failed, trying fetch and merge approach"
+          
+          # Alternative approach: create a temporary branch
+          git branch temp-branch
+          git checkout main
+          
+          # Fetch latest changes from main
+          git fetch origin main
+          git reset --hard origin/main
+          
+          # Create and apply patch from our changes
+          git checkout temp-branch
+          git format-patch -1 HEAD -o /tmp/patches
+          git checkout main
+          
+          # Apply the patch (our changes) on top of the updated main
+          git am /tmp/patches/*
+          
+          # Push the result
+          if git push origin main; then
+            echo "Successfully pushed changes after merge"
+            exit 0
+          else
+            echo "Failed to push changes even after merge"
+            exit 1
+          fi

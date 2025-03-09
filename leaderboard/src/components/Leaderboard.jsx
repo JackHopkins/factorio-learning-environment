@@ -28,7 +28,7 @@ const Leaderboard = () => {
           model: item.name || item.model,
           productionScore: item.productionScore || 0,
           milestones: item.milestones || 0,
-          automationMilestones: item['automation-milestones'] || 0,
+          automationMilestones: item.automationMilestones || 0,
           labTasksSuccessRate: item.labTasksSuccessRate || 0,
           labTasksCompleted: item.labTasksCompleted || 0, // For backward compatibility
           mostComplexItem: item.mostComplexItem || 'none',

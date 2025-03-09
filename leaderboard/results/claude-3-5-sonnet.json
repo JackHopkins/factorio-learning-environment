@@ -2,7 +2,7 @@
   "name": "Claude 3.5-Sonnet",
   "productionScore": 293206,
   "milestones": 30,
-  "automation-milestones": 13,
+  "automationMilestones": 13,
   "labTasksSuccessRate": 21.9,
   "mostComplexItem": "plastic-bar",
   "submittedBy": "JackHopkins",

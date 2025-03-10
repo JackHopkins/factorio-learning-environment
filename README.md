@@ -23,6 +23,7 @@ automation (e.g electronic-circuit manufacturing).
 - [Tasks](##task-documentation)
 - [Tools](##tool-documentation)
 - [Project Structure](##project-structure)
+- [Database](##database)
 - [Benchmarks](##benchmarks)
 - [Contributions](##contributing-guidelines)
 
@@ -69,6 +70,29 @@ docker-compose -f docker-compose-1.yml up -d
   - You may disconnect from each server once it has been activated
 
 5. **Run Eval**:
+First create the .env file. Note that API keys are only required for the respective model providers that will be used to run eval on
+
+```
+# model providers
+OPENAI_API_KEY=<KEY>
+ANTHROPIC_API_KEY=<KEY>
+TOGETHER_API_KEY = <KEY>
+OPEN_ROUTER_API_KEY = <KEY>
+
+# If using Postgres DB, NOT REQUIRED (See section on Database)
+SKILLS_DB_PORT=""
+SKILLS_DB_NAME=""
+SKILLS_DB_USER=""
+SKILLS_DB_PASSWORD=""
+
+# AWS credentials if wanting to use Cloudformation, NOT REQUIRED
+AWS_SECRET_ACCESS_KEY=<KEY>
+AWS_ACCESS_KEY_ID=""
+AWS_DEFAULT_REGION=""
+CLUSTER_NAME=""
+```
+
+
 How to run open and lab play with example run configs
    1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
    2. Tasks (one parallel run of iron-ore task): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_lab_play.json`

@@ -1,19 +1,28 @@
-# ⚙ Factorio Learning Environment
+<h1 align="center">Factorio Learning Environment</h1>
+<p align="center">
+  <a href="https://jackhopkins.github.io/factorio-learning-environment/leaderboard">Leaderboard</a> | <a href="docs/assets/documents/paper.pdf">Paper</a> | <a href="https://jackhopkins.github.io/factorio-learning-environment/">Website</a>
+</p>
 
-**Factorio Learning Environment** (FLE) is an open source framework for developing and evaluating LLM agents in the game of [Factorio](https://factorio.com/).
+<p align="center">
+An open source framework for developing and evaluating LLM agents in the game of <a href="https://factorio.com/">Factorio</a>.
+</p>
 
-FLE tests agent capabilities in long-term planning, program synthesis, and resource optimization against a set of exponentially scaling challenges, ranging from basic automation to complex factories processing millions of resources per second. 
+<p align="center">
+<img src="docs/assets/videos/compressed_527-cropped.webp" width="485" height="364" controls/>
+<img src="docs/assets/videos/compressed_1897-cropped.webp" width="485" height="364" controls/>
+</p>
+<p align="center"><em>Claude 3.5 plays Factorio</em></p>
+
+## Why FLE?
+FLE is a framework that tests agent capabilities in long-term planning, program synthesis, and resource optimization against a set of exponentially scaling challenges, ranging from basic automation to complex factories processing millions of resources per second. 
 
 We provide two settings:
 1. **Lab-play**: 24 structured tasks with fixed resources.
-2. **Open-play** Unbounded task of building the largest possible factory on a procedurally generated map. 
+2. **Open-play** An unbounded task of building the largest possible factory on a procedurally generated map. 
 
-Our results demonstrate that models still lack strong spatial reasoning, error correcting abilities and long-term planning. In lab-play, we find that while LLMs
+Our results demonstrate that models still lack strong spatial reasoning. In lab-play, we find that while LLMs
 exhibit promising short-horizon skills, they are unable to operate effectively in constrained environments, reflecting limitations in error analysis. In open-play, while LLMs discover automation strategies that improve growth (e.g electric-powered drilling), they fail to achieve complex 
 automation (e.g electronic-circuit manufacturing). 
-
-<img src="docs/assets/videos/claude-500.webp" width="364" height="364" controls></video>
-<img src="docs/assets/videos/4o-mini-1500.webp" width="364" height="364" controls></video>
 
 
 ## Quick Links
@@ -109,7 +118,7 @@ print(get_entities())
 </pre>
 </td>
 <td class="bash-code">
-<b>Feedback<b/>
+<b>Feedback</b>
 <pre>
 >>> [ BurnerMiningDrill(fuel=Inventory({'coal': 4}), 
 >>>                     name='burner-mining-drill', 

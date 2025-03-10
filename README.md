@@ -80,6 +80,7 @@ docker-compose -f docker-compose-1.yml up -d
   - You may disconnect from each server once it has been activated
 
 5. **Run Eval**:
+
 First create the .env file. Note that API keys are only required for the respective model providers that will be used to run eval on
 
 ```
@@ -103,7 +104,7 @@ CLUSTER_NAME=""
 ```
 
 
-How to run open and lab play with example run configs
+Running open and lab play with example run configs:
    1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
    2. Tasks (one parallel run of iron-ore task): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_lab_play.json`
 ## Environment

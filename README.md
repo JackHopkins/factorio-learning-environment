@@ -14,7 +14,8 @@ An open source framework for developing and evaluating LLM agents in the game of
 <p align="center"><em>Claude 3.5 plays Factorio</em></p>
 
 ## Why FLE?
-FLE is a framework that tests agent capabilities in long-term planning, program synthesis, and resource optimization against a set of exponentially scaling challenges, ranging from basic automation to complex factories processing millions of resources per second. 
+
+[//]: # (FLE is a framework that tests agent capabilities in long-term planning, program synthesis, and resource optimization against a set of exponentially scaling challenges, ranging from basic automation to complex factories processing millions of resources per second. )
 
 We provide two settings:
 1. **Lab-play**: 24 structured tasks with fixed resources.

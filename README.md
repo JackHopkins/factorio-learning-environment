@@ -8,7 +8,7 @@ We provide two settings:
 1. **Lab-play**: 24 structured tasks with fixed resources.
 2. **Open-play** Unbounded task of building the largest possible factory on a procedurally generated map. 
 
-Our results demonstrate that models still lack strong spatial reasoning. In lab-play, we find that while LLMs
+Our results demonstrate that models still lack strong spatial reasoning, error correcting abilities and long-term planning. In lab-play, we find that while LLMs
 exhibit promising short-horizon skills, they are unable to operate effectively in constrained environments, reflecting limitations in error analysis. In open-play, while LLMs discover automation strategies that improve growth (e.g electric-powered drilling), they fail to achieve complex 
 automation (e.g electronic-circuit manufacturing). 
 

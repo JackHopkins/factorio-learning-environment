@@ -87,8 +87,8 @@ First create the .env file. Note that API keys are only required for the respect
 # model providers
 OPENAI_API_KEY=<KEY>
 ANTHROPIC_API_KEY=<KEY>
-TOGETHER_API_KEY = <KEY>
-OPEN_ROUTER_API_KEY = <KEY>
+TOGETHER_API_KEY=<KEY>
+OPEN_ROUTER_API_KEY=<KEY>
 
 # If using Postgres DB, NOT REQUIRED (See section on Database)
 SKILLS_DB_PORT=""

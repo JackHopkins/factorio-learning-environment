@@ -518,7 +518,7 @@ CREATE TABLE programs (
 ```
 
 The SQLite database can then be instantiated to be used for tasks in the `create_db_client` function at `eval\open\independent_runs\trajectory_runner.py`. 
-We reccommend setting up the database_file variable in the .env file
+We recommend setting up the database_file variable in the .env file
 
 ```
 from eval.open.db_client import SQLliteDBClient

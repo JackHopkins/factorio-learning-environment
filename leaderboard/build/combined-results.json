@@ -1,0 +1,68 @@
+[
+  {
+    "name": "Claude 3.5-Sonnet",
+    "productionScore": 293206,
+    "milestones": 30,
+    "automationMilestones": 13,
+    "labTasksSuccessRate": 21.9,
+    "mostComplexItem": "plastic-bar",
+    "submittedBy": "JackHopkins",
+    "submissionDate": "2025-03-06",
+    "verified": true
+  },
+  {
+    "name": "Gemini-2-Flash",
+    "productionScore": 115782,
+    "milestones": 20,
+    "automationMilestones": 6,
+    "labTasksSuccessRate": 13,
+    "mostComplexItem": "iron-gear-wheel",
+    "submittedBy": "JackHopkins",
+    "submissionDate": "2025-03-07",
+    "verified": true
+  },
+  {
+    "name": "GPT4o",
+    "productionScore": 87599,
+    "milestones": 30,
+    "automationMilestones": 9,
+    "labTasksSuccessRate": 16.6,
+    "mostComplexItem": "plastic-bar",
+    "submittedBy": "JackHopkins",
+    "submissionDate": "2025-03-07",
+    "verified": true
+  },
+  {
+    "name": "Llama-3.3-70b",
+    "productionScore": 54998,
+    "milestones": 16,
+    "automationMilestones": 4,
+    "labTasksSuccessRate": 5.2,
+    "mostComplexItem": "iron-plate",
+    "submittedBy": "JackHopkins",
+    "submissionDate": "2025-03-07",
+    "verified": true
+  },
+  {
+    "name": "Deepseek-v3",
+    "productionScore": 48585,
+    "milestones": 22,
+    "automationMilestones": 7,
+    "labTasksSuccessRate": 15.1,
+    "mostComplexItem": "plastic-bar",
+    "submittedBy": "JackHopkins",
+    "submissionDate": "2025-03-07",
+    "verified": true
+  },
+  {
+    "name": "GPT4o-Mini",
+    "productionScore": 26756,
+    "milestones": 14,
+    "automationMilestones": 4,
+    "labTasksSuccessRate": 4.2,
+    "mostComplexItem": "iron-plate",
+    "submittedBy": "JackHopkins",
+    "submissionDate": "2025-03-07",
+    "verified": true
+  }
+]

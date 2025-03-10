@@ -11,20 +11,92 @@ const Leaderboard = () => {
   const [sortField, setSortField] = useState('productionScore');
   const [sortDirection, setSortDirection] = useState('desc');
   const [activeModels, setActiveModels] = useState([]);
+  const [expandedRows, setExpandedRows] = useState({});
 
   useEffect(() => {
-    // Fetch combined results
-    fetch('./processed/combined-results.json')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to load leaderboard data');
+    const loadData = async () => {
+      try {
+        // Try to load the JSON data file using window.fs.readFile if available
+        let data;
+        try {
+          // Try to use the window.fs API if available
+          const fileContent = await window.fs.readFile('combined-results.json', { encoding: 'utf8' });
+          data = JSON.parse(fileContent);
+        } catch (fileError) {
+          console.warn('Could not load data file directly. Using fallback data:', fileError);
+          // Fallback to the sample data if file can't be loaded
+          data = [
+            {
+              "name": "Claude 3.5-Sonnet",
+              "productionScore": 293206,
+              "milestones": 30,
+              "automationMilestones": 13,
+              "labTasksSuccessRate": 21.9,
+              "mostComplexItem": "plastic-bar",
+              "submittedBy": "JackHopkins",
+              "submissionDate": "2025-03-06",
+              "verified": true
+            },
+            {
+              "name": "Gemini-2-Flash",
+              "productionScore": 115782,
+              "milestones": 20,
+              "automationMilestones": 6,
+              "labTasksSuccessRate": 13,
+              "mostComplexItem": "iron-gear-wheel",
+              "submittedBy": "JackHopkins",
+              "submissionDate": "2025-03-07",
+              "verified": true
+            },
+            {
+              "name": "GPT4o",
+              "productionScore": 87599,
+              "milestones": 30,
+              "automationMilestones": 9,
+              "labTasksSuccessRate": 16.6,
+              "mostComplexItem": "plastic-bar",
+              "submittedBy": "JackHopkins",
+              "submissionDate": "2025-03-07",
+              "verified": true
+            },
+            {
+              "name": "Llama-3.3-70b",
+              "productionScore": 54998,
+              "milestones": 16,
+              "automationMilestones": 4,
+              "labTasksSuccessRate": 5.2,
+              "mostComplexItem": "iron-plate",
+              "submittedBy": "JackHopkins",
+              "submissionDate": "2025-03-07",
+              "verified": true
+            },
+            {
+              "name": "Deepseek-v3",
+              "productionScore": 48585,
+              "milestones": 22,
+              "automationMilestones": 7,
+              "labTasksSuccessRate": 15.1,
+              "mostComplexItem": "plastic-bar",
+              "submittedBy": "JackHopkins",
+              "submissionDate": "2025-03-07",
+              "verified": true
+            },
+            {
+              "name": "GPT4o-Mini",
+              "productionScore": 26756,
+              "milestones": 14,
+              "automationMilestones": 4,
+              "labTasksSuccessRate": 4.2,
+              "mostComplexItem": "iron-plate",
+              "submittedBy": "JackHopkins",
+              "submissionDate": "2025-03-07",
+              "verified": true
+            }
+          ];
         }
-        return response.json();
-      })
-      .then(data => {
-        // Map the data to ensure compatibility with new format
+
+        // Process the data
         const processedData = data.map(item => ({
-          // Support both "name" and "model" fields for backwards compatibility
           model: item.name || item.model,
           productionScore: item.productionScore || 0,
           milestones: item.milestones || 0,
@@ -41,24 +113,28 @@ const Leaderboard = () => {
         setModelData(processedData);
         setActiveModels(processedData.map(d => d.model));
         setLoading(false);
-      })
-      .catch(err => {
-        setError(err.message);
+      } catch (error) {
+        console.error("Error loading data:", error);
+        setError(error.message);
         setLoading(false);
-      });
+      }
+    };
+
+    loadData();
   }, []);
+
 
   // Sort and filter data
   const sortedData = useMemo(() => {
     return [...modelData]
-      .filter(item => activeModels.includes(item.model))
-      .sort((a, b) => {
-        if (sortDirection === 'asc') {
-          return a[sortField] - b[sortField];
-        } else {
-          return b[sortField] - a[sortField];
-        }
-      });
+        .filter(item => activeModels.includes(item.model))
+        .sort((a, b) => {
+          if (sortDirection === 'asc') {
+            return a[sortField] - b[sortField];
+          } else {
+            return b[sortField] - a[sortField];
+          }
+        });
   }, [sortField, sortDirection, activeModels, modelData]);
 
   // Toggle sort direction
@@ -80,6 +156,14 @@ const Leaderboard = () => {
     }
   };
 
+  // Toggle row expansion for details
+  const toggleRowExpansion = (model) => {
+    setExpandedRows(prev => ({
+      ...prev,
+      [model]: !prev[model]
+    }));
+  };
+
   // Format submission date
   const formatDate = (dateString) => {
     if (!dateString || dateString === 'Unknown') return 'Unknown';
@@ -95,14 +179,14 @@ const Leaderboard = () => {
   const renderModelName = (model, url) => {
     if (url) {
       return (
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-factorio-highlight hover:text-factorio-accent underline"
-        >
-          {model}
-        </a>
+          <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-factorio-highlight hover:text-factorio-accent underline"
+          >
+            {model}
+          </a>
       );
     }
     return model;
@@ -117,142 +201,167 @@ const Leaderboard = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-4 text-center">Factorio Learning Environment Leaderboard</h2>
+      <div className="max-w-4xl mx-auto p-4 bg-white rounded-lg shadow-lg">
+        <h2 className="text-2xl font-bold mb-4 text-center">FactoryBench Leaderboard</h2>
 
-      {/* Model filters */}
-      <div className="mb-6">
-        <h3 className="text-lg font-medium mb-2">Models</h3>
-        <div className="flex flex-wrap gap-2">
-          {modelData.map(({ model, verified }) => (
-            <button
-              key={model}
-              onClick={() => toggleModel(model)}
-              className={`px-3 py-1 rounded-full text-sm ${
-                activeModels.includes(model)
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              {model} {verified && <span className="ml-1 text-green-300">✓</span>}
-            </button>
-          ))}
+        {/* Model filters */}
+        <div className="mb-6">
+          <h3 className="text-lg font-medium mb-2">Models</h3>
+          <div className="flex flex-wrap gap-2">
+            {modelData.map(({ model, verified }) => (
+                <button
+                    key={model}
+                    onClick={() => toggleModel(model)}
+                    className={`px-3 py-1 rounded-full text-sm ${
+                        activeModels.includes(model)
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 text-gray-700'
+                    }`}
+                >
+                  {model} {verified && <span className="ml-1 text-green-300">✓</span>}
+                </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Charts */}
-      <div className="mb-8">
-        <h3 className="text-lg font-medium mb-2">Production Score</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={sortedData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="model" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="productionScore" fill="#8884d8" name="Production Score" />
-            </BarChart>
-          </ResponsiveContainer>
+        {/* Charts */}
+        <div className="mb-8">
+          <h3 className="text-lg font-medium mb-2">Production Score</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={sortedData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="model" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="productionScore" fill="#8884d8" name="Production Score" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </div>
 
-      <div className="mb-8">
-        <h3 className="text-lg font-medium mb-2">Milestone Comparison</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={sortedData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="model" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="milestones" fill="#82ca9d" name="Total Milestones" />
-              <Bar dataKey="automationMilestones" fill="#ff9d00" name="Automation Milestones" />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="mb-8">
+          <h3 className="text-lg font-medium mb-2">Milestone Comparison</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={sortedData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="model" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="automationMilestones" stackId="a" fill="#ff9d00" name="Automation Milestones" />
+                <Bar
+                    dataKey="nonAutomationMilestones"
+                    stackId="a"
+                    fill="#82ca9d"
+                    name="Other Milestones"
+                    // Calculate non-automation milestones dynamically
+                    data={sortedData.map(item => ({
+                      ...item,
+                      nonAutomationMilestones: item.milestones - item.automationMilestones
+                    }))}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </div>
 
-      <div className="mb-8">
-        <h3 className="text-lg font-medium mb-2">Log Scale Comparison</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={sortedData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="model" />
-              <YAxis scale="log" domain={['auto', 'auto']} />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="productionScore" stroke="#8884d8" name="Production Score" />
-              <Line type="monotone" dataKey="milestones" stroke="#82ca9d" name="Milestones" />
-              <Line type="monotone" dataKey="labTasksSuccessRate" stroke="#ff9d00" name="Lab Success Rate (%)" />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="mb-8">
+          <h3 className="text-lg font-medium mb-2">Lab Task Comparison</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={sortedData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="model" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="labTasksSuccessRate" fill="#8884d8" name="Lab Success Rate (%)" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white border border-gray-300">
-          <thead>
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border border-gray-300">
+            <thead>
             <tr className="bg-gray-100">
               <th className="py-2 px-4 border-b text-left">Rank</th>
               <th className="py-2 px-4 border-b text-left">Model</th>
               <th
-                className="py-2 px-4 border-b text-left cursor-pointer hover:bg-gray-200"
-                onClick={() => handleSort('productionScore')}
+                  className="py-2 px-4 border-b text-left cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort('productionScore')}
               >
                 Production Score {sortField === 'productionScore' && (sortDirection === 'asc' ? '↑' : '↓')}
               </th>
               <th
-                className="py-2 px-4 border-b text-left cursor-pointer hover:bg-gray-200"
-                onClick={() => handleSort('milestones')}
+                  className="py-2 px-4 border-b text-left cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort('milestones')}
               >
                 Milestones {sortField === 'milestones' && (sortDirection === 'asc' ? '↑' : '↓')}
               </th>
               <th
-                className="py-2 px-4 border-b text-left cursor-pointer hover:bg-gray-200"
-                onClick={() => handleSort('automationMilestones')}
+                  className="py-2 px-4 border-b text-left cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort('automationMilestones')}
               >
                 Automation {sortField === 'automationMilestones' && (sortDirection === 'asc' ? '↑' : '↓')}
               </th>
               <th
-                className="py-2 px-4 border-b text-left cursor-pointer hover:bg-gray-200"
-                onClick={() => handleSort('labTasksSuccessRate')}
+                  className="py-2 px-4 border-b text-left cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort('labTasksSuccessRate')}
               >
                 Lab Success % {sortField === 'labTasksSuccessRate' && (sortDirection === 'asc' ? '↑' : '↓')}
               </th>
               <th className="py-2 px-4 border-b text-left">Most Complex Item</th>
-              <th className="py-2 px-4 border-b text-left">Submitted By</th>
-              <th className="py-2 px-4 border-b text-left">Date</th>
+              <th className="py-2 px-4 border-b text-left">Details</th>
             </tr>
-          </thead>
-          <tbody>
+            </thead>
+            <tbody>
             {sortedData.map((item, index) => (
-              <tr key={item.model} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                <td className="py-2 px-4 border-b">{index + 1}</td>
-                <td className="py-2 px-4 border-b font-medium">
-                  {renderModelName(item.model, item.url)}
-                  {item.verified && <span className="ml-2 text-green-600" title="Verified">✓</span>}
-                </td>
-                <td className="py-2 px-4 border-b">{item.productionScore.toLocaleString()}</td>
-                <td className="py-2 px-4 border-b">{item.milestones}</td>
-                <td className="py-2 px-4 border-b">{item.automationMilestones}</td>
-                <td className="py-2 px-4 border-b">{item.labTasksSuccessRate}%</td>
-                <td className="py-2 px-4 border-b">{item.mostComplexItem}</td>
-                <td className="py-2 px-4 border-b">{item.submittedBy}</td>
-                <td className="py-2 px-4 border-b">{formatDate(item.submissionDate)}</td>
-              </tr>
+                <React.Fragment key={item.model}>
+                  <tr className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                    <td className="py-2 px-4 border-b">{index + 1}</td>
+                    <td className="py-2 px-4 border-b font-medium">
+                      {renderModelName(item.model, item.url)}
+                      {item.verified && <span className="ml-2 text-green-600" title="Verified">✓</span>}
+                    </td>
+                    <td className="py-2 px-4 border-b">{item.productionScore.toLocaleString()}</td>
+                    <td className="py-2 px-4 border-b">{item.milestones}</td>
+                    <td className="py-2 px-4 border-b">{item.automationMilestones}</td>
+                    <td className="py-2 px-4 border-b">{item.labTasksSuccessRate}%</td>
+                    <td className="py-2 px-4 border-b">{item.mostComplexItem}</td>
+                    <td className="py-2 px-4 border-b">
+                      <button
+                          onClick={() => toggleRowExpansion(item.model)}
+                          className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm focus:outline-none"
+                      >
+                        {expandedRows[item.model] ? 'Hide' : 'Show'}
+                      </button>
+                    </td>
+                  </tr>
+                  {expandedRows[item.model] && (
+                      <tr className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                        <td colSpan="8" className="py-2 px-4 border-b">
+                          <div className="pl-8">
+                            <p><strong>Submitted By:</strong> {item.submittedBy}</p>
+                            <p><strong>Date:</strong> {formatDate(item.submissionDate)}</p>
+                          </div>
+                        </td>
+                      </tr>
+                  )}
+                </React.Fragment>
             ))}
-          </tbody>
-        </table>
-      </div>
+            </tbody>
+          </table>
+        </div>
 
-      <div className="mt-4 text-gray-600 text-sm">
-        <p>Last updated: {new Date().toLocaleDateString()}</p>
+        <div className="mt-4 text-gray-600 text-sm">
+          <p>Last updated: {new Date().toLocaleDateString()}</p>
+        </div>
       </div>
-    </div>
   );
 };
 

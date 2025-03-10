@@ -5,7 +5,7 @@
 FLE tests agent capabilities in long-term planning, program synthesis, and resource optimization against a set of exponentially scaling challenges, ranging from basic automation to complex factories processing millions of resources per second. 
 
 We provide two settings:
-1. **Lab-play**: Eight structured tasks with fixed resources.
+1. **Lab-play**: 24 structured tasks with fixed resources.
 2. **Open-play** Unbounded task of building the largest possible factory on a procedurally generated map. 
 
 Our results demonstrate that models still lack strong spatial reasoning. In lab-play, we find that while LLMs

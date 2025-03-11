@@ -27,15 +27,15 @@ automation (e.g electronic-circuit manufacturing).
 
 
 ## Quick Links
-- [Installation](##installation)
-- [Environment](##environment-documentation)
-- [Agents](##agent-documentation)
-- [Tasks](##task-documentation)
-- [Tools](##tool-documentation)
-- [Project Structure](##project-structure)
-- [Database](##database)
-- [Benchmarks](##benchmarks)
-- [Contributions](##contributing-guidelines)
+- [Installation](#installation)
+- [Environment](#environment-documentation)
+- [Agents](#agent-documentation)
+- [Tasks](#task-documentation)
+- [Tools](#tool-documentation)
+- [Project Structure](#project-structure)
+- [Database](#database)
+- [Benchmarks](#benchmarks)
+- [Contributions](#contributing-guidelines)
 
 ## Installation
 
@@ -171,7 +171,7 @@ print(get_entities())
 </html>
 
 
-Agents are provided with the Python standard library, and an API comprising [tools](##tool-documentation) that they can use.
+Agents are provided with the Python standard library, and an API comprising [tools](#tool-documentation) that they can use.
 
 Tools are functions that perform a game action and return a typed object (e.g an Inventory), which can be stored as a named **variable** in the Python namespace for later use. 
 

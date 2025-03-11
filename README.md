@@ -50,7 +50,7 @@ automation (e.g electronic-circuit manufacturing).
 
 ```
 git clone https://github.com/JackHopkins/factorio-learning-environment.git
-cd src
+cd env/src
 pip install -e .
 ```
 

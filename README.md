@@ -118,6 +118,9 @@ SKILLS_DB_NAME=""
 SKILLS_DB_USER=""
 SKILLS_DB_PASSWORD=""
 
+# If using SQLite for DB (See section on Database)
+SQLITE_DB_FILE = ""
+
 # AWS credentials if wanting to use Cloudformation, NOT REQUIRED
 AWS_SECRET_ACCESS_KEY=<KEY>
 AWS_ACCESS_KEY_ID=""
@@ -159,7 +162,7 @@ CREATE TABLE programs (
 );
 ```
 
-And replace the `DBClient` object `create_db_client()` function with `SQLiteDBClient`.
+And replace the `DBClient` object at `create_db_client` function in `eval\open\independent_runs\trajectory_runner.py` with the SQLliteDBClient object (see [Database](#database) section).
 
 9. **Run Eval**: Running open and lab play with example run configs:
    1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`

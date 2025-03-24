@@ -3,7 +3,7 @@ from typing import Tuple, Optional
 from PIL import ImageDraw
 
 from entities import Direction, Entity, EntityStatus
-from render_config import RenderConfig
+from tools.admin.render.utils.render_config import RenderConfig
 
 
 class ShapeRenderer:
@@ -188,7 +188,7 @@ class ShapeRenderer:
 
         cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
         width, height = x2 - x1, y2 - y1
-        indicator_size = min(width, height) * 0.3
+        indicator_size = min(width, height) * 0.5
 
         # Calculate direction vector
         dx, dy = 0, 0
@@ -211,7 +211,7 @@ class ShapeRenderer:
                       fill=(255, 255, 255), width=2)
 
             # Draw arrow head
-            arrow_size = indicator_size * 0.3
+            arrow_size = indicator_size * 0.5
             if dx != 0:  # Horizontal arrow
                 draw.polygon([
                     (end_x, end_y),

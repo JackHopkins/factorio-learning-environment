@@ -3,8 +3,9 @@ from typing import Dict, List, Tuple, Optional
 from collections import defaultdict
 
 from entities import Entity, EntityStatus
-from render_config import RenderConfig
-from entity_categoriser import EntityCategoriser
+from game_types import prototype_by_name
+from tools.admin.render.utils.render_config import RenderConfig
+from tools.admin.render.utils.entity_categoriser import EntityCategoriser
 
 
 class ColourManager:
@@ -106,25 +107,36 @@ class ColourManager:
 
         return base_color
 
-    def get_entities_by_category(self) -> Dict[str, List[Tuple[str, int]]]:
-        """Group entity types by their categories with counts"""
+    def get_entities_by_category(self) -> Tuple[Dict[str, List[Tuple[str, int]]], Dict[str, str]]:
+        """
+        Group entity types by their categories with counts and provide shape information
+
+        Returns:
+            Tuple containing:
+            - Dictionary mapping categories to lists of (entity_name, count) tuples
+            - Dictionary mapping entity names to their shape types
+        """
         entities_by_category = defaultdict(list)
+        entity_shapes = {}
 
-        # Find at least one entity of each type to determine its category
-        for entity_name in self.entity_type_counts:
-            category = None
-            # We need the category, but we don't have the entity here
-            # In practice, we'd want to store this when we first process entities
-            # For simplicity, we're assuming the category is the first part of the name
-            if '-' in entity_name:
-                category = entity_name.split('-')[0]
-            else:
+        # Find the category for each entity type and group them
+        for entity_name in self.entity_type_counts.keys():
+            # Determine appropriate category
+            if entity_name in ["iron-ore", "copper-ore", "coal", "stone", "uranium-ore", "crude-oil"]:
                 category = entity_name
+            elif entity_name == "water":
+                category = "water"
+            else:
+                # For regular entities, get the actual category
+                category = self.categorizer.get_entity_category(prototype_by_name[entity_name])
 
-            if category:
-                entities_by_category[category].append(
-                    (entity_name, self.entity_type_counts[entity_name])
-                )
+            # Get shape based on category
+            shape_type = self.config.get_category_shape(category)
+            entity_shapes[entity_name] = shape_type
+
+            entities_by_category[category].append(
+                (entity_name, self.entity_type_counts[entity_name])
+            )
 
         # Sort entities within each category by count (descending)
         for category in entities_by_category:
@@ -133,4 +145,4 @@ class ColourManager:
                 key=lambda x: (-x[1], x[0])  # Sort by count (descending), then name
             )
 
-        return dict(entities_by_category)
+        return dict(entities_by_category), entity_shapes

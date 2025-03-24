@@ -65,6 +65,10 @@ def test_create_offshore_pump_to_steam_engine(game):
 
     assert steam_engine.direction.value == Direction.opposite(boiler.direction).value
 
+    image = game._render(Position(x=5, y=0))
+    image.show()
+    pass
+
 
 def test_build_iron_gear_factory_from_scratch(game):
     """

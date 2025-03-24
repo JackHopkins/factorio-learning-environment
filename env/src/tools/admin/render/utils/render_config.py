@@ -1,6 +1,7 @@
 from typing import Dict, Optional, Tuple, Any
 from entities import EntityStatus
 
+
 class RenderConfig:
     """Manages configuration settings for Factorio entity rendering"""
 
@@ -37,10 +38,38 @@ class RenderConfig:
             EntityStatus.FULL_OUTPUT: (80, 180, 255),
             EntityStatus.NO_RECIPE: (200, 200, 50),
             EntityStatus.NO_INGREDIENTS: (255, 80, 0),
-        }
+        },
+        # Water and resource-related style settings
+        "water_color": (0, 70, 140),  # Base water color
+        "deepwater_color": (0, 50, 120),  # Deep water color
+        "water_pattern_color": (30, 100, 170),  # Color for water pattern lines
+        "resource_colors": {
+            "iron-ore": (140, 140, 190),
+            "copper-ore": (200, 100, 60),
+            "coal": (50, 50, 50),
+            "stone": (130, 130, 110),
+            "uranium-ore": (50, 190, 50),
+            "crude-oil": (20, 20, 20)
+        },
+        # Tree and rock related settings
+        "tree_color": (20, 120, 20),  # Base green color for trees
+        "tree_color_variations": [  # Different shades for tree variations
+            (20, 100, 20),  # Darker green
+            (40, 130, 40),  # Medium green
+            (60, 150, 60),  # Lighter green
+            (80, 150, 40),  # Yellow-green
+            (100, 160, 60)  # Bright green
+        ],
+        "rock_color": (120, 110, 100),  # Base color for rocks
+        "rock_color_variations": [  # Different shades for rock variations
+            (100, 90, 80),  # Dark grey-brown
+            (130, 120, 110),  # Medium grey
+            (160, 150, 140),  # Light grey
+            (140, 130, 100)  # Brownish grey
+        ]
     }
 
-    # Fixed colors for common entity categories - moved from Renderer
+    # Fixed colors for common entity categories
     CATEGORY_COLORS = {
         "resource": (100, 120, 160),  # Resources have blue-ish tint
         "belt": (255, 210, 0),  # Belts are yellow
@@ -52,19 +81,38 @@ class RenderConfig:
         "defense": (180, 80, 80),  # Defense entities are reddish
         "mining": (140, 100, 40),  # Mining entities are brown
         "origin": (255, 255, 0),  # Origin/player marker is yellow
+        "water": (0, 70, 140),  # Water tiles
+        "iron-ore": (140, 140, 190),  # Iron ore resource
+        "copper-ore": (200, 100, 60),  # Copper ore resource
+        "coal": (50, 50, 50),  # Coal resource
+        "stone": (130, 130, 110),  # Stone resource
+        "uranium-ore": (50, 190, 50),  # Uranium resource
+        "crude-oil": (20, 20, 20),  # Oil resource
+        "tree": (50, 150, 50),  # Trees
+        "rock": (120, 110, 100)  # Rocks
     }
 
-    # Shape mappings for different entity categories - moved from Renderer
+    # Shape mappings for different entity categories
     CATEGORY_SHAPES = {
         "resource": "circle",  # Resources are circles
         "belt": "triangle",  # Belts are triangles
         "inserter": "diamond",  # Inserters are diamonds
         "power": "rectangle",  # Power entities are pentagons
-        "fluid": "triangle",  # Fluid entities are hexagons
+        "fluid": "triangle",  # Fluid entities are triangles
+        "pipe": "circle",
         "production": "square",  # Production entities are squares
         "logistics": "octagon",  # Logistics are octagons
         "defense": "cross",  # Defense are crosses
         "mining": "star",  # Mining entities are stars
+        "water": "square",  # Water tiles are squares with cross-hatch
+        "iron-ore": "square",  # Iron ore is square
+        "copper-ore": "square",  # Copper ore is square
+        "coal": "diamond",  # Coal is diamond
+        "stone": "diamond",  # Stone is diamond
+        "uranium-ore": "circle",  # Uranium is circle with radiation symbol
+        "crude-oil": "circle",  # Oil is circle with bubbles
+        "tree": "circle",  # Trees are circles with special rendering
+        "rock": "pentagon"  # Rocks are pentagons with rougher edges
     }
 
     def __init__(self, style: Optional[Dict[str, Any]] = None):
@@ -92,3 +140,21 @@ class RenderConfig:
     def get_status_color(self, status: EntityStatus) -> Tuple[int, int, int]:
         """Get the color for an entity status"""
         return self.style["status_colors"].get(status, (255, 0, 255))  # Magenta for unknown status
+
+    def get_resource_color(self, resource_name: str) -> Tuple[int, int, int]:
+        """Get the color for a resource type"""
+        return self.style["resource_colors"].get(resource_name, (150, 150, 150))  # Gray for unknown resources
+
+    def get_tree_color(self, tree_size: int = None) -> Tuple[int, int, int]:
+        """Get a color for a tree, optionally based on its size/variation"""
+        if tree_size is not None and 0 <= tree_size < len(self.style["tree_color_variations"]):
+            return self.style["tree_color_variations"][tree_size]
+        return self.style["tree_color"]  # Default tree color
+
+    def get_rock_color(self, rock_name: str = None) -> Tuple[int, int, int]:
+        """Get a color for a rock, optionally based on its name"""
+        # Use hash of rock name to get a consistent but varied color
+        if rock_name:
+            index = hash(rock_name) % len(self.style["rock_color_variations"])
+            return self.style["rock_color_variations"][index]
+        return self.style["rock_color"]  # Default rock color

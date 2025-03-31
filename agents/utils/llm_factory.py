@@ -14,7 +14,7 @@ class LLMFactory:
     MODELS_WITH_IMAGE_SUPPORT = [
         # Claude models with vision
         "claude-3-opus", "claude-3-sonnet", "claude-3-haiku",
-        "claude-3.5-sonnet", "claude-3.7-sonnet",
+        "claude-3-5-sonnet", "claude-3-7-sonnet",
         # OpenAI models with vision
         "gpt-4-vision", "gpt-4-turbo", "gpt-4o", "gpt-4-1106-vision-preview"
     ]
@@ -40,17 +40,7 @@ class LLMFactory:
 
         # Check for models with version number suffixes
         for supported_model in self.MODELS_WITH_IMAGE_SUPPORT:
-            # Check if the model starts with the supported model name followed by a
-            # hyphen or ends with the supported model name
-            if (model_lower.startswith(f"{supported_model}-") or
-                    model_lower == supported_model):
-                return True
-
-            # Handle date formats specifically for OpenAI models (e.g., gpt-4o-2024-05-13)
-            # Check if the model starts with the supported model name followed by a dash and a year
-            if supported_model in ["gpt-4-vision", "gpt-4-turbo", "gpt-4o"] and (
-                    model_lower.startswith(f"{supported_model}-20")  # Year format with dash
-            ):
+            if supported_model in model:
                 return True
 
         # Special handling for custom adaptations

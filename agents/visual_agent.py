@@ -143,12 +143,12 @@ class VisualAgent(AgentABC):
         """
         try:
             # Check if Render is available in the namespace
-            if not hasattr(namespace, "render") or not callable(namespace._render):
-                # Create a Render instance if not available
-                if hasattr(namespace, "connection") and hasattr(namespace, "game_state"):
-                    namespace.Render = Render(namespace.connection, namespace.game_state)
-                else:
-                    return None
+            # if not hasattr(namespace, "render") or not callable(namespace._render):
+            #     # Create a Render instance if not available
+            #     if hasattr(namespace, "connection") and hasattr(namespace, "game_state"):
+            #         namespace._render = Render(namespace.connection, namespace.game_state)
+            #     else:
+            #         return None
 
             # Get player position (or use 0,0 if not available)
             player_pos = Position(0, 0)
@@ -158,12 +158,13 @@ class VisualAgent(AgentABC):
             # Render around player position
             render = namespace._render(
                 position=player_pos,
-                radius=self.render_radius,
+                #radius=self.render_radius,
                 layers=Layer.ALL  # Render all layers for complete information
             )
 
             # Convert image to base64 for embedding
             self.last_image_base64 = render.to_base64()
+            render.show()
             return self.last_image_base64
 
         except Exception as e:

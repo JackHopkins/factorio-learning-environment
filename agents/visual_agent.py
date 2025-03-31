@@ -143,7 +143,7 @@ class VisualAgent(AgentABC):
         """
         try:
             # Check if Render is available in the namespace
-            if not hasattr(namespace, "Render") or not callable(namespace.Render):
+            if not hasattr(namespace, "render") or not callable(namespace._render):
                 # Create a Render instance if not available
                 if hasattr(namespace, "connection") and hasattr(namespace, "game_state"):
                     namespace.Render = Render(namespace.connection, namespace.game_state)
@@ -156,7 +156,7 @@ class VisualAgent(AgentABC):
                 player_pos = namespace.PLAYER.position
 
             # Render around player position
-            render = namespace.Render(
+            render = namespace._render(
                 position=player_pos,
                 radius=self.render_radius,
                 layers=Layer.ALL  # Render all layers for complete information

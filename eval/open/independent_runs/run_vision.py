@@ -3,6 +3,7 @@ import argparse
 import multiprocessing
 from dotenv import load_dotenv
 from agents.basic_agent import BasicAgent
+from agents.visual_agent import VisualAgent
 from eval.open.independent_runs.trajectory_runner import run_process, get_next_version, create_factorio_instance, EvalConfig
 from eval.tasks.task_factory import TaskFactory
 from pathlib import Path
@@ -12,7 +13,7 @@ from cluster.local.cluster_ips import get_local_container_ips
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--run_config', type=str, help='Path of the run config file', default=Path( "run_config_thinking_open.json"))
+    parser.add_argument('--run_config', type=str, help='Path of the run config file', default=Path( "run_config_thinking_vision.json"))
     args = parser.parse_args()
     # read in run_config
     run_config_location = args.run_config
@@ -35,7 +36,7 @@ def main():
     processes = []
     for run_idx, run_config in enumerate(run_configs):
         task = TaskFactory.create_task(run_config["task"])
-        agent = BasicAgent(model=run_config["model"], system_prompt=system_prompt, task = task)
+        agent = VisualAgent(model=run_config["model"], system_prompt=system_prompt, task = task)
         if "version" in run_config:
             version = run_config["version"]
         else:

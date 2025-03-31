@@ -11,7 +11,7 @@ from PIL import Image
 from dotenv import load_dotenv
 from matplotlib.ticker import LogLocator
 
-from eval.open.db_client import DBClient
+from eval.open.db_client import DBClient, PostgresDBClient
 from eval.open.independent_runs.value_calculator import ValueCalculator
 
 load_dotenv()
@@ -1254,7 +1254,7 @@ class ProgressionVisualizerWithTicks:
 
 async def main():
     # Example usage
-    db_client = DBClient(
+    db_client = PostgresDBClient(
         max_conversation_length=40,
         host=os.getenv("SKILLS_DB_HOST"),
         port=os.getenv("SKILLS_DB_PORT"),
@@ -1278,7 +1278,9 @@ async def main():
             "LLaMA-70B": [550, 599, 600, 601, 602],
             "Gemini-2": [595, 596, 597, 598, 805, 806, 807, 808],
             "GPT-4o": [551, 552, 553, 554, 564, 797, 798, 799, 800],  # Multiple GPT-4 versions
-            "Claude": [559, 560, 561, 562, 574, 801, 802, 803, 804],  # Multiple Claude versions
+            "Claude-3.5": [559, 560, 561, 562, 574, 801, 802, 803, 804],  # Multiple Claude versions
+            "Claude-3.7": [2223, 2226, 2224, 2225],  # Multiple Claude versions
+            "o3-mini-high": [2229, 2227, 2228, 2230]
             # "LLaMA-70B": [488],  # Single version
             # "GPT-4-Mini": [505],
             # "o3-mini": [508]
@@ -1291,7 +1293,9 @@ async def main():
 
 
         labels = {
-            "Claude": "Claude",
+            "Claude-3.7": "Claude-3.7",
+            "Claude-3.5": "Claude-3.5",
+            "o3-mini-high": 'o3-mini-high',
             "GPT-4o": "GPT-4o",
             "LLaMA-70B": "LLaMA-70B",
             "GPT-4o-Mini": "GPT-4o-Mini",

@@ -1,8 +1,31 @@
 import math
 from typing import Tuple, Any, Union, Dict, Set, Literal
 from typing import List, Optional
-from enum import Enum
+from enum import Enum, Flag, auto, IntFlag
 from pydantic import BaseModel, PrivateAttr, root_validator
+
+
+class Layer(IntFlag):
+    """Enum representing different layers that can be rendered on the map"""
+    NONE = 0
+    GRID = 1 << 0  # Grid lines
+    WATER = 1 << 1  # Water tiles
+    RESOURCES = 1 << 2  # Resource patches (iron, copper, coal, etc.)
+    TREES = 1 << 3  # Trees
+    ROCKS = 1 << 4  # Rocks
+    ENTITIES = 1 << 5  # Player-built entities
+    CONNECTIONS = 1 << 6  # Underground belt/pipe connections
+    ORIGIN = 1 << 7  # Origin marker (0,0)
+    PLAYER = 1 << 8  # Player position marker
+    LABELS = 1 << 9  # Entity labels
+    ELECTRICITY = 1 << 10  # New layer for electricity networks
+
+    # Convenience combinations
+    NATURAL = TREES | ROCKS  # All natural elements
+
+    # Use this explicit definition instead of ~0 to ensure we only include defined flags
+    ALL = (GRID | WATER | RESOURCES | TREES | ROCKS |
+           ENTITIES | CONNECTIONS | ORIGIN | PLAYER | LABELS | ELECTRICITY)
 
 
 # This should really live in `types`, but it's here to prevent a circular import

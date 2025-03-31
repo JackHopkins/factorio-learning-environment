@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-from entities import BurnerMiningDrill, EntityStatus
+from entities import BurnerMiningDrill, EntityStatus, Layer
 from instance import FactorioInstance, Direction
 from game_types import Prototype, Resource
 
@@ -72,6 +72,9 @@ def test_steam_engines(game):
     inspected_assembler = game.get_entity(Prototype.AssemblingMachine1, assembler.position)
     assert inspected_assembler.status == EntityStatus.NO_RECIPE
 
+    image = game._render(position=assembler.position, layers=Layer.ALL)
+    image.show()
+    pass
 
 
 def test_iron_smelting(game: FactorioInstance):

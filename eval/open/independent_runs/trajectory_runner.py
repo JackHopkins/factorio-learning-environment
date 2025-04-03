@@ -83,7 +83,7 @@ class TrajectoryRunner:
                 version=self.config.version,
                 model=self.agent.model,
                 version_description=self.config.version_description,
-                meta={"model": self.agent.model, "process_id": self.process_id},
+                meta={"model": self.agent.model, "process_id": self.process_id, "text_response": policy.meta.text_response},
                 depth=len(messages) - 2
             )
 
@@ -119,9 +119,9 @@ class TrajectoryRunner:
         self.start_time = time.time()
 
         current_state = None
-        if self.config.version:
-            current_state, current_conversation, parent_id, depth = await self.db.get_resume_state(resume_version = self.config.version, process_id = self.process_id)
-            self.agent.conversation = current_conversation
+        #if self.config.version:
+        #    current_state, current_conversation, parent_id, depth = await self.db.get_resume_state(resume_version = self.config.version, process_id = self.process_id)
+        #    self.agent.conversation = current_conversation
             
         if not current_state:
             current_state = self.config.agent.task.starting_game_state

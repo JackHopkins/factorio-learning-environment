@@ -1,8 +1,14 @@
+import sys
+sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser")
+sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\env")
+sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\env\src")
+
 import asyncio
 import argparse
 import multiprocessing
 from dotenv import load_dotenv
 from agents.basic_agent import BasicAgent
+from agents.query_agent import QueryAgent
 from eval.open.independent_runs.trajectory_runner import run_process, get_next_version, create_factorio_instance, EvalConfig
 from eval.tasks.task_factory import TaskFactory
 from pathlib import Path
@@ -35,7 +41,7 @@ def main():
     processes = []
     for run_idx, run_config in enumerate(run_configs):
         task = TaskFactory.create_task(run_config["task"])
-        agent = BasicAgent(model=run_config["model"], system_prompt=system_prompt, task = task)
+        agent = QueryAgent(model=run_config["model"], system_prompt=system_prompt, task = task)
         if "version" in run_config:
             version = run_config["version"]
         else:

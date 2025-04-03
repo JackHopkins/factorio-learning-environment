@@ -10,12 +10,6 @@ harvest_resource(position: Position, quantity: int = 1, radius: int = 10) -> int
 
 The function returns the actual quantity harvested.
 
-### Parameters
-
-- `position`: Position object indicating where to harvest from
-- `quantity`: How many resources to harvest (default: 1)
-- `radius`: Search radius around the position (default: 10)
-
 ### Examples
 
 ```python

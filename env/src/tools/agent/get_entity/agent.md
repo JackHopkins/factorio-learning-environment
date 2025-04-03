@@ -2,12 +2,6 @@
 
 The `get_entity` tool allows you to get objects and update variables with their new versions. It is crucial to regularly get the newest variables at the start of every program to ensure no variables are stale
 
-Inputs
-- Prototype.X
-- Position
-
-Outputs
-Entity object
 
 ## Basic Usage
 Creating power connection

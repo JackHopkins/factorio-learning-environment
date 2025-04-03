@@ -10,12 +10,6 @@ insert_item(item: Prototype, target: Union[Entity, EntityGroup], quantity: int =
 
 The function returns the updated target entity.
 
-### Parameters
-
-- `item`: Prototype of the item to insert
-- `target`: Entity or EntityGroup to insert items into
-- `quantity`: Number of items to insert (default: 5)
-
 ### Examples
 
 ```python

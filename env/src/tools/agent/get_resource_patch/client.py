@@ -19,11 +19,22 @@ class GetResourcePatch(Tool):
         """
         Get the resource patch at position (x, y) if it exists in the radius.
         if radius is set to 0, it will only check the exact position for this resource patch.
-        :param resource: Resource to get, e.g Resource.Coal
-        :param position: Position to get resource patch
-        :param radius: Radius to search for resource patch
+        :param resource: Type of resource to analyze (e.g., Resource.Coal, Resource.Water)
+        :param position: Center point to search around
+        :param radius: Search radius in tiles (default: 10)
         :example coal_patch_at_origin = get_resource_patch(Resource.Coal, Position(x=0, y=0))
-        :return: ResourcePatch if found, else None
+        :return: ResourcePatch if found, else None. ResourcePatch object has the following structure:
+            ResourcePatch(
+                name=str,              # Resource name
+                size=int,              # Total resource amount
+                bounding_box=BoundingBox(
+                    left_top=Position(x,y),
+                    right_bottom=Position(x,y),
+                    left_bottom=Position(x,y),
+                    right_top=Position(x,y)
+                )
+            )
+
         """
         response, time_elapsed = self.execute(PLAYER, resource[0], position.x, position.y, radius)
 

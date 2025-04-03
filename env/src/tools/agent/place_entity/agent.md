@@ -38,58 +38,6 @@ inserter = place_entity(
 )
 # log your actions
 print(f"Placed inserter at {inserter.position} to input into a chest")
-move_to(water_pos)
-# Flexible positioning
-pump = place_entity(
-    Prototype.OffshorePump,
-    position=water_pos
-)
-# log your actions
-print(f"Placed pump at {pump.position}to generate power")
 ```
-
-### Mining Drills
-```python
-# Place on resource patch
-ore_pos = nearest(Resource.IronOre)
-move_to(ore_pos)
-drill = place_entity(
-    Prototype.BurnerMiningDrill,
-    position=ore_pos,
-    direction=Direction.DOWN
-)
-# log your actions
-print(f"Placed drill at {drill.position} to mine iron ore")
-```
-
 ## Best Practices
 - Use nearest buildable to ensure safe placement
-
-## Common Patterns
-
-1. **Mining Setup**
-You can put chests directly at the drop positions of drills to catch ore, thus creating automatic drilling lines
-```python
-def setup_mining(resource_pos: Position):
-    move_to(resource_pos)
-    # Place drill
-    # put the drop position down
-    drill = place_entity(
-        Prototype.BurnerMiningDrill,
-        position=resource_pos,
-        direction=Direction.DOWN,
-    )
-    # log your actions
-    print(f"Placed drill to mine iron ore at {drill.position}")
-    # insert coal to drill
-    drill = insert_item(Prototype.Coal, drill, quantity = 10)
-    # Place output chest that catches ore
-    chest = place_entity(
-        Prototype.WoodenChest,
-        position=drill.drop_position,
-        direction=Direction.DOWN,
-    )
-    # log your actions
-    print(f"Placed chest to catch iron ore at {chest.position}")
-    return drill, chest
-```

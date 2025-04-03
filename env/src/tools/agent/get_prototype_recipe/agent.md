@@ -27,23 +27,6 @@ recipe = get_prototype_recipe(RecipeName.SolidFuelFromHeavyOil)
 for ingredient in recipe.ingredients:
     print(f"Need {ingredient.count} {ingredient.name}")
 ```
-### Parameters
-
-The tool accepts one of:
-1. `Prototype` enum value
-2. `RecipeName` enum value
-3. Raw string name of the recipe
-
-### Return Value
-
-Returns a `Recipe` object with the following structure:
-```python
-Recipe(
-    name=str,
-    ingredients=[Ingredient(name=str, count=int, type=str)],
-    products=[Product(name=str, count=int, probability=float, type=str)]
-)
-```
 
 ## Common Use Cases
 

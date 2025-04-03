@@ -10,10 +10,6 @@ move_to(position: Position) -> Position
 
 The function returns your final Position after moving.
 
-### Parameters
-
-- `position`: Target Position to move to
-
 ### Examples
 
 ```python

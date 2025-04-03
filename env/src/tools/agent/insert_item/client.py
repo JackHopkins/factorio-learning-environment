@@ -17,7 +17,7 @@ class InsertItem(Tool):
         """
         Insert an item into a target entity's inventory
         :param entity: Type to insert from inventory
-        :param target: Entity to insert into
+        :param target: Entity or EntityGroup to insert items into
         :param quantity: Quantity to insert
         :return: The target entity inserted into
         """

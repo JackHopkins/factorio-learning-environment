@@ -10,6 +10,15 @@ import json
 load_dotenv()
 from cluster.local.cluster_ips import get_local_container_ips
 
+
+class RunConfig:
+    def __init__(self, task: str, model: str, version: int = None, num_agents: int = 1):
+        self.task = task
+        self.model = model
+        self.version = version
+        self.num_agents = num_agents
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--run_config', type=str, help='Path of the run config file', default=Path("eval", "open", "independent_runs","run_config.json"))
@@ -17,7 +26,9 @@ def main():
     # read in run_config
     run_config_location = args.run_config
     with open(run_config_location, 'r') as f:
-        run_configs = json.load(f)
+        run_configs_raw = json.load(f)
+        run_configs = [RunConfig(**config) for config in run_configs_raw]
+
     # Create initial state and get system prompt
     try:
         instance = create_factorio_instance(0)
@@ -34,17 +45,20 @@ def main():
     base_version = asyncio.run(get_next_version())
     processes = []
     for run_idx, run_config in enumerate(run_configs):
-        task = TaskFactory.create_task(run_config["task"])
-        agent = BasicAgent(model=run_config["model"], system_prompt=system_prompt, task = task)
-        if "version" in run_config:
-            version = run_config["version"]
+        task = TaskFactory.create_task(run_config.task)
+        agents = []
+        for _ in range(run_config.num_agents):
+            agent = BasicAgent(model=run_config.model, system_prompt=system_prompt, task=task)
+            agents.append(agent)
+        if run_config.version is not None:
+            version = run_config.version
         else:
             version = base_version + version_offset
             version_offset += 1
         config = EvalConfig(
-            agent=agent,
+            agents=agents,
             version=version,
-            version_description=f"model:{run_config['model']}\ntype:{task.task_key}",
+            version_description=f"model:{run_config.model}\ntype:{task.task_key}",
         )
 
         p = multiprocessing.Process(

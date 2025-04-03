@@ -23,9 +23,11 @@ end
 
 
 global.actions.move_to = function(player_index, path_handle, trailing_entity, is_trailing)
-    local player = game.get_player(player_index)
+    game.print("Moving with character!")
+    local character = game.get_player(player_index).character
+    if not character then return end
     local path = global.paths[path_handle]
-    local surface = player.surface
+    local surface = character.surface
 
     -- Check if path is valid
     if not path or type(path) ~= "table" or #path == 0 then
@@ -63,13 +65,13 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
         if #global.walking_queues[player_index].positions > 0 then
             local target = global.walking_queues[player_index].positions[1]
             global.walking_queues[player_index].current_target = target
-            player.walking_state = {
+            character.walking_state = {
                 walking = true,
-                direction = global.utils.get_direction(player.position, target)
+                direction = global.utils.get_direction(character.position, target)
             }
         end
 
-        return player.position
+        return character.position
     end
 
     local function rotate_entity(entity, direction)
@@ -88,17 +90,17 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
     end
 
     local function place(place_position, direction)
-        if surface.can_place_entity{name=trailing_entity, position=place_position, direction=direction, force='player', build_check_type=defines.build_check_type.manual} then
-            if player.get_item_count(trailing_entity) > 0 then
-                local created = surface.create_entity{name=trailing_entity, position=place_position, direction=direction, force='player', player=player, build_check_type=defines.build_check_type.manual, fast_replace=true}
+        if surface.can_place_entity{name=trailing_entity, position=place_position, direction=direction, force=character.force, build_check_type=defines.build_check_type.manual} then
+            if character.get_item_count(trailing_entity) > 0 then
+                local created = surface.create_entity{name=trailing_entity, position=place_position, direction=direction, force=character.force, build_check_type=defines.build_check_type.manual, fast_replace=true}
                 if created then
-                    player.remove_item({name=trailing_entity, count=1})
+                    character.remove_item({name=trailing_entity, count=1})
                 end
                 return created
             else
                 error("\"No ".. trailing_entity .." in the inventory\"")
             end
-        elseif surface.can_fast_replace{name=trailing_entity, position=place_position, direction=direction, force='player'} then
+        elseif surface.can_fast_replace{name=trailing_entity, position=place_position, direction=direction, force=character.force} then
             local existing_entity = surface.find_entity(trailing_entity, place_position)
             if existing_entity and existing_entity.direction ~= direction then
                 rotate_entity(existing_entity, direction)
@@ -156,14 +158,13 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
     end
 
     local prev_belt = nil
-    local prev_pos = player.position
+    local prev_pos = character.position
     for i = 1, #path do
-        local current_position = player.position
+        local current_position = character.position
         local target_position = path[i].position
 
         -- Calculate and accumulate movement ticks before teleporting
-        global.elapsed_ticks = global.elapsed_ticks + global.utils.calculate_movement_ticks(player, prev_pos, target_position)
-
+        global.elapsed_ticks = global.elapsed_ticks + global.utils.calculate_movement_ticks(character, prev_pos, target_position)
 
         local direction = global.utils.get_direction(prev_pos, target_position)
 
@@ -183,7 +184,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
                     rotate_entity(prev_belt, global.utils.get_direction(prev_belt.position, prev_pos))
                 end
             end
-            player.teleport(target_position)
+            character.teleport(target_position)
         elseif is_trailing == 0 then
             if math.abs(prev_pos.x - target_position.x) == 1 and math.abs(prev_pos.y - target_position.y) == 1 then
                 place_diagonal(prev_pos, target_position, true)
@@ -197,16 +198,16 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
                     rotate_entity(prev_belt, global.utils.get_direction(prev_belt.position, current_position))
                 end
             end
-            player.teleport(target_position)
+            character.teleport(target_position)
         else
-            player.teleport(target_position)
+            character.teleport(target_position)
         end
         prev_belt = new_belt
         prev_pos = target_position
         ::continue::
     end
 
-    return player.position
+    return character.position
 end
 
 -- Add this new function to handle the walking queue updates
@@ -216,12 +217,13 @@ global.actions.update_walking_queues = function()
 
     for player_index, queue in pairs(global.walking_queues) do
         local player = game.get_player(player_index)
-        if not player or not queue.current_target then goto continue end
+        local character = player.character
+        if not character or not queue.current_target then goto continue end
 
-        local distance = ((player.position.x - queue.current_target.x)^2 +
-                         (player.position.y - queue.current_target.y)^2)^0.5
+        local distance = ((character.position.x - queue.current_target.x)^2 +
+                         (character.position.y - queue.current_target.y)^2)^0.5
 
-        -- If player is close enough to current target
+        -- If character is close enough to current target
         if distance < 1 then
             -- Remove the current position from queue
             table.remove(queue.positions, 1)
@@ -229,20 +231,20 @@ global.actions.update_walking_queues = function()
             -- If there are more positions, start walking to next one
             if #queue.positions > 0 then
                 queue.current_target = queue.positions[1]
-                player.walking_state = {
+                character.walking_state = {
                     walking = true,
-                    direction = global.utils.get_direction_with_diagonals(player.position, queue.current_target)
+                    direction = global.utils.get_direction_with_diagonals(character.position, queue.current_target)
                 }
             else
                 -- Queue is empty, stop walking
-                player.walking_state = {walking = false}
+                character.walking_state = {walking = false}
                 queue.current_target = nil
             end
         else
             -- Update walking direction to current target
-            player.walking_state = {
+            character.walking_state = {
                 walking = true,
-                direction = global.utils.get_direction_with_diagonals(player.position, queue.current_target)
+                direction = global.utils.get_direction_with_diagonals(character.position, queue.current_target)
             }
         end
 

@@ -35,6 +35,7 @@ class EvalConfig:
     agent: AgentABC
     version: int
     version_description: str
+    exit_on_task_success: bool
 
 
 class TrajectoryRunner:

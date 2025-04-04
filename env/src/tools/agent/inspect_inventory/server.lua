@@ -1,22 +1,26 @@
-global.actions.inspect_inventory = function(player_index, is_character_inventory, x, y, entity)
+global.actions.inspect_inventory = function(character_index, is_character_inventory, x, y, entity)
     local position = {x=x, y=y}
-    local player = game.get_player(player_index)
-    local surface = player.surface
+    local character = global.character_registry.get_character_by_index(character_index)
+    if not character then
+        error("Character not found in registry at index " .. character_index)
+    end
+    
+    local surface = character.surface
     local is_fast = global.fast
     local automatic_close = True
 
-    local function get_player_inventory_items(player)
+    local function get_character_inventory_items(character)
        if not is_fast then
-           player.opened = player
+           character.opened = character
            script.on_nth_tick(60, function()
                if automatic_close == True then
-                   player.opened = nil
+                   character.opened = nil
                    automatic_close = False
                end
            end)
        end
 
-       local inventory = player.get_main_inventory()
+       local inventory = character.get_main_inventory()
        if not inventory or not inventory.valid then
            return nil
        end
@@ -47,10 +51,10 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
        end
 
        if not is_fast then
-           player.opened = closest_entity
+           character.opened = closest_entity
            script.on_nth_tick(60, function()
                if automatic_close == True then
-                   player.opened = nil
+                   character.opened = nil
                    automatic_close = False
                end
            end)
@@ -92,17 +96,12 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
        return closest_entity.get_inventory(defines.inventory.chest).get_contents()
     end
 
-    local player = game.get_player(player_index)
-    if not player then
-       error("Player not found")
-    end
-
     if is_character_inventory then
-       local inventory_items = get_player_inventory_items(player)
+       local inventory_items = get_character_inventory_items(character)
        if inventory_items then
            return dump(inventory_items)
        else
-           error("Could not get player inventory")
+           error("Could not get character inventory")
        end
     else
        local inventory_items = get_inventory()
@@ -114,13 +113,17 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
     end
 end
 
-global.actions.inspect_inventory2 = function(player_index, is_character_inventory, x, y)
+global.actions.inspect_inventory2 = function(character_index, is_character_inventory, x, y)
     local position = {x=x, y=y}
-    local player = game.get_player(player_index)
-    local surface = player.surface
+    local character = global.character_registry.get_character_by_index(character_index)
+    if not character then
+        error("Character not found in registry at index " .. character_index)
+    end
+    
+    local surface = character.surface
 
-    local function get_player_inventory_items(player)
-        local inventory = player.get_main_inventory()
+    local function get_character_inventory_items(character)
+        local inventory = character.get_main_inventory()
         if not inventory or not inventory.valid then
             return nil
         end
@@ -181,18 +184,13 @@ global.actions.inspect_inventory2 = function(player_index, is_character_inventor
         return closest_entity.get_inventory(defines.inventory.chest).get_contents()
     end
 
-    local player = game.get_player(player_index)
-    if not player then
-        error("Player not found")
-    end
-
     if is_character_inventory then
-        local inventory_items = get_player_inventory_items(player)
+        local inventory_items = get_character_inventory_items(character)
 
         if inventory_items then
             return dump(inventory_items)
         else
-            error("Could not get player inventory")
+            error("Could not get character inventory")
         end
     else
         local inventory_items = get_inventory()

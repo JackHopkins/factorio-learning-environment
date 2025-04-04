@@ -22,11 +22,13 @@ end
 --end
 
 
-global.actions.move_to = function(player_index, path_handle, trailing_entity, is_trailing)
-    game.print("Moving with character!")
-    local character = game.get_player(player_index).character
-    if not character then return end
-    local path = global.paths[path_handle]
+global.actions.move_to = function(character_index, x, y, trailing_entity, is_trailing)
+    local character = global.character_registry.get_character_by_index(character_index)
+    if not character then
+        error("Character not found in registry at index " .. character_index)
+    end
+
+    local position = {x = x, y = y}
     local surface = character.surface
 
     -- Check if path is valid
@@ -41,30 +43,30 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
             global.walking_queues = {}
         end
 
-        -- Create or clear existing queue for this player
-        if not global.walking_queues[player_index] then
-            global.walking_queues[player_index] = {
+        -- Create or clear existing queue for this character
+        if not global.walking_queues[character_index] then
+            global.walking_queues[character_index] = {
                 positions = {},
                 current_target = nil,
                 trailing_entity = trailing_entity,
                 is_trailing = is_trailing
             }
         else
-            global.walking_queues[player_index].positions = {}
-            global.walking_queues[player_index].current_target = nil
-            global.walking_queues[player_index].trailing_entity = trailing_entity
-            global.walking_queues[player_index].is_trailing = is_trailing
+            global.walking_queues[character_index].positions = {}
+            global.walking_queues[character_index].current_target = nil
+            global.walking_queues[character_index].trailing_entity = trailing_entity
+            global.walking_queues[character_index].is_trailing = is_trailing
         end
 
         -- Add all path positions to the queue
         for _, point in ipairs(path) do
-            table.insert(global.walking_queues[player_index].positions, point.position)
+            table.insert(global.walking_queues[character_index].positions, point.position)
         end
 
         -- Start walking to first position
-        if #global.walking_queues[player_index].positions > 0 then
-            local target = global.walking_queues[player_index].positions[1]
-            global.walking_queues[player_index].current_target = target
+        if #global.walking_queues[character_index].positions > 0 then
+            local target = global.walking_queues[character_index].positions[1]
+            global.walking_queues[character_index].current_target = target
             character.walking_state = {
                 walking = true,
                 direction = global.utils.get_direction(character.position, target)

@@ -1,5 +1,8 @@
-global.actions.nearest = function(player_index, resource)
-    local player = game.get_player(player_index)
+global.actions.nearest = function(character_index, resource)
+    local character = global.character_registry.get_character_by_index(character_index)
+    if not character then
+        error("Character not found in registry at index " .. character_index)
+    end
 
     local function normalize_resource_name(resource)
         if resource == "copper" then
@@ -15,9 +18,9 @@ global.actions.nearest = function(player_index, resource)
 
     local normalized_resource = normalize_resource_name(resource)
 
-    local function find_nearest(player, resource)
-        local surface = player.surface
-        local position = player.position
+    local function find_nearest(character, resource)
+        local surface = character.surface
+        local position = character.position
         local closest_distance = math.huge
         local closest = nil
         local entities
@@ -67,5 +70,5 @@ global.actions.nearest = function(player_index, resource)
         --return { x = position.x - closest.x, y = position.y - closest.y }
     end
 
-    return find_nearest(player, normalized_resource)
+    return find_nearest(character, normalized_resource)
 end

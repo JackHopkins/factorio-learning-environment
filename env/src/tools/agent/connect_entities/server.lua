@@ -621,7 +621,7 @@ local function place_at_position(player, connection_type, current_position, dir,
 
     -- Place entity
     if can_place and not dry_run then
-        --global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
+        --global.utils.avoid_entity(character_index, connection_type, placement_position, dir)
 
         local placed_entity = game.surfaces[1].create_entity({
             name = connection_type,

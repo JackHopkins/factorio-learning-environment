@@ -730,4 +730,28 @@ def unwrap_after_deserialization(instance, value):
     return value
 
 
+def get_character_index(self, unit_number):
+    """Get the registry index for a character by its unit number"""
+    try:
+        response, time_elapsed = self.execute(PLAYER, unit_number=unit_number)
+        return response
+    except Exception as e:
+        print(f"Error getting character index: {e}")
+        return None
+
+
+def create_character(self, x, y):
+    """Create a new character at the specified position.
+    
+    Args:
+        x (float): X coordinate for character placement
+        y (float): Y coordinate for character placement
+        
+    Returns:
+        int: The index of the newly created character in the registry
+    """
+    response, time_elapsed = self.execute(PLAYER, x=x, y=y)
+    return response
+
+
 

@@ -64,7 +64,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         local ref_width, ref_height
         if ref_entity then
             if ref_entity.type == "inserter" then
-                ref_width, ref_height = 1, 1
+                ref_width = 1, 1
             else
                 local ref_orientation = ref_entity.direction
                 if ref_orientation == 2 or ref_orientation == 6 then  -- East or West
@@ -223,15 +223,15 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     --game.print("new_position: " .. serpent.line(new_position))
     --create_beam_point_with_direction(player, direction, new_position)
 
-    local function player_collision(player, target_area)
-        --local character_box = player.character.prototype.collision_box
+    local function character_collision(character, target_area)
+        --local character_box = character.prototype.collision_box
         local character_box = {
             left_top = {x = -0.2, y = -0.2},
             right_bottom = {x = 0.2, y = 0.2}
         }
         local character_area = {
-            {player.position.x + character_box.left_top.x, player.position.y + character_box.left_top.y},
-            {player.position.x + character_box.right_bottom.x, player.position.y + character_box.right_bottom.y}
+            {character.position.x + character_box.left_top.x, character.position.y + character_box.left_top.y},
+            {character.position.x + character_box.right_bottom.x, character.position.y + character_box.right_bottom.y}
         }
         return (character_area[1][1] < target_area[2][1] and character_area[2][1] > target_area[1][1]) and
                (character_area[1][2] < target_area[2][2] and character_area[2][2] > target_area[1][2])
@@ -275,7 +275,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             {new_position.x - width / 2, new_position.y - height / 2},
             {new_position.x + width / 2, new_position.y + height / 2}
         }
-        while player_collision(player, target_area) do
+        while character_collision(player, target_area) do
             player.teleport({player.position.x + width + 1, player.position.y}, player.surface)
         end
     end
@@ -299,7 +299,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         {new_position.x + entity_width / 2, new_position.y + entity_height / 2}
     }
 
-    if player_collision(player, target_area) then
+    if character_collision(player, target_area) then
         game.print("Player is colliding with the target area. Moving player.")
         local move_distance = math.max(entity_width, entity_height) + 1
         local move_direction = {x = 0, y = 0}

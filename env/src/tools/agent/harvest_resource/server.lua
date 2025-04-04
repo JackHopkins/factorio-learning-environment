@@ -1,4 +1,4 @@
---- global.actions.harvest_resource(player_index, x, y, count, radius)
+--- global.actions.harvest_resource(character_index, x, y, count, radius)
 local function calculate_mining_ticks(entity)
     local mining_time = entity.prototype.mineable_properties.mining_time or 1
     -- Convert mining time (in seconds) to ticks (60 ticks per second)
@@ -40,18 +40,18 @@ local function sort_entities_by_distance(entities, from_position)
 end
 
 -- Helper function to start mining an entity and track yields
-local function start_mining_entity(player, entity)
+local function start_mining_entity(character, entity)
     if entity.valid and entity.minable then
         --game.print("Starting mining entity " .. entity.name .. " at " .. serpent.line(entity.position))
 
         -- First select the entity
 
-        --player.selected = entity
+        --character.selected = entity
 
         -- Then set mining state with position
-        if not player.mining_state.mining then
-            player.update_selected_entity(entity.position)
-            player.mining_state = {
+        if not character.mining_state.mining then
+            character.update_selected_entity(entity.position)
+            character.mining_state = {
                 mining = true,
                 position = entity.position
             }
@@ -106,23 +106,23 @@ script.on_nth_tick(15, function(event)
     -- If no queues at all, just return
     if not global.harvest_queues then return end
 
-    for player_index, queue in pairs(global.harvest_queues) do
-        local player = game.get_player(player_index)
-        -- Skip if player not valid
-        if not player or not player.valid then goto continue end
+    for character_index, queue in pairs(global.harvest_queues) do
+        local character = global.character_registry.get_character_by_index(character_index)
+        -- Skip if character not valid
+        if not character or not character.valid then goto continue end
 
         -- Already reached or exceeded our target?
         if queue.total_yield >= queue.target_yield then
-            -- Remove this player's queue
-            global.harvest_queues[player_index] = nil
+            -- Remove this character's queue
+            global.harvest_queues[character_index] = nil
             goto continue
         end
 
-        -- Check if player is still in resource reach distance
-        local dist_x = player.position.x - queue.mining_position.x
-        local dist_y = player.position.y - queue.mining_position.y
+        -- Check if character is still in resource reach distance
+        local dist_x = character.position.x - queue.mining_position.x
+        local dist_y = character.position.y - queue.mining_position.y
         local sq_dist = (dist_x * dist_x) + (dist_y * dist_y)
-        local sq_reach = (player.resource_reach_distance * player.resource_reach_distance)
+        local sq_reach = (character.resource_reach_distance * character.resource_reach_distance)
         if sq_dist > sq_reach then
             -- Too far away; do nothing for now
             goto continue
@@ -133,7 +133,7 @@ script.on_nth_tick(15, function(event)
             local next_entity = table.remove(queue.entities, 1)
             if not next_entity then
                 -- No more entities left
-                global.harvest_queues[player_index] = nil
+                global.harvest_queues[character_index] = nil
                 goto continue
             end
 
@@ -154,10 +154,10 @@ script.on_nth_tick(15, function(event)
             local ticks_mining = game.tick - queue.current_mining.start_tick
             if ticks_mining >= 30 then
                 -- Time to finish mining
-                local inv_before = player.get_main_inventory().get_contents()
-                local mined_ok = player.mine_entity(entity)  -- Instantly mines & adds items
+                local inv_before = character.get_main_inventory().get_contents()
+                local mined_ok = character.mine_entity(entity)  -- Instantly mines & adds items
                 if mined_ok then
-                    local inv_after = player.get_main_inventory().get_contents()
+                    local inv_after = character.get_main_inventory().get_contents()
 
                     -- Figure out how many items we actually gained
                     local items_added = 0
@@ -171,7 +171,7 @@ script.on_nth_tick(15, function(event)
                         local new_total = queue.total_yield + items_added
 
                         if new_total > queue.target_yield then
-                            -- We overshot. Remove the extras from the player's inventory.
+                            -- We overshot. Remove the extras from the character's inventory.
                             local overshoot = new_total - queue.target_yield
                             -- We'll try to remove it from whatever items were gained.
                             -- If multiple resource types might drop, you'd handle them individually.
@@ -182,7 +182,7 @@ script.on_nth_tick(15, function(event)
                                 local gained_this_item = (after_count - before_count)
                                 if gained_this_item > 0 then
                                     local to_remove = math.min(overshoot_left, gained_this_item)
-                                    local actually_removed = player.remove_item({name = name, count = to_remove})
+                                    local actually_removed = character.remove_item({name = name, count = to_remove})
                                     overshoot_left = overshoot_left - actually_removed
                                     if overshoot_left <= 0 then
                                         break
@@ -205,9 +205,9 @@ script.on_nth_tick(15, function(event)
 end)
 
 
-local function check_inventory_space(player, entity, count)
-    -- Get player's main inventory
-    local inventory = player.get_main_inventory()
+local function check_inventory_space(character, entity, count)
+    -- Get character's main inventory
+    local inventory = character.get_main_inventory()
     if not inventory then return false end
 
     -- Create a temporary inventory to test insertion
@@ -253,10 +253,10 @@ local function find_entity_type_at_position(surface, position)
     return nil, nil
 end
 
-local function harvest_specific_resources(player, surface, position, count, target_type, target_name)
+local function harvest_specific_resources(character, surface, position, count, target_type, target_name)
     game.print("Harvesting specific resources")
     -- Use existing harvest/harvest_trees functions but filtered to specific type
-    local radius = player.resource_reach_distance
+    local radius = character.resource_reach_distance
     local entities = surface.find_entities_filtered{
         position = position,
         radius = radius,
@@ -271,9 +271,9 @@ local function harvest_specific_resources(player, surface, position, count, targ
 
     -- Use your existing harvest functions based on type
     if target_type == "tree" then
-        return harvest_trees(entities, count, position, player)
+        return harvest_trees(entities, count, position, character)
     else
-        return harvest(entities, count, position, player)
+        return harvest(entities, count, position, character)
     end
 end
 
@@ -287,22 +287,22 @@ local function find_entities_at_position(surface, position, entity_types, exact)
     }
 end
 
-local function begin_mining(queue, player)
+local function begin_mining(queue, character)
     if #queue.entities > 0 then
         local first_entity = table.remove(queue.entities, 1)
-        queue.current_mining = start_mining_entity(player, first_entity)
+        queue.current_mining = start_mining_entity(character, first_entity)
         if not queue.current_mining then
             error("Failed to start mining entity")
         end
     end
 end
 
-local function initialize_harvest_queue(player_index, position, target_yield)
+local function initialize_harvest_queue(character_index, position, target_yield)
    if not global.harvest_queues then
        global.harvest_queues = {}
    end
 
-   global.harvest_queues[player_index] = {
+   global.harvest_queues[character_index] = {
        entities = {},
        mining_position = position,
        total_mined = 0,
@@ -311,17 +311,17 @@ local function initialize_harvest_queue(player_index, position, target_yield)
        target_yield = target_yield
    }
 
-   return global.harvest_queues[player_index]
+   return global.harvest_queues[character_index]
 end
 
 
-local function harvest_resource_slow(player, player_index, surface, position, count)
+local function harvest_resource_slow(character, character_index, surface, position, count)
    local exact_entities = find_entities_at_position(surface, position, {"tree", "resource"}, true)
 
    if #exact_entities > 0 then
-       local queue = initialize_harvest_queue(player_index, position, count)
+       local queue = initialize_harvest_queue(character_index, position, count)
        local expected_yield = add_entities_to_queue(queue, exact_entities, count)
-       begin_mining(queue, player)
+       begin_mining(queue, character)
        return expected_yield
    end
 
@@ -330,14 +330,14 @@ local function harvest_resource_slow(player, player_index, surface, position, co
        error("No harvestable entities found within range")
    end
 
-   local queue = initialize_harvest_queue(player_index, position, count)
+   local queue = initialize_harvest_queue(character_index, position, count)
    local expected_yield = add_entities_to_queue(queue, radius_entities, count)
    game.print("expected "..expected_yield)
-   begin_mining(queue, player)
+   begin_mining(queue, character)
    return expected_yield
 end
 
-function harvest(entities, count, from_position, player)
+function harvest(entities, count, from_position, character)
     if count == 0 then return 0 end
     local yield = 0
 
@@ -351,7 +351,7 @@ function harvest(entities, count, from_position, player)
     end
 
     if reference_entity then
-        check_inventory_space(player, reference_entity, count)
+        check_inventory_space(character, reference_entity, count)
     end
 
 
@@ -372,8 +372,8 @@ function harvest(entities, count, from_position, player)
                 local amount = product.amount or 1
                 yield = yield + amount
                 entity.mine({ignore_minable=false, raise_destroyed=true})
-                player.insert({name=product.name, count=amount})
-                update_production_stats(player.force, product.name, amount)
+                character.insert({name=product.name, count=amount})
+                update_production_stats(character.force, product.name, amount)
                 has_mined = true
                 if yield >= count then break end
             end
@@ -386,7 +386,7 @@ function harvest(entities, count, from_position, player)
     return yield
 end
 
-function harvest_trees(entities, count, from_position, player)
+function harvest_trees(entities, count, from_position, character)
     game.print("Harvesting "..#entities.." trees")
     if count == 0 then return 0 end
     local yield = 0
@@ -405,8 +405,8 @@ function harvest_trees(entities, count, from_position, player)
             for _, product in pairs(products) do
                 if product.name == "wood" then
                     local amount = product.amount or 1
-                    player.insert({name="wood", count=amount})
-                    update_production_stats(player.force, "wood", amount)
+                    character.insert({name="wood", count=amount})
+                    update_production_stats(character.force, "wood", amount)
                     yield = yield + amount
 
                     local tree_position = entity.position
@@ -425,7 +425,7 @@ function harvest_trees(entities, count, from_position, player)
 end
 
 -- Add function to handle simple entities like rocks and tree stumps
-local function harvest_simple_entities(entities, count, from_position, player)
+local function harvest_simple_entities(entities, count, from_position, character)
     if count == 0 then return 0 end
     local yield = 0
     entities = sort_entities_by_distance(entities, from_position)
@@ -442,8 +442,8 @@ local function harvest_simple_entities(entities, count, from_position, player)
                 local amount = product.amount or 1
                 yield = yield + amount
                 entity.mine({ignore_minable=false, raise_destroyed=true})
-                player.insert({name=product.name, count=amount})
-                update_production_stats(player.force, product.name, amount)
+                character.insert({name=product.name, count=amount})
+                update_production_stats(character.force, product.name, amount)
 
                 if yield >= count then break end
             end
@@ -454,21 +454,21 @@ local function harvest_simple_entities(entities, count, from_position, player)
 end
 
 
-global.actions.harvest_resource = function(player_index, x, y, count, radius)
-    local player = game.get_player(player_index)
-    if not player then
-        error("Player not found")
+global.actions.harvest_resource = function(character_index, x, y, count, radius)
+    local character = global.character_registry.get_character_by_index(character_index)
+    if not character then
+        error("Character not found in registry at index " .. character_index)
     end
 
-    local player_position = player.position
+    local character_position = character.position
     local position = {x=x, y=y}
 
-    local distance = math.sqrt((position.x - player_position.x)^2 + (position.y - player_position.y)^2)
-    if distance > player.resource_reach_distance then
+    local distance = math.sqrt((position.x - character_position.x)^2 + (position.y - character_position.y)^2)
+    if distance > character.resource_reach_distance then
         error("Nothing within reach to harvest")
     end
 
-    local surface = player.surface
+    local surface = character.surface
     local target_type, target_name = find_entity_type_at_position(surface, position)
 
     if not target_type then
@@ -476,12 +476,12 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
     end
 
     if not global.fast then
-        return harvest_resource_slow(player, player_index, surface, position, count, radius)
+        return harvest_resource_slow(character, character_index, surface, position, count, radius)
     end
 
     local total_yield = 0
     if target_type then
-        total_yield = total_yield + harvest_specific_resources(player, surface, position, count, target_type, target_name)
+        total_yield = total_yield + harvest_specific_resources(character, surface, position, count, target_type, target_name)
         if total_yield >= count then
             game.print("Harvested " .. total_yield .. " items of " .. target_name)
             return total_yield
@@ -496,7 +496,7 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
             radius = radius,
             type = "tree"
         }
-        total_yield = total_yield + harvest_trees(tree_entities, count - total_yield, position, player)
+        total_yield = total_yield + harvest_trees(tree_entities, count - total_yield, position, character)
     end
 
     if total_yield < count then
@@ -506,7 +506,7 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
             radius = radius,
             type = "simple-entity"
         }
-        total_yield = total_yield + harvest_simple_entities(simple_entities, count - total_yield, position, player)
+        total_yield = total_yield + harvest_simple_entities(simple_entities, count - total_yield, position, character)
     end
 
     if total_yield < count then
@@ -516,7 +516,7 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
             radius = radius,
             type = "resource"
         }
-        total_yield = total_yield + harvest(mineable_entities, count - total_yield, position, player)
+        total_yield = total_yield + harvest(mineable_entities, count - total_yield, position, character)
     end
 
     if total_yield == 0 then
@@ -586,31 +586,31 @@ end
 --end
 
 
-global.actions.clear_harvest_queue = function(player_index)
-    if global.harvest_queues and global.harvest_queues[player_index] then
-        global.harvest_queues[player_index] = nil
+global.actions.clear_harvest_queue = function(character_index)
+    if global.harvest_queues and global.harvest_queues[character_index] then
+        global.harvest_queues[character_index] = nil
     end
 end
 
-global.actions.get_harvest_queue_length = function(player_index)
-    if global.harvest_queues and global.harvest_queues[player_index] then
-        return #global.harvest_queues[player_index].entities
+global.actions.get_harvest_queue_length = function(character_index)
+    if global.harvest_queues and global.harvest_queues[character_index] then
+        return #global.harvest_queues[character_index].entities
     end
     return 0
 end
 
-global.actions.get_resource_name_at_position = function(player_index, x, y)
-    local player = game.get_player(player_index)
-    if not player then
-        error("Player not found")
+global.actions.get_resource_name_at_position = function(character_index, x, y)
+    local character = global.character_registry.get_character_by_index(character_index)
+    if not character then
+        error("Character not found in registry at index " .. character_index)
     end
 
     local position = {x=x, y=y}
-    local surface = player.surface
+    local surface = character.surface
 
     local entities = surface.find_entities_filtered{
         position = position,
-        radius = player.resource_reach_distance,
+        radius = character.resource_reach_distance,
         type = {"tree", "resource"},
         limit = 1
     }

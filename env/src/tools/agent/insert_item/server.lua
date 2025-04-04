@@ -25,13 +25,17 @@ local function get_inventory_info(entity)
     return ""
 end
 
-global.actions.insert_item = function(player_index, insert_item, count, x, y, target_name)
-    local player = game.get_player(player_index)
+global.actions.insert_item = function(character_index, insert_item, count, x, y, target_name)
+    local character = global.character_registry.get_character_by_index(character_index)
+    if not character then
+        error("Character not found in registry at index " .. character_index)
+    end
+    
     local position = {x=x, y=y}
-    local surface = player.surface
+    local surface = character.surface
 
-    -- Check if player has enough items
-    local item_count = player.get_item_count(insert_item)
+    -- Check if character has enough items
+    local item_count = character.get_item_count(insert_item)
     if item_count == 0 then
         error('\"No '..insert_item..' to insert from your inventory\"')
     end
@@ -160,7 +164,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
 
     -- Throw an error if the entity is too far away from the player
     if closest_distance > 10 then
-        error("\"Entity at ("..closest_entity.position.x..", "..closest_entity.position.y..") is too far away from your position of ("..player.character.position.x..", "..player.character.position.y.."), move closer.\"")
+        error("\"Entity at ("..closest_entity.position.x..", "..closest_entity.position.y..") is too far away from your position of ("..character.position.x..", "..character.position.y.."), move closer.\"")
     end
 
     -- Function to insert items onto a transport belt - one at a time
@@ -223,7 +227,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
     game.print("Inserted " .. inserted .. " items.")
     if inserted > 0 then
         -- Only remove successfully inserted items from player
-        player.remove_item{name=insert_item, count=inserted}
+        character.remove_item{name=insert_item, count=inserted}
         game.print("Successfully inserted " .. inserted .. " items.")
         return global.utils.serialize_entity(closest_entity)
     else

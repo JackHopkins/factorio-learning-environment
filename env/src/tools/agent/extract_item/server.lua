@@ -96,10 +96,14 @@ local function remove_items_from_entity(entity, stack)
     return total_removed
 end
 
-global.actions.extract_item = function(player_index, extract_item, count, x, y, source_name)
-    local player = game.get_player(player_index)
+global.actions.extract_item = function(character_index, extract_item, count, x, y, source_name)
+    local character = global.character_registry.get_character_by_index(character_index)
+    if not character then
+        error("Character not found in registry at index " .. character_index)
+    end
+    
     local position = {x=x, y=y}
-    local surface = player.surface
+    local surface = character.surface
 
     -- First validate the request
     if count <= 0 then
@@ -158,7 +162,7 @@ global.actions.extract_item = function(player_index, extract_item, count, x, y, 
     end
 
     if closest_distance > search_radius then
-        error("\"Entity at ("..closest_entity.position.x..", "..closest_entity.position.y..") is too far away from your position of ("..player.character.position.x..","..player.character.position.y.."), move closer.\"")
+        error("\"Entity at ("..closest_entity.position.x..", "..closest_entity.position.y..") is too far away from your position of ("..character.position.x..","..character.position.y.."), move closer.\"")
     end
 
     if not found_any_items then
@@ -177,7 +181,7 @@ global.actions.extract_item = function(player_index, extract_item, count, x, y, 
 
     if number_extracted > 0 then
         -- Insert items into player inventory
-        local inserted = player.insert(stack)
+        local inserted = character.insert(stack)
 
         -- If we couldn't insert all items, put them back in the container
         if inserted < number_extracted then

@@ -1,5 +1,9 @@
-global.actions.get_entity = function(player_index, entity, x, y)
-    local player = game.get_player(player_index)
+global.actions.get_entity = function(character_index, entity, x, y)
+    local character = global.character_registry.get_character_by_index(character_index)
+    if not character then
+        error("Character not found in registry at index " .. character_index)
+    end
+
     local position = {x=x, y=y}
 
     if game.entity_prototypes[entity] == nil then
@@ -19,8 +23,8 @@ global.actions.get_entity = function(player_index, entity, x, y)
         {position.x - width , position.y - height },
         {position.x + width , position.y + height }
     }
-    --local entities = player.surface.find_entities_filtered{area = target_area} --, name = entity}
-    local entities = player.surface.find_entities_filtered{area = target_area, name = entity}
+    --local entities = character.surface.find_entities_filtered{area = target_area} --, name = entity}
+    local entities = character.surface.find_entities_filtered{area = target_area, name = entity}
     game.print("Number of entities found: " .. #entities)
 
     local closest_distance = math.huge

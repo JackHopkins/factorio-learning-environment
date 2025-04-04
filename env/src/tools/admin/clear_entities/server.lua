@@ -1,6 +1,6 @@
 global.actions.clear_entities = function(player_index)
-    local function clear_area_of_entities(player, area, force_filter)
-        local surface = player.surface
+    local function clear_area_of_entities(character, area, force_filter)
+        local surface = character.surface
         local entities = surface.find_entities_filtered{
             area = area,
             force = force_filter,
@@ -21,7 +21,7 @@ global.actions.clear_entities = function(player_index)
         }
 
         for _, entity in ipairs(entities) do
-            if entity and entity.valid and entity ~= player.character then
+            if entity and entity.valid and entity ~= character then
                 entity.destroy()
             end
         end
@@ -38,9 +38,9 @@ global.actions.clear_entities = function(player_index)
         end
     end
 
-    local function reset_character_inventory(player)
+    local function reset_character_inventory(character)
         for inventory_id, inventory in pairs(defines.inventory) do
-            local character_inventory = player.get_inventory(inventory)
+            local character_inventory = character.get_inventory(inventory)
             if character_inventory then
                 character_inventory.clear()
             end
@@ -48,18 +48,20 @@ global.actions.clear_entities = function(player_index)
     end
 
     -- Main execution
-    local player = game.get_player(player_index)
+    local character = game.get_player(player_index).character
+    if not character then return end
+
     local area = {
-        {player.position.x - 1000, player.position.y - 1000},
-        {player.position.x + 1000, player.position.y + 1000}
+        {character.position.x - 1000, character.position.y - 1000},
+        {character.position.x + 1000, character.position.y + 1000}
     }
 
     -- Clear player force entities
-    clear_area_of_entities(player, area, player.force)
+    clear_area_of_entities(character, area, character.force)
     -- Clear neutral force entities
-    clear_area_of_entities(player, area, "neutral")
+    clear_area_of_entities(character, area, "neutral")
 
-    reset_character_inventory(player)
-    player.force.reset()
+    reset_character_inventory(character)
+    character.force.reset()
     return 1
 end

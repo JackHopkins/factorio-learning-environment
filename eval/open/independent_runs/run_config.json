@@ -3,7 +3,8 @@
 "model": "gpt-4o-mini-2024-07-18",
 "version": 768},
 {"task": "plastic_bar_throughput_16.json",
-"model": "gpt-4o-mini-2024-07-18"},
+"model": "gpt-4o-mini-2024-07-18",
+"exit_on_task_success": false},
 {"task": "open_play.json",
 "model": "gpt-4o-mini-2024-07-18"}
 ]

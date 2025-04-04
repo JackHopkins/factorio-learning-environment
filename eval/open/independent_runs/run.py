@@ -45,6 +45,7 @@ def main():
             agent=agent,
             version=version,
             version_description=f"model:{run_config['model']}\ntype:{task.task_key}",
+            exit_on_task_success=run_config.get("exit_on_task_success", True),
         )
 
         p = multiprocessing.Process(

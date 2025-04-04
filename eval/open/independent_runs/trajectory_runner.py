@@ -166,12 +166,6 @@ class TrajectoryRunner:
                 print(f"Evaluated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "
                       f"Iteration {iteration}/{self.config.agent.task.trajectory_length}")
-                if task_verification_response.success and self.config.exit_on_task_success:
-                    print(f"Task verification success: {task_verification_response.success}")
-                    completion_result = CompletionResult(step = iteration, 
-                                                         reason = CompletionReason.SUCCESS)
-                    await self.config.agent.end(program.conversation, completion_result)
-                    break
                 if not evaluated_program:
                     continue
 
@@ -222,7 +216,7 @@ class TrajectoryRunner:
                           f"Elapsed: {elapsed_str} - "
                           f"ETA: {eta}")
                     
-                if task_verification_response.success:
+                if task_verification_response.success and self.config.exit_on_task_success:
                     print(f"Task verification success: {task_verification_response.success}")
                     completion_result = CompletionResult(step = iteration, 
                                                          reason = CompletionReason.SUCCESS)

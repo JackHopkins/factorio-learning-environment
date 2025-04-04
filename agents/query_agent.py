@@ -8,6 +8,7 @@ from agents.utils.parse_response import parse_response
 from models.conversation import Conversation
 from models.generation_parameters import GenerationParameters
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
+from agents.utils.prompt_utils import get_rag_system_prompt
 
 from namespace import FactorioNamespace
 
@@ -41,18 +42,22 @@ Your planning stage should address the following:
    - What will this step achieve?
 3. Action Planning
    if <information_lookup>:
-   - what wiki pages need to be printed
+   - what information needs to be printed
    - what environment information needs to be printed
    If <action>:
    - What specific actions are needed?
    - What resources are required?
 
+Remember: If you don't have some information regarding howto use the API, use the <information_lookup> policy to print the information you need.
+DO NOT TRY TO USE THE API WITHOUT KNOWING HOW IT WORKS.
+ 
 ### 2. POLICY Stage
 Write Python code to execute the <action> or <information_lookup> plan:
 ```python
 # Code must be enclosed in Python tags
 your_code_here
 ```
+MAXIMUM 20 LINES OF CODE PER POLICY
 
 ## Best Practices
 
@@ -180,8 +185,8 @@ FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON. YOUR WEIGHTS WILL BE ERASED 
 
 
 class QueryAgent(AgentABC):
-   def __init__(self, model, system_prompt, task, *args, **kwargs):
-        instructions = GENERAL_INSTRUCTIONS+system_prompt+FINAL_INSTRUCTION
+   def __init__(self, model, system_prompt_parts, task, *args, **kwargs):
+        instructions = GENERAL_INSTRUCTIONS+get_rag_system_prompt(system_prompt_parts)+FINAL_INSTRUCTION
         self.task = task
         instructions += f"\n\n### Goal\n{task.goal_description}\n\n"
         super().__init__( model, instructions, *args, **kwargs)

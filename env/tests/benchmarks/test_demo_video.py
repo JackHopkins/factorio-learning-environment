@@ -67,7 +67,6 @@ def test_inspect_inventory(game):
     #game.execute_transaction()
     #game.craft_item(Prototype.IronChest)
     #inventory = game.inspect_inventory()
-    prompt = game.get_system_prompt()
     furnace = game.place_entity(Prototype.StoneFurnace, position=Position(x=0, y=0))
     game.move_to(game.nearest(Prototype.Coal))
     game.harvest_resource(game.nearest(Prototype.Coal), quantity=10)

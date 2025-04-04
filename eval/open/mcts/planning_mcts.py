@@ -11,7 +11,7 @@ from eval.open.mcts.mcts import MCTS
 from models.program import Program
 from eval.open.mcts.planning_models import LanguageOutput, TaskOutput, InitialPlanOutput, PlanOutput, Step
 from tenacity import wait_exponential, retry
-
+from agents.utils.prompt_utils import get_default_system_prompt
 
 def get_mining_setup(instance):
         mining_setup = instance.namespace.get_entities()
@@ -37,7 +37,7 @@ class PlanningMCTS(MCTS):
         self.planning_model = planning_model
         self.executor_model = executor_model
         self.objective_model = objective_model
-        self.api_description = self.evaluator.instances[0].get_system_prompt()
+        self.api_description = get_default_system_prompt(self.evaluator.instances[0].get_system_prompt())
         self.step_executor_prompt_path = step_executor_prompt_path
         self.step_generator_prompt_path = step_generator_prompt_path
         self.step_judge_prompt_path = step_judge_prompt_path

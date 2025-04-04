@@ -24,7 +24,7 @@ from eval.open.mcts.samplers.kld_achievement_sampler import KLDiversityAchieveme
 from instance import FactorioInstance
 from agents.utils.llm_factory import LLMFactory
 from cluster.local.cluster_ips import get_local_container_ips
-
+from agents.utils.prompt_utils import get_default_system_prompt
 # Configure environment
 os.environ.update({
     "FORCE_COLOR": "1",
@@ -240,7 +240,7 @@ async def main():
     # Load system prompt
     #with open(CONFIG['prompt_path']) as f:
     #    system_prompt = f.read().format(schema=instances[0].get_system_prompt())
-    system_prompt = instances[0].get_system_prompt()
+    system_prompt = get_default_system_prompt(instances[0].get_system_prompt())
 
     # Initialize MCTS
     print("Initializing MCTS...")

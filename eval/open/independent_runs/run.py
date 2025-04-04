@@ -27,7 +27,7 @@ def main():
     # Create initial state and get system prompt
     try:
         instance = create_factorio_instance(0)
-        system_prompt = instance.get_system_prompt()
+        system_prompt_parts = instance.get_system_prompt()
     except Exception as e:
         raise(f"Error creating Factorio instance: {e}")
     
@@ -41,7 +41,7 @@ def main():
     processes = []
     for run_idx, run_config in enumerate(run_configs):
         task = TaskFactory.create_task(run_config["task"])
-        agent = QueryAgent(model=run_config["model"], system_prompt=system_prompt, task = task)
+        agent = BasicAgent(model=run_config["model"], system_prompt_parts=system_prompt_parts, task = task)
         if "version" in run_config:
             version = run_config["version"]
         else:

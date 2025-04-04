@@ -21,7 +21,7 @@ from eval.open.mcts.planning_models import PlanOutput, TaskOutput, Step, Languag
 from models.game_state import GameState
 from models.program import Program
 from instance import FactorioInstance
-
+from agents.utils.prompt_utils import get_default_system_prompt
 logger = logging.basicConfig(level=logging.INFO)
 
 
@@ -96,7 +96,7 @@ class ParallelPlanningMCTS:
 
         # Create instance groups
         self.instance_groups = self._create_instance_groups(instances)
-        self.api_description = self.instance_groups[0].evaluator.instances[0].get_system_prompt()
+        self.api_description = get_default_system_prompt(self.instance_groups[0].evaluator.instances[0].get_system_prompt())
         # format the 2 system prompts
         self.step_executor_system_prompt = self.step_executor_system_prompt.format(schema=self.api_description)
         self.example_plan_system_prompt = self.example_plan_system_prompt.format(schema=self.api_description)

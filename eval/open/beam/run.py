@@ -14,6 +14,7 @@ from typing import List, Tuple
 
 from agents.utils.formatters.recursive_formatter import RecursiveFormatter
 from models.game_state import GameState
+from agents.utils.prompt_utils import get_default_system_prompt
 
 os.environ.update({"FORCE_COLOR": "1", "TERM": "xterm-256color"})
 load_dotenv()
@@ -140,8 +141,8 @@ async def main():
             "\033[91mError initialising Factorio instances. Are the docker containers running, and have they been activated?\033[91m")
         return
     instances = instances[-4:]
-    API_SCHEMA = instances[0].get_system_prompt()
-    prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\n# Observations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
+    API_SCHEMA = get_default_system_prompt(instances[0].get_system_prompt())
+    prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\n# Observations:\n' + OBSERVATION_SPACE + '\n\n'
     initial_state = GameState.from_instance(instances[0])
 
     # Add argument parsing for version

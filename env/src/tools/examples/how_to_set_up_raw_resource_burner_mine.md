@@ -1,4 +1,4 @@
-1. **Mining Setup**
+## How to create single drill raw resource mine
 You can put chests directly at the drop positions of drills to catch ore, thus creating automatic drilling lines
 ```python
 # Setup mining drill on ore patch

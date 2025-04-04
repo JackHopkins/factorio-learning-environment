@@ -48,21 +48,7 @@ print(f"Pumpjack at {pumpjack.position} has been successfully powered")
 The outputs of pumpjacks can be stored in storage tanks or directly connected to oil refineries
 
 Example:
-Connect a pumpjack to a existing storage tank to store crude_oil
-NB: TO CHECK HOW TO SET UP STORAGE TANKS, PRINT OUT THE "how_to_setup_storage_tanks" WIKI PAGE
-```python
-# get the pumpjack and storage tank
-pumpjack = get_entity(Prototype.PumpJack, position = Position(x = -25, y = 10))
-storage_tank = get_entity(Prototype.StorageTank, position = Position(x = -20, y = 10))
-
-# connect the storagetank and pumpjack
-pipes = connect_entities(pumpjack, storage_tank, connection_type={Prototype.UndergroundPipe, Prototype.Pipe})
-print(f"Connected the pumpjack at {pumpjack.position} to a storage tank at {storage_tank.position} to store crude oil with {pipes}")
-```
-
-Example:
 Connect a pumpjack to a existing oil_refinery to process crude oil
-NB: TO CHECK HOW TO SET UP OIL REFINERIES, PRINT OUT THE "how_to_setup_oil_refineries" WIKI PAGE
 ```python
 # get the oil_refinery and pumpjack
 oil_refinery = get_entity(Prototype.OilRefinery, position = Position(x = -25, y = 10))

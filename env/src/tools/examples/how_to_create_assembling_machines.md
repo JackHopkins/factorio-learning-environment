@@ -1,6 +1,6 @@
-### 3. Automated Assembly Systems
+## Automated Assembly Systems
 
-#### Basic Assembly Line
+### Basic Assembly Line
 Important: Each section of the mine should be atleast 20 spaces further away from the other and have enough room for connections
 ```python
 furnace_output_inserter = get_entity(Prototype.BurnerInserter, Position(x = 9, y = 0))

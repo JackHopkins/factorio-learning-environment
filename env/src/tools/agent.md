@@ -1,15 +1,3 @@
-## Error Handling and Recovery
-
-### 1. Entity Status Monitoring
-```python
-def monitor_entity_status(entity, expected_status):
-    entity = get_entity(entity.prototype, entity.position)
-    if entity.status != expected_status:
-        print(f"Entity at {entity.position} has unexpected status: {entity.status}")
-        return False
-    return True
-```
-
 ## TIPS FOR QUERYING INFORMATION
 - Make sure to query information using the query_information tool
 - Use the tool like you would research different areas on the wiki

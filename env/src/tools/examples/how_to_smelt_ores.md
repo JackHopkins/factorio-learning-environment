@@ -1,4 +1,4 @@
-## Best Practices
+## How to smelt ores into plates
 
 1. **Inventory Verification**
 Example - Safe smelting ore into plates

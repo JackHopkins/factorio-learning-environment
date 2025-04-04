@@ -75,21 +75,4 @@ print(f"Connected the chemical_plant at {chemical_plant.position} to oil refiner
 ```
 
 ### Storing liquid outputs of chemical plants 
-The liquid outputs of chemical plants can be stored in storage tanks
-Example:
-Connect a chemical plant to a existing storage tank to store lubricant
-NB: TO CHECK HOW TO SET UP STORAGE TANKS, PRINT OUT THE "how_to_setup_storage_tanks" WIKI PAGE
-```python
-# get the chemical_plant and storage tank
-chemical_plant = get_entity(Prototype.ChemicalPlant, position = Position(x = -25, y = 10))
-storage_tank = get_entity(Prototype.StorageTank, position = Position(x = -20, y = 10))
-
-# Get the lubricant output point of chemical_plant
-output_lubricant_connection_points = [x for x in chemical_plant.output_connection_points if x.type == "lubricant"]
-assert len(output_lubricant_connection_points) > 0, f"No lubricant output points in chemical_plant"
-output_lubricant_connection_point = output_lubricant_connection_points[0]
-
-# connect the storagetank and chemical plant
-pipes = connect_entities(output_lubricant_connection_point, storage_tank, connection_type={Prototype.UndergroundPipe, Prototype.Pipe})
-print(f"Connected the chemical plant at {chemical_plant.position} to a storage tank at {storage_tank.position} to store lubricant with {pipes}")
-```
+The liquid outputs of chemical plants can be stored in storage tanks via pipes

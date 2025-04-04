@@ -1,4 +1,4 @@
-1. **Multiple Entity Placement**
+## How to set up multiple drill plate mines
 Example: Create a copper plate mining line with 3 drills with inserters for future integration
 ```python
 # log your general idea what you will do next

@@ -3,9 +3,9 @@
 ### Power Infrastructure with steam engine
 
 Power typically involves:
--> Water Source + OffshorePump
--> Boiler (burning coal)
--> SteamEngine
+-> Water Source + OffshorePump. This moves water from the water source using the offshore pump
+-> Boiler (burning coal). This creates the water from water source into steam
+-> SteamEngine. This creates electricity from steam
 
 IMPORTANT: We also need to be very careful and check where we can place boiler and steam engine as they cannot be on water
 We will do this in 2 separate code examples

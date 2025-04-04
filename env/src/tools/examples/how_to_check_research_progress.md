@@ -1,4 +1,4 @@
-## Important Notes
+## How to check research progress
 
 1. **Current Research Check**
    ```python

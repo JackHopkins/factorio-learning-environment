@@ -15,7 +15,7 @@ class QueryInformation(Tool):
         super().__init__(connection, game_state)
         # get the location of this file
         root_directory = os.path.dirname(os.path.abspath(__file__))
-        self.pages_path = Path(root_directory, 'pages')
+        self.pages_path = Path(root_directory,"..", "..", 'examples')
         # get all md files in the pages directory
         self.pages = [page.replace(".md", "") for page in os.listdir(self.pages_path) if page.endswith('.md')]
         # read inthe embeddings.json file

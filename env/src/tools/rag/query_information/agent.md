@@ -25,4 +25,4 @@ print(resource_mine_information)
 
 ```
 
-NB: The toolgives high value information so always consult the tool when something is unknown 
+NB: The tool gives high value information so always consult the tool when something is unknown

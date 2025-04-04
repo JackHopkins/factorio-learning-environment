@@ -5,7 +5,7 @@ You can use storage tanks to store liquids
 ### Placing a storage tank to store liquid
 
 Example:
-Place a storage tank and store petroleum gas from an existing storage tank
+Place a storage tank and store petroleum gas from an existing oil refinery
 ```python
 # get the oil_refinery
 oil_refinery = get_entity(Prototype.OilRefinery, position = Position(x = -25, y = 10))
@@ -33,7 +33,7 @@ print(f"Connected the oil_refinery at {oil_refinery.position} to a storage tank 
 
 
 ### Using an existing storage tank with liquid
-If a storage tank has liquid, the liquid can be sent to other fluid processors via pipes
+If a storage tank has liquid, the liquid can be sent to other fluid processors like oil refinery and chemical plant via pipes
 
 Example:
 Connect an existing storage tank with petroleum gas to a existing chemical plant

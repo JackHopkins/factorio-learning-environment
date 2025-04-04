@@ -191,7 +191,7 @@ class FactorioInstance:
         if not response: return 0
         return int(response)
 
-    def get_system_prompt(self) -> str:
+    def get_system_prompt(self) -> dict:
         """
         Get the system prompt for the Factorio environment.
         This includes all the available actions, objects, and entities that the agent can interact with.

@@ -1,13 +1,17 @@
-global.actions.can_place_entity = function(player_index, entity, direction, x, y)
-    local player = game.get_player(player_index)
+global.actions.can_place_entity = function(character_index, entity, direction, x, y)
+    local character = global.character_registry.get_character_by_index(character_index)
+    if not character then
+        error("Character not found in registry at index " .. character_index)
+    end
+    
     local position = {x = x, y = y}
     --
     ---- Check player's reach distance
-    local dx = player.position.x - x
-    local dy = player.position.y - y
+    local dx = character.position.x - x
+    local dy = character.position.y - y
     local distance = math.sqrt(dx * dx + dy * dy)
 
-    if distance > player.character.reach_distance then
+    if distance > character.reach_distance then
         error("The distance to the target position is too far away to place the entity (" ..distance.."). Move closer.")
     end
 
@@ -22,7 +26,7 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
     end
 
     -- Check inventory for the entity
-    if player.get_item_count(entity) == 0 then
+    if character.get_item_count(entity) == 0 then
         local name = entity:gsub(" ", "_"):gsub("-", "_")
         error("No " .. name .. " in inventory.")
     end
@@ -41,7 +45,7 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
     }
 
     -- Check for collision with other entities
-    local entities = player.surface.find_entities_filtered{area = target_area, force = player.force}
+    local entities = character.surface.find_entities_filtered{area = target_area, force = character.force}
 
     -- iterate over entities and remove any with the player_character name
     for i = #entities, 1, -1 do
@@ -56,7 +60,7 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
 
     -- Additional checks for specific entities like offshore-pump
     if entity == "offshore-pump" then
-        local tile = player.surface.get_tile(x, y)
+        local tile = character.surface.get_tile(x, y)
         if not tile.prototype.name:match("water") then
             error("Cannot place the entity at the specified position due to lack of water.")
         end
@@ -64,7 +68,7 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
 
     ---- Check if the entity can be placed
     ---  force = player.force,
-    local can_build = global.utils.avoid_entity(player_index, entity, position, direction)
+    local can_build = global.utils.avoid_entity(character_index, entity, position, direction)
     if not can_build then
         error("Cannot place the entity at the specified position: x="..position.x..", y="..position.y)
     end

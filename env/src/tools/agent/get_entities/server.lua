@@ -1,10 +1,14 @@
-global.actions.get_entities = function(player_index, radius, entity_names_json, position_x, position_y)
-    local player = game.get_player(player_index)
+global.actions.get_entities = function(character_index, radius, entity_names_json, position_x, position_y)
+    local character = global.character_registry.get_character_by_index(character_index)
+    if not character then
+        error("Character not found in registry at index " .. character_index)
+    end
+
     local position
     if position_x and position_y then
         position = {x = tonumber(position_x), y = tonumber(position_y)}
     else
-        position = player.position
+        position = character.position
     end
 
     radius = tonumber(radius) or 5
@@ -21,9 +25,9 @@ global.actions.get_entities = function(player_index, radius, entity_names_json, 
 
     local entities
     if #entity_names > 0 then
-        entities = player.surface.find_entities_filtered{area = area, force = player.force, filter=filter}
+        entities = character.surface.find_entities_filtered{area = area, force = character.force, filter=filter}
     else
-        entities = player.surface.find_entities_filtered{area = area, force = player.force}
+        entities = character.surface.find_entities_filtered{area = area, force = character.force}
     end
 
     local result = {}

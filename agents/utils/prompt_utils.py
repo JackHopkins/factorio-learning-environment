@@ -18,5 +18,6 @@ def get_rag_system_prompt(prompt_object):
             f"```methods\n{prompt_object['schema']}\n```"
             f"{prompt_object['manual_defs']}\n"
             f"Information gathering tools available to you\n"
+            f"```rag_methods\n{prompt_object['rag_schema']}\n```"
             f"{prompt_object['rag_manual_defs']}\n"
         )

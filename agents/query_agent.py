@@ -61,6 +61,13 @@ MAXIMUM 20 LINES OF CODE PER POLICY
 
 ## Best Practices
 
+### Querying Information
+- Make sure to query information using the query_information tool
+- Use the tool like you would research different areas on the wiki
+- The pages have info regarding how to use the api, how to carry out different actions and general factorio knowledge
+- Always wait for the information to be printed before executing steps that rely on this information. Do not execute steps that rely on information that has not been printed yet.
+
+
 ### Modularity
 - Create small, modular policies
 - Each policy should have a single clear purpose
@@ -86,6 +93,7 @@ MAXIMUM 20 LINES OF CODE PER POLICY
 - Continue from last successful execution
 - Avoid unnecessary state changes
 - Analyze the root cause of entities that aren't working, and prioritize automated solutions (like transport belts) above manual triage
+- Do not just pick up all entities and start from scratch, try to fix the modular small problems
 
 ### Code Structure
 - Write code as direct Python interpreter commands

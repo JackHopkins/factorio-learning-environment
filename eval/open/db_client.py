@@ -469,33 +469,6 @@ class PostgresDBClient(DBClient):
                     except:
                         pass
     
-    def get_initial_128_programs(self, resume_version, number = 128) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
-        """Get the state to resume from"""
-        try:
-            # Get most recent successful program to resume from
-            query = """
-            SELECT code, meta, achievements_json, value FROM programs 
-            WHERE version = %s
-            AND state_json IS NOT NULL
-            ORDER BY created_at ASC
-            LIMIT %s
-            """
-
-            with self.get_connection() as conn:
-                with conn.cursor() as cur:
-                    cur.execute(query, (resume_version,number))
-                    results = cur.fetchall()
-
-            if not results:
-                print(f"No valid programs found for version {resume_version}")
-                return None
-
-            # Choose a program to resume from
-            return results
-
-        except Exception as e:
-            print(f"Error getting resume state: {e}")
-            return None, None, None, None
         
     
 

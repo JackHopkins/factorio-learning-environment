@@ -316,21 +316,21 @@ class FactorioInstance:
 
     def eval_with_error(self, expr, timeout=60):
         """ Evaluate an expression with a timeout, and return the result without error handling"""
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(self.namespace.eval_with_timeout, expr)
-            score, goal, result = future.result(timeout)
-            return score, goal, result
+        #with ThreadPoolExecutor(max_workers=1) as executor:
+        #    future = executor.submit(self.namespace.eval_with_timeout, expr)
+        #    score, goal, result = future.result(timeout)
+        #    return score, goal, result
         
-        #def handler(signum, frame):
-        #    raise TimeoutError()
-#
-        #signal.signal(signal.SIGALRM, handler)
-        #signal.alarm(timeout)
-#
-        #try:
-        #    return self.namespace.eval_with_timeout(expr)
-        #finally:
-        #    signal.alarm(0)
+        def handler(signum, frame):
+            raise TimeoutError()
+
+        signal.signal(signal.SIGALRM, handler)
+        signal.alarm(timeout)
+
+        try:
+            return self.namespace.eval_with_timeout(expr)
+        finally:
+            signal.alarm(0)
 
 
     def eval(self, expr, timeout=60):

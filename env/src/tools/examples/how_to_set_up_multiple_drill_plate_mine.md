@@ -1,4 +1,9 @@
 ## How to set up multiple drill plate mines
+Furnaces can be placed at the drop position of drills to automatically smelt resources
+The following resources can be smelt
+x - iron ore to iron plate
+x - copper ore to copper plate
+x - stone to stone brick
 Example: Create a copper plate mining line with 3 drills with inserters for future integration
 ```python
 # log your general idea what you will do next
@@ -28,7 +33,7 @@ for i in range(3):
     # We use the Direction.DOWN as the direction, as the drill direction is DOWN which means the drop position is below the drill
     furnace = place_entity_next_to(Prototype.StoneFurnace, reference_position=drill.position, direction = Direction.DOWN)
     print(f"Placed furnace at {furnace.position} to smelt the copper ore for drill {i} at {drill.position}")
-    # add inserters for future potential integartion
+    # add inserters that remove items from furnaces for future potential integartion
     # put them below the furnace as the furnace is below the drill
     inserter = place_entity_next_to(Prototype.Inserter, reference_position=furnace.position, direction = Direction.DOWN)
     print(f"Placed inserter at {inserter.position} to get the plates from furnace {i} at {furnace.position}")

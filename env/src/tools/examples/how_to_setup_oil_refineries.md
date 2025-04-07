@@ -5,6 +5,7 @@
 Example:
 Placing a oil refinery near a existing pumpjack at Position(x=-50, y=0)
 Also connect the oil refinery to a steam engine, that will power the refinery. To power the oil refinery, it needs to be connected to a power source via electric poles
+NB: TO CHECK HOW TO SET UP ELECTRICITY NETWORKS, QUERY "HOW TO SET UP ELECTRICITY?"
 ```python
 # get the pumpjack
 pumpjack = get_entity(Prototype.PumpJack, position=Position(x=-50, y=0))

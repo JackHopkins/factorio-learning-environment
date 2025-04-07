@@ -20,6 +20,10 @@ class QueryInformation(Tool):
         self.pages = [page.replace(".md", "") for page in os.listdir(self.pages_path) if page.endswith('.md')]
         # read inthe embeddings.json file
         self.embeddings_path = Path(root_directory, 'embeddings.json')
+        if not os.path.exists(self.embeddings_path):
+            # create the embeddings.json file
+            with open(self.embeddings_path, 'w') as file:
+                json.dump({}, file)
         with open(self.embeddings_path, 'r') as file:
             self.embeddings = json.load(file)
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -59,7 +63,7 @@ class QueryInformation(Tool):
         :param nr_of_results: The number of results to return
         :return: The content of the pages
         """
-        
+        top_relevance_ratio = 0.8
         # get the embeddings for the query
         query_embedding = self.get_embeddings(query)
         # get the closest pages to the query
@@ -69,11 +73,15 @@ class QueryInformation(Tool):
             closest_pages.append((page, similarity))
         # sort the pages by similarity
         closest_pages = sorted(closest_pages, key=lambda x: x[1], reverse=True)
+        idx = 0
         # get the content of the closest pages
         content = f"QUERY RESULTS FOR - {query}:\n\n"
-        for page, _ in closest_pages[:nr_of_results]:
+        for page, sim in closest_pages:
+            if idx >= nr_of_results and sim < top_relevance_ratio:
+                break
             with open(Path(self.pages_path, page + ".md"), 'r') as file:
                 content += file.read() + "\n\n"
+            idx += 1
         
         return content.strip()
     

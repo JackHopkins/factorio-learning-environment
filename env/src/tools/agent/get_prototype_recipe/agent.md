@@ -28,9 +28,7 @@ for ingredient in recipe.ingredients:
     print(f"Need {ingredient.count} {ingredient.name}")
 ```
 
-## Common Use Cases
-
-### 1. Basic Recipe Checking
+### Checking recipe for chemical plant or oil refinery technologies using RecipeName
 ```python
 # Check light oil cracking  requirements
 recipe = get_prototype_recipe(RecipeName.LightOilCracking)

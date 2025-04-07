@@ -1,13 +1,13 @@
 ## Pumpjacks
 
 To harvest crude oil from the environment, it needs to be done with pumpjacks
-
+Crude oil can be processed to petroleum gas
 ### Placing a pumpjack
 
 Example:
 Placing a pumpjack near a crude oil patch
 Also connect the pumpjack to a steam engine, that will power the pumpjack. To power the pumpjack, it needs to be connected to a power source via electric poles
-NB: TO CHECK HOW TO SET UP ELECTRICITY NETWORKS, PRINT OUT THE "how_to_create_electricity_generators" WIKI PAGE
+NB: TO CHECK HOW TO SET UP ELECTRICITY NETWORKS, QUERY "HOW TO SET UP ELECTRICITY?"
 ```python
 # Get the crude oil resource patch
 resource_pos = nearest(Resource.CrudeOil)

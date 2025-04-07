@@ -1,8 +1,3 @@
-import sys
-sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser")
-sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\env")
-sys.path.append(r"C:\Users\martb\Documents\paperpclip_max\PaperclipMaximiser\env\src")
-
 import asyncio
 import argparse
 import multiprocessing

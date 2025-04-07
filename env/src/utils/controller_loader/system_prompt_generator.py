@@ -13,12 +13,16 @@ class SystemPromptGenerator:
     def __init__(self, base_path: str):
         self.base_path = Path(base_path)
         self.tool_path = self.base_path / "tools" / "agent"
+        self.rag_tool_path = self.base_path / "tools" / "rag"
 
     def generate(self) -> dict:
         # Generate schema
         schema_generator = SchemaGenerator(str(self.tool_path))
         schema = schema_generator.generate_schema(with_docstring=True).replace("temp_module.", "")
 
+        # Generate schema for RAG tools
+        rag_schema_generator = SchemaGenerator(str(self.rag_tool_path))
+        rag_schema = rag_schema_generator.generate_schema(with_docstring=True).replace("temp_module.", "")
         # Load and process type definitions
         type_defs = TypeDefinitionProcessor.load_and_clean_definitions(
             str(self.base_path / "game_types.py")
@@ -48,4 +52,5 @@ class SystemPromptGenerator:
             "manual_defs": agent_manual_defs,
             "examples": examples,
             "rag_manual_defs": rag_manual_defs,
+            "rag_schema": rag_schema,
         }

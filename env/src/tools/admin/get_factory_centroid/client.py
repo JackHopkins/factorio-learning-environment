@@ -1,5 +1,4 @@
 from entities import BoundingBox, Position
-from instance import PLAYER
 from models.camera import Camera
 from tools.tool import Tool
 
@@ -14,7 +13,7 @@ class GetFactoryCentroid(Tool):
         Gets the bounding box of the enti factory.
         """
 
-        result, _ = self.execute(PLAYER)
+        result, _ = self.execute(self.player_index)
 
         if isinstance(result, str):
             raise Exception(result)

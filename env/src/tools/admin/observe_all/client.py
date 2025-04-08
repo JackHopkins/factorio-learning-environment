@@ -4,7 +4,7 @@ from timeit import default_timer as timer
 import numpy as np
 from numpy import ndarray, zeros
 
-from instance import PLAYER, CHUNK_SIZE, MAX_SAMPLES
+from instance import CHUNK_SIZE, MAX_SAMPLES
 from gym.utils import stitch
 from gym.observation_state import FIELDS, ObservationState
 from tools.tool import Tool
@@ -39,7 +39,7 @@ class ObserveAll(Tool):
         movement_field_x, movement_field_y = self.game_state.movement_vector[0], self.game_state.movement_vector[1]
         omit = kwargs
         response, execution_time = self.execute(
-                                              PLAYER,
+                                              self.player_index,
                                               chunk_x,
                                               chunk_y,
                                               self.game_state.bounding_box,

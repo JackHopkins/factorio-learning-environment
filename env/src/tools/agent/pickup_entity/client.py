@@ -1,7 +1,6 @@
 from typing import Tuple, Union, Optional
 
 from entities import Position, Entity, BeltGroup, PipeGroup, EntityGroup, UndergroundBelt, Direction, ElectricityGroup
-from instance import PLAYER
 from game_types import Prototype
 from tools.tool import Tool
 
@@ -53,21 +52,21 @@ class PickupEntity(Tool):
 
         if position:
             x, y = position.x, position.y
-            response, elapsed = self.execute(PLAYER, x, y, name)
+            response, elapsed = self.execute(self.player_index, x, y, name)
         elif isinstance(entity, UndergroundBelt):
             x, y = entity.position.x, entity.position.y
-            response, elapsed = self.execute(PLAYER, x, y, name)
+            response, elapsed = self.execute(self.player_index, x, y, name)
             if response != 1 and response != {}:
                 raise Exception(f"Could not pickup: {self.get_error_message(response)}")
 
             x, y = entity.output_position.x, entity.output_position.y
-            response, elapsed = self.execute(PLAYER, x, y, name)
+            response, elapsed = self.execute(self.player_index, x, y, name)
             if response != 1 and response != {}:
                 raise Exception(f"Could not pickup: {self.get_error_message(response)}")
 
         elif isinstance(entity, Entity):
             x, y = entity.position.x, entity.position.y
-            response, elapsed = self.execute(PLAYER, x, y, name)
+            response, elapsed = self.execute(self.player_index, x, y, name)
         else:
             raise ValueError("The second argument must be a Position object")
 

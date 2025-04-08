@@ -11,7 +11,6 @@ from typing import Optional, Union, List, Dict, Tuple, Set, Any
 from pydantic import BaseModel
 
 from exceptions.hinting_name_error import get_value_type_str
-from instance import FactorioInstance
 from entities import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe, BuildingBox, PipeGroup, \
     ElectricityGroup, Pipe, Entity
 
@@ -51,7 +50,7 @@ class LoopContext:
 
 class FactorioNamespace:
 
-    def __init__(self, instance: FactorioInstance):
+    def __init__(self, instance):
         self.logging_results = {}
         self.line_value = 0
         self.persistent_vars = {}

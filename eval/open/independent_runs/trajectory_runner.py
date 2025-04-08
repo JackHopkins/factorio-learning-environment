@@ -32,22 +32,26 @@ COURTESY_SLEEP = 5
 @dataclass
 class EvalConfig:
     """Configuration for evaluation"""
-    agent: AgentABC
+    agents: list[AgentABC]
     version: int
     version_description: str
+    task: Optional[TaskABC] = None
 
+    def __post_init__(self):
+        if self.task is None and hasattr(self.agents[0], 'task'):
+            self.task = self.agents[0].task
 
 class TrajectoryRunner:
     """Handles program generation and evaluation for a single trajectory"""
 
     def __init__(self,
                  #llm_factory: LLMFactory,
-                 agent: AgentABC,
+                 agents: list[AgentABC],
                  db_client: PostgresDBClient,
                  evaluator: SimpleFactorioEvaluator,
                  config: EvalConfig,
                  process_id: int):
-        self.agent = agent
+        self.agents = agents
         self.db = db_client
         self.evaluator = evaluator
         self.config = config
@@ -60,10 +64,10 @@ class TrajectoryRunner:
         return "gpt" in model or 'o1' in model or 'gemini' in model
 
 
-    async def _generate_program(self, conversation: Conversation, response: Response, namespace: FactorioNamespace, meta={}) -> Program:
+    async def _generate_program(self, conversation: Conversation, response: Response, namespace: FactorioNamespace, meta={}, agent_idx: int = 0) -> Program:
         conversation = copy.deepcopy(conversation)
         try:
-            policy = await self.agent.step(conversation, response, namespace)
+            policy = await self.agents[agent_idx].step(conversation, response, namespace)
 
             if not policy:
                 raise Exception("Policy not valid Python. Skipping.")
@@ -81,9 +85,9 @@ class TrajectoryRunner:
                 completion_token_usage=policy.meta.output_tokens,
                 prompt_token_usage=policy.meta.input_tokens,
                 version=self.config.version,
-                model=self.agent.model,
+                model=self.agents[agent_idx].model,
                 version_description=self.config.version_description,
-                meta={"model": self.agent.model, "process_id": self.process_id},
+                meta={"model": self.agents[agent_idx].model, "process_id": self.process_id},
                 depth=len(messages) - 2
             )
 
@@ -102,7 +106,7 @@ class TrajectoryRunner:
             return "calculating..."
 
         avg_iteration_time = sum(self.iteration_times) / len(self.iteration_times)
-        remaining_iterations = self.config.agent.task.trajectory_length - current_iteration
+        remaining_iterations = self.config.task.trajectory_length - current_iteration
         seconds_remaining = avg_iteration_time * remaining_iterations
 
         # Convert to hours:minutes:seconds
@@ -275,7 +279,7 @@ async def run_trajectory(process_id: int, config: EvalConfig):
     # setup the instance
     task = config.agent.task
     task.setup(instance)
-    runner = TrajectoryRunner(config.agent, db_client, evaluator, config, process_id)
+    runner = TrajectoryRunner(config.agents, db_client, evaluator, config, process_id)
     await runner.run()
 
     await db_client.cleanup()

@@ -129,10 +129,7 @@ class TrajectoryRunner:
         current_state = None
         current_conversations = [None] * len(self.agents)
         
-        if self.config.version and len(self.agents) == 1:
-            current_state, current_conversations[0], parent_id, depth = await self.db.get_resume_state(resume_version = self.config.version, process_id = self.process_id)
-            self.agents[0].conversation = current_conversations[0]
-        elif self.config.version and len(self.agents) > 1:
+        if self.config.version:
             for agent_idx in range(len(self.agents)):
                 current_state, current_conversations[agent_idx], parent_id, depth = await self.db.get_resume_state(
                     resume_version = self.config.version, process_id = self.process_id, agent_idx = agent_idx

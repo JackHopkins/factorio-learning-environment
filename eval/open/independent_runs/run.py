@@ -58,7 +58,7 @@ def main():
         config = EvalConfig(
             agents=agents,
             version=version,
-            version_description=f"model:{run_config.model}\ntype:{task.task_key}",
+            version_description=f"model:{run_config.model}\ntype:{task.task_key}\nnum_agents:{run_config.num_agents}",
         )
 
         p = multiprocessing.Process(

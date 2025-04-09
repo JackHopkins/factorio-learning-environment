@@ -1,5 +1,6 @@
 import asyncio
 import argparse
+from itertools import product
 import os
 import copy
 from dataclasses import dataclass
@@ -48,12 +49,12 @@ class TrajectoryRunner:
                  #llm_factory: LLMFactory,
                  agents: list[AgentABC],
                  db_client: PostgresDBClient,
-                 evaluator: SimpleFactorioEvaluator,
+                 evaluators: list[SimpleFactorioEvaluator],
                  config: EvalConfig,
                  process_id: int):
         self.agents = agents
         self.db = db_client
-        self.evaluator = evaluator
+        self.evaluators = evaluators
         self.config = config
         self.iteration_times = []
         self.process_id = process_id
@@ -64,8 +65,9 @@ class TrajectoryRunner:
         return "gpt" in model or 'o1' in model or 'gemini' in model
 
 
-    async def _generate_program(self, conversation: Conversation, response: Response, namespace: FactorioNamespace, meta={}, agent_idx: int = 0) -> Program:
+    async def _generate_program(self, conversation: Conversation, response: Response, namespace: FactorioNamespace, meta={}, instance: int = -1) -> Program:
         conversation = copy.deepcopy(conversation)
+        agent_idx = 0 if instance == -1 else instance
         try:
             policy = await self.agents[agent_idx].step(conversation, response, namespace)
 
@@ -85,6 +87,7 @@ class TrajectoryRunner:
                 completion_token_usage=policy.meta.output_tokens,
                 prompt_token_usage=policy.meta.input_tokens,
                 version=self.config.version,
+                instance=instance,
                 model=self.agents[agent_idx].model,
                 version_description=self.config.version_description,
                 meta={"model": self.agents[agent_idx].model, "process_id": self.process_id},
@@ -123,59 +126,72 @@ class TrajectoryRunner:
         self.start_time = time.time()
 
         current_state = None
-        if self.config.version:
-            current_state, current_conversation, parent_id, depth = await self.db.get_resume_state(resume_version = self.config.version, process_id = self.process_id)
-            self.agent.conversation = current_conversation
+        current_conversations = [None] * len(self.agents)
+        
+        if self.config.version and len(self.agents) == 1:
+            current_state, current_conversations[0], parent_id, depth = await self.db.get_resume_state(resume_version = self.config.version, process_id = self.process_id)
+            self.agents[0].conversation = current_conversations[0]
+        elif self.config.version and len(self.agents) > 1:
+            for agent_idx in range(len(self.agents)):
+                current_state, current_conversations[agent_idx], parent_id, depth = await self.db.get_resume_state(
+                    resume_version = self.config.version, process_id = self.process_id, agent_idx = agent_idx
+                )
+                self.agents[agent_idx].conversation = current_conversations[agent_idx]
             
         if not current_state:
-            current_state = self.config.agent.task.starting_game_state
+            current_state = self.config.task.starting_game_state
             depth = 0
-            instance = self.evaluator.instance
-            instance.reset(current_state)
-            entities = instance.namespace.get_entities()
-            current_conversation = Conversation(messages=[
-                Message(role="system", content=self.config.agent.system_prompt),
-                Message(role="assistant", content="print(f'Inventory: {inspect_inventory()}')\n"
+            for agent_idx in range(len(self.agents)):
+                self.evaluators[agent_idx].instance.reset(current_state)
+                entities = self.evaluators[agent_idx].instance.namespace.get_entities()
+                current_conversations[agent_idx] = Conversation(messages=[
+                    Message(role="system", content=self.config.agents[agent_idx].system_prompt),
+                    Message(role="assistant", content="print(f'Inventory: {inspect_inventory()}')\n"
                                                   "print(f'Entities: {get_entities()}')\n"),
-                Message(role="user", content=f"1: ('Inventory: {current_state.inventory.__dict__}')\n"
-                                             f"2: ('Entities: {entities}')"),
-            ])
-            self.agent.conversation = current_conversation
-            parent_id = None
+                    Message(role="user", content=f"1: ('Inventory: {current_state.inventory.__dict__}')\n"
+                                                f"2: ('Entities: {entities}')"),
+                ])
+                self.agents[agent_idx].conversation = current_conversations[agent_idx]
+                parent_id = None
 
         last_response = None
         # Run trajectory
-        for iteration in range(depth, self.config.agent.task.trajectory_length):
+        for iteration, agent_idx in product(range(depth, self.config.task.trajectory_length), range(len(self.agents))):
             iteration_start = time.time()
             time.sleep(COURTESY_SLEEP) # courtesy sleep
+            
             try:
-                program = await self._generate_program(self.agent.conversation, last_response, self.evaluator.instance.namespace)
+                instance_param = -1 if len(self.agents) == 1 else agent_idx
+                program = await self._generate_program(self.agents[agent_idx].conversation, last_response, self.evaluators[agent_idx].instance.namespace, instance=instance_param)
 
                 print(f"Generated program {multiprocessing.current_process().name} - "
-                      f"Model: {self.config.agent.model} - "
-                      f"Iteration {iteration}/{self.config.agent.task.trajectory_length}")
+                      f"Model: {self.config.agents[agent_idx].model} - "
+                      f"Iteration {iteration}/{self.config.task.trajectory_length}")
 
                 if not program:
+                    print(f"Program generation failed for agent {agent_idx} at iteration {iteration}")
                     continue
 
                 program.parent_id = parent_id
 
                 # Evaluate program
-                instance = self.evaluator.instance
+                instance = self.evaluators[agent_idx].instance
                 instance.reset(current_state)
-                evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.agent.task)
+                evaluated_program, task_verification_response = await self.evaluators[agent_idx].evaluate(program, current_state, self.config.task)
                 print(program.code + "\n"+"="*50)
                 print("\033[1m\n".join(['>>>\t'+line for line in program.response.strip().replace('\\n', '\n\t').split('\n')]).strip()+"\033[0m")
                 print(f"Evaluated program {multiprocessing.current_process().name} - "
-                      f"Model: {self.config.agent.model} - "
-                      f"Iteration {iteration}/{self.config.agent.task.trajectory_length}")
+                      f"Model: {self.config.agents[agent_idx].model} - "
+                      f"Iteration {iteration}/{self.config.task.trajectory_length} - "
+                      f"Agent {agent_idx}")
 
                 if not evaluated_program:
+                    print(f"Evaluation failed for agent {agent_idx} at iteration {iteration}")
                     continue
 
                 program = evaluated_program
-                self.agent.conversation = program.conversation
-                program.meta["task_key"] = self.config.agent.task.task_key
+                self.agents[agent_idx].conversation = program.conversation
+                program.meta["task_key"] = self.config.task.task_key
                 last_response = Response(
                     code=program.code,
                     created_at=program.created_at,
@@ -191,15 +207,15 @@ class TrajectoryRunner:
                 # Save program
                 saved_program = await self.db.create_program(program)
                 print(f"Saved program {multiprocessing.current_process().name} - "
-                      f"Model: {self.config.agent.model} - "
-                      f"Iteration {iteration}/{self.config.agent.task.trajectory_length}")
+                      f"Model: {self.config.agents[agent_idx].model} - "
+                      f"Iteration {iteration}/{self.config.task.trajectory_length}")
 
                 parent_id = saved_program.id
 
                 # Update state for next iteration
                 if program.state:
                     current_state = program.state
-                    current_conversation = program.conversation
+                    current_conversations[agent_idx] = program.conversation
 
                 # Record iteration time
                 iteration_time = time.time() - iteration_start
@@ -214,8 +230,8 @@ class TrajectoryRunner:
                     elapsed_str = f"{int(elapsed // 3600):02d}:{int((elapsed % 3600) // 60):02d}:{int(elapsed % 60):02d}"
                     eta = self.get_eta(iteration)
                     print(f"\033[92m Process {multiprocessing.current_process().name} - "
-                          f"Model: {self.config.agent.model} - "
-                          f"Iteration {iteration}/{self.config.agent.task.trajectory_length} - "
+                          f"Model: {self.config.agents[agent_idx].model} - "
+                          f"Iteration {iteration}/{self.config.task.trajectory_length} - "
                           f"Value: {program.value:.2f} - "
                           f"Elapsed: {elapsed_str} - "
                           f"ETA: {eta}")
@@ -231,7 +247,7 @@ class TrajectoryRunner:
                 continue
 
 
-def create_factorio_instance(instance_id: int) -> FactorioInstance:
+def create_factorio_instance(instance_id: int, agent_idx: int = 0) -> FactorioInstance:
     """Create a single Factorio instance"""
     ips, udp_ports, tcp_ports = get_local_container_ips()
 
@@ -242,7 +258,8 @@ def create_factorio_instance(instance_id: int) -> FactorioInstance:
         fast=True,
         cache_scripts=True,
         inventory={},
-        all_technologies_researched=True
+        all_technologies_researched=True,
+        player_index=agent_idx + 1  # +1 because lua is 1-indexed
     )
     instance.speed(10)
     return instance
@@ -267,19 +284,22 @@ async def run_trajectory(process_id: int, config: EvalConfig):
     # Initialize components
     db_client = await create_db_client()
     #llm_factory = LLMFactory(model=config.model)
-    instance = create_factorio_instance(process_id)
-
-    evaluator = SimpleFactorioEvaluator(
-        db_client=db_client,
-        instance=instance,
-        value_accrual_time=1,
-        error_penalty=0
-    )
+    instances = []
+    evaluators = []
+    for agent_idx in range(len(config.agents)):
+        instances.append(create_factorio_instance(process_id, agent_idx))
+        evaluators.append(SimpleFactorioEvaluator(
+            db_client=db_client,
+            instance=instances[agent_idx],
+            value_accrual_time=1,
+            error_penalty=0
+        ))
 
     # setup the instance
-    task = config.agent.task
-    task.setup(instance)
-    runner = TrajectoryRunner(config.agents, db_client, evaluator, config, process_id)
+    task = config.task
+    for instance in instances:
+        task.setup(instance)
+    runner = TrajectoryRunner(config.agents, db_client, evaluators, config, process_id)
     await runner.run()
 
     await db_client.cleanup()

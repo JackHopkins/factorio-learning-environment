@@ -4,32 +4,6 @@ The `nearest_buildable` tool helps find valid positions to place entities while 
 
 ## Basic Usage
 
-```python
-nearest_buildable(
-    entity: Prototype,
-    building_box: BuildingBox,
-    center_position: Position
-) -> BoundingBox
-```
-
-The function returns a BoundingBox object containing buildable area coordinates.
-
-### Parameters
-- `entity`: Prototype of entity to place
-- `building_box`: BuildingBox defining required area dimensions
-- `center_position`: Position to search around
-
-### Return Value
-Returns a BoundingBox with these attributes:
-- `left_top`: Top-left corner Position
-- `right_bottom`: Bottom-right corner Position
-- `left_bottom`: Bottom-left corner Position
-- `right_top`: Top-right corner Position
-- `center`: Center position
-
-
-## Common Use Cases
-
 ### 1. Basic Entity Placement
 ```python
 # Find place for chest near the origin

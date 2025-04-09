@@ -100,3 +100,7 @@ electric_mining_drill = get_entity(Prototype.ElectricMiningDrill, electric_minin
 assert electric_mining_drill.energy > 0, f"electric_mining_drill at {electric_mining_drill.position} is not receiving power" 
 print(f"Electric mining drill at {electric_mining_drill.position} has been successfully powered")
 ```
+
+### Using solar panels for energy
+Using solar panels for energy is very easy.
+Solar panels need to be just placed on the ground and then can be connected directly to targets requiring power 

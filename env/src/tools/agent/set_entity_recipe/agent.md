@@ -3,19 +3,9 @@
 ## Overview
 The `set_entity_recipe` tool allows you to set or change the recipe of an assembling machine, chemical plant or oil refinery entity in the game. This enables automation of crafting specific items.
 
-## Function Signature
-```python
-def set_entity_recipe(entity: Entity, prototype: Union[Prototype, RecipeName]) -> Entity
-```
-
-### Parameters
-- `entity`: An Entity object representing the assembling machine whose recipe you want to set
-- `prototype`: Either a Prototype or RecipeName enum value indicating the recipe to set
-
-### Returns
-- Returns the updated Entity with the new recipe set
-
 ## Usage Example
+
+Returns the updated Entity with the new recipe set
 Set recipe for assembling machine
 ```python
 # get the assembling machine

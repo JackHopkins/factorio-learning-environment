@@ -15,8 +15,8 @@ class SetEntityRecipe(Tool):
         """
         Sets the recipe of an given entity.
         :param entity: Entity to set recipe
-        :param prototype: The prototype to create, or a recipe name for more complex processes
-        :return: Entity that had its recipe set
+        :param prototype: Either a Prototype or RecipeName enum value indicating the recipe to set
+        :return: Updated Entity with the new recipe set
         """
 
         x, y = entity.position.x, entity.position.y

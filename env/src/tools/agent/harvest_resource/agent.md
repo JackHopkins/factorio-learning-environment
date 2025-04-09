@@ -5,14 +5,6 @@ The `harvest_resource` tool allows you to harvest resources like ores, trees, ro
 ## Basic Usage
 
 ```python
-harvest_resource(position: Position, quantity: int = 1, radius: int = 10) -> int
-```
-
-The function returns the actual quantity harvested.
-
-### Examples
-
-```python
 # Harvest 10 coal from nearest coal patch
 coal_pos = nearest(Resource.Coal)
 move_to(coal_pos)
@@ -23,19 +15,7 @@ iron_pos = nearest(Resource.IronOre)
 move_to(iron_pos)
 harvested = harvest_resource(iron_pos, quantity=5)
 ```
-
-## Important Rules
-
-1. You **must move to the resource** before harvesting:
-```python
-# Wrong - will fail
-harvest_resource(nearest(Resource.Coal), 10)
-
-# Correct
-coal_pos = nearest(Resource.Coal)
-move_to(coal_pos)
-harvest_resource(coal_pos, 10)
-```
+You **must move to the resource** before harvesting
 
 ## Harvestable Resources
 

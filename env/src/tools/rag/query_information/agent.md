@@ -10,7 +10,7 @@ inserter_information = query_information("How to use inserters to input items in
 print(f"Manual how to use inserters")
 print(inserter_information)
 
-electricity_information = query_information("How to set up electricity?")
+electricity_information = query_information("How to set up electricity networks?")
 print(f"Manual how to set up elctricity")
 print(electricity_information)
 

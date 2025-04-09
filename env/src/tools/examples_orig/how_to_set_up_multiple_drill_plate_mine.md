@@ -1,4 +1,5 @@
-## How to set up multiple drill plate mines
+## How to set up automated plate factory
+
 Furnaces can be placed at the drop position of drills to automatically smelt resources
 The following resources can be smelt
 x - iron ore to iron plate

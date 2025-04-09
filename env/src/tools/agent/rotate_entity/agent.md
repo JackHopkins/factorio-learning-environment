@@ -4,17 +4,8 @@ The `rotate_entity` tool allows you to change the orientation of placed entities
 
 ## Basic Usage
 
-```python
-rotate_entity(entity: Entity, direction: Direction = Direction.UP) -> Entity
-```
-
 Returns the rotated Entity object.
 
-### Parameters
-- `entity`: Entity to rotate
-- `direction`: Target direction (UP/DOWN/LEFT/RIGHT)
-
-### Examples
 Rotating inserters - Inserter rotation affects pickup/drop positions
 Important: By default inserters take items from entities they are placed next to and place them at the drop_position
 Always rotate the inserters the other way if they need to put items into the entity (i.e the entity is at the drop_position)

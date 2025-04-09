@@ -12,13 +12,6 @@ The tool determines the number of connecting entities (pipes, belts, or power po
 
 ## Basic Usage
 
-```python
-# Get number of entities needed between positions/entities
-amount = get_connection_amount(source, target, connection_type=Prototype.X)
-```
-
-## Common Use Cases
-
 ### 1. Planning Belt Lines
 ```python
 # Calculate belts needed between drill and furnace

@@ -1,7 +1,12 @@
 ## Automated Assembly Systems
+Assembling machines can be used to automatically craft items in factorio
 
 ### Basic Assembly Line
+Example
+Create a copper cable assembling machine
+Put down an assembling machine 15 spaces away from an inserter that will send ingredients to the assembling machine  
 Important: Each section of the mine should be atleast 20 spaces further away from the other and have enough room for connections
+We will use a existing solar panel to power the assembling machine
 ```python
 furnace_output_inserter = get_entity(Prototype.BurnerInserter, Position(x = 9, y = 0))
 solar_panel = get_entity(Prototype.SolarPanel, Position(x = 0, y = 0))

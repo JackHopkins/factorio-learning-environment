@@ -7,7 +7,6 @@ Crude oil can be processed to petroleum gas
 Example:
 Placing a pumpjack near a crude oil patch
 Also connect the pumpjack to a steam engine, that will power the pumpjack. To power the pumpjack, it needs to be connected to a power source via electric poles
-NB: TO CHECK HOW TO SET UP ELECTRICITY NETWORKS, QUERY "HOW TO SET UP ELECTRICITY?"
 ```python
 # Get the crude oil resource patch
 resource_pos = nearest(Resource.CrudeOil)
@@ -31,6 +30,7 @@ pumpjack = place_entity(
 print(f"Placed pumpjack to harvest crude oil at {pumpjack.position}")
 
 # power the pumpjack by connecting to an existing steam engine
+# NB: To check how to power entities, look at the relevant examples for power networks
 steam_engine = get_entity(Prototype.SteamEngine, position=Position(x=0, y=0))
 # Connect power to pumpjack
 poles = connect_entities(steam_engine,

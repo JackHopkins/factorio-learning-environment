@@ -5,7 +5,6 @@
 Example:
 Placing a chemical plant near a existing oil_refinery at Position(x=-50, y=0)
 Also connect the chemical plant to a steam engine, that will power the engine. To power the chemical plant, it needs to be connected to a power source via electric poles
-NB: TO CHECK HOW TO SET UP ELECTRICITY NETWORKS, QUERY "HOW TO SET UP ELECTRICITY?"
 ```python
 # get the oil_refinery
 oil_refinery = get_entity(Prototype.OilRefinery, position=Position(x=-50, y=0))

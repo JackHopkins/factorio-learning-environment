@@ -4,22 +4,6 @@ The extract tool allows you to remove items from entity inventories in the Facto
 
 ## Basic Usage
 
-```python
-# Extract items using a position
-extracted_count = extract_item(Prototype.IronPlate, position, quantity=5)
-
-# Extract items using an entity directly
-extracted_count = extract_item(Prototype.CopperCable, entity, quantity=3)
-```
-
-The function returns the number of items successfully extracted. The extracted items are automatically placed in the player's inventory.
-
-**Quantity Handling**
-   - If requested quantity exceeds available items, it extracts all available items
-   - Returns actual number of items extracted
-
-## Examples
-
 ### Extracting from a Chest
 ```python
 # Place a chest and insert items
@@ -34,6 +18,12 @@ count = extract_item(Prototype.IronPlate, chest.position, quantity=2)
 count = extract_item(Prototype.IronPlate, chest, quantity=5)
 # count will be 5, items move to player inventory
 ```
+
+The function returns the number of items successfully extracted. The extracted items are automatically placed in the player's inventory.
+
+**Quantity Handling**
+   - If requested quantity exceeds available items, it extracts all available items
+   - Returns actual number of items extracted
 
 ## Common Pitfalls
 

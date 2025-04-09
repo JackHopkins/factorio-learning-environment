@@ -4,18 +4,6 @@ The `get_entity` tool allows you to get objects and update variables with their 
 
 
 ## Basic Usage
-Creating power connection
-Assume the SolarPanel and ElectronicMiningDrill exist at the given positions
-```python
-# get the variables
-solar_panel = get_entity(Prototype.SolarPanel, Position(x = 1, y = 2))
-drill_1 = get_entity(Prototype.ElectricMiningDrill, Position(x = 10, y = 28))
-# create the main connection
-main_power_connection = connect_entities(solar_panel, 
-                                    drill_1,
-                                    Prototype.SmallElectricPole)
-```
-
 Connecting one inserter to another (inserter_1 at Position(x = 12, y = 11) to inserter_2 at Position(x = 0, y = 0))
 ```python
 # get the inserter entities

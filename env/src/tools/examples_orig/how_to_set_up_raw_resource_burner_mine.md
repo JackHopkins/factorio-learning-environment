@@ -1,7 +1,9 @@
-## How to create single drill raw resource mine
+## How to create automatic raw resource mining operation
 All types of drills (burner, electric) can be used.
 Coal, iron ore, copper ore and stone automaton can be set up like this
 You can put chests directly at the drop positions of drills to catch ore, thus creating automatic drilling lines
+Example:
+Using a single drill to a chest resource setup
 ```python
 # Setup mining drill on ore patch
 resource_pos = nearest(Resource.IronOre)

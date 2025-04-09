@@ -4,13 +4,7 @@ The `inspect_inventory` tool allows you to check the contents of your own invent
 
 ## Basic Usage
 
-```python
-inspect_inventory(entity: Optional[Union[Entity, Position]] = None) -> Inventory
-```
-
 The function returns an Inventory object that can be queried using Prototype objects.
-
-## Common Usage Patterns
 
 1. **Check Player Inventory**
 ```python

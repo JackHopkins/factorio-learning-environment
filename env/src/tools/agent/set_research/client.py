@@ -18,8 +18,12 @@ class SetResearch(Tool):
     def __call__(self, technology: Technology) -> List[Ingredient]:
         """
         Set the current research technology for the player's force.
-        :param technology: Technology to research
-        :return: Required ingredients to research the technology.
+        :param technology: A Technology enum value representing the technology to research
+        :return: A list of `Ingredient` objects containing the required science packs and their quantities
+            - Each `Ingredient` object has:
+            - `name`: Name of the required science pack
+            - `count`: Number of science packs needed
+            - `type`: Type of the ingredient (usually "item" for science packs)
         """
         if hasattr(technology, 'value'):
             name = technology.value

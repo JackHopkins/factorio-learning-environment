@@ -34,15 +34,3 @@ The tool supports recursive crafting of intermediate components. For example:
 
 - Raw resources like iron ore and copper ore cannot be crafted. These must be mined using mining tools instead. Attempting to craft raw resources will result in an error.
 - Crafting if your inventory is full will also result in an error.
-
-
-## Examples
-
-### Basic Crafting
-```python
-# Craft 5 iron chests (requires 8 iron plates each)
-craft_item(Prototype.IronChest, quantity=5)
-
-# Craft 20 copper cables (requires 10 copper plates)
-craft_item(Prototype.CopperCable, quantity=20)
-```

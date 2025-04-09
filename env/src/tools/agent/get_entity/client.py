@@ -3,7 +3,6 @@ from typing import Tuple
 
 from entities import Position, Entity
 
-from instance import PLAYER
 from game_types import Prototype
 from tools.agent.get_entities.client import GetEntities
 from tools.tool import Tool
@@ -41,7 +40,7 @@ class GetEntity(Tool):
                     metaclass = metaclass[1]
 
                 sleep(0.05)
-                response, elapsed = self.execute(PLAYER, name, x, y)
+                response, elapsed = self.execute(self.player_index, name, x, y)
 
                 if response is None or response == {} or isinstance(response, str):
                     msg = response.split(':')[-1]

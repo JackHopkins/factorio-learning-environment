@@ -2,7 +2,7 @@ import math
 from time import sleep
 
 from entities import Position
-from instance import PLAYER, NONE
+from instance import NONE
 from game_types import Prototype
 from tools.admin.get_path.client import GetPath
 from tools.admin.request_path.client import RequestPath
@@ -36,12 +36,12 @@ class MoveTo(Tool):
         try:
             if laying is not None:
                 entity_name = laying.value[0]
-                response, execution_time = self.execute(PLAYER, path_handle, entity_name, 1)
+                response, execution_time = self.execute(self.player_index, path_handle, entity_name, 1)
             elif leading:
                 entity_name = leading.value[0]
-                response, execution_time = self.execute(PLAYER, path_handle, entity_name, 0)
+                response, execution_time = self.execute(self.player_index, path_handle, entity_name, 0)
             else:
-                response, execution_time = self.execute(PLAYER, path_handle, NONE, NONE)
+                response, execution_time = self.execute(self.player_index, path_handle, NONE, NONE)
 
             if isinstance(response, int) and response == 0:
                 raise Exception("Could not move.")
@@ -54,10 +54,10 @@ class MoveTo(Tool):
 
             # If `fast` is turned off - we need to long poll the game state to ensure the player has moved
             if not self.game_state.instance.fast:
-                remaining_steps = self.connection.send_command(f'/silent-command rcon.print(global.actions.get_walking_queue_length({PLAYER}))')
+                remaining_steps = self.connection.send_command(f'/silent-command rcon.print(global.actions.get_walking_queue_length({self.player_index}))')
                 while remaining_steps != '0':
                     sleep(0.5)
-                    remaining_steps = self.connection.send_command(f'/silent-command rcon.print(global.actions.get_walking_queue_length({PLAYER}))')
+                    remaining_steps = self.connection.send_command(f'/silent-command rcon.print(global.actions.get_walking_queue_length({self.player_index}))')
                 self.game_state.player_location = Position(x=position.x, y=position.y)
 
             return Position(x=response['x'], y=response['y'])#, execution_time

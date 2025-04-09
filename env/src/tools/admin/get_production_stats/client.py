@@ -1,4 +1,3 @@
-from instance import PLAYER
 from tools.tool import Tool
 
 
@@ -10,5 +9,5 @@ class GetProductionStats(Tool):
         self.game_state = game_state
 
     def __call__(self, *args, **kwargs):
-        response, execution_time = self.execute(PLAYER, *args, **kwargs)
+        response, execution_time = self.execute(self.player_index, *args, **kwargs)
         return response

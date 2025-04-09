@@ -7,16 +7,18 @@ from eval.open.independent_runs.trajectory_runner import run_process, get_next_v
 from eval.tasks.task_factory import TaskFactory
 from pathlib import Path
 import json
+from dataclasses import dataclass
 load_dotenv()
 from cluster.local.cluster_ips import get_local_container_ips
 
 
+@dataclass  
 class RunConfig:
-    def __init__(self, task: str, model: str, version: int = None, num_agents: int = 1):
-        self.task = task
-        self.model = model
-        self.version = version
-        self.num_agents = num_agents
+    task: str
+    model: str
+    version: int = None
+    num_agents: int = 1
+    exit_on_task_success: bool = True
 
 
 def main():
@@ -59,7 +61,7 @@ def main():
             agents=agents,
             version=version,
             version_description=f"model:{run_config.model}\ntype:{task.task_key}\nnum_agents:{run_config.num_agents}",
-            exit_on_task_success=run_config.get("exit_on_task_success", True),
+            exit_on_task_success=run_config.exit_on_task_success,
         )
 
         p = multiprocessing.Process(

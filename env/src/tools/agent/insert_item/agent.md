@@ -5,39 +5,19 @@ The `insert_item` tool allows you to insert items from your inventory into entit
 ## Basic Usage
 
 ```python
-insert_item(item: Prototype, target: Union[Entity, EntityGroup], quantity: int = 5) -> Entity
-```
-
-The function returns the updated target entity.
-
-### Parameters
-
-- `item`: Prototype of the item to insert
-- `target`: Entity or EntityGroup to insert items into
-- `quantity`: Number of items to insert (default: 5)
-
-### Examples
-
-```python
 # Insert coal into a furnace
 furnace = insert_item(Prototype.Coal, furnace, quantity=10)
 
 # Insert iron ore into a furnace
 furnace = insert_item(Prototype.IronOre, furnace, quantity=50)
 ```
+The function returns the updated target entity.
 
 ## Important Rules
 
-1. **Always update the target variable with the return value:**
-```python
-# Wrong - state will be outdated
-insert_item(Prototype.Coal, furnace, 10)
+**Always update the target variable with the return value**
 
-# Correct - updates furnace state
-furnace = insert_item(Prototype.Coal, furnace, 10)
-```
-
-2. **Check inventory before inserting:**
+**Check inventory before inserting:**
 ```python
 inventory = inspect_inventory()
 if inventory[Prototype.Coal] >= 10:

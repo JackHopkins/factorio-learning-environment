@@ -18,7 +18,7 @@ class Nearest(Tool):
                  ) -> Position:
         """
         Find the nearest entity or resource to your position.
-        :param type: Entity or resource type to find
+        :param type: Resource or Prototype to find (e.g., Resource.Coal, Resource.Water)
         :return: Position of nearest entity or resource
         """
         try:

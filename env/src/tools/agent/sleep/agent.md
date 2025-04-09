@@ -3,17 +3,6 @@
 ## Overview
 The `sleep` tool provides a way to pause execution for a specified duration. It's particularly useful when waiting for game actions to complete, such as waiting for items to be crafted or resources to be gathered.
 
-## Function Signature
-```python
-def sleep(seconds: int) -> bool
-```
-
-### Parameters
-- `seconds`: Number of seconds to pause execution (integer)
-
-### Returns
-- `bool`: True if sleep completed successfully
-
 ## Usage Example
 ```python
 # Wait for 10 seconds

@@ -17,7 +17,7 @@ class PickupEntity(Tool):
         """
         Pick up an entity if it exists on the world at a given position.
         :param entity: Entity prototype to pickup, e.g Prototype.IronPlate
-        :param position: Position to pickup entity
+        :param position: Optional position to pickup from (required for Prototypes)
         :return: True if the entity was picked up successfully, False otherwise.
         """
         if not isinstance(entity, (Prototype, Entity, EntityGroup)):

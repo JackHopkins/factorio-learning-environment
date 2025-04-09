@@ -14,7 +14,6 @@ def test_drop_box_chest():
                                 fast=True,
                                 # cache_scripts=False,
                                 inventory={'burner-mining-drill': 1, 'iron-chest':1, 'coal': 10})
-    prompt = instance.get_system_prompt()
     instance.namespace.move_to(instance.namespace.nearest(Resource.IronOre))
     drill = instance.namespace.place_entity(Prototype.BurnerMiningDrill, Direction.UP, instance.namespace.nearest(Resource.IronOre))
     instance.namespace.place_entity(Prototype.IronChest, Direction.UP,

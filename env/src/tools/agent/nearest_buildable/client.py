@@ -22,11 +22,17 @@ class NearestBuildable(Tool):
                  ) -> BoundingBox:
         """
         Find the nearest buildable area for an entity.
+        
+        :param entity: Prototype of entity to place
+        :param building_box: BuildingBox defining required area dimensions
+        :param center_position: Position to search around
+        :return: BoundingBox with these attributes:
+        - `left_top`: Top-left corner Position
+        - `right_bottom`: Bottom-right corner Position
+        - `left_bottom`: Bottom-left corner Position
+        - `right_top`: Top-right corner Position
+        - `center`: Center position
 
-        :param entity: Prototype of the entity to build.
-        :param building_box: The building box denoting the area of location that must be placeable.
-        :param center_position: The position to find the nearest area where building box fits
-        :return: BoundingBox of the nearest buildable area or None if no such area exists.
         """
         if not isinstance(entity, Prototype):
             raise Exception("'nearest_buildable' requires the Prototype of the desired entity as the first argument")

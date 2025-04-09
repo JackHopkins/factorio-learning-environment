@@ -17,6 +17,7 @@ from agents.utils.formatters.recursive_report_formatter import RecursiveReportFo
 from eval.open.mcts.parallel_supervised_config import SupervisedExecutorConfig
 from models.game_state import GameState
 from eval.tasks.throughput_task import ThroughputTask, LAB_PLAY_POPULATED_STARTING_INVENTORY
+from agents.utils.prompt_utils import get_default_system_prompt
 
 os.environ.update({"FORCE_COLOR": "1", "TERM": "xterm-256color"})
 load_dotenv()
@@ -231,8 +232,8 @@ async def main():
             "\033[91mError initialising Factorio instances. Are the docker containers running, and have they been activated?\033[91m")
         return
     
-    API_SCHEMA = instances[0].get_system_prompt()
-    prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\nObservations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
+    API_SCHEMA = get_default_system_prompt(instances[0].get_system_prompt())
+    prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\nObservations:\n' + OBSERVATION_SPACE + '\n\n'
     zero_state = GameState.from_instance(instances[0])
 
     model_to_evaluate = "claude-3-5-sonnet-20241022"

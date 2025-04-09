@@ -23,8 +23,8 @@ class PlaceEntityNextTo(Tool):
         In order to place something with a gap, you must increase the spacing parameter.
         :param entity: Entity to place
         :param reference_position: Position of existing entity or position to place entity next to
-        :param direction: Direction to place entity from reference_position
-        :param spacing: Space between entity and reference_position
+        :param direction: Which direction to place from reference (UP/DOWN/LEFT/RIGHT)
+        :param spacing: Additional tiles of space between entities (0 or more)
         :example: place_entity_next_to(Prototype.WoodenChest, Position(x=0, y=0), direction=Direction.UP, spacing=1)
         :return: Entity placed
         """

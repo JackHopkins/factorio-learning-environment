@@ -25,6 +25,7 @@ from eval.open.mcts.samplers.kld_achievement_sampler import KLDiversityAchieveme
 from instance import FactorioInstance
 from agents.utils.llm_factory import LLMFactory
 from cluster.local.cluster_ips import get_local_container_ips
+from agents.utils.prompt_utils import get_default_system_prompt
 
 # Configure environment
 os.environ.update({
@@ -238,7 +239,7 @@ async def main():
 
     initial_state = GameState.from_instance(instances[0])
 
-    system_prompt = instances[0].get_system_prompt()
+    system_prompt = get_default_system_prompt(instances[0].get_system_prompt())
 
     # Initialize MCTS
     print("Initializing MCTS...")

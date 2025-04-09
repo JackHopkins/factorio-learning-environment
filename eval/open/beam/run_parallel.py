@@ -16,6 +16,7 @@ from eval.open.db_client import DBClient
 from instance import FactorioInstance
 from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
 from models.game_state import GameState
+from agents.utils.prompt_utils import get_default_system_prompt
 
 os.environ.update({"FORCE_COLOR": "1", "TERM": "xterm-256color"})
 load_dotenv()
@@ -106,8 +107,8 @@ async def run_model_search(model: str, instance_start: int, version: int, resume
         return
 
     initial_state = GameState.from_instance(instances[0])
-    API_SCHEMA = instances[0].get_system_prompt()
-    prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\n# Observations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
+    API_SCHEMA = get_default_system_prompt(instances[0].get_system_prompt())
+    prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\n# Observations:\n' + OBSERVATION_SPACE + '\n\n'
 
     current_depth = 0
     resume_heads = None

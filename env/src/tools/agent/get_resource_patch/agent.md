@@ -20,27 +20,6 @@ patch = get_resource_patch(
 )
 ```
 
-### Parameters
-
-1. `resource`: Resource - Type of resource to analyze (e.g., Resource.Coal, Resource.Water)
-2. `position`: Position - Center point to search around
-3. `radius`: int - Search radius in tiles (default: 10)
-
-### Return Value
-
-Returns a ResourcePatch object containing:
-```python
-ResourcePatch(
-    name=str,              # Resource name
-    size=int,              # Total resource amount
-    bounding_box=BoundingBox(
-        left_top=Position(x,y),
-        right_bottom=Position(x,y),
-        left_bottom=Position(x,y),
-        right_top=Position(x,y)
-    )
-)
-```
 
 ## Resource Types
 

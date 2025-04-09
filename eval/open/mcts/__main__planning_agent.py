@@ -25,7 +25,7 @@ from eval.open.db_client import DBClient
 from models.game_state import GameState
 from instance import FactorioInstance
 from agents.utils.llm_factory import LLMFactory
-
+from agents.utils.prompt_utils import get_default_system_prompt
 load_dotenv()
 
 def create_instance(params: Tuple[str, int, int]) -> FactorioInstance:
@@ -158,7 +158,7 @@ async def main():
 
     # load from prompts/bottoms_up_prompts/system_message_policy_self_gen into string
     with open(objective_model_prompt_path, "r") as f:
-        system_prompt = f.read().format(schema=instances[0].get_system_prompt())
+        system_prompt = f.read().format(schema=get_default_system_prompt(instances[0].get_system_prompt()))
 
     print("Initializing MCTS...")
     # Sampler

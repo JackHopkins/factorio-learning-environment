@@ -4,28 +4,6 @@ The `print` tool allows you to output information about game state, entities, an
 
 ## Basic Usage
 
-```python
-print(*args) -> str
-```
-
-Returns a string representation of the printed message.
-
-### Parameters
-- `*args`: Variable number of objects to print
-
-### Supported Types
-- Entity objects
-- Inventory objects
-- Dictionaries
-- Booleans
-- Strings
-- Position objects
-- Lists
-- Tuples
-- Any object with a `dict()` method (BaseModel derivatives)
-
-## Common Use Cases
-
 ### 1. Entity Information
 ```python
 # Print entity details

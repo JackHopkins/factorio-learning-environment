@@ -3,22 +3,8 @@
 ## Overview
 The `set_research` tool enables setting the current research technology for the player's force in Factorio. It manages research prerequisites, validates technology availability, and provides information about required research ingredients.
 
-## Function Signature
-```python
-def set_research(technology: Technology) -> List[Ingredient]
-```
-
-### Parameters
-- `technology`: A Technology enum value representing the technology to research
-
-### Returns
-- Returns a list of `Ingredient` objects containing the required science packs and their quantities
-- Each `Ingredient` object has:
-  - `name`: Name of the required science pack
-  - `count`: Number of science packs needed
-  - `type`: Type of the ingredient (usually "item" for science packs)
-
 ## Usage Example
+
 ```python
 # Set research to Automation technology
 ingredients = set_research(Technology.Automation)

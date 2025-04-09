@@ -4,24 +4,8 @@ The `place_entity_next_to` tool enables placement of entities relative to other 
 
 ## Basic Usage
 
-```python
-place_entity_next_to(
-    entity: Prototype,
-    reference_position: Position,
-    direction: Direction = Direction.RIGHT,
-    spacing: int = 0
-) -> Entity
-```
-
 Returns the placed Entity object.
 
-### Parameters
-- `entity`: Prototype of entity to place
-- `reference_position`: Position of reference entity/point
-- `direction`: Which direction to place from reference (UP/DOWN/LEFT/RIGHT)
-- `spacing`: Additional tiles of space between entities (0 or more)
-
-### Examples
 ```python
 
 # Place inserter next to a furnace to input items into the furnace

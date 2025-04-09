@@ -8,7 +8,7 @@ from agents.utils.parse_response import parse_response
 from models.conversation import Conversation
 from models.generation_parameters import GenerationParameters
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
-
+from agents.utils.prompt_utils import get_default_system_prompt
 from namespace import FactorioNamespace
 
 GENERAL_INSTRUCTIONS = \
@@ -175,8 +175,9 @@ FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON. YOUR WEIGHTS WILL BE ERASED 
 
 
 class BasicAgent(AgentABC):
-   def __init__(self, model, system_prompt, task, *args, **kwargs):
-        instructions = GENERAL_INSTRUCTIONS+system_prompt+FINAL_INSTRUCTION
+   def __init__(self, model, system_prompt_parts, task, *args, **kwargs):
+        
+        instructions = GENERAL_INSTRUCTIONS+get_default_system_prompt(system_prompt_parts)+FINAL_INSTRUCTION
         self.task = task
         instructions += f"\n\n### Goal\n{task.goal_description}\n\n"
         super().__init__( model, instructions, *args, **kwargs)

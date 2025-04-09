@@ -14,9 +14,9 @@ class ExtractItem(Tool):
     def __call__(self, entity: Prototype, source: Union[Position, Entity], quantity=5) -> int:
         """
         Extract an item from an entity's inventory at position (x, y) if it exists on the world.
-        :param entity: Entity prototype to extract, e.g Prototype.IronPlate
-        :param source: Entity or position to extract from
-        :param quantity: Quantity to extract
+        :param entity: The Prototype of the item to extract (required)
+        :param source: Either a Position or Entity to extract from (required)
+        :param quantity: Number of items to extract (default=5)
         :example extract_item(Prototype.IronPlate, stone_furnace.position, 5)
         :example extract_item(Prototype.CopperWire, stone_furnace, 5)
         :return The number of items extracted.

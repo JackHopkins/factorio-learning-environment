@@ -241,7 +241,8 @@ class TrajectoryRunner:
                     print(f"Task verification success: {task_verification_response.success}")
                     completion_result = CompletionResult(step = iteration, 
                                                          reason = CompletionReason.SUCCESS)
-                    await self.config.agent.end(program.conversation, completion_result)
+                    for agent in self.agents:
+                        await agent.end(program.conversation, completion_result)
                     break 
             except Exception as e:
                 print(f"Error in iteration {iteration}: {e}")

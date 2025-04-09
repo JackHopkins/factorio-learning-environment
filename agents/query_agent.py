@@ -189,7 +189,7 @@ sorted_furnaces = sorted(
 - Ensure that your factory is arranged in a grid, as this will make things easier.
 """
 
-FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON." # Annoying how effective this is
+FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON.\nWHEN YOU SEE AN ERROR, DO NOT CLEAN EVERYTHING UP. FIX ERRORS MODULARLY, NOT BY STARTING FRESH EVERY TIME. CREATE SMALL MODULAR POLICIES TO FIX ERRORS AS THEY COME" # Annoying how effective this is
 
 
 class QueryAgent(AgentABC):

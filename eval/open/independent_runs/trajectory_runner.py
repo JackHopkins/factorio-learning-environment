@@ -36,6 +36,7 @@ class EvalConfig:
     agents: list[AgentABC]
     version: int
     version_description: str
+    exit_on_task_success: bool
     task: Optional[TaskABC] = None
 
     def __post_init__(self):
@@ -183,7 +184,7 @@ class TrajectoryRunner:
                 print(f"Evaluated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agents[agent_idx].model} - "
                       f"Iteration {iteration}/{self.config.task.trajectory_length} - "
-                      f"Agent {agent_idx}")
+                      f"Agent #{agent_idx}")
 
                 if not evaluated_program:
                     print(f"Evaluation failed for agent {agent_idx} at iteration {iteration}")
@@ -236,7 +237,7 @@ class TrajectoryRunner:
                           f"Elapsed: {elapsed_str} - "
                           f"ETA: {eta}")
                     
-                if task_verification_response.success:
+                if task_verification_response.success and self.config.exit_on_task_success:
                     print(f"Task verification success: {task_verification_response.success}")
                     completion_result = CompletionResult(step = iteration, 
                                                          reason = CompletionReason.SUCCESS)

@@ -11,6 +11,7 @@ def multi_instance(instance):
     """Creates a second FactorioInstance with a different player_index"""
     # First instance is already created by the base fixture
     instance1 = instance
+    instance1.num_players = 2
     
     # Create second instance with different player index
     ips, udp_ports, tcp_ports = get_local_container_ips()
@@ -21,6 +22,7 @@ def multi_instance(instance):
         cache_scripts=False,
         fast=True,
         player_index=2,  # Different player index
+        num_players=2,
         inventory={
             'iron-plate': 50,
             'copper-plate': 50,

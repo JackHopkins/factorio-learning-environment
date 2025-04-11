@@ -3,8 +3,9 @@ import argparse
 from itertools import product
 import os
 import copy
+import time
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Dict, List
 import multiprocessing
 from dotenv import load_dotenv
 
@@ -22,6 +23,7 @@ from cluster.local.cluster_ips import get_local_container_ips
 from agents.utils.python_parser import PythonParser
 #from models.response import EnvironmentResponse
 from namespace import FactorioNamespace
+from tools.agent.send_message.client import AgentMessage
 
 from agents import Response
 import json
@@ -59,6 +61,10 @@ class TrajectoryRunner:
         self.config = config
         self.iteration_times = []
         self.process_id = process_id
+        # Track messages for each agent
+        self.agent_messages: Dict[int, List[AgentMessage]] = {i: [] for i in range(len(agents))}
+        # Track the last timestamp we've shown for each agent
+        self.last_message_timestamps: Dict[int, float] = {i: 0.0 for i in range(len(agents))}
 
 
     def _is_model_compatible_with_n_samples(self, model):
@@ -119,6 +125,46 @@ class TrajectoryRunner:
         seconds = int(seconds_remaining % 60)
 
         return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        
+    def _collect_new_messages(self, agent_idx: int) -> str:
+        """Collect new messages for an agent and format them for display"""
+        new_messages = []
+        latest_timestamp = 0
+
+        # Get new messages from the game state
+        raw_messages = self.evaluators[agent_idx].instance.namespace._get_messages()
+        for msg in raw_messages:
+            # Create AgentMessage object and check if newer than last shown
+            agent_msg = AgentMessage(
+                sender=msg['sender'],
+                recipient=msg['recipient'],
+                content=msg['message'],
+                timestamp=msg['timestamp']
+            )
+            if agent_msg.timestamp > self.last_message_timestamps[agent_idx]:
+                new_messages.append(agent_msg)
+                # Add to agent_messages collection
+                self.agent_messages[agent_idx].append(agent_msg)
+                latest_timestamp = max(latest_timestamp, agent_msg.timestamp)
+            else:
+                print(f'trajectory_runner.py: skipping message: {msg}, {agent_msg.timestamp}, {self.last_message_timestamps[agent_idx]}')
+                
+        # Update the last timestamp
+        if new_messages:
+            self.last_message_timestamps[agent_idx] = latest_timestamp
+            
+        # Format messages for display
+        if not new_messages:
+            return ""
+            
+        formatted_messages = "\n\nMessages received:\n"
+        for msg in new_messages:
+            sender_info = f"Agent {msg.sender}"
+            if msg.recipient is not None:
+                sender_info += f" (to Agent {msg.recipient})"
+            formatted_messages += f"[{sender_info}]: {msg.content}\n"
+            
+        return formatted_messages
 
     async def run(self):
         """Run a single trajectory"""
@@ -128,6 +174,7 @@ class TrajectoryRunner:
 
         current_state = None
         current_conversations = [None] * len(self.agents)
+        last_responses = [None] * len(self.agents)
         
         if self.config.version:
             for agent_idx in range(len(self.agents)):
@@ -152,15 +199,30 @@ class TrajectoryRunner:
                 self.agents[agent_idx].conversation = current_conversations[agent_idx]
                 parent_id = None
 
-        last_response = None
         # Run trajectory
         for iteration, agent_idx in product(range(depth, self.config.task.trajectory_length), range(len(self.agents))):
             iteration_start = time.time()
             time.sleep(COURTESY_SLEEP) # courtesy sleep
             
             try:
+                # Collect new messages for this agent
+                new_messages_text = self._collect_new_messages(agent_idx)
+                
+                # Update the conversation with new messages if any
+                if new_messages_text:
+                    # Get the last user message
+                    last_user_message = None
+                    for msg in reversed(self.agents[agent_idx].conversation.messages):
+                        if msg.role == "user":
+                            last_user_message = msg
+                            break
+                    
+                    if last_user_message:
+                        # Append new messages to the last user message
+                        last_user_message.content += new_messages_text
+                
                 instance_param = -1 if len(self.agents) == 1 else agent_idx
-                program = await self._generate_program(self.agents[agent_idx].conversation, last_response, self.evaluators[agent_idx].instance.namespace, instance=instance_param)
+                program = await self._generate_program(self.agents[agent_idx].conversation, last_responses[agent_idx], self.evaluators[agent_idx].instance.namespace, instance=instance_param)
 
                 print(f"Generated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agents[agent_idx].model} - "
@@ -190,7 +252,7 @@ class TrajectoryRunner:
                 program = evaluated_program
                 self.agents[agent_idx].conversation = program.conversation
                 program.meta["task_key"] = self.config.task.task_key
-                last_response = Response(
+                last_responses[agent_idx] = Response(
                     code=program.code,
                     created_at=program.created_at,
                     score=program.value,
@@ -299,8 +361,8 @@ async def run_trajectory(process_id: int, config: EvalConfig):
     for instance in instances:
         task.setup(instance)
     runner = TrajectoryRunner(config.agents, db_client, evaluators, config, process_id)
+    
     await runner.run()
-
     await db_client.cleanup()
 
 

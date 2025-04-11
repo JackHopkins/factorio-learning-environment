@@ -78,10 +78,12 @@ class FactorioInstance:
                  all_technologies_researched=True,
                  peaceful=True,
                  player_index=1,
+                 num_players=1,
                  **kwargs
                  ):
 
         self.player_index = player_index
+        self.num_players = num_players
         self.persistent_vars = {}
 
         self.tcp_port = tcp_port
@@ -128,7 +130,7 @@ class FactorioInstance:
     def reset(self, game_state: Optional[GameState] = None):
         # Reset the namespace (clear variables, functions etc)
         self.namespace.reset()
-
+        
         if not game_state:
             # Reset the game instance
             self._reset(**self.initial_inventory if isinstance(self.initial_inventory,
@@ -201,7 +203,16 @@ class FactorioInstance:
         """
         execution_path = Path(os.path.dirname(os.path.realpath(__file__)))
         generator = SystemPromptGenerator(str(execution_path))
-        return generator.generate()
+        multi_agent_str = ""
+        if self.num_players > 1:
+            multi_agent_str = (
+                f"You are player {self.player_index - 1} out of {self.num_players} players in the game. "
+                f"Player 0 is the master player who should give instructions to other players. "
+                f"If you are not player 0, follow player 0's instructions and cooperate since you share the same task "
+                f"and operate in the same world. Use the send_messages() tool regularly to communicate with other players "
+                f"about your current activities and any challenges you encounter."
+            )
+        return generator.generate(multi_agent_str)
 
     def connect_to_server(self, address, tcp_port):
         try:
@@ -527,6 +538,8 @@ class FactorioInstance:
         #self.add_command('/c script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
         self.add_command('clear_inventory', self.player_index)
         self.add_command('reset_position', self.player_index, 0, 0)
+        # Clear agent messages
+        self.add_command('/c global.agent_inbox = {}', raw=True)
 
         self.execute_transaction()
 

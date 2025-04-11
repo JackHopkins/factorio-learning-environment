@@ -1,4 +1,3 @@
-from instance import PLAYER
 from tools.tool import Tool
 
 
@@ -11,6 +10,6 @@ class RegenerateResources(Tool):
         """
         Fills up all resources on the map back to full
         """
-        self.execute(PLAYER)
+        self.execute(self.player_index)
 
         return True

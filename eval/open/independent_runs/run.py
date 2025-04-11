@@ -7,8 +7,19 @@ from eval.open.independent_runs.trajectory_runner import run_process, get_next_v
 from eval.tasks.task_factory import TaskFactory
 from pathlib import Path
 import json
+from dataclasses import dataclass
 load_dotenv()
 from cluster.local.cluster_ips import get_local_container_ips
+
+
+@dataclass  
+class RunConfig:
+    task: str
+    model: str
+    version: int = None
+    num_agents: int = 1
+    exit_on_task_success: bool = True
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -17,7 +28,9 @@ def main():
     # read in run_config
     run_config_location = args.run_config
     with open(run_config_location, 'r') as f:
-        run_configs = json.load(f)
+        run_configs_raw = json.load(f)
+        run_configs = [RunConfig(**config) for config in run_configs_raw]
+
     # Create initial state and get system prompt
     try:
         instance = create_factorio_instance(0)
@@ -34,18 +47,21 @@ def main():
     base_version = asyncio.run(get_next_version())
     processes = []
     for run_idx, run_config in enumerate(run_configs):
-        task = TaskFactory.create_task(run_config["task"])
-        agent = BasicAgent(model=run_config["model"], system_prompt=system_prompt, task = task)
-        if "version" in run_config:
-            version = run_config["version"]
+        task = TaskFactory.create_task(run_config.task)
+        agents = []
+        for _ in range(run_config.num_agents):
+            agent = BasicAgent(model=run_config.model, system_prompt=system_prompt, task=task)
+            agents.append(agent)
+        if run_config.version is not None:
+            version = run_config.version
         else:
             version = base_version + version_offset
             version_offset += 1
         config = EvalConfig(
-            agent=agent,
+            agents=agents,
             version=version,
-            version_description=f"model:{run_config['model']}\ntype:{task.task_key}",
-            exit_on_task_success=run_config.get("exit_on_task_success", True),
+            version_description=f"model:{run_config.model}\ntype:{task.task_key}\nnum_agents:{run_config.num_agents}",
+            exit_on_task_success=run_config.exit_on_task_success,
         )
 
         p = multiprocessing.Process(

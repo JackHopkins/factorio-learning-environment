@@ -392,7 +392,7 @@ class DBClient(ABC):
             print(f"Error updating program: {e}")
             raise e
         
-    async def get_resume_state(self, resume_version, process_id) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
+    async def get_resume_state(self, resume_version, process_id, agent_idx=-1) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
         """Get the state to resume from"""
         try:
             # Get most recent successful program to resume from
@@ -402,17 +402,18 @@ class DBClient(ABC):
             AND state_json IS NOT NULL
             AND value IS NOT NULL
             -- AND meta->>'process_id' = %s::text
+            AND instance = %s
             ORDER BY created_at DESC
             LIMIT 1
             """
 
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
-                    cur.execute(query, (resume_version, process_id))
+                    cur.execute(query, (resume_version, process_id, agent_idx))
                     results = cur.fetchall()
 
             if not results:
-                print(f"No valid programs found for version {resume_version}")
+                print(f"No valid programs found for version {resume_version} ")
                 return None, None, None, None
 
             # Choose a program to resume from

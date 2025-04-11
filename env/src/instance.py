@@ -36,7 +36,6 @@ MAX_SAMPLES = 5000
 
 load_dotenv()
 
-PLAYER = 1
 NONE = 'nil'
 
 global var
@@ -78,9 +77,13 @@ class FactorioInstance:
                  cache_scripts=True,
                  all_technologies_researched=True,
                  peaceful=True,
+                 player_index=1,
+                 num_players=1,
                  **kwargs
                  ):
 
+        self.player_index = player_index
+        self.num_players = num_players
         self.persistent_vars = {}
 
         self.tcp_port = tcp_port
@@ -127,7 +130,7 @@ class FactorioInstance:
     def reset(self, game_state: Optional[GameState] = None):
         # Reset the namespace (clear variables, functions etc)
         self.namespace.reset()
-
+        
         if not game_state:
             # Reset the game instance
             self._reset(**self.initial_inventory if isinstance(self.initial_inventory,
@@ -170,14 +173,14 @@ class FactorioInstance:
 
     def set_inventory(self, **kwargs):
         self.begin_transaction()
-        self.add_command('clear_inventory', PLAYER)
+        self.add_command('clear_inventory', self.player_index)
         self.execute_transaction()
 
         self.begin_transaction()
         # kwargs dict to json
         inventory_items = {k: v for k, v in kwargs.items()}
         inventory_items_json = json.dumps(inventory_items)
-        self.add_command(f"/c global.actions.initialise_inventory({PLAYER}, '{inventory_items_json}')", raw=True)
+        self.add_command(f"/c global.actions.initialise_inventory({self.player_index}, '{inventory_items_json}')", raw=True)
 
         self.execute_transaction()
 
@@ -200,7 +203,16 @@ class FactorioInstance:
         """
         execution_path = Path(os.path.dirname(os.path.realpath(__file__)))
         generator = SystemPromptGenerator(str(execution_path))
-        return generator.generate()
+        multi_agent_str = ""
+        if self.num_players > 1:
+            multi_agent_str = (
+                f"You are player {self.player_index - 1} out of {self.num_players} players in the game. "
+                f"Player 0 is the master player who should give instructions to other players. "
+                f"If you are not player 0, follow player 0's instructions and cooperate since you share the same task "
+                f"and operate in the same world. Use the send_messages() tool regularly to communicate with other players "
+                f"about your current activities and any challenges you encounter."
+            )
+        return generator.generate(multi_agent_str)
 
     def connect_to_server(self, address, tcp_port):
         try:
@@ -522,21 +534,23 @@ class FactorioInstance:
         self.add_command('/c global.alerts = {}', raw=True)
         self.add_command('/c game.reset_game_state()', raw=True)
         self.add_command('/c global.actions.reset_production_stats()', raw=True)
-        self.add_command(f'/c global.actions.regenerate_resources({PLAYER})', raw=True)
+        self.add_command(f'/c global.actions.regenerate_resources({self.player_index})', raw=True)
         #self.add_command('/c script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
-        self.add_command('clear_inventory', PLAYER)
-        self.add_command('reset_position', PLAYER, 0, 0)
+        self.add_command('clear_inventory', self.player_index)
+        self.add_command('reset_position', self.player_index, 0, 0)
+        # Clear agent messages
+        self.add_command('/c global.agent_inbox = {}', raw=True)
 
         self.execute_transaction()
 
         self.begin_transaction()
         self.add_command('/c global.actions.clear_walking_queue()', raw=True)
-        self.add_command(f'/c global.actions.clear_entities({PLAYER})', raw=True)
+        self.add_command(f'/c global.actions.clear_entities({self.player_index})', raw=True)
 
         # kwargs dict to json
         inventory_items = {k: v for k, v in kwargs.items()}
         inventory_items_json = json.dumps(inventory_items)
-        self.add_command(f"/c global.actions.initialise_inventory({PLAYER}, '{inventory_items_json}')", raw=True)
+        self.add_command(f"/c global.actions.initialise_inventory({self.player_index}, '{inventory_items_json}')", raw=True)
 
         if self.all_technologies_researched:
             self.add_command("/c game.players[1].force.research_all_technologies()", raw=True)
@@ -596,7 +610,7 @@ class FactorioInstance:
             self.lua_script_manager.load_init_into_game('enemies')
 
 
-        self.add_command(f'/c player = game.players[{PLAYER}]', raw=True)
+        self.add_command(f'/c player = game.players[{self.player_index}]', raw=True)
         self.execute_transaction()
 
         self.lua_script_manager.load_init_into_game('initialise')

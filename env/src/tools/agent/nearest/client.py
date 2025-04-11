@@ -2,7 +2,6 @@ import math
 from typing import Union
 
 from entities import Position, ResourcePatch
-from instance import PLAYER
 from game_types import Prototype, Resource
 from tools.tool import Tool
 
@@ -30,7 +29,7 @@ class Nearest(Tool):
             if not isinstance(name, str):
                 raise Exception("'Nearest' must be called with an entity name as the first argument.")
 
-            response, time_elapsed = self.execute(PLAYER, name)
+            response, time_elapsed = self.execute(self.player_index, name)
 
             if response is None or response == {}:
                 if metaclass == ResourcePatch:

@@ -26,6 +26,7 @@ def multi_instance(instance):
         inventory={
             'iron-plate': 50,
             'copper-plate': 50,
+            'steam-engine': 5
         }
     )
     

@@ -145,8 +145,9 @@ class FactorioInstance:
                     progress={}
                 ))
         else:
-            # Reset the game instance
-            self._reset(**dict(game_state.inventory))
+            # Reset the game instance with the correct player's inventory
+            player_inventory = game_state.inventories[self.player_index - 1] if game_state.inventories and self.player_index - 1 < len(game_state.inventories) else {}
+            self._reset(**player_inventory)
 
             # Load entities into the game
             self.namespace._load_entity_state(game_state.entities, decompress=True)

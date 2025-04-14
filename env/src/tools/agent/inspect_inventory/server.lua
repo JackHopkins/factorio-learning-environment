@@ -1,4 +1,4 @@
-global.actions.inspect_inventory = function(player_index, is_character_inventory, x, y, entity)
+global.actions.inspect_inventory = function(player_index, is_character_inventory, x, y, entity, all_players)
     local position = {x=x, y=y}
     local player = game.get_player(player_index)
     local surface = player.surface
@@ -95,6 +95,19 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
     local player = game.get_player(player_index)
     if not player then
        error("Player not found")
+    end
+
+    if all_players then
+        local all_inventories = {}
+        for _, p in pairs(game.players) do
+            local inventory_items = get_player_inventory_items(p)
+            if inventory_items then
+                table.insert(all_inventories, inventory_items)
+            else
+                table.insert(all_inventories, {})
+            end
+        end
+        return dump(all_inventories)
     end
 
     if is_character_inventory then

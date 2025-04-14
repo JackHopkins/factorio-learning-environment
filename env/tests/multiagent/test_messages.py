@@ -15,7 +15,7 @@ from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
 from eval.tasks.task_abc import TaskABC
 from eval.tasks.default_task import DefaultTask
 
-from env.tests.multiagent.test_multiagent_setup import multi_instance
+from env.tests.multiagent.test_setup_multiagent import multi_instance
 
 
 @pytest.fixture

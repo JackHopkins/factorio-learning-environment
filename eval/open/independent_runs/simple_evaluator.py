@@ -2,6 +2,7 @@ import asyncio
 import copy
 from pathlib import Path
 from typing import List, Tuple, Union, Dict
+from time import sleep
 
 from eval.open.db_client import DBClient
 from models.achievements import ProductionFlows
@@ -28,10 +29,10 @@ class SimpleFactorioEvaluator:
         if logger:
             self.port_to_group = logger.port_to_group
 
-    async def evaluate(self, program: Program, start_state: GameState, task) -> Program:
+    def evaluate(self, program: Program, start_state: GameState, task) -> Program:
         try:
             self.instance.reset(start_state)
-            raw_reward, state, response, entities, achievements, flows, ticks = await self._evaluate_single(self.instance.tcp_port, program, self.instance)
+            raw_reward, state, response, entities, achievements, flows, ticks = self._evaluate_single(self.instance.tcp_port, program, self.instance)
             task_response = task.verify(score=raw_reward, 
                                                  instance=self.instance, 
                                                  step_statistics=flows)
@@ -60,7 +61,7 @@ class SimpleFactorioEvaluator:
             print(e)
             raise e
 
-    async def  _evaluate_single(self, instance_port: int, program: Program, instance: FactorioInstance) \
+    def  _evaluate_single(self, instance_port: int, program: Program, instance: FactorioInstance) \
             -> Tuple[float, GameState, str, List[Union[Entity, EntityGroup]], Dict, ProductionFlows, int]:
 
         #tcp_port = instance_port
@@ -106,7 +107,7 @@ class SimpleFactorioEvaluator:
                 result += f'final: (\'Entities on the map after the current step: {entities}\',)'
 
             # Sleep for 3 seconds to get output flows
-            await asyncio.sleep(self.value_accrual_time)
+            sleep(self.value_accrual_time)
             state = GameState.from_instance(instance)
 
             score, _ = instance.namespace.score()

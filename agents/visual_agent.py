@@ -157,7 +157,7 @@ class VisualAgent(AgentABC):
 
             # Convert image to base64 for embedding
             self.last_image_base64 = render.to_base64()
-            render.show()
+            # render.show()
             return self.last_image_base64
 
         except Exception as e:

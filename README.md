@@ -13,6 +13,8 @@ An open source framework for developing and evaluating LLM agents in the game of
 </p>
 <p align="center"><em>Claude 3.5 plays Factorio</em></p>
 
+
+
 ## Why FLE?
 
 [//]: # (FLE is a framework that tests agent capabilities in long-term planning, program synthesis, and resource optimization against a set of exponentially scaling challenges, ranging from basic automation to complex factories processing millions of resources per second. )
@@ -25,6 +27,8 @@ Our results demonstrate that models still lack strong spatial reasoning. In lab-
 exhibit promising short-horizon skills, they are unable to operate effectively in constrained environments, reflecting limitations in error analysis. In open-play, while LLMs discover automation strategies that improve growth (e.g electric-powered drilling), they fail to achieve complex 
 automation (e.g electronic-circuit manufacturing). 
 
+## Updates
+- [15/4/2025] Added a visual agent, that takes a rendering of the map as an additional input.
 
 ## Quick Links
 - [Installation](#installation)

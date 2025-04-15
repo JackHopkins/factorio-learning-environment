@@ -1,3 +1,10 @@
 [
-  {"task": "iron_gear_wheel_throughput_16.json", "model": "anthropic/claude-3.7-sonnet-open-router" }
+  {"task": "electronic_circuit_throughput_16.json", "model": "anthropic/claude-3.7-sonnet-open-router" },
+  {"task": "electronic_circuit_throughput_16.json", "model": "anthropic/claude-3.7-sonnet-open-router" },
+  {"task": "electronic_circuit_throughput_16.json", "model": "anthropic/claude-3.7-sonnet-open-router" },
+  {"task": "electronic_circuit_throughput_16.json", "model": "anthropic/claude-3.7-sonnet-open-router" },
+  {"task": "electronic_circuit_throughput_16.json", "model": "anthropic/claude-3.7-sonnet-open-router" },
+  {"task": "electronic_circuit_throughput_16.json", "model": "anthropic/claude-3.7-sonnet-open-router" },
+  {"task": "electronic_circuit_throughput_16.json", "model": "anthropic/claude-3.7-sonnet-open-router" },
+  {"task": "electronic_circuit_throughput_16.json", "model": "anthropic/claude-3.7-sonnet-open-router" }
 ]

@@ -19,6 +19,10 @@ class ShapeRenderer:
         width, height = x2 - x1, y2 - y1
         size = min(width, height)  # Use smaller dimension for consistent shapes
 
+        # First, draw the backing rectangle to show the actual entity space
+        backing_color = self.get_backing_rectangle_color(color)
+        draw.rectangle([x1, y1, x2, y2], fill=backing_color, outline=(0, 0, 0))
+
         # Calculate rotation angle based on direction if provided and orient_shapes is enabled
         angle_rad = 0
         if direction is not None and self.config.style["orient_shapes"]:
@@ -40,18 +44,28 @@ class ShapeRenderer:
             nx, ny = px * c - py * s, px * s + py * c  # Rotate
             return nx + cx, ny + cy  # Translate back
 
+        # Draw the actual shape but slightly smaller to fit within the backing rectangle
+        # Apply a small reduction to shape size to make backing rectangle visible
+        shrink_factor = 0.85
+        # Calculate new coordinates for the shape
+        shape_x1 = cx - (width * shrink_factor / 2)
+        shape_y1 = cy - (height * shrink_factor / 2)
+        shape_x2 = cx + (width * shrink_factor / 2)
+        shape_y2 = cy + (height * shrink_factor / 2)
+        size = min(shape_x2 - shape_x1, shape_y2 - shape_y1)  # Recalculate size for shape
+
         # For simple shapes like square and circle
         if shape_type == "square":
             if angle_rad == 0:
                 # No rotation needed for square
-                draw.rectangle([x1, y1, x2, y2], fill=color, outline=(0, 0, 0))
+                draw.rectangle([shape_x1, shape_y1, shape_x2, shape_y2], fill=color, outline=(0, 0, 0))
             else:
                 # For rotated square, use polygon
                 points = [
-                    (x1, y1),  # Top-left
-                    (x2, y1),  # Top-right
-                    (x2, y2),  # Bottom-right
-                    (x1, y2)  # Bottom-left
+                    (shape_x1, shape_y1),  # Top-left
+                    (shape_x2, shape_y1),  # Top-right
+                    (shape_x2, shape_y2),  # Bottom-right
+                    (shape_x1, shape_y2)  # Bottom-left
                 ]
                 # Rotate all points
                 rotated_points = [rotate_point(px, py, angle_rad) for px, py in points]
@@ -59,14 +73,14 @@ class ShapeRenderer:
 
         elif shape_type == "circle":
             # Circle is rotation-invariant
-            draw.ellipse([x1, y1, x2, y2], fill=color, outline=(0, 0, 0))
+            draw.ellipse([shape_x1, shape_y1, shape_x2, shape_y2], fill=color, outline=(0, 0, 0))
 
         elif shape_type == "triangle":
             # Define triangle points
             points = [
-                (cx, y1),  # Top
-                (x1, y2),  # Bottom left
-                (x2, y2)  # Bottom right
+                (cx, shape_y1),  # Top
+                (shape_x1, shape_y2),  # Bottom left
+                (shape_x2, shape_y2)  # Bottom right
             ]
             # Rotate points if needed
             if angle_rad != 0:
@@ -76,10 +90,10 @@ class ShapeRenderer:
         elif shape_type == "diamond":
             # Define diamond points
             points = [
-                (cx, y1),  # Top
-                (x2, cy),  # Right
-                (cx, y2),  # Bottom
-                (x1, cy)  # Left
+                (cx, shape_y1),  # Top
+                (shape_x2, cy),  # Right
+                (cx, shape_y2),  # Bottom
+                (shape_x1, cy)  # Left
             ]
             # Rotate points if needed
             if angle_rad != 0:
@@ -131,27 +145,27 @@ class ShapeRenderer:
             if angle_rad == 0 or angle_rad == math.pi:  # 0 or 180 degrees
                 # Vertical bar
                 draw.rectangle([
-                    cx - thickness / 2, y1,
-                    cx + thickness / 2, y2
+                    cx - thickness / 2, shape_y1,
+                    cx + thickness / 2, shape_y2
                 ], fill=color, outline=(0, 0, 0))
                 # Horizontal bar
                 draw.rectangle([
-                    x1, cy - thickness / 2,
-                    x2, cy + thickness / 2
+                    shape_x1, cy - thickness / 2,
+                    shape_x2, cy + thickness / 2
                 ], fill=color, outline=(0, 0, 0))
             else:  # 90 or 270 degrees
                 # Use polygon for rotated cross
                 v_points = [
-                    (cx - thickness / 2, y1),
-                    (cx + thickness / 2, y1),
-                    (cx + thickness / 2, y2),
-                    (cx - thickness / 2, y2)
+                    (cx - thickness / 2, shape_y1),
+                    (cx + thickness / 2, shape_y1),
+                    (cx + thickness / 2, shape_y2),
+                    (cx - thickness / 2, shape_y2)
                 ]
                 h_points = [
-                    (x1, cy - thickness / 2),
-                    (x2, cy - thickness / 2),
-                    (x2, cy + thickness / 2),
-                    (x1, cy + thickness / 2)
+                    (shape_x1, cy - thickness / 2),
+                    (shape_x2, cy - thickness / 2),
+                    (shape_x2, cy + thickness / 2),
+                    (shape_x1, cy + thickness / 2)
                 ]
                 # Rotate all points
                 v_rotated = [rotate_point(px, py, angle_rad) for px, py in v_points]
@@ -176,8 +190,21 @@ class ShapeRenderer:
             draw.polygon(points, fill=color, outline=(0, 0, 0))
 
         else:
-            # Default to rectangle for unknown shapes
-            draw.rectangle([x1, y1, x2, y2], fill=color, outline=(0, 0, 0))
+            # Default to rectangle for unknown shapes - no need to draw since backing is already a rectangle
+            pass
+
+    def get_backing_rectangle_color(self, shape_color: Tuple[int, int, int]) -> Tuple[int, int, int, int]:
+        """Generate a semi-transparent backing rectangle color based on the shape color"""
+        # Use shape_color as base, but make it slightly lighter and semi-transparent
+        r, g, b = shape_color
+        # Calculate a lighter, slightly desaturated version
+        lightness_factor = 0.6
+        lighter_r = int(r + (255 - r) * lightness_factor)
+        lighter_g = int(g + (255 - g) * lightness_factor)
+        lighter_b = int(b + (255 - b) * lightness_factor)
+        # Add transparency (alpha channel)
+        alpha = 120  # Semi-transparent (0-255)
+        return (lighter_r, lighter_g, lighter_b, alpha)
 
     def draw_direction_indicator(self, draw: ImageDraw.ImageDraw,
                                  x1: float, y1: float, x2: float, y2: float,

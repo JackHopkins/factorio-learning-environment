@@ -187,6 +187,10 @@ class LegendRenderer:
                     "color": color
                 })
 
+        # Add player marker to the legend
+        player_marker = {"name": "Character Position", "is_player": True}
+        player_items = [player_marker]
+
         # If we have status items or electricity items, add another category for each
         if status_items:
             total_categories += 1
@@ -194,7 +198,7 @@ class LegendRenderer:
             total_categories += 1
 
         # Add resources, natural elements, status items, and electricity networks to total items
-        total_items += len(resource_types) + len(natural_types) + len(status_items) + len(electricity_items)
+        total_items += len(resource_types) + len(natural_types) + len(status_items) + len(electricity_items) + len(player_items)
 
         # Measure text widths to determine legend width
         max_text_width = 0
@@ -232,6 +236,11 @@ class LegendRenderer:
             text_width = tmp_img.textlength(electricity_item["name"], font=font)
             max_text_width = max(max_text_width, text_width)
 
+        # Check player marker width
+        for player_item in player_items:
+            text_width = tmp_img.textlength(player_item["name"], font=font)
+            max_text_width = max(max_text_width, text_width)
+
         # Calculate base column width
         shape_sample_size = item_height
         column_width = int(max_text_width + shape_sample_size + 3 * padding)
@@ -263,13 +272,16 @@ class LegendRenderer:
         if electricity_items:
             electricity_height = item_height + category_spacing + len(electricity_items) * (item_height + item_spacing)
 
+        # Add height for player marker
+        player_marker_height = item_height + category_spacing + len(player_items) * (item_height + item_spacing)
+
         # Add height for origin marker if enabled
         origin_height = 0
         if self.config.style["origin_marker_enabled"]:
             origin_height = item_height + item_spacing
 
         total_height = (terrain_height + resources_height + natural_height + entities_height +
-                        status_height + electricity_height + origin_height)
+                        status_height + electricity_height + player_marker_height + origin_height)
 
         # Target height (use 80% of image height as maximum)
         target_height = int(img_height * 0.8) if img_height > 0 else 800
@@ -295,7 +307,8 @@ class LegendRenderer:
             "resource_types": resource_types,
             "natural_types": natural_types,
             "status_items": status_items,
-            "electricity_items": electricity_items
+            "electricity_items": electricity_items,
+            "player_items": player_items
         }
 
     def draw_combined_legend(self, draw: ImageDraw.ImageDraw, img_width: int, img_height: int,
@@ -326,6 +339,7 @@ class LegendRenderer:
         natural_types = dimensions.get("natural_types", [])
         status_items = dimensions.get("status_items", [])
         electricity_items = dimensions.get("electricity_items", [])
+        player_items = dimensions.get("player_items", [])
 
         # Get entity shapes
         entities_by_category, entity_shapes = self.color_manager.get_entities_by_category()
@@ -487,15 +501,37 @@ class LegendRenderer:
 
             sections.append(electricity_section)
 
+        if player_items:
+            player_section = {
+                "title": "MARKERS",
+                "items": []
+            }
+
+            for player_item in player_items:
+                player_section["items"].append({
+                    "name": player_item["name"],
+                    "is_player": True
+                })
+
+            sections.append(player_section)
+
         # Add origin marker if enabled
         if self.config.style["origin_marker_enabled"]:
-            origin_section = {
-                "title": "ORIGIN",
-                "items": [
-                    {"name": "Origin (0,0)", "is_origin": True}
-                ]
-            }
-            sections.append(origin_section)
+            # Check if we already have a MARKERS section
+            markers_section = next((s for s in sections if s["title"] == "MARKERS"), None)
+
+            if markers_section:
+                # Add to existing MARKERS section
+                markers_section["items"].append({"name": "Origin (0,0)", "is_origin": True})
+            else:
+                # Create new MARKERS section
+                origin_section = {
+                    "title": "MARKERS",
+                    "items": [
+                        {"name": "Origin (0,0)", "is_origin": True}
+                    ]
+                }
+                sections.append(origin_section)
 
         # Calculate approximate height of each section
         section_heights = []
@@ -561,6 +597,28 @@ class LegendRenderer:
                             [center_x, center_y - marker_size, center_x, center_y + marker_size],
                             fill=marker_color, width=2
                         )
+                    elif "is_player" in item and item["is_player"]:
+                        # Draw player marker (crosshair)
+                        marker_size = item_height / 2.5
+                        marker_color = self.config.style["player_indicator_color"]
+                        center_x = col_x + shape_sample_size / 2
+                        center_y = col_y + shape_sample_size / 2
+
+                        # Draw a distinctive player marker (crosshair inside circle)
+                        draw.ellipse(
+                            [center_x - marker_size, center_y - marker_size,
+                             center_x + marker_size, center_y + marker_size],
+                            fill=marker_color
+                        )
+                        # Add crosshair in center
+                        draw.line(
+                            [center_x, center_y - marker_size, center_x, center_y + marker_size],
+                            fill=(0, 0, 0), width=2
+                        )
+                        draw.line(
+                            [center_x - marker_size, center_y, center_x + marker_size, center_y],
+                            fill=(0, 0, 0), width=2
+                        )
                     elif "is_status" in item and item["is_status"]:
                         # Draw status indicator
                         status_color = item.get("status_color", (255, 0, 255))  # Default to magenta if missing
@@ -614,13 +672,41 @@ class LegendRenderer:
                         shape_type = item.get("shape", "square")
                         color = item.get("color", (200, 200, 200))
 
-                        # Draw the basic shape
+                        # First draw the backing rectangle to show entity space
+                        # Create a lighter, semi-transparent version of the shape color for the backing rectangle
+                        r, g, b = color
+                        lightness_factor = 0.6
+                        backing_r = int(r + (255 - r) * lightness_factor)
+                        backing_g = int(g + (255 - g) * lightness_factor)
+                        backing_b = int(b + (255 - b) * lightness_factor)
+                        backing_color = (backing_r, backing_g, backing_b, 120)  # Semi-transparent
+
+                        # Draw backing rectangle
+                        draw.rectangle(
+                            [shape_x, shape_y,
+                             shape_x + shape_sample_size,
+                             shape_y + shape_sample_size],
+                            fill=backing_color,
+                            outline=(0, 0, 0)
+                        )
+
+                        # Draw the actual shape slightly smaller to fit within backing rectangle
+                        shrink_factor = 0.85
+                        shape_center_x = shape_x + shape_sample_size / 2
+                        shape_center_y = shape_y + shape_sample_size / 2
+                        smaller_size = shape_sample_size * shrink_factor
+                        smaller_x1 = shape_center_x - smaller_size / 2
+                        smaller_y1 = shape_center_y - smaller_size / 2
+                        smaller_x2 = shape_center_x + smaller_size / 2
+                        smaller_y2 = shape_center_y + smaller_size / 2
+
+                        # Draw the basic shape (use the smaller coordinates for the actual shape)
                         self.shape_renderer.draw_shape(
                             draw,
-                            shape_x,
-                            shape_y,
-                            shape_x + shape_sample_size,
-                            shape_y + shape_sample_size,
+                            smaller_x1,
+                            smaller_y1,
+                            smaller_x2,
+                            smaller_y2,
                             shape_type,
                             color
                         )

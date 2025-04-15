@@ -5,7 +5,7 @@ from eval.tasks.throughput_task import ThroughputTask
 from eval.tasks.default_task import DefaultTask
 from eval.tasks.task_abc import TaskABC
 from pathlib import Path
-TASK_FOLDER = Path("eval", "tasks", "task_definitions")
+TASK_FOLDER = Path( "..","..", "tasks", "task_definitions")
 import json
 
 class TaskFactory:

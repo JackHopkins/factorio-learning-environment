@@ -113,7 +113,7 @@ class VisualAgent(AgentABC):
                             },
                             {
                                 "type": "text",
-                                "text": f"[Current map view (radius: {self.render_radius}) - Use this visual information to guide your decisions.]"
+                                "text": f"[Current map view (radius: {self.render_radius}) - Use this visual information to guide your decisions. Be sure to reference to legend to understand what each entity is.]"
                             }
                         ]
                         break
@@ -142,23 +142,16 @@ class VisualAgent(AgentABC):
             str: Base64-encoded image or None if rendering fails
         """
         try:
-            # Check if Render is available in the namespace
-            # if not hasattr(namespace, "render") or not callable(namespace._render):
-            #     # Create a Render instance if not available
-            #     if hasattr(namespace, "connection") and hasattr(namespace, "game_state"):
-            #         namespace._render = Render(namespace.connection, namespace.game_state)
-            #     else:
-            #         return None
-
             # Get player position (or use 0,0 if not available)
             player_pos = Position(0, 0)
             if hasattr(namespace, "PLAYER") and hasattr(namespace.PLAYER, "position"):
                 player_pos = namespace.PLAYER.position
+            elif hasattr(namespace, "player_location"):
+                player_pos = namespace.player_location
 
             # Render around player position
             render = namespace._render(
                 position=player_pos,
-                #radius=self.render_radius,
                 layers=Layer.ALL  # Render all layers for complete information
             )
 

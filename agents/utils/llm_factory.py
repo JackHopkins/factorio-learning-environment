@@ -14,7 +14,7 @@ class LLMFactory:
     MODELS_WITH_IMAGE_SUPPORT = [
         # Claude models with vision
         "claude-3-opus", "claude-3-sonnet", "claude-3-haiku",
-        "claude-3-5-sonnet", "claude-3-7-sonnet",
+        "claude-3-5-sonnet", "claude-3-7-sonnet", "claude-3.7-sonnet",
         # OpenAI models with vision
         "gpt-4-vision", "gpt-4-turbo", "gpt-4o", "gpt-4-1106-vision-preview"
     ]

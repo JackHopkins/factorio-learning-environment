@@ -1,4 +1,8 @@
-[
-    {"task": "iron_ore_throughput_16.json",
-    "model": "gpt-4o"}
-    ]
+[{"task": "iron_plate_throughput_16.json", "model": "deepseek/deepseek-chat-v3-0324-open-router"},
+  {"task": "iron_plate_throughput_16.json", "model": "deepseek/deepseek-chat-v3-0324-open-router"},
+  {"task": "iron_plate_throughput_16.json", "model": "deepseek/deepseek-chat-v3-0324-open-router"},
+  {"task": "iron_plate_throughput_16.json", "model": "deepseek/deepseek-chat-v3-0324-open-router"},
+  {"task": "iron_plate_throughput_16.json", "model": "deepseek/deepseek-chat-v3-0324-open-router"},
+  {"task": "iron_plate_throughput_16.json", "model": "deepseek/deepseek-chat-v3-0324-open-router"},
+  {"task": "iron_plate_throughput_16.json", "model": "deepseek/deepseek-chat-v3-0324-open-router"},
+  {"task": "iron_plate_throughput_16.json", "model": "deepseek/deepseek-chat-v3-0324-open-router"}]

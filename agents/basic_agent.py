@@ -182,7 +182,7 @@ class BasicAgent(AgentABC):
         super().__init__( model, instructions, *args, **kwargs)
         self.llm_factory = LLMFactory(model)
         self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.llm_factory.acall,cache_dir='summary_cache')
-        self.generation_params = GenerationParameters(n=1, max_tokens=2048, model=model)
+        self.generation_params = GenerationParameters(n=1, max_tokens=4096, model=model)
 
    async def step(self, conversation: Conversation, response: Response, namespace: FactorioNamespace) -> Policy:
        

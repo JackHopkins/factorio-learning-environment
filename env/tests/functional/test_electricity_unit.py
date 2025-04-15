@@ -54,7 +54,7 @@ def test_create_offshore_pump_to_steam_engine(game):
     game.move_to(Position(x=0, y=10))
     steam_engine: Entity = game.place_entity_next_to(Prototype.SteamEngine,
                                                      reference_position=boiler.position,
-                                                     direction=boiler.direction,
+                                                     direction=Direction.RIGHT, #boiler.direction,
                                                      spacing=1)
 
     # connect the boiler and steam engine with a pipe
@@ -64,6 +64,10 @@ def test_create_offshore_pump_to_steam_engine(game):
     assert inspected_steam_engine.status == EntityStatus.NOT_PLUGGED_IN_ELECTRIC_NETWORK
 
     assert steam_engine.direction.value == Direction.opposite(boiler.direction).value
+
+    image = game._render(Position(x=5, y=0))
+    image.show()
+    pass
 
 
 def test_build_iron_gear_factory_from_scratch(game):

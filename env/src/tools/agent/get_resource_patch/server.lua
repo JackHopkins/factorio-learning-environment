@@ -8,10 +8,10 @@ global.actions.get_resource_patch = function(player_index, resource, x, y, radiu
         local right_top = {y=box.left_top.y, x=box.right_bottom.x}
 
         rendering.clear()
-        rendering.draw_circle{width = 0.5, color = {r = 1, g = 0, b = 0}, surface = game.players[1].surface, radius = 0.5, filled = false, target = box.left_top, time_to_live = 60000}
-        rendering.draw_circle{width = 0.5, color = {r = 0, g = 1, b = 0}, surface = game.players[1].surface, radius = 0.5, filled = false, target = box.right_bottom, time_to_live = 60000}
-        rendering.draw_circle{width = 0.5, color = {r = 1, g = 0, b = 1}, surface = game.players[1].surface, radius = 0.5, filled = false, target = left_bottom, time_to_live = 60000}
-        rendering.draw_circle{width = 0.5, color = {r = 0, g = 1, b = 1}, surface = game.players[1].surface, radius = 0.5, filled = false, target = right_top, time_to_live = 60000}
+        rendering.draw_circle{width = 0.5, color = {r = 1, g = 0, b = 0}, surface = surface, radius = 0.5, filled = false, target = box.left_top, time_to_live = 60000}
+        rendering.draw_circle{width = 0.5, color = {r = 0, g = 1, b = 0}, surface = surface, radius = 0.5, filled = false, target = box.right_bottom, time_to_live = 60000}
+        rendering.draw_circle{width = 0.5, color = {r = 1, g = 0, b = 1}, surface = surface, radius = 0.5, filled = false, target = left_bottom, time_to_live = 60000}
+        rendering.draw_circle{width = 0.5, color = {r = 0, g = 1, b = 1}, surface = surface, radius = 0.5, filled = false, target = right_top, time_to_live = 60000}
 
     end
     -- Function to expand bounding box

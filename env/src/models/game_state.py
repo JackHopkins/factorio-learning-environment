@@ -45,7 +45,9 @@ class GameState:
         readable_namespace=pickle.loads(self.namespace)
         return f"GameState(entities={self.entities}, inventory={self.inventory}, timestamp={self.timestamp}, namespace={{{readable_namespace}}})"
 
-
+    @property
+    def is_multiagent(self) -> bool:
+        return False
 
     @classmethod
     def parse_raw(cls, json_str: str) -> 'GameState':

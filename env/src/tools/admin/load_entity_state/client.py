@@ -3,7 +3,6 @@ import json
 import zlib
 from typing import Union, List, Dict
 
-from instance import PLAYER
 from tools.tool import Tool
 
 
@@ -26,6 +25,6 @@ class LoadEntityState(Tool):
         else:
             entities = json.dumps(entities)
 
-        result, _ = self.execute(PLAYER, entities)
+        result, _ = self.execute(self.player_index, entities)
 
         return result

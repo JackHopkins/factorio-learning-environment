@@ -1,11 +1,12 @@
 import asyncio
 import copy
 from pathlib import Path
-from typing import List, Tuple, Union, Dict
+from typing import List, Tuple, Union, Dict, Optional
 
 from eval.open.db_client import DBClient
 from models.achievements import ProductionFlows
 from models.game_state import GameState
+from models.multiagent_game_state import MultiagentGameState
 from models.program import Program
 from entities import Entity, EntityGroup
 from instance import FactorioInstance
@@ -15,12 +16,12 @@ from utils.profits import get_achievements
 class SimpleFactorioEvaluator:
     def __init__(self,
                  db_client: DBClient,
-                 instance: FactorioInstance,
+                 instances: List[FactorioInstance],
                  value_accrual_time=10,
                  error_penalty=10,
                  logger=None):
         self.db = db_client
-        self.instance = instance  # Main instances
+        self.instances = instances  # Main instances
         # self.holdout = instances[-1]  # Holdout instance
         self.value_accrual_time = value_accrual_time  # Time to accrue value before evaluating
         self.error_penalty = error_penalty  # Penalty for errors during evaluation
@@ -28,12 +29,12 @@ class SimpleFactorioEvaluator:
         if logger:
             self.port_to_group = logger.port_to_group
 
-    async def evaluate(self, program: Program, start_state: GameState, task) -> Program:
+    async def evaluate(self, program: Program, start_state: GameState, task, agent_idx: int) -> Program:
         try:
-            self.instance.reset(start_state)
-            raw_reward, state, response, entities, achievements, flows, ticks = await self._evaluate_single(self.instance.tcp_port, program, self.instance)
+            self.instances[agent_idx].reset(start_state)
+            raw_reward, state, response, entities, achievements, flows, ticks = await self._evaluate_single(program, agent_idx)
             task_response = task.verify(score=raw_reward, 
-                                                 instance=self.instance, 
+                                                 instance=self.instances[agent_idx], 
                                                  step_statistics=flows)
             relative_reward = raw_reward  # - holdout_value
 
@@ -60,14 +61,14 @@ class SimpleFactorioEvaluator:
             print(e)
             raise e
 
-    async def  _evaluate_single(self, instance_port: int, program: Program, instance: FactorioInstance) \
+    async def  _evaluate_single(self, program: Program, agent_idx: int) \
             -> Tuple[float, GameState, str, List[Union[Entity, EntityGroup]], Dict, ProductionFlows, int]:
 
         #tcp_port = instance_port
 
         try:
             # Get initial state information
-
+            instance = self.instances[agent_idx]
             start_entities = instance.namespace.get_entities()
             start_inventory = instance.namespace.inspect_inventory()
             #start_production_flows = instance.namespace._get_production_stats()
@@ -107,7 +108,10 @@ class SimpleFactorioEvaluator:
 
             # Sleep for 3 seconds to get output flows
             await asyncio.sleep(self.value_accrual_time)
-            state = GameState.from_instance(instance)
+            if len(self.instances) > 1:
+                state = MultiagentGameState.from_instances(self.instances)
+            else:
+                state = GameState.from_instance(instance)
 
             score, _ = instance.namespace.score()
             final_reward = score - initial_value

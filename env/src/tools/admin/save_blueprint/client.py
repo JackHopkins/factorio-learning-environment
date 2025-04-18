@@ -1,7 +1,6 @@
 from typing import Tuple
 
 from entities import Position
-from instance import PLAYER
 from tools.tool import Tool
 
 
@@ -15,7 +14,7 @@ class SaveBlueprint(Tool):
         Saves the current player entities on the map into a blueprint string
         :return: Blueprint and offset to blueprint from the origin.
         """
-        result, _ = self.execute(PLAYER)
+        result, _ = self.execute(self.player_index)
 
         blueprint = result['blueprint']
         offset = Position(x=result['center_x'], y=result['center_y'])

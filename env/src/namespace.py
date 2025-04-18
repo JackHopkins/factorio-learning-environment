@@ -17,6 +17,7 @@ from entities import Position, Direction, EntityStatus, BoundingBox, BeltGroup, 
 from game_types import Prototype, Resource, Technology, prototype_by_name, RecipeName
 from models.serializable_function import SerializableFunction
 from models.game_state import GameState
+from models.multiagent_game_state import MultiagentGameState
 
 
 class LoopContext:
@@ -199,15 +200,17 @@ class FactorioNamespace:
         return list(filter(lambda x: isinstance(x, SerializableFunction), self.persistent_vars.values()))
 
 
-    def load(self, game_state: GameState):
+    def load(self, game_state: Union[GameState, MultiagentGameState], player_index: int = 1):
         try:
-            if game_state.namespace:
+            if game_state.is_multiagent:
+                env = pickle.loads(game_state.namespaces[player_index - 1])
+            else:
                 env = pickle.loads(game_state.namespace)
-                for key, value in env.items():
-                    # Unwrap any serialized values (like functions)
-                    restored_value = unwrap_after_deserialization(self, value)
-                    self.persistent_vars[key] = restored_value
-                    setattr(self, key, restored_value)
+            for key, value in env.items():
+                # Unwrap any serialized values (like functions)
+                restored_value = unwrap_after_deserialization(self, value)
+                self.persistent_vars[key] = restored_value
+                setattr(self, key, restored_value)
 
         except Exception as e:
             print(f"Error restoring namespace: {e}")

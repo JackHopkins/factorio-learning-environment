@@ -19,5 +19,6 @@ pillow
 psycopg2
 backoff
 tenacity
+pytest-asyncio
 # For slpp, use the git version since it's likely more up to date:
 git+https://github.com/SirAnthony/slpp

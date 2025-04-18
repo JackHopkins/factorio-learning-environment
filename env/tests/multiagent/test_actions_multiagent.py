@@ -84,19 +84,19 @@ steam_engine = place_entity(
     
     for j in range(4):
         i = j % 2
-        instance = trajectory_runner.evaluators[i].instance
+        instance = trajectory_runner.evaluator.instances[i]
         instance.reset(current_state)
-        evaluated_program, _ = await trajectory_runner.evaluators[i].evaluate(
-            programs[j], current_state, mock_config.task
+        evaluated_program, _ = await trajectory_runner.evaluator.evaluate(
+            programs[j], current_state, mock_config.task, i
         )
         print(f'agent {i} program response : {evaluated_program.response}')
         current_state = evaluated_program.state
-    trajectory_runner.evaluators[0].instance.reset(current_state)
+    trajectory_runner.evaluator.instances[0].reset(current_state)
 
         
     # Get instances
-    instance0 = trajectory_runner.evaluators[0].instance
-    instance1 = trajectory_runner.evaluators[1].instance
+    instance0 = trajectory_runner.evaluator.instances[0]
+    instance1 = trajectory_runner.evaluator.instances[1]
     
     # Check agent 0's position and mining
     entities0 = instance0.namespace.get_entities()

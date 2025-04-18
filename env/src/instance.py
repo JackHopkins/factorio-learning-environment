@@ -29,6 +29,7 @@ from transaction import FactorioTransaction
 from models.research_state import ResearchState
 from rcon.factorio_rcon import RCONClient
 from models.game_state import GameState
+from models.multiagent_game_state import MultiagentGameState
 from utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 
 CHUNK_SIZE = 32
@@ -127,7 +128,7 @@ class FactorioInstance:
         # Register the cleanup method to be called on exit
         atexit.register(self.cleanup)
 
-    def reset(self, game_state: Optional[GameState] = None):
+    def reset(self, game_state: Optional[Union[GameState, MultiagentGameState]] = None):
         # Reset the namespace (clear variables, functions etc)
         self.namespace.reset()
         
@@ -145,8 +146,12 @@ class FactorioInstance:
                     progress={}
                 ))
         else:
-            # Reset the game instance with the correct player's inventory
-            player_inventory = game_state.inventories[self.player_index - 1] if game_state.inventories and self.player_index - 1 < len(game_state.inventories) else {}
+            # Reset the game instance with the correct player's inventory and messages if multiagent
+            if game_state.is_multiagent:
+                player_inventory = game_state.inventories[self.player_index - 1]
+                self.namespace._load_messages(game_state.agent_messages)
+            else:
+                player_inventory = game_state.inventory
             self._reset(**player_inventory)
 
             # Load entities into the game
@@ -159,7 +164,7 @@ class FactorioInstance:
             self._reset_elapsed_ticks()
 
             # Load variables / functions from game state
-            self.namespace.load(game_state)
+            self.namespace.load(game_state, player_index=self.player_index)
 
         try:
             self.initial_score, goal = self.namespace.score()
@@ -204,16 +209,16 @@ class FactorioInstance:
         """
         execution_path = Path(os.path.dirname(os.path.realpath(__file__)))
         generator = SystemPromptGenerator(str(execution_path))
-        multi_agent_str = ""
+        multiagent_str = ""
         if self.num_players > 1:
-            multi_agent_str = (
+            multiagent_str = (
                 f"You are player {self.player_index - 1} out of {self.num_players} players in the game. "
                 f"Player 0 is the master player who should give instructions to other players. "
                 f"If you are not player 0, follow player 0's instructions and cooperate since you share the same task "
                 f"and operate in the same world. Use the send_messages() tool regularly to communicate with other players "
                 f"about your current activities and any challenges you encounter."
             )
-        return generator.generate(multi_agent_str)
+        return generator.generate(multiagent_str)
 
     def connect_to_server(self, address, tcp_port):
         try:

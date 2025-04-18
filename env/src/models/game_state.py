@@ -3,7 +3,7 @@ import pickle
 import time
 from dataclasses import dataclass, field, asdict
 from enum import Enum
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any
 
 
 from models.research_state import ResearchState
@@ -13,7 +13,7 @@ from models.technology_state import TechnologyState
 class GameState:
     """Serializable Factorio game state"""
     entities: str # Serialized list of entities
-    inventories: List[Dict[str, int]]  # List of inventories for all players
+    inventory: Dict[str, int]
     research: Optional[ResearchState] = field()
     timestamp: float = field(default_factory=time.time)
     namespace: bytes = field(default_factory=bytes)
@@ -34,21 +34,20 @@ class GameState:
         else:
             namespace = bytes()
 
-        # Get inventories for all players
-        inventories = instance.namespace.inspect_inventory(all_players=True)
-
         return cls(
             entities=entities,
-            inventories=inventories,
+            inventory=instance.namespace.inspect_inventory(),
             namespace=namespace,
             research=research_state,
         )
 
     def __repr__(self):
         readable_namespace=pickle.loads(self.namespace)
-        return f"GameState(entities={self.entities}, inventories={self.inventories}, timestamp={self.timestamp}, namespace={{{readable_namespace}}})"
+        return f"GameState(entities={self.entities}, inventory={self.inventory}, timestamp={self.timestamp}, namespace={{{readable_namespace}}})"
 
-
+    @property
+    def is_multiagent(self) -> bool:
+        return False
 
     @classmethod
     def parse_raw(cls, json_str: str) -> 'GameState':
@@ -70,7 +69,7 @@ class GameState:
 
         return cls(
             entities=data['entities'],
-            inventories=data['inventories'],
+            inventory=data['inventory'],
             timestamp=data['timestamp'] if 'timestamp' in data else time.time(),
             namespace=namespace,
             research=research
@@ -96,7 +95,7 @@ class GameState:
 
         return cls(
             entities=data['entities'],
-            inventories=data['inventories'],
+            inventory=data['inventory'],
             timestamp=data['timestamp'] if 'timestamp' in data else time.time(),
             namespace=namespace,
             research=research
@@ -106,7 +105,7 @@ class GameState:
         """Convert state to JSON string"""
         data = {
             'entities': self.entities,
-            'inventories': self.inventories,
+            'inventory': self.inventory.__dict__ if hasattr(self.inventory, '__dict__') else self.inventory,
             'timestamp': self.timestamp,
             'namespace': self.namespace.hex() if self.namespace else ''
         }
@@ -138,10 +137,7 @@ class GameState:
     def to_instance(self, instance: 'FactorioInstance'):
         """Restore game state to Factorio instance"""
         instance.namespace._load_entity_state(self.entities, decode=True)
-        
-        # Set inventory for the current player
-        if self.inventories and instance.player_index - 1 < len(self.inventories):
-            instance.set_inventory(**self.inventories[instance.player_index - 1])
+        instance.set_inventory(**self.inventory)
 
         # Restore research state if present
         if self.research:

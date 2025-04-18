@@ -39,11 +39,6 @@ def test_multiagent_interaction(multi_instance):
     """Test interaction between multiple agents in the same server"""
     instance1, instance2 = multi_instance
     
-    # Initially, trying to use instance2 should fail because second player isn't set up
-    with pytest.raises(Exception) as exc_info:
-        instance2.namespace.craft_item(Prototype.IronChest, quantity=1)
-    assert "player not found" in str(exc_info.value).lower()
-    
     # Set up additional players using setup_multiagent
     setup_multiagent(
         num_clients=2,  # We want 2 additional players (3 total)

@@ -62,26 +62,18 @@ def trajectory_runner(multi_instance, mock_db_client, mock_config):
     instance1, instance2 = multi_instance
     
     # Create evaluators
-    evaluators = [
-        SimpleFactorioEvaluator(
-            db_client=mock_db_client,
-            instance=instance1,
-            value_accrual_time=1,
-            error_penalty=0
-        ),
-        SimpleFactorioEvaluator(
-            db_client=mock_db_client,
-            instance=instance2,
-            value_accrual_time=1,
-            error_penalty=0
-        )
-    ]
+    evaluator = SimpleFactorioEvaluator(
+        db_client=mock_db_client,
+        instances=[instance1, instance2],
+        value_accrual_time=1,
+        error_penalty=0
+    )
     
     # Create trajectory runner
     runner = TrajectoryRunner(
         mock_config.agents, 
         mock_db_client, 
-        evaluators, 
+        evaluator, 
         mock_config, 
         process_id=1
     )
@@ -103,8 +95,8 @@ def test_collaborative_scenario(trajectory_runner, mock_config):
         # Simulate a collaborative scenario:
         # Agent 0: Resource gatherer
         # Agent 1: Builder
-        instance0 = trajectory_runner.evaluators[0].instance
-        instance1 = trajectory_runner.evaluators[1].instance
+        instance0 = trajectory_runner.evaluator.instances[0]
+        instance1 = trajectory_runner.evaluator.instances[1]
         
         # Agent 0 (resource gatherer) reports progress
         instance0.namespace.send_message(
@@ -150,7 +142,7 @@ def test_collaborative_scenario(trajectory_runner, mock_config):
 def test_send_message_to_specific_agent(trajectory_runner, mock_config):
     """Test sending a message to a specific agent"""
     # Agent 0 sends a message to Agent 1
-    instance = trajectory_runner.evaluators[0].instance
+    instance = trajectory_runner.evaluator.instances[0]
     instance.namespace.send_message("Hello Agent 1", recipient=1)
     trajectory_runner._collect_new_messages(0)
     trajectory_runner._collect_new_messages(1)
@@ -170,7 +162,7 @@ def test_send_message_to_specific_agent(trajectory_runner, mock_config):
 def test_send_message_to_all_agents(trajectory_runner, mock_config):
     """Test sending a message to all agents"""
     # Agent 0 sends a message to all agents
-    instance = trajectory_runner.evaluators[0].instance
+    instance = trajectory_runner.evaluator.instances[0]
     instance.namespace.send_message("Hello everyone")
     trajectory_runner._collect_new_messages(0)
     trajectory_runner._collect_new_messages(1)
@@ -187,7 +179,7 @@ def test_send_message_to_all_agents(trajectory_runner, mock_config):
 def test_message_collection_in_conversation(trajectory_runner, mock_config):
     """Test that messages are collected in the conversation"""
     # Agent 0 sends a message to Agent 1
-    instance = trajectory_runner.evaluators[0].instance
+    instance = trajectory_runner.evaluator.instances[0]
     instance.namespace.send_message("Hello Agent 1", recipient=1)
     
     # Collect new messages for Agent 1
@@ -215,7 +207,7 @@ def test_message_collection_in_conversation(trajectory_runner, mock_config):
 def test_only_new_messages_are_collected(trajectory_runner, mock_config):
     """Test that only new messages are collected"""
     # Agent 0 sends a message to Agent 1
-    instance = trajectory_runner.evaluators[0].instance
+    instance = trajectory_runner.evaluator.instances[0]
     instance.namespace.send_message("Hello Agent 1", recipient=1)
     
     # Collect new messages for Agent 1
@@ -234,11 +226,11 @@ def test_only_new_messages_are_collected(trajectory_runner, mock_config):
 def test_multiple_messages(trajectory_runner, mock_config):
     """Test handling multiple messages"""
     # Agent 0 sends a message to Agent 1
-    instance0 = trajectory_runner.evaluators[0].instance
+    instance0 = trajectory_runner.evaluator.instances[0]
     instance0.namespace.send_message("Hello Agent 1", recipient=1)
     
     # Agent 1 sends a message to Agent 0
-    instance1 = trajectory_runner.evaluators[1].instance
+    instance1 = trajectory_runner.evaluator.instances[1]
     instance1.namespace.send_message("Hello from Agent 1", recipient=0)
     
     # Collect new messages for Agent 0

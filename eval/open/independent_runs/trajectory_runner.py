@@ -52,12 +52,12 @@ class TrajectoryRunner:
                  #llm_factory: LLMFactory,
                  agents: list[AgentABC],
                  db_client: PostgresDBClient,
-                 evaluators: list[SimpleFactorioEvaluator],
+                 evaluator: SimpleFactorioEvaluator,
                  config: EvalConfig,
                  process_id: int):
         self.agents = agents
         self.db = db_client
-        self.evaluators = evaluators
+        self.evaluator = evaluator
         self.config = config
         self.iteration_times = []
         self.process_id = process_id
@@ -72,9 +72,9 @@ class TrajectoryRunner:
         return "gpt" in model or 'o1' in model or 'gemini' in model
 
 
-    async def _generate_program(self, conversation: Conversation, response: Response, namespace: FactorioNamespace, meta={}, instance: int = -1) -> Program:
+    async def _generate_program(self, conversation: Conversation, response: Response, namespace: FactorioNamespace, meta={}, instance_param: int = -1) -> Program:
         conversation = copy.deepcopy(conversation)
-        agent_idx = 0 if instance == -1 else instance
+        agent_idx = 0 if instance_param == -1 else instance_param
         try:
             policy = await self.agents[agent_idx].step(conversation, response, namespace)
 
@@ -94,7 +94,7 @@ class TrajectoryRunner:
                 completion_token_usage=policy.meta.output_tokens,
                 prompt_token_usage=policy.meta.input_tokens,
                 version=self.config.version,
-                instance=instance,
+                instance=instance_param,
                 model=self.agents[agent_idx].model,
                 version_description=self.config.version_description,
                 meta={"model": self.agents[agent_idx].model, "process_id": self.process_id},
@@ -132,7 +132,7 @@ class TrajectoryRunner:
         latest_timestamp = 0
 
         # Get new messages from the game state
-        raw_messages = self.evaluators[agent_idx].instance.namespace._get_messages()
+        raw_messages = self.evaluator.instances[agent_idx].namespace._get_messages()
         for msg in raw_messages:
             # Create AgentMessage object and check if newer than last shown
             agent_msg = AgentMessage(
@@ -187,8 +187,8 @@ class TrajectoryRunner:
             current_state = self.config.task.starting_game_state
             depth = 0
             for agent_idx in range(len(self.agents)):
-                self.evaluators[agent_idx].instance.reset(current_state)
-                entities = self.evaluators[agent_idx].instance.namespace.get_entities()
+                self.evaluator.instances[agent_idx].reset(current_state)
+                entities = self.evaluator.instances[agent_idx].namespace.get_entities()
                 current_conversations[agent_idx] = Conversation(messages=[
                     Message(role="system", content=self.config.agents[agent_idx].system_prompt),
                     Message(role="assistant", content="print(f'Inventory: {inspect_inventory()}')\n"
@@ -222,7 +222,7 @@ class TrajectoryRunner:
                         last_user_message.content += new_messages_text
                 
                 instance_param = -1 if len(self.agents) == 1 else agent_idx
-                program = await self._generate_program(self.agents[agent_idx].conversation, last_responses[agent_idx], self.evaluators[agent_idx].instance.namespace, instance=instance_param)
+                program = await self._generate_program(self.agents[agent_idx].conversation, last_responses[agent_idx], self.evaluator.instances[agent_idx].namespace, instance_param=instance_param)
 
                 print(f"Generated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agents[agent_idx].model} - "
@@ -235,9 +235,9 @@ class TrajectoryRunner:
                 program.parent_id = parent_id
 
                 # Evaluate program
-                instance = self.evaluators[agent_idx].instance
+                instance = self.evaluator.instances[agent_idx]
                 instance.reset(current_state)
-                evaluated_program, task_verification_response = await self.evaluators[agent_idx].evaluate(program, current_state, self.config.task)
+                evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.task)
                 print(program.code + "\n"+"="*50)
                 print("\033[1m\n".join(['>>>\t'+line for line in program.response.strip().replace('\\n', '\n\t').split('\n')]).strip()+"\033[0m")
                 print(f"Evaluated program {multiprocessing.current_process().name} - "
@@ -346,21 +346,20 @@ async def run_trajectory(process_id: int, config: EvalConfig):
     db_client = await create_db_client()
     #llm_factory = LLMFactory(model=config.model)
     instances = []
-    evaluators = []
     for agent_idx in range(len(config.agents)):
         instances.append(create_factorio_instance(process_id, agent_idx))
-        evaluators.append(SimpleFactorioEvaluator(
-            db_client=db_client,
-            instance=instances[agent_idx],
-            value_accrual_time=1,
-            error_penalty=0
-        ))
+    evaluator = SimpleFactorioEvaluator(
+        db_client=db_client,
+        instances=instances,
+        value_accrual_time=1,
+        error_penalty=0
+    )
 
     # setup the instance
     task = config.task
     for instance in instances:
         task.setup(instance)
-    runner = TrajectoryRunner(config.agents, db_client, evaluators, config, process_id)
+    runner = TrajectoryRunner(config.agents, db_client, evaluator, config, process_id)
     
     await runner.run()
     await db_client.cleanup()

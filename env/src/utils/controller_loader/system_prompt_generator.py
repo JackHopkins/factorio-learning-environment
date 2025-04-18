@@ -13,7 +13,7 @@ class SystemPromptGenerator:
         self.base_path = Path(base_path)
         self.tool_path = self.base_path / "tools" / "agent"
 
-    def generate(self, multi_agent_str: str = "") -> str:
+    def generate(self, multiagent_str: str = "") -> str:
         # Generate schema
         schema_generator = SchemaGenerator(str(self.tool_path))
         schema = schema_generator.generate_schema(with_docstring=True).replace("temp_module.", "")
@@ -32,8 +32,8 @@ class SystemPromptGenerator:
         manual_defs = ManualGenerator.generate_manual(
             str(self.base_path / "tools")
         )
-        if multi_agent_str:
-            manual_defs += f"\n\n{multi_agent_str}"
+        if multiagent_str:
+            manual_defs += f"\n\n{multiagent_str}"
 
         # Combine all parts into final prompt
         return (

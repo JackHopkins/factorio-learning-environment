@@ -36,6 +36,17 @@ class ProductionFlows:
             static_items=data.get('static_items')
         )
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert ProductionFlows to a dictionary."""
+        return {
+            'input': self.input,
+            'output': self.output,
+            'crafted': self.crafted,
+            'harvested': self.harvested,
+            'price_list': self.price_list,
+            'static_items': self.static_items
+        }
+
     def is_valid(self) -> bool:
         """Check if the production flows data is valid."""
         return isinstance(self.input, dict) and 'output' in self.__dict__

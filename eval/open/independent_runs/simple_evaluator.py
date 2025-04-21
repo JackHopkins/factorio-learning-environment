@@ -34,8 +34,9 @@ class SimpleFactorioEvaluator:
             raw_reward, state, response, entities, achievements, flows, ticks = await self._evaluate_single(self.instance.tcp_port, program, self.instance)
             # enchance step statistics with the flows
             if not isinstance(flows, dict):
-                flows = flows.to_dict()
-            step_statistics.update(flows)
+                step_statistics.update(flows.to_dict())
+            else:
+                step_statistics.update(flows)
             task_response = task.verify(score=raw_reward, 
                                                  instance=self.instance, 
                                                  step_statistics=step_statistics)

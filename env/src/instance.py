@@ -149,7 +149,7 @@ class FactorioInstance:
             # Reset the game instance with the correct player's inventory and messages if multiagent
             if game_state.is_multiagent:
                 player_inventory = game_state.inventories[self.player_index - 1]
-                self.namespace._load_messages(game_state.agent_messages)
+                agent_messages = game_state.agent_messages
             else:
                 player_inventory = game_state.inventory
             self._reset(**player_inventory)
@@ -159,6 +159,9 @@ class FactorioInstance:
 
             # Load research state into the game
             self.namespace._load_research_state(game_state.research)
+
+            if game_state.is_multiagent:
+                self.namespace._load_messages(agent_messages)
 
             # Reset elapsed ticks
             self._reset_elapsed_ticks()

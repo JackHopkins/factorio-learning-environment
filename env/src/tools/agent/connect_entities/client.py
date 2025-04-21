@@ -5,7 +5,7 @@ import numpy
 
 from entities import EntityGroup, Entity, Position, BeltGroup, PipeGroup, ElectricityGroup, TransportBelt, \
     Pipe, FluidHandler, MiningDrill, Inserter, ChemicalPlant, OilRefinery, MultiFluidHandler
-from instance import PLAYER, Direction
+from instance import Direction
 from game_types import Prototype, prototype_by_name
 from tools.admin.clear_collision_boxes.client import ClearCollisionBoxes
 from tools.admin.extend_collision_boxes.client import ExtendCollisionBoxes
@@ -336,7 +336,7 @@ class ConnectEntities(Tool):
             sleep(0.05)  # Allow pathing system time to compute
 
             response, _ = self.execute(
-                PLAYER,
+                self.player_index,
                 source_pos.x,
                 source_pos.y,
                 target_pos.x,

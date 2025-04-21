@@ -1,7 +1,6 @@
 from typing import Union
 
 from entities import Position, Entity
-from instance import PLAYER
 from game_types import Prototype
 from tools.tool import Tool
 
@@ -31,7 +30,7 @@ class ExtractItem(Tool):
 
         name, _ = entity.value
 
-        response, elapsed = self.execute(PLAYER, name, quantity, x, y, source_name)
+        response, elapsed = self.execute(self.player_index, name, quantity, x, y, source_name)
         if isinstance(response, str):
             msg = self.get_error_message(response)
             if source_name:

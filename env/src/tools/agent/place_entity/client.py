@@ -1,7 +1,6 @@
 from time import sleep
 
 from entities import Position, Entity
-from instance import PLAYER
 from instance import Direction
 from entities import Direction as DirectionEntities
 from game_types import Prototype
@@ -60,7 +59,7 @@ class PlaceObject(Tool):
 
         try:
             # If we are in `fast` mode, this is synchronous
-            response, elapsed = self.execute(PLAYER, name, factorio_direction, x, y, exact)
+            response, elapsed = self.execute(self.player_index, name, factorio_direction, x, y, exact)
         except Exception as e:
             try:
                 msg = self.get_error_message(str(e))

@@ -20,17 +20,20 @@ class UnboundedThroughputTask(TaskABC):
                     throughput_entity: Entity, holdout_wait_period: int,
                     pre_holdout_wait_period: int = 0,
                     show_number_of_steps_left_in_prompt = False,
-                    include_stats = True):
+                    include_stats = True,
+                    use_populated_inventory = True,
+                    unlock_all_research = True) -> None:
         goal_description += f"\n{INSTRUCTIONS}"
         if include_stats:
             goal_description += "\n\n##Useful statistics\n" + CRAFTING_STATISTICS
         if show_number_of_steps_left_in_prompt:
             goal_description += f"\n\nIn total you have {trajectory_length} steps to build your factory"
+        starting_inventory = LAB_PLAY_POPULATED_STARTING_INVENTORY if use_populated_inventory else {}
         super().__init__(trajectory_length, 
-                            starting_inventory = LAB_PLAY_POPULATED_STARTING_INVENTORY,
+                            starting_inventory = starting_inventory,
                             goal_description=goal_description, 
                             task_key = task_key,
-                            all_technology_reserached = True)
+                            all_technology_reserached = unlock_all_research)
         self.throughput_entity = throughput_entity
         self.holdout_wait_period = holdout_wait_period
         self.starting_game_state = None

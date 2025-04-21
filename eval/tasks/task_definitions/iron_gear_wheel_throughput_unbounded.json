@@ -1,0 +1,13 @@
+
+{                          
+    "task_type": "unbounded_throughput",
+    "config":
+        {"goal_description":"Create an automatic iron gear wheel factory.",
+        "throughput_entity":"iron-gear-wheel",
+        "trajectory_length": 16,
+        "holdout_wait_period": 60,
+        "pre_holdout_wait_period": 60,
+        "task_key": "iron_gear_wheel_throughput_unbounded_16_steps_show_steps_true",
+        "show_number_of_steps_left_in_prompt": true}
+
+}

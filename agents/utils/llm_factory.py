@@ -149,7 +149,7 @@ class LLMFactory:
                 stream=False
             )
 
-        elif "o1-mini" in model_to_use or 'o3-mini' in model_to_use:
+        elif "o1-mini" in model_to_use or 'o3-mini' in model_to_use or 'o4-mini' in model_to_use:
             client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             # replace `max_tokens` with `max_completion_tokens` for OpenAI API
             if "max_tokens" in kwargs:
@@ -165,6 +165,8 @@ class LLMFactory:
                 model = kwargs.get('model', 'o3-mini')
                 if 'o3-mini' in model:
                     model = 'o3-mini'
+                if 'o4-mini' in model:
+                    model = 'o4-mini'
                 elif 'o1-mini' in model:
                     model = 'o1-mini'
 

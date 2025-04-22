@@ -209,7 +209,7 @@ class LLMFactory:
                 stream=False
             )
 
-        elif "o1-mini" in model_to_use or 'o3-mini' in model_to_use:
+        elif "o1-mini" in model_to_use or 'o3-mini' in model_to_use or 'o4-mini' in model_to_use:
             if has_images:
                 raise ValueError(f"Claude o1-mini and o3-mini models do not support image inputs.")
 
@@ -228,6 +228,8 @@ class LLMFactory:
                 model = kwargs.get('model', 'o3-mini')
                 if 'o3-mini' in model:
                     model = 'o3-mini'
+                if 'o4-mini' in model:
+                    model = 'o4-mini'
                 elif 'o1-mini' in model:
                     model = 'o1-mini'
 

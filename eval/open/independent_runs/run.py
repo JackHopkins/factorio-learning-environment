@@ -12,12 +12,16 @@ from cluster.local.cluster_ips import get_local_container_ips
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--run_config', type=str, help='Path of the run config file', default=Path("eval", "open", "independent_runs","run_config.json"))
+    parser.add_argument('--run_config', type=str, help='Path of the run config file', default=Path("eval", "open", "independent_runs","run_config_progressive_lab_play.json"))
     args = parser.parse_args()
     # read in run_config
     run_config_location = args.run_config
-    with open(run_config_location, 'r') as f:
+
+    # current directory
+    current_dir = Path(__file__).resolve().parent.parent.parent.parent
+    with open(current_dir / run_config_location, 'r') as f:
         run_configs = json.load(f)
+
     # Create initial state and get system prompt
     try:
         instance = create_factorio_instance(0)

@@ -146,8 +146,7 @@ class TrajectoryRunner:
             iteration_start = time.time()
             time.sleep(COURTESY_SLEEP) # courtesy sleep
             try:
-                program = await self._generate_program(self.agent.conversation, last_response, self.evaluator.instance.namespace)
-
+                program: Program = await self._generate_program(self.agent.conversation, last_response, self.evaluator.instance.namespace)
                 print(f"Generated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "
                       f"Iteration {iteration}/{self.config.agent.task.trajectory_length}")

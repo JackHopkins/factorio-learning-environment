@@ -71,15 +71,19 @@ After each step the throughput of the factory is evaluated during 60 seconds of 
 """
 
 class ThroughputTask(TaskABC):
+    """
+    A task in which the agent must meet a certain production quota for an entity over an N-second holdout period
+    _after_ the program is executed. This measures purely automated production.
+    """
     def __init__(self, trajectory_length, goal_description: str, task_key: str,
                   throughput_entity: Entity, quota: int, holdout_wait_period: int, pre_holdout_wait_period: int = 0):
         goal_description += f"\n{INSTRUCTIONS}"
         goal_description += "\n\n##Useful statistics\n" + CRAFTING_STATISTICS
         super().__init__(trajectory_length, 
-                            starting_inventory = LAB_PLAY_POPULATED_STARTING_INVENTORY,
-                            goal_description=goal_description, 
-                            task_key = task_key,
-                            all_technology_reserached = True)
+                         starting_inventory=LAB_PLAY_POPULATED_STARTING_INVENTORY,
+                         goal_description=goal_description,
+                         task_key = task_key,
+                         all_technology_researched = True)
         self.throughput_entity = throughput_entity
         self.quota = quota
         self.holdout_wait_period = holdout_wait_period

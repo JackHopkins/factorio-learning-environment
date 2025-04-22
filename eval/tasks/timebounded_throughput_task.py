@@ -15,7 +15,10 @@ You must create an AUTOMATIC factory that automatically creates a target entity 
 After each step the throughput of the factory is evaluated during 60 seconds of worktime and the results are supplied to you in the response. Iteratively expand your factory, i.e first make a small factory step by step and then expand the factory in subsequent steps .
 """
 
-class UnboundedThroughputTask(TaskABC):
+class TimeboundedThroughputTask(TaskABC):
+    """
+    A task to maximise the production of a given entity within a number of steps.
+    """
     def __init__(self, trajectory_length, goal_description: str, task_key: str,
                     throughput_entity: Entity, holdout_wait_period: int,
                     pre_holdout_wait_period: int = 0,
@@ -30,10 +33,10 @@ class UnboundedThroughputTask(TaskABC):
             goal_description += f"\n\nIn total you have {trajectory_length} steps to build your factory"
         starting_inventory = LAB_PLAY_POPULATED_STARTING_INVENTORY if use_populated_inventory else {}
         super().__init__(trajectory_length, 
-                            starting_inventory = starting_inventory,
+                            starting_inventory=starting_inventory,
                             goal_description=goal_description, 
                             task_key = task_key,
-                            all_technology_reserached = unlock_all_research)
+                            all_technology_researched = unlock_all_research)
         self.throughput_entity = throughput_entity
         self.holdout_wait_period = holdout_wait_period
         self.starting_game_state = None

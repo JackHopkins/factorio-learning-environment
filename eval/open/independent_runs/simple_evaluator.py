@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List, Tuple, Union, Dict
 
 from eval.open.db_client import DBClient
+from eval.tasks.task_abc import TaskABC
 from models.achievements import ProductionFlows
 from models.game_state import GameState
 from models.program import Program
@@ -28,7 +29,7 @@ class SimpleFactorioEvaluator:
         if logger:
             self.port_to_group = logger.port_to_group
 
-    async def evaluate(self, program: Program, start_state: GameState, task, step_statistics: dict = {}) -> Program:
+    async def evaluate(self, program: Program, start_state: GameState, task: TaskABC, step_statistics: dict = {}) -> Program:
         try:
             self.instance.reset(start_state)
             raw_reward, state, response, entities, achievements, flows, ticks = await self._evaluate_single(self.instance.tcp_port, program, self.instance)
@@ -38,12 +39,11 @@ class SimpleFactorioEvaluator:
             else:
                 step_statistics.update(flows)
             task_response = task.verify(score=raw_reward, 
-                                                 instance=self.instance, 
-                                                 step_statistics=step_statistics)
+                                        instance=self.instance,
+                                        step_statistics=step_statistics)
+
             relative_reward = raw_reward  # - holdout_value
-
-
-            program.value = relative_reward
+            program.value = task.reward(raw_reward, achievements, flows, ticks)
             program.state = state
             program.raw_reward = raw_reward
             program.ticks = ticks

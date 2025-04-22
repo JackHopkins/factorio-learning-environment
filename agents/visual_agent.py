@@ -55,10 +55,10 @@ class VisualAgent(AgentABC):
         """
         # Initialize the base agent
         instructions = GENERAL_INSTRUCTIONS + system_prompt + FINAL_INSTRUCTION + VISUAL_INSTRUCTIONS
-        self.task = task
+
         instructions += f"\n\n### Goal\n{task.goal_description}\n\n"
 
-        super().__init__(model, instructions, *args, **kwargs)
+        super().__init__(model, instructions, task, *args, **kwargs)
 
         self.render_radius = render_radius
         self.llm_factory = LLMFactory(model)

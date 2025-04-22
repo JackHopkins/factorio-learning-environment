@@ -1,6 +1,7 @@
 from abc import abstractmethod
 
 from agents import Response, Python, CompletionResult, Policy
+from eval.tasks.task_abc import TaskABC
 from models.conversation import Conversation
 from namespace import FactorioNamespace
 
@@ -9,10 +10,12 @@ class AgentABC:
     model: str
     system_prompt: str
     conversation: Conversation
+    task: TaskABC
 
-    def __init__(self, model, system_prompt, *args, **kwargs):
+    def __init__(self, model, system_prompt, task, *args, **kwargs):
        self.model = model
        self.system_prompt = system_prompt
+       self.task = task
 
     def set_conversation(self, conversation: Conversation) -> None:
         """

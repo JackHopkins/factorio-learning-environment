@@ -4,7 +4,7 @@ from typing import Optional
 
 from cluster.local.cluster_ips import get_local_container_ips
 from eval.open.db_client import PostgresDBClient
-from eval.open.mcts_worker import MCTSWorker, MCTSNode, MCTSConfig
+from eval.open.mcts.mcts_worker import MCTSWorker, MCTSNode, MCTSConfig
 
 
 class MCTSTrajectoryRunner:

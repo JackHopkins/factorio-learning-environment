@@ -2,7 +2,7 @@ import unittest
 from dataclasses import dataclass
 from typing import Optional
 
-from eval.open.mcts.chunked_mcts import ChunkedMCTS
+from eval.open._mcts_old.chunked_mcts import ChunkedMCTS
 
 
 @dataclass

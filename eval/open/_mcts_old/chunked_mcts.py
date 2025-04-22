@@ -6,7 +6,7 @@ import re
 from typing import Tuple, Optional, Union
 
 from entities import Entity, EntityGroup
-from eval.open.mcts.mcts import MCTS
+from eval.open._mcts_old.mcts import MCTS
 from models.conversation import Conversation
 from models.message import Message
 from models.generation_parameters import GenerationParameters

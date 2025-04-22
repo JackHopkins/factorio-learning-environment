@@ -18,7 +18,7 @@ from eval.open.db_client import DBClient
 from eval.evaluator import Evaluator
 from models.game_state import GameState
 from models.program import Program
-from eval.open.mcts.samplers.db_sampler import DBSampler
+from eval.open._mcts_old.samplers.db_sampler import DBSampler
 
 
 class MCTS:

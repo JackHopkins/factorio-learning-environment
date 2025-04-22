@@ -9,7 +9,7 @@ from pathlib import Path
 import questionary
 from dataclasses import asdict
 
-from eval.open.mcts.samplers.beam_sampler import BeamSampler
+from eval.open._mcts_old.samplers.beam_sampler import BeamSampler
 from models.game_state import GameState
 from agents.utils.llm_factory import LLMFactory
 
@@ -163,8 +163,8 @@ def _get_sampler(sampler_type: SamplerType,
                  beam_width: int = 8,
                  exploration_prob=0.1,
                  maximum_lookback=10):
-    from eval.open.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
-    from eval.open.mcts.samplers.dynamic_reward_weighted_sampler import DynamicRewardWeightedSampler
+    from eval.open._mcts_old.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
+    from eval.open._mcts_old.samplers.dynamic_reward_weighted_sampler import DynamicRewardWeightedSampler
 
     if sampler_type == SamplerType.KLD:
         return KLDiversityAchievementSampler(db_client, window_size, temperature)
@@ -215,9 +215,9 @@ class MCTSFactory:
         raise ValueError(f"Unknown MCTS type: {config.mcts_type}")
 
     def _create_mcts(self, config: BaseConfig):
-        from eval.open.mcts.mcts import MCTS
-        from eval.open.mcts.parallel_mcts import ParallelMCTS
-        from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
+        from eval.open._mcts_old.mcts import MCTS
+        from eval.open._mcts_old.parallel_mcts import ParallelMCTS
+        from eval.open._mcts_old.parallel_mcts_config import ParallelMCTSConfig
 
         mcts_config = ParallelMCTSConfig(
             n_parallel=config.n_parallel,
@@ -241,9 +241,9 @@ class MCTSFactory:
         )
 
     def _create_chunked_mcts(self, config: ChunkedConfig):
-        from eval.open.mcts.chunked_mcts import ChunkedMCTS
-        from eval.open.mcts.parallel_mcts import ParallelMCTS
-        from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
+        from eval.open._mcts_old.chunked_mcts import ChunkedMCTS
+        from eval.open._mcts_old.parallel_mcts import ParallelMCTS
+        from eval.open._mcts_old.parallel_mcts_config import ParallelMCTSConfig
         from agents.utils.formatters.conversation_formatter_abc import StructurePreservingFormatter
 
         mcts_config = ParallelMCTSConfig(
@@ -273,9 +273,9 @@ class MCTSFactory:
         )
 
     def _create_objective_mcts(self, config: ObjectiveConfig):
-        from eval.open.mcts.objective_mcts import ObjectiveMCTS
-        from eval.open.mcts.parallel_mcts import ParallelMCTS
-        from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
+        from eval.open._mcts_old.objective_mcts import ObjectiveMCTS
+        from eval.open._mcts_old.parallel_mcts import ParallelMCTS
+        from eval.open._mcts_old.parallel_mcts_config import ParallelMCTSConfig
         from agents.utils.formatters.conversation_formatter_abc import StructurePreservingFormatter
 
         mcts_config = ParallelMCTSConfig(
@@ -306,9 +306,9 @@ class MCTSFactory:
         )
 
     def _create_planning_mcts(self, config: PlanningConfig):
-        from eval.open.mcts.planning_mcts import PlanningMCTS
-        from eval.open.mcts.parallel_planning_mcts import ParallelPlanningMCTS
-        from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
+        from eval.open._mcts_old.planning_mcts import PlanningMCTS
+        from eval.open._mcts_old.parallel_planning_mcts import ParallelPlanningMCTS
+        from eval.open._mcts_old.parallel_mcts_config import ParallelMCTSConfig
 
         game_state = GameState.from_instance(self.instances[0])
         mcts_config = ParallelMCTSConfig(

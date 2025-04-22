@@ -4,11 +4,11 @@ import os
 from eval.open.auto_curriculum.plan_sampler import PlanSampler
 from models.conversation import Conversation
 from models.message import Message
-from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
-from eval.open.mcts.parallel_planning_mcts import ParallelPlanningMCTS
-from eval.open.mcts.planning_mcts import PlanningMCTS
+from eval.open._mcts_old.parallel_mcts_config import ParallelMCTSConfig
+from eval.open._mcts_old.parallel_planning_mcts import ParallelPlanningMCTS
+from eval.open._mcts_old.planning_mcts import PlanningMCTS
 from models.program import Program
-from eval.open.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
+from eval.open._mcts_old.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
 
 os.environ["FORCE_COLOR"] = "1"
 os.environ["TERM"] = "xterm-256color"

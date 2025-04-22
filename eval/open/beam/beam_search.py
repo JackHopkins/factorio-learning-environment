@@ -13,9 +13,9 @@ from rich.console import Console
 
 from eval.open.db_client import DBClient
 from eval.evaluator import Evaluator
-from eval.open.mcts.grouped_logger import GroupedFactorioLogger
-from eval.open.mcts.mcts import MCTS
-from eval.open.mcts.instance_group import InstanceGroup
+from eval.open._mcts_old.grouped_logger import GroupedFactorioLogger
+from eval.open._mcts_old.mcts import MCTS
+from eval.open._mcts_old.instance_group import InstanceGroup
 from models.conversation import Conversation
 from models.message import Message
 from models.generation_parameters import GenerationParameters

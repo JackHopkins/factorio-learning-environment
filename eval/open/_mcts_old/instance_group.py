@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List
 
 from eval.evaluator import Evaluator
-from eval.open.mcts.mcts import MCTS
+from eval.open._mcts_old.mcts import MCTS
 
 
 @dataclass

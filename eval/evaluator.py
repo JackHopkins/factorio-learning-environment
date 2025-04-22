@@ -5,7 +5,7 @@ from typing import List, Tuple, Union, Dict
 
 from eval.open.db_client import DBClient
 from models.game_state import GameState
-from eval.open.mcts.logger import FactorioLogger
+from eval.open._mcts_old.logger import FactorioLogger
 from models.program import Program
 from entities import Entity, EntityGroup
 from instance import FactorioInstance

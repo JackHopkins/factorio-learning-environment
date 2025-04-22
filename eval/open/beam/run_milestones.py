@@ -14,7 +14,7 @@ from env.src.instance import FactorioInstance
 from eval.open.beam.beam_search_milestones import MilestonesBeamSearchExecutor
 from eval.open.db_client import DBClient
 from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
-from eval.open.mcts.parallel_supervised_config import SupervisedExecutorConfig
+from eval.open._mcts_old.parallel_supervised_config import SupervisedExecutorConfig
 from models.game_state import GameState
 from eval.tasks.throughput_task import ThroughputTask, LAB_PLAY_POPULATED_STARTING_INVENTORY
 

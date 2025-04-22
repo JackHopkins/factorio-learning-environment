@@ -7,7 +7,7 @@ from agents import CompletionResult, CompletionReason, Response
 from agents.agent_abc import AgentABC
 from eval.open.db_client import PostgresDBClient
 from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
-from eval.open.mcts.samplers.db_sampler import DBSampler
+from eval.open._mcts_old.samplers.db_sampler import DBSampler
 from instance import FactorioInstance
 from models.achievements import ProductionFlows
 from models.conversation import Conversation

@@ -7,9 +7,9 @@ from rich.console import Console
 
 from eval.open.db_client import DBClient
 from eval.evaluator import Evaluator
-from eval.open.mcts.grouped_logger import GroupedFactorioLogger
-from eval.open.mcts.instance_group import InstanceGroup
-from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
+from eval.open._mcts_old.grouped_logger import GroupedFactorioLogger
+from eval.open._mcts_old.instance_group import InstanceGroup
+from eval.open._mcts_old.parallel_mcts_config import ParallelMCTSConfig
 from instance import FactorioInstance
 
 # Configure logging

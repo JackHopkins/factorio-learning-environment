@@ -2,8 +2,8 @@ import asyncio
 from dataclasses import dataclass
 from typing import List, Dict, Any
 
-from eval.open.mcts_trajectory_runner import MCTSTrajectoryRunner
-from eval.open.mcts_worker import MCTSConfig
+from eval.open.mcts.mcts_trajectory_runner import MCTSTrajectoryRunner
+from eval.open.mcts.mcts_worker import MCTSConfig
 
 
 @dataclass
@@ -29,7 +29,7 @@ async def run_mcts(params: MCTSRunParameters):
     from eval.open.db_client import PostgresDBClient
     from eval.tasks.task_factory import TaskFactory
     from agents.basic_agent import BasicAgent
-    from eval.open.mcts.samplers.dynamic_reward_weighted_sampler import DynamicRewardWeightedSampler
+    from eval.open._mcts_old.samplers.dynamic_reward_weighted_sampler import DynamicRewardWeightedSampler
 
     load_dotenv()
 

@@ -7,9 +7,9 @@ from models.conversation import Conversation
 from models.message import Message
 from models.generation_parameters import GenerationParameters
 from models.game_state import GameState
-from eval.open.mcts.mcts import MCTS
+from eval.open._mcts_old.mcts import MCTS
 from models.program import Program
-from eval.open.mcts.planning_models import LanguageOutput, TaskOutput, InitialPlanOutput, PlanOutput, Step
+from eval.open._mcts_old.planning_models import LanguageOutput, TaskOutput, InitialPlanOutput, PlanOutput, Step
 from tenacity import wait_exponential, retry
 
 

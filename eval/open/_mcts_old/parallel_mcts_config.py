@@ -1,8 +1,8 @@
 from typing import Any, Dict, Type
 
 from models.game_state import GameState
-from eval.open.mcts.mcts import MCTS
-from eval.open.mcts.samplers.db_sampler import DBSampler
+from eval.open._mcts_old.mcts import MCTS
+from eval.open._mcts_old.samplers.db_sampler import DBSampler
 
 
 class ParallelMCTSConfig:

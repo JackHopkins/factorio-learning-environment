@@ -14,10 +14,10 @@ from models.generation_parameters import GenerationParameters
 from agents.utils.formatters.conversation_formatter_abc import ConversationFormatter, StructurePreservingFormatter
 from eval.open.db_client import DBClient
 from eval.evaluator import Evaluator
-from eval.open.mcts.grouped_logger import GroupedFactorioLogger
-from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
-from eval.open.mcts.planning_mcts import get_mining_setup
-from eval.open.mcts.planning_models import PlanOutput, TaskOutput, Step, LanguageOutput, InitialPlanOutput
+from eval.open._mcts_old.grouped_logger import GroupedFactorioLogger
+from eval.open._mcts_old.parallel_mcts_config import ParallelMCTSConfig
+from eval.open._mcts_old.planning_mcts import get_mining_setup
+from eval.open._mcts_old.planning_models import PlanOutput, TaskOutput, Step, LanguageOutput, InitialPlanOutput
 from models.game_state import GameState
 from models.program import Program
 from instance import FactorioInstance

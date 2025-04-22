@@ -2,17 +2,17 @@ from typing import List, Optional, Any, Tuple
 import asyncio
 import logging
 from eval.open.db_client import DBClient
-from eval.open.mcts.supervised_task_executor_abc import SupervisedTaskExecutorABC, PlanningGroupV2
-from eval.open.mcts.planning_models import PlanOutput, TaskOutput, Step, InitialPlanOutput
+from eval.open._mcts_old.supervised_task_executor_abc import SupervisedTaskExecutorABC, PlanningGroupV2
+from eval.open._mcts_old.planning_models import PlanOutput, TaskOutput, Step, InitialPlanOutput
 from models.game_state import GameState
 from models.program import Program
 from env.src.instance import FactorioInstance
-from eval.open.mcts.parallel_supervised_config import SupervisedExecutorConfig
+from eval.open._mcts_old.parallel_supervised_config import SupervisedExecutorConfig
 from models.conversation import Conversation
 from models.message import Message
 from models.generation_parameters import GenerationParameters
 from tenacity import retry, wait_exponential
-from eval.open.mcts.planning_mcts import get_mining_setup
+from eval.open._mcts_old.planning_mcts import get_mining_setup
 from eval.tasks.throughput_task import ThroughputTask
 logger = logging.basicConfig(level=logging.INFO)
 

@@ -266,7 +266,7 @@ class ProgressiveThroughputTask(TaskABC):
             ticks: Number of ticks elapsed
 
         Returns:
-            Modified reward incorporating progressive score
+            Modified reward incorporating progressive score - rewards for partial ingredient automation
         """
         # Get the dynamic achievements (items produced during this period)
         dynamic_achievements = achievements.get("dynamic", {})

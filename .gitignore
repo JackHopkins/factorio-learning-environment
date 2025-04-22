@@ -59,7 +59,7 @@ environment/src/skills/ground_truth_skills/*
 /eval/open/plots/icons/
 /eval/open/plots/viz_cache.pkl
 /eval/open/plots/viz_cache2.pkl
-/eval/open/mcts/runs/
+/eval/open/_mcts_old/runs/
 /eval/open/independent_runs/summary_cache/
 /eval/open/beam/summary_cache/
 /venv_py311/

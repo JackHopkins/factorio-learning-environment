@@ -6,7 +6,7 @@ import psycopg2
 import tenacity
 from tenacity import wait_exponential, retry, retry_if_exception_type
 
-from eval.open.mcts.mcts import MCTS
+from eval.open._mcts_old.mcts import MCTS
 from models.conversation import Conversation
 from models.message import Message
 from models.generation_parameters import GenerationParameters
@@ -15,8 +15,8 @@ from eval.open.db_client import DBClient
 from eval.evaluator import Evaluator
 from models.game_state import GameState
 from models.program import Program
-from eval.open.mcts.samplers.db_sampler import DBSampler
-from eval.open.mcts.samplers.objective_sampler import ObjectiveTreeSampler
+from eval.open._mcts_old.samplers.db_sampler import DBSampler
+from eval.open._mcts_old.samplers.objective_sampler import ObjectiveTreeSampler
 from agents.utils.llm_factory import LLMFactory
 
 OBJECTIVE_PLANNING_PROMPT = \

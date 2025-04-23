@@ -1,7 +1,6 @@
 from typing import Tuple
 
 from entities import Inventory, Entity, Position
-from instance import PLAYER
 from tools.tool import Tool
 
 
@@ -27,7 +26,7 @@ class InspectInventory(Tool):
         else:
             x, y = 0, 0
 
-        response, execution_time = self.execute(PLAYER, entity == None, x, y, entity.name if entity else "")
+        response, execution_time = self.execute(self.player_index, entity == None, x, y, entity.name if entity else "")
 
         if not isinstance(response, dict):
             if entity:

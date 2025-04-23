@@ -54,7 +54,7 @@ class BlueprintScenarioSampler:
         try:
             # Reset instance to clean state
             instance.reset()
-            instance.set_inventory(**inventory)
+            instance.set_inventory(inventory)
 
             # Run the implementation to set up initial state
             reward, _, result = instance.eval(blueprint['implementation'], timeout=30)

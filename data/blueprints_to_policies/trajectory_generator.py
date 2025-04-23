@@ -755,7 +755,7 @@ for file in files:
         with open(execution_dir+filename+".json", "r") as f:
             blueprint_json = f.read()
             inventory = get_inventory(blueprint_json)
-            instance.set_inventory(**inventory)
+            instance.set_inventory(inventory)
             #instance.add_command(_create_more_ore(Position(x=0, y=0), 30))
             instance.execute_transaction()
             instance.move_to(Position(x=0, y=0))

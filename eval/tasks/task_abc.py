@@ -3,6 +3,7 @@ from env.src.entities import Inventory, Entity
 from env.src.instance import FactorioInstance
 from agents import TaskResponse
 from models.game_state import GameState
+from models.multiagent_game_state import MultiagentGameState
 
 class TaskABC:
     def __init__(self, trajectory_length, starting_inventory: Inventory, goal_description: str, task_key: str, all_technology_reserached: bool = False):
@@ -30,4 +31,5 @@ class TaskABC:
         instance.all_technologies_researched = self.all_technology_reserached
         instance.reset()
         self.setup_instance(instance)
-        self.starting_game_state = GameState.from_instance(instance)
+        state_cls = MultiagentGameState if instance.num_agents > 1 else GameState
+        self.starting_game_state = state_cls.from_instance(instance)

@@ -49,7 +49,8 @@ def main():
     for run_idx, run_config in enumerate(run_configs):
         task = TaskFactory.create_task(run_config.task)
         agents = []
-        for _ in range(run_config.num_agents):
+        for agent_idx in range(run_config.num_agents):
+            system_prompt = instance.get_system_prompt(agent_idx)
             agent = BasicAgent(model=run_config.model, system_prompt=system_prompt, task=task)
             agents.append(agent)
         if run_config.version is not None:

@@ -51,7 +51,7 @@ class LoopContext:
 
 class FactorioNamespace:
 
-    def __init__(self, instance):
+    def __init__(self, instance, agent_index):
         self.logging_results = {}
         self.line_value = 0
         self.persistent_vars = {}
@@ -61,7 +61,7 @@ class FactorioNamespace:
         self._sequential_exception_count = 0
         self.log_counter = 0
         self.player_location = Position(x=0, y=0)
-
+        self.agent_index = agent_index
         self.loop_context = LoopContext()
 
         # Add all builtins to the namespace
@@ -200,12 +200,9 @@ class FactorioNamespace:
         return list(filter(lambda x: isinstance(x, SerializableFunction), self.persistent_vars.values()))
 
 
-    def load(self, game_state: Union[GameState, MultiagentGameState], player_index: int = 1):
+    def load(self, namespace_str: bytes):
         try:
-            if game_state.is_multiagent:
-                env = pickle.loads(game_state.namespaces[player_index - 1])
-            else:
-                env = pickle.loads(game_state.namespace)
+            env = pickle.loads(namespace_str)
             for key, value in env.items():
                 # Unwrap any serialized values (like functions)
                 restored_value = unwrap_after_deserialization(self, value)

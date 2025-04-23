@@ -58,7 +58,7 @@ def eval_program_with_achievements(
         program: str
 ) -> Tuple[List[str], str, bool, Dict[str, Dict[str, float]]]:
     """Evaluate a program and calculate achievements."""
-    pre_flows = ProductionFlows.from_dict(instance.namespace._get_production_stats())
+    pre_flows = ProductionFlows.from_dict(instance.first_namespace._get_production_stats())
 
     try:
         score, goal, result = instance.eval_with_error(program, timeout=300)
@@ -67,7 +67,7 @@ def eval_program_with_achievements(
         result = str(e)
         error = True
 
-    post_flows = ProductionFlows.from_dict(instance.namespace._get_production_stats())
+    post_flows = ProductionFlows.from_dict(instance.first_namespace._get_production_stats())
     achievements = AchievementTracker.calculate_achievements(pre_flows, post_flows)
 
     return result.splitlines(), result, error, achievements

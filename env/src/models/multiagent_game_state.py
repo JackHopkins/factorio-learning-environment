@@ -23,30 +23,32 @@ class MultiagentGameState:
     @property
     def is_multiagent(self) -> bool:
         return True
+    
+    @property
+    def num_agents(self) -> int:
+        return len(self.inventories)
 
     @classmethod
-    def from_instances(cls, instances: List['FactorioInstance']) -> 'MultiagentGameState':
-
+    def from_instance(cls, instance: 'FactorioInstance') -> 'MultiagentGameState':
         """Capture current game state from Factorio instances"""
-        entities = instances[0].namespace._save_entity_state(compress=True, encode=True)
+        assert instance.num_agents > 1, "MultiagentGameState can only be created from a multiagent instance"
+        entities = instance.first_namespace._save_entity_state(compress=True, encode=True)
 
         # Get research state
-        research_state = instances[0].namespace._save_research_state()
+        research_state = instance.first_namespace._save_research_state()
 
         # Filter and pickle only serializable variables
-        # Sort instances by player_index and create namespaces list
-        sorted_instances = sorted(instances, key=lambda x: x.player_index)
         namespaces = []
-        for instance in sorted_instances:
-            if hasattr(instance.namespace, 'persistent_vars'):
-                serializable_vars = filter_serializable_vars(instance.namespace.persistent_vars)
+        for namespace in instance.namespaces:
+            if hasattr(namespace, 'persistent_vars'):
+                serializable_vars = filter_serializable_vars(namespace.persistent_vars)
                 namespaces.append(pickle.dumps(serializable_vars))
             else:
                 namespaces.append(bytes())
 
         # Get inventories for all players
-        inventories = instance.namespace.inspect_inventory(all_players=True)
-        agent_messages = instance.namespace._get_messages(all_players=True)
+        inventories = [namespace.inspect_inventory() for namespace in instance.namespaces]
+        agent_messages = [namespace._get_messages() for namespace in instance.namespaces]
 
         return cls(
             entities=entities,
@@ -125,7 +127,7 @@ class MultiagentGameState:
         """Convert state to JSON string"""
         data = {
             'entities': self.entities,
-            'inventories': self.inventories,
+            'inventories': [inventory.__dict__ for inventory in self.inventories],
             'timestamp': self.timestamp,
             'namespaces': [ns.hex() if ns else '' for ns in self.namespaces],
             'agent_messages': self.agent_messages
@@ -147,29 +149,31 @@ class MultiagentGameState:
         return json.dumps(data)
 
 
-    def to_instances(self, instances: List['FactorioInstance']):
-        """Restore game state to multiple Factorio instances"""
+    def to_instance(self, instance: 'FactorioInstance'):
+        """Restore game state to a Factorio instance"""
         # Load entity state to all instances (since it's shared)
-        for instance in instances:
-            instance.namespace._load_entity_state(self.entities, decode=True)
-            
-            # Set inventory for each player
-            if self.inventories and instance.player_index - 1 < len(self.inventories):
-                instance.set_inventory(**self.inventories[instance.player_index - 1])
+        assert instance.num_agents == self.num_agents, f"MultiagentGameState can only be restored to a multiagent instance with the same number of agents (num_agents={self.num_agents})"
+        instance.first_namespace._load_entity_state(self.entities, decode=True)
+        
+        # Set inventory for each player
+        if self.inventories:
+            for i in range(instance.num_agents):
+                instance.set_inventory(self.inventories[i], i)
 
-            # Restore research state if present (only need to do this once)
-            if self.research and instance.player_index == 1:  # Only do this for the first instance
-                instance.namespace._load_research_state(self.research)
-            
-            # Load messages for each player
-            if self.agent_messages:
-                instance.namespace._load_messages(self.agent_messages)
+        # Restore research state if present (only need to do this once)
+        if self.research and instance.player_index == 1:  # Only do this for the first instance
+            instance.first_namespace._load_research_state(self.research)
+        
+        # Load messages for each player
+        if self.agent_messages:
+            instance.first_namespace._load_messages(self.agent_messages)
 
-            # Merge pickled namespace with existing persistent_vars for each player
-            if self.namespaces and instance.player_index - 1 < len(self.namespaces):
-                namespace = self.namespaces[instance.player_index - 1]
+        # Merge pickled namespace with existing persistent_vars for each player
+        if self.namespaces:
+            for i in range(instance.num_agents):
+                namespace = self.namespaces[i]
                 if namespace:
                     restored_vars = pickle.loads(namespace)
-                    if not hasattr(instance, 'persistent_vars') or instance.persistent_vars is None:
-                        instance.persistent_vars = {}
-                    instance.persistent_vars.update(restored_vars)
+                if not hasattr(instance, 'persistent_vars') or instance.persistent_vars is None:
+                    instance.persistent_vars = {}
+                instance.persistent_vars.update(restored_vars)

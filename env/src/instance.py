@@ -74,19 +74,16 @@ class FactorioInstance:
                  address=None,
                  fast=False,
                  tcp_port=27000,
-                 inventory={},
+                 inventory=None,
                  cache_scripts=True,
                  all_technologies_researched=True,
                  peaceful=True,
-                 player_index=1,
-                 num_players=1,
+                 num_agents=1,
                  **kwargs
                  ):
 
-        self.player_index = player_index
-        self.num_players = num_players
+        self.num_agents = num_agents
         self.persistent_vars = {}
-
         self.tcp_port = tcp_port
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
         self.all_technologies_researched = all_technologies_researched
@@ -95,7 +92,8 @@ class FactorioInstance:
         self._ticks_elapsed = 0
 
         self.peaceful = peaceful
-        self.namespace = FactorioNamespace(self)
+        self.namespaces = [FactorioNamespace(self, i) for i in range(num_agents)]
+        self.first_namespace = self.namespaces[0]  # for arbitrary namespace access
 
         self.lua_script_manager = LuaScriptManager(self.rcon_client, cache_scripts)
         self.script_dict = {**self.lua_script_manager.lib_scripts, **self.lua_script_manager.tool_scripts}
@@ -107,38 +105,49 @@ class FactorioInstance:
         # Load the python controllers that correspond to the Lua scripts
         self.setup_tools(self.lua_script_manager)
 
+        if inventory is None:
+            inventory = {}
         self.initial_inventory = inventory
-        self.initialise(fast, **inventory)
+        self.initialise(fast)
         self.initial_score = 0
 
 
         try:
-            self.namespace.score()
+            self.first_namespace.score()
         except Exception as e:
             # Invalidate cache if there is an error
             self.lua_script_manager = LuaScriptManager(self.rcon_client, False)
             self.script_dict = {**self.lua_script_manager.lib_scripts, **self.lua_script_manager.tool_scripts}
             self.setup_tools(self.lua_script_manager)
-            self.initialise(fast, **inventory)
+            self.initialise(fast)
 
-        self._tasks = []
-
-        self.initial_score, goal = self.namespace.score()
+        self.initial_score, goal = self.first_namespace.score()
 
         # Register the cleanup method to be called on exit
         atexit.register(self.cleanup)
+    
+    @property
+    def namespace(self):
+        if len(self.namespaces) == 1:
+            return self.namespaces[0]
+        else:
+            raise ValueError("Can only use .namespace for single-agent instances")
 
     def reset(self, game_state: Optional[Union[GameState, MultiagentGameState]] = None):
         # Reset the namespace (clear variables, functions etc)
-        self.namespace.reset()
+        assert not game_state or game_state.is_multiagent == (self.num_agents > 1), \
+            "Multiagent game state must be provided if num_agents > 1"
+        
+        for namespace in self.namespaces:
+            namespace.reset()
         
         if not game_state:
             # Reset the game instance
-            self._reset(**self.initial_inventory if isinstance(self.initial_inventory,
-                                                               dict) else self.initial_inventory.__dict__)
+            inventories = [self.initial_inventory] * self.num_agents
+            self._reset(inventories)
             # Reset the technologies
             if not self.all_technologies_researched:
-                self.namespace._load_research_state(ResearchState(
+                self.first_namespace._load_research_state(ResearchState(
                     technologies={},
                     research_progress=0,
                     current_research=None,
@@ -148,29 +157,33 @@ class FactorioInstance:
         else:
             # Reset the game instance with the correct player's inventory and messages if multiagent
             if game_state.is_multiagent:
-                player_inventory = game_state.inventories[self.player_index - 1]
+                inventories = game_state.inventories
                 agent_messages = game_state.agent_messages
             else:
-                player_inventory = game_state.inventory
-            self._reset(**player_inventory)
+                inventories = [game_state.inventory]
+            self._reset(inventories)
 
             # Load entities into the game
-            self.namespace._load_entity_state(game_state.entities, decompress=True)
+            self.first_namespace._load_entity_state(game_state.entities, decompress=True)
 
             # Load research state into the game
-            self.namespace._load_research_state(game_state.research)
+            self.first_namespace._load_research_state(game_state.research)
 
             if game_state.is_multiagent:
-                self.namespace._load_messages(agent_messages)
+                self.first_namespace._load_messages(agent_messages)
 
             # Reset elapsed ticks
             self._reset_elapsed_ticks()
 
             # Load variables / functions from game state
-            self.namespace.load(game_state, player_index=self.player_index)
+            if game_state.is_multiagent:
+                for i in range(self.num_agents):
+                    self.namespaces[i].load(game_state.namespaces[i])
+            else:
+                self.first_namespace.load(game_state.namespace)
 
         try:
-            self.initial_score, goal = self.namespace.score()
+            self.initial_score, goal = self.first_namespace.score()
         except Exception as e:
             self.initial_score, goal = 0, None
 
@@ -180,16 +193,16 @@ class FactorioInstance:
         self.execute_transaction()
 
 
-    def set_inventory(self, **kwargs):
+    def set_inventory(self, inventory: Dict[str, Any], agent_idx: int = 0):
         self.begin_transaction()
-        self.add_command('clear_inventory', self.player_index)
+        self.add_command('clear_inventory', agent_idx)
         self.execute_transaction()
 
         self.begin_transaction()
         # kwargs dict to json
-        inventory_items = {k: v for k, v in kwargs.items()}
+        inventory_items = {k: v for k, v in inventory.items()}
         inventory_items_json = json.dumps(inventory_items)
-        self.add_command(f"/c global.actions.initialise_inventory({self.player_index}, '{inventory_items_json}')", raw=True)
+        self.add_command(f"/c global.actions.initialise_inventory({agent_idx}, '{inventory_items_json}')", raw=True)
 
         self.execute_transaction()
 
@@ -202,7 +215,7 @@ class FactorioInstance:
         if not response: return 0
         return int(response)
 
-    def get_system_prompt(self) -> str:
+    def get_system_prompt(self, agent_idx: int = 0) -> str:
         """
         Get the system prompt for the Factorio environment.
         This includes all the available actions, objects, and entities that the agent can interact with.
@@ -213,11 +226,12 @@ class FactorioInstance:
         execution_path = Path(os.path.dirname(os.path.realpath(__file__)))
         generator = SystemPromptGenerator(str(execution_path))
         multiagent_str = ""
-        if self.num_players > 1:
+        if self.num_agents > 1:
+            player_idx = agent_idx + 1
             multiagent_str = (
-                f"You are player {self.player_index - 1} out of {self.num_players} players in the game. "
-                f"Player 0 is the master player who should give instructions to other players. "
-                f"If you are not player 0, follow player 0's instructions and cooperate since you share the same task "
+                f"You are player {player_idx} out of {self.num_agents} player(s) in the game. "
+                f"Player 1 is the master player who should give instructions to other players. "
+                f"If you are not player 1, follow player 1's instructions and cooperate since you share the same task "
                 f"and operate in the same world. Use the send_messages() tool regularly to communicate with other players "
                 f"about your current activities and any challenges you encounter."
             )
@@ -315,26 +329,27 @@ class FactorioInstance:
                     class_name = "Reward"
 
                 try:
-                    # Get and instantiate the controller class
-                    callable_class = getattr(module, class_name)
-                    callable_instance = callable_class(lua_script_manager, self.namespace)
+                    for i in range(self.num_agents):
+                        # Get and instantiate the controller class
+                        callable_class = getattr(module, class_name)
+                        callable_instance = callable_class(lua_script_manager, self.namespaces[i])
 
-                    # Create a wrapper that will execute hooks
-                    wrapped_instance = create_hook_wrapper(tool_name.lower(), callable_instance)
+                        # Create a wrapper that will execute hooks
+                        wrapped_instance = create_hook_wrapper(tool_name.lower(), callable_instance)
 
-                    # Store the controller and add it to namespace
-                    self.controllers[tool_name.lower()] = callable_instance
+                        # Store the controller and add it to namespace
+                        self.controllers[tool_name.lower()] = callable_instance
 
-                    if directory_name == 'admin':
-                        # If this is an admin method, we hide it in the namespace by adding a shebang
-                        setattr(self.namespace, f"_{tool_name.lower()}", wrapped_instance)
-                    else:
-                        setattr(self.namespace, tool_name.lower(), wrapped_instance)
+                        if directory_name == 'admin':
+                            # If this is an admin method, we hide it in the namespace by adding a shebang
+                            setattr(self.namespaces[i], f"_{tool_name.lower()}", wrapped_instance)
+                        else:
+                            setattr(self.namespaces[i], tool_name.lower(), wrapped_instance)
 
                 except Exception as e:
                     raise Exception(f"Could not instantiate {class_name} from {client_file}. {e}")
 
-    def eval_with_error(self, expr, timeout=60):
+    def eval_with_error(self, expr, agent_idx=0, timeout=60):
         """ Evaluate an expression with a timeout, and return the result without error handling"""
         # with ThreadPoolExecutor(max_workers=1) as executor:
         #     future = executor.submit(self._eval_with_timeout, expr)
@@ -347,15 +362,15 @@ class FactorioInstance:
         signal.alarm(timeout)
 
         try:
-            return self.namespace.eval_with_timeout(expr)
+            return self.namespaces[agent_idx].eval_with_timeout(expr)
         finally:
             signal.alarm(0)
 
 
-    def eval(self, expr, timeout=60):
+    def eval(self, expr, agent_idx=0, timeout=60):
         "Evaluate several lines of input, returning the result of the last line with a timeout"
         try:
-            return self.eval_with_error(expr, timeout)
+            return self.eval_with_error(expr, agent_idx, timeout)
         except TimeoutError:
             return -1, "", "Error: Evaluation timed out"
         except Exception as e:
@@ -436,7 +451,7 @@ class FactorioInstance:
             str: Path to the saved screenshot, or None if failed
         """
         # Clear rendering
-        camera: Camera = self.namespace._get_factory_centroid()
+        camera: Camera = self.first_namespace._get_factory_centroid()
         POS_STRING = ""
         if camera:
             centroid = camera.position
@@ -537,16 +552,18 @@ class FactorioInstance:
         self.add_command('/c global.elapsed_ticks = 0', raw=True)
         self.execute_transaction()
 
-    def _reset(self, **kwargs):
+    def _reset(self, inventories: List[Dict[str, Any]]):
 
         self.begin_transaction()
         self.add_command('/c global.alerts = {}', raw=True)
         self.add_command('/c game.reset_game_state()', raw=True)
         self.add_command('/c global.actions.reset_production_stats()', raw=True)
-        self.add_command(f'/c global.actions.regenerate_resources({self.player_index})', raw=True)
         #self.add_command('/c script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
-        self.add_command('clear_inventory', self.player_index)
-        self.add_command('reset_position', self.player_index, 0, 0)
+        for i in range(self.num_agents):
+            player_index = i + 1
+            self.add_command(f'/c global.actions.regenerate_resources({player_index})', raw=True)
+            self.add_command('clear_inventory', player_index)
+            self.add_command('reset_position', player_index, 0, 0)
         # Clear agent messages
         self.add_command('/c global.agent_inbox = {}', raw=True)
 
@@ -554,12 +571,12 @@ class FactorioInstance:
 
         self.begin_transaction()
         self.add_command('/c global.actions.clear_walking_queue()', raw=True)
-        self.add_command(f'/c global.actions.clear_entities({self.player_index})', raw=True)
-
-        # kwargs dict to json
-        inventory_items = {k: v for k, v in kwargs.items()}
-        inventory_items_json = json.dumps(inventory_items)
-        self.add_command(f"/c global.actions.initialise_inventory({self.player_index}, '{inventory_items_json}')", raw=True)
+        for i in range(self.num_agents):
+            player_index = i + 1
+            self.add_command(f'/c global.actions.clear_entities({player_index})', raw=True)
+            inventory_items = {k: v for k, v in inventories[i].items()}
+            inventory_items_json = json.dumps(inventory_items)
+            self.add_command(f"/c global.actions.initialise_inventory({player_index}, '{inventory_items_json}')", raw=True)
 
         if self.all_technologies_researched:
             self.add_command("/c game.players[1].force.research_all_technologies()", raw=True)
@@ -603,7 +620,7 @@ class FactorioInstance:
     def execute_transaction(self) -> Dict[str, Any]:
         return self._execute_transaction()
 
-    def initialise(self, fast=True, **kwargs):
+    def initialise(self, fast=True):
 
         self.begin_transaction()
         self.add_command('/c global.alerts = {}', raw=True)
@@ -619,7 +636,7 @@ class FactorioInstance:
             self.lua_script_manager.load_init_into_game('enemies')
 
 
-        self.add_command(f'/c player = game.players[{self.player_index}]', raw=True)
+        self.add_command(f'/c player = game.players[1]', raw=True)
         self.execute_transaction()
 
         self.lua_script_manager.load_init_into_game('initialise')
@@ -633,9 +650,10 @@ class FactorioInstance:
         self.lua_script_manager.load_init_into_game('production_score')
         self.lua_script_manager.load_init_into_game('initialise_inventory')
 
-        self._reset(**kwargs)
+        inventories = [self.initial_inventory] * self.num_agents
+        self._reset(inventories)
 
-        self.namespace._clear_collision_boxes()
+        self.first_namespace._clear_collision_boxes()
 
     def get_warnings(self, seconds=10):
         """

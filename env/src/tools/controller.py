@@ -19,6 +19,7 @@ class Controller:
         self.game_state = game_state
         self.name = self.camel_to_snake(self.__class__.__name__)
         self.lua_script_manager = lua_script_manager
+        self.player_index = game_state.instance.player_index
 
     def clean_response(self, response):
         def is_lua_list(d):

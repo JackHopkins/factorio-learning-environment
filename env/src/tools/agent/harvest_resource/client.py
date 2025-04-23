@@ -1,7 +1,6 @@
 from time import sleep
 
 from entities import Position
-from instance import PLAYER
 from game_types import Resource
 from tools.agent.get_entity.client import GetEntity
 from tools.agent.move_to.client import MoveTo
@@ -42,7 +41,7 @@ class HarvestResource(Tool):
 
         # Now we attempt to harvest.
         # In fast mode, this will always be successful (because we don't check if the resource is reachable)
-        response, elapsed = self.execute(PLAYER, x, y, quantity, radius)
+        response, elapsed = self.execute(self.player_index, x, y, quantity, radius)
 
         if response != {} and response == 0 or isinstance(response, str):
             msg = response.split(":")[-1].strip()
@@ -51,13 +50,13 @@ class HarvestResource(Tool):
         # If `fast` is turned off - we need to long poll the game state to ensure the player has moved
         if not self.game_state.instance.fast:
             remaining_steps = self.connection.send_command(
-                f'/silent-command rcon.print(global.actions.get_harvest_queue_length({PLAYER}))')
+                f'/silent-command rcon.print(global.actions.get_harvest_queue_length({self.player_index}))')
             attempt = 0
             max_attempts = 10
             while remaining_steps != '0' and attempt < max_attempts:
                 sleep(0.5)
                 remaining_steps = self.connection.send_command(
-                    f'/silent-command rcon.print(global.actions.get_harvest_queue_length({PLAYER}))')
+                    f'/silent-command rcon.print(global.actions.get_harvest_queue_length({self.player_index}))')
 
             max_attempts = 5
             attempt = 0
@@ -78,7 +77,7 @@ class HarvestResource(Tool):
     def get_resource_type_at_position(self, position: Position):
         x, y = self.get_position(position)
         entity_at_position = self.connection.send_command(
-            f'/silent-command rcon.print(global.actions.get_resource_name_at_position({PLAYER}, {x}, {y}))')
+            f'/silent-command rcon.print(global.actions.get_resource_name_at_position({self.player_index}, {x}, {y}))')
         if entity_at_position.startswith('tree'):
             return Resource.Wood
         elif entity_at_position.startswith('coal'):

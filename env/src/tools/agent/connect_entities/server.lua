@@ -686,7 +686,7 @@ end
 
 local function connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_types, dry_run)
     local counter_state = {place_counter = 0}
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local last_placed_entity = nil
 
     local start_position = {x = math.floor(source_x*2)/2, y = math.floor(source_y*2)/2}

@@ -1,6 +1,6 @@
 global.actions.inspect_inventory = function(player_index, is_character_inventory, x, y, entity, all_players)
     local position = {x=x, y=y}
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local surface = player.surface
     local is_fast = global.fast
     local automatic_close = True
@@ -92,14 +92,14 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
        return closest_entity.get_inventory(defines.inventory.chest).get_contents()
     end
 
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     if not player then
        error("Player not found")
     end
 
     if all_players then
         local all_inventories = {}
-        for _, p in pairs(game.players) do
+        for _, p in pairs(global.agent_characters) do
             local inventory_items = get_player_inventory_items(p)
             if inventory_items then
                 table.insert(all_inventories, inventory_items)
@@ -129,7 +129,7 @@ end
 
 global.actions.inspect_inventory2 = function(player_index, is_character_inventory, x, y)
     local position = {x=x, y=y}
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local surface = player.surface
 
     local function get_player_inventory_items(player)
@@ -194,7 +194,7 @@ global.actions.inspect_inventory2 = function(player_index, is_character_inventor
         return closest_entity.get_inventory(defines.inventory.chest).get_contents()
     end
 
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     if not player then
         error("Player not found")
     end

@@ -24,7 +24,7 @@ end
 
 
 global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_y, direction, gap)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local ref_position = {x = ref_x, y = ref_y}
 
     local function table_contains(tbl, element)
@@ -224,7 +224,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     --create_beam_point_with_direction(player, direction, new_position)
 
     local function player_collision(player, target_area)
-        --local character_box = player.character.prototype.collision_box
+        --local character_box = player.prototype.collision_box
         local character_box = {
             left_top = {x = -0.2, y = -0.2},
             right_bottom = {x = 0.2, y = 0.2}

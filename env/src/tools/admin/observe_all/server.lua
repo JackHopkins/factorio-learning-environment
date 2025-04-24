@@ -1,6 +1,6 @@
 -- Observe.lua
 global.actions.collision_mask = function(player_index, localBoundingBox)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     response = find_passable_tiles(player, localBoundingBox)
     rcon.print(player.position)
     return response
@@ -16,7 +16,7 @@ global.actions.observe_all = function(player_index,
                                       search_radius,
                                       debug,
                                       include)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     player.walking_state = {walking = false, direction = defines.direction.north}
     local inventory = player.get_main_inventory().get_contents()
     local surface = player.surface

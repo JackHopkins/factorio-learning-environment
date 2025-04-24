@@ -4,6 +4,7 @@ import time
 from dataclasses import dataclass, field, asdict
 from enum import Enum
 from typing import Dict, Optional, Any, List
+from typing_extensions import deprecated
 
 
 from models.research_state import ResearchState
@@ -11,10 +12,10 @@ from models.technology_state import TechnologyState
 from models.game_state import GameState, is_serializable, filter_serializable_vars
 
 @dataclass
-class MultiagentGameState:
+class MultiagentGameState(GameState):
     """Serializable Factorio game state"""
     entities: str # Serialized list of entities
-    inventories: List[Dict[str, int]]  # List of inventories for all players
+    inventories: List[Dict[str, int]] = field(default_factory=list) # List of inventories for all players
     research: Optional[ResearchState] = field()
     timestamp: float = field(default_factory=time.time)
     namespaces: List[bytes] = field(default_factory=list)
@@ -148,7 +149,7 @@ class MultiagentGameState:
 
         return json.dumps(data)
 
-
+    #@deprecated(reason="we don't use this anymore.")
     def to_instance(self, instance: 'FactorioInstance'):
         """Restore game state to a Factorio instance"""
         # Load entity state to all instances (since it's shared)

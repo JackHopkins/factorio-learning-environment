@@ -641,7 +641,6 @@ class FactorioInstance:
 
         self.lua_script_manager.load_init_into_game('initialise')
         self.lua_script_manager.load_init_into_game('clear_entities')
-        self.lua_script_manager.load_init_into_game('character_patch')
         self.lua_script_manager.load_init_into_game('alerts')
         self.lua_script_manager.load_init_into_game('util')
         self.lua_script_manager.load_init_into_game('priority_queue')

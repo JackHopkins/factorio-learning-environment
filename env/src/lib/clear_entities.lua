@@ -21,7 +21,7 @@ global.actions.clear_entities = function(player_index)
         }
 
         for _, entity in ipairs(entities) do
-            if entity and entity.valid and entity ~= player.character then
+            if entity and entity.valid and entity ~= player then
                 entity.destroy()
             end
         end
@@ -48,7 +48,7 @@ global.actions.clear_entities = function(player_index)
     end
 
     -- Main execution
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local area = {
         {player.position.x - 1000, player.position.y - 1000},
         {player.position.x + 1000, player.position.y + 1000}

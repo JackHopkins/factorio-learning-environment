@@ -31,7 +31,7 @@ class MoveTo(Tool):
 
         path_handle = self.request_path(start=Position(x=self.game_state.player_location.x,
                                                        y=self.game_state.player_location.y), finish=nposition,
-                                        allow_paths_through_own_entities=True)
+                                        allow_paths_through_own_entities=False)
         sleep(0.05) # Let the pathing complete in the game.
         try:
             if laying is not None:

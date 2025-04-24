@@ -296,7 +296,7 @@ global.utils.describe_placement_issues = function(player, entity_name, position,
 end
 
 global.utils.avoid_entity = function(player_index, entity, position, direction)
-    local player = game.get_player(player_index)
+    local player = game.agent_characters[player_index]
     local player_position = player.position
     for i=0, 10 do
         local can_place = player.can_place_entity{

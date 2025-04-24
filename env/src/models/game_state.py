@@ -132,6 +132,7 @@ class GameState:
     #         'namespace': self.namespace.hex() if self.namespace else ''
     #     })
 
+#    @deprecated(reason="we don't use this anymore.")
     def to_instance(self, instance: 'FactorioInstance'):
         """Restore game state to Factorio instance"""
         instance.namespace._load_entity_state(self.entities, decode=True)

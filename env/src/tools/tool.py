@@ -24,7 +24,6 @@ class Tool(Controller):
 
         return x, y
 
-
     def get_error_message(self, response):
         try:
             msg = response.split(':')[-1].replace('"', '').strip().replace("\\\'", "").replace("\'", "")

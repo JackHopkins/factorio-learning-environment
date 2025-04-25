@@ -8,9 +8,20 @@ class PythonParser:
 
     @staticmethod
     def is_valid_python(code: str) -> bool:
-        """Check if a string is valid Python syntax."""
+        """Check if a string is valid Python syntax.
+
+        This version supports checking indented code blocks by dedenting
+        the code before parsing.
+        """
         try:
-            ast.parse(code)
+            # Import the textwrap module for dedent functionality
+            import textwrap
+
+            # Dedent the code before attempting to parse
+            dedented_code = textwrap.dedent(code)
+
+            # Parse the dedented code
+            ast.parse(dedented_code)
             return True
         except:
             return False

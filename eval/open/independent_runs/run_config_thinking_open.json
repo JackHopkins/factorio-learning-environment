@@ -1,0 +1,10 @@
+[
+  {"task": "open_play.json", "model": "claude-3-7-sonnet-20250219", "version": 2224},
+  {"task": "open_play.json", "model": "claude-3-7-sonnet-20250219", "version": 2225},
+  {"task": "open_play.json", "model": "claude-3-7-sonnet-20250219", "version": 2226},
+  {"task": "open_play.json", "model": "claude-3-7-sonnet-20250219", "version": 2223},
+  {"task": "open_play.json", "model": "o3-mini-high", "version": 2227},
+  {"task": "open_play.json", "model": "o3-mini-high", "version": 2230},
+  {"task": "open_play.json", "model": "o3-mini-high", "version": 2228},
+  {"task": "open_play.json", "model": "o3-mini-high", "version": 2229}
+]

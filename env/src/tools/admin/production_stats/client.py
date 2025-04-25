@@ -1,6 +1,5 @@
 from typing import Dict
 
-from instance import PLAYER
 from tools.tool import Tool
 
 
@@ -15,7 +14,7 @@ class ProductionStats(Tool):
         Returns a dictionary of item names to net production/consumption counts.
         """
 
-        result, _ = self.execute(PLAYER)
+        result, _ = self.execute(self.player_index)
 
         if isinstance(result, str):
             raise Exception(result)

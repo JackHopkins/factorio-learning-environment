@@ -1,7 +1,7 @@
 import math
 
 from entities import Position, Entity
-from instance import PLAYER, Direction
+from instance import Direction
 from game_types import Prototype
 from tools.tool import Tool
 
@@ -40,7 +40,7 @@ class PlaceEntityNextTo(Tool):
 
             factorio_direction = Direction.to_factorio_direction(direction)
 
-            response, elapsed = self.execute(PLAYER, name, x, y, factorio_direction, spacing)
+            response, elapsed = self.execute(self.player_index, name, x, y, factorio_direction, spacing)
 
 
             if not isinstance(response, dict) or response == {}:

@@ -36,7 +36,6 @@ MAX_SAMPLES = 5000
 
 load_dotenv()
 
-PLAYER = 1
 NONE = 'nil'
 
 global var
@@ -78,9 +77,11 @@ class FactorioInstance:
                  cache_scripts=True,
                  all_technologies_researched=True,
                  peaceful=True,
+                 player_index=1,
                  **kwargs
                  ):
 
+        self.player_index = player_index
         self.persistent_vars = {}
 
         self.tcp_port = tcp_port
@@ -170,14 +171,14 @@ class FactorioInstance:
 
     def set_inventory(self, **kwargs):
         self.begin_transaction()
-        self.add_command('clear_inventory', PLAYER)
+        self.add_command('clear_inventory', self.player_index)
         self.execute_transaction()
 
         self.begin_transaction()
         # kwargs dict to json
         inventory_items = {k: v for k, v in kwargs.items()}
         inventory_items_json = json.dumps(inventory_items)
-        self.add_command(f"/c global.actions.initialise_inventory({PLAYER}, '{inventory_items_json}')", raw=True)
+        self.add_command(f"/c global.actions.initialise_inventory({self.player_index}, '{inventory_items_json}')", raw=True)
 
         self.execute_transaction()
 
@@ -520,18 +521,18 @@ class FactorioInstance:
         self.begin_transaction()
         self.add_command('/c global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)', raw=True)
         #self.add_command('/c script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
-        self.add_command('clear_inventory', PLAYER)
-        self.add_command('reset_position', PLAYER, 0, 0)
+        self.add_command('clear_inventory', self.player_index)
+        self.add_command('reset_position', self.player_index, 0, 0)
 
         self.execute_transaction()
 
         self.begin_transaction()
-        self.add_command(f'/c global.actions.clear_walking_queue(); global.actions.clear_entities({PLAYER})', raw=True)
+        self.add_command(f'/c global.actions.clear_walking_queue(); global.actions.clear_entities({self.player_index})', raw=True)
 
         # kwargs dict to json
         inventory_items = {k: v for k, v in kwargs.items()}
         inventory_items_json = json.dumps(inventory_items)
-        self.add_command(f"/c global.actions.initialise_inventory({PLAYER}, '{inventory_items_json}')", raw=True)
+        self.add_command(f"/c global.actions.initialise_inventory({self.player_index}, '{inventory_items_json}')", raw=True)
 
         if self.all_technologies_researched:
             self.add_command("/c game.players[1].force.research_all_technologies()", raw=True)

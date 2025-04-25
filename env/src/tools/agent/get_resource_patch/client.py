@@ -1,7 +1,6 @@
 from typing import Optional
 
 from entities import Position, ResourcePatch, BoundingBox
-from instance import PLAYER
 from game_types import Resource
 from tools.tool import Tool
 
@@ -25,7 +24,7 @@ class GetResourcePatch(Tool):
         :example coal_patch_at_origin = get_resource_patch(Resource.Coal, Position(x=0, y=0))
         :return: ResourcePatch if found, else None
         """
-        response, time_elapsed = self.execute(PLAYER, resource[0], position.x, position.y, radius)
+        response, time_elapsed = self.execute(self.player_index, resource[0], position.x, position.y, radius)
 
         if not isinstance(response, dict) or response == {}:
             top_level_message = str(response).split(":")[-1].strip()

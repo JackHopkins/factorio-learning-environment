@@ -590,8 +590,8 @@ class FactorioInstance:
             self.lua_script_manager.load_init_into_game('enemies')
         # Create characters for all agents
 
-        self.add_command(f'/c player = game.players[{PLAYER}]', raw=True)
-        self.add_command('/c global.agent_characters = {}; for _,c in pairs(game.surfaces[1].find_entities_filtered{type="character"}) do if c then c.destroy() end end; for i=1,3 do local y=2*(i+1); global.agent_characters[i]=game.surfaces[1].create_entity{name="character",position={x=0,y=y},force=game.forces.player} end', raw=True)
+        #self.add_command(f'/c player = game.players[{PLAYER}]', raw=True)
+        self.add_command('/c global.agent_characters = {}; for _,c in pairs(game.surfaces[1].find_entities_filtered{type="character"}) do if c then c.destroy() end end; global.agent_characters[1]=game.surfaces[1].create_entity{name="character",position={x=0,y=0},force=game.forces.player}', raw=True)
         self.execute_transaction()
 
         self.lua_script_manager.load_init_into_game('initialise')

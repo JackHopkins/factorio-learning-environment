@@ -521,7 +521,7 @@ class FactorioInstance:
         self.add_command('/c global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)', raw=True)
         #self.add_command('/c script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
         self.add_command('clear_inventory', PLAYER)
-        #self.add_command('reset_position', PLAYER, 0, 0)
+        self.add_command('reset_position', PLAYER, 0, 0)
 
         self.execute_transaction()
 

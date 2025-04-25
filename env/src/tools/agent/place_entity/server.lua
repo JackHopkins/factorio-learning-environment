@@ -220,7 +220,8 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             end
         end
         global.utils.avoid_entity(player_index, entity, position, direction)
-        local can_build = player.surface.can_place_entity{
+        -- need to use game.players[1] since player.can_place_entity behaves differently for offshore pumps
+        local can_build = game.players[1].can_place_entity{
             name = entity,
             force = player.force,
             position = position,

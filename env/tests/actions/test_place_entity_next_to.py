@@ -118,12 +118,12 @@ def test_place_pipe_next_to_offshore_pump(game):
     nearby_position = Position(x=starting_position.x + 1, y=starting_position.y - 1)
     game.move_to(nearby_position)
 
-    for direction in [Direction.DOWN, Direction.UP]:
+    for direction in [Direction.RIGHT, Direction.DOWN, Direction.UP]:
 
         for spacing in range(3):
             print(f"Placing {ref_proto.value[0]} at {starting_position} in direction {direction}")
             ref_entity = game.place_entity(ref_proto, position=starting_position, direction=direction)
-            return
+
             placed_entity = game.place_entity_next_to(placed_proto, ref_entity.position, direction, spacing)
 
             expected_position = calculate_expected_position(ref_entity.position, direction, spacing, ref_entity,

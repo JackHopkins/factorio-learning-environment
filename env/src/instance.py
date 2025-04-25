@@ -505,8 +505,7 @@ class FactorioInstance:
         """
         This resets the cached production flows that we track for achievements and diversity sampling.
         """
-        self.add_command('/c global.crafted_items = {}', raw=True)
-        self.add_command('/c global.harvested_items = {}', raw=True)
+        self.add_command('/c global.crafted_items = {}; global.harvested_items = {}', raw=True)
         self.execute_transaction()
 
     def _reset_elapsed_ticks(self):
@@ -519,19 +518,15 @@ class FactorioInstance:
     def _reset(self, **kwargs):
 
         self.begin_transaction()
-        self.add_command('/c global.alerts = {}', raw=True)
-        self.add_command('/c game.reset_game_state()', raw=True)
-        self.add_command('/c global.actions.reset_production_stats()', raw=True)
-        self.add_command(f'/c global.actions.regenerate_resources({PLAYER})', raw=True)
+        self.add_command('/c global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)', raw=True)
         #self.add_command('/c script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
         self.add_command('clear_inventory', PLAYER)
-        self.add_command('reset_position', PLAYER, 0, 0)
+        #self.add_command('reset_position', PLAYER, 0, 0)
 
         self.execute_transaction()
 
         self.begin_transaction()
-        self.add_command('/c global.actions.clear_walking_queue()', raw=True)
-        self.add_command(f'/c global.actions.clear_entities({PLAYER})', raw=True)
+        self.add_command(f'/c global.actions.clear_walking_queue(); global.actions.clear_entities({PLAYER})', raw=True)
 
         # kwargs dict to json
         inventory_items = {k: v for k, v in kwargs.items()}

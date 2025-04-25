@@ -94,36 +94,26 @@ local function find_offshore_pump_position(player, center_pos)
 end
 
 global.actions.place_entity = function(player_index, entity, direction, x, y, exact)
-    game.print("place_entity called with: player_index=" .. tostring(player_index) .. ", entity=" .. tostring(entity) .. ", direction=" .. tostring(direction) .. ", x=" .. tostring(x) .. ", y=" .. tostring(y) .. ", exact=" .. tostring(exact))
-    
     local player = global.agent_characters[player_index]
-    game.print("Looking up player " .. player_index)
     if not player then 
-        game.print("Error: Player " .. player_index .. " not found in global.agent_characters")
         return -1
     end
     local position = {x = x, y = y}
-    game.print("Target position: x=" .. x .. ", y=" .. y)
 
     if not direction then
         direction = 0
     end
-    game.print("Using direction: " .. direction)
 
     local entity_direction = global.utils.get_entity_direction(entity, direction)
-    game.print("Converted to entity direction: " .. entity_direction)
 
     -- Common validation functions
     local function validate_distance()
         local max_distance = player.reach_distance or player.build_distance
-        game.print("Max placement distance: " .. max_distance)
         local dx = player.position.x - x
         local dy = player.position.y - y or 0
         local distance = math.sqrt(dx * dx + dy * dy)
-        game.print("Distance to target: " .. string.format("%.2f", distance))
 
         if distance > max_distance then
-            game.print("Distance exceeds maximum - throwing error")
             error("\"The target position is too far away to place the entity. The player position is " ..
                   player.position.x .. ", " .. player.position.y ..
                   " and the target position is " .. x .. ", " .. y ..
@@ -133,21 +123,16 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
     end
 
     local function validate_entity()
-        game.print("Validating entity prototype: " .. entity)
         if game.entity_prototypes[entity] == nil then
             local name = entity:gsub(" ", "_"):gsub("-", "_")
-            game.print("Invalid entity prototype - throwing error")
             error("\""..name .. " isn't something that exists. Did you make a typo?\"")
         end
-        game.print("Entity prototype is valid")
     end
 
     local function validate_inventory()
         local count = player.get_item_count(entity)
-        game.print("Found " .. count .. " " .. entity .. " in inventory")
         if count == 0 then
             local name = entity:gsub(" ", "_"):gsub("-", "_")
-            game.print("No items in inventory - throwing error")
             error("\"No " .. name .. " in inventory.\"")
         end
     end
@@ -155,30 +140,23 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
     -- Slow placement implementation
     local function slow_place()
         -- Set cursor ghost
-        game.print("Setting cursor ghost to " .. entity)
         player.cursor_ghost = entity
 
         -- Select the target position
-        game.print("Updating selected entity at position " .. serpent.line(position))
         player.update_selected_entity(position)
 
         -- Schedule the actual placement after delay
-        game.print("Scheduling placement after 60 ticks")
         script.on_nth_tick(60, function(event)  -- 30 ticks = 0.5 seconds
-            game.print("Placement tick handler triggered")
             script.on_nth_tick(60, nil)  -- Clear the scheduled event
             
             -- Verify conditions are still valid
-            game.print("Re-validating placement conditions")
             validate_distance()
             validate_inventory()
 
             -- Avoid entity at target position
-            game.print("Avoiding entities at target position")
             global.utils.avoid_entity(player_index, entity, position)
 
             -- Perform the actual placement
-            game.print("Creating entity " .. entity .. " at " .. serpent.line(position))
             local placed_entity = player.surface.create_entity{
                 name = entity,
                 force = "player", 
@@ -188,26 +166,20 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             }
 
             if placed_entity then
-                game.print("Successfully placed entity, removing from inventory")
                 player.remove_item{name = entity, count = 1}
-                game.print("Placed " .. entity .. " at " .. position.x .. ", " .. position.y)
                 player.cursor_ghost = nil  -- Clear the ghost
                 return global.utils.serialize_entity(placed_entity)
             else
-                game.print("Failed to place entity")
                 error("\"Failed to place entity after delay\"")
             end
         end)
 
-        game.print("Returning pending placement")
         return { pending = true }
     end
 
     -- Fast placement implementation (existing logic)
     local function fast_place()
-        game.print("Starting fast_place() for entity: " .. entity)
         local entity_prototype = game.entity_prototypes[entity]
-        game.print("Starting fast_place() for entity: " .. entity)
 
         if entity == 'offshore-pump' then
             exact = false
@@ -217,12 +189,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         if exact then
             local existing_entity = player.surface.find_entity(entity, position)
             if existing_entity then
-                --if existing_entity.name == entity then
-                --    existing_entity.direction = entity_direction
-                --    return global.utils.serialize_entity(existing_entity)
-                --else
-                --    existing_entity.destroy({raise_destroy=true})
-                --end
                 error("\"entity already exists at the target position " .. serpent.line(existing_entity.position) .. " - remove this before continuing.\"" )
             end
 
@@ -233,7 +199,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 {position.x - collision_box.left_top.x/2, position.y - collision_box.left_top.y/2},
                 {position.x + collision_box.right_bottom.x/2, position.y + collision_box.right_bottom.y/2}
             }
-            game.print("Checking area for water: " .. serpent.line(check_area))
             rendering.draw_circle{width = 1, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.5, filled = false, target = {x=position.x, y=position.y}, time_to_live = 12000}
 
             -- Check each tile in the entity's footprint for water
@@ -254,7 +219,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             position = position,
             direction = entity_direction
         }
-        game.print("Initial can_build check: " .. tostring(can_build))
 
         if not can_build then
             if not exact then
@@ -264,7 +228,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 -- special logic for orienting offshore pumps correctly.
                 if entity == 'offshore-pump' then
                     local pos_dir = find_offshore_pump_position(player, position)
-                    game.print(serpent.line(pos_dir))
                     entity_direction = global.utils.get_entity_direction(entity, pos_dir['direction']/2)
                     new_position = pos_dir['position']
                     found_position = true
@@ -272,7 +235,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                     -- Existing search logic for nearby valid position
                     local radius = 1
                     local max_radius = 10
-                    game.print("Searching for valid position with max radius: " .. max_radius)
 
                     while not found_position and radius <= max_radius do
                         for dx = -radius, radius do
@@ -299,7 +261,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 end
 
                 if found_position then
-                    game.print("Found valid position at: " .. serpent.line(new_position))
                     local have_built = player.surface.create_entity{
                         name = entity,
                         force = player.force,
@@ -309,7 +270,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                     }
                     if have_built then
                         player.remove_item{name = entity, count = 1}
-                        game.print("Placed " .. entity .. " at " .. new_position.x .. ", " .. new_position.y)
                         return global.actions.get_entity(player_index, entity, new_position.x, new_position.y)
                     end
                 else
@@ -319,13 +279,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 -- Clear existing entities if exact placement is required
                 local area = {{position.x - 0.25, position.y - 0.25}, {position.x + 0.25, position.y + 0.25}}
                 local entities = player.surface.find_entities_filtered{area = area, force = "player"}
-                --for _, existing_entity in pairs(entities) do
-                --    if existing_entity.can_be_destroyed() then
-                --        if existing_entity.name ~= "character" then
-                --            pcall(existing_entity.destroy{raise_destroy=false, do_cliff_correction=false})
-                --        end
-                --    end
-                --end
                 if #entities ~= 0 then
                     if #entities == 1 then
                         error("\"Could not find a suitable position to place " .. entity .. " at the target location, as there is an existing object in the way\"")
@@ -357,7 +310,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                     entity_width = math.abs(entity_box.right_bottom.y - entity_box.left_top.y)
                 end
 
-                game.print("Entity dimensions: " .. entity_width .. "x" .. entity_height)
                 rendering.draw_rectangle{
                     surface = player.surface,
                     left_top = {position.x - entity_width / 2, position.y - entity_height / 2},
@@ -381,7 +333,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
         if have_built then
             player.remove_item{name = entity, count = 1}
-            game.print("Successfully placed " .. entity .. " at " .. position.x .. ", " .. position.y)
 
             -- Find and return the placed entity
             local width = 0.5

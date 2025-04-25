@@ -51,14 +51,14 @@ end
 
 -- Main serialization function
 global.actions.save_entity_state = function(player_index, distance, player_entities, resource_entities, items_on_ground)
-    local surface = game.agent_characters[player_index].surface
+    local surface = global.agent_characters[player_index].surface
     if player_entities then
-        entities = surface.find_entities_filtered({area={{-distance, -distance}, {distance, distance}}, force=game.agent_characters[player_index].force})
+        entities = surface.find_entities_filtered({area={{-distance, -distance}, {distance, distance}}, force=global.agent_characters[player_index].force})
     else
         if resource_entities then
             entities = surface.find_entities({{-distance, -distance}, {distance, distance}})
         else
-            entities = surface.find_entities_filtered({area={{-distance, -distance}, {distance, distance}}, force=game.agent_characters[player_index].force})
+            entities = surface.find_entities_filtered({area={{-distance, -distance}, {distance, distance}}, force=global.agent_characters[player_index].force})
         end
     end
 

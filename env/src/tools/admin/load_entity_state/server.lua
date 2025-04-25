@@ -6,7 +6,7 @@ end
 
 -- Main deserialization function
 global.actions.load_entity_state = function(player, stored_json_data)
-    local player_entity = game.agent_characters[player]
+    local player_entity = global.agent_characters[player]
     local surface = player_entity.surface
     local created_entities = {}
     local stored_data = game.json_to_table(stored_json_data)

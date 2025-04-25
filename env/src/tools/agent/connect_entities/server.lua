@@ -525,7 +525,7 @@ local function place_at_position(player, connection_type, current_position, dir,
             move_stuck_players=true
         }
         -- We can just teleport away here to avoid collision as we dont adhere by distance rules in connect_entities
-        player.teleport({placement_position.x+2, placement_position.y+2}, player.surface)
+        player.teleport({placement_position.x+2, placement_position.y+2})
         local can_place = game.surfaces[1].can_place_entity{
             name = connection_type,
             position = placement_position,
@@ -538,7 +538,7 @@ local function place_at_position(player, connection_type, current_position, dir,
         --    error("Cannot place the entity at the specified position: x="..position.x..", y="..position.y)
         --end
         --local player_position = player.position
-       -- player.teleport({placement_position.x, placement_position.y}, player.surface)
+       -- player.teleport({placement_position.x, placement_position.y})
         --local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)
         --player.teleport(player_position)
 
@@ -588,7 +588,7 @@ local function place_at_position(player, connection_type, current_position, dir,
     end
 
     -- We can just teleport away here to avoid collision as we dont adhere by distance rules in connect_entities
-    player.teleport({placement_position.x+2, placement_position.y+2}, player.surface)
+    player.teleport({placement_position.x+2, placement_position.y+2})
     local can_place = game.surfaces[1].can_place_entity{
         name = connection_type,
         position = placement_position,
@@ -596,7 +596,7 @@ local function place_at_position(player, connection_type, current_position, dir,
         force = player.force
     }
     --local player_position = player.position
-    --player.teleport({placement_position.x, placement_position.y}, player.surface)
+    --player.teleport({placement_position.x, placement_position.y})
     --local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)
     --player.teleport(player_position)
 

@@ -17,7 +17,6 @@ global.actions.save_research_state = function(player_index)
             })
         end
 
-
         return {
             name = "\""..tech.name.."\"",
             researched = tech.researched,
@@ -59,6 +58,5 @@ global.actions.save_research_state = function(player_index)
             table.insert(research_state.research_queue, "\""..tech.name.."\"")
         end
     end
-
     return research_state
 end

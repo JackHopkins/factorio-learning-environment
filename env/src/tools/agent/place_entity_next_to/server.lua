@@ -1,31 +1,42 @@
 local function validate_mining_drill_placement(surface, position, entity_name)
+    game.print("Validating mining drill placement")
     -- Check if the entity is a mining drill
     local prototype = game.entity_prototypes[entity_name]
     if prototype.type ~= "mining-drill" then
+        game.print("Not a mining drill, returning true")
         return true
     end
 
+    game.print("Getting mining area")
     -- Get the mining area
     local mining_area = prototype.collision_box
     local area = {
         {position.x + mining_area.left_top.x, position.y + mining_area.left_top.y},
         {position.x + mining_area.right_bottom.x, position.y + mining_area.right_bottom.y}
     }
+    game.print("Mining area: " .. serpent.line(area))
 
+    game.print("Checking for resources")
     -- Check for resources in the mining area
     local resources = surface.find_entities_filtered({
         area = area,
         type = "resource"
     })
+    game.print("Found " .. #resources .. " resources")
 
     -- For mining drills, we need at least one valid resource
+    game.print("Returning " .. tostring(#resources > 0))
     return #resources > 0
 end
 
 
 global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_y, direction, gap)
+    game.print("Starting place_entity_next_to")
+    game.print("Parameters: player_index=" .. player_index .. ", entity=" .. entity .. ", ref_x=" .. ref_x .. ", ref_y=" .. ref_y .. ", direction=" .. direction .. ", gap=" .. (gap or "nil"))
+    
     local player = global.agent_characters[player_index]
     local ref_position = {x = ref_x, y = ref_y}
+    game.print("Reference position: " .. serpent.line(ref_position))
 
     local function table_contains(tbl, element)
         for _, value in ipairs(tbl) do
@@ -42,12 +53,14 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         error("Invalid direction " .. direction .. " provided. Please use 0 (north), 1 (east), 2 (south), or 3 (west).")
     end
 
+    game.print("Finding reference entities")
     local ref_entities = player.surface.find_entities_filtered({
         area = {{ref_x - 0.5, ref_y - 0.5}, {ref_x + 0.5, ref_y + 0.5}},
         type = {"character", "resource"}, -- Find players
         invert = true
     })
     local ref_entity = #ref_entities > 0 and ref_entities[1] or nil
+    game.print("Reference entity: " .. (ref_entity and ref_entity.name or "nil"))
 
     local function is_transport_belt(entity_name)
         return entity_name == "transport-belt" or
@@ -57,8 +70,10 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
 
 
     local function calculate_position(direction, ref_pos, ref_entity, gap, is_belt, entity_to_place)
+        game.print("Calculating position")
         local new_pos = {x = ref_pos.x, y = ref_pos.y}
         local effective_gap = gap or 0
+        game.print("Initial position: " .. serpent.line(new_pos))
 
         -- Get reference entity's width/height based on its rotation
         local ref_width, ref_height
@@ -79,6 +94,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             ref_width = 1
             ref_height = 1
         end
+        game.print("Reference dimensions: " .. ref_width .. "x" .. ref_height)
 
         -- Check if the entity to place is an inserter
         local entity_prototype = game.entity_prototypes[entity_to_place]
@@ -91,6 +107,8 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             entity_width = entity_prototype.tile_width
             entity_height = entity_prototype.tile_height
         end
+        game.print("Entity dimensions: " .. entity_width .. "x" .. entity_height)
+
         if direction == 0 then     -- North
             new_pos.y = new_pos.y - (math.ceil(ref_height + entity_height)/2 + effective_gap)
         elseif direction == 1 then -- East
@@ -104,11 +122,13 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         -- Round the position to the nearest 0.5 to align with Factorio's grid
         new_pos.x = math.ceil(new_pos.x * 2) / 2
         new_pos.y = math.ceil(new_pos.y * 2) / 2
+        game.print("Final position: " .. serpent.line(new_pos))
 
         return new_pos
     end
 
     local function calculate_position_old(direction, ref_pos, ref_entity, gap, is_belt, entity_to_place)
+        game.print("Using old position calculation")
         local new_pos = {x = ref_pos.x, y = ref_pos.y}
         local effective_gap = gap or 0
 
@@ -218,8 +238,10 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     --end
 
     local is_belt = is_transport_belt(entity)
+    game.print("Is transport belt: " .. tostring(is_belt))
 
     local new_position = calculate_position(direction, ref_position, ref_entity, gap, is_belt, entity)
+    game.print("Calculated new position: " .. serpent.line(new_position))
     --game.print("new_position: " .. serpent.line(new_position))
     --create_beam_point_with_direction(player, direction, new_position)
 
@@ -237,6 +259,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
                (character_area[1][2] < target_area[2][2] and character_area[2][2] > target_area[1][2])
     end
 
+    game.print("Checking for nearby entities")
     local nearby_entities = player.surface.find_entities_filtered({
         position = new_position,
         radius = 0.5,
@@ -244,6 +267,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     })
 
     if #nearby_entities > 0 then
+        game.print("Found " .. #nearby_entities .. " nearby entities")
         local colliding_entity_names = {}
         for _, nearby_entity in pairs(nearby_entities) do
             if nearby_entity.name ~= 'laser-beam' and nearby_entity.name ~= "character" then
@@ -264,8 +288,10 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     end
 
     local orientation = global.utils.get_entity_direction(entity, direction)
+    game.print("Orientation: " .. orientation)
 
     if ref_entity then
+        game.print("Handling reference entity collision")
         local prototype = game.entity_prototypes[ref_entity.name]
         local collision_box = prototype.collision_box
         local width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
@@ -276,10 +302,12 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             {new_position.x + width / 2, new_position.y + height / 2}
         }
         while player_collision(player, target_area) do
-            player.teleport({player.position.x + width + 1, player.position.y}, player.surface)
+            game.print("Moving player away from reference entity")
+            player.teleport({player.position.x + width + 1, player.position.y})
         end
     end
 
+    game.print("Checking for player collision")
     -- Check for player collision and move player if necessary
     local entity_prototype = game.entity_prototypes[entity]
     local entity_box = entity_prototype.collision_box
@@ -314,20 +342,21 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             x = player.position.x + move_direction.x * move_distance,
             y = player.position.y + move_direction.y * move_distance
         }
-        player.teleport(new_player_position, player.surface)
+        player.teleport(new_player_position)
     end
 
+    game.print("Cleaning up items on ground")
     -- First clean up any items-on-ground at the target position
     local area = {{new_position.x - entity_width / 2, new_position.y - entity_height / 2}, {new_position.x + entity_width / 2, new_position.y + entity_height / 2}}
 
     -- Show bounding box
+    game.print("Drawing debug visuals")
     rendering.draw_rectangle({
         color = {r = 0, g = 1, b = 0},
         filled = false,
         left_top = area[1],
         right_bottom = area[2],
         surface = player.surface,
-        players = {player},
         time_to_live = 60000
     })
     rendering.draw_circle({
@@ -336,7 +365,6 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         filled = true,
         target = new_position,
         surface = player.surface,
-        players = {player},
         time_to_live = 60000
     })
     rendering.draw_circle({
@@ -345,7 +373,6 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         filled = true,
         target = ref_position,
         surface = player.surface,
-        players = {player},
         time_to_live = 60000
     })
 
@@ -355,10 +382,13 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         type = "item-on-ground"
     }
     for _, item in ipairs(items) do
+        game.print("Destroying item on ground: " .. item.name)
         item.destroy()
     end
 
+    game.print("Avoiding entity collision")
     global.utils.avoid_entity(player_index, entity, new_position, direction)
+    game.print("Checking if can build")
     local can_build = player.surface.can_place_entity({
         name = entity,
         position = new_position,
@@ -366,11 +396,13 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         force = player.force
     })
     if can_build then
+        game.print("Can build, checking mining drill placement")
         can_build = validate_mining_drill_placement(player.surface, new_position, entity)
         if not can_build then
             error("Cannot place mining drill - no resources found in mining area")
         end
     else
+        game.print("Cannot build, checking for blockers")
         --local area = {{new_position.x - 0.5, new_position.y - 0.5}, {new_position.x + 0.5, new_position.y + 0.5}}
         local entities = player.surface.find_entities_filtered{area = area, type = {"beam", "resource", "player"}, invert=true}
         local blocker_names = {}
@@ -402,6 +434,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
 
     end
 
+    game.print("Creating entity")
     local new_entity = player.surface.create_entity({
         name = entity,
         position = new_position,
@@ -414,9 +447,11 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         error("Failed to create entity " .. entity .. " at position " .. serpent.line(new_position))
     end
 
+    game.print("Removing item from inventory")
     local item_stack = {name = entity, count = 1}
     if player.get_main_inventory().can_insert(item_stack) then
         player.get_main_inventory().remove(item_stack)
+        game.print("Successfully placed entity")
         return global.utils.serialize_entity(new_entity)
     else
         error("Not enough items in inventory.")

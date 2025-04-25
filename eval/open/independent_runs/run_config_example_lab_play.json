@@ -1,4 +1,4 @@
 [
     {"task": "iron_ore_throughput_16.json",
-    "model": "gpt-4o"}
+    "model": "claude-3-5-sonnet-20240620"}
     ]

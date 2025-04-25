@@ -94,7 +94,19 @@ local function find_offshore_pump_position(player, center_pos)
 end
 
 global.actions.place_entity = function(player_index, entity, direction, x, y, exact)
+    game.print("place_entity called with:")
+    game.print("player_index: " .. tostring(player_index))
+    game.print("entity: " .. tostring(entity))
+    game.print("direction: " .. tostring(direction))
+    game.print("x: " .. tostring(x))
+    game.print("y: " .. tostring(y))
+    game.print("exact: " .. tostring(exact))
+    
     local player = global.agent_characters[player_index]
+    if not player then 
+        game.print("Error: Player " .. player_index .. " not found in global.agent_characters")
+        return -1
+    end
     local position = {x = x, y = y}
 
     if not direction then
@@ -105,7 +117,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
     -- Common validation functions
     local function validate_distance()
-        local max_distance = player['character'] and player.reach_distance or player.build_distance
+        local max_distance = player.reach_distance or player.build_distance
         local dx = player.position.x - x
         local dy = player.position.y - y or 0
         local distance = math.sqrt(dx * dx + dy * dy)
@@ -159,7 +171,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 force = "player",
                 position = position,
                 direction = entity_direction,
-                player = player
+                player = game.players[1]
             }
 
             if placed_entity then
@@ -217,7 +229,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             end
         end
         global.utils.avoid_entity(player_index, entity, position, direction)
-        local can_build = player.can_place_entity{
+        local can_build = player.surface.can_place_entity{
             name = entity,
             force = player.force,
             position = position,
@@ -247,7 +259,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                                 if dx == -radius or dx == radius or dy == -radius or dy == radius then
                                     new_position = {x = position.x + dx, y = position.y + dy}
                                     global.utils.avoid_entity(player_index, entity, position, direction)
-                                    can_build = player.can_place_entity{
+                                    can_build = player.surface.can_place_entity{
                                         name = entity,
                                         force = player.force,
                                         position = new_position,
@@ -271,7 +283,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                         force = player.force,
                         position = new_position,
                         direction = entity_direction,
-                        player = player
+                        player = game.players[1]
                     }
                     if have_built then
                         player.remove_item{name = entity, count = 1}
@@ -303,7 +315,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
             global.utils.avoid_entity(player_index, entity, position, direction)
 
-            can_build = player.can_place_entity{
+            can_build = player.surface.can_place_entity{
                 name = entity,
                 force = player.force,
                 position = position,
@@ -341,7 +353,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             force = player.force,
             position = position,
             direction = entity_direction,
-            player = player
+            player = game.players[1]
         }
 
         if have_built then

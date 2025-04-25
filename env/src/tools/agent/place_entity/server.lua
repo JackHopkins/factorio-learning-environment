@@ -227,6 +227,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             direction = entity_direction
         }
 
+        game.print("Can build: " .. serpent.line(can_build))
         if not can_build then
             if not exact then
                 local new_position
@@ -235,6 +236,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 -- special logic for orienting offshore pumps correctly.
                 if entity == 'offshore-pump' then
                     local pos_dir = find_offshore_pump_position(player, position)
+                    game.print("offshore pump Pos dir: " .. serpent.line(pos_dir))
                     entity_direction = global.utils.get_entity_direction(entity, pos_dir['direction']/2)
                     new_position = pos_dir['position']
                     found_position = true
@@ -277,6 +279,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                     }
                     if have_built then
                         player.remove_item{name = entity, count = 1}
+                        game.print("Placed " .. entity .. " at " .. new_position.x .. ", " .. new_position.y .. " direction: " .. entity_direction)
                         return global.actions.get_entity(player_index, entity, new_position.x, new_position.y)
                     end
                 else

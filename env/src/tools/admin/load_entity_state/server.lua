@@ -6,17 +6,17 @@ end
 
 -- Main deserialization function
 global.actions.load_entity_state = function(player, stored_json_data)
-    local player_entity = game.players[player]
+    local player_entity = game.agent_characters[player]
     local surface = player_entity.surface
     local created_entities = {}
     local stored_data = game.json_to_table(stored_json_data)
-    local character_state = nil
-    -- First pass: Create all non-character entities and store character state
+    local character_states = {}
+    -- First pass: Create all non-character entities and store character states
     for _, state in pairs(stored_data) do
         local name = unquote_string(state.name)
 
         if name == "character" then
-            character_state = state
+            table.insert(character_states, state)
         elseif name == "item-on-ground" then
             local item_name = unquote_string(state.type)
             local item_count = tonumber(state.count)
@@ -40,7 +40,6 @@ global.actions.load_entity_state = function(player, stored_json_data)
         elseif state.type == "simple-entity-with-owner" then
             -- Do nothing, we don't want to load in placeholder entities if they were somehow persisted!
         else
-
             local entity = surface.create_entity({
                 name = name,
                 position = {
@@ -61,8 +60,8 @@ global.actions.load_entity_state = function(player, stored_json_data)
         end
     end
 
-    -- Handle character separately
-    if character_state then
+    -- Handle characters separately
+    for _, character_state in ipairs(character_states) do
         -- Store old character position if it exists
         local old_position = nil
         if player_entity.character then

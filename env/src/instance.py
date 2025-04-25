@@ -536,8 +536,11 @@ class FactorioInstance:
         # kwargs dict to json
         inventory_items = {k: v for k, v in kwargs.items()}
         inventory_items_json = json.dumps(inventory_items)
+        self.add_command('/c global.agent_characters = {}; for _,c in pairs(game.surfaces[1].find_entities_filtered{type="character"}) do if c then c.destroy() end end; for i=1,3 do local y=2*(i+1); global.agent_characters[i]=game.surfaces[1].create_entity{name="character",position={x=0,y=y},force=game.forces.player} end', raw=True)
         self.add_command(f"/c global.actions.initialise_inventory({PLAYER}, '{inventory_items_json}')", raw=True)
 
+        # self.add_command('/c for k,v in pairs(global.agent_characters) do game.print("Agent " .. k .. " at position " .. serpent.line(v.position)) end', raw=True)
+        # self.add_command('/c function game.get_player(index) return global.agent_characters[index] end; local players_mt = { __index = function(t, k) if k == 1 then return original_players[1] else return global.agent_characters[k] end end }; game.players = setmetatable({}, players_mt)', raw=True)
         if self.all_technologies_researched:
             self.add_command("/c game.players[1].force.research_all_technologies()", raw=True)
         self.execute_transaction()
@@ -587,20 +590,20 @@ class FactorioInstance:
         self.add_command('/c global.elapsed_ticks = 0', raw=True)
         self.add_command('/c global.fast = {}'.format('true' if fast else 'false'), raw=True)
         #self.add_command('/c script.on_nth_tick(nil)', raw=True)
-
         # Peaceful mode
         # self.add_command('/c game.map_settings.enemy_expansion.enabled = false', raw=True)
         # self.add_command('/c game.map_settings.enemy_evolution.enabled = false', raw=True)
         # self.add_command('/c game.forces.enemy.kill_all_units()', raw=True)
         if self.peaceful:
             self.lua_script_manager.load_init_into_game('enemies')
-
+        # Create characters for all agents
 
         self.add_command(f'/c player = game.players[{PLAYER}]', raw=True)
         self.execute_transaction()
 
         self.lua_script_manager.load_init_into_game('initialise')
         self.lua_script_manager.load_init_into_game('clear_entities')
+        self.lua_script_manager.load_init_into_game('character_patch')
         self.lua_script_manager.load_init_into_game('alerts')
         self.lua_script_manager.load_init_into_game('util')
         self.lua_script_manager.load_init_into_game('priority_queue')

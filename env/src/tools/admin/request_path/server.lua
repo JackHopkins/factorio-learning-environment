@@ -4,7 +4,7 @@ if not global.clearance_entities then
 end
 
 global.actions.request_path = function(player_index, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities, entity_size)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     if not player then return nil end
     local size = entity_size/2 - 0.01
 
@@ -56,7 +56,7 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
         goal = goal_position,
         force = force,
         radius = radius or 0,
-        entity_to_ignore = player.character,
+        entity_to_ignore = player,
         can_open_gates = true,
         path_resolution_modifier = 0,
         pathfind_flags = {
@@ -110,7 +110,7 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
         return
     end
 
-    local player = game.get_player(request_data)
+    local player = global.agent_characters[request_data]
     if not player then
         log("Player not found for request ID: " .. event.id)
         return

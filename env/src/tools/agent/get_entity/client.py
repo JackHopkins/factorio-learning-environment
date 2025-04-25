@@ -51,7 +51,7 @@ class GetEntity(Tool):
                 try:
                     object = metaclass(prototype=entity.name, **cleaned_response)
                 except Exception as e:
-                    raise Exception(f"Could not create {name} object from response: {cleaned_response}", e)
+                    raise Exception(f"Could not create {name} object from response (get entity): {cleaned_response}", e)
 
                 return object
             except Exception as e:

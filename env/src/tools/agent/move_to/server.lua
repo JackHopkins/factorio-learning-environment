@@ -23,7 +23,11 @@ end
 
 
 global.actions.move_to = function(player_index, path_handle, trailing_entity, is_trailing)
-    local player = game.get_player(player_index)
+    --local player = global.agent_characters[player_index]
+    local player = global.agent_characters[player_index]
+    if not player then
+        error("Player not found")
+    end
     local path = global.paths[path_handle]
     local surface = player.surface
 
@@ -215,7 +219,7 @@ global.actions.update_walking_queues = function()
     if not global.walking_queues then return end
 
     for player_index, queue in pairs(global.walking_queues) do
-        local player = game.get_player(player_index)
+        local player = global.agent_characters[player_index]
         if not player or not queue.current_target then goto continue end
 
         local distance = ((player.position.x - queue.current_target.x)^2 +

@@ -26,7 +26,7 @@ local function get_inventory_info(entity)
 end
 
 global.actions.insert_item = function(player_index, insert_item, count, x, y, target_name)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local position = {x=x, y=y}
     local surface = player.surface
 
@@ -160,7 +160,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
 
     -- Throw an error if the entity is too far away from the player
     if closest_distance > 10 then
-        error("\"Entity at ("..closest_entity.position.x..", "..closest_entity.position.y..") is too far away from your position of ("..player.character.position.x..", "..player.character.position.y.."), move closer.\"")
+        error("\"Entity at ("..closest_entity.position.x..", "..closest_entity.position.y..") is too far away from your position of ("..player.position.x..", "..player.position.y.."), move closer.\"")
     end
 
     -- Function to insert items onto a transport belt - one at a time

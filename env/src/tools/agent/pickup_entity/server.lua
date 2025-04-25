@@ -1,5 +1,5 @@
 global.actions.pickup_entity = function(player_index, x, y, entity)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local position = {x=x, y=y}
     local surface = player.surface
     local success = false

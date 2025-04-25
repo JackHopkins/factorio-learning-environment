@@ -1,6 +1,6 @@
 -- Load research state
 global.actions.load_research_state = function(player_index, research_state)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local force = player.force
 
     -- Reset all research first

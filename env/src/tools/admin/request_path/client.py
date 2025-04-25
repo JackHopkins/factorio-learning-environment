@@ -24,7 +24,7 @@ class RequestPath(Tool):
             response, elapsed = self.execute(PLAYER, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities, entity_size)
 
             if response is None or response == {} or isinstance(response, str):
-                raise Exception("Could not request path", response)
+                raise Exception("Could not request path (request_path)", response)
 
             path_handle = int(response)
 

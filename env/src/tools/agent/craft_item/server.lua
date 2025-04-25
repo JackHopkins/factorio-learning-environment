@@ -1,5 +1,5 @@
 global.actions.craft_item = function(player_index, entity, count)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
 
     local function calculate_crafting_ticks(recipe, crafts_count)
         -- energy_required is in seconds, multiply by 60 to get ticks

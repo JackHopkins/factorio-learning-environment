@@ -1768,6 +1768,7 @@ global.utils.serialize_entity = function(entity)
     -- Add fluid box if the entity is an offshore pump
     if entity.type == "offshore-pump" then
         serialized.connection_points = global.utils.get_offshore_pump_connection_points(entity)
+        game.print("Offshore pump connection points: " .. serpent.line(serialized.connection_points))
     end
 
     -- If entity has a fluidbox

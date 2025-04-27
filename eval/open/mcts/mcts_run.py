@@ -29,7 +29,7 @@ async def run_mcts(params: MCTSRunParameters):
     from eval.open.db_client import PostgresDBClient
     from eval.tasks.task_factory import TaskFactory
     from agents.basic_agent import BasicAgent
-    from eval.open._mcts_old.samplers.dynamic_reward_weighted_sampler import DynamicRewardWeightedSampler
+    from eval.open.mcts.dynamic_reward_weighted_sampler import DynamicRewardWeightedSampler
 
     load_dotenv()
 

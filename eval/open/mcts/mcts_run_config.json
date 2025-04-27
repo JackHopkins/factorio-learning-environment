@@ -1,17 +1,17 @@
 [
   {
     "task": "iron_gear_wheel_progressive_throughput_16.json",
-    "model": "gpt-4.1-mini",
+    "model": "anthropic/claude-3.7-sonnet-open-router",
     "sampler": {
       "compression_strength": 0.7,
-      "adaptive_period": 200,
+      "adaptive_period": 20,
       "maximum_lookback": 20
     },
     "mcts": {
       "max_iterations": 200,
       "exploration_weight": 1.41,
       "batch_size": 4,
-      "max_depth": 128
+      "max_depth": 32
     }
   }
 ]

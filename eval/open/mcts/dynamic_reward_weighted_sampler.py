@@ -10,7 +10,7 @@ from tenacity import retry_if_exception_type, wait_exponential
 
 from eval.open.db_client import DBClient
 from models.program import Program
-from eval.open._mcts_old.samplers.db_sampler import DBSampler
+from eval.open.mcts.db_sampler import DBSampler
 
 
 class DynamicRewardWeightedSampler(DBSampler):
@@ -76,15 +76,15 @@ class DynamicRewardWeightedSampler(DBSampler):
 
                         cur.execute("""
                                 WITH recent AS (
-                                    SELECT id, advantage, conversation_json
+                                    SELECT id, value, conversation_json
                                     FROM programs
                                     WHERE version = %s 
-                                    AND advantage IS NOT NULL
+                                    AND value IS NOT NULL
                                     AND depth > %s
                                     ORDER BY created_at DESC
                                     LIMIT 300
                                 )
-                                SELECT id, advantage 
+                                SELECT id, value 
                                 FROM recent
                                 """, (version, min_depth))
 
@@ -116,7 +116,7 @@ class DynamicRewardWeightedSampler(DBSampler):
 
                         # Calculate transformed weights
                         weights = [
-                            (row['id'], transform_reward(row['advantage']))
+                            (row['id'], transform_reward(row['value']))
                             for row in results
                         ]
 

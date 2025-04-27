@@ -10,7 +10,7 @@ from eval.open.mcts.mcts_worker import MCTSWorker, MCTSNode, MCTSConfig
 class MCTSTrajectoryRunner:
     """Main MCTS controller that manages the search process"""
 
-    def __init__(self, db_client: PostgresDBClient, config: MCTSConfig, num_workers: int):
+    def  __init__(self, db_client: PostgresDBClient, config: MCTSConfig, num_workers: int):
         self.db_client = db_client
         self.config = config
         self.num_workers = num_workers

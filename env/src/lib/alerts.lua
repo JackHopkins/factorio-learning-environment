@@ -358,6 +358,7 @@ function is_not_fluid(name)
     end
     return true
 end
+
 -- Define a function to check if the entity is an assembler machine and lacks resources
 function lacks_assembler_resources(entity)
     if entity.type == "assembling-machine" then

@@ -42,7 +42,7 @@ class DBSampler(ABC):
 
                 # Get all children of this program
                 cur.execute("""
-                    SELECT id, value 
+                    SELECT id, value, visits
                     FROM programs 
                     WHERE parent_id = %s AND value IS NOT NULL
                     """, (id,))

@@ -343,12 +343,21 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
 
             table.insert(entity_array, state)
         else
+            -- Find the index of this character in global.agent_characters
+            agent_index = -1
+            for idx, agent in pairs(global.agent_characters) do
+                if agent == entity then
+                    agent_index = idx
+                    break
+                end
+            end
             local state = {
                 name = '"' .. entity.name .. '"',
                 position = serialize_position(entity.position),
                 direction = entity.direction,
                 entity_number = entity.unit_number or -1,
-                inventories = {}
+                inventories = {},
+                agent_index = agent_index
             }
             -- Get the character's inventory using defines
             local inventory = entity.get_inventory(defines.inventory.character_main)

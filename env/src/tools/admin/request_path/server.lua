@@ -108,9 +108,12 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
 
     if event.path then
         global.paths[event.id] = event.path
+        log("Path found for request ID: " .. event.id)
     elseif event.try_again_later then
         global.paths[event.id] = "busy"
+        log("Pathfinder busy for request ID: " .. event.id)
     else
         global.paths[event.id] = "not_found"
+        log("Path not found for request ID: " .. event.id)
     end
 end)

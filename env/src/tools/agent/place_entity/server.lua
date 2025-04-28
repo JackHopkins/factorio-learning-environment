@@ -12,7 +12,6 @@ local function surface_to_entity_direction(surface_dir)
 end
 
 local function find_offshore_pump_position(player, center_pos)
-    game.print("Finding offshore pump position")
     local max_radius = 20
     local search_positions = {
         {dx = 0, dy = 1, dir = defines.direction.north},
@@ -46,7 +45,6 @@ local function find_offshore_pump_position(player, center_pos)
                                     x = check_pos.x + search.dx,
                                     y = check_pos.y + search.dy
                                 }
-                                game.print("Checking water at " .. water_pos.x .. "," .. water_pos.y)
 
                                 -- Check for entities at water position
                                 local water_entities = player.surface.find_entities_filtered{
@@ -54,15 +52,12 @@ local function find_offshore_pump_position(player, center_pos)
                                     collision_mask = "water-tile",
                                     invert = true
                                 }
-                                game.print("Found " .. #water_entities .. " entities at water position")
 
                                 if #water_entities == 0 then
                                     local adjacent_tile = player.surface.get_tile(water_pos.x, water_pos.y)
-                                    game.print("Adjacent tile is " .. adjacent_tile.name)
 
                                     if is_water_tile(adjacent_tile.name) then
                                         local entity_dir = surface_to_entity_direction(search.dir)
-                                        game.print("Found valid water tile, trying placement")
                                         local placement = {
                                             name = "offshore-pump",
                                             position = check_pos,
@@ -71,7 +66,6 @@ local function find_offshore_pump_position(player, center_pos)
                                         }
 
                                         if player.surface.can_place_entity(placement) then
-                                            game.print("Can place entity, doing final collision check")
                                             -- Final collision check for the exact pump dimensions
                                             local final_check = player.surface.find_entities_filtered{
                                                 area = {{check_pos.x - 0.5, check_pos.y - 0.5},
@@ -80,7 +74,6 @@ local function find_offshore_pump_position(player, center_pos)
                                             }
 
                                             if #final_check == 0 then
-                                                game.print("Found valid placement position")
                                                 return {
                                                     position = check_pos,
                                                     direction = entity_dir
@@ -102,9 +95,6 @@ end
 
 global.actions.place_entity = function(player_index, entity, direction, x, y, exact)
     local player = global.agent_characters[player_index]
-    if not player then 
-        return -1
-    end
     local position = {x = x, y = y}
 
     if not direction then
@@ -155,7 +145,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         -- Schedule the actual placement after delay
         script.on_nth_tick(60, function(event)  -- 30 ticks = 0.5 seconds
             script.on_nth_tick(60, nil)  -- Clear the scheduled event
-            
+ 
             -- Verify conditions are still valid
             validate_distance()
             validate_inventory()
@@ -166,10 +156,9 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             -- Perform the actual placement
             local placed_entity = player.surface.create_entity{
                 name = entity,
-                force = "player", 
+                force = "player",
                 position = position,
                 direction = entity_direction,
-                player = game.players[1]
             }
 
             if placed_entity then
@@ -228,7 +217,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             direction = entity_direction
         }
 
-        game.print("Can build: " .. serpent.line(can_build))
         if not can_build then
             if not exact then
                 local new_position
@@ -237,7 +225,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 -- special logic for orienting offshore pumps correctly.
                 if entity == 'offshore-pump' then
                     local pos_dir = find_offshore_pump_position(player, position)
-                    game.print("offshore pump Pos dir: " .. serpent.line(pos_dir))
                     entity_direction = global.utils.get_entity_direction(entity, pos_dir['direction']/2)
                     new_position = pos_dir['position']
                     found_position = true
@@ -276,11 +263,10 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                         force = player.force,
                         position = new_position,
                         direction = entity_direction,
-                        player = game.players[1]
                     }
                     if have_built then
                         player.remove_item{name = entity, count = 1}
-                        game.print("Placed " .. entity .. " at " .. new_position.x .. ", " .. new_position.y .. " direction: " .. entity_direction)
+                        game.print("Placed " .. entity .. " at " .. new_position.x .. ", " .. new_position.y)
                         return global.actions.get_entity(player_index, entity, new_position.x, new_position.y)
                     end
                 else
@@ -339,11 +325,11 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             force = player.force,
             position = position,
             direction = entity_direction,
-            player = game.players[1]
         }
 
         if have_built then
             player.remove_item{name = entity, count = 1}
+            game.print("Placed " .. entity .. " at " .. position.x .. ", " .. position.y)
 
             -- Find and return the placed entity
             local width = 0.5

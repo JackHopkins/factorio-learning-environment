@@ -2,25 +2,25 @@ from PIL import Image, ImageDraw, ImageFont
 import math
 from typing import List, Dict, Optional, Tuple, Any, Set
 
-from entities import Entity, Position, BoundingBox, Layer, EntityStatus
-from tools.admin.render.layers.connection_layers_renderer import ConnectionsLayerRenderer
-from tools.admin.render.layers.marker_layers_renderer import MarkersLayerRenderer
-from tools.admin.render.layers.resource_layer_renderer import ResourcesLayerRenderer
-from tools.admin.render.utils.electricity_renderer import ElectricityLayerRenderer
-from tools.admin.render.utils.render_config import RenderConfig
-from tools.admin.render.utils.entity_categoriser import EntityCategoriser
-from tools.admin.render.utils.colour_manager import ColourManager
-from tools.admin.render.utils.shape_renderer import ShapeRenderer
-from tools.admin.render.utils.legend_renderer import LegendRenderer
-from tools.admin.render.utils.connection_renderer import ConnectionRenderer
-from tools.admin.render.utils.image_calculator import ImageCalculator
+from env.src.entities import Entity, Position, BoundingBox, Layer, EntityStatus
+from env.src.tools.admin.render.layers.connection_layers_renderer import ConnectionsLayerRenderer
+from env.src.tools.admin.render.layers.marker_layers_renderer import MarkersLayerRenderer
+from env.src.tools.admin.render.layers.resource_layer_renderer import ResourcesLayerRenderer
+from env.src.tools.admin.render.utils.electricity_renderer import ElectricityLayerRenderer
+from env.src.tools.admin.render.utils.render_config import RenderConfig
+from env.src.tools.admin.render.utils.entity_categoriser import EntityCategoriser
+from env.src.tools.admin.render.utils.colour_manager import ColourManager
+from env.src.tools.admin.render.utils.shape_renderer import ShapeRenderer
+from env.src.tools.admin.render.utils.legend_renderer import LegendRenderer
+from env.src.tools.admin.render.utils.connection_renderer import ConnectionRenderer
+from env.src.tools.admin.render.utils.image_calculator import ImageCalculator
 
 
 # Import layer renderers
-from tools.admin.render.layers.grid_layer_renderer import GridLayerRenderer
-from tools.admin.render.layers.water_layer_renderer import WaterLayerRenderer
-from tools.admin.render.layers.natural_layer_renderer import NaturalLayerRenderer
-from tools.admin.render.layers.entities_layer_renderer import EntitiesLayerRenderer
+from env.src.tools.admin.render.layers.grid_layer_renderer import GridLayerRenderer
+from env.src.tools.admin.render.layers.water_layer_renderer import WaterLayerRenderer
+from env.src.tools.admin.render.layers.natural_layer_renderer import NaturalLayerRenderer
+from env.src.tools.admin.render.layers.entities_layer_renderer import EntitiesLayerRenderer
 
 
 
@@ -127,7 +127,7 @@ class Renderer:
         # Assign colors to entities
         self.color_manager.assign_entity_colors(entities)
 
-        # Calculate boundaries for rendering
+        # Calculate boundaries for rendering, making sure max_tiles is passed 
         boundaries = self.image_calculator.calculate_boundaries(entities, center_pos, bounding_box, max_tiles=max_tiles)
 
         # Filter entities that are outside the boundaries
@@ -155,12 +155,13 @@ class Renderer:
                 self.color_manager.entity_colors or resources_present or
                 natural_elements_present or statuses_present or network_colors):
             # Create a temporary image to calculate legend dimensions properly
+            # Use constant base cell size for legend calculations to ensure consistent legend sizing regardless of zoom
+            BASE_CELL_SIZE = 20  # Base cell size - this ensures legend remains readable at all zoom levels
+            
             tmp_width = int(
-                (boundaries["max_x"] - boundaries["min_x"]) * self.config.style["cell_size"] + 2 * self.config.style[
-                    "margin"])
+                (boundaries["max_x"] - boundaries["min_x"]) * BASE_CELL_SIZE + 2 * self.config.style["margin"])
             tmp_height = int(
-                (boundaries["max_y"] - boundaries["min_y"]) * self.config.style["cell_size"] + 2 * self.config.style[
-                    "margin"])
+                (boundaries["max_y"] - boundaries["min_y"]) * BASE_CELL_SIZE + 2 * self.config.style["margin"])
 
             legend_dimensions = self.legend_renderer.calculate_legend_dimensions(
                 tmp_width, tmp_height, resources_present, natural_elements_present,
@@ -178,8 +179,9 @@ class Renderer:
         # Get coordinate conversion function
         game_to_img = self.image_calculator.get_game_to_image_coordinate_function()
 
-        # Load font for text rendering
+        # Load fonts for text rendering - one for the map and one for the legend
         font = self._load_font()
+        legend_font = self._load_legend_font()
 
         # Define the render order - certain layers should be rendered before others
         render_order = [
@@ -218,8 +220,9 @@ class Renderer:
                         break
 
         # Draw the legend with resources, natural elements, statuses, and electricity networks
+        # Use the legend_font for consistent readability regardless of zoom
         self.legend_renderer.draw_combined_legend(
-            draw, img_width, img_height, font,
+            draw, img_width, img_height, legend_font,
             resources_present, natural_elements_present,
             statuses_present, network_colors
         )
@@ -234,6 +237,20 @@ class Renderer:
             try:
                 # Try another common font on different systems
                 font = ImageFont.truetype("DejaVuSans.ttf", size=10)
+            except IOError:
+                # Fallback to default font
+                font = ImageFont.load_default()
+        return font
+        
+    def _load_legend_font(self) -> ImageFont.ImageFont:
+        """Load a font specifically for the legend with a consistent size"""
+        legend_font_size = self.config.style.get("legend_font_size", 10)
+        try:
+            font = ImageFont.truetype("arial.ttf", size=legend_font_size)
+        except IOError:
+            try:
+                # Try another common font on different systems
+                font = ImageFont.truetype("DejaVuSans.ttf", size=legend_font_size)
             except IOError:
                 # Fallback to default font
                 font = ImageFont.load_default()

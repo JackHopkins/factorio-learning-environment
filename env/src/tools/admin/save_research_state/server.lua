@@ -1,5 +1,5 @@
 global.actions.save_research_state = function(player_index)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local force = player.force
 
     -- Helper to serialize technology state
@@ -16,7 +16,6 @@ global.actions.save_research_state = function(player_index)
                 amount = ingredient.amount
             })
         end
-
 
         return {
             name = "\""..tech.name.."\"",
@@ -59,6 +58,5 @@ global.actions.save_research_state = function(player_index)
             table.insert(research_state.research_queue, "\""..tech.name.."\"")
         end
     end
-
     return research_state
 end

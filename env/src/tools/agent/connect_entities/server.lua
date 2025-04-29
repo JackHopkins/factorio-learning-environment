@@ -525,7 +525,7 @@ local function place_at_position(player, connection_type, current_position, dir,
             move_stuck_players=true
         }
         -- We can just teleport away here to avoid collision as we dont adhere by distance rules in connect_entities
-        player.teleport({placement_position.x+2, placement_position.y+2}, player.surface)
+        player.teleport({placement_position.x+2, placement_position.y+2})
         local can_place = game.surfaces[1].can_place_entity{
             name = connection_type,
             position = placement_position,
@@ -538,7 +538,7 @@ local function place_at_position(player, connection_type, current_position, dir,
         --    error("Cannot place the entity at the specified position: x="..position.x..", y="..position.y)
         --end
         --local player_position = player.position
-       -- player.teleport({placement_position.x, placement_position.y}, player.surface)
+       -- player.teleport({placement_position.x, placement_position.y})
         --local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)
         --player.teleport(player_position)
 
@@ -588,7 +588,7 @@ local function place_at_position(player, connection_type, current_position, dir,
     end
 
     -- We can just teleport away here to avoid collision as we dont adhere by distance rules in connect_entities
-    player.teleport({placement_position.x+2, placement_position.y+2}, player.surface)
+    player.teleport({placement_position.x+2, placement_position.y+2})
     local can_place = game.surfaces[1].can_place_entity{
         name = connection_type,
         position = placement_position,
@@ -596,7 +596,7 @@ local function place_at_position(player, connection_type, current_position, dir,
         force = player.force
     }
     --local player_position = player.position
-    --player.teleport({placement_position.x, placement_position.y}, player.surface)
+    --player.teleport({placement_position.x, placement_position.y})
     --local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)
     --player.teleport(player_position)
 
@@ -686,7 +686,7 @@ end
 
 local function connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_types, dry_run)
     local counter_state = {place_counter = 0}
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local last_placed_entity = nil
 
     local start_position = {x = math.floor(source_x*2)/2, y = math.floor(source_y*2)/2}
@@ -1033,7 +1033,7 @@ global.utils.normalise_path = function(original_path, start_position, end_positi
     local path = {}
     local seen = {}  -- To track seen positions
     if original_path == nil or #original_path < 1 or original_path == "not_found" then
-        error("Not a valid path to normalise")
+        error("Failed to find a path.")
     end
     if math.ceil(start_position.x) == start_position.x then
         start_position.x = start_position.x + 0.5

@@ -64,7 +64,7 @@ class RotateEntity(Tool):
         try:
             object = metaclass(**cleaned_response)
         except Exception as e:
-            raise Exception(f"Could not create {entity.name} object from response: {response}", e)
+            raise Exception(f"Could not create {entity.name} object from response (rotate entity): {response}", e)
 
         if object.direction.value != direction.value:
             if isinstance(entity, AssemblingMachine):

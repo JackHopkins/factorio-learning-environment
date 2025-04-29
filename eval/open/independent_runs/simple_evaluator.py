@@ -29,13 +29,18 @@ class SimpleFactorioEvaluator:
         if logger:
             self.port_to_group = logger.port_to_group
 
-    async def evaluate(self, program: Program, start_state: Union[GameState, MultiagentGameState], task, agent_idx: int) -> Program:
+    async def evaluate(self, program: Program, start_state: Union[GameState, MultiagentGameState], task, agent_idx: int, step_statistics: dict = {}) -> Program:
         try:
             self.instance.reset(start_state)
             raw_reward, state, response, entities, achievements, flows, ticks = await self._evaluate_single(program, agent_idx)
+            # enchance step statistics with the flows
+            if not isinstance(flows, dict):
+                step_statistics.update(flows.to_dict())
+            else:
+                step_statistics.update(flows)
             task_response = task.verify(score=raw_reward, 
                                                  instance=self.instance, 
-                                                 step_statistics=flows)
+                                                 step_statistics=step_statistics)
             relative_reward = raw_reward  # - holdout_value
 
 

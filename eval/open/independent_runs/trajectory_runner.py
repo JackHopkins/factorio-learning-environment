@@ -240,8 +240,15 @@ class TrajectoryRunner:
                 program.parent_id = parent_id
 
                 # Evaluate program
+<<<<<<< HEAD
                 self.evaluator.instance.reset(current_state)
                 evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.task, agent_idx=agent_idx)
+=======
+                instance = self.evaluator.instance
+                instance.reset(current_state)
+                step_statistics = {"current_step_id": iteration}
+                evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.agent.task, step_statistics)
+>>>>>>> agent-characters
                 print(program.code + "\n"+"="*50)
                 print("\033[1m\n".join(['>>>\t'+line for line in program.response.strip().replace('\\n', '\n\t').split('\n')]).strip()+"\033[0m")
                 print(f"Evaluated program {multiprocessing.current_process().name} - "

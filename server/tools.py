@@ -7,7 +7,7 @@ from env.src.entities import Position
 from env.src.models.game_state import GameState
 from env.src.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 from server import mcp
-from server.init import state
+from server.init import state, initialize_session
 
 
 @mcp.tool()
@@ -25,13 +25,41 @@ async def render(center_x: float = 0, center_y: float = 0) -> Image:
     if not state.active_server:
         return "No active Factorio server connection. Use connect_to_factorio_server first."
 
-    # In a real implementation, this would capture a screenshot via the Factorio instance API
-    # For demo purposes, we'll create a mock image
-
     instance = state.active_server
 
     img = instance.namespace._render(position=Position(center_x, center_y))
     return Image(data=img._repr_png_(), format="png")
+
+@mcp.tool()
+async def entities(center_x: float = 0, center_y: float = 0, radius: float = 500) -> str:
+    """
+    Prints out all entities objects on the map. Use this to get positions, status and other information about the existing factory.
+
+    Args:
+        center_x: X coordinate to center on (defaults to factory center)
+        center_y: Y coordinate to center on (defaults to factory center)
+        radius: Radius from center to retrieve entities
+    """
+    if not state.active_server:
+        return "No active Factorio server connection. Use connect_to_factorio_server first."
+
+    instance = state.active_server
+
+    entities = instance.namespace.get_entities(position=Position(center_x, center_y), radius=radius)
+    return str(entities)
+
+@mcp.tool()
+async def inventory() -> str:
+    """
+    Prints out your current inventory.
+    """
+    if not state.active_server:
+        return "No active Factorio server connection. Use connect_to_factorio_server first."
+
+    instance = state.active_server
+
+    inventory = instance.namespace.inspect_inventory()
+    return str(inventory)
 
 @mcp.tool()
 async def execute(code: str) -> str:
@@ -71,7 +99,8 @@ async def status() -> str:
     Check the status of the Factorio server connection
     """
     if not state.active_server:
-        return "Not connected to any Factorio server."
+       return await initialize_session(None)
+
 
     server_id = state.active_server.tcp_port
     if server_id in state.available_servers:
@@ -86,8 +115,8 @@ async def status() -> str:
 
 
 @mcp.tool()
-async def get_prototypes():
-    """Get all prototypes available in the game. This can be chained with `get_recipe` to understand the prerequisites."""
+async def get_entity_names():
+    """Get the names of all entities available in the game. They correspond to Prototype objects."""
     # Initialize recipes if empty
     if not state.recipes:
         state.recipes = state.load_recipes_from_file()
@@ -112,6 +141,9 @@ async def position() -> str:
     """
     Get your position in the Factorio world.
     """
+    if not state.active_server:
+        raise Exception("No active Factorio server connection. Use connect_to_factorio_server first.")
+
     position = state.active_server.namespace.player_location
     return position
 
@@ -174,4 +206,29 @@ async def manual(name: str) -> str:
     # Generate the documentation
     generator = SystemPromptGenerator(str(execution_path))
     return generator.manual(name)
+
+@mcp.tool()
+async def toggle_debug_rendering(enable: bool = None) -> str:
+    """
+    Toggle debug rendering of polygons and shapes in Factorio
+    
+    Args:
+        enable: Set to True to enable debug rendering, False to disable, or None to toggle
+    """
+    if not state.active_server:
+        return "No active Factorio server connection. Use connect_to_factorio_server first."
+    
+    # Call the toggle_debug function with the rendering debug type
+    enable_str = "true" if enable else "false" if enable is not None else None
+    result = state.active_server.rcon_client.send_command(
+        f"/silent-command global.actions.toggle_debug(1, 'rendering', {enable_str or 'nil'})"
+    )
+    
+    # Parse the result
+    if "Debug rendering enabled" in result:
+        return "Debug rendering is now enabled"
+    elif "Debug rendering disabled" in result:
+        return "Debug rendering is now disabled"
+    else:
+        return f"Current debug rendering status: {result}"
 

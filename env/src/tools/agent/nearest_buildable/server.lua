@@ -144,7 +144,7 @@ global.actions.nearest_buildable = function(player_index, entity_name, bounding_
                 local is_buildable, left_top, right_bottom = is_buildable_box(current_pos, bounding_box)
                 if is_buildable then
                     --rendering.clear()
-                    rendering.draw_rectangle{
+                    global.debug_rendering.draw_rectangle{
                         surface = surface,
                         left_top = left_top,
                         right_bottom = right_bottom,

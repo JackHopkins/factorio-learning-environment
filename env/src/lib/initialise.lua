@@ -7,6 +7,15 @@ end
 if not global.utils then
     global.utils = {}
 end
+
+-- Initialize debug flags
+if global.debug == nil then
+    global.debug = {
+        rendering = false -- Flag to toggle debug rendering of polygons and shapes
+    }
+end
+
+-- Note: The debug_rendering.lua library will be loaded separately by the LuaScriptManager
 --local player = game.players[arg1]
 player.surface.always_day=true
 --game.players[1].character_collision_mask = "not-colliding-with-itself"
@@ -83,7 +92,7 @@ global.utils.get_direction_with_diagonals = function(from_pos, to_pos)
     end
 
     -- Check for cardinal directions first
-    local cardinal_margin = 0.25
+    local cardinal_margin = 0.20 --0.25
     if math.abs(dx) < cardinal_margin then
         return dy > 0 and defines.direction.south or defines.direction.north
     elseif math.abs(dy) < cardinal_margin then

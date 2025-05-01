@@ -3,7 +3,7 @@ if not global.clearance_entities then
     global.clearance_entities = {}
 end
 
-global.actions.request_path = function(player_index, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities, entity_size)
+global.actions.request_path = function(player_index, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities, entity_size, resolution)
     local player = game.get_player(player_index)
     if not player then return nil end
     local size = entity_size/2 - 0.01
@@ -22,8 +22,8 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
             y = math.max(start_y, goal_y) + 10
         }
     }
-    rendering.draw_circle{width = 1, color = {r = 0.5, g = 0, b = 0.5}, surface = player.surface, radius = 0.303, filled = false, target = {x=start_x, y=start_y}, time_to_live = 12000}
-    rendering.draw_circle{width = 1, color = {r = 0, g = 0.5, b = 0.5}, surface = player.surface, radius = 0.303, filled = false, target = {x=goal_x, y=goal_y }, time_to_live = 12000}
+    global.debug_rendering.draw_circle{width = 1, color = {r = 0.5, g = 0, b = 0.5}, surface = player.surface, radius = 0.303, filled = false, target = {x=start_x, y=start_y}, time_to_live = 12000}
+    global.debug_rendering.draw_circle{width = 1, color = {r = 0, g = 0.5, b = 0.5}, surface = player.surface, radius = 0.303, filled = false, target = {x=goal_x, y=goal_y }, time_to_live = 12000}
 
 
     -- Add temporary collision entities
@@ -58,7 +58,7 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
         radius = radius or 0,
         entity_to_ignore = player.character,
         can_open_gates = true,
-        path_resolution_modifier = 0,
+        path_resolution_modifier = resolution,
         pathfind_flags = {
             cache = false,
             no_break = true,

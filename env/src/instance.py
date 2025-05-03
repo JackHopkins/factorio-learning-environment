@@ -158,7 +158,7 @@ class FactorioInstance:
             # Reset the game instance with the correct player's inventory and messages if multiagent
             if game_state.is_multiagent:
                 inventories = game_state.inventories
-                agent_messages = game_state.agent_messages
+                agent_messages = [msg for sublist in game_state.agent_messages for msg in sublist]
             else:
                 inventories = [game_state.inventory]
             self._reset(inventories)
@@ -229,11 +229,14 @@ class FactorioInstance:
         if self.num_agents > 1:
             player_idx = agent_idx + 1
             multiagent_str = (
+                f"## MULTIAGENT INSTRUCTIONS\n"
                 f"You are player {player_idx} out of {self.num_agents} player(s) in the game. "
                 f"Player 1 is the master player who should give instructions to other players. "
                 f"If you are not player 1, follow player 1's instructions and cooperate since you share the same task "
-                f"and operate in the same world. Use the send_messages() tool regularly to communicate with other players "
-                f"about your current activities and any challenges you encounter."
+                f"and operate in the same world. Use the send_message() tool regularly to communicate with other players "
+                f"about your current activities and any challenges you encounter. "
+                f"Start each program with a send_message() call to explain what you are doing. "
+                f"End each program with a send_message() call to confirm your actions. If your program errored out this message will not be sent. "
             )
         return generator.generate(multiagent_str)
 

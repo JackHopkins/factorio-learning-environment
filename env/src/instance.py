@@ -562,8 +562,8 @@ class FactorioInstance:
         for i in range(self.num_agents):
             player_index = i + 1
             self.add_command(f'/c global.actions.regenerate_resources({player_index})', raw=True)
-            self.add_command('clear_inventory', player_index)
-            self.add_command('reset_position', player_index, 0, 0)
+            #self.add_command('clear_inventory', player_index)
+            #self.add_command('reset_position', player_index, 0, 0)
 
         self.execute_transaction()
 
@@ -633,7 +633,7 @@ class FactorioInstance:
             self.lua_script_manager.load_init_into_game('enemies')
         # Create characters for all agents
 
-        self.add_command('/c global.agent_characters = {}; for _,c in pairs(game.surfaces[1].find_entities_filtered{type="character"}) do if c then c.destroy() end end; global.agent_characters[1]=game.surfaces[1].create_entity{name="character",position={x=0,y=0},force=game.forces.player}', raw=True)
+        self.add_command('/sc global.agent_characters = {}; for _,c in pairs(game.surfaces[1].find_entities_filtered{type="character"}) do if c then c.destroy() end end; for i=1,' + str(self.num_agents) + ' do global.agent_characters[i]=game.surfaces[1].create_entity{name="character",position={x=0,y=(i-1)*2},force=game.forces.player} end', raw=True)
         self.execute_transaction()
 
         self.lua_script_manager.load_init_into_game('initialise')

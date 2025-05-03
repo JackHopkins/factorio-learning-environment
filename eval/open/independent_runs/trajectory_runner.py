@@ -17,6 +17,7 @@ from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
 from models.conversation import Conversation
 from models.message import Message
 from models.game_state import GameState
+from models.multiagent_game_state import MultiagentGameState
 from models.program import Program
 from instance import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
@@ -240,15 +241,8 @@ class TrajectoryRunner:
                 program.parent_id = parent_id
 
                 # Evaluate program
-<<<<<<< HEAD
                 self.evaluator.instance.reset(current_state)
-                evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.task, agent_idx=agent_idx)
-=======
-                instance = self.evaluator.instance
-                instance.reset(current_state)
-                step_statistics = {"current_step_id": iteration}
-                evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.agent.task, step_statistics)
->>>>>>> agent-characters
+                evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.task, agent_idx=agent_idx, step_statistics={"current_step_id": iteration})
                 print(program.code + "\n"+"="*50)
                 print("\033[1m\n".join(['>>>\t'+line for line in program.response.strip().replace('\\n', '\n\t').split('\n')]).strip()+"\033[0m")
                 print(f"Evaluated program {multiprocessing.current_process().name} - "
@@ -286,6 +280,7 @@ class TrajectoryRunner:
                 # Update state for next iteration
                 if program.state:
                     current_state = program.state
+                    # print("current state agent_messages", current_state.agent_messages)
                     current_conversations[agent_idx] = program.conversation
 
                 # Record iteration time

@@ -3,41 +3,58 @@ if not global.agent_inbox then
     global.agent_inbox = {}
 end
 
-global.actions.load_messages = function(messages_str)
+global.actions.load_messages = function(messages)
     -- If agent inbox already has messages, exit early
     local has_messages = false
     for _, _ in pairs(global.agent_inbox) do
         has_messages = true
         break
     end
-    if has_messages then
-        return true
-    end
+    --if has_messages then
+    --    return true
+    --end
 
-    -- Parse the messages string
-    local messages = {}
-    for line in string.gmatch(messages_str, "[^\n]+") do
-        local sender, message, timestamp, recipient = string.match(line, "(%d+)|(.+)|(%d+)|(%d+)")
+    -- Parse the messages list
+    local messages_loaded = 0
+    -- game.print("Loading messages - " .. serpent.block(messages))
+    
+    for _, msg in ipairs(messages) do
+        local message = msg.message
+        local sender = msg.sender
+        local recipient = msg.recipient
+        local timestamp = msg.timestamp
+        
+        -- game.print("Message loaded - From: " .. sender .. " To: " .. recipient .. " Message: " .. message .. " Timestamp: " .. timestamp)
+        if not global.agent_inbox[recipient] then
+            global.agent_inbox[recipient] = {}
+        end
+        table.insert(global.agent_inbox[recipient], {
+            sender = tonumber(sender),
+            message = "test message",
+            timestamp = tonumber(timestamp),
+            recipient = tonumber(recipient)
+        })
+        
         if sender and message and timestamp and recipient then
-            -- Convert string values to numbers where appropriate
             sender = tonumber(sender)
             timestamp = tonumber(timestamp)
             recipient = tonumber(recipient)
             
-            -- Initialize recipient's inbox if it doesn't exist
             if not global.agent_inbox[recipient] then
                 global.agent_inbox[recipient] = {}
             end
             
-            -- Add message to recipient's inbox
             table.insert(global.agent_inbox[recipient], {
                 sender = sender,
                 message = message,
                 timestamp = timestamp,
                 recipient = recipient
             })
+            
+            -- game.print("Message loaded - From: " .. sender .. " To: " .. recipient .. " Message: " .. message)
+            messages_loaded = messages_loaded + 1
         end
     end
     
-    return true
+    return messages_loaded
 end

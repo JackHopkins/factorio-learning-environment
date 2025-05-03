@@ -16,24 +16,19 @@ class LoadMessages(Tool):
         :return: True if successful, raises exception if not
         """
         try:
-            # Convert messages to the format expected by the server
-            formatted_messages = []
+            # Validate messages
             for msg in messages:
                 if not all(k in msg for k in ['sender', 'message', 'timestamp', 'recipient']):
                     raise ValueError("Message missing required fields: sender, message, timestamp, recipient")
-                
-                formatted_messages.append(
-                    f"{msg['sender']}|{msg['message']}|{msg['timestamp']}|{msg['recipient']}"
-                )
             
-            # Join messages with newlines
-            messages_str = "\n".join(formatted_messages)
-            
-            # Execute the server command
-            response = self.execute(messages_str)
+            #print(f'load_messages client sending messages: {messages}')
+            # Execute the server command with the list of message dictionaries
+            response = self.execute(messages)
             
             if isinstance(response, str):
                 raise Exception(f"Could not load messages: {response}")
+            
+            #print(f'load_messages client response: {response}')
                 
             return True
             

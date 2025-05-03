@@ -7,17 +7,21 @@ global.actions.get_messages = function(player_index)
     -- Return messages for this player
     if not global.agent_inbox[player_index] then
         global.agent_inbox[player_index] = {}
+        --game.print("Created new inbox for player " .. player_index)
     end
     
     -- Convert messages to a simple string format
     local messages = {}
+    --game.print("Getting messages for player " .. player_index)
+    --game.print("length of inbox: " .. #global.agent_inbox[player_index])
     for _, msg in ipairs(global.agent_inbox[player_index]) do
-        table.insert(messages, string.format("%d|%s|%d|%d", 
-            msg.sender, 
+        --game.print("message: " .. msg.message)
+        local formatted_msg = string.format("%s|%d|%d|%d", 
             msg.message, 
-            msg.timestamp, 
-            msg.recipient))
+            msg.sender, 
+            msg.recipient, 
+            msg.timestamp)
+        table.insert(messages, formatted_msg)
     end
-    
     return table.concat(messages, "\n")
 end 

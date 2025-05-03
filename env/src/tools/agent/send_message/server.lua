@@ -6,10 +6,10 @@ end
 global.actions.send_message = function(player_index, message, recipient)
     -- Create message entry
     local message_entry = {
-        sender = player_index,
         message = message,
+        sender = player_index,
+        recipient = recipient,
         timestamp = game.tick,
-        recipient = recipient
     }
     
     if recipient >= 0 then
@@ -20,7 +20,7 @@ global.actions.send_message = function(player_index, message, recipient)
         table.insert(global.agent_inbox[recipient], message_entry)
     else
         -- Send to all agents except sender
-        for other_index, _ in pairs(game.players) do
+        for other_index, _ in pairs(global.agent_characters) do
             if other_index ~= player_index then
                 if not global.agent_inbox[other_index] then
                     global.agent_inbox[other_index] = {}
@@ -29,6 +29,5 @@ global.actions.send_message = function(player_index, message, recipient)
             end
         end
     end
-    
     return true
 end

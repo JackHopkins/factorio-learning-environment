@@ -79,7 +79,7 @@ class SimpleFactorioEvaluator:
             start_production_flows = ProductionFlows.from_dict(self.instance.namespaces[agent_idx]._get_production_stats())
 
             initial_value, start_time = self.instance.namespaces[agent_idx].score()
-            reward, time, result = self.instance.eval(program.code, timeout=60)
+            reward, time, result = self.instance.eval(program.code, agent_idx=agent_idx, timeout=60)
 
 
             entities = self.instance.namespaces[agent_idx].get_entities()
@@ -116,10 +116,6 @@ class SimpleFactorioEvaluator:
                 state = MultiagentGameState.from_instance(self.instance)
             else:
                 state = GameState.from_instance(self.instance)
-            print('hello world')
-            import zlib
-            import base64
-            print(zlib.decompress(base64.b64decode(state.entities)))
             score, _ = self.instance.first_namespace.score()
             final_reward = score - initial_value
             ticks = self.instance.get_elapsed_ticks()

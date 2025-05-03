@@ -33,7 +33,8 @@ def main():
 
     # Create initial state and get system prompt
     try:
-        instance = create_factorio_instance(0)
+        num_agents = run_configs[0].num_agents
+        instance = create_factorio_instance(0, num_agents)
         system_prompt = instance.get_system_prompt()
     except Exception as e:
         raise(f"Error creating Factorio instance: {e}")

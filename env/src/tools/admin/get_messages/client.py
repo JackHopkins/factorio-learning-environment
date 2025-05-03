@@ -12,12 +12,12 @@ class GetMessages(Tool):
     def __call__(self, all_players: bool = False) -> List[Dict]:   
         if all_players:
             all_messages = []
-            for player_index in range(self.game_state.instance.num_players):
+            for player_index in range(1, self.game_state.instance.num_agents + 1):
                 messages = self.get_single_player_messages(player_index)
                 all_messages.extend(messages)
             return all_messages
         else:
-            return self.get_single_player_messages(self.player_index - 1)
+            return self.get_single_player_messages(self.player_index)
 
     
     def get_single_player_messages(self, player_index: int) -> List[Dict]:
@@ -27,6 +27,7 @@ class GetMessages(Tool):
         """
         try:
             response = self.execute(player_index)
+            # print(f'get_messages client response for player {player_index}: {response}')
             
             if isinstance(response, str):
                 raise Exception(f"Could not get messages: {response}")
@@ -43,24 +44,43 @@ class GetMessages(Tool):
                 
                 # Parse the simple string format: sender|message|timestamp|recipient
                 messages = []
+                current_message = []
                 for line in lua_response.split('\n'):
                     if not line.strip():
                         continue
+                        
+                    # Try parsing as single line first
                     try:
-                        sender, message, timestamp, recipient = line.split('|')
+                        message, sender, recipient, timestamp = line.split('|')
                         messages.append({
                             'sender': int(sender),
                             'message': message,
                             'timestamp': int(timestamp),
                             'recipient': int(recipient)
                         })
+                        continue
                     except ValueError:
-                        # Skip malformed lines
+                        # Not a complete message, add to buffer
+                        current_message.append(line)
+                    
+                    # Try parsing accumulated lines
+                    try:
+                        combined = '\n'.join(current_message)
+                        message, sender, recipient, timestamp  = combined.split('|')
+                        messages.append({
+                            'sender': int(sender),
+                            'message': message,
+                            'timestamp': int(timestamp),
+                            'recipient': int(recipient)
+                        })
+                        current_message = []
+                    except ValueError:
+                        # Still not enough parts, continue accumulating
                         continue
                 
-                print(f'get_messages for player {self.player_index - 1} messages: {messages}')
+                #print(f'get_messages for player {player_index} messages: {messages}')
                 return messages
-            print(f'get_messages for player {self.player_index - 1} no messages')
+            #print(f'get_messages for player {player_index} no messages')
             return []
             
         except Exception as e:

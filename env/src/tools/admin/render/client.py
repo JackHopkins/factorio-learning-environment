@@ -2,7 +2,6 @@ from typing import Optional, Dict
 
 from entities import BoundingBox, Position, BeltGroup, PipeGroup, \
     ElectricityGroup, Layer
-from instance import PLAYER
 from tools.admin.render.rendered_image import RenderedImage
 from tools.admin.render.renderer import Renderer
 from tools.agent.get_entities.client import GetEntities
@@ -72,7 +71,7 @@ class Render(Tool):
                 )
 
             # Get entities within bounding box
-            response, _ = self.execute(PLAYER, "bounding_box",
+            response, _ = self.execute(self.player_index, "bounding_box",
                                        bounding_box.left_top.x, bounding_box.left_top.y,
                                        bounding_box.right_bottom.x, bounding_box.right_bottom.y)
         else:
@@ -80,7 +79,7 @@ class Render(Tool):
             radius = min(radius, max_tiles)
 
             # Get water, resources, trees and rocks within radius of position
-            response, _ = self.execute(PLAYER, "radius", position.x, position.y, radius)
+            response, _ = self.execute(self.player_index, "radius", position.x, position.y, radius)
 
         # Get entities within radius of position
         entities = self.get_entities(position=position, radius=radius)

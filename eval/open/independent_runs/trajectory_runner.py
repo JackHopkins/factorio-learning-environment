@@ -84,7 +84,7 @@ class TrajectoryRunner:
                 version=self.config.version,
                 model=self.agent.model,
                 version_description=self.config.version_description,
-                meta={"model": self.agent.model, "process_id": self.process_id},
+                meta={"model": self.agent.model, "process_id": self.process_id, "text_response": policy.meta.text_response},
                 depth=len(messages) - 2
             )
 

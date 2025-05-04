@@ -3,6 +3,7 @@ from pathlib import Path
 from utils.controller_loader.code_analyzer import CodeAnalyzer
 from utils.controller_loader.manual_generator import ManualGenerator
 from utils.controller_loader.schema_generator import SchemaGenerator
+from utils.controller_loader.examples_generator import ExamplesGenerator
 from utils.controller_loader.type_definition_processor import TypeDefinitionProcessor
 
 
@@ -12,12 +13,16 @@ class SystemPromptGenerator:
     def __init__(self, base_path: str):
         self.base_path = Path(base_path)
         self.tool_path = self.base_path / "tools" / "agent"
+        self.rag_tool_path = self.base_path / "tools" / "rag"
 
-    def generate(self) -> str:
+    def generate(self) -> dict:
         # Generate schema
         schema_generator = SchemaGenerator(str(self.tool_path))
         schema = schema_generator.generate_schema(with_docstring=True).replace("temp_module.", "")
 
+        # Generate schema for RAG tools
+        rag_schema_generator = SchemaGenerator(str(self.rag_tool_path))
+        rag_schema = rag_schema_generator.generate_schema(with_docstring=True).replace("temp_module.", "")
         # Load and process type definitions
         type_defs = TypeDefinitionProcessor.load_and_clean_definitions(
             str(self.base_path / "game_types.py")
@@ -29,13 +34,23 @@ class SystemPromptGenerator:
         )
 
         # Load and process the manuals (agent.md files)
-        manual_defs = ManualGenerator.generate_manual(
+        agent_manual_defs = ManualGenerator.generate_agent_manual(
             str(self.base_path / "tools")
         )
-
-        # Combine all parts into final prompt
-        return (
-            f"```types\n{type_defs}\n{entity_defs}\n```\n"
-            f"```methods\n{schema}\n```"
-            f"{manual_defs}"
+        # Load and process the RAG manuals (agent.md files)
+        rag_manual_defs = ManualGenerator.generate_rag_manual(
+            str(self.base_path / "tools")
         )
+        examples = ExamplesGenerator.generate_examples(
+            str(self.base_path / "tools")
+        )
+        # Combine all parts into final prompt
+        return {
+            "type_defs":type_defs,
+            "entity_defs":entity_defs,
+            "schema": schema,
+            "manual_defs": agent_manual_defs,
+            "examples": examples,
+            "rag_manual_defs": rag_manual_defs,
+            "rag_schema": rag_schema,
+        }

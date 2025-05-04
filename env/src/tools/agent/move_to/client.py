@@ -20,7 +20,7 @@ class MoveTo(Tool):
     def __call__(self, position: Position, laying: Prototype = None, leading: Prototype = None) -> Position:
         """
         Move to a position.
-        :param position: Position to move to.
+        :param position: Target Position to move to
         :return: Your final position
         """
 

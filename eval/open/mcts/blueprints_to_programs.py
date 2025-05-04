@@ -11,7 +11,7 @@ from models.message import Message
 from eval.open.db_client import DBClient
 from models.program import Program
 from instance import FactorioInstance
-
+from agents.utils.prompt_utils import get_default_system_prompt
 load_dotenv()
 
 class BlueprintsToPrograms:
@@ -121,7 +121,7 @@ async def save():
         'dbname': os.getenv("SKILLS_DB_NAME"),
         'user': os.getenv("SKILLS_DB_USER"),
         'password': os.getenv("SKILLS_DB_PASSWORD")
-    }, system_prompt=instance.get_system_prompt())
+    }, system_prompt=get_default_system_prompt(instance.get_system_prompt()))
 
     scenarios = blueprints_to_programs.sample_scenarios(n_samples=1000)
 

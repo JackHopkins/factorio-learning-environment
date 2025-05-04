@@ -543,7 +543,7 @@ class ElectricMiningDrill(MiningDrill, Electric):
     pass
 
 class BurnerInserter(Inserter, BurnerType):
-    """An inserter powered by burnable fuel."""
+    """An inserter powered by burnable fuel, does not require electricity, runs on burner fuels."""
     _height: float = 1
     _width: float = 1
     pass

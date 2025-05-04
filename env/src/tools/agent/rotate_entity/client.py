@@ -14,7 +14,7 @@ class RotateEntity(Tool):
         """
         Rotate an entity to a specified direction
         :param entity: Entity to rotate
-        :param direction: Direction to rotate
+        :param direction: Target direction (UP/DOWN/LEFT/RIGHT)
         :example rotate_entity(iron_chest, Direction.UP)
         :return: Returns the rotated entity
         """

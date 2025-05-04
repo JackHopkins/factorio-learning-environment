@@ -27,8 +27,8 @@ class PlaceObject(Tool):
                  ) -> Entity:
         """
         Places an entity e at local position (x, y) if you have it in inventory.
-        :param entity: Entity to place
-        :param direction: Cardinal direction to place
+        :param entity: Prototype of entity to place
+        :param direction: Direction entity should face (default: UP)
         :param position: Position to place entity
         :param exact: If True, place entity at exact position, else place entity at nearest possible position
         :return: Entity object

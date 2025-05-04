@@ -50,6 +50,9 @@ class SchemaGenerator:
                 if tool == "__pycache__":
                     continue
                 python_file = root + "/" + tool + "/client.py"
+                # check if the file exists
+                if not os.path.exists(python_file):
+                    continue
                 module = ModuleLoader.from_path(str(python_file))
                 if not module:
                     continue

@@ -12,8 +12,15 @@ class InspectInventory(Tool):
     def __call__(self, entity=None) -> Inventory:
         """
         Inspects the inventory of the given entity. If no entity is given, inspect your own inventory.
-        :param entity: Entity to inspect
-        :return: Inventory of the given entity
+        :param entity: Optional Entity or Position to inspect (if None, inspects player inventory)
+        :return: Returns an Inventory object that can be accessed in two ways:
+
+            inventory = inspect_inventory()
+            # Using [] syntax
+            coal_count = inventory[Prototype.Coal]  # Returns 0 if not present
+
+            # Using get() method
+            coal_count = inventory.get(Prototype.Coal, 0)  # Second argument is default value
         """
 
         if entity:

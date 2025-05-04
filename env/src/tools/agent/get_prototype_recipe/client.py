@@ -13,8 +13,13 @@ class GetPrototypeRecipe(Tool):
     def __call__(self, prototype: Union[Prototype, RecipeName, str]) -> Recipe:
         """
         Get the recipe (cost to make) of the given entity prototype.
-        :param prototype: Prototype to get recipe from
-        :return: Recipe of the given prototype
+        :param prototype: Prototype to get recipe from (either a `Prototype` enum value, `RecipeName` enum value or a string)
+        :return: a `Recipe` object with the following structure:
+            Recipe(
+                name=str,
+                ingredients=[Ingredient(name=str, count=int, type=str)],
+                products=[Product(name=str, count=int, probability=float, type=str)]
+            )
         """
 
         if isinstance(prototype, Prototype):

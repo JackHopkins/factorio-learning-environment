@@ -4,20 +4,8 @@ The `pickup_entity` tool allows you to remove entities from the world and return
 
 ## Basic Usage
 
-```python
-pickup_entity(
-    entity: Union[Entity, Prototype, EntityGroup],
-    position: Optional[Position] = None
-) -> bool
-```
-
 Returns True if pickup was successful.
 
-### Parameters
-- `entity`: Entity/Prototype to pickup
-- `position`: Optional position to pickup from (required for Prototypes)
-
-### Examples
 ```python
 # Pickup using prototype and position
 pickup_entity(Prototype.Boiler, Position(x=0, y=0))

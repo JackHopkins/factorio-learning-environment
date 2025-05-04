@@ -25,6 +25,7 @@ class HarvestResource(Tool):
         Harvest a resource at position (x, y) if it exists on the world.
         :param position: Position to harvest resource
         :param quantity: Quantity to harvest
+        :param radius: Search radius in tiles (default: 10)
         :example harvest_resource(nearest(Resource.Coal), 5)
         :example harvest_resource(nearest(Resource.Stone), 5)
         :return: The quantity of the resource harvested

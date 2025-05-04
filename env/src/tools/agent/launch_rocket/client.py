@@ -16,7 +16,7 @@ class LaunchRocket(Tool):
     def __call__(self, silo: Union[Position, RocketSilo]) -> RocketSilo:
         """
         Launch a rocket.
-        :param silo: Rocket silo
+        :param silo: Either a Position object or RocketSilo entity indicating where to launch from
         :return: Your final position
         """
 

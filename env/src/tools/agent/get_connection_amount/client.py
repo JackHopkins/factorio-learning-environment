@@ -22,11 +22,11 @@ class GetConnectionAmount(Tool):
                  ) -> int:
         """
         Calculate the number of connecting entities needed to connect two entities, positions or groups.
-        :param source: First entity or position
-        :param target: Second entity or position
-        :param connection_type: a Pipe, TransportBelt or ElectricPole
+        :param source: Starting point (can be Position, Entity, or EntityGroup)
+        :param target: Ending point (can be Position, Entity, or EntityGroup)
+        :param connection_type: Type of connecting entity to use -  Prototype.Pipe, Prototype.TransportBelt or Prototype.ElectricPole
         :return: A integer representing how many entities are required to connect the source and target entities
-        """
+"""
 
         connect_output = self.connect_entities(source, target, connection_type, dry_run=True)
         return connect_output["number_of_entities_required"]

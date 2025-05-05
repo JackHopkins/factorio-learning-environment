@@ -91,5 +91,10 @@ def setup_mining(resource_pos: Position):
     )
     # log your actions
     print(f"Placed chest to catch iron ore at {chest.position}")
+    # wait for 5 seconds and check if chest has the ore
+    sleep(5)
+    # update chest entity
+    chest = game.get_entity(Prototype.WoodenChest, chest.position)
+    assert inspect_inventory(entity=chest).get(Prototype.IronOre, 0) > 0, f"No iron ore found in chest at {chest.position}"
     return drill, chest
 ```

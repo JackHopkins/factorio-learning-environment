@@ -52,7 +52,7 @@ your_code_here
 ## Best Practices
 
 ### Modularity
-- Create small, modular policies
+- Create small, modular policies, MAXIMUM 30 lines of code
 - Each policy should have a single clear purpose
 - Keep policies easy to debug and modify
 - Avoid breaking existing automated structures
@@ -169,14 +169,24 @@ sorted_furnaces = sorted(
 - Do not encapsulate your code in a function _unless_ you are writing a utility for future use - just write it as if you were typing directly into the Python interpreter.
 - Your inventory has space for ~2000 items. If it fills up, insert the items into a chest.
 - Ensure that your factory is arranged in a grid, as this will make things easier.
+- Its a lot easier to manually add coil to boilers rather than make a automated system for it. Prefer manual fueling
 """
 
-FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON." # Annoying how effective this is
-
+FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON AND REMEMEBER MAXIMUM 30 LINES OF CODE PER POLICY. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON." # Annoying how effective this is
+import tiktoken
 
 class BasicAgent(AgentABC):
    def __init__(self, model, system_prompt, task, *args, **kwargs):
+        encoding = tiktoken.encoding_for_model("gpt-4o-mini")
         instructions = GENERAL_INSTRUCTIONS+system_prompt+FINAL_INSTRUCTION
+        system_prompt_tokens = encoding.encode(system_prompt)
+        instructions_tokens = encoding.encode(instructions)
+        general_instruction_tokens = encoding.encode(GENERAL_INSTRUCTIONS)
+        final_instruction_tokens = encoding.encode(FINAL_INSTRUCTION)
+        print(f"System prompt tokens: {len(system_prompt_tokens)}")
+        print(f"Instructions tokens: {len(instructions_tokens)}")
+        print(f"General instruction tokens: {len(general_instruction_tokens)}")
+        print(f"Final instruction tokens: {len(final_instruction_tokens)}")
         self.task = task
         instructions += f"\n\n### Goal\n{task.goal_description}\n\n"
         super().__init__( model, instructions, *args, **kwargs)
@@ -185,32 +195,34 @@ class BasicAgent(AgentABC):
         self.generation_params = GenerationParameters(n=1, max_tokens=2048, model=model)
 
    async def step(self, conversation: Conversation, response: Response, namespace: FactorioNamespace) -> Policy:
-       
-       # We format the conversation every N steps to add a context summary to the system prompt
-       formatted_conversation = await self.formatter.format_conversation(conversation, namespace)
-       # We set the new conversation state for external use
-       self.set_conversation(formatted_conversation)
-
-       return await self._get_policy(formatted_conversation)
+        encoding = tiktoken.encoding_for_model("gpt-4o-mini")
+        # We format the conversation every N steps to add a context summary to the system prompt
+        formatted_conversation = await self.formatter.format_conversation(conversation, namespace)
+        # We set the new conversation state for external use
+        self.set_conversation(formatted_conversation)
+        for message in formatted_conversation.messages:
+            message_tokens = encoding.encode(message.content)
+            print(f"Message tokens: {len(message_tokens)}")
+        return await self._get_policy(formatted_conversation), None
 
    @tenacity.retry(
        retry=retry_if_exception_type(Exception),
        wait=wait_exponential(multiplier=1, min=4, max=10)
    )
    async def _get_policy(self, conversation: Conversation):
-       response = await self.llm_factory.acall(
-           messages=self.formatter.to_llm_messages(conversation),
-           n_samples=1,  # We only need one program per iteration
-           temperature=self.generation_params.temperature,
-           max_tokens=self.generation_params.max_tokens,
-           model=self.generation_params.model,
-       )
+        response = await self.llm_factory.acall(
+            messages=self.formatter.to_llm_messages(conversation),
+            n_samples=1,  # We only need one program per iteration
+            temperature=self.generation_params.temperature,
+            max_tokens=self.generation_params.max_tokens,
+            model=self.generation_params.model,
+        )
 
-       policy = parse_response(response)
-       if not policy:
-           raise Exception("Not a valid Python policy")
-
-       return policy
+        policy = parse_response(response)
+        if not policy:
+            raise Exception("Not a valid Python policy")
+        policy.input_conversation = conversation
+        return policy
 
    async def end(self, conversation: Conversation, completion: CompletionResult):
        pass

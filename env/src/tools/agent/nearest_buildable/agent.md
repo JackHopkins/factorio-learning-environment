@@ -96,12 +96,19 @@ for i in range(3):
     print(f"Placed ElectricMiningDrill {i} at {drill.position} to mine copper ore")
     # place a furnace to catch the ore
     # We use the Direction.DOWN as the direction, as the drill direction is DOWN which means the drop position is below the drill
+    # NB: We also need to use drill.position, not drill.drop_position for placement. FUrnaces are multiple tiles wide and using drill.drop_pos will break the placement. VERY IMPORTANT CONSIDERATION
     furnace = place_entity_next_to(Prototype.StoneFurnace, reference_position=drill.position, direction = Direction.DOWN)
     print(f"Placed furnace at {furnace.position} to smelt the copper ore for drill {i} at {drill.position}")
     # add inserters for future potential integartion
     # put them below the furnace as the furnace is below the drill
     inserter = place_entity_next_to(Prototype.Inserter, reference_position=furnace.position, direction = Direction.DOWN)
     print(f"Placed inserter at {inserter.position} to get the plates from furnace {i} at {furnace.position}")
+
+# sleep for 5 seconds and check a furnace has plates in it
+sleep(5)
+# update furnace entity
+furnace = game.get_entity(Prototype.StoneFurnace, furnace.position)
+assert inspect_inventory(entity=furnace).get(Prototype.CopperPlate, 0) > 0, f"No copper plates found in furnace at {furnace.position}"
 ```
 
 ## Best practices

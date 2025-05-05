@@ -36,6 +36,7 @@ class EvalConfig:
     version: int
     version_description: str
     exit_on_task_success: bool
+    only_continue_on_program_success: bool = False
 
 
 class TrajectoryRunner:
@@ -64,19 +65,19 @@ class TrajectoryRunner:
     async def _generate_program(self, conversation: Conversation, response: Response, namespace: FactorioNamespace, meta={}) -> Program:
         conversation = copy.deepcopy(conversation)
         try:
-            policy = await self.agent.step(conversation, response, namespace)
+            policy, policy_meta = await self.agent.step(conversation, response, namespace)
 
             if not policy:
                 raise Exception("Policy not valid Python. Skipping.")
 
             try:
-                messages = conversation.model_dump()['messages']
+                messages = policy.input_conversation.model_dump()['messages'] if policy.input_conversation else conversation.model_dump()['messages']
             except Exception:
-                messages = conversation.dict()['messages']
+                messages = policy.input_conversation.dict()['messages'] if policy.input_conversation else conversation.dict()['messages']
 
             program = Program(
                 code=policy.code,
-                conversation=conversation,
+                conversation=policy.input_conversation if policy.input_conversation else conversation,
                 response=response.response if response else None,
                 token_usage=policy.meta.total_tokens,
                 completion_token_usage=policy.meta.output_tokens,
@@ -90,7 +91,8 @@ class TrajectoryRunner:
 
             if meta:
                 program.meta.update(meta)
-
+            if policy_meta:
+                program.meta.update(policy_meta)
             return program
 
         except Exception as e:
@@ -120,9 +122,8 @@ class TrajectoryRunner:
         self.start_time = time.time()
 
         current_state = None
-        if self.config.version:
-            current_state, current_conversation, parent_id, depth = await self.db.get_resume_state(resume_version = self.config.version, process_id = self.process_id)
-            self.agent.conversation = current_conversation
+        #if self.config.version:
+        #    current_state, current_conversation, parent_id, depth = await self.db.get_resume_state(resume_version = self.config.version, process_id = self.process_id)
             
         if not current_state:
             current_state = self.config.agent.task.starting_game_state
@@ -132,12 +133,11 @@ class TrajectoryRunner:
             entities = instance.namespace.get_entities()
             current_conversation = Conversation(messages=[
                 Message(role="system", content=self.config.agent.system_prompt),
-                Message(role="assistant", content="print(f'Inventory: {inspect_inventory()}')\n"
-                                                  "print(f'Entities: {get_entities()}')\n"),
+                Message(role="assistant", content="```python\nprint(f'Inventory: {inspect_inventory()}')\n"
+                                                  "print(f'Entities: {get_entities()}')\n```"),
                 Message(role="user", content=f"1: ('Inventory: {current_state.inventory.__dict__}')\n"
                                              f"2: ('Entities: {entities}')"),
             ])
-            self.agent.conversation = current_conversation
             parent_id = None
 
         last_response = None
@@ -146,7 +146,7 @@ class TrajectoryRunner:
             iteration_start = time.time()
             time.sleep(COURTESY_SLEEP) # courtesy sleep
             try:
-                program = await self._generate_program(self.agent.conversation, last_response, self.evaluator.instance.namespace)
+                program = await self._generate_program(current_conversation, last_response, self.evaluator.instance.namespace)
 
                 print(f"Generated program {multiprocessing.current_process().name} - "
                       f"Model: {self.config.agent.model} - "
@@ -155,11 +155,12 @@ class TrajectoryRunner:
                 if not program:
                     continue
 
-                program.parent_id = parent_id
+                if not program.parent_id: program.parent_id = parent_id
 
                 # Evaluate program
                 instance = self.evaluator.instance
                 instance.reset(current_state)
+                instance_namespace_before_program = instance.namespace
                 step_statistics = {"current_step_id": iteration}
                 evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.agent.task, step_statistics)
                 print(program.code + "\n"+"="*50)
@@ -169,34 +170,6 @@ class TrajectoryRunner:
                       f"Iteration {iteration}/{self.config.agent.task.trajectory_length}")
                 if not evaluated_program:
                     continue
-
-                program = evaluated_program
-                self.agent.conversation = program.conversation
-                program.meta["task_key"] = self.config.agent.task.task_key
-                last_response = Response(
-                    code=program.code,
-                    created_at=program.created_at,
-                    score=program.value,
-                    achievements=program.achievements,
-                    step=depth,
-                    ticks = program.ticks,
-                    flows = program.flows,
-                    response=program.response,
-                    task=task_verification_response
-                )
-
-                # Save program
-                saved_program = await self.db.create_program(program)
-                print(f"Saved program {multiprocessing.current_process().name} - "
-                      f"Model: {self.config.agent.model} - "
-                      f"Iteration {iteration}/{self.config.agent.task.trajectory_length}")
-
-                parent_id = saved_program.id
-
-                # Update state for next iteration
-                if program.state:
-                    current_state = program.state
-                    current_conversation = program.conversation
 
                 # Record iteration time
                 iteration_time = time.time() - iteration_start
@@ -216,7 +189,48 @@ class TrajectoryRunner:
                           f"Value: {program.value:.2f} - "
                           f"Elapsed: {elapsed_str} - "
                           f"ETA: {eta}")
-                    
+
+                last_response = Response(
+                    code=f"```python\n{evaluated_program.code}\n```",
+                    created_at=evaluated_program.created_at,
+                    score=evaluated_program.value,
+                    achievements=evaluated_program.achievements,
+                    step=depth,
+                    ticks = evaluated_program.ticks,
+                    flows = evaluated_program.flows,
+                    response=evaluated_program.response,
+                    task=task_verification_response,
+                    error=evaluated_program.meta.get("error_occurred", False),
+                    program_id=evaluated_program.id,
+                )
+
+        
+                if self.config.only_continue_on_program_success:
+                    if last_response.error:
+                        print(f"Error occurred in program evaluation. Skipping to next iteration.")
+                        # restore instance namespace to before program execution
+                        instance.namespace = instance_namespace_before_program
+                    else:
+                        current_state = program.state
+                else:
+                    current_state = program.state
+                
+                program = evaluated_program
+                program.meta["task_key"] = self.config.agent.task.task_key
+
+                # Save program
+                saved_program = await self.db.create_program(program)
+                print(f"Saved program {multiprocessing.current_process().name} - "
+                      f"Model: {self.config.agent.model} - "
+                      f"Iteration {iteration}/{self.config.agent.task.trajectory_length}")
+
+                parent_id = saved_program.id
+                last_response.program_id = saved_program.id
+                # Update state for next iteration
+                if program.state:
+                    # add the last 2 messages from program.conversation to the current conversation
+                    current_conversation.messages.extend(program.conversation.messages[-2:])
+
                 if task_verification_response.success and self.config.exit_on_task_success:
                     print(f"Task verification success: {task_verification_response.success}")
                     completion_result = CompletionResult(step = iteration, 

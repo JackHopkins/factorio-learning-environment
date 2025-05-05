@@ -34,6 +34,7 @@ Low density structure - 4 per 60 seconds
 Copper plate - 18.75 per 60 seconds
 Iron plate - 18.75 per 60 seconds
 Stone brick - 18.75 per 60 seconds
+Automation science packs - 12 per 60 seconds
 Battery - 20 per 60 seconds. Can only be produced by a chemical plant
 
 Crafting speeds for liquids
@@ -66,7 +67,9 @@ Chemical plant - 1 (Example: Creates 600 Lubricant per 60 seconds)
 
 INSTRUCTIONS = """
 You must create an AUTOMATIC factory that automatically creates a target entity by itself. You are given the entity for which you need to create a factory for. You are also given the target throughput that the factory must achieve
-    
+
+Calculate and plan your factory, how many drills of certain resources you need, how many assemblers you need etc. Print out recipes of items you need to craft
+
 After each step the throughput of the factory is evaluated during 60 seconds of worktime and the results are supplied to you in the response. If you have achieved the target throughput, make sure to fuel the factory and make small improvements but do not break the factory.
 """
 

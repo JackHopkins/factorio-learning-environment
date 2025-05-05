@@ -12,6 +12,22 @@ from cluster.local.cluster_ips import get_local_container_ips
 
 load_dotenv()
 
+def get_program_chain_backtracking(conn, version: int):
+    """Get the chain of programs for a specific version for the backtracking chain"""
+    query = f"""
+    SELECT meta, code, response, id FROM programs 
+    WHERE version = {version}
+    ORDER BY created_at ASC
+    """
+
+    model = 'anthropic/claude-3.5-sonnet-open-router'
+
+    with conn.cursor() as cur:
+        cur.execute(query)
+        data = cur.fetchall()
+    data = [x[-1] for x in data if x[0]["model"] == model and not x[0]["error_occurred"]]
+    return data
+
 
 def get_db_connection():
     """Create a database connection using environment variables"""

@@ -77,10 +77,12 @@ PROMPTS = {
     )
 }
 
+
 @mcp._mcp_server.list_prompts()
 async def list_all_prompts() -> list[types.Prompt]:
     """List all available prompts"""
     return list(PROMPTS.values())
+
 
 @mcp._mcp_server.get_prompt()
 async def get_prompt(

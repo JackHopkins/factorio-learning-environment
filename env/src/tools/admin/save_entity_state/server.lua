@@ -68,7 +68,7 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
             area = {{-distance, -distance}, {distance, distance}},
             name = "item-on-ground"
         })
-        game.print("Ground items "..#ground_items)
+        -- game.print("Ground items "..#ground_items)
         -- Merge the arrays
         for _, item in pairs(ground_items) do
             table.insert(entities, item)

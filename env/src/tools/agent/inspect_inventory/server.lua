@@ -31,7 +31,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
 
        local area = {{position.x - 2, position.y - 2}, {position.x + 2, position.y + 2}}
        local buildings = surface.find_entities_filtered({ area = area, force = "player", name = entity })
-       game.print("Found "..#buildings.. " "..entity)
+       -- game.print("Found "..#buildings.. " "..entity)
        for _, building in ipairs(buildings) do
            if building.name ~= 'character' then
                local distance = ((position.x - building.position.x) ^ 2 + (position.y - building.position.y) ^ 2) ^ 0.5

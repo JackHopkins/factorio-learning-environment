@@ -311,7 +311,7 @@ global.utils.avoid_entity = function(player_index, entity, position, direction)
         player.teleport({player_position.x + i, player_position.y + i})
     end
     player.teleport(player_position)
-    game.print("Cannot avoid")
+    -- game.print("Cannot avoid")
     return false
 end
 

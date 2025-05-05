@@ -311,7 +311,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         for _, e in ipairs(entities) do
             table.insert(blocker_names, e.type.."("..serpent.line(e.position)..")")
         end
-        game.print(serpent.line(blocker_names))
+        -- game.print(serpent.line(blocker_names))
 
         local tree = player.surface.find_entities_filtered{area = area, type = {"tree"}}
         for _, e in ipairs(tree) do
@@ -327,7 +327,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
                 end
             end
         end
-        game.print(serpent.line(blocker_names))
+        -- game.print(serpent.line(blocker_names))
 
         error("\'Cannot place entity at the position " .. serpent.line(new_position) .. " with the current direction" ..
               ". Attempting to place next to - "..ref_entity.name..". There might be a collision with existing entities or this area cannot be placed on (water). Nearby entities that might be blocking the placement - " .. serpent.line(blocker_names) ..

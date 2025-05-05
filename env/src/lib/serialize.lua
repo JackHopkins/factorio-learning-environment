@@ -1565,7 +1565,7 @@ global.utils.serialize_entity = function(entity)
         }
         serialized.drop_position.x = math.round(serialized.drop_position.x * 2) / 2
         serialized.drop_position.y = math.round(serialized.drop_position.y * 2) / 2
-        game.print("Mining drill drop position: " .. serpent.line(serialized.drop_position))
+        -- game.print("Mining drill drop position: " .. serpent.line(serialized.drop_position))
 
         -- Get the mining area
         local prototype = game.entity_prototypes[entity.name]
@@ -1639,19 +1639,19 @@ global.utils.serialize_entity = function(entity)
         local x, y = entity.position.x, entity.position.y
 
         if entity.direction == defines.direction.north then
-            game.print("Boiler direction is north")
+            -- game.print("Boiler direction is north")
             serialized.connection_points = {{x = x - 2, y = y + 0.5}, {x = x + 2, y = y + 0.5}}
             serialized.steam_output_point = {x = x, y = y - 1.5}
         elseif entity.direction == defines.direction.south then
-            game.print("Boiler direction is south")
+            -- game.print("Boiler direction is south")
             serialized.connection_points = {{x = x - 2, y = y - 0.5}, {x = x + 2, y = y - 0.5}}
             serialized.steam_output_point = {x = x, y = y + 1.5}
         elseif entity.direction == defines.direction.east then
-            game.print("Boiler direction is east")
+            -- game.print("Boiler direction is east")
             serialized.connection_points = {{x = x - 0.5, y = y - 2}, {x = x - 0.5, y = y + 2}}
             serialized.steam_output_point = {x = x + 1.5, y = y}
         elseif entity.direction == defines.direction.west then
-            game.print("Boiler direction is west")
+            -- game.print("Boiler direction is west")
             serialized.connection_points = {{x = x + 0.5, y = y - 2}, {x = x + 0.5, y = y + 2}}
             serialized.steam_output_point = {x = x - 1.5, y = y}
         end
@@ -1776,7 +1776,7 @@ global.utils.serialize_entity = function(entity)
         if fluid_box and #fluid_box > 0 then
             serialized.fluid_box = {}
             for i = 1, #fluid_box do
-                game.print("Fluid!")
+                -- game.print("Fluid!")
                 local fluid = fluid_box[i]
                 if fluid then
                     table.insert(serialized.fluid_box, {name = "\""..fluid.name.."\"", amount = fluid.amount, temperature = fluid.temperature})

@@ -140,13 +140,13 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
             end
         end
     end
-    game.print("There are "..#entities.drills)
+    -- game.print("There are "..#entities.drills)
     for _, drill in pairs(entities.drills) do
-        game.print(serpent.block(drill))
+        -- game.print(serpent.block(drill))
     end
     -- Collect positions from mining drills
     for _, drill in pairs(entities.drills) do
-        game.print("Drop position ".. serpent.line(drill.drop_position))
+        -- game.print("Drop position ".. serpent.line(drill.drop_position))
         local drop_pos = drill.drop_position--{x=math.round(drill.drop_position.x*2)/2, y=math.round(drill.drop_position.y*2)/2}
         if not is_excluded_position(drop_pos) then
             table.insert(all_positions, drop_pos)

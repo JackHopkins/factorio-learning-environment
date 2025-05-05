@@ -170,7 +170,9 @@ class FactorioInstance:
             self.first_namespace._load_research_state(game_state.research)
 
             if game_state.is_multiagent:
+                #print(f'instance.py loading messages: {agent_messages}')
                 self.first_namespace._load_messages(agent_messages)
+                #print('instance.py loaded messages', self.first_namespace._get_messages(True))
 
             # Reset elapsed ticks
             self._reset_elapsed_ticks()
@@ -189,7 +191,7 @@ class FactorioInstance:
 
         # Clear renderings
         self.begin_transaction()
-        self.add_command('/c rendering.clear()', raw=True)
+        self.add_command('/sc rendering.clear()', raw=True)
         self.execute_transaction()
 
 
@@ -202,16 +204,16 @@ class FactorioInstance:
         # kwargs dict to json
         inventory_items = {k: v for k, v in inventory.items()}
         inventory_items_json = json.dumps(inventory_items)
-        self.add_command(f"/c global.actions.initialise_inventory({agent_idx}, '{inventory_items_json}')", raw=True)
+        self.add_command(f"/sc global.actions.initialise_inventory({agent_idx}, '{inventory_items_json}')", raw=True)
 
         self.execute_transaction()
 
     def speed(self, speed):
-        response = self.rcon_client.send_command(f'/c game.speed = {speed}')
+        response = self.rcon_client.send_command(f'/sc game.speed = {speed}')
         self._speed = speed
 
     def get_elapsed_ticks(self):
-        response = self.rcon_client.send_command(f'/c rcon.print(global.elapsed_ticks or 0)')
+        response = self.rcon_client.send_command(f'/sc rcon.print(global.elapsed_ticks or 0)')
         if not response: return 0
         return int(response)
 
@@ -251,12 +253,12 @@ class FactorioInstance:
 
         try:
             rcon_client.connect()
-            player_exists = rcon_client.send_command('/c rcon.print(game.players[1].position)')
+            player_exists = rcon_client.send_command('/sc rcon.print(game.players[1].position)')
             if not player_exists:
                 raise Exception(
                     "Player hasn't been initialised into the game. Please log in once to make this node operational.")
-            #rcon_client.send_command('/c global = {}')
-            #rcon_client.send_command('/c global.actions = {}')
+            #rcon_client.send_command('/sc global = {}')
+            #rcon_client.send_command('/sc global.actions = {}')
 
         except Exception as e:
             raise ConnectionError(f"Could not connect to {address} at tcp/{tcp_port}: \n{e.args[0]}")
@@ -382,7 +384,7 @@ class FactorioInstance:
             return -1, "", f"{message}".strip()
 
     def _get_command(self, command, parameters=[], measured=True):
-        prefix = "/c " if not measured else '/command '
+        prefix = "/sc " if not measured else '/command '
         if command in self.script_dict:
             script = prefix + self.script_dict[command]
             for index in range(len(parameters)):
@@ -460,13 +462,13 @@ class FactorioInstance:
             centroid = camera.position
             POS_STRING = ", position={x="+str(centroid.x)+", y="+str(centroid.y)+"}"
 
-        self.rcon_client.send_command("/c rendering.clear()")
+        self.rcon_client.send_command("/sc rendering.clear()")
 
         # # Calculate optimal zoom if not specified
         # if zoom is None:
         #     zoom = self.calculate_optimal_zoom(bounds, resolution)
 
-        command = "/c game.take_screenshot({player=1, zoom="+str(camera.zoom)+", show_entity_info=true, hide_clouds=true, hide_fog=true "+POS_STRING+"})"
+        command = "/sc game.take_screenshot({player=1, zoom="+str(camera.zoom)+", show_entity_info=true, hide_clouds=true, hide_fog=true "+POS_STRING+"})"
         response = self.rcon_client.send_command(command)
         time.sleep(1)
         # if not response:
@@ -544,40 +546,40 @@ class FactorioInstance:
         """
         This resets the cached production flows that we track for achievements and diversity sampling.
         """
-        self.add_command('/c global.crafted_items = {}; global.harvested_items = {}', raw=True)
+        self.add_command('/sc global.crafted_items = {}; global.harvested_items = {}', raw=True)
         self.execute_transaction()
 
     def _reset_elapsed_ticks(self):
         """
         This resets the cached production flows that we track for achievements and diversity sampling.
         """
-        self.add_command('/c global.elapsed_ticks = 0', raw=True)
+        self.add_command('/sc global.elapsed_ticks = 0', raw=True)
         self.execute_transaction()
 
     def _reset(self, inventories: List[Dict[str, Any]]):
 
         self.begin_transaction()
-        self.add_command('/c global.alerts = {}; global.agent_inbox = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)', raw=True)
-        #self.add_command('/c script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
+        self.add_command('/sc global.alerts = {}; global.agent_inbox = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)', raw=True)
+        #self.add_command('/sc script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
         for i in range(self.num_agents):
             player_index = i + 1
-            self.add_command(f'/c global.actions.regenerate_resources({player_index})', raw=True)
+            self.add_command(f'/sc global.actions.regenerate_resources({player_index})', raw=True)
             #self.add_command('clear_inventory', player_index)
             #self.add_command('reset_position', player_index, 0, 0)
 
         self.execute_transaction()
 
         self.begin_transaction()
-        self.add_command('/c global.actions.clear_walking_queue()', raw=True)
+        self.add_command('/sc global.actions.clear_walking_queue()', raw=True)
         for i in range(self.num_agents):
             player_index = i + 1
-            self.add_command(f'/c global.actions.clear_entities({player_index})', raw=True)
+            self.add_command(f'/sc global.actions.clear_entities({player_index})', raw=True)
             inventory_items = {k: v for k, v in inventories[i].items()}
             inventory_items_json = json.dumps(inventory_items)
-            self.add_command(f"/c global.actions.initialise_inventory({player_index}, '{inventory_items_json}')", raw=True)
+            self.add_command(f"/sc global.actions.initialise_inventory({player_index}, '{inventory_items_json}')", raw=True)
 
         if self.all_technologies_researched:
-            self.add_command("/c game.players[1].force.research_all_technologies()", raw=True)
+            self.add_command("/sc game.players[1].force.research_all_technologies()", raw=True)
         self.execute_transaction()
         #self.clear_entities()
         self._reset_static_achievement_counters()
@@ -621,19 +623,19 @@ class FactorioInstance:
     def initialise(self, fast=True):
 
         self.begin_transaction()
-        self.add_command('/c global.alerts = {}', raw=True)
-        self.add_command('/c global.elapsed_ticks = 0', raw=True)
-        self.add_command('/c global.fast = {}'.format('true' if fast else 'false'), raw=True)
-        #self.add_command('/c script.on_nth_tick(nil)', raw=True)
+        self.add_command('/sc global.alerts = {}', raw=True)
+        self.add_command('/sc global.elapsed_ticks = 0', raw=True)
+        self.add_command('/sc global.fast = {}'.format('true' if fast else 'false'), raw=True)
+        #self.add_command('/sc script.on_nth_tick(nil)', raw=True)
         # Peaceful mode
-        # self.add_command('/c game.map_settings.enemy_expansion.enabled = false', raw=True)
-        # self.add_command('/c game.map_settings.enemy_evolution.enabled = false', raw=True)
-        # self.add_command('/c game.forces.enemy.kill_all_units()', raw=True)
+        # self.add_command('/sc game.map_settings.enemy_expansion.enabled = false', raw=True)
+        # self.add_command('/sc game.map_settings.enemy_evolution.enabled = false', raw=True)
+        # self.add_command('/sc game.forces.enemy.kill_all_units()', raw=True)
         if self.peaceful:
             self.lua_script_manager.load_init_into_game('enemies')
         # Create characters for all agents
 
-        self.add_command(f'/c player = game.players[1]')
+        self.add_command('/sc player = game.players[1]')
         self.add_command('/sc global.agent_characters = {}; for _,c in pairs(game.surfaces[1].find_entities_filtered{type="character"}) do if c then c.destroy() end end; for i=1,' + str(self.num_agents) + ' do global.agent_characters[i]=game.surfaces[1].create_entity{name="character",position={x=0,y=(i-1)*2},force=game.forces.player} end', raw=True)
         self.execute_transaction()
 

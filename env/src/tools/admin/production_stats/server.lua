@@ -34,8 +34,8 @@ global.actions.production_stats = function(player)
     }
 end
 
-global.action.reset_production_stats = function(player)
-    local force = player.force
+global.actions.reset_production_stats = function(player)
+    local force = game.forces.player
     -- Reset item statistics
     force.item_production_statistics.clear()
 

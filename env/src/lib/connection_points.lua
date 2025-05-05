@@ -12,7 +12,7 @@ global.utils.get_storage_tank_connection_points = function(entity)
 
     -- Note: entity.direction is in Factorio's 8-way direction system (0-7)
     -- We need to handle both orientations (0/2 and 1/3)
-    game.print("en "..entity.direction)
+    -- game.print("en "..entity.direction)
     if entity.direction == 1 or entity.direction == 2 then
         -- TopRight/BottomLeft connections
         table.insert(connection_points, {x = x + 1, y = y - 2})  -- Top right - Top
@@ -75,7 +75,7 @@ global.utils.get_generator_connection_positions = function(entity)
     local x, y = entity.position.x, entity.position.y
     local orientation = entity.orientation
     local entity_prototype = game.entity_prototypes[entity.name]
-    game.print("Getting pipe position for entity: " .. entity.name .. " with orientation: " .. orientation)
+    -- game.print("Getting pipe position for entity: " .. entity.name .. " with orientation: " .. orientation)
     local dx, dy = 0, 0
     local offsetx, offsety = 0, 0
     if orientation == 0 or orientation == defines.direction.north then
@@ -109,7 +109,7 @@ global.utils.get_generator_connection_positions = function(entity)
         ))
     end
     local height = entity_prototype.tile_height/2
-    game.print("Height: " .. height)
+    -- game.print("Height: " .. height)
     local pipe_positions = {
         {x = x + (height*dx) + offsetx, y = y + (height*dy) + offsety},
         {x = x - (height*dx) + offsetx, y = y - (height*dy) + offsety}
@@ -204,7 +204,7 @@ global.utils.get_offshore_pump_connection_points = function(entity)
     local x, y = entity.position.x, entity.position.y
     local orientation = entity.orientation * 8
 
-    game.print("Getting pipe position for offshore pump with orientation: " .. orientation)
+    -- game.print("Getting pipe position for offshore pump with orientation: " .. orientation)
     local dx, dy
     if orientation == defines.direction.north then
         dx, dy = 0, 1

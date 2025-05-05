@@ -17,7 +17,7 @@ local function get_refinery_position_offsets(fluid_type, recipe, is_input)
         end
     end
 
-    game.print(serpent.block(recipe.ingredients))
+    -- game.print(serpent.block(recipe.ingredients))
     -- Advanced oil processing
     if #recipe.ingredients == 2 and recipe.ingredients[2].name == "crude-oil" then
         if is_input then

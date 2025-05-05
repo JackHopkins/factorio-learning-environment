@@ -166,7 +166,10 @@ class MultiagentGameState:
         
         # Load messages for each player
         if self.agent_messages:
-            instance.first_namespace._load_messages(self.agent_messages)
+            agent_messages = [msg for sublist in self.agent_messages for msg in sublist]
+            print(f'multiagent_game_state.py: loading messages: {agent_messages}')
+            instance.first_namespace._load_messages(agent_messages)
+            print(f'multiagent_game_state.py: loaded messages: {instance.first_namespace._get_messages(True)}')
 
         # Merge pickled namespace with existing persistent_vars for each player
         if self.namespaces:

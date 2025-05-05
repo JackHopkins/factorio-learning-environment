@@ -207,28 +207,3 @@ async def manual(name: str) -> str:
     generator = SystemPromptGenerator(str(execution_path))
     return generator.manual(name)
 
-@mcp.tool()
-async def toggle_debug_rendering(enable: bool = None) -> str:
-    """
-    Toggle debug rendering of polygons and shapes in Factorio
-    
-    Args:
-        enable: Set to True to enable debug rendering, False to disable, or None to toggle
-    """
-    if not state.active_server:
-        return "No active Factorio server connection. Use connect_to_factorio_server first."
-    
-    # Call the toggle_debug function with the rendering debug type
-    enable_str = "true" if enable else "false" if enable is not None else None
-    result = state.active_server.rcon_client.send_command(
-        f"/silent-command global.actions.toggle_debug(1, 'rendering', {enable_str or 'nil'})"
-    )
-    
-    # Parse the result
-    if "Debug rendering enabled" in result:
-        return "Debug rendering is now enabled"
-    elif "Debug rendering disabled" in result:
-        return "Debug rendering is now disabled"
-    else:
-        return f"Current debug rendering status: {result}"
-

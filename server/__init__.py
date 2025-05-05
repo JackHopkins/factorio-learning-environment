@@ -22,16 +22,16 @@ async def fle_lifespan(server: FastMCP) -> AsyncIterator[FactorioContext]:
     import os
     
     # Temporarily redirect stdout to stderr or /dev/null to prevent MCP protocol corruption
-    original_stdout = sys.stdout
-    sys.stdout = open(os.devnull, 'w')
+    #original_stdout = sys.stdout
+    #sys.stdout = open(os.devnull, 'w')
     
-    try:
-        connection_message = await initialize_session()
-        from server.init import state
-    finally:
-        # Restore stdout
-        sys.stdout.close()
-        sys.stdout = original_stdout
+    #try:
+    connection_message = await initialize_session()
+    from server.init import state
+    # finally:
+    #     # Restore stdout
+    #     sys.stdout.close()
+    #     sys.stdout = original_stdout
     
     # Create context with connection message and state
     context = FactorioContext(

@@ -135,6 +135,7 @@ class FactorioMCPState:
 
             # Initialize VCS repository for this instance if it doesn't exist
             if instance_id not in self.vcs_repos:
+                print("Initializing repo")
                 self.vcs_repos[instance_id] = FactorioMCPRepository(instance)
 
             return True

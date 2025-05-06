@@ -401,7 +401,7 @@ class FactorioInstance:
         return round(optimal_zoom, 2)
 
 
-    def screenshot(self, resolution="1920x1080", save_path=None, zoom=None, center_on_factory=False, script_output_path="/Users/jackhopkins/Library/Application Support/factorio/script-output"):
+    def screenshot(self, script_output_path, resolution="1920x1080", save_path=None, zoom=None, center_on_factory=False):
         """
         Take a screenshot in game and optionally save it to a specific location.
 

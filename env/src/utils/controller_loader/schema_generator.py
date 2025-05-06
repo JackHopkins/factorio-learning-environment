@@ -3,8 +3,8 @@ import os
 from pathlib import Path
 from typing import Any
 
-from utils.controller_loader.code_analyzer import CodeAnalyzer
-from utils.controller_loader.module_loader import ModuleLoader
+from env.src.utils.controller_loader.code_analyzer import CodeAnalyzer
+from env.src.utils.controller_loader.module_loader import ModuleLoader
 
 
 class SchemaGenerator:

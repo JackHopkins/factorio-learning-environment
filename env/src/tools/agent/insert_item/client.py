@@ -1,10 +1,10 @@
 from time import sleep
 from typing import Union
 
-from entities import Entity, EntityGroup, Position, BeltGroup, PipeGroup
-from game_types import Prototype
-from tools.agent.get_entities.client import GetEntities
-from tools.tool import Tool
+from env.src.entities import Entity, EntityGroup, Position, BeltGroup, PipeGroup
+from env.src.game_types import Prototype
+from env.src.tools.agent.get_entities.client import GetEntities
+from env.src.tools.tool import Tool
 
 
 class InsertItem(Tool):

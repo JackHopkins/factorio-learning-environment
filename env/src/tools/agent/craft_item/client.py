@@ -1,8 +1,8 @@
 from time import sleep
 
-from game_types import Prototype
-from tools.agent.inspect_inventory.client import InspectInventory
-from tools.tool import Tool
+from env.src.game_types import Prototype
+from env.src.tools.agent.inspect_inventory.client import InspectInventory
+from env.src.tools.tool import Tool
 
 
 class CraftItem(Tool):

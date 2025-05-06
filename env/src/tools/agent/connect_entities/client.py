@@ -3,26 +3,26 @@ from typing import Union, Optional, List, Dict, cast, Set
 
 import numpy
 
-from entities import EntityGroup, Entity, Position, BeltGroup, PipeGroup, ElectricityGroup, TransportBelt, \
+from env.src.entities import EntityGroup, Entity, Position, BeltGroup, PipeGroup, ElectricityGroup, TransportBelt, \
     Pipe, FluidHandler, MiningDrill, Inserter, ChemicalPlant, OilRefinery, MultiFluidHandler
-from instance import Direction
-from game_types import Prototype, prototype_by_name
-from tools.admin.clear_collision_boxes.client import ClearCollisionBoxes
-from tools.admin.extend_collision_boxes.client import ExtendCollisionBoxes
-from tools.admin.get_path.client import GetPath
-from tools.admin.request_path.client import RequestPath
-from tools.agent.connect_entities.path_result import PathResult
-from tools.agent.connect_entities.resolver import ConnectionType, Resolver
-from tools.agent.connect_entities.resolvers.fluid_connection_resolver import FluidConnectionResolver
-from tools.agent.connect_entities.resolvers.power_connection_resolver import PowerConnectionResolver
-from tools.agent.connect_entities.resolvers.transport_connection_resolver import TransportConnectionResolver
-from tools.agent.connect_entities.groupable_entities import _deduplicate_entities, agglomerate_groupable_entities
-from tools.agent.get_entities.client import GetEntities
-from tools.agent.get_entity.client import GetEntity
-from tools.agent.inspect_inventory.client import InspectInventory
-from tools.agent.pickup_entity.client import PickupEntity
-from tools.agent.rotate_entity.client import RotateEntity
-from tools.tool import Tool
+from env.src.instance import Direction
+from env.src.game_types import Prototype, prototype_by_name
+from env.src.tools.admin.clear_collision_boxes.client import ClearCollisionBoxes
+from env.src.tools.admin.extend_collision_boxes.client import ExtendCollisionBoxes
+from env.src.tools.admin.get_path.client import GetPath
+from env.src.tools.admin.request_path.client import RequestPath
+from env.src.tools.agent.connect_entities.path_result import PathResult
+from env.src.tools.agent.connect_entities.resolver import ConnectionType, Resolver
+from env.src.tools.agent.connect_entities.resolvers.fluid_connection_resolver import FluidConnectionResolver
+from env.src.tools.agent.connect_entities.resolvers.power_connection_resolver import PowerConnectionResolver
+from env.src.tools.agent.connect_entities.resolvers.transport_connection_resolver import TransportConnectionResolver
+from env.src.tools.agent.connect_entities.groupable_entities import _deduplicate_entities, agglomerate_groupable_entities
+from env.src.tools.agent.get_entities.client import GetEntities
+from env.src.tools.agent.get_entity.client import GetEntity
+from env.src.tools.agent.inspect_inventory.client import InspectInventory
+from env.src.tools.agent.pickup_entity.client import PickupEntity
+from env.src.tools.agent.rotate_entity.client import RotateEntity
+from env.src.tools.tool import Tool
 from collections.abc import Set as AbstractSet
 
 

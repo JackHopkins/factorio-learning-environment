@@ -179,6 +179,12 @@ And replace the `PostgresDBClient` object at `create_db_client` function in `eva
 - **Docker issues**: Ensure your user has permission to run Docker without sudo.
 - **Connection issues**: Make sure the Factorio server is running and ports are properly configured.
 
+## MCP
+### Claude Code
+After starting and activating at least 1 Factorio server:
+
+`claude mcp add -- claude mcp add fle -- mcp run /PATH/TO/FLE/server.py `
+
 ## Environment
 
 FLE is an agent evaluation environment built on the game of Factorio, a popular resource management simulation game.

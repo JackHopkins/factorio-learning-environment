@@ -1,7 +1,7 @@
 from typing import Tuple
 
-from entities import Position
-from tools.tool import Tool
+from env.src.entities import Position
+from env.src.tools.tool import Tool
 
 
 class SaveBlueprint(Tool):

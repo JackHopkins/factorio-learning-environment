@@ -1,8 +1,8 @@
 import math
 from typing import Union, Tuple, List
-from entities import Position, Entity, BeltGroup, Inserter, MiningDrill, TransportBelt, Direction, EntityGroup, \
+from env.src.entities import Position, Entity, BeltGroup, Inserter, MiningDrill, TransportBelt, Direction, EntityGroup, \
     GunTurret, AssemblingMachine, Lab, Chest, Accumulator, Furnace, Boiler, Generator
-from tools.agent.connect_entities.resolver import Resolver
+from env.src.tools.agent.connect_entities.resolver import Resolver
 
 
 class TransportConnectionResolver(Resolver):

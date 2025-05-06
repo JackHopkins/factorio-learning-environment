@@ -1,7 +1,7 @@
 from typing import List, Tuple, Optional, Dict, Callable
 
-from entities import Entity, Position, BoundingBox, Direction
-from tools.admin.render.utils.render_config import RenderConfig
+from env.src.entities import Entity, Position, BoundingBox, Direction
+from env.src.tools.admin.render.utils.render_config import RenderConfig
 
 
 class ImageCalculator:

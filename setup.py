@@ -9,7 +9,7 @@ import atexit
 
 # Package name
 PACKAGE_NAME = "factorio_learning_environment"
-VERSION = "0.2.4"
+VERSION = "0.2.5"
 
 try:
     # Clean up any existing build artifacts

@@ -4,7 +4,7 @@ import importlib
 import os
 
 # Path to the built package
-package_path = "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/dist/factorio_learning_environment-0.2.4.tar.gz"
+package_path = "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/dist/factorio_learning_environment-0.2.5.tar.gz"
 
 # Verify the file exists
 if not os.path.exists(package_path):

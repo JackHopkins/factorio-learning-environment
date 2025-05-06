@@ -21,7 +21,6 @@ def test_fail_to_craft_item(game):
     :return:
     """
 
-
     try:
         game.craft_item(Prototype.IronChest, quantity=100)
     except Exception as e:

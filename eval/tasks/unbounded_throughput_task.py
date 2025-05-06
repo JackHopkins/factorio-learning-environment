@@ -1,13 +1,11 @@
-from typing import Any, Dict, List, Union
-from env.src.entities import Inventory, Entity
+from typing import Any, Dict
+
+from agents import TaskResponse
+from env.src.entities import Entity
 from env.src.instance import FactorioInstance
+from env.src.utils.achievements import eval_program_with_achievements
 from eval.tasks.task_abc import TaskABC
 from eval.tasks.throughput_task import LAB_PLAY_POPULATED_STARTING_INVENTORY, CRAFTING_STATISTICS
-from env.src.utils.achievements import eval_program_with_achievements
-from models.game_state import GameState
-import copy
-from agents import TaskResponse
-
 
 INSTRUCTIONS = """
 You must create an AUTOMATIC factory that automatically creates a target entity by itself. You are given the entity for which you need to create a factory for. Create the largest factory as you can that automatically creates the target entity

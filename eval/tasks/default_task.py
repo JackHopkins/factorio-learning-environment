@@ -1,11 +1,8 @@
-from typing import Any, Dict, List, Union
-from env.src.entities import Inventory, Entity
+from typing import Any, Dict
+
+from agents import TaskResponse
 from env.src.instance import FactorioInstance
 from eval.tasks.task_abc import TaskABC
-from env.src.utils.achievements import eval_program_with_achievements
-from models.game_state import GameState
-import copy
-from agents import TaskResponse
 
 
 class DefaultTask(TaskABC):

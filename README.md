@@ -48,6 +48,45 @@ automation (e.g electronic-circuit manufacturing).
 - Docker 
 - Python 3.10+
 
+### Install using pip
+
+The Factorio Learning Environment package can be installed directly using pip:
+
+```bash
+# Install the core package
+pip install factorio-learning-environment
+
+# Install with optional components
+pip install "factorio-learning-environment[agents]"  # LLM agent support
+pip install "factorio-learning-environment[eval]"    # Evaluation tools
+pip install "factorio-learning-environment[cluster]" # Cluster deployment support
+pip install "factorio-learning-environment[all]"     # All optional dependencies
+```
+
+### Development Installation
+
+For development, you can install the package in editable mode:
+
+```bash
+# Clone the repository
+git clone https://github.com/JackHopkins/factorio-learning-environment.git
+cd factorio-learning-environment
+
+# Install in development mode
+pip install -e .
+
+# Install with development dependencies
+pip install -e ".[dev]"
+```
+
+### Usage
+
+After installation, you can import the package in your Python code:
+
+```python
+import factorio_learning_environment as fle
+```
+
 ### Quickstart
 
 1. **Clone the repository**:
@@ -55,14 +94,39 @@ automation (e.g electronic-circuit manufacturing).
 ```
 git clone https://github.com/JackHopkins/factorio-learning-environment.git
 cd factorio-learning-environment
-pip install -e .
 ```
 
-2. **Install dependencies**:
+2. **Install the package**:
+
+You can install the package with different options depending on your needs:
+
+```bash
+# Basic installation (includes core environment dependencies)
+pip install -e .
+
+# Install with agent support (for running LLM agents)
+pip install -e ".[agents]"
+
+# Install with cluster support (for running Factorio servers)
+pip install -e ".[cluster]"
+
+# Install with evaluation support (for running experiments)
+pip install -e ".[eval]"
+
+# Install everything
+pip install -e ".[all]"
+
+# Install for development
+pip install -e ".[dev]"
 ```
-pip install psycopg2 lupa
-# Install other dependencies if prompted by pip during runtime
+
+You can also combine options:
+```bash
+# Install with agent and eval support
+pip install -e ".[agents,eval]"
 ```
+
+Note: The environment module (for interacting with Factorio) is included as part of the base package, so you always have access to the core functionality.
 
 3. **Set up Factorio client**:
 - Purchase Factorio from the [official website](https://www.factorio.com/) or on Steam.

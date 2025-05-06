@@ -4,8 +4,8 @@ from unittest.mock import Mock
 
 from agents.utils.llm_factory import LLMFactory
 from agents.utils.formatters.recursive_formatter import RecursiveFormatter
-from models.conversation import Conversation
-from models.message import Message
+from env.src.models.conversation import Conversation
+from env.src.models.message import Message
 
 temp_dir = tempfile.mkdtemp()
 mock_llm = Mock(spec=LLMFactory)

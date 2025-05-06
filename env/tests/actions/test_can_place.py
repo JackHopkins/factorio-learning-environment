@@ -19,7 +19,7 @@ def test_can_place(game):
     """
     boilers_in_inventory = game.inspect_inventory()[Prototype.Pipe]
     can_place = game.can_place_entity(Prototype.Pipe, position=(5, 0))
-    assert can_place == True
+    assert can_place
 
     # attempt to place a pipe beyond the reach of the player
     can_place = game.can_place_entity(Prototype.Pipe, position=(100, 0))

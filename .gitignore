@@ -67,3 +67,11 @@ environment/src/skills/ground_truth_skills/*
 *.mp4
 !/docs/assets/videos/*.mp4
 /leaderboard/node_modules/
+# Build directory
+/factorio_learning_environment/
+/factorio_learning_environment/*
+/factorio_learning_environment/__init__.py
+/factorio_learning_environment/run.py
+
+**/.claude/settings.local.json
+/dist/

@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 from env.src.entities import Inventory, Entity
 from env.src.instance import FactorioInstance
 from agents import TaskResponse
-from models.game_state import GameState
+from env.src.models.game_state import GameState
 
 class TaskABC:
     def __init__(self, trajectory_length, starting_inventory: Inventory, goal_description: str, task_key: str, all_technology_reserached: bool = False):

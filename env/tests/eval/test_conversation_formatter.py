@@ -1,6 +1,6 @@
 import unittest
-from models.conversation import Conversation
-from models.message import Message
+from env.src.models.conversation import Conversation
+from env.src.models.message import Message
 
 from agents.utils.formatters.conversation_formatter_abc import StructurePreservingFormatter, CodeProcessor
 

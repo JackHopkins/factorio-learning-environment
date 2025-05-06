@@ -2,7 +2,7 @@ import math
 from typing import Dict, Callable, List
 from PIL import ImageDraw
 
-from tools.admin.render.layers.layer_renderer import LayerRenderer
+from env.src.tools.admin.render.layers.layer_renderer import LayerRenderer
 
 
 class ResourcesLayerRenderer(LayerRenderer):

@@ -1,5 +1,5 @@
 from typing import Dict, Optional, Tuple, Any
-from entities import EntityStatus
+from env.src.entities import EntityStatus
 
 
 class RenderConfig:
@@ -17,6 +17,8 @@ class RenderConfig:
         "legend_item_height": 15,
         "legend_item_spacing": 5,
         "legend_enabled": True,
+        "legend_font_size": 10,  # Font size for legend text
+        "legend_shape_size": 15,  # Size of shapes in the legend
         "cell_size": 20,  # pixels per game tile
         "margin": 10,  # pixels around the edge
         "grid_enabled": True,

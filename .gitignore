@@ -75,3 +75,6 @@ environment/src/skills/ground_truth_skills/*
 
 **/.claude/settings.local.json
 /dist/
+/server/CLAUDE.md
+
+**/.claude/settings.local.json

@@ -10,7 +10,7 @@ def game():
     instance = FactorioInstance(address='localhost',
                                bounding_box=200,
                                tcp_port=27000,
-                               fast=False,
+                               fast=True,
                                inventory={})
     instance.speed(1)
     instance.reset()

@@ -7,10 +7,14 @@ class ManualGenerator:
     @staticmethod
     def generate_manual(folder_path) -> str:
         """Generate schema from all Python files in the folder."""
-        agent_tool_path = os.path.join(folder_path, "agent")
+        if "agent/" not in folder_path:
+            agent_tool_path = os.path.join(folder_path, "agent")
+        else:
+            agent_tool_path = folder_path
+
         # get all the folders in tool_paths
         tool_folders = [f for f in os.listdir(agent_tool_path) if os.path.isdir(os.path.join(agent_tool_path, f))]
-        manual = "Here is the manual for the tools available to you\n\n"
+        manual = ""
         for folder in tool_folders:
             # check if it has a agent.md file
             agent_path = os.path.join(agent_tool_path, folder, "agent.md")

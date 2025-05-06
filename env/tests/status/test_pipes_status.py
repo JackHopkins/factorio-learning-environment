@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from entities import Direction, Position, EntityStatus
+from env.src.entities import Direction, Position, EntityStatus
 from game_types import Resource, Prototype
 
 

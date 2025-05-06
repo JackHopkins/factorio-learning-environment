@@ -65,6 +65,11 @@ all = [
     "psycopg2>=2.9.10",
 ]
 
+mcp = [
+    "mcp[cli]",
+    "dulwich"
+]
+
 [project.scripts]
 fle = "run:main"
 

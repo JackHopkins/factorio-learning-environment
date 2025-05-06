@@ -339,10 +339,10 @@ global.actions.score = function()
 
     if global.goal ~= goal_description then
       global.goal = goal_description
-      game.print(goal_description)
-      if goal_description ~= nil and #goal_description > 1 then
-        production_score["goal"] = goal_description[1]:gsub("-", "_")
-      end
+      --game.print(goal_description)
+      --if goal_description ~= nil and #goal_description > 1 then
+        --production_score["goal"] = goal_description[1]:gsub("-", "_")
+      --end
       return dump(production_score)
     end
     return dump(production_score)

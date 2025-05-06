@@ -4,9 +4,9 @@ import textwrap
 
 from jinja2 import Template
 
-from entities import Position, BoundingBox, EntityGroup
-from instance import FactorioInstance, Direction
-from game_types import Resource, prototype_by_name
+from env.src.entities import Position, BoundingBox, EntityGroup
+from env.src.instance import FactorioInstance, Direction
+from env.src.game_types import Resource, prototype_by_name
 
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple, NamedTuple

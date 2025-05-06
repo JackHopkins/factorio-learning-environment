@@ -9,13 +9,11 @@ from agents.basic_agent import GENERAL_INSTRUCTIONS, FINAL_INSTRUCTION
 from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
 from agents.utils.llm_factory import LLMFactory
 from agents.utils.parse_response import parse_response
-from env.src.models.conversation import Conversation
-from env.src.models.generation_parameters import GenerationParameters
+from models.conversation import Conversation
+from models.generation_parameters import GenerationParameters
 from tenacity import wait_exponential, retry_if_exception_type
-from env.src.entities import Layer, Position, BoundingBox
-from env.src.namespace import FactorioNamespace
-
-from tools.admin.render.client import Render
+from entities import Layer, Position, BoundingBox
+from namespace import FactorioNamespace
 
 VISUAL_INSTRUCTIONS = \
 """

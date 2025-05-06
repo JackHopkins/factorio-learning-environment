@@ -4,12 +4,12 @@ import os
 from pathlib import Path
 
 
-from utils.rcon import _load_lib, _load_script, \
+from env.src.utils.rcon import _load_lib, _load_script, \
     _get_lib_names, _get_tool_names, _get_dir, _get_lib_dir
 
 from lupa.lua54 import LuaRuntime
 
-from rcon.factorio_rcon import RCONClient
+from env.src.rcon.factorio_rcon import RCONClient
 
 
 class LuaScriptManager:

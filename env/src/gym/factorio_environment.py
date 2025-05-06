@@ -8,10 +8,10 @@ from gym import spaces
 from gym import FactorioInstance
 from gym import Vocabulary
 
-PLAYER = 1
-NONE = 'nil'
-CHUNK_SIZE = 32
-MAX_SAMPLES = 5000
+#PLAYER = 1
+# NONE = 'nil'
+# CHUNK_SIZE = 32
+# MAX_SAMPLES = 5000
 
 class FactorioEnv(gym.Env, FactorioInstance):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}

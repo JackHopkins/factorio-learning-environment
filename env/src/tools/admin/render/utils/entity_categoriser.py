@@ -1,11 +1,11 @@
-from game_types import Prototype
+from env.src.game_types import Prototype
 
 
 class EntityCategoriser:
     """Handles the categorisation of Factorio entities based on their types"""
 
     @staticmethod
-    @staticmethod
+
     def get_entity_category(entity) -> str:
         """
         Determine category for an entity based on its class hierarchy or Prototype
@@ -16,7 +16,7 @@ class EntityCategoriser:
         Returns:
             String representing the entity category
         """
-        from entities import (
+        from env.src.entities import (
             TransportBelt, Splitter, UndergroundBelt, BeltGroup,  # Belt category
             Inserter, FilterInserter, BurnerInserter,  # Inserter category
             ElectricalProducer, ElectricityPole, Accumulator, Generator, ElectricityGroup,  # Power category

@@ -1,8 +1,8 @@
 from typing import Union
 
-from entities import Recipe, Ingredient, Product
-from game_types import Prototype, RecipeName
-from tools.tool import Tool
+from env.src.entities import Recipe, Ingredient, Product
+from env.src.game_types import Prototype, RecipeName
+from env.src.tools.tool import Tool
 
 
 class GetPrototypeRecipe(Tool):

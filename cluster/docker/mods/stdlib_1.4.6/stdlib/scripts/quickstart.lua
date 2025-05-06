@@ -176,15 +176,15 @@ function quickstart.on_player_created(event)
         if QS.get('chunk_bounds', false) then
             local black = {r = 0, g = 0, b = 0}
             -- Horizontal
-            rendering.draw_line{width = 2, color = black, from = {x = 32, y = 0}, to = {x = -32, y = 0}, surface = surface}
-            rendering.draw_line{width = 2, color = black, from = {x = 32, y = 32}, to = {x = -32, y = 32}, surface = surface}
-            rendering.draw_line{width = 2, color = black, from = {x = 32, y = -32}, to = {x = -32, y = -32}, surface = surface}
+            rendering.draw_line{only_in_alt_mode=true, width = 2, color = black, from = {x = 32, y = 0}, to = {x = -32, y = 0}, surface = surface}
+            rendering.draw_line{only_in_alt_mode=true, width = 2, color = black, from = {x = 32, y = 32}, to = {x = -32, y = 32}, surface = surface}
+            rendering.draw_line{only_in_alt_mode=true, width = 2, color = black, from = {x = 32, y = -32}, to = {x = -32, y = -32}, surface = surface}
             -- Vertical
-            rendering.draw_line{width = 2, color = black, from = {x = 0, y = 32}, to = {x = 0, y = -32}, surface = surface}
-            rendering.draw_line{width = 2, color = black, from = {x = 32, y = 32}, to = {x = 32, y = -32}, surface = surface}
-            rendering.draw_line{width = 2, color = black, from = {x = -32, y = 32}, to = {x = -32, y = -32}, surface = surface}
+            rendering.draw_line{only_in_alt_mode=true, width = 2, color = black, from = {x = 0, y = 32}, to = {x = 0, y = -32}, surface = surface}
+            rendering.draw_line{only_in_alt_mode=true, width = 2, color = black, from = {x = 32, y = 32}, to = {x = 32, y = -32}, surface = surface}
+            rendering.draw_line{only_in_alt_mode=true, width = 2, color = black, from = {x = -32, y = 32}, to = {x = -32, y = -32}, surface = surface}
             -- Center
-            rendering.draw_circle{width = 2, color = black, surface = surface, radius = 1, filled = false, target = {x = 0, y = 0}}
+            rendering.draw_circle{only_in_alt_mode=true, width = 2, color = black, surface = surface, radius = 1, filled = false, target = {x = 0, y = 0}}
         end
 
         -- Create proxy blueprint from string, read in the entities and remove it.

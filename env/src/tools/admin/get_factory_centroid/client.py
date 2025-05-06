@@ -1,6 +1,6 @@
-from entities import BoundingBox, Position
-from models.camera import Camera
-from tools.tool import Tool
+from env.src.entities import BoundingBox, Position
+from env.src.models.camera import Camera
+from env.src.tools.tool import Tool
 
 
 class GetFactoryCentroid(Tool):

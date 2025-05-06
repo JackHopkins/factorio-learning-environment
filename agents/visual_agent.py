@@ -12,10 +12,10 @@ from agents.utils.parse_response import parse_response
 from models.conversation import Conversation
 from models.generation_parameters import GenerationParameters
 from tenacity import wait_exponential, retry_if_exception_type
-from entities import Layer, Position, BoundingBox
+from env.src.entities import Layer, Position, BoundingBox
 from namespace import FactorioNamespace
 
-from tools.admin.render.client import Render
+from env.src.tools.admin.render.client import Render
 
 VISUAL_INSTRUCTIONS = \
 """

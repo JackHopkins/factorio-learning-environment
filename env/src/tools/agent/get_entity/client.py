@@ -1,11 +1,11 @@
 from time import sleep
 from typing import Tuple
 
-from entities import Position, Entity
+from env.src.entities import Position, Entity
 
-from game_types import Prototype
-from tools.agent.get_entities.client import GetEntities
-from tools.tool import Tool
+from env.src.game_types import Prototype
+from env.src.tools.agent.get_entities.client import GetEntities
+from env.src.tools.tool import Tool
 
 
 class GetEntity(Tool):

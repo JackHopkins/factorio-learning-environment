@@ -4,17 +4,17 @@ from typing import List, Tuple, Dict, Any
 
 from slpp import slpp as lua, ParseError
 
-from entities import EntityStatus, Direction
-from lua_manager import LuaScriptManager
-from namespace import FactorioNamespace
-from utils.rcon import _lua2python
+from env.src.entities import EntityStatus, Direction
+from env.src.lua_manager import LuaScriptManager
+from env.src.namespace import FactorioNamespace
+from env.src.utils.rcon import _lua2python
 
 COMMAND = "/silent-command"
 
 class Controller:
 
     def __init__(self, lua_script_manager: 'LuaScriptManager', game_state: 'FactorioNamespace', *args, **kwargs):
-        assert isinstance(lua_script_manager, LuaScriptManager), "Not correct"
+        #assert isinstance(lua_script_manager, LuaScriptManager), f"Not correct: {type(lua_script_manager)}"
         self.connection = lua_script_manager
         self.game_state = game_state
         self.name = self.camel_to_snake(self.__class__.__name__)
@@ -62,9 +62,9 @@ class Controller:
             pass
 
         for key, value in response.items():
-            if key == 'status' and isinstance(value, str):
-                cleaned_response[key] = EntityStatus.from_string(value)
-            elif key == 'direction' and isinstance(value, str):
+            #if key == 'status' and isinstance(value, str):
+                #cleaned_response[key] = EntityStatus.from_string(value)
+            if key == 'direction' and isinstance(value, str):
                 cleaned_response[key] = Direction.from_string(value)
             elif not value and key in ('warnings', 'input_connection_points', 'output_connection_points'):
                 cleaned_response[key] = []

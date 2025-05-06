@@ -1,7 +1,7 @@
 from typing import Any, List
 
-from entities import Entity, Inventory, Position
-from tools.tool import Tool
+from env.src.entities import Entity, Inventory, Position
+from env.src.tools.tool import Tool
 
 
 class Print(Tool):

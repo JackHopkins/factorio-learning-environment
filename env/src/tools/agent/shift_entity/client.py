@@ -1,14 +1,14 @@
 
 from typing import Union
 
-from entities import Entity, Direction
-from game_types import prototype_by_name, prototype_by_title, Prototype
-from instance import Direction as DirectionA
-from tools.agent.can_place_entity.client import CanPlaceEntity
-from tools.agent.connect_entities.client import ConnectEntities
-from tools.agent.pickup_entity.client import PickupEntity
-from tools.agent.place_entity.client import PlaceObject as PlaceEntity
-from tools.tool import Tool
+from env.src.entities import Entity, Direction
+from env.src.game_types import prototype_by_name, prototype_by_title, Prototype
+from env.src.instance import Direction as DirectionA
+from env.src.tools.agent.can_place_entity.client import CanPlaceEntity
+from env.src.tools.agent.connect_entities.client import ConnectEntities
+from env.src.tools.agent.pickup_entity.client import PickupEntity
+from env.src.tools.agent.place_entity.client import PlaceObject as PlaceEntity
+from env.src.tools.tool import Tool
 
 
 class ShiftEntity(Tool):

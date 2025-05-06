@@ -3,9 +3,9 @@ from typing import List
 
 import pytest
 
-from entities import Entity, Position, ResourcePatch, Recipe, BurnerMiningDrill, EntityStatus
-from instance import Direction, FactorioInstance
-from game_types import Prototype, Resource
+from env.src.entities import Entity, Position, ResourcePatch, Recipe, BurnerMiningDrill, EntityStatus
+from env.src.instance import Direction, FactorioInstance
+from env.src.game_types import Prototype, Resource
 
 
 @pytest.fixture()
@@ -54,7 +54,7 @@ def test_create_offshore_pump_to_steam_engine(game):
     game.move_to(Position(x=0, y=10))
     steam_engine: Entity = game.place_entity_next_to(Prototype.SteamEngine,
                                                      reference_position=boiler.position,
-                                                     direction=Direction.RIGHT, #boiler.direction,
+                                                     direction=boiler.direction,
                                                      spacing=1)
 
     # connect the boiler and steam engine with a pipe
@@ -65,7 +65,7 @@ def test_create_offshore_pump_to_steam_engine(game):
 
     assert steam_engine.direction.value == Direction.opposite(boiler.direction).value
 
-    image = game._render(Position(x=5, y=0))
+    image = game._render(Position(x=5, y=0), zoom=5)
     image.show()
     pass
 

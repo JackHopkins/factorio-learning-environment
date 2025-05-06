@@ -18,7 +18,16 @@ dependencies = [
     "construct>=2.10.70",
     "pillow>=11.1.0",
     "scikit-image>=0.25.2",
+    "mcp[cli]>=1.6.0",
+    "dulwich>=0.22.8",
 ]
+
+[project.optional-dependencies]
+mcp = [
+    "mcp[cli]",
+    "dulwich"
+]
+
 
 [build-system]
 requires = ["hatchling"]

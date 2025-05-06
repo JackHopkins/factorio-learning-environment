@@ -2,10 +2,10 @@ import colorsys
 from typing import Dict, List, Tuple, Optional
 from collections import defaultdict
 
-from entities import Entity, EntityStatus
-from game_types import prototype_by_name
-from tools.admin.render.utils.render_config import RenderConfig
-from tools.admin.render.utils.entity_categoriser import EntityCategoriser
+from env.src.entities import Entity, EntityStatus
+from env.src.game_types import prototype_by_name
+from env.src.tools.admin.render.utils.render_config import RenderConfig
+from env.src.tools.admin.render.utils.entity_categoriser import EntityCategoriser
 
 
 class ColourManager:

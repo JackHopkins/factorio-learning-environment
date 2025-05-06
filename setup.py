@@ -6,10 +6,26 @@ import glob
 import subprocess
 import tempfile
 import atexit
+import tomli  # Added for reading toml files
 
 # Package name
 PACKAGE_NAME = "factorio_learning_environment"
-VERSION = "0.2.5"
+
+
+# Read version from pyproject.toml instead of hardcoding it
+def get_version_from_toml():
+    try:
+        with open("pyproject.toml", "rb") as f:
+            data = tomli.load(f)
+            return data["project"]["version"]
+    except (FileNotFoundError, KeyError, tomli.TOMLDecodeError) as e:
+        print(f"Error reading version from pyproject.toml: {e}")
+        print("Falling back to default version")
+        return "0.2.5"  # Fallback version
+
+
+VERSION = get_version_from_toml()
+print(f"Building version: {VERSION}")
 
 try:
     # Clean up any existing build artifacts
@@ -64,8 +80,31 @@ try:
         with open(os.path.join(package_dir, "__init__.py"), "w") as f:
             f.write(f"""# {PACKAGE_NAME} package
 __version__ = "{VERSION}"
+import sys
+import importlib.util
+
+# First, create empty module objects for all of our submodules
+# This prevents import errors when modules try to import each other
+for name in ['env', 'agents', 'server', 'eval', 'cluster']:
+    module_name = f'{PACKAGE_NAME}.{{name}}'
+    if module_name not in sys.modules:
+        # Create empty module to avoid circular imports
+        spec = importlib.util.find_spec(module_name)
+        if spec:
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+    
+    # Create alias in global namespace immediately
+    sys.modules[name] = sys.modules[f'{PACKAGE_NAME}.{{name}}']
+
+# Now import all submodules safely
 from . import env
-__all__ = ['env']
+from . import agents
+from . import server
+from . import eval
+from . import cluster
+
+__all__ = ['env', 'agents', 'server', 'eval', 'cluster']
 """)
 
         # Copy modules to package directory
@@ -74,16 +113,24 @@ __all__ = ['env']
                 dest_dir = os.path.join(package_dir, module)
                 print(f"Copying {module} to {dest_dir}...")
 
+                # Define only what to exclude rather than limiting what to include
+                exclude_patterns = [
+                    '__pycache__', '*.pyc', '*.pyo', '*.pyd',
+                    '.git', '.DS_Store',
+                    'data/plans/factorio_guides', 'eval/open/summary_cache',
+                    'dist', 'build', '*.egg-info'
+                ]
+
+                # Optionally exclude large binary files to keep package size manageable
+                # Uncomment if needed
+                # binary_exclusions = ['*.png', '*.jpg', '*.jpeg', '*.gif', '*.webp',
+                #                     '*.ico', '*.svg', '*.mp4', '*.bin', '*.dat']
+                # exclude_patterns.extend(binary_exclusions)
+
                 shutil.copytree(
                     module,
                     dest_dir,
-                    ignore=shutil.ignore_patterns(
-                        '__pycache__', '*.pyc', '*.pyo', '*.pyd',
-                        '.git', '.DS_Store', '*.png', '*.jpg', '*.jpeg',
-                        '*.gif', '*.webp', '*.ico', '*.svg', '*.mp4',
-                        'data/plans/factorio_guides', 'eval/open/summary_cache',
-                        'dist', 'build', '*.egg-info'
-                    )
+                    ignore=shutil.ignore_patterns(*exclude_patterns)
                 )
 
                 # Ensure __init__.py exists
@@ -97,35 +144,39 @@ __all__ = ['env']
             print("Copying run.py...")
             shutil.copy("run.py", os.path.join(package_dir, "run.py"))
 
-        # Create setup.py in the temp directory
+        # Copy pyproject.toml to the temp directory
+        print("Copying pyproject.toml...")
+        shutil.copy("pyproject.toml", os.path.join(temp_build_dir, "pyproject.toml"))
+
+        # Create setup.py in the temp directory that reads version from pyproject.toml
         setup_py = os.path.join(temp_build_dir, "setup.py")
         with open(setup_py, "w") as f:
             f.write(f"""
+import tomli
 from setuptools import setup, find_packages
+
+# Read version from pyproject.toml
+def get_version():
+    with open("pyproject.toml", "rb") as f:
+        data = tomli.load(f)
+        return data["project"]["version"]
 
 setup(
     name="factorio-learning-environment",
-    version="{VERSION}",
+    version=get_version(),
     packages=["{PACKAGE_NAME}"] + ["{PACKAGE_NAME}." + pkg for pkg in ['env', 'agents', 'server', 'eval', 'cluster']],
     package_data={{
-        '{PACKAGE_NAME}': ['*.py', '*.md', '*.json', '*.lua'],
-        '{PACKAGE_NAME}.env': ['**/*.py', '**/*.md', '**/*.json', '**/*.lua'],
-        '{PACKAGE_NAME}.agents': ['**/*.py', '**/*.md'],
-        '{PACKAGE_NAME}.server': ['**/*.py', '**/*.md'],
-        '{PACKAGE_NAME}.eval': ['**/*.py', '**/*.json', '**/*.md'],
-        '{PACKAGE_NAME}.cluster': ['**/*.py', '**/*.sh', '**/*.yml', '**/*.yaml', '**/*.md', 'docker/**/*', 'scenarios/**/*'],
+        # Include all files for all packages
+        '{PACKAGE_NAME}': ['*.*'],
+        '{PACKAGE_NAME}.env': ['**/*.*'],
+        '{PACKAGE_NAME}.agents': ['**/*.*'],
+        '{PACKAGE_NAME}.server': ['**/*.*'],
+        '{PACKAGE_NAME}.eval': ['**/*.*'],
+        '{PACKAGE_NAME}.cluster': ['**/*.*', 'docker/**/*', 'scenarios/**/*'],
     }},
     include_package_data=True,
 )
     """)
-
-        # Create pyproject.toml
-        with open(os.path.join(temp_build_dir, "pyproject.toml"), "w") as f:
-            f.write("""
-[build-system]
-requires = ["setuptools>=61.0.0", "wheel", "tomli>=2.0.0"]
-build-backend = "setuptools.build_meta"
-""")
 
         # Create or empty the dist directory
         if not os.path.exists("dist"):
@@ -172,6 +223,7 @@ build-backend = "setuptools.build_meta"
                 shutil.copy2(file, dest)
 
             print("\nBuild completed successfully!")
+            print(f"Package version: {VERSION}")
             dist_files = glob.glob("dist/*")
             for file in dist_files:
                 print(f"Created: {file}")

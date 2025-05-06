@@ -12,7 +12,7 @@ from cluster.local.cluster_ips import get_local_container_ips
 
 load_dotenv()
 
-def get_program_chain_backtracking(conn, version: int):
+def get_program_chain_backtracking(conn, version: int, model = 'anthropic/claude-3.5-sonnet-open-router'):
     """Get the chain of programs for a specific version for the backtracking chain"""
     query = f"""
     SELECT meta, code, response, id, created_at FROM programs 
@@ -20,12 +20,16 @@ def get_program_chain_backtracking(conn, version: int):
     ORDER BY created_at ASC
     """
 
-    model = 'anthropic/claude-3.5-sonnet-open-router'
+
 
     with conn.cursor() as cur:
         cur.execute(query)
         data = cur.fetchall()
-    data = [(x[-2], x[-1]) for x in data if x[0]["model"] == model and not x[0]["error_occurred"]]
+
+    if model:
+        data = [(x[-2], x[-1]) for x in data if x[0]["model"] == model and not x[0]["error_occurred"]]
+    else:
+        data = [(x[-2], x[-1]) for x in data if not x[0]["error_occurred"]]
     return data
 
 
@@ -294,7 +298,7 @@ def main():
 
     #718
     backtracking_chain = True
-    for version in [2755, 2757]:#range(1892, 1895):#range(755, 775):#[764]:#[804, 798, 800, 598, 601, 576, 559 ]:
+    for version in [2755, 2757]:
 
         parser = argparse.ArgumentParser(description='Capture Factorio program evolution screenshots')
         parser.add_argument('--version', '-v', type=int, default=version,

@@ -293,6 +293,7 @@ def main():
     #703 -> 796
 
     #718
+    backtracking_chain = True
     for version in [2755, 2757]:#range(1892, 1895):#range(755, 775):#[764]:#[804, 798, 800, 598, 601, 576, 559 ]:
 
         parser = argparse.ArgumentParser(description='Capture Factorio program evolution screenshots')
@@ -304,7 +305,7 @@ def main():
                             help='Framerate for output video')
         parser.add_argument('--script_output_path', '-s', type=str, default="/Users/jackhopkins/Library/Application Support/factorio/script-output",
                             help='path where the factorio script will save screenshots to')
-
+        
         # When running in IDE, use no args. When running from command line, parse args
         import sys
         if len(sys.argv) > 1:
@@ -322,7 +323,9 @@ def main():
         try:
             # Get program chain
             print(f"Getting program chain for version {args.version}")
-            program_ids = get_program_chain_backtracking(conn, args.version)
+            
+            program_ids = get_program_chain_backtracking(conn, args.version) if backtracking_chain else get_program_chain(conn, args.version)
+            
             if not program_ids:
                 print(f"No programs found for version {args.version}")
                 return

@@ -1,4 +1,4 @@
-from tools.tool import Tool
+from env.src.tools.tool import Tool
 
 
 class Reward(Tool):
@@ -25,7 +25,7 @@ class Reward(Tool):
         return response['player'], goal
 
 
-if __name__ == "__main__":
-    score = Reward("connection", 0)
-    score.load()
-    pass
+# if __name__ == "__main__":
+#     score = Reward("connection", 0)
+#     score.load()
+#     pass

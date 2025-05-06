@@ -1,8 +1,8 @@
 from typing import Dict, Callable, List
 from PIL import ImageDraw
 
-from entities import Entity, UndergroundBelt, Pipe
-from tools.admin.render.layers.layer_renderer import LayerRenderer
+from env.src.entities import Entity, UndergroundBelt, Pipe
+from env.src.tools.admin.render.layers.layer_renderer import LayerRenderer
 
 
 class ConnectionsLayerRenderer(LayerRenderer):

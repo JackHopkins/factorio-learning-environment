@@ -5,9 +5,9 @@ from typing import Optional
 import numpy as np
 from pydantic import BaseModel, Field
 
-from models.achievements import ProductionFlows
-from models.conversation import Conversation
-from models.game_state import GameState
+from env.src.models.achievements import ProductionFlows
+from env.src.models.conversation import Conversation
+from env.src.models.game_state import GameState
 
 
 class Program(BaseModel):

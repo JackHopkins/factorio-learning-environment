@@ -1,7 +1,7 @@
 import pytest
 
-from entities import Position, Layer
-from game_types import Prototype, Resource
+from env.src.entities import Position, Layer
+from env.src.game_types import Prototype, Resource
 
 
 @pytest.fixture()
@@ -17,7 +17,7 @@ def game(instance):
     instance.reset()
 
 def test_basic_render(game):
-    chest = game.place_entity(Prototype.AssemblingMachine1, position=Position(x=0, y=0))
+    chest = game.place_entity(Prototype.IronChest, position=Position(x=0, y=0))
     belts = game.connect_entities(Position(x=0, y=-2), Position(x=15, y=5), {Prototype.Pipe, Prototype.UndergroundPipe})
     poles = game.connect_entities(Position(x=0, y=-10), Position(x=15, y=-10), { Prototype.SmallElectricPole })
     image = game._render(position=Position(x=0, y=5), layers=Layer.ALL)

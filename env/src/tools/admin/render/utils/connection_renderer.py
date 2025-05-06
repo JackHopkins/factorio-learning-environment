@@ -2,8 +2,8 @@ import math
 from typing import Tuple, Callable, List
 
 from PIL import ImageDraw
-from entities import UndergroundBelt, Pipe
-from tools.admin.render.utils.colour_manager import ColourManager
+from env.src.entities import UndergroundBelt, Pipe
+from env.src.tools.admin.render.utils.colour_manager import ColourManager
 
 
 class ConnectionRenderer:

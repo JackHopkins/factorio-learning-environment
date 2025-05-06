@@ -1,8 +1,8 @@
 from typing import Optional
 
-from entities import Position, ResourcePatch, BoundingBox
-from game_types import Resource
-from tools.tool import Tool
+from env.src.entities import Position, ResourcePatch, BoundingBox
+from env.src.game_types import Resource
+from env.src.tools.tool import Tool
 
 
 class GetResourcePatch(Tool):

@@ -322,6 +322,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
 
     -- Show bounding box
     rendering.draw_rectangle({
+        only_in_alt_mode=true,
         color = {r = 0, g = 1, b = 0},
         filled = false,
         left_top = area[1],
@@ -331,6 +332,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         time_to_live = 60000
     })
     rendering.draw_circle({
+        only_in_alt_mode=true,
         color = {r = 1, g = 0, b = 0},
         radius = 0.2,
         filled = true,
@@ -340,6 +342,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         time_to_live = 60000
     })
     rendering.draw_circle({
+        only_in_alt_mode=true,
         color = {r = 0, g = 0, b = 1},
         radius = 0.2,
         filled = true,

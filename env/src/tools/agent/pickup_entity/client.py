@@ -1,8 +1,8 @@
 from typing import Tuple, Union, Optional
 
-from entities import Position, Entity, BeltGroup, PipeGroup, EntityGroup, UndergroundBelt, Direction, ElectricityGroup
-from game_types import Prototype
-from tools.tool import Tool
+from env.src.entities import Position, Entity, BeltGroup, PipeGroup, EntityGroup, UndergroundBelt, Direction, ElectricityGroup
+from env.src.game_types import Prototype
+from env.src.tools.tool import Tool
 
 
 class PickupEntity(Tool):

@@ -1,9 +1,9 @@
 from time import sleep
 from typing import List, Set, Union
-from entities import Position, Entity
-from game_types import Prototype
-from tools.agent.connect_entities.groupable_entities import agglomerate_groupable_entities
-from tools.tool import Tool
+from env.src.entities import Position, Entity
+from env.src.game_types import Prototype
+from env.src.tools.agent.connect_entities.groupable_entities import agglomerate_groupable_entities
+from env.src.tools.tool import Tool
 
 
 class GetEntities(Tool):

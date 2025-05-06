@@ -12,11 +12,11 @@ from agents.agent_abc import AgentABC
 from agents.basic_agent import BasicAgent
 from eval.open.db_client import PostgresDBClient, SQLliteDBClient
 from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
-from models.conversation import Conversation
-from models.message import Message
-from models.game_state import GameState
-from models.program import Program
-from instance import FactorioInstance
+from env.src.models.conversation import Conversation
+from env.src.models.message import Message
+from env.src.models.game_state import GameState
+from env.src.models.program import Program
+from env.src.instance import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
 from agents.utils.python_parser import PythonParser
 #from models.response import EnvironmentResponse

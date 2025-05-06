@@ -2,8 +2,8 @@ import math
 from typing import Tuple, Optional
 from PIL import ImageDraw
 
-from entities import Direction, Entity, EntityStatus
-from tools.admin.render.utils.render_config import RenderConfig
+from env.src.entities import Direction, Entity, EntityStatus
+from env.src.tools.admin.render.utils.render_config import RenderConfig
 
 
 class ShapeRenderer:

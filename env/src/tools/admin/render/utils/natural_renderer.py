@@ -3,7 +3,7 @@ from PIL import Image, ImageDraw
 import math
 import random
 
-from tools.admin.render.utils.render_config import RenderConfig
+from env.src.tools.admin.render.utils.render_config import RenderConfig
 
 
 class NaturalRenderer:

@@ -1,7 +1,7 @@
 from typing import Tuple
 
-from entities import Inventory, Entity, Position
-from tools.tool import Tool
+from env.src.entities import Inventory, Entity, Position
+from env.src.tools.tool import Tool
 
 
 class InspectInventory(Tool):

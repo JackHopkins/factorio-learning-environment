@@ -1,8 +1,8 @@
 from typing import Dict, Callable, Any
 from PIL import ImageDraw, ImageFont
 
-from entities import Position, Layer
-from tools.admin.render.layers.layer_renderer import LayerRenderer
+from env.src.entities import Position, Layer
+from env.src.tools.admin.render.layers.layer_renderer import LayerRenderer
 
 
 class MarkersLayerRenderer(LayerRenderer):

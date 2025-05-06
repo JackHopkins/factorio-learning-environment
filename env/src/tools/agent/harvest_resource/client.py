@@ -1,11 +1,11 @@
 from time import sleep
 
-from entities import Position
-from game_types import Resource
-from tools.agent.get_entity.client import GetEntity
-from tools.agent.move_to.client import MoveTo
-from tools.agent.nearest.client import Nearest
-from tools.tool import Tool
+from env.src.entities import Position
+from env.src.game_types import Resource
+from env.src.tools.agent.get_entity.client import GetEntity
+from env.src.tools.agent.move_to.client import MoveTo
+from env.src.tools.agent.nearest.client import Nearest
+from env.src.tools.tool import Tool
 
 
 class HarvestResource(Tool):
@@ -49,20 +49,23 @@ class HarvestResource(Tool):
 
         # If `fast` is turned off - we need to long poll the game state to ensure the player has moved
         if not self.game_state.instance.fast:
-            remaining_steps = self.connection.send_command(
+            remaining_steps = self.connection.rcon_client.send_command(
                 f'/silent-command rcon.print(global.actions.get_harvest_queue_length({self.player_index}))')
             attempt = 0
             max_attempts = 10
             while remaining_steps != '0' and attempt < max_attempts:
                 sleep(0.5)
-                remaining_steps = self.connection.send_command(
+                remaining_steps = self.connection.rcon_client.send_command(
                     f'/silent-command rcon.print(global.actions.get_harvest_queue_length({self.player_index}))')
 
-            max_attempts = 5
+            max_attempts = 50
             attempt = 0
             while int(response) < quantity and attempt < max_attempts:
                 nearest_resource = self.nearest(resource_to_harvest)
-                self.move_to(nearest_resource)
+
+                if not nearest_resource.is_close(self.game_state.player_location, 2):
+                    self.move_to(nearest_resource)
+
                 try:
                     harvested = self.__call__(nearest_resource, quantity - int(response))
                     return int(response) + harvested
@@ -76,7 +79,7 @@ class HarvestResource(Tool):
 
     def get_resource_type_at_position(self, position: Position):
         x, y = self.get_position(position)
-        entity_at_position = self.connection.send_command(
+        entity_at_position = self.connection.rcon_client.send_command(
             f'/silent-command rcon.print(global.actions.get_resource_name_at_position({self.player_index}, {x}, {y}))')
         if entity_at_position.startswith('tree'):
             return Resource.Wood

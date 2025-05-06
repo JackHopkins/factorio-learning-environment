@@ -3,11 +3,11 @@ from typing import Dict, List, Tuple, Any, Set, Optional
 from PIL import ImageDraw, ImageFont, Image
 import math
 
-from entities import EntityStatus
-from tools.admin.render.utils.render_config import RenderConfig
-from tools.admin.render.utils.colour_manager import ColourManager
-from tools.admin.render.utils.entity_categoriser import EntityCategoriser
-from tools.admin.render.utils.shape_renderer import ShapeRenderer
+from env.src.entities import EntityStatus
+from env.src.tools.admin.render.utils.render_config import RenderConfig
+from env.src.tools.admin.render.utils.colour_manager import ColourManager
+from env.src.tools.admin.render.utils.entity_categoriser import EntityCategoriser
+from env.src.tools.admin.render.utils.shape_renderer import ShapeRenderer
 
 
 class LegendRenderer:
@@ -77,20 +77,24 @@ class LegendRenderer:
         """
         # Create a temporary image and drawing context to measure text
         tmp_img = ImageDraw.Draw(Image.new('RGBA', (1, 1), (0, 0, 0, 0)))
-
-        # Try to load a font for text measurement
-        try:
-            font = ImageFont.truetype("arial.ttf", size=10)
-        except IOError:
-            try:
-                font = ImageFont.truetype("DejaVuSans.ttf", size=10)
-            except IOError:
-                font = ImageFont.load_default()
-
-        # Set up legend dimensions
+        
+        # Get consistent legend settings to ensure readability regardless of zoom
         padding = self.config.style["legend_padding"]
         item_height = self.config.style["legend_item_height"]
         item_spacing = self.config.style["legend_item_spacing"]
+        category_spacing = item_spacing * 2  # Extra space between categories
+
+        # Try to load a font for text measurement - use consistent font size for legend
+        legend_font_size = self.config.style.get("legend_font_size", 10)
+        try:
+            font = ImageFont.truetype("arial.ttf", size=legend_font_size)
+        except IOError:
+            try:
+                font = ImageFont.truetype("DejaVuSans.ttf", size=legend_font_size)
+            except IOError:
+                font = ImageFont.load_default()
+
+        # Settings were already loaded above - no need to redefine
         category_spacing = item_spacing * 2
 
         # Get all entities and count them
@@ -320,7 +324,7 @@ class LegendRenderer:
         if not self.config.style["legend_enabled"]:
             return
 
-        # Set up legend dimensions
+        # Get legend settings
         padding = self.config.style["legend_padding"]
         item_height = self.config.style["legend_item_height"]
         item_spacing = self.config.style["legend_item_spacing"]
@@ -348,7 +352,7 @@ class LegendRenderer:
         legend_x = img_width - legend_width - padding
         legend_y = padding
 
-        # Draw legend background
+        # Draw legend background with consistent styling (unaffected by zoom)
         draw.rectangle(
             [legend_x, legend_y, legend_x + legend_width, legend_y + legend_height],
             fill=self.config.style["legend_bg_color"],

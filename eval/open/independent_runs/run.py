@@ -1,8 +1,9 @@
+
 import asyncio
 import argparse
 import multiprocessing
 from dotenv import load_dotenv
-from agents.basic_agent import BasicAgent
+from agents.backtracking_system import BacktrackingSystem
 from eval.open.independent_runs.trajectory_runner import run_process, get_next_version, create_factorio_instance, EvalConfig
 from eval.tasks.task_factory import TaskFactory
 from pathlib import Path
@@ -35,7 +36,7 @@ def main():
     processes = []
     for run_idx, run_config in enumerate(run_configs):
         task = TaskFactory.create_task(run_config["task"])
-        agent = BasicAgent(model=run_config["model"], system_prompt=system_prompt, task = task)
+        agent = BacktrackingSystem(model=run_config["model"], system_prompt=system_prompt, task = task)
         if "version" in run_config:
             version = run_config["version"]
         else:
@@ -46,6 +47,7 @@ def main():
             version=version,
             version_description=f"model:{run_config['model']}\ntype:{task.task_key}",
             exit_on_task_success=run_config.get("exit_on_task_success", True),
+            only_continue_on_program_success=True
         )
 
         p = multiprocessing.Process(

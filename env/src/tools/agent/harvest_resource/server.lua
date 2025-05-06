@@ -148,6 +148,26 @@ local function begin_mining_next_entity(queue, player)
     return false
 end
 
+script.on_nth_tick(15, function(event)
+    -- If no queues at all, just return
+    if not global.harvest_queues then return end
+
+    for player_index, queue in pairs(global.harvest_queues) do
+        local player = global.agent_characters[player_index]
+        -- Skip if player not valid
+        if not player or not player.valid then goto continue end
+
+        -- Already reached or exceeded our target?
+        if queue.total_yield >= queue.target_yield then
+            -- Remove this player's queue
+            global.harvest_queues[player_index] = nil
+            goto continue
+
+        end
+    end
+    return false
+end
+
 -- Find entities at a position
 local function find_entities_at_position(surface, position, entity_types, exact)
     local radius = exact and 0.1 or nil  -- Use tiny radius for exact position check
@@ -492,7 +512,7 @@ end
 
 -- Main harvest_resource function
 global.actions.harvest_resource = function(player_index, x, y, count, radius)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     if not player then
         error("Player not found")
     end
@@ -576,7 +596,7 @@ global.actions.get_harvest_queue_length = function(player_index)
 end
 
 global.actions.get_resource_name_at_position = function(player_index, x, y)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     if not player then
         error("Player not found")
     end

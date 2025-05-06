@@ -53,7 +53,7 @@ class PlaceEntityNextTo(Tool):
             try:
                 object = metaclass(prototype=name, game=self.connection, **cleaned_response)
             except Exception as e:
-                raise Exception(f"Could not create {name} object from response: {response}", e)
+                raise Exception(f"Could not create {name} object from response (place entity next to): {response}", e)
 
             return object
         except Exception as e:

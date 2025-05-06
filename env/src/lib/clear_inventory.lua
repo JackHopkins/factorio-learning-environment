@@ -1,2 +1,2 @@
-game.players[arg1].clear_items_inside()
+global.agent_characters[arg1].clear_items_inside()
 rcon.print(1)

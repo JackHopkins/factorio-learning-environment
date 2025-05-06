@@ -939,7 +939,7 @@ global.utils.serialize_entity = function(entity)
     --        x = x - 1
     --        y = y + 1
     --    end
-    --    --create_beam_point_with_direction(game.players[1], entity.direction , {x = x, y = y})
+    --    --create_beam_point_with_direction(global.agent_characters[1], entity.direction , {x = x, y = y})
     --    serialized.output_position = {x = x, y = y}
     --    serialized.position = {x = entity.position.x, y = entity.position.y}
     --    --serialized.inventory = entity.get_transport_line(1).get_contents()
@@ -1248,8 +1248,8 @@ global.utils.serialize_entity = function(entity)
 
     -- Add the current research to the lab
     if entity.name == "lab" then
-        if game.players[1].force.current_research ~= nil then
-            serialized.research = game.players[1].force.current_research.name
+        if global.agent_characters[1].force.current_research ~= nil then
+            serialized.research = global.agent_characters[1].force.current_research.name
         else
             serialized.research = nil
         end

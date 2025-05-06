@@ -28,7 +28,7 @@ class GetPath(Tool):
                 response, elapsed = self.execute(path_handle)
 
                 if response is None or response == {} or isinstance(response, str):
-                    raise Exception("Could not request path", response)
+                    raise Exception("Could not request path (get_path)", response)
 
                 path = json.loads(response)
 

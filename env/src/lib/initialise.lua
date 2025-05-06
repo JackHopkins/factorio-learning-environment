@@ -307,19 +307,19 @@ global.utils.describe_placement_issues = function(player, entity_name, position,
 end
 
 global.utils.avoid_entity = function(player_index, entity, position, direction)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local player_position = player.position
     for i=0, 10 do
-        local can_place = player.can_place_entity{
+        local can_place = player.surface.can_place_entity{
             name = entity,
-            force = player.force,
+            force = "player",
             position = position,
             direction = global.utils.get_entity_direction(entity, direction)
         }
         if can_place then
             return true
         end
-        player.teleport({player_position.x + i, player_position.y + i}, player.surface)
+        player.teleport({player_position.x + i, player_position.y + i})
     end
     player.teleport(player_position)
     return false

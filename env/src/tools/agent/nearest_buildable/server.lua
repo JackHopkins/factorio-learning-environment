@@ -5,7 +5,7 @@ local max = math.max
 local abs = math.abs
 
 global.actions.nearest_buildable = function(player_index, entity_name, bounding_box, center_position)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local surface = player.surface
     local entity_prototype = game.entity_prototypes[entity_name]
     local needs_resources = entity_prototype.resource_categories ~= nil

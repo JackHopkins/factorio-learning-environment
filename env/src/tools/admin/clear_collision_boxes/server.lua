@@ -1,5 +1,5 @@
 global.actions.clear_collision_boxes = function(player_index)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     if not player then return end
 
     -- Clean up temporary entities

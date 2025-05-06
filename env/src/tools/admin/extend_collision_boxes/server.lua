@@ -178,7 +178,7 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
 end
 
 global.actions.extend_collision_boxes = function(player_index, start_x, start_y, goal_x, goal_y)
-    local player = game.players[player_index]
+    local player = global.agent_characters[player_index]
     local start_pos = {x=start_x, y=start_y}
     local end_pos = {x=goal_x, y=goal_y}
     -- Define region for entity checking (add some margin around start/goal)

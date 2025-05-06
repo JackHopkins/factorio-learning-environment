@@ -15,7 +15,7 @@ local function find_offshore_pump_position(player, center_pos)
     local max_radius = 20
     local search_positions = {
         {dx = 0, dy = 1, dir = defines.direction.north},
-        {dx = 1, dy = 0, dir = defines.direction.west},
+        {dx = 1, dy = 0, dir = defines.direction.west}, 
         {dx = 0, dy = -1, dir = defines.direction.south},
         {dx = -1, dy = 0, dir = defines.direction.east}
     }
@@ -32,7 +32,7 @@ local function find_offshore_pump_position(player, center_pos)
                     -- Check if position is already occupied
                     local entities = player.surface.find_entities_filtered{
                         position = check_pos,
-                        collision_mask = "player-layer",
+                        collision_mask = "player-layer", 
                         invert = false
                     }
 
@@ -94,7 +94,7 @@ local function find_offshore_pump_position(player, center_pos)
 end
 
 global.actions.place_entity = function(player_index, entity, direction, x, y, exact)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local position = {x = x, y = y}
 
     if not direction then
@@ -105,7 +105,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
     -- Common validation functions
     local function validate_distance()
-        local max_distance = player['character'] and player.reach_distance or player.build_distance
+        local max_distance = player.reach_distance or player.build_distance
         local dx = player.position.x - x
         local dy = player.position.y - y or 0
         local distance = math.sqrt(dx * dx + dy * dy)
@@ -145,7 +145,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         -- Schedule the actual placement after delay
         script.on_nth_tick(60, function(event)  -- 30 ticks = 0.5 seconds
             script.on_nth_tick(60, nil)  -- Clear the scheduled event
-
+ 
             -- Verify conditions are still valid
             validate_distance()
             validate_inventory()
@@ -159,12 +159,10 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 force = "player",
                 position = position,
                 direction = entity_direction,
-                player = player
             }
 
             if placed_entity then
                 player.remove_item{name = entity, count = 1}
-                game.print("Placed " .. entity .. " at " .. position.x .. ", " .. position.y)
                 player.cursor_ghost = nil  -- Clear the ghost
                 return global.utils.serialize_entity(placed_entity)
             else
@@ -187,12 +185,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         if exact then
             local existing_entity = player.surface.find_entity(entity, position)
             if existing_entity then
-                --if existing_entity.name == entity then
-                --    existing_entity.direction = entity_direction
-                --    return global.utils.serialize_entity(existing_entity)
-                --else
-                --    existing_entity.destroy({raise_destroy=true})
-                --end
                 error("\"entity already exists at the target position " .. serpent.line(existing_entity.position) .. " - remove this before continuing.\"" )
             end
 
@@ -217,7 +209,8 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             end
         end
         global.utils.avoid_entity(player_index, entity, position, direction)
-        local can_build = player.can_place_entity{
+        -- need to use game.players[1] since player.can_place_entity behaves differently for offshore pumps
+        local can_build = game.players[1].can_place_entity{
             name = entity,
             force = player.force,
             position = position,
@@ -232,7 +225,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 -- special logic for orienting offshore pumps correctly.
                 if entity == 'offshore-pump' then
                     local pos_dir = find_offshore_pump_position(player, position)
-                    game.print(serpent.line(pos_dir))
                     entity_direction = global.utils.get_entity_direction(entity, pos_dir['direction']/2)
                     new_position = pos_dir['position']
                     found_position = true
@@ -247,7 +239,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                                 if dx == -radius or dx == radius or dy == -radius or dy == radius then
                                     new_position = {x = position.x + dx, y = position.y + dy}
                                     global.utils.avoid_entity(player_index, entity, position, direction)
-                                    can_build = player.can_place_entity{
+                                    can_build = player.surface.can_place_entity{
                                         name = entity,
                                         force = player.force,
                                         position = new_position,
@@ -271,7 +263,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                         force = player.force,
                         position = new_position,
                         direction = entity_direction,
-                        player = player
                     }
                     if have_built then
                         player.remove_item{name = entity, count = 1}
@@ -285,13 +276,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 -- Clear existing entities if exact placement is required
                 local area = {{position.x - 0.25, position.y - 0.25}, {position.x + 0.25, position.y + 0.25}}
                 local entities = player.surface.find_entities_filtered{area = area, force = "player"}
-                --for _, existing_entity in pairs(entities) do
-                --    if existing_entity.can_be_destroyed() then
-                --        if existing_entity.name ~= "character" then
-                --            pcall(existing_entity.destroy{raise_destroy=false, do_cliff_correction=false})
-                --        end
-                --    end
-                --end
                 if #entities ~= 0 then
                     if #entities == 1 then
                         error("\"Could not find a suitable position to place " .. entity .. " at the target location, as there is an existing object in the way\"")
@@ -303,7 +287,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
             global.utils.avoid_entity(player_index, entity, position, direction)
 
-            can_build = player.can_place_entity{
+            can_build = player.surface.can_place_entity{
                 name = entity,
                 force = player.force,
                 position = position,
@@ -341,7 +325,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             force = player.force,
             position = position,
             direction = entity_direction,
-            player = player
         }
 
         if have_built then

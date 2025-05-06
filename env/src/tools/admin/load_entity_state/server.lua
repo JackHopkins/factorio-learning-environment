@@ -6,17 +6,17 @@ end
 
 -- Main deserialization function
 global.actions.load_entity_state = function(player, stored_json_data)
-    local player_entity = game.players[player]
+    local player_entity = global.agent_characters[player]
     local surface = player_entity.surface
     local created_entities = {}
     local stored_data = game.json_to_table(stored_json_data)
-    local character_state = nil
-    -- First pass: Create all non-character entities and store character state
+    local character_states = {}
+    -- First pass: Create all non-character entities and store character states
     for _, state in pairs(stored_data) do
         local name = unquote_string(state.name)
 
         if name == "character" then
-            character_state = state
+            table.insert(character_states, state)
         elseif name == "item-on-ground" then
             local item_name = unquote_string(state.type)
             local item_count = tonumber(state.count)
@@ -40,7 +40,6 @@ global.actions.load_entity_state = function(player, stored_json_data)
         elseif state.type == "simple-entity-with-owner" then
             -- Do nothing, we don't want to load in placeholder entities if they were somehow persisted!
         else
-
             local entity = surface.create_entity({
                 name = name,
                 position = {
@@ -61,13 +60,20 @@ global.actions.load_entity_state = function(player, stored_json_data)
         end
     end
 
-    -- Handle character separately
-    if character_state then
+    -- Handle characters separately
+    for _, character_state in ipairs(character_states) do
         -- Store old character position if it exists
         local old_position = nil
-        if player_entity.character then
-            old_position = player_entity.character.position
-            player_entity.character.destroy()
+        local agent_index = character_state.agent_index
+        local old_character = nil
+
+        -- If we have a valid agent_index, get the old character from global.agent_characters
+        if agent_index and agent_index > 0 and global.agent_characters[agent_index] then
+            old_character = global.agent_characters[agent_index]
+            if old_character then
+                old_position = old_character.position
+                old_character.destroy()
+            end
         end
 
         -- Create new character at the stored position or old position
@@ -87,7 +93,11 @@ global.actions.load_entity_state = function(player, stored_json_data)
         })
 
         if new_character then
-            player_entity.character = new_character
+            -- Update global.agent_characters if we have a valid agent_index
+            if agent_index and agent_index > 0 then
+                global.agent_characters[agent_index] = new_character
+            end
+
             -- Restore character inventory
             if character_state.inventory then
                 local main_inventory = new_character.get_inventory(defines.inventory.character_main)

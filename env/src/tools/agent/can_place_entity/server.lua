@@ -1,13 +1,13 @@
 global.actions.can_place_entity = function(player_index, entity, direction, x, y)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local position = {x = x, y = y}
-    --
+    
     ---- Check player's reach distance
     local dx = player.position.x - x
     local dy = player.position.y - y
     local distance = math.sqrt(dx * dx + dy * dy)
 
-    if distance > player.character.reach_distance then
+    if distance > player.reach_distance then
         error("The distance to the target position is too far away to place the entity (" ..distance.."). Move closer.")
     end
 
@@ -50,7 +50,6 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
         end
     end
     if #entities > 1 then
-        game.print(serpent.block(entities))
         error("Cannot place the entity at the specified location due to collision with other entities.")
     end
 
@@ -68,7 +67,6 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
     if not can_build then
         error("Cannot place the entity at the specified position: x="..position.x..", y="..position.y)
     end
-
     return true
 end
 

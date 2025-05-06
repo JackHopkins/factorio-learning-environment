@@ -1,5 +1,5 @@
 global.actions.set_research = function(player_index, technology_name)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local force = player.force
 
     -- Helper function to check if technology can be researched

@@ -1,5 +1,5 @@
 global.actions.regenerate_resources = function(player_index)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local surface = player.surface
     for _, ore in pairs(surface.find_entities_filtered({type="resource"})) do
       -- skip oil
@@ -13,7 +13,7 @@ global.actions.regenerate_resources = function(player_index)
 end
 
 global.actions.regenerate_resources2 = function(player_index)
-    local player = game.players[player_index]
+    local player = global.agent_characters[player_index]
 
     local surface = player.surface
     for _, e in pairs(surface.find_entities_filtered{type="resource"}) do

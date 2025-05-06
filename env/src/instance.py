@@ -506,8 +506,7 @@ class FactorioInstance:
         """
         This resets the cached production flows that we track for achievements and diversity sampling.
         """
-        self.add_command('/c global.crafted_items = {}', raw=True)
-        self.add_command('/c global.harvested_items = {}', raw=True)
+        self.add_command('/c global.crafted_items = {}; global.harvested_items = {}', raw=True)
         self.execute_transaction()
 
     def _reset_elapsed_ticks(self):
@@ -520,10 +519,7 @@ class FactorioInstance:
     def _reset(self, **kwargs):
 
         self.begin_transaction()
-        self.add_command('/c global.alerts = {}', raw=True)
-        self.add_command('/c game.reset_game_state()', raw=True)
-        self.add_command('/c global.actions.reset_production_stats()', raw=True)
-        self.add_command(f'/c global.actions.regenerate_resources({self.player_index})', raw=True)
+        self.add_command('/c global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)', raw=True)
         #self.add_command('/c script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
         self.add_command('clear_inventory', self.player_index)
         self.add_command('reset_position', self.player_index, 0, 0)
@@ -531,8 +527,7 @@ class FactorioInstance:
         self.execute_transaction()
 
         self.begin_transaction()
-        self.add_command('/c global.actions.clear_walking_queue()', raw=True)
-        self.add_command(f'/c global.actions.clear_entities({self.player_index})', raw=True)
+        self.add_command(f'/c global.actions.clear_walking_queue(); global.actions.clear_entities({self.player_index})', raw=True)
 
         # kwargs dict to json
         inventory_items = {k: v for k, v in kwargs.items()}
@@ -588,16 +583,16 @@ class FactorioInstance:
         self.add_command('/c global.elapsed_ticks = 0', raw=True)
         self.add_command('/c global.fast = {}'.format('true' if fast else 'false'), raw=True)
         #self.add_command('/c script.on_nth_tick(nil)', raw=True)
-
         # Peaceful mode
         # self.add_command('/c game.map_settings.enemy_expansion.enabled = false', raw=True)
         # self.add_command('/c game.map_settings.enemy_evolution.enabled = false', raw=True)
         # self.add_command('/c game.forces.enemy.kill_all_units()', raw=True)
         if self.peaceful:
             self.lua_script_manager.load_init_into_game('enemies')
+        # Create characters for all agents
 
-
-        self.add_command(f'/c player = game.players[{self.player_index}]', raw=True)
+        self.add_command(f'/c player = game.players[1]')
+        self.add_command('/c global.agent_characters = {}; for _,c in pairs(game.surfaces[1].find_entities_filtered{type="character"}) do if c then c.destroy() end end; global.agent_characters[1]=game.surfaces[1].create_entity{name="character",position={x=0,y=0},force=game.forces.player}', raw=True)
         self.execute_transaction()
 
         self.lua_script_manager.load_init_into_game('initialise')

@@ -1,5 +1,5 @@
 global.actions.set_entity_recipe = function(player_index, recipe_name, x, y)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local surface = player.surface
     --local position = player.position
     local closest_distance = math.huge

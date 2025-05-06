@@ -1,5 +1,5 @@
 global.actions.get_entities = function(player_index, radius, entity_names_json, position_x, position_y)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local position
     if position_x and position_y then
         position = {x = tonumber(position_x), y = tonumber(position_y)}

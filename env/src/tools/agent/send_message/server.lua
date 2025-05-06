@@ -3,6 +3,13 @@ if not global.agent_inbox then
     global.agent_inbox = {}
 end
 
+-- Register event listener for console chat
+script.on_event(defines.events.on_console_chat, function(event)
+    if event.player_index then  -- Only process player messages
+        global.actions.send_message(0, event.message, -1)
+    end
+end)
+
 global.actions.send_message = function(player_index, message, recipient)
     -- Create message entry
     local message_entry = {

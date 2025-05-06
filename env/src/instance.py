@@ -141,6 +141,7 @@ class FactorioInstance:
         for namespace in self.namespaces:
             namespace.reset()
         
+        self.first_namespace._get_messages(True)
         if not game_state:
             # Reset the game instance
             inventories = [self.initial_inventory] * self.num_agents
@@ -170,9 +171,7 @@ class FactorioInstance:
             self.first_namespace._load_research_state(game_state.research)
 
             if game_state.is_multiagent:
-                #print(f'instance.py loading messages: {agent_messages}')
                 self.first_namespace._load_messages(agent_messages)
-                #print('instance.py loaded messages', self.first_namespace._get_messages(True))
 
             # Reset elapsed ticks
             self._reset_elapsed_ticks()
@@ -232,10 +231,9 @@ class FactorioInstance:
             player_idx = agent_idx + 1
             multiagent_str = (
                 f"## MULTIAGENT INSTRUCTIONS\n"
-                f"You are player {player_idx} out of {self.num_agents} player(s) in the game. "
-                f"Player 1 is the master player who should give instructions to other players. "
-                f"If you are not player 1, follow player 1's instructions and cooperate since you share the same task "
-                f"and operate in the same world. Use the send_message() tool regularly to communicate with other players "
+                f"You are Agent {player_idx} out of {self.num_agents} agent(s) in the game excluding Leader. "
+                f"Leader gives instructions to other agents. So follow Leader's instructions and cooperate since you share the same task "
+                f"and operate in the same world. Use the send_message() tool regularly to communicate with other agents "
                 f"about your current activities and any challenges you encounter. "
                 f"Start each program with a send_message() call to explain what you are doing. "
                 f"End each program with a send_message() call to confirm your actions. If your program errored out this message will not be sent. "

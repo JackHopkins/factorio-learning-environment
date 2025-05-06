@@ -1,6 +1,7 @@
 from typing import List, Dict
 from tools.tool import Tool
-
+from tools.admin.message_utils import log_messages, deduplicate_broadcast_messages
+import os
 
 class LoadMessages(Tool):
     def __init__(self, connection, game_state):
@@ -21,15 +22,13 @@ class LoadMessages(Tool):
                 if not all(k in msg for k in ['sender', 'message', 'timestamp', 'recipient']):
                     raise ValueError("Message missing required fields: sender, message, timestamp, recipient")
             
-            #print(f'load_messages client sending messages: {messages}')
+            messages = deduplicate_broadcast_messages(messages)
+            log_messages(messages)
             # Execute the server command with the list of message dictionaries
             response = self.execute(messages)
-            
             if isinstance(response, str):
                 raise Exception(f"Could not load messages: {response}")
             
-            #print(f'load_messages client response: {response}')
-                
             return True
             
         except Exception as e:

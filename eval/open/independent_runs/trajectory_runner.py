@@ -46,6 +46,7 @@ class EvalConfig:
         if self.task is None and hasattr(self.agents[0], 'task'):
             self.task = self.agents[0].task
 
+
 class TrajectoryRunner:
     """Handles program generation and evaluation for a single trajectory"""
 
@@ -147,8 +148,6 @@ class TrajectoryRunner:
                 # Add to agent_messages collection
                 self.agent_messages[agent_idx].append(agent_msg)
                 latest_timestamp = max(latest_timestamp, agent_msg.timestamp)
-            else:
-                print(f'trajectory_runner.py: skipping message: {msg}, {agent_msg.timestamp}, {self.last_message_timestamps[agent_idx]}')
                 
         # Update the last timestamp
         if new_messages:
@@ -160,9 +159,7 @@ class TrajectoryRunner:
             
         formatted_messages = "\n\nMessages received:\n"
         for msg in new_messages:
-            sender_info = f"Agent {msg.sender}"
-            if msg.recipient is not None:
-                sender_info += f" (to Agent {msg.recipient})"
+            sender_info = f"Agent {msg.sender}" if msg.sender != 0 else "Leader"
             formatted_messages += f"[{sender_info}]: {msg.content}\n"
             
         return formatted_messages
@@ -241,6 +238,9 @@ class TrajectoryRunner:
                 program.parent_id = parent_id
 
                 # Evaluate program
+                if current_state.is_multiagent:
+                    uptodate_messages = [namespace._get_messages() for namespace in self.evaluator.instance.namespaces]
+                    current_state.agent_messages = uptodate_messages
                 self.evaluator.instance.reset(current_state)
                 evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.task, agent_idx=agent_idx, step_statistics={"current_step_id": iteration})
                 print(program.code + "\n"+"="*50)
@@ -280,7 +280,6 @@ class TrajectoryRunner:
                 # Update state for next iteration
                 if program.state:
                     current_state = program.state
-                    # print("current state agent_messages", current_state.agent_messages)
                     current_conversations[agent_idx] = program.conversation
 
                 # Record iteration time

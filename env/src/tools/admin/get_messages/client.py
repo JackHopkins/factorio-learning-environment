@@ -1,6 +1,6 @@
 from typing import List, Dict, Optional, Union
 from tools.tool import Tool
-
+from tools.admin.message_utils import log_messages, deduplicate_broadcast_messages
 
 class GetMessages(Tool):
     def __init__(self, connection, game_state):
@@ -13,8 +13,10 @@ class GetMessages(Tool):
         if all_players:
             all_messages = []
             for player_index in range(1, self.game_state.instance.num_agents + 1):
-                messages = self.get_single_player_messages(player_index)
+                messages = self.get_single_player_messages(player_index)    
                 all_messages.extend(messages)
+            dedup_messages = deduplicate_broadcast_messages(all_messages)
+            log_messages(dedup_messages)
             return all_messages
         else:
             return self.get_single_player_messages(self.player_index)

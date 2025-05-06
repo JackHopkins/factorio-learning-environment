@@ -9,16 +9,15 @@ class RenderMessage(Tool):
         self.game_state = game_state
         self.load()
 
-    def __call__(self, message: str, duration: Optional[int] = 300) -> bool:
+    def __call__(self, message: str) -> bool:
         """
         Render a message above the agent's head.
         :param message: The message text to display
-        :param duration: How long the message should be displayed (in ticks)
         :return: True if successful, raises exception if not
         """
         try:
             # Execute the server command with positional arguments
-            response = self.execute(self.player_index, message, duration)
+            response = self.execute(self.player_index, message)
             
             if isinstance(response, str):
                 raise Exception(f"Could not render message: {response}")

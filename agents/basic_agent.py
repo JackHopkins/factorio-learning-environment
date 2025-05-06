@@ -173,20 +173,10 @@ sorted_furnaces = sorted(
 """
 
 FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON AND REMEMEBER MAXIMUM 30 LINES OF CODE PER POLICY. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON." # Annoying how effective this is
-import tiktoken
 
 class BasicAgent(AgentABC):
    def __init__(self, model, system_prompt, task, *args, **kwargs):
-        encoding = tiktoken.encoding_for_model("gpt-4o-mini")
         instructions = GENERAL_INSTRUCTIONS+system_prompt+FINAL_INSTRUCTION
-        system_prompt_tokens = encoding.encode(system_prompt)
-        instructions_tokens = encoding.encode(instructions)
-        general_instruction_tokens = encoding.encode(GENERAL_INSTRUCTIONS)
-        final_instruction_tokens = encoding.encode(FINAL_INSTRUCTION)
-        print(f"System prompt tokens: {len(system_prompt_tokens)}")
-        print(f"Instructions tokens: {len(instructions_tokens)}")
-        print(f"General instruction tokens: {len(general_instruction_tokens)}")
-        print(f"Final instruction tokens: {len(final_instruction_tokens)}")
         self.task = task
         instructions += f"\n\n### Goal\n{task.goal_description}\n\n"
         super().__init__( model, instructions, *args, **kwargs)
@@ -195,14 +185,10 @@ class BasicAgent(AgentABC):
         self.generation_params = GenerationParameters(n=1, max_tokens=2048, model=model)
 
    async def step(self, conversation: Conversation, response: Response, namespace: FactorioNamespace) -> Policy:
-        encoding = tiktoken.encoding_for_model("gpt-4o-mini")
         # We format the conversation every N steps to add a context summary to the system prompt
         formatted_conversation = await self.formatter.format_conversation(conversation, namespace)
         # We set the new conversation state for external use
         self.set_conversation(formatted_conversation)
-        for message in formatted_conversation.messages:
-            message_tokens = encoding.encode(message.content)
-            print(f"Message tokens: {len(message_tokens)}")
         return await self._get_policy(formatted_conversation), None
 
    @tenacity.retry(

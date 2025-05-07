@@ -1,7 +1,7 @@
 import pytest
 
-from instance import FactorioInstance
-from game_types import Technology
+from env.src.instance import FactorioInstance
+from env.src.game_types import Technology
 from cluster.local.cluster_ips import get_local_container_ips
 
 @pytest.fixture()

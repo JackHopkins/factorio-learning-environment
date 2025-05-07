@@ -174,7 +174,7 @@ class TrajectoryRunner:
         current_state = None
         current_conversations = [None] * len(self.agents)
         last_responses = [None] * len(self.agents)
-        
+        agent_step_budget = [self.config.task.trajectory_length] * len(self.agents)
         if self.config.version:
             for agent_idx in range(len(self.agents)):
                 current_state, current_conversations[agent_idx], parent_id, depth = await self.db.get_resume_state(
@@ -224,9 +224,10 @@ class TrajectoryRunner:
                         last_user_message.content += new_messages_text
                 
                 instance_param = -1 if len(self.agents) == 1 else agent_idx
-                while not agent_completed:
+                # loop while the agent is not completed yet
+                while not agent_completed and agent_step_budget[agent_idx] > 0:
                     program = await self._generate_program(current_conversations[agent_idx], last_responses[agent_idx], self.evaluator.instance.namespaces[agent_idx], instance_param=instance_param)
-
+                    agent_step_budget[agent_idx] -= 1
                     print(f"Generated program {multiprocessing.current_process().name} - "
                           f"Model: {self.config.agents[agent_idx].model} - "
                           f"Iteration {iteration}/{self.config.task.trajectory_length}")
@@ -288,7 +289,7 @@ class TrajectoryRunner:
                         program_id=evaluated_program.id,
                     )
 
-
+                    # get the agent_completed flag from the agent
                     agent_completed, update_state = self.agents[agent_idx].check_completion(last_responses[agent_idx])
                     if not update_state:
                         self.evaluator.instance.namespaces[agent_idx] = instance_namespace_before_program

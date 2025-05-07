@@ -38,7 +38,6 @@ class SendMessage(Tool):
             recipient += 1  # Convert to 1-based index
         try:
             rendered_message = self.render_message(message)
-            print(f'sending message from {self.player_index} to {recipient}: {message}')
             response = self.execute(self.player_index, message, recipient)
             if isinstance(response, str):
                 raise Exception(f"Could not send message: {response}")

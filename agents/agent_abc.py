@@ -1,8 +1,8 @@
 from abc import abstractmethod
 
 from agents import Response, Python, CompletionResult, Policy
-from models.conversation import Conversation
-from namespace import FactorioNamespace
+from env.src.models.conversation import Conversation
+from env.src.namespace import FactorioNamespace
 
 
 class AgentABC:

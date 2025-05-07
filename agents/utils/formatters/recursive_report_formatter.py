@@ -6,8 +6,8 @@ from typing import List, Optional, Callable, TypedDict, Union, Dict, Any, Awaita
 
 from agents.utils.llm_factory import LLMFactory
 from agents.utils.formatters.conversation_formatter_abc import ConversationFormatter
-from models.conversation import Conversation
-from models.message import Message
+from env.src.models.conversation import Conversation
+from env.src.models.message import Message
 import copy
 
 from namespace import FactorioNamespace

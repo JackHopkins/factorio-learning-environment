@@ -1,14 +1,14 @@
 import pytest
 
 from cluster.local.cluster_ips import get_local_container_ips
-from game_types import Prototype, Resource
-from entities import Position, BoundingBox, BuildingBox, Direction
-from instance import FactorioInstance
+from env.src.game_types import Prototype, Resource
+from env.src.entities import Position, BoundingBox, BuildingBox, Direction
+from env.src.instance import FactorioInstance
 
 # @pytest.fixture()
 # def game(instance):
 #     instance.reset()
-#     instance.set_inventory(**{
+#     instance.set_inventory({
 #         'wooden-chest': 100,
 #         'electric-mining-drill': 10,
 #         'steam-engine': 1,
@@ -43,7 +43,7 @@ def game():
                                     "pumpjack": 1,
                                 })
     instance.reset()
-    instance.set_inventory(**{
+    instance.set_inventory({
         'wooden-chest': 100,
         'electric-mining-drill': 10,
         'steam-engine': 1,

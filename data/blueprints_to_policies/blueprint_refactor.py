@@ -16,10 +16,10 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from cluster.remote.cluster_ips import get_public_ips
 from data.blueprints_to_policies.processing_state import ProcessingState
-from entities import Position
-from instance import FactorioInstance
+from env.src.entities import Position
+from env.src.instance import FactorioInstance
 from blueprint_analyzer import BlueprintAnalyzer
-from game_types import Resource
+from env.src.game_types import Resource
 
 load_dotenv()
 
@@ -556,7 +556,7 @@ Only return python code between ```python and ``` tags, nothing else.
         """Verify that the refactored code produces identical entity placement."""
         try:
             instance.reset()
-            instance.set_inventory(**inventory)
+            instance.set_inventory(inventory)
             # Execute the code
             score, goal, result = instance.eval_with_error(
                 code.replace("game.", ""),

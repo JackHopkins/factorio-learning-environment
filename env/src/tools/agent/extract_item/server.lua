@@ -97,7 +97,7 @@ local function remove_items_from_entity(entity, stack)
 end
 
 global.actions.extract_item = function(player_index, extract_item, count, x, y, source_name)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local position = {x=x, y=y}
     local surface = player.surface
 
@@ -158,7 +158,7 @@ global.actions.extract_item = function(player_index, extract_item, count, x, y, 
     end
 
     if closest_distance > search_radius then
-        error("\"Entity at ("..closest_entity.position.x..", "..closest_entity.position.y..") is too far away from your position of ("..player.character.position.x..","..player.character.position.y.."), move closer.\"")
+        error("\"Entity at ("..closest_entity.position.x..", "..closest_entity.position.y..") is too far away from your position of ("..player.position.x..","..player.position.y.."), move closer.\"")
     end
 
     if not found_any_items then
@@ -186,7 +186,7 @@ global.actions.extract_item = function(player_index, extract_item, count, x, y, 
             number_extracted = inserted
         end
 
-        game.print("Extracted " .. number_extracted .. " " .. extract_item)
+        -- game.print("Extracted " .. number_extracted .. " " .. extract_item)
         return number_extracted
     else
         -- This should rarely happen given our prior checks

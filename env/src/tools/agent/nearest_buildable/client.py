@@ -1,10 +1,9 @@
 import math
 from typing import Optional
 
-from entities import Position, BuildingBox, BoundingBox
-from instance import PLAYER
-from game_types import Prototype
-from tools.tool import Tool
+from env.src.entities import Position, BuildingBox, BoundingBox
+from env.src.game_types import Prototype
+from env.src.tools.tool import Tool
 
 
 class NearestBuildable(Tool):
@@ -44,7 +43,7 @@ class NearestBuildable(Tool):
         #center_position = {"x": math.ceil(center_position.x + 0.5), "y": math.ceil(center_position.y + 0.5)}
         center_position = {"x": center_position.x , "y": center_position.y}
 
-        response, time_elapsed = self.execute(PLAYER, entity.value[0], bb_data, center_position)
+        response, time_elapsed = self.execute(self.player_index, entity.value[0], bb_data, center_position)
 
         if isinstance(response, str):
             raise Exception(f"No viable place to put {str(entity)} near the centre position {center_position} with this BuildingBox size found on the map. Either decrease the size of the BuildingBox or use multiple smaller BuildingBoxes")

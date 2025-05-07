@@ -1,10 +1,10 @@
 
 from typing import Tuple, List, Union
 
-from entities import Entity, Position, EntityGroup
-from game_types import Prototype
-from tools.agent.connect_entities.client import ConnectEntities
-from tools.tool import Tool
+from env.src.entities import Entity, Position, EntityGroup
+from env.src.game_types import Prototype
+from env.src.tools.agent.connect_entities.client import ConnectEntities
+from env.src.tools.tool import Tool
 
 
 class GetConnectionAmount(Tool):

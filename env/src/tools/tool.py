@@ -1,9 +1,9 @@
 from functools import wraps
 from typing import Tuple, Union
 
-from entities import Position, Entity
-from namespace import FactorioNamespace
-from tools.controller import Controller
+from env.src.entities import Position, Entity
+from env.src.namespace import FactorioNamespace
+from env.src.tools.controller import Controller
 
 
 class Tool(Controller):
@@ -23,7 +23,6 @@ class Tool(Controller):
             y = position_or_entity.y
 
         return x, y
-
 
     def get_error_message(self, response):
         try:

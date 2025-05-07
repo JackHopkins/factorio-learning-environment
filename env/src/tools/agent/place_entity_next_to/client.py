@@ -1,9 +1,9 @@
 import math
 
-from entities import Position, Entity
-from instance import PLAYER, Direction
-from game_types import Prototype
-from tools.tool import Tool
+from env.src.entities import Position, Entity
+from env.src.instance import Direction
+from env.src.game_types import Prototype
+from env.src.tools.tool import Tool
 
 
 class PlaceEntityNextTo(Tool):
@@ -40,7 +40,7 @@ class PlaceEntityNextTo(Tool):
 
             factorio_direction = Direction.to_factorio_direction(direction)
 
-            response, elapsed = self.execute(PLAYER, name, x, y, factorio_direction, spacing)
+            response, elapsed = self.execute(self.player_index, name, x, y, factorio_direction, spacing)
 
 
             if not isinstance(response, dict) or response == {}:
@@ -53,7 +53,7 @@ class PlaceEntityNextTo(Tool):
             try:
                 object = metaclass(prototype=name, game=self.connection, **cleaned_response)
             except Exception as e:
-                raise Exception(f"Could not create {name} object from response: {response}", e)
+                raise Exception(f"Could not create {name} object from response (place entity next to): {response}", e)
 
             return object
         except Exception as e:

@@ -1,10 +1,9 @@
 from time import sleep
 from typing import List, Set, Union
-from entities import Position, Entity
-from instance import PLAYER
-from game_types import Prototype
-from tools.agent.connect_entities.groupable_entities import agglomerate_groupable_entities
-from tools.tool import Tool
+from env.src.entities import Position, Entity
+from env.src.game_types import Prototype
+from env.src.tools.agent.connect_entities.groupable_entities import agglomerate_groupable_entities
+from env.src.tools.tool import Tool
 
 
 class GetEntities(Tool):
@@ -36,9 +35,9 @@ class GetEntities(Tool):
             sleep(0.05)
 
             if position is None:
-                response, time_elapsed = self.execute(PLAYER, radius, entity_names)
+                response, time_elapsed = self.execute(self.player_index, radius, entity_names)
             else:
-                response, time_elapsed = self.execute(PLAYER, radius, entity_names, position.x, position.y)
+                response, time_elapsed = self.execute(self.player_index, radius, entity_names, position.x, position.y)
 
             if not response:
                 return []

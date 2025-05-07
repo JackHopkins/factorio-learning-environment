@@ -845,7 +845,7 @@ def setup_smelting_array(ore_position: Position, num_furnaces: int = 5) -> List[
 ### Best Practices for Utility Functions
 
 1. **Safety First**
-- Validate inputs and** entity states
+- Validate inputs and entity states
 - Clean up partially built structures on failure
 - Return meaningful values or raise specific exceptions
 

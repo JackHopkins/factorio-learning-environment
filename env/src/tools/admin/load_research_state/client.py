@@ -1,6 +1,5 @@
-from instance import PLAYER
-from models.research_state import ResearchState
-from tools.tool import Tool
+from env.src.models.research_state import ResearchState
+from env.src.tools.tool import Tool
 
 
 class LoadResearchState(Tool):
@@ -43,4 +42,4 @@ class LoadResearchState(Tool):
             "progress": state.progress
         }
 
-        return self.execute(PLAYER, raw_state)
+        return self.execute(self.player_index, raw_state)

@@ -4,15 +4,15 @@ from timeit import default_timer as timer
 import numpy as np
 from numpy import ndarray, zeros
 
-from instance import PLAYER, CHUNK_SIZE, MAX_SAMPLES
-from gym.utils import stitch
-from gym.observation_state import FIELDS, ObservationState
-from tools.tool import Tool
+from env.src.instance import CHUNK_SIZE, MAX_SAMPLES
+#from gym.utils import stitch
+#from gym.observation_state import FIELDS, ObservationState
+from env.src.tools.tool import Tool
 
 
 class ObserveAll(Tool):
 
-    def __init__(self, connection, game_state: ObservationState):
+    def __init__(self, connection, game_state: 'ObservationState'):
         super().__init__(connection, game_state)
         mu, sigma = 0, CHUNK_SIZE * 20
         self.minimap_normal = np.random.normal(mu, sigma, MAX_SAMPLES)
@@ -39,7 +39,7 @@ class ObserveAll(Tool):
         movement_field_x, movement_field_y = self.game_state.movement_vector[0], self.game_state.movement_vector[1]
         omit = kwargs
         response, execution_time = self.execute(
-                                              PLAYER,
+                                              self.player_index,
                                               chunk_x,
                                               chunk_y,
                                               self.game_state.bounding_box,

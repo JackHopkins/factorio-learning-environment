@@ -1,17 +1,18 @@
 import math
 from time import sleep
 
-from entities import Position
-from instance import PLAYER, NONE
-from game_types import Prototype
-from tools.admin.get_path.client import GetPath
-from tools.admin.request_path.client import RequestPath
-from tools.tool import Tool
+from env.src.entities import Position
+from env.src.instance import NONE
+from env.src.game_types import Prototype
+from env.src.tools.admin.get_path.client import GetPath
+from env.src.tools.admin.request_path.client import RequestPath
+from env.src.tools.tool import Tool
+from env.src.lua_manager import LuaScriptManager
 
 
 class MoveTo(Tool):
 
-    def __init__(self, connection, game_state):
+    def __init__(self, connection: LuaScriptManager, game_state):
         super().__init__(connection, game_state)
         #self.observe = ObserveAll(connection, game_state)
         self.request_path = RequestPath(connection, game_state)
@@ -24,24 +25,26 @@ class MoveTo(Tool):
         :return: Your final position
         """
 
-        X_OFFSET, Y_OFFSET = 0.5, 0
+        X_OFFSET, Y_OFFSET = 0,0#0.5, 0
 
         x, y = math.floor(position.x*4)/4 + X_OFFSET, math.floor(position.y*4)/4 + Y_OFFSET
         nposition = Position(x=x, y=y)
 
         path_handle = self.request_path(start=Position(x=self.game_state.player_location.x,
-                                                       y=self.game_state.player_location.y), finish=nposition,
-                                        allow_paths_through_own_entities=True)
+                                                       y=self.game_state.player_location.y),
+                                        finish=nposition,
+                                        allow_paths_through_own_entities=True,
+                                        resolution=-1)
         sleep(0.05) # Let the pathing complete in the game.
         try:
             if laying is not None:
                 entity_name = laying.value[0]
-                response, execution_time = self.execute(PLAYER, path_handle, entity_name, 1)
+                response, execution_time = self.execute(self.player_index, path_handle, entity_name, 1)
             elif leading:
                 entity_name = leading.value[0]
-                response, execution_time = self.execute(PLAYER, path_handle, entity_name, 0)
+                response, execution_time = self.execute(self.player_index, path_handle, entity_name, 0)
             else:
-                response, execution_time = self.execute(PLAYER, path_handle, NONE, NONE)
+                response, execution_time = self.execute(self.player_index, path_handle, NONE, NONE)
 
             if isinstance(response, int) and response == 0:
                 raise Exception("Could not move.")
@@ -54,10 +57,10 @@ class MoveTo(Tool):
 
             # If `fast` is turned off - we need to long poll the game state to ensure the player has moved
             if not self.game_state.instance.fast:
-                remaining_steps = self.connection.send_command(f'/silent-command rcon.print(global.actions.get_walking_queue_length({PLAYER}))')
+                remaining_steps = self.connection.rcon_client.send_command(f'/silent-command rcon.print(global.actions.get_walking_queue_length({self.player_index}))')
                 while remaining_steps != '0':
                     sleep(0.5)
-                    remaining_steps = self.connection.send_command(f'/silent-command rcon.print(global.actions.get_walking_queue_length({PLAYER}))')
+                    remaining_steps = self.connection.rcon_client.send_command(f'/silent-command rcon.print(global.actions.get_walking_queue_length({self.player_index}))')
                 self.game_state.player_location = Position(x=position.x, y=position.y)
 
             return Position(x=response['x'], y=response['y'])#, execution_time

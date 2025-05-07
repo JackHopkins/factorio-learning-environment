@@ -1,13 +1,12 @@
 from time import sleep
 
-from entities import Position, Entity
-from instance import PLAYER
-from instance import Direction
-from entities import Direction as DirectionEntities
-from game_types import Prototype
-from tools.agent.get_entity.client import GetEntity
-from tools.agent.pickup_entity.client import PickupEntity
-from tools.tool import Tool
+from env.src.entities import Position, Entity
+from env.src.instance import Direction
+from env.src.entities import Direction as DirectionEntities
+from env.src.game_types import Prototype
+from env.src.tools.agent.get_entity.client import GetEntity
+from env.src.tools.agent.pickup_entity.client import PickupEntity
+from env.src.tools.tool import Tool
 
 
 class PlaceObject(Tool):
@@ -60,7 +59,7 @@ class PlaceObject(Tool):
 
         try:
             # If we are in `fast` mode, this is synchronous
-            response, elapsed = self.execute(PLAYER, name, factorio_direction, x, y, exact)
+            response, elapsed = self.execute(self.player_index, name, factorio_direction, x, y, exact)
         except Exception as e:
             try:
                 msg = self.get_error_message(str(e))
@@ -86,6 +85,6 @@ class PlaceObject(Tool):
             try:
                 object = metaclass(prototype=entity.name, game=self.connection, **cleaned_response)
             except Exception as e:
-                raise Exception(f"Could not create {name} object from response: {cleaned_response}", e)
+                raise Exception(f"Could not create {name} object from response (place entity): {cleaned_response}", e)
 
             return object

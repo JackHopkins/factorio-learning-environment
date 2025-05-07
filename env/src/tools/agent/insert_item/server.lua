@@ -26,7 +26,7 @@ local function get_inventory_info(entity)
 end
 
 global.actions.insert_item = function(player_index, insert_item, count, x, y, target_name)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local position = {x=x, y=y}
     local surface = player.surface
 
@@ -160,7 +160,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
 
     -- Throw an error if the entity is too far away from the player
     if closest_distance > 10 then
-        error("\"Entity at ("..closest_entity.position.x..", "..closest_entity.position.y..") is too far away from your position of ("..player.character.position.x..", "..player.character.position.y.."), move closer.\"")
+        error("\"Entity at ("..closest_entity.position.x..", "..closest_entity.position.y..") is too far away from your position of ("..player.position.x..", "..player.position.y.."), move closer.\"")
     end
 
     -- Function to insert items onto a transport belt - one at a time
@@ -192,7 +192,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
     local inserted = 0
     if closest_entity.type == "transport-belt" then
         -- For transport belts, we need to use a different method
-        game.print("Inserting ".. insertable_count.. " items onto transport belt...")
+        -- game.print("Inserting ".. insertable_count.. " items onto transport belt...")
         inserted = insert_on_belt(closest_entity, insert_item)
     elseif closest_entity.type == "assembling-machine" then
         local recipe = closest_entity.get_recipe()
@@ -220,11 +220,11 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
         inserted = closest_entity.insert{name=insert_item, count=insertable_count}
     end
 
-    game.print("Inserted " .. inserted .. " items.")
+    -- game.print("Inserted " .. inserted .. " items.")
     if inserted > 0 then
         -- Only remove successfully inserted items from player
         player.remove_item{name=insert_item, count=inserted}
-        game.print("Successfully inserted " .. inserted .. " items.")
+        -- game.print("Successfully inserted " .. inserted .. " items.")
         return global.utils.serialize_entity(closest_entity)
     else
         local inventory_info = get_inventory_info(closest_entity)

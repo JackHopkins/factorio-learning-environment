@@ -1,10 +1,9 @@
 from typing import Union, cast
 
-from entities import Position, RocketSilo
-from game_types import Prototype
-from instance import PLAYER
-from tools.agent.get_entity.client import GetEntity
-from tools.tool import Tool
+from env.src.entities import Position, RocketSilo
+from env.src.game_types import Prototype
+from env.src.tools.agent.get_entity.client import GetEntity
+from env.src.tools.tool import Tool
 
 
 class LaunchRocket(Tool):
@@ -27,7 +26,7 @@ class LaunchRocket(Tool):
             position = silo.position
 
         try:
-            response, _ = self.execute(PLAYER, position.x, position.y)
+            response, _ = self.execute(self.player_index, position.x, position.y)
             return cast(Prototype.RocketSilo, self.get_entity(Prototype.RocketSilo, position))
         except Exception as e:
             raise Exception(f"Cannot launch rocket. {e}")

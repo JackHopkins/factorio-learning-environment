@@ -1,9 +1,8 @@
-
-{                          
+{
     "task_type": "throughput",
     "config": {
-        "goal_description":"Create an automatic iron plate factory that produces 16 iron plate per 60 ingame seconds.",
-        "throughput_entity":"iron_plate",
+        "goal_description":"Create an automatic iron plate factory that produces 16 iron plate per 60 ingame seconds. IMPORTANT: Start and end every program with a message to the other agents using send_message() tool. End each program with a send_message() call to confirm your actions. If your program errored out this message will not be sent. If you are Agent 1, focus on electric power production (boilers, engines, coal extraction, etc). If you are Agent 2, focus on the iron plate factory (iron ore extraction, furnaces, etc).",
+        "throughput_entity":"iron-plate",
         "quota":16,
         "trajectory_length": 128,
         "holdout_wait_period": 60,

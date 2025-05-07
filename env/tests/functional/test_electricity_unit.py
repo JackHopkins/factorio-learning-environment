@@ -3,9 +3,9 @@ from typing import List
 
 import pytest
 
-from entities import Entity, Position, ResourcePatch, Recipe, BurnerMiningDrill, EntityStatus
-from instance import Direction, FactorioInstance
-from game_types import Prototype, Resource
+from env.src.entities import Entity, Position, ResourcePatch, Recipe, BurnerMiningDrill, EntityStatus
+from env.src.instance import Direction, FactorioInstance
+from env.src.game_types import Prototype, Resource
 
 
 @pytest.fixture()
@@ -64,6 +64,10 @@ def test_create_offshore_pump_to_steam_engine(game):
     assert inspected_steam_engine.status == EntityStatus.NOT_PLUGGED_IN_ELECTRIC_NETWORK
 
     assert steam_engine.direction.value == Direction.opposite(boiler.direction).value
+
+    image = game._render(Position(x=5, y=0), zoom=5)
+    image.show()
+    pass
 
 
 def test_build_iron_gear_factory_from_scratch(game):

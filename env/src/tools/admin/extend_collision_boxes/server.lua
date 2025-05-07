@@ -78,8 +78,8 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
 
 
     -- Draw debug circles for start and end positions
-    rendering.draw_circle{width = 1, color = {r = 1, g = 0, b = 0}, surface = surface, radius = 0.5, filled = false, target = start_pos, time_to_live = 60000}
-    rendering.draw_circle{width = 1, color = {r = 0, g = 1, b = 0}, surface = surface, radius = 0.5, filled = false, target = end_pos, time_to_live = 60000}
+    rendering.draw_circle{only_in_alt_mode=true, width = 1, color = {r = 1, g = 0, b = 0}, surface = surface, radius = 0.5, filled = false, target = start_pos, time_to_live = 60000}
+    rendering.draw_circle{only_in_alt_mode=true, width = 1, color = {r = 0, g = 1, b = 0}, surface = surface, radius = 0.5, filled = false, target = end_pos, time_to_live = 60000}
 
     -- Collect positions from pipes
     for _, pipe in pairs(entities.pipes) do
@@ -140,13 +140,13 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
             end
         end
     end
-    game.print("There are "..#entities.drills)
+    -- game.print("There are "..#entities.drills)
     for _, drill in pairs(entities.drills) do
-        game.print(serpent.block(drill))
+        -- game.print(serpent.block(drill))
     end
     -- Collect positions from mining drills
     for _, drill in pairs(entities.drills) do
-        game.print("Drop position ".. serpent.line(drill.drop_position))
+        -- game.print("Drop position ".. serpent.line(drill.drop_position))
         local drop_pos = drill.drop_position--{x=math.round(drill.drop_position.x*2)/2, y=math.round(drill.drop_position.y*2)/2}
         if not is_excluded_position(drop_pos) then
             table.insert(all_positions, drop_pos)
@@ -156,7 +156,7 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
     -- Create entities at filtered positions
     for _, pos in pairs(all_positions) do
         -- Draw debug circles for connection points
-        rendering.draw_circle{width = 1, color = {r = 0, g = 1, b = 1}, surface = surface, radius = 0.33, filled = false, target = pos, time_to_live = 60000}
+        rendering.draw_circle{only_in_alt_mode=true, width = 1, color = {r = 0, g = 1, b = 1}, surface = surface, radius = 0.33, filled = false, target = pos, time_to_live = 60000}
 
         local entity = surface.create_entity{
             name = "simple-entity-with-owner",
@@ -178,7 +178,7 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
 end
 
 global.actions.extend_collision_boxes = function(player_index, start_x, start_y, goal_x, goal_y)
-    local player = game.players[player_index]
+    local player = global.agent_characters[player_index]
     local start_pos = {x=start_x, y=start_y}
     local end_pos = {x=goal_x, y=goal_y}
     -- Define region for entity checking (add some margin around start/goal)

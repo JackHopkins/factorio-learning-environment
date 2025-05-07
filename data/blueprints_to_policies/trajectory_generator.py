@@ -4,9 +4,9 @@ import textwrap
 
 from jinja2 import Template
 
-from entities import Position, BoundingBox, EntityGroup
-from instance import FactorioInstance, Direction
-from game_types import Resource, prototype_by_name
+from env.src.entities import Position, BoundingBox, EntityGroup
+from env.src.instance import FactorioInstance, Direction
+from env.src.game_types import Resource, prototype_by_name
 
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple, NamedTuple
@@ -755,7 +755,7 @@ for file in files:
         with open(execution_dir+filename+".json", "r") as f:
             blueprint_json = f.read()
             inventory = get_inventory(blueprint_json)
-            instance.set_inventory(**inventory)
+            instance.set_inventory(inventory)
             #instance.add_command(_create_more_ore(Position(x=0, y=0), 30))
             instance.execute_transaction()
             instance.move_to(Position(x=0, y=0))

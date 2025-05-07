@@ -3,8 +3,7 @@ import json
 import zlib
 from typing import Dict, List, Union
 
-from instance import PLAYER
-from tools.tool import Tool
+from env.src.tools.tool import Tool
 
 
 class SaveEntityState(Tool):
@@ -31,7 +30,7 @@ class SaveEntityState(Tool):
             Note: Perform encoding and compression if we are sending this over a network.
         :return: Blueprint and offset to blueprint from the origin.
         """
-        entities, _ = self.execute(PLAYER, distance, player_entities, resource_entities, items_on_ground)
+        entities, _ = self.execute(self.player_index, distance, player_entities, resource_entities, items_on_ground)
 
         if encode:
             encoded_string = json.dumps(entities).encode()

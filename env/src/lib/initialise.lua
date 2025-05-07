@@ -7,11 +7,22 @@ end
 if not global.utils then
     global.utils = {}
 end
+
+-- Initialize debug flags
+if global.debug == nil then
+    global.debug = {
+        rendering = false -- Flag to toggle debug rendering of polygons and shapes
+    }
+end
+
+
+-- Note: The debug_rendering.lua library will be loaded separately by the LuaScriptManager
 --local player = game.players[arg1]
 player.surface.always_day=true
 --game.players[1].character_collision_mask = "not-colliding-with-itself"
 player.force.character_build_distance_bonus = 100
 player.force.research_all_technologies()
+
 
 local beam_duration = 9
 local surface=player.surface
@@ -83,7 +94,7 @@ global.utils.get_direction_with_diagonals = function(from_pos, to_pos)
     end
 
     -- Check for cardinal directions first
-    local cardinal_margin = 0.25
+    local cardinal_margin = 0.20 --0.25
     if math.abs(dx) < cardinal_margin then
         return dy > 0 and defines.direction.south or defines.direction.north
     elseif math.abs(dy) < cardinal_margin then
@@ -122,7 +133,7 @@ global.utils.get_closest_entity = function(player, position)
 end
 
 global.utils.is_position_blocked = function(player, position)
-    rendering.draw_circle{width = 0.5, color = {r = 1, g = 0, b = 1}, surface = player.surface, radius = 0.5, filled = false, target = position, time_to_live = 60000}
+    rendering.draw_circle{only_in_alt_mode=true, width = 0.5, color = {r = 1, g = 0, b = 1}, surface = player.surface, radius = 0.5, filled = false, target = position, time_to_live = 60000}
 
     local can_place = player.surface.can_place_entity{
         name = "simple-entity-with-owner",
@@ -296,22 +307,21 @@ global.utils.describe_placement_issues = function(player, entity_name, position,
 end
 
 global.utils.avoid_entity = function(player_index, entity, position, direction)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local player_position = player.position
     for i=0, 10 do
-        local can_place = player.can_place_entity{
+        local can_place = player.surface.can_place_entity{
             name = entity,
-            force = player.force,
+            force = "player",
             position = position,
             direction = global.utils.get_entity_direction(entity, direction)
         }
         if can_place then
             return true
         end
-        player.teleport({player_position.x + i, player_position.y + i}, player.surface)
+        player.teleport({player_position.x + i, player_position.y + i})
     end
     player.teleport(player_position)
-    game.print("Cannot avoid")
     return false
 end
 

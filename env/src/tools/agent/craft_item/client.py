@@ -1,9 +1,8 @@
 from time import sleep
 
-from instance import PLAYER
-from game_types import Prototype
-from tools.agent.inspect_inventory.client import InspectInventory
-from tools.tool import Tool
+from env.src.game_types import Prototype
+from env.src.tools.agent.inspect_inventory.client import InspectInventory
+from env.src.tools.tool import Tool
 
 
 class CraftItem(Tool):
@@ -29,7 +28,7 @@ class CraftItem(Tool):
         if not self.game_state.instance.fast:
             count_in_inventory = self.inspect_inventory()[entity]
 
-        success, elapsed = self.execute(PLAYER, name, quantity)
+        success, elapsed = self.execute(self.player_index, name, quantity)
         if success != {} and isinstance(success, str):
             if success is None:
                 raise Exception(f"Could not craft a {name} - Ingredients cannot be crafted by hand.")

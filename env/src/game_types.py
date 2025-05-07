@@ -1,7 +1,7 @@
 from __future__ import annotations
 import enum
 from difflib import get_close_matches
-from entities import *
+from env.src.entities import *
 
 
 class ResourceName(enum.Enum):

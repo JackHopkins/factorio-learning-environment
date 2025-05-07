@@ -4,7 +4,7 @@
     "config":
     {                      
         "goal_description":"Create an automatic crude oil factory that produces 250 crude oil per 60 ingame seconds.",
-        "throughput_entity":"crude_oil",
+        "throughput_entity":"crude-oil",
         "quota":250,
         "trajectory_length": 128,
         "holdout_wait_period": 60,

@@ -1,6 +1,5 @@
-from entities import Position
-from instance import PLAYER
-from tools.tool import Tool
+from env.src.entities import Position
+from env.src.tools.tool import Tool
 
 
 class LoadBlueprint(Tool):
@@ -17,7 +16,7 @@ class LoadBlueprint(Tool):
 
         assert isinstance(blueprint, str)
 
-        result, _ = self.execute(PLAYER, blueprint, position.x, position.y)
+        result, _ = self.execute(self.player_index, blueprint, position.x, position.y)
 
         if result == 0:
             return True

@@ -150,7 +150,7 @@ local function split_section_into_underground_segments(section, path, range, max
     while current_start + 1 < effective_end and segment_count < max_segments do
         iteration_count = iteration_count + 1
         if iteration_count > MAX_ITERATIONS then
-            game.print("Warning: Maximum iterations reached while splitting underground segments")
+            -- game.print("Warning: Maximum iterations reached while splitting underground segments")
             break
         end
         -- Calculate end index for this segment
@@ -271,7 +271,7 @@ local function serialize_belt_group(entity)
             end
         end
 
-        game.print("connected lines "..#connected_lines)
+        -- game.print("connected lines "..#connected_lines)
         -- Convert lines to unique belt entities
         for _, line in pairs(connected_lines) do
             if line and line.valid and not seen_owners[line.unit_number] then
@@ -279,14 +279,14 @@ local function serialize_belt_group(entity)
                 table.insert(connected_entities, line)
             end
         end
-        game.print("connected entities "..#connected_entities)
+        -- game.print("connected entities "..#connected_entities)
         return connected_entities
     end
 
     local function serialize_connected_belts(belt, is_output)
         iteration_count = iteration_count + 1
         if iteration_count > MAX_SERIALIZATION_ITERATIONS then
-            game.print("Warning: Belt serialization reached iteration limit")
+            -- game.print("Warning: Belt serialization reached iteration limit")
             return
         end
 
@@ -376,7 +376,7 @@ local function interpolate_manhattan(pos1, pos2)
     local dx = pos2.x - pos1.x
     local dy = pos2.y - pos1.y
     local manhattan_distance = math.abs(dx) + math.abs(dy)
-    game.print("Distance3 "..manhattan_distance)
+    -- game.print("Distance3 "..manhattan_distance)
     if manhattan_distance > 2 then
         local steps = math.max(math.abs(dx), math.abs(dy))
         local x_step = math.floor((dx / steps)*2)/2
@@ -483,7 +483,7 @@ local function place_at_position(player, connection_type, current_position, dir,
     end
 
     if existing_entity then
-        game.print("Existing entity "..existing_entity.name)
+        -- game.print("Existing entity "..existing_entity.name)
         -- Get the existing network ID before any modifications
         --local existing_network_id = has_valid_fluidbox(existing_entity) and existing_entity.fluidbox[1].get_fluid_system_id()
 
@@ -525,7 +525,7 @@ local function place_at_position(player, connection_type, current_position, dir,
             move_stuck_players=true
         }
         -- We can just teleport away here to avoid collision as we dont adhere by distance rules in connect_entities
-        player.teleport({placement_position.x+2, placement_position.y+2}, player.surface)
+        player.teleport({placement_position.x+2, placement_position.y+2})
         local can_place = game.surfaces[1].can_place_entity{
             name = connection_type,
             position = placement_position,
@@ -538,7 +538,7 @@ local function place_at_position(player, connection_type, current_position, dir,
         --    error("Cannot place the entity at the specified position: x="..position.x..", y="..position.y)
         --end
         --local player_position = player.position
-       -- player.teleport({placement_position.x, placement_position.y}, player.surface)
+       -- player.teleport({placement_position.x, placement_position.y})
         --local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)
         --player.teleport(player_position)
 
@@ -552,7 +552,7 @@ local function place_at_position(player, connection_type, current_position, dir,
             -- Check for collision with other entities
             local entities = player.surface.find_entities_filtered{area = target_area, force = player.force}
             for _, entity in pairs(entities) do
-                game.print("1 "..entity.name)
+                -- game.print("1 "..entity.name)
             end
 
             error("Cannot connect due to placement blockage 1.")
@@ -588,7 +588,7 @@ local function place_at_position(player, connection_type, current_position, dir,
     end
 
     -- We can just teleport away here to avoid collision as we dont adhere by distance rules in connect_entities
-    player.teleport({placement_position.x+2, placement_position.y+2}, player.surface)
+    player.teleport({placement_position.x+2, placement_position.y+2})
     local can_place = game.surfaces[1].can_place_entity{
         name = connection_type,
         position = placement_position,
@@ -596,12 +596,12 @@ local function place_at_position(player, connection_type, current_position, dir,
         force = player.force
     }
     --local player_position = player.position
-    --player.teleport({placement_position.x, placement_position.y}, player.surface)
+    --player.teleport({placement_position.x, placement_position.y})
     --local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)
     --player.teleport(player_position)
 
     --local can_place = global.utils.avoid_entity(1, connection_type, placement_position, dir)
-    rendering.draw_circle{width = 0.25, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.5, filled = false, target = placement_position, time_to_live = 12000}
+    rendering.draw_circle{only_in_alt_mode=true, width = 0.25, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.5, filled = false, target = placement_position, time_to_live = 12000}
 
     if dry_run and can_place == false then
         local target_area = {
@@ -612,7 +612,7 @@ local function place_at_position(player, connection_type, current_position, dir,
         -- Check for collision with other entities
         local entities = player.surface.find_entities_filtered{area = target_area, force = player.force}
         for _, entity in pairs(entities) do
-            game.print("1: "..entity.name)
+            -- game.print("1: "..entity.name)
         end
 
         error("Cannot connect due to placement blockage.")
@@ -686,7 +686,7 @@ end
 
 local function connect_entities(player_index, source_x, source_y, target_x, target_y, path_handle, connection_types, dry_run)
     local counter_state = {place_counter = 0}
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     local last_placed_entity = nil
 
     local start_position = {x = math.floor(source_x*2)/2, y = math.floor(source_y*2)/2}
@@ -694,14 +694,14 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
 
     local raw_path = global.paths[path_handle]
-    game.print("Path length "..#raw_path)
-    game.print(serpent.line(start_position).." - "..serpent.line(end_position))
+    -- game.print("Path length "..#raw_path)
+    -- game.print(serpent.line(start_position).." - "..serpent.line(end_position))
 
     if not raw_path or type(raw_path) ~= "table" or #raw_path == 0 then
         error("Invalid path: " .. serpent.line(path))
     end
 
-    game.print("Normalising", {print_skip=defines.print_skip.never})
+    -- game.print("Normalising", {print_skip=defines.print_skip.never})
     local path = global.utils.normalise_path(raw_path, start_position, end_position)
 
     -- Get default and underground connection types
@@ -716,14 +716,14 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
     --rendering.clear()
 
-    rendering.draw_circle{width = 1, color = {r = 1, g = 0, b = 0}, surface = game.players[1].surface, radius = 0.5, filled = false, target = start_position, time_to_live = 60000}
-    rendering.draw_circle{width = 1, color = {r = 0, g = 1, b = 0}, surface = game.players[1].surface, radius = 0.5, filled = false, target = end_position, time_to_live = 60000}
+    rendering.draw_circle{only_in_alt_mode=true, width = 1, color = {r = 1, g = 0, b = 0}, surface = game.players[1].surface, radius = 0.5, filled = false, target = start_position, time_to_live = 60000}
+    rendering.draw_circle{only_in_alt_mode=true, width = 1, color = {r = 0, g = 1, b = 0}, surface = game.players[1].surface, radius = 0.5, filled = false, target = end_position, time_to_live = 60000}
 
     for i = 1, #path - 1 do
-        rendering.draw_line{surface = game.players[1].surface, from = path[i].position, to =  path[i + 1].position, color = {1, 0, 1}, width = 2,  dash_length=0.25, gap_length = 0.25}
+        rendering.draw_line{only_in_alt_mode=true, surface = game.players[1].surface, from = path[i].position, to =  path[i + 1].position, color = {1, 0, 1}, width = 2,  dash_length=0.25, gap_length = 0.25}
     end
     for i = 1, #raw_path - 1 do
-        rendering.draw_line{surface = game.players[1].surface, from = raw_path[i].position, to =  raw_path[i + 1].position, color = {1, 1, 0}, width = 0,  dash_length=0.2, gap_length = 0.2}
+        rendering.draw_line{only_in_alt_mode=true, surface = game.players[1].surface, from = raw_path[i].position, to =  raw_path[i + 1].position, color = {1, 1, 0}, width = 0,  dash_length=0.2, gap_length = 0.2}
     end
 
 
@@ -937,7 +937,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
             -- If we haven't achieved connectivity yet, place one final pole at the target
             if not dry_run and last_pole and target_entity and not are_poles_connected(last_pole, target_entity) then
                 local final_dir = global.utils.get_direction(path[#path].position, end_position)
-                game.print("Placing final pole at "..serpent.line(end_position))
+                -- game.print("Placing final pole at "..serpent.line(end_position))
                 place_at_position(player, default_connection_type, end_position,
                         global.utils.get_entity_direction(default_connection_type, final_dir/2),
                         serialized_entities, dry_run, counter_state)
@@ -1019,7 +1019,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         end
     end
 
-    game.print("Connection status: " .. tostring(is_connected))
+    -- game.print("Connection status: " .. tostring(is_connected))
 
 
     return {
@@ -1033,7 +1033,7 @@ global.utils.normalise_path = function(original_path, start_position, end_positi
     local path = {}
     local seen = {}  -- To track seen positions
     if original_path == nil or #original_path < 1 or original_path == "not_found" then
-        error("Not a valid path to normalise")
+        error("Failed to find a path.")
     end
     if math.ceil(start_position.x) == start_position.x then
         start_position.x = start_position.x + 0.5
@@ -1235,7 +1235,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
 
     local connection_types = {}
     for item in string.gmatch(connection_type_string, "([^,]+)") do
-        game.print(item)
+        -- game.print(item)
         table.insert(connection_types, item)
     end
     --First do a dry run
@@ -1244,8 +1244,8 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     if not dry_run then
         -- Check if the player has enough entities in their inventory
         local required_count = result.number_of_entities
-        game.print("Required count: " .. required_count)
-        game.print("Available count: " .. number_of_connection_entities)
+        -- game.print("Required count: " .. required_count)
+        -- game.print("Available count: " .. number_of_connection_entities)
         if number_of_connection_entities < required_count then
             error("\"You do not have enough " .. connection_type_string .. " in you inventory to complete this connection. Required number - " .. required_count .. ", Available in inventory - " .. number_of_connection_entities.."\"")
         end

@@ -2,9 +2,9 @@ from statistics import mean
 from typing import List, Union
 from typing_extensions import deprecated, cast
 
-from entities import TransportBelt, BeltGroup, Position, Entity, EntityGroup, PipeGroup, Inventory, \
+from env.src.entities import TransportBelt, BeltGroup, Position, Entity, EntityGroup, PipeGroup, Inventory, \
     EntityStatus, Pipe, ElectricityGroup, UndergroundBelt, Direction, WallGroup
-from game_types import Prototype
+from env.src.game_types import Prototype
 
 
 def _deduplicate_entities(entities: List[Entity]) -> List[Entity]:
@@ -485,7 +485,7 @@ def agglomerate_groupable_entities(connected_entities: List[Entity]) -> List[Ent
     if not connected_entities:
         return []
 
-    if isinstance(connected_entities[0], Entity):
+    if hasattr(connected_entities[0], 'prototype'):
         prototype = connected_entities[0].prototype
 
     if prototype in (Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole):
@@ -523,6 +523,8 @@ def agglomerate_groupable_entities(connected_entities: List[Entity]) -> List[Ent
             prototype=prototype,
             position=connected_entities[0].position
         )]
+    elif prototype in (Prototype.TransportBelt, Prototype.FastTransportBelt, Prototype.ExpressTransportBelt, Prototype.UndergroundBelt, Prototype.FastUndergroundBelt, Prototype.ExpressUndergroundBelt):
+        groups = construct_belt_groups(connected_entities, prototype)
+        return groups
 
-    groups = construct_belt_groups(connected_entities, prototype)
-    return groups
+    raise RuntimeError("Failed to group an entity with prototype: {}".format(prototype.name))

@@ -1,15 +1,16 @@
 import asyncio
 import copy
 from pathlib import Path
-from typing import List, Tuple, Union, Dict
+from typing import List, Tuple, Union, Dict, Optional
 
 from eval.open.db_client import DBClient
-from models.achievements import ProductionFlows
-from models.game_state import GameState
-from models.program import Program
-from entities import Entity, EntityGroup
-from instance import FactorioInstance
-from utils.profits import get_achievements
+from env.src.models.achievements import ProductionFlows
+from env.src.models.game_state import GameState
+from env.src.models.multiagent_game_state import MultiagentGameState
+from env.src.models.program import Program
+from env.src.entities import Entity, EntityGroup
+from env.src.instance import FactorioInstance
+from env.src.utils.profits import get_achievements
 
 
 class SimpleFactorioEvaluator:
@@ -20,7 +21,7 @@ class SimpleFactorioEvaluator:
                  error_penalty=10,
                  logger=None):
         self.db = db_client
-        self.instance = instance  # Main instances
+        self.instance = instance  # Main instance
         # self.holdout = instances[-1]  # Holdout instance
         self.value_accrual_time = value_accrual_time  # Time to accrue value before evaluating
         self.error_penalty = error_penalty  # Penalty for errors during evaluation
@@ -28,10 +29,10 @@ class SimpleFactorioEvaluator:
         if logger:
             self.port_to_group = logger.port_to_group
 
-    async def evaluate(self, program: Program, start_state: GameState, task, step_statistics: dict = {}) -> Program:
+    async def evaluate(self, program: Program, start_state: Union[GameState, MultiagentGameState], task, agent_idx: int, step_statistics: dict = {}) -> Program:
         try:
             self.instance.reset(start_state)
-            raw_reward, state, response, entities, achievements, flows, ticks, error_occurred = await self._evaluate_single(self.instance.tcp_port, program, self.instance)
+            raw_reward, state, response, entities, achievements, flows, ticks, error_occurred = await self._evaluate_single(program, agent_idx)
             # enchance step statistics with the flows
             if not isinstance(flows, dict):
                 step_statistics.update(flows.to_dict())
@@ -66,25 +67,24 @@ class SimpleFactorioEvaluator:
             print(e)
             raise e
 
-    async def  _evaluate_single(self, instance_port: int, program: Program, instance: FactorioInstance) \
+    async def  _evaluate_single(self, program: Program, agent_idx: int) \
             -> Tuple[float, GameState, str, List[Union[Entity, EntityGroup]], Dict, ProductionFlows, int]:
 
         #tcp_port = instance_port
 
         try:
             # Get initial state information
-
-            start_entities = instance.namespace.get_entities()
-            start_inventory = instance.namespace.inspect_inventory()
+            start_entities = self.instance.namespaces[agent_idx].get_entities()
+            start_inventory = self.instance.namespaces[agent_idx].inspect_inventory()
             #start_production_flows = instance.namespace._get_production_stats()
-            start_production_flows = ProductionFlows.from_dict(instance.namespace._get_production_stats())
+            start_production_flows = ProductionFlows.from_dict(self.instance.namespaces[agent_idx]._get_production_stats())
 
-            initial_value, start_time = instance.namespace.score()
-            reward, time, result = instance.eval(program.code, timeout=60)
+            initial_value, start_time = self.instance.namespaces[agent_idx].score()
+            reward, time, result = self.instance.eval(program.code, agent_idx=agent_idx, timeout=60)
+            # Check if there was an error in the program execution
             error_occurred = "error" in result.lower() or "exception: " in result.lower()
-
-            entities = instance.namespace.get_entities()
-            final_inventory = instance.namespace.inspect_inventory()
+            entities = self.instance.namespaces[agent_idx].get_entities()
+            final_inventory = self.instance.namespaces[agent_idx].inspect_inventory()
 
             # Check to see if the inventories are different
             # If so, we manually put a hint in the generated code and result from the game
@@ -113,13 +113,15 @@ class SimpleFactorioEvaluator:
 
             # Sleep for 3 seconds to get output flows
             await asyncio.sleep(self.value_accrual_time)
-            state = GameState.from_instance(instance)
-
-            score, _ = instance.namespace.score()
+            if self.instance.num_agents > 1:
+                state = MultiagentGameState.from_instance(self.instance)
+            else:
+                state = GameState.from_instance(self.instance)
+            score, _ = self.instance.first_namespace.score()
             final_reward = score - initial_value
-            ticks = instance.get_elapsed_ticks()
+            ticks = self.instance.get_elapsed_ticks()
 
-            post_production_flows = ProductionFlows.from_dict(instance.namespace._get_production_stats())
+            post_production_flows = ProductionFlows.from_dict(self.instance.first_namespace._get_production_stats())
 
             achievements = get_achievements(start_production_flows.__dict__, post_production_flows.__dict__)
             flows = start_production_flows.get_new_flows(post_production_flows)#

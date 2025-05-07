@@ -1,7 +1,6 @@
-from instance import PLAYER
-from models.research_state import ResearchState
-from models.technology_state import TechnologyState
-from tools.tool import Tool
+from env.src.models.research_state import ResearchState
+from env.src.models.technology_state import TechnologyState
+from env.src.tools.tool import Tool
 
 
 class SaveResearchState(Tool):
@@ -15,7 +14,7 @@ class SaveResearchState(Tool):
         Returns:
             ResearchState: Complete research state including all technologies
         """
-        state, _ = self.execute(PLAYER)
+        state, _ = self.execute(self.player_index)
 
         if not isinstance(state, dict):
             raise Exception(f"Could not save research state: {state}")

@@ -8,8 +8,19 @@ from eval.open.independent_runs.trajectory_runner import run_process, get_next_v
 from eval.tasks.task_factory import TaskFactory
 from pathlib import Path
 import json
+from dataclasses import dataclass
 load_dotenv()
 from cluster.local.cluster_ips import get_local_container_ips
+
+
+@dataclass  
+class RunConfig:
+    task: str
+    model: str
+    version: int = None
+    num_agents: int = 1
+    exit_on_task_success: bool = True
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -18,10 +29,13 @@ def main():
     # read in run_config
     run_config_location = args.run_config
     with open(run_config_location, 'r') as f:
-        run_configs = json.load(f)
+        run_configs_raw = json.load(f)
+        run_configs = [RunConfig(**config) for config in run_configs_raw]
+
     # Create initial state and get system prompt
     try:
-        instance = create_factorio_instance(0)
+        num_agents = run_configs[0].num_agents
+        instance = create_factorio_instance(0, num_agents)
         system_prompt = instance.get_system_prompt()
     except Exception as e:
         raise(f"Error creating Factorio instance: {e}")
@@ -35,19 +49,22 @@ def main():
     base_version = asyncio.run(get_next_version())
     processes = []
     for run_idx, run_config in enumerate(run_configs):
-        task = TaskFactory.create_task(run_config["task"])
-        agent = BacktrackingSystem(model=run_config["model"], system_prompt=system_prompt, task = task)
-        if "version" in run_config:
-            version = run_config["version"]
+        task = TaskFactory.create_task(run_config.task)
+        agents = []
+        for agent_idx in range(run_config.num_agents):
+            system_prompt = instance.get_system_prompt(agent_idx)
+            agent = BacktrackingSystem(model=run_config.model, system_prompt=system_prompt, task=task)
+            agents.append(agent)
+        if run_config.version is not None:
+            version = run_config.version
         else:
             version = base_version + version_offset
             version_offset += 1
         config = EvalConfig(
-            agent=agent,
+            agents=agents,
             version=version,
-            version_description=f"model:{run_config['model']}\ntype:{task.task_key}",
-            exit_on_task_success=run_config.get("exit_on_task_success", True),
-            only_continue_on_program_success=True
+            version_description=f"model:{run_config.model}\ntype:{task.task_key}\nnum_agents:{run_config.num_agents}",
+            exit_on_task_success=run_config.exit_on_task_success,
         )
 
         p = multiprocessing.Process(
@@ -56,6 +73,15 @@ def main():
         )
         p.start()
         processes.append(p)
+
+    # Reset message log file
+    # Get the root directory (fle) by going up 3 levels from the current file
+    root_dir = Path(__file__).parent.parent.parent.parent
+    message_log_path = root_dir / "message_log.txt"
+    if message_log_path.exists():
+        message_log_path.unlink()
+    message_log_path.touch()
+    message_log_path.write_text(f"Message log for version {base_version}\n")
 
     # Wait for all processes to complete
     for p in processes:

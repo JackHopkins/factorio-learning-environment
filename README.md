@@ -13,6 +13,8 @@ An open source framework for developing and evaluating LLM agents in the game of
 </p>
 <p align="center"><em>Claude 3.5 plays Factorio</em></p>
 
+
+
 ## Why FLE?
 
 [//]: # (FLE is a framework that tests agent capabilities in long-term planning, program synthesis, and resource optimization against a set of exponentially scaling challenges, ranging from basic automation to complex factories processing millions of resources per second. )
@@ -25,6 +27,8 @@ Our results demonstrate that models still lack strong spatial reasoning. In lab-
 exhibit promising short-horizon skills, they are unable to operate effectively in constrained environments, reflecting limitations in error analysis. In open-play, while LLMs discover automation strategies that improve growth (e.g electric-powered drilling), they fail to achieve complex 
 automation (e.g electronic-circuit manufacturing). 
 
+## Updates
+- [15/4/2025] Added a visual agent, that takes a rendering of the map as an additional input.
 
 ## Quick Links
 - [Installation](#installation)
@@ -88,20 +92,39 @@ docker compose -f docker-compose-1.yml up -d
 ```
 **Note**: Use docker compose (with a space) instead of docker-compose as shown in the command above.
 
-6. **Configure firewall** (if running server on a different machine):
+6. **Set up multiple agents** (if needed):
+If you want to run multiple agents in parallel, you'll need to set up additional Factorio clients before loading the FLE mods. Run the following command right after starting the Docker container:
+
+```bash
+python cluster/local/setup_multiagent.py <num_clients> --server localhost:34197 --factorio /Applications/factorio.app/Contents/MacOS/factorio
+```
+
+Where:
+- `<num_clients>` is the number of agents you want to set up on the server. (Single agent experiments will still work just fine even if you have set up multiple agents.)
+- `--server` specifies the server address (default: localhost:34197)
+- `--factorio` specifies the path to your Factorio binary (default: /Applications/factorio.app/Contents/MacOS/factorio)
+
+This script will:
+1. Create separate config directories for each client
+2. Launch each client and verify their connection to the server
+3. Clean up temporary config files after setup
+
+**Important**: Run this script BEFORE loading any FLE mods into the server, as the clients won't be able to join if the mods are already installed.
+
+7. **Configure firewall** (if running server on a different machine):
 
     Open the following ports:
 - UDP 34197 (Game connection)
 - TCP 27015 (RCON)
 
 
-7. **Activate server**:
+8. **Activate server**:
 - Open Factorio client
 - Navigate to _Multiplayer_
 - Connect to `localhost:34197` (default) or your configured address in Docker. 
   - Once connected, you can safely disconnect. This step confirms your Factorio license with the server.
 
-8. **Configure DB**: Create an `.env` file in the root directory, modelled on `.example.env`
+9. **Configure DB**: Create an `.env` file in the root directory, modelled on `.example.env`
 
 First create the .env file. Note that API keys are only required for the respective model providers that will be used to run eval on
 
@@ -164,7 +187,7 @@ CREATE TABLE programs (
 
 And replace the `PostgresDBClient` object at `create_db_client` function in `eval\open\independent_runs\trajectory_runner.py` with the SQLliteDBClient object (see [Database](#database) section).
 
-9. **Run Eval**: Running open and lab play with example run configs:
+10. **Run Eval**: Running open and lab play with example run configs:
    1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
    2. Tasks (one parallel run of iron-ore task): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_lab_play.json`
 
@@ -174,6 +197,12 @@ And replace the `PostgresDBClient` object at `create_db_client` function in `eva
 - **Database connection errors**: Verify your database configuration in the .env file and ensure the database exists.
 - **Docker issues**: Ensure your user has permission to run Docker without sudo.
 - **Connection issues**: Make sure the Factorio server is running and ports are properly configured.
+
+## MCP
+### Claude Code
+After starting and activating at least 1 Factorio server:
+
+`claude mcp add -- claude mcp add fle -- mcp run /PATH/TO/FLE/server.py `
 
 ## Environment
 
@@ -352,7 +381,7 @@ enhance_response_with_task_output(self, response: str, task_response: TaskRespon
 We provide two default tasks: 
 1. OpenPlayTask - Task for the open-play setting, where the agent plays the game until a specified number of steps is finished. The verify function will always return False
 2. ThroughputTask - Task for requiring the agent to build a factory that achieves a specified throughput in the holdout period. The verify function will return True if the holdout period throughput is above the threshold
-
+3. UnboundedThroughputTask - Task for the agent to create a factory that maximises the throughput of a target entity in a specified number of timesteps. The verify function will always return False until the number of steps is reached
 The task jsons specifies the "task_type" and the "config" parameters. `task_type` specifies the mapping from the json to the task type (the creation of task objects from the json is done in `eval\tasks\task_factory.py`). `config` specifies all required attributes to substantiate the respective task object. Each config must at minimum define the "goal_description", "trajectory_length" and "task_key" parameters.
 Examples of task json
 ```

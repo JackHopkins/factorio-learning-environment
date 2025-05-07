@@ -4,12 +4,12 @@ import os
 from pathlib import Path
 
 
-from utils.rcon import _load_lib, _load_script, \
+from env.src.utils.rcon import _load_lib, _load_script, \
     _get_lib_names, _get_tool_names, _get_dir, _get_lib_dir
 
 from lupa.lua54 import LuaRuntime
 
-from rcon.factorio_rcon import RCONClient
+from env.src.rcon.factorio_rcon import RCONClient
 
 
 class LuaScriptManager:
@@ -34,7 +34,7 @@ class LuaScriptManager:
 
     def init_action_checksums(self):
         checksum_init_script = _load_lib("checksum")
-        response = self.rcon_client.send_command("/c "+checksum_init_script)
+        response = self.rcon_client.send_command("/sc "+checksum_init_script)
         return response
 
     def check_lua_syntax(self, script):
@@ -67,7 +67,7 @@ class LuaScriptManager:
     #         raise Exception(f"Syntax error in: {name}: {error}")
     #     print(f"{self.rcon_client.port}: Loading action {name} into game")
     #
-    #     result = self.rcon_client.send_command(f'/c ' + script)
+    #     result = self.rcon_client.send_command(f'/sc ' + script)
 
     def load_tool_into_game(self, name):
         # Find all scripts for this action by checking prefixes
@@ -98,7 +98,7 @@ class LuaScriptManager:
                 raise Exception(f"Syntax error in: {script_name}: {error}")
             print(f"{self.rcon_client.port}: Loading action {script_name} into game")
 
-            result = self.rcon_client.send_command(f'/c ' + script)
+            result = self.rcon_client.send_command(f'/sc ' + script)
             pass
 
     def load_init_into_game(self, name):
@@ -114,7 +114,7 @@ class LuaScriptManager:
                 return
             self.update_game_checksum(self.rcon_client, name, checksum)
 
-        self.rcon_client.send_command(f'/c ' + script)
+        self.rcon_client.send_command(f'/sc ' + script)
 
 
     def calculate_checksum(self, content: str) -> str:
@@ -178,13 +178,13 @@ class LuaScriptManager:
         return scripts_to_load
 
     def update_game_checksum(self, rcon_client, script_name: str, checksum: str):
-        rcon_client.send_command(f"/c global.set_lua_script_checksum('{script_name}', '{checksum}')")
+        rcon_client.send_command(f"/sc global.set_lua_script_checksum('{script_name}', '{checksum}')")
 
     def _clear_game_checksums(self, rcon_client):
-        rcon_client.send_command("/c global.clear_lua_script_checksums()")
+        rcon_client.send_command("/sc global.clear_lua_script_checksums()")
 
     def _get_game_checksums(self, rcon_client):
-        response = rcon_client.send_command("/c rcon.print(global.get_lua_script_checksums())")
+        response = rcon_client.send_command("/sc rcon.print(global.get_lua_script_checksums())")
         return json.loads(response)
 
 

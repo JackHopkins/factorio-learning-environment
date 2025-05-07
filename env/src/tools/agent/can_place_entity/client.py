@@ -1,9 +1,9 @@
 
 
-from entities import Position, Entity, Direction as DirectionA
-from instance import PLAYER, Direction
-from game_types import Prototype
-from tools.tool import Tool
+from env.src.entities import Position, Entity, Direction as DirectionA
+from env.src.instance import Direction
+from env.src.game_types import Prototype
+from env.src.tools.tool import Tool
 
 
 class CanPlaceEntity(Tool):
@@ -36,7 +36,7 @@ class CanPlaceEntity(Tool):
         x, y = self.get_position(position)
         name, metaclass = entity.value
 
-        response, elapsed = self.execute(PLAYER, name, direction.value + 1, x, y)
+        response, elapsed = self.execute(self.player_index, name, direction.value + 1, x, y)
 
         if not isinstance(response, dict):
             if isinstance(response, bool):

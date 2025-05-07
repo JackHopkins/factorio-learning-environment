@@ -1,8 +1,8 @@
 import pytest
 
-from instance import Direction
-from game_types import Prototype, RecipeName
-from entities import Position
+from env.src.instance import Direction
+from env.src.game_types import Prototype, RecipeName
+from env.src.entities import Position
 
 @pytest.fixture()
 def game(instance):
@@ -55,7 +55,6 @@ def test_rotate_assembling_machine_2_with_recipe(game):
 
 def test_rotate_boiler(game):
     # place the boiler next to the offshore pump
-    from entities import Position
     boiler = game.place_entity_next_to(Prototype.Boiler,
                                        reference_position=Position(x=0, y=0),
                                        direction=Direction.RIGHT,

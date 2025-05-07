@@ -1,11 +1,10 @@
 from time import sleep
 from typing import Union
 
-from entities import Entity, EntityGroup, Position, BeltGroup, PipeGroup
-from instance import PLAYER
-from game_types import Prototype
-from tools.agent.get_entities.client import GetEntities
-from tools.tool import Tool
+from env.src.entities import Entity, EntityGroup, Position, BeltGroup, PipeGroup
+from env.src.game_types import Prototype
+from env.src.tools.agent.get_entities.client import GetEntities
+from env.src.tools.tool import Tool
 
 
 class InsertItem(Tool):
@@ -44,7 +43,7 @@ class InsertItem(Tool):
                 x, y = target.belts[0].position.x, target.belts[0].position.y
 
             while items_inserted < quantity:
-                response, elapsed = self.execute(PLAYER, name, 1, x, y, None)
+                response, elapsed = self.execute(self.player_index, name, 1, x, y, None)
 
                 if isinstance(response, str):
                     if "Could not find" not in response:  # Don't raise if belt is just full
@@ -66,7 +65,7 @@ class InsertItem(Tool):
 
             return target
 
-        response, elapsed = self.execute(PLAYER, name, quantity, x, y, target_name)
+        response, elapsed = self.execute(self.player_index, name, quantity, x, y, target_name)
 
         if isinstance(response, str):
             raise Exception(f"Could not insert: {response.split(':')[-1].strip()}")

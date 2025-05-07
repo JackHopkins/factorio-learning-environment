@@ -1,0 +1,182 @@
+import json
+import pickle
+import time
+from dataclasses import dataclass, field, asdict
+from enum import Enum
+from typing import Dict, Optional, Any, List
+
+
+from models.research_state import ResearchState
+from models.technology_state import TechnologyState
+from models.game_state import GameState, is_serializable, filter_serializable_vars
+
+@dataclass
+class MultiagentGameState:
+    """Serializable Factorio game state"""
+    entities: str # Serialized list of entities
+    inventories: List[Dict[str, int]]  # List of inventories for all players
+    research: Optional[ResearchState] = field()
+    timestamp: float = field(default_factory=time.time)
+    namespaces: List[bytes] = field(default_factory=list)
+    agent_messages: List[Dict[str, Any]] = field(default_factory=list)
+
+    @property
+    def is_multiagent(self) -> bool:
+        return True
+    
+    @property
+    def num_agents(self) -> int:
+        return len(self.inventories)
+
+    @classmethod
+    def from_instance(cls, instance: 'FactorioInstance') -> 'MultiagentGameState':
+        """Capture current game state from Factorio instances"""
+        assert instance.num_agents > 1, "MultiagentGameState can only be created from a multiagent instance"
+        entities = instance.first_namespace._save_entity_state(compress=True, encode=True)
+
+        # Get research state
+        research_state = instance.first_namespace._save_research_state()
+
+        # Filter and pickle only serializable variables
+        namespaces = []
+        for namespace in instance.namespaces:
+            if hasattr(namespace, 'persistent_vars'):
+                serializable_vars = filter_serializable_vars(namespace.persistent_vars)
+                namespaces.append(pickle.dumps(serializable_vars))
+            else:
+                namespaces.append(bytes())
+
+        # Get inventories for all players
+        inventories = [namespace.inspect_inventory() for namespace in instance.namespaces]
+        agent_messages = [namespace._get_messages() for namespace in instance.namespaces]
+
+        return cls(
+            entities=entities,
+            inventories=inventories,
+            namespaces=namespaces,
+            research=research_state,
+            agent_messages=agent_messages
+        )
+
+    def __repr__(self):
+        readable_namespaces=[pickle.loads(namespace) for namespace in self.namespaces]
+        return f"MultiagentGameState(entities={self.entities}, inventories={self.inventories}, timestamp={self.timestamp}, namespace={{{readable_namespaces}}}, agent_messages={self.agent_messages})"
+
+
+
+    @classmethod
+    def parse_raw(cls, json_str: str) -> 'MultiagentGameState':
+        data = json.loads(json_str)
+        namespaces = []
+        if 'namespaces' in data:
+            namespaces = [bytes.fromhex(ns) if ns else bytes() for ns in data['namespaces']]
+        
+        # Parse research state if present
+        research = None
+        if 'research' in data:
+            research = ResearchState(
+                technologies={
+                    name: TechnologyState(**tech)
+                    for name, tech in data['research']['technologies'].items()
+                },
+                current_research=data['research']['current_research'],
+                research_progress=data['research']['research_progress'],
+                research_queue=data['research']['research_queue'],
+                progress=data['research']['progress'] if 'progress' in data['research'] else {}
+            )
+
+        return cls(
+            entities=data['entities'],
+            inventories=data['inventories'],
+            timestamp=data['timestamp'] if 'timestamp' in data else time.time(),
+            namespaces=namespaces,
+            research=research,
+            agent_messages=data.get('agent_messages', [])
+        )
+
+    @classmethod
+    def parse(cls, data) -> 'MultiagentGameState':
+        namespaces = []
+        if 'namespaces' in data:
+            namespaces = [bytes.fromhex(ns) if ns else bytes() for ns in data['namespaces']]
+
+        # Parse research state if present
+        research = None
+        if 'research' in data:
+            research = ResearchState(
+                technologies={
+                    name: TechnologyState(**tech)
+                    for name, tech in data['research']['technologies'].items()
+                },
+                current_research=data['research']['current_research'],
+                research_progress=data['research']['research_progress'],
+                research_queue=data['research']['research_queue'],
+                progress=data['research']['progress'] if 'progress' in data['research'] else {}
+            )
+
+        return cls(
+            entities=data['entities'],
+            inventories=data['inventories'],
+            timestamp=data['timestamp'] if 'timestamp' in data else time.time(),
+            namespaces=namespaces,
+            research=research,
+            agent_messages=data.get('agent_messages', [])
+        )
+
+    def to_raw(self) -> str:
+        """Convert state to JSON string"""
+        data = {
+            'entities': self.entities,
+            'inventories': [inventory.__dict__ for inventory in self.inventories],
+            'timestamp': self.timestamp,
+            'namespaces': [ns.hex() if ns else '' for ns in self.namespaces],
+            'agent_messages': self.agent_messages
+        }
+
+        # Add research state if present
+        if self.research:
+            data['research'] = {
+                'technologies': {
+                    name: asdict(tech)
+                    for name, tech in self.research.technologies.items()
+                },
+                'current_research': self.research.current_research,
+                'research_progress': self.research.research_progress,
+                'research_queue': self.research.research_queue,
+                'progress': self.research.progress
+            }
+
+        return json.dumps(data)
+
+
+    def to_instance(self, instance: 'FactorioInstance'):
+        """Restore game state to a Factorio instance"""
+        # Load entity state to all instances (since it's shared)
+        assert instance.num_agents == self.num_agents, f"MultiagentGameState can only be restored to a multiagent instance with the same number of agents (num_agents={self.num_agents})"
+        instance.first_namespace._load_entity_state(self.entities, decode=True)
+        
+        # Set inventory for each player
+        if self.inventories:
+            for i in range(instance.num_agents):
+                instance.set_inventory(self.inventories[i], i)
+
+        # Restore research state if present (only need to do this once)
+        if self.research and instance.player_index == 1:  # Only do this for the first instance
+            instance.first_namespace._load_research_state(self.research)
+        
+        # Load messages for each player
+        if self.agent_messages:
+            agent_messages = [msg for sublist in self.agent_messages for msg in sublist]
+            print(f'multiagent_game_state.py: loading messages: {agent_messages}')
+            instance.first_namespace._load_messages(agent_messages)
+            print(f'multiagent_game_state.py: loaded messages: {instance.first_namespace._get_messages(True)}')
+
+        # Merge pickled namespace with existing persistent_vars for each player
+        if self.namespaces:
+            for i in range(instance.num_agents):
+                namespace = self.namespaces[i]
+                if namespace:
+                    restored_vars = pickle.loads(namespace)
+                if not hasattr(instance, 'persistent_vars') or instance.persistent_vars is None:
+                    instance.persistent_vars = {}
+                instance.persistent_vars.update(restored_vars)

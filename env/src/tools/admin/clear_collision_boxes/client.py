@@ -1,6 +1,4 @@
-
-from instance import PLAYER
-from tools.tool import Tool
+from env.src.tools.tool import Tool
 
 
 class ClearCollisionBoxes(Tool):
@@ -12,5 +10,5 @@ class ClearCollisionBoxes(Tool):
         """
         Removes all pipe insulation
         """
-        response, elapsed = self.execute(PLAYER)
+        response, elapsed = self.execute(self.player_index)
         return True

@@ -107,7 +107,7 @@ script.on_nth_tick(15, function(event)
     if not global.harvest_queues then return end
 
     for player_index, queue in pairs(global.harvest_queues) do
-        local player = game.get_player(player_index)
+        local player = global.agent_characters[player_index]
         -- Skip if player not valid
         if not player or not player.valid then goto continue end
 
@@ -254,7 +254,7 @@ local function find_entity_type_at_position(surface, position)
 end
 
 local function harvest_specific_resources(player, surface, position, count, target_type, target_name)
-    game.print("Harvesting specific resources")
+    -- game.print("Harvesting specific resources")
     -- Use existing harvest/harvest_trees functions but filtered to specific type
     local radius = player.resource_reach_distance
     local entities = surface.find_entities_filtered{
@@ -332,7 +332,7 @@ local function harvest_resource_slow(player, player_index, surface, position, co
 
    local queue = initialize_harvest_queue(player_index, position, count)
    local expected_yield = add_entities_to_queue(queue, radius_entities, count)
-   game.print("expected "..expected_yield)
+   -- game.print("expected "..expected_yield)
    begin_mining(queue, player)
    return expected_yield
 end
@@ -387,7 +387,7 @@ function harvest(entities, count, from_position, player)
 end
 
 function harvest_trees(entities, count, from_position, player)
-    game.print("Harvesting "..#entities.." trees")
+    -- game.print("Harvesting "..#entities.." trees")
     if count == 0 then return 0 end
     local yield = 0
     entities = sort_entities_by_distance(entities, from_position)
@@ -455,7 +455,7 @@ end
 
 
 global.actions.harvest_resource = function(player_index, x, y, count, radius)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     if not player then
         error("Player not found")
     end
@@ -475,15 +475,15 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
         error("Nothing within reach to harvest")
     end
 
-    if not global.fast then
-        return harvest_resource_slow(player, player_index, surface, position, count, radius)
-    end
+    --if not global.fast then
+    --    return harvest_resource_slow(player, player_index, surface, position, count, radius)
+    --end
 
     local total_yield = 0
     if target_type then
         total_yield = total_yield + harvest_specific_resources(player, surface, position, count, target_type, target_name)
         if total_yield >= count then
-            game.print("Harvested " .. total_yield .. " items of " .. target_name)
+            -- game.print("Harvested " .. total_yield .. " items of " .. target_name)
             return total_yield
         end
     end
@@ -522,13 +522,13 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
     if total_yield == 0 then
         error("Nothing within reach to harvest")
     else
-        game.print("Harvested resources yielding " .. total_yield .. " items")
+        -- game.print("Harvested resources yielding " .. total_yield .. " items")
         return total_yield
     end
 end
 --
 --global.actions.harvest_resource2 = function(player_index, x, y, count, radius)
---    local player = game.get_player(player_index)
+--    local player = global.agent_characters[player_index]
 --    if not player then
 --        error("Player not found")
 --    end
@@ -600,7 +600,7 @@ global.actions.get_harvest_queue_length = function(player_index)
 end
 
 global.actions.get_resource_name_at_position = function(player_index, x, y)
-    local player = game.get_player(player_index)
+    local player = global.agent_characters[player_index]
     if not player then
         error("Player not found")
     end

@@ -23,7 +23,8 @@ end
 
 
 global.actions.move_to = function(player_index, path_handle, trailing_entity, is_trailing)
-    local player = game.get_player(player_index)
+    --local player = global.agent_characters[player_index]
+    local player = global.agent_characters[player_index]
     local path = global.paths[path_handle]
     local surface = player.surface
 
@@ -188,7 +189,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
             if math.abs(prev_pos.x - target_position.x) == 1 and math.abs(prev_pos.y - target_position.y) == 1 then
                 place_diagonal(prev_pos, target_position, true)
             else
-                game.print("Placing at direction: " .. direction .. " Current position: " .. serpent.line(prev_pos) .. " Target position: " .. serpent.line(target_position))
+                -- game.print("Placing at direction: " .. direction .. " Current position: " .. serpent.line(prev_pos) .. " Target position: " .. serpent.line(target_position))
                 directions = {defines.direction.north, defines.direction.east, defines.direction.south, defines.direction.west}
                 opposite_direction = {defines.direction.south, defines.direction.west, defines.direction.north, defines.direction.east}
                 new_direction = opposite_direction[direction/2+1]
@@ -215,7 +216,7 @@ global.actions.update_walking_queues = function()
     if not global.walking_queues then return end
 
     for player_index, queue in pairs(global.walking_queues) do
-        local player = game.get_player(player_index)
+        local player = global.agent_characters[player_index]
         if not player or not queue.current_target then goto continue end
 
         local distance = ((player.position.x - queue.current_target.x)^2 +

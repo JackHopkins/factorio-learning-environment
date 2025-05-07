@@ -1,6 +1,5 @@
-from entities import Position
-from instance import PLAYER
-from tools.tool import Tool
+from env.src.entities import Position
+from env.src.tools.tool import Tool
 
 
 class ExtendCollisionBoxes(Tool):
@@ -14,7 +13,7 @@ class ExtendCollisionBoxes(Tool):
         This is necessary when making other pipe connections, as adjacency can inadvertently cause different
         pipe groups to merge
         """
-        response, elapsed = self.execute(PLAYER,
+        response, elapsed = self.execute(self.player_index,
                                          source_position.x,
                                          source_position.y,
                                          target_position.x,

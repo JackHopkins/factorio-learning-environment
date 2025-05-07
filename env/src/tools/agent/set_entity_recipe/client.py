@@ -1,9 +1,8 @@
 from typing import Union
 
-from entities import Entity
-from instance import PLAYER
-from game_types import Prototype, RecipeName
-from tools.tool import Tool
+from env.src.entities import Entity
+from env.src.game_types import Prototype, RecipeName
+from env.src.tools.tool import Tool
 
 
 class SetEntityRecipe(Tool):
@@ -28,7 +27,7 @@ class SetEntityRecipe(Tool):
         else:
             raise ValueError(f"Invalid entity type: {prototype}")
 
-        response, elapsed = self.execute(PLAYER, name, x, y)
+        response, elapsed = self.execute(self.player_index, name, x, y)
 
         if not isinstance(response, dict):
             raise Exception(f"Could not set recipe to {name}"+str(response).split(":")[-1].strip())

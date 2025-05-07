@@ -1,9 +1,8 @@
 from typing import Union
 
-from entities import Recipe, Ingredient, Product
-from instance import PLAYER
-from game_types import Prototype, RecipeName
-from tools.tool import Tool
+from env.src.entities import Recipe, Ingredient, Product
+from env.src.game_types import Prototype, RecipeName
+from env.src.tools.tool import Tool
 
 
 class GetPrototypeRecipe(Tool):
@@ -25,7 +24,7 @@ class GetPrototypeRecipe(Tool):
         else:
             name = prototype
 
-        response, elapsed = self.execute(PLAYER, name)
+        response, elapsed = self.execute(self.player_index, name)
 
         if not isinstance(response, dict):
             raise Exception(f"Could not get recipe of {name} - {response}. You may need to use the RecipeName enum instead.")

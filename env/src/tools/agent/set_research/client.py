@@ -1,8 +1,7 @@
 from typing import List, Optional
 from pydantic import BaseModel
-from game_types import Technology
-from instance import PLAYER
-from tools.tool import Tool
+from env.src.game_types import Technology
+from env.src.tools.tool import Tool
 
 
 class Ingredient(BaseModel):
@@ -26,7 +25,7 @@ class SetResearch(Tool):
         else:
             name = technology
 
-        success, elapsed = self.execute(PLAYER, name)
+        success, elapsed = self.execute(self.player_index, name)
 
         if success != {} and isinstance(success, str):
             if success is None:

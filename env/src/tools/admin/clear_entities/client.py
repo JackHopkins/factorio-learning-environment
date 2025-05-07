@@ -1,7 +1,6 @@
 import math
 
-from instance import PLAYER
-from tools.init import Init
+from env.src.tools.init import Init
 
 
 class ClearEntities(Init):
@@ -10,5 +9,5 @@ class ClearEntities(Init):
         super().__init__(connection, game_state)
 
     def __call__(self, *args, **kwargs):
-        response, time_elapsed = self.execute(PLAYER)
+        response, time_elapsed = self.execute(self.player_index)
         return response

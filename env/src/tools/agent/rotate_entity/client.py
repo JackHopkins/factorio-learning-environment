@@ -1,8 +1,8 @@
-from entities import Entity, Direction as DirectionA, \
+from env.src.entities import Entity, Direction as DirectionA, \
     AssemblingMachine  # We have 2 Direction objects to avoid circular deps
-from instance import PLAYER, Direction
-from game_types import prototype_by_name
-from tools.tool import Tool
+from env.src.instance import Direction
+from env.src.game_types import prototype_by_name
+from env.src.tools.tool import Tool
 
 
 class RotateEntity(Tool):
@@ -33,7 +33,7 @@ class RotateEntity(Tool):
 
             factorio_direction = Direction.to_factorio_direction(direction)
 
-            response, elapsed = self.execute(PLAYER, x, y, factorio_direction, entity.name)
+            response, elapsed = self.execute(self.player_index, x, y, factorio_direction, entity.name)
 
             if not response:
                 raise Exception(f"Could not rotate: {response}")
@@ -64,7 +64,7 @@ class RotateEntity(Tool):
         try:
             object = metaclass(**cleaned_response)
         except Exception as e:
-            raise Exception(f"Could not create {entity.name} object from response: {response}", e)
+            raise Exception(f"Could not create {entity.name} object from response (rotate entity): {response}", e)
 
         if object.direction.value != direction.value:
             if isinstance(entity, AssemblingMachine):

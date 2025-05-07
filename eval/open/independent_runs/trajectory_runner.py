@@ -203,6 +203,10 @@ class TrajectoryRunner:
 
         # Run trajectory
         for iteration, agent_idx in product(range(depth, self.config.task.trajectory_length), range(len(self.agents))):
+            # Check if the agent has steps left
+            if agent_step_budget[agent_idx] <= 0:
+                print(f"Agent {agent_idx} has no steps left. Skipping.")
+                continue
             iteration_start = time.time()
             time.sleep(COURTESY_SLEEP) # courtesy sleep
             agent_completed = False

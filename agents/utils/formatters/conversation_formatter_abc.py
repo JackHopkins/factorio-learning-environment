@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Tuple, Optional
 
-from models.conversation import Conversation
-from models.message import Message
+from env.src.models.conversation import Conversation
+from env.src.models.message import Message
 from namespace import FactorioNamespace
 
 PLANNING_ADDITION_PROMPT = \

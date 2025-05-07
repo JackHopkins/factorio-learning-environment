@@ -98,6 +98,16 @@ global.actions.load_entity_state = function(player, stored_json_data)
                 global.agent_characters[agent_index] = new_character
             end
 
+            -- Restore character color if it exists
+            if character_state.color then
+                new_character.color = {
+                    r = tonumber(character_state.color.r),
+                    g = tonumber(character_state.color.g),
+                    b = tonumber(character_state.color.b),
+                    a = tonumber(character_state.color.a)
+                }
+            end
+
             -- Restore character inventory
             if character_state.inventory then
                 local main_inventory = new_character.get_inventory(defines.inventory.character_main)

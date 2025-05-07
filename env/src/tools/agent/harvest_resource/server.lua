@@ -475,9 +475,9 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
         error("Nothing within reach to harvest")
     end
 
-    if not global.fast then
-        return harvest_resource_slow(player, player_index, surface, position, count, radius)
-    end
+    --if not global.fast then
+    --    return harvest_resource_slow(player, player_index, surface, position, count, radius)
+    --end
 
     local total_yield = 0
     if target_type then

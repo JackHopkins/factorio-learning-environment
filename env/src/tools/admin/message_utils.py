@@ -33,7 +33,7 @@ def log_messages(messages: List[Dict]) -> None:
                 agent_name = f"Agent {msg['sender']}"
                 colored_name = agent_name
                 
-            f.write(f"{colored_name}: {msg['message']}\n")
+            f.write(f"{colored_name}: {msg['message']}\n\n")
 
 def deduplicate_broadcast_messages(messages):
     """Helper function to deduplicate broadcast messages while preserving direct messages"""

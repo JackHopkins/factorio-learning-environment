@@ -48,7 +48,7 @@ class HarvestResource(Tool):
             raise Exception(f"Could not harvest. {msg}")
 
         # If `fast` is turned off - we need to long poll the game state to ensure the player has moved
-        if not self.game_state.instance.fast:
+        if self.game_state.instance.fast:
             remaining_steps = self.connection.send_command(
                 f'/silent-command rcon.print(global.actions.get_harvest_queue_length({self.player_index}))')
             attempt = 0
@@ -76,7 +76,7 @@ class HarvestResource(Tool):
 
     def get_resource_type_at_position(self, position: Position):
         x, y = self.get_position(position)
-        entity_at_position = self.connection.send_command(
+        entity_at_position = self.connection.rcon_client.send_command(
             f'/silent-command rcon.print(global.actions.get_resource_name_at_position({self.player_index}, {x}, {y}))')
         if entity_at_position.startswith('tree'):
             return Resource.Wood

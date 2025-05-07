@@ -6,15 +6,15 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
     local automatic_close = True
 
     local function get_player_inventory_items(player)
-       if not is_fast then
-           player.opened = player
-           script.on_nth_tick(60, function()
-               if automatic_close == True then
-                   player.opened = nil
-                   automatic_close = False
-               end
-           end)
-       end
+       -- if not is_fast then
+       --     player.opened = player
+       --     script.on_nth_tick(60, function()
+       --         if automatic_close == True then
+       --             player.opened = nil
+       --             automatic_close = False
+       --         end
+       --     end)
+       -- end
 
        local inventory = player.get_main_inventory()
        if not inventory or not inventory.valid then
@@ -99,7 +99,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
 
     if all_players then
         local all_inventories = {}
-        for _, p in pairs(game.players) do
+        for _, p in pairs(global.agent_characters) do
             local inventory_items = get_player_inventory_items(p)
             if inventory_items then
                 table.insert(all_inventories, inventory_items)

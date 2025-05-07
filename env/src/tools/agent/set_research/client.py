@@ -1,7 +1,7 @@
 from typing import List, Optional
 from pydantic import BaseModel
-from game_types import Technology
-from tools.tool import Tool
+from env.src.game_types import Technology
+from env.src.tools.tool import Tool
 
 
 class Ingredient(BaseModel):

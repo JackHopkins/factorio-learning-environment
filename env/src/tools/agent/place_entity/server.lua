@@ -195,7 +195,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 {position.x - collision_box.left_top.x/2, position.y - collision_box.left_top.y/2},
                 {position.x + collision_box.right_bottom.x/2, position.y + collision_box.right_bottom.y/2}
             }
-            rendering.draw_circle{width = 1, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.5, filled = false, target = {x=position.x, y=position.y}, time_to_live = 12000}
+            rendering.draw_circle{only_in_alt_mode=true, width = 1, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.5, filled = false, target = {x=position.x, y=position.y}, time_to_live = 12000}
 
             -- Check each tile in the entity's footprint for water
             for x = math.floor(check_area[1][1]), math.ceil(check_area[2][1]) do
@@ -308,6 +308,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 end
 
                 rendering.draw_rectangle{
+                    only_in_alt_mode=true,
                     surface = player.surface,
                     left_top = {position.x - entity_width / 2, position.y - entity_height / 2},
                     right_bottom = {position.x + entity_width / 2, position.y + entity_height / 2},

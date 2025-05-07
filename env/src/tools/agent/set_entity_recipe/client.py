@@ -1,8 +1,8 @@
 from typing import Union
 
-from entities import Entity
-from game_types import Prototype, RecipeName
-from tools.tool import Tool
+from env.src.entities import Entity
+from env.src.game_types import Prototype, RecipeName
+from env.src.tools.tool import Tool
 
 
 class SetEntityRecipe(Tool):

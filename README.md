@@ -198,6 +198,12 @@ And replace the `PostgresDBClient` object at `create_db_client` function in `eva
 - **Docker issues**: Ensure your user has permission to run Docker without sudo.
 - **Connection issues**: Make sure the Factorio server is running and ports are properly configured.
 
+## MCP
+### Claude Code
+After starting and activating at least 1 Factorio server:
+
+`claude mcp add -- claude mcp add fle -- mcp run /PATH/TO/FLE/server.py `
+
 ## Environment
 
 FLE is an agent evaluation environment built on the game of Factorio, a popular resource management simulation game.
@@ -375,7 +381,7 @@ enhance_response_with_task_output(self, response: str, task_response: TaskRespon
 We provide two default tasks: 
 1. OpenPlayTask - Task for the open-play setting, where the agent plays the game until a specified number of steps is finished. The verify function will always return False
 2. ThroughputTask - Task for requiring the agent to build a factory that achieves a specified throughput in the holdout period. The verify function will return True if the holdout period throughput is above the threshold
-
+3. UnboundedThroughputTask - Task for the agent to create a factory that maximises the throughput of a target entity in a specified number of timesteps. The verify function will always return False until the number of steps is reached
 The task jsons specifies the "task_type" and the "config" parameters. `task_type` specifies the mapping from the json to the task type (the creation of task objects from the json is done in `eval\tasks\task_factory.py`). `config` specifies all required attributes to substantiate the respective task object. Each config must at minimum define the "goal_description", "trajectory_length" and "task_key" parameters.
 Examples of task json
 ```

@@ -10,14 +10,13 @@ from difflib import get_close_matches
 from typing import Optional, Union, List, Dict, Tuple, Set, Any
 from pydantic import BaseModel
 
-from exceptions.hinting_name_error import get_value_type_str
-from entities import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe, BuildingBox, PipeGroup, \
+from env.src.exceptions.hinting_name_error import get_value_type_str
+from env.src.entities import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe, BuildingBox, PipeGroup, \
     ElectricityGroup, Pipe, Entity
 
-from game_types import Prototype, Resource, Technology, prototype_by_name, RecipeName
-from models.serializable_function import SerializableFunction
-from models.game_state import GameState
-from models.multiagent_game_state import MultiagentGameState
+from env.src.game_types import Prototype, Resource, Technology, prototype_by_name, RecipeName
+from env.src.models.serializable_function import SerializableFunction
+from env.src.models.game_state import GameState
 
 
 class LoopContext:

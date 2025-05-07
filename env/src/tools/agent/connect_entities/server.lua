@@ -601,7 +601,7 @@ local function place_at_position(player, connection_type, current_position, dir,
     --player.teleport(player_position)
 
     --local can_place = global.utils.avoid_entity(1, connection_type, placement_position, dir)
-    rendering.draw_circle{width = 0.25, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.5, filled = false, target = placement_position, time_to_live = 12000}
+    rendering.draw_circle{only_in_alt_mode=true, width = 0.25, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.5, filled = false, target = placement_position, time_to_live = 12000}
 
     if dry_run and can_place == false then
         local target_area = {
@@ -716,14 +716,14 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
     --rendering.clear()
 
-    rendering.draw_circle{width = 1, color = {r = 1, g = 0, b = 0}, surface = game.players[1].surface, radius = 0.5, filled = false, target = start_position, time_to_live = 60000}
-    rendering.draw_circle{width = 1, color = {r = 0, g = 1, b = 0}, surface = game.players[1].surface, radius = 0.5, filled = false, target = end_position, time_to_live = 60000}
+    rendering.draw_circle{only_in_alt_mode=true, width = 1, color = {r = 1, g = 0, b = 0}, surface = game.players[1].surface, radius = 0.5, filled = false, target = start_position, time_to_live = 60000}
+    rendering.draw_circle{only_in_alt_mode=true, width = 1, color = {r = 0, g = 1, b = 0}, surface = game.players[1].surface, radius = 0.5, filled = false, target = end_position, time_to_live = 60000}
 
     for i = 1, #path - 1 do
-        rendering.draw_line{surface = game.players[1].surface, from = path[i].position, to =  path[i + 1].position, color = {1, 0, 1}, width = 2,  dash_length=0.25, gap_length = 0.25}
+        rendering.draw_line{only_in_alt_mode=true, surface = game.players[1].surface, from = path[i].position, to =  path[i + 1].position, color = {1, 0, 1}, width = 2,  dash_length=0.25, gap_length = 0.25}
     end
     for i = 1, #raw_path - 1 do
-        rendering.draw_line{surface = game.players[1].surface, from = raw_path[i].position, to =  raw_path[i + 1].position, color = {1, 1, 0}, width = 0,  dash_length=0.2, gap_length = 0.2}
+        rendering.draw_line{only_in_alt_mode=true, surface = game.players[1].surface, from = raw_path[i].position, to =  raw_path[i + 1].position, color = {1, 1, 0}, width = 0,  dash_length=0.2, gap_length = 0.2}
     end
 
 

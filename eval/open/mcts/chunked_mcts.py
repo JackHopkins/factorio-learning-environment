@@ -5,7 +5,7 @@ import pickle
 import re
 from typing import Tuple, Optional, Union
 
-from entities import Entity, EntityGroup
+from env.src.entities import Entity, EntityGroup
 from eval.open.mcts.mcts import MCTS
 from models.conversation import Conversation
 from models.message import Message

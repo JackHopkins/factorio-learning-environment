@@ -3,7 +3,7 @@ global.actions.pickup_entity = function(player_index, x, y, entity)
     local position = {x=x, y=y}
     local surface = player.surface
     local success = false
-    rendering.draw_circle{width = 0.5, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.25, filled = false, target = position, time_to_live = 12000}
+    rendering.draw_circle{only_in_alt_mode=true, width = 0.5, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.25, filled = false, target = position, time_to_live = 12000}
 
     -- Debug print
     -- game.print("Starting pickup attempt for " .. entity .. " at (" .. x .. ", " .. y .. ")")

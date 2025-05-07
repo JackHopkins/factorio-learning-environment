@@ -1,9 +1,9 @@
 from functools import wraps
 from typing import Tuple, Union
 
-from entities import Position, Entity
-from namespace import FactorioNamespace
-from tools.controller import Controller
+from env.src.entities import Position, Entity
+from env.src.namespace import FactorioNamespace
+from env.src.tools.controller import Controller
 
 
 class Tool(Controller):

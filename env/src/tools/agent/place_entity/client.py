@@ -1,12 +1,12 @@
 from time import sleep
 
-from entities import Position, Entity
-from instance import Direction
-from entities import Direction as DirectionEntities
-from game_types import Prototype
-from tools.agent.get_entity.client import GetEntity
-from tools.agent.pickup_entity.client import PickupEntity
-from tools.tool import Tool
+from env.src.entities import Position, Entity
+from env.src.instance import Direction
+from env.src.entities import Direction as DirectionEntities
+from env.src.game_types import Prototype
+from env.src.tools.agent.get_entity.client import GetEntity
+from env.src.tools.agent.pickup_entity.client import PickupEntity
+from env.src.tools.tool import Tool
 
 
 class PlaceObject(Tool):

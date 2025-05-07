@@ -20,17 +20,17 @@ from typing_extensions import deprecated
 from dotenv import load_dotenv
 from slpp import slpp as lua
 
-from entities import *
-from lua_manager import LuaScriptManager
-from models.camera import Camera
-from namespace import FactorioNamespace
-from utils.rcon import _lua2python, _get_dir
-from transaction import FactorioTransaction
-from models.research_state import ResearchState
-from rcon.factorio_rcon import RCONClient
-from models.game_state import GameState
-from models.multiagent_game_state import MultiagentGameState
-from utils.controller_loader.system_prompt_generator import SystemPromptGenerator
+from env.src.entities import *
+from env.src.lua_manager import LuaScriptManager
+from env.src.models.camera import Camera
+from env.src.namespace import FactorioNamespace
+from env.src.utils.rcon import _lua2python, _get_dir
+from env.src.transaction import FactorioTransaction
+from env.src.models.research_state import ResearchState
+from env.src.rcon.factorio_rcon import RCONClient
+from env.src.models.game_state import GameState
+from env.src.models.multiagent_game_state import MultiagentGameState
+from env.src.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000
@@ -439,7 +439,7 @@ class FactorioInstance:
         return round(optimal_zoom, 2)
 
 
-    def screenshot(self, resolution="1920x1080", save_path=None, zoom=None, center_on_factory=False, script_output_path="/Users/jackhopkins/Library/Application Support/factorio/script-output"):
+    def screenshot(self, script_output_path, resolution="1920x1080", save_path=None, zoom=None, center_on_factory=False):
         """
         Take a screenshot in game and optionally save it to a specific location.
 

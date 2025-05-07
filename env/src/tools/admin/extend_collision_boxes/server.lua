@@ -78,8 +78,8 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
 
 
     -- Draw debug circles for start and end positions
-    rendering.draw_circle{width = 1, color = {r = 1, g = 0, b = 0}, surface = surface, radius = 0.5, filled = false, target = start_pos, time_to_live = 60000}
-    rendering.draw_circle{width = 1, color = {r = 0, g = 1, b = 0}, surface = surface, radius = 0.5, filled = false, target = end_pos, time_to_live = 60000}
+    rendering.draw_circle{only_in_alt_mode=true, width = 1, color = {r = 1, g = 0, b = 0}, surface = surface, radius = 0.5, filled = false, target = start_pos, time_to_live = 60000}
+    rendering.draw_circle{only_in_alt_mode=true, width = 1, color = {r = 0, g = 1, b = 0}, surface = surface, radius = 0.5, filled = false, target = end_pos, time_to_live = 60000}
 
     -- Collect positions from pipes
     for _, pipe in pairs(entities.pipes) do
@@ -156,7 +156,7 @@ local function add_clearance_entities(surface, force, region, start_pos, end_pos
     -- Create entities at filtered positions
     for _, pos in pairs(all_positions) do
         -- Draw debug circles for connection points
-        rendering.draw_circle{width = 1, color = {r = 0, g = 1, b = 1}, surface = surface, radius = 0.33, filled = false, target = pos, time_to_live = 60000}
+        rendering.draw_circle{only_in_alt_mode=true, width = 1, color = {r = 0, g = 1, b = 1}, surface = surface, radius = 0.33, filled = false, target = pos, time_to_live = 60000}
 
         local entity = surface.create_entity{
             name = "simple-entity-with-owner",

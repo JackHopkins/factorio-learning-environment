@@ -1,17 +1,18 @@
 import math
 from time import sleep
 
-from entities import Position
-from instance import NONE
-from game_types import Prototype
-from tools.admin.get_path.client import GetPath
-from tools.admin.request_path.client import RequestPath
-from tools.tool import Tool
+from env.src.entities import Position
+from env.src.instance import NONE
+from env.src.game_types import Prototype
+from env.src.tools.admin.get_path.client import GetPath
+from env.src.tools.admin.request_path.client import RequestPath
+from env.src.tools.tool import Tool
+from env.src.lua_manager import LuaScriptManager
 
 
 class MoveTo(Tool):
 
-    def __init__(self, connection, game_state):
+    def __init__(self, connection: LuaScriptManager, game_state):
         super().__init__(connection, game_state)
         #self.observe = ObserveAll(connection, game_state)
         self.request_path = RequestPath(connection, game_state)
@@ -24,14 +25,16 @@ class MoveTo(Tool):
         :return: Your final position
         """
 
-        X_OFFSET, Y_OFFSET = 0.5, 0
+        X_OFFSET, Y_OFFSET = 0,0#0.5, 0
 
         x, y = math.floor(position.x*4)/4 + X_OFFSET, math.floor(position.y*4)/4 + Y_OFFSET
         nposition = Position(x=x, y=y)
 
         path_handle = self.request_path(start=Position(x=self.game_state.player_location.x,
-                                                       y=self.game_state.player_location.y), finish=nposition,
-                                        allow_paths_through_own_entities=True)
+                                                       y=self.game_state.player_location.y),
+                                        finish=nposition,
+                                        allow_paths_through_own_entities=True,
+                                        resolution=-1)
         sleep(0.05) # Let the pathing complete in the game.
         try:
             if laying is not None:

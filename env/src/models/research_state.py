@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
-from models.technology_state import TechnologyState
+from env.src.models.technology_state import TechnologyState
 
 
 @dataclass

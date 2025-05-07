@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Callable, List, Optional
 from PIL import ImageDraw
 
-from entities import Position
-from tools.admin.render.utils.render_config import RenderConfig
+from env.src.entities import Position
+from env.src.tools.admin.render.utils.render_config import RenderConfig
 
 
 class LayerRenderer(ABC):

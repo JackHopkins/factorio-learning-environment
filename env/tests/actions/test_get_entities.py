@@ -1,8 +1,8 @@
 import pytest
 
-from entities import Position, Furnace
-from instance import Direction, FactorioInstance
-from game_types import Prototype, Resource
+from env.src.entities import Position, Furnace
+from env.src.instance import Direction, FactorioInstance
+from env.src.game_types import Prototype, Resource
 
 
 

@@ -4,8 +4,9 @@ import pickle
 from typing import List, Tuple, Union, Dict
 
 from eval.open.db_client import DBClient
-from env.src.models.game_state import GameState
 from eval.open.mcts.logger import FactorioLogger
+
+from env.src.models.game_state import GameState
 from env.src.models.program import Program
 from env.src.entities import Entity, EntityGroup
 from env.src.instance import FactorioInstance

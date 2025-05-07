@@ -119,39 +119,14 @@ import factorio_learning_environment as fle
 ```
 git clone https://github.com/JackHopkins/factorio-learning-environment.git
 cd factorio-learning-environment
-```
-
-2. **Install the package**:
-
-You can install the package with different options depending on your needs:
-
-```bash
-# Basic installation (includes core environment dependencies)
 pip install -e .
-
-# Install with agent support (for running LLM agents)
-pip install -e ".[agents]"
-
-# Install with cluster support (for running Factorio servers)
-pip install -e ".[cluster]"
-
-# Install with evaluation support (for running experiments)
-pip install -e ".[eval]"
-
-# Install everything
-pip install -e ".[all]"
-
-# Install for development
-pip install -e ".[dev]"
 ```
 
-You can also combine options:
-```bash
-# Install with agent and eval support
-pip install -e ".[agents,eval]"
+2. **Install dependencies**:
 ```
-
-Note: The environment module (for interacting with Factorio) is included as part of the base package, so you always have access to the core functionality.
+pip install psycopg2 lupa
+# Install other dependencies if prompted by pip during runtime
+```
 
 3. **Set up Factorio client**:
 - Purchase Factorio from the [official website](https://www.factorio.com/) or on Steam.
@@ -267,14 +242,6 @@ And replace the `PostgresDBClient` object at `create_db_client` function in `eva
 - **Database connection errors**: Verify your database configuration in the .env file and ensure the database exists.
 - **Docker issues**: Ensure your user has permission to run Docker without sudo.
 - **Connection issues**: Make sure the Factorio server is running and ports are properly configured.
-
-## MCP
-After starting and activating at least 1 Factorio server:
-
-`claude mcp add -- claude mcp add fle -- mcp run /PATH/TO/FLE/server.py `
-or:
-`mcp install /PATH/TO/FLE/server.py`
-
 
 ## Environment
 

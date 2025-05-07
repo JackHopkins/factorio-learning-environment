@@ -1,6 +1,6 @@
 import pytest
 
-from game_types import Prototype
+from env.src.game_types import Prototype
 
 @pytest.fixture()
 def game(instance):

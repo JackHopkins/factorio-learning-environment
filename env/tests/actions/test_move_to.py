@@ -2,9 +2,9 @@ from time import sleep
 
 import pytest
 
-from entities import Position
-from instance import FactorioInstance
-from game_types import Prototype, Resource
+from env.src.entities import Position
+from env.src.instance import FactorioInstance
+from env.src.game_types import Prototype, Resource
 
 
 @pytest.fixture()

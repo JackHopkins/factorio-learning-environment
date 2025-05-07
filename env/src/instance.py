@@ -27,7 +27,7 @@ from env.src.namespace import FactorioNamespace
 from env.src.utils.rcon import _lua2python, _get_dir
 from env.src.transaction import FactorioTransaction
 from env.src.models.research_state import ResearchState
-from factorio_rcon import RCONClient
+from env.src.rcon.factorio_rcon import RCONClient
 from env.src.models.game_state import GameState
 from env.src.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 

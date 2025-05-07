@@ -1,6 +1,8 @@
 import pytest
-from entities import Position, Direction
-from game_types import Prototype, Resource
+from scipy.optimize import direct
+
+from env.src.entities import Position, Direction
+from env.src.game_types import Prototype, Resource
 
 
 @pytest.fixture()
@@ -17,7 +19,7 @@ def test_can_place(game):
     """
     boilers_in_inventory = game.inspect_inventory()[Prototype.Pipe]
     can_place = game.can_place_entity(Prototype.Pipe, position=(5, 0))
-    assert can_place
+    assert can_place == True
 
     # attempt to place a pipe beyond the reach of the player
     can_place = game.can_place_entity(Prototype.Pipe, position=(100, 0))

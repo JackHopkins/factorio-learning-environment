@@ -70,34 +70,6 @@ pip install -e ".[all]"     # All optional dependencies
 pip install -e ".[dev]"     # Development dependencies
 ```
 
-### Testing the Installation
-
-To test the installation:
-
-```bash
-python test_install.py
-```
-
-This will create a temporary virtual environment, install the package, and verify that it can be imported correctly.
-
-## Package Structure
-
-The package structure is created as follows:
-
-```
-factorio_learning_environment/
-├── __init__.py
-├── __about__.py
-├── agents/
-├── env/
-├── server/
-├── eval/
-├── cluster/
-└── run.py
-```
-
-Each module is copied from the original directory structure during the build process.
-
 ## Installing from the Wheel
 
 ```bash

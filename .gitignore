@@ -78,3 +78,6 @@ environment/src/skills/ground_truth_skills/*
 /server/CLAUDE.md
 
 **/.claude/settings.local.json
+/factorio_learning_environment.egg-info/
+/build/
+/.fle/

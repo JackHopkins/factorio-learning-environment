@@ -2,30 +2,67 @@
 
 This document explains how to build and install the Factorio Learning Environment package.
 
-## Overview
+## Using prepare_build.py
 
-The build process preserves the existing project structure while creating a package that can be imported with:
+You can also build directly with the `prepare_build.py` script, which now includes direct wheel building functionality.
 
-```python
-from factorio_learning_environment import env
-```
-
-The build process:
-1. Dynamically creates a `factorio_learning_environment` package during installation
-2. Copies/links relevant code from the project into the package
-3. Cleans up after building to maintain the original repo structure
-
-## Building and Installing
-
-### Development Installation (Editable Mode)
-
-For development, install in editable mode:
+### Building the Package
 
 ```bash
-# Install in development mode
-pip install -e .
+# Clean, prepare, and build in one step
+python prepare_build.py --clean --build
+```
 
-# Install with specific extras
+This will:
+1. Clean the existing package structure
+2. Create the package structure
+3. Build a wheel (.whl) in the `dist/` directory
+
+You can also run these steps separately:
+
+```bash
+# Just prepare the package structure
+python prepare_build.py --clean
+
+# Just build the wheel (using previously prepared structure)
+python prepare_build.py --no-prepare --build
+```
+
+### Using Hatch
+
+If you prefer using Hatch, you can still do so:
+
+1. Install Hatch:
+   ```bash
+   pip install hatch
+   ```
+
+2. Prepare the package structure:
+   ```bash
+   python prepare_build.py --clean
+   ```
+
+3. Build the package with Hatch:
+   ```bash
+   hatch build
+   ```
+
+   This will create both a source distribution (.tar.gz) and a wheel (.whl) in the `dist/` directory.
+
+### Development Installation
+
+For development, you can install the package in editable mode:
+
+```bash
+python prepare_build.py
+pip install -e .
+```
+
+This creates the necessary package structure and installs the package in development mode, allowing changes to be reflected immediately without reinstalling.
+
+You can also specify extras:
+
+```bash
 pip install -e ".[agents]"  # LLM agent support
 pip install -e ".[eval]"    # Evaluation tools
 pip install -e ".[cluster]" # Cluster deployment
@@ -33,23 +70,35 @@ pip install -e ".[all]"     # All optional dependencies
 pip install -e ".[dev]"     # Development dependencies
 ```
 
-In editable mode, the temporary package structure will be kept in place to allow for live code changes.
+### Testing the Installation
 
-### Building a Distribution Package
-
-To build a wheel package for distribution:
+To test the installation:
 
 ```bash
-# Install build dependencies
-pip install build wheel
-
-# Build the wheel
-python -m build --wheel
+python test_install.py
 ```
 
-The wheel file will be created in the `dist/` directory.
+This will create a temporary virtual environment, install the package, and verify that it can be imported correctly.
 
-### Installing from the Wheel
+## Package Structure
+
+The package structure is created as follows:
+
+```
+factorio_learning_environment/
+├── __init__.py
+├── __about__.py
+├── agents/
+├── env/
+├── server/
+├── eval/
+├── cluster/
+└── run.py
+```
+
+Each module is copied from the original directory structure during the build process.
+
+## Installing from the Wheel
 
 ```bash
 pip install dist/factorio_learning_environment-*.whl
@@ -59,6 +108,23 @@ You can also specify extras:
 
 ```bash
 pip install "dist/factorio_learning_environment-*.whl[agents]"
+```
+
+## Verifying the Installation
+
+To verify that the installation was successful:
+
+```bash
+# Create a test environment
+mkdir -p test_install && cd test_install
+python -m venv test_env
+source test_env/bin/activate
+
+# Install the wheel
+pip install ../dist/factorio_learning_environment-*.whl
+
+# Verify installation
+python -c "import factorio_learning_environment; print(factorio_learning_environment.__file__)"
 ```
 
 ## Using the Package
@@ -76,21 +142,6 @@ from factorio_learning_environment import env
 env_instance = env.Instance()
 ```
 
-## Testing the Installation
-
-A test script is provided to verify the build and installation:
-
-```bash
-python test_install.py
-```
-
-This script:
-1. Builds a wheel package
-2. Creates a temporary virtual environment
-3. Installs the package in editable mode
-4. Tests importing the package
-5. Reports the results
-
 ## Cleaning Up
 
 If you need to clean up the dynamic package structure manually:
@@ -99,4 +150,5 @@ If you need to clean up the dynamic package structure manually:
 # Remove temporary files
 rm -rf factorio_learning_environment/
 rm -rf build/ dist/ *.egg-info/
+rm -rf wheel_extract/ test_install*/
 ```

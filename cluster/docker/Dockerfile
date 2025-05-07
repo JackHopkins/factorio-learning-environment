@@ -3,7 +3,6 @@ FROM --platform=linux/amd64 factoriotools/factorio:1.1.110
 
 COPY config /opt/factorio/config
 COPY config /factorio/config
-COPY mods /opt/factorio/mods
 COPY config/scenario.sh /opt/factorio/scenario.sh
 
 

@@ -203,7 +203,8 @@ class FactorioInstance:
         # kwargs dict to json
         inventory_items = {k: v for k, v in inventory.items()}
         inventory_items_json = json.dumps(inventory_items)
-        self.add_command(f"/sc global.actions.initialise_inventory({agent_idx}, '{inventory_items_json}')", raw=True)
+        player_idx = agent_idx + 1
+        self.add_command(f"/sc global.actions.initialise_inventory({player_idx}, '{inventory_items_json}')", raw=True)
 
         self.execute_transaction()
 

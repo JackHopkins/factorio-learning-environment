@@ -53,14 +53,7 @@ automation (e.g electronic-circuit manufacturing).
 The Factorio Learning Environment package can be installed directly using pip:
 
 ```bash
-# Install the core package
 pip install factorio-learning-environment
-
-# Install with optional components
-pip install "factorio-learning-environment[agents]"  # LLM agent support
-pip install "factorio-learning-environment[eval]"    # Evaluation tools
-pip install "factorio-learning-environment[cluster]" # Cluster deployment support
-pip install "factorio-learning-environment[all]"     # All optional dependencies
 ```
 
 ### Development Installation
@@ -244,10 +237,12 @@ And replace the `PostgresDBClient` object at `create_db_client` function in `eva
 - **Connection issues**: Make sure the Factorio server is running and ports are properly configured.
 
 ## MCP
-### Claude Code
 After starting and activating at least 1 Factorio server:
 
 `claude mcp add -- claude mcp add fle -- mcp run /PATH/TO/FLE/server.py `
+or:
+`mcp install /PATH/TO/FLE/server.py`
+
 
 ## Environment
 

@@ -16,7 +16,7 @@ class FactorioMCPRepository:
 
     def __init__(self, instance: FactorioInstance):
         # Create a directory for storing the repository in the current working directory
-        self.repo_dir = os.path.abspath(os.path.join(os.getcwd(), ".factorio_mcp_repo"))
+        self.repo_dir = os.path.abspath(os.path.join(os.getcwd(), ".fle"))
         os.makedirs(self.repo_dir, exist_ok=True)
         
         # Create instance-specific repo directory
@@ -153,21 +153,16 @@ class FactorioMCPRepository:
 
         # Add to undo stack
         self.undo_stack.append(commit_id)
-        
-        # Make sure refs are stored to disk
+
+        # Make sure refs are stored to disk - using add_packed_refs instead of pack_refs
         try:
-            self.repo.refs.pack_refs()
+            # Pack only the updated branch reference
+            self.repo.refs.add_packed_refs({self.branch: commit.id})
         except Exception as e:
             print(f"Warning: Could not pack refs: {str(e)}")
         
         return commit_id
-        
-    def _save_state_to_disk(self, commit_id: str):
-        """Save the current repository state to disk"""
-        # No need to call do_commit here - that creates a new commit
-        # Objects are already persisted by the object_store.add_object operations
-        # and refs are persisted by pack_refs()
-        pass
+
 
     def tag_commit(self, name: str, commit_id: Optional[str] = None) -> str:
         """Create a named tag for a commit (default: current HEAD)"""
@@ -193,9 +188,10 @@ class FactorioMCPRepository:
         
         # Ensure refs are persisted to disk
         try:
-            self.repo.refs.pack_refs()
+            # Pack only the updated branch reference
+            self.repo.refs.add_packed_refs({self.branch: commit_id_bytes})
         except Exception as e:
-            print(f"Warning: Could not pack refs for tag: {str(e)}")
+            print(f"Warning: Could not pack refs: {str(e)}")
         
         return commit_id
 
@@ -247,9 +243,20 @@ class FactorioMCPRepository:
             else:
                 # Direct ref for detached HEAD
                 self.repo.refs[b"HEAD"] = commit_id
-                
-            # Make sure refs are written to disk
-            self.repo.refs.pack_refs()
+
+            # Make sure refs are written to disk - using add_packed_refs instead of pack_refs
+            try:
+                if self.current_branch:
+                    # Pack the branch and HEAD references
+                    self.repo.refs.add_packed_refs({
+                        self.branch: commit_id,
+                        b"HEAD": commit_id
+                    })
+                else:
+                    # Just pack the HEAD reference for detached HEAD
+                    self.repo.refs.add_packed_refs({b"HEAD": commit_id})
+            except Exception as e:
+                print(f"Warning: Could not pack refs: {str(e)}")
         except Exception as e:
             print(f"Warning: Error updating HEAD reference: {str(e)}")
             
@@ -349,7 +356,18 @@ class FactorioMCPRepository:
                 self.repo.refs[b"HEAD"] = commit_id_bytes
                 
             # Make sure refs are written to disk
-            self.repo.refs.pack_refs()
+            try:
+                # Pack the current branch reference
+                if self.current_branch:
+                    refs_to_pack = {self.branch: commit_id_bytes}
+                    # Also pack HEAD if it's a symbolic ref to our branch
+                    refs_to_pack[b"HEAD"] = commit_id_bytes
+                    self.repo.refs.add_packed_refs(refs_to_pack)
+                else:
+                    # Just pack HEAD for detached HEAD state
+                    self.repo.refs.add_packed_refs({b"HEAD": commit_id_bytes})
+            except Exception as e:
+                print(f"Warning: Could not pack refs: {str(e)}")
             
         except Exception as e:
             print(f"Warning: Error updating references during undo: {str(e)}")

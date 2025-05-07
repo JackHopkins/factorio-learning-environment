@@ -297,13 +297,15 @@ wheels = [
 
 [[package]]
 name = "factorio-learning-environment"
-version = "0.2.0rc0"
+version = "0.2.0rc1"
 source = { editable = "." }
 dependencies = [
     { name = "construct" },
     { name = "dotenv" },
     { name = "factorio-rcon-py" },
     { name = "lupa" },
+    { name = "mcp", extra = ["cli"] },
+    { name = "numpy" },
     { name = "pillow" },
     { name = "pydantic" },
     { name = "slpp" },
@@ -359,10 +361,12 @@ requires-dist = [
     { name = "docker", marker = "extra == 'cluster'", specifier = ">=6.0.0" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "dulwich", marker = "extra == 'mcp'" },
-    { name = "factorio-rcon-py", specifier = ">=2.1.3" },
+    { name = "factorio-rcon-py", specifier = "==1.2.1" },
     { name = "isort", marker = "extra == 'dev'", specifier = ">=5.12.0" },
     { name = "lupa", specifier = ">=2.4" },
+    { name = "mcp", extras = ["cli"] },
     { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'" },
+    { name = "numpy", specifier = ">=2.2.3" },
     { name = "numpy", marker = "extra == 'all'", specifier = ">=2.2.3" },
     { name = "numpy", marker = "extra == 'eval'", specifier = ">=2.2.3" },
     { name = "openai", marker = "extra == 'agents'", specifier = ">=1.66.3" },
@@ -385,11 +389,14 @@ provides-extras = ["dev", "agents", "cluster", "eval", "all", "mcp"]
 
 [[package]]
 name = "factorio-rcon-py"
-version = "2.1.3"
+version = "1.2.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/23/24/ddb08445a3a00c4b106b81ee2b3b59061cd29ea8f4968ec33954adf1c46a/factorio_rcon_py-2.1.3.tar.gz", hash = "sha256:84bfc42d2adfcd01660bd403652c6453f6be2b474817e214e75206f02b1512c3", size = 17425, upload_time = "2024-06-19T15:29:12.59Z" }
+dependencies = [
+    { name = "construct" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/91/24/05467fbc469cefe4d0caac2ea96695208cffb2bea21aad44050be572765e/factorio-rcon-py-1.2.1.tar.gz", hash = "sha256:3cd331769b7ffa3ca74f802fdfb7c0994932be2ad0eb6f4495683a73c6cf4922", size = 5756, upload_time = "2020-10-29T13:33:54.111Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f5/d6/d100cca0fddea8241d44205e17c52b3b9b71ca4accf6db3fbe8262e27cc3/factorio_rcon_py-2.1.3-py3-none-any.whl", hash = "sha256:ad2e73f5442cd1df235f435bf1079dd73eb62d1856d7526e4a0b6d4400b6cbb0", size = 17323, upload_time = "2024-06-19T15:29:10.277Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/fc/bc7c6d15848303e0343bc4e3c9d12aaaaf6b06a922cea198510201c093f8/factorio_rcon_py-1.2.1-py3-none-any.whl", hash = "sha256:db827cc9a759e3d7065caa7d8cddb109b47e338e9d80eca0a502ceee3ab528e9", size = 18705, upload_time = "2020-10-29T13:33:52.115Z" },
 ]
 
 [[package]]

@@ -1,0 +1,24 @@
+import tomli
+from setuptools import setup, find_packages
+
+# Read version from pyproject.toml
+def get_version():
+    with open("pyproject.toml", "rb") as f:
+        data = tomli.load(f)
+        return data["project"]["version"]
+
+setup(
+    name="factorio-learning-environment",
+    version=get_version(),
+    packages=["{package_name}"] + ["{package_name}." + pkg for pkg in ['env', 'agents', 'server', 'eval', 'cluster']],
+    package_data={{
+        # Include all files for all packages
+        '{package_name}': ['*.*'],
+        '{package_name}.env': ['**/*.*'],
+        '{package_name}.agents': ['**/*.*'],
+        '{package_name}.server': ['**/*.*'],
+        '{package_name}.eval': ['**/*.*'],
+        '{package_name}.cluster': ['**/*.*', 'docker/**/*', 'scenarios/**/*'],
+    }},
+    include_package_data=True,
+)

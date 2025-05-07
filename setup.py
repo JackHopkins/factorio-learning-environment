@@ -7,9 +7,14 @@ import subprocess
 import tempfile
 import atexit
 import tomli  # Added for reading toml files
+import argparse
 
 # Package name
 PACKAGE_NAME = "factorio_learning_environment"
+
+# Determine mode - development or deployment
+# Set this environment variable to bypass the complex build process
+IN_DEVELOPMENT = os.environ.get("FLE_DEVELOPMENT") == "1"
 
 
 # Read version from pyproject.toml instead of hardcoding it
@@ -24,9 +29,59 @@ def get_version_from_toml():
         return "0.2.5"  # Fallback version
 
 
+# Function to read a template file
+def read_template_file(template_path):
+    """Read a template file and return its contents"""
+    try:
+        with open(template_path, 'r') as f:
+            return f.read()
+    except Exception as e:
+        print(f"Error reading template file {template_path}: {e}")
+        return None
+
+
+# Function to render a template with simple variable substitution
+def render_template(template_content, context):
+    """
+    Render a template string with the given context variables
+    using simple string formatting
+    """
+    try:
+        # Simple variable substitution
+        return template_content.format(**context)
+    except Exception as e:
+        print(f"Error rendering template: {e}")
+        return None
+
+
 VERSION = get_version_from_toml()
 print(f"Building version: {VERSION}")
 
+# For simple setup.py commands like 'develop', we can skip the complex build
+if IN_DEVELOPMENT or (len(sys.argv) > 1 and (sys.argv[1] in ['develop', 'egg_info'] or '-e' in sys.argv)):
+    # Simple development setup without side effects
+    from setuptools import setup, find_packages
+
+    # Clean up any existing egg-info directories first
+    for item in os.listdir('.'):
+        if item.endswith('.egg-info'):
+            print(f"Removing existing {item}...")
+            shutil.rmtree(item)
+
+    setup(
+        name="factorio-learning-environment",
+        version=VERSION,
+        packages=find_packages(),
+        package_data={
+            "": ["*.md", "*.txt", "*.lua"],
+        },
+        # Dependencies will be handled by pyproject.toml
+    )
+
+    # Exit now without running the complex build logic
+    sys.exit(0)
+
+# Continue with the original complex build process for deployment
 try:
     # Clean up any existing build artifacts
     for directory in ['build', f'{PACKAGE_NAME}.egg-info']:
@@ -72,40 +127,45 @@ try:
     atexit.register(cleanup_temp_dir)
 
     try:
+        # Check for template files
+        templates_dir = "packaging"
+        init_template_path = os.path.join(templates_dir, "__init__.py.template")
+        setup_template_path = os.path.join(templates_dir, "setup.py.template")
+
+        # Verify template files exist
+        if not os.path.exists(init_template_path):
+            raise FileNotFoundError(f"Template file not found: {init_template_path}")
+
+        if not os.path.exists(setup_template_path):
+            raise FileNotFoundError(f"Template file not found: {setup_template_path}")
+
         # Create the package directory structure inside the temp directory
         package_dir = os.path.join(temp_build_dir, PACKAGE_NAME)
         os.makedirs(package_dir)
 
-        # Create __init__.py
-        with open(os.path.join(package_dir, "__init__.py"), "w") as f:
-            f.write(f"""# {PACKAGE_NAME} package
-__version__ = "{VERSION}"
-import sys
-import importlib.util
+        # Create context for templates
+        template_context = {
+            'package_name': PACKAGE_NAME,
+            'version': VERSION
+        }
 
-# First, create empty module objects for all of our submodules
-# This prevents import errors when modules try to import each other
-for name in ['env', 'agents', 'server', 'eval', 'cluster']:
-    module_name = f'{PACKAGE_NAME}.{{name}}'
-    if module_name not in sys.modules:
-        # Create empty module to avoid circular imports
-        spec = importlib.util.find_spec(module_name)
-        if spec:
-            module = importlib.util.module_from_spec(spec)
-            sys.modules[module_name] = module
-    
-    # Create alias in global namespace immediately
-    sys.modules[name] = sys.modules[f'{PACKAGE_NAME}.{{name}}']
-
-# Now import all submodules safely
-from . import env
-from . import agents
-from . import server
-from . import eval
-from . import cluster
-
-__all__ = ['env', 'agents', 'server', 'eval', 'cluster']
-""")
+        # Read and render __init__.py template
+        init_template_content = read_template_file(init_template_path)
+        if init_template_content:
+            init_content = render_template(init_template_content, template_context)
+            if init_content:
+                with open(os.path.join(package_dir, "__init__.py"), "w") as f:
+                    f.write(init_content)
+            else:
+                print("Warning: Failed to render __init__.py template.")
+                # Fallback to minimal __init__.py
+                with open(os.path.join(package_dir, "__init__.py"), "w") as f:
+                    f.write(f"# {PACKAGE_NAME} package\n__version__ = \"{VERSION}\"\n")
+        else:
+            print("Warning: Failed to read __init__.py template.")
+            # Fallback to minimal __init__.py
+            with open(os.path.join(package_dir, "__init__.py"), "w") as f:
+                f.write(f"# {PACKAGE_NAME} package\n__version__ = \"{VERSION}\"\n")
 
         # Copy modules to package directory
         for module in ['env', 'agents', 'server', 'eval', 'cluster']:
@@ -120,12 +180,6 @@ __all__ = ['env', 'agents', 'server', 'eval', 'cluster']
                     'data/plans/factorio_guides', 'eval/open/summary_cache',
                     'dist', 'build', '*.egg-info'
                 ]
-
-                # Optionally exclude large binary files to keep package size manageable
-                # Uncomment if needed
-                # binary_exclusions = ['*.png', '*.jpg', '*.jpeg', '*.gif', '*.webp',
-                #                     '*.ico', '*.svg', '*.mp4', '*.bin', '*.dat']
-                # exclude_patterns.extend(binary_exclusions)
 
                 shutil.copytree(
                     module,
@@ -148,35 +202,39 @@ __all__ = ['env', 'agents', 'server', 'eval', 'cluster']
         print("Copying pyproject.toml...")
         shutil.copy("pyproject.toml", os.path.join(temp_build_dir, "pyproject.toml"))
 
-        # Create setup.py in the temp directory that reads version from pyproject.toml
-        setup_py = os.path.join(temp_build_dir, "setup.py")
-        with open(setup_py, "w") as f:
-            f.write(f"""
-import tomli
-from setuptools import setup, find_packages
+        # Read and render setup.py template
+        setup_template_content = read_template_file(setup_template_path)
+        setup_py_path = os.path.join(temp_build_dir, "setup.py")
 
-# Read version from pyproject.toml
-def get_version():
-    with open("pyproject.toml", "rb") as f:
-        data = tomli.load(f)
-        return data["project"]["version"]
-
+        if setup_template_content:
+            setup_content = render_template(setup_template_content, template_context)
+            if setup_content:
+                with open(setup_py_path, "w") as f:
+                    f.write(setup_content)
+            else:
+                print("Warning: Failed to render setup.py template.")
+                # Fallback to minimal setup.py
+                with open(setup_py_path, "w") as f:
+                    f.write(f"""
+from setuptools import setup
 setup(
     name="factorio-learning-environment",
-    version=get_version(),
-    packages=["{PACKAGE_NAME}"] + ["{PACKAGE_NAME}." + pkg for pkg in ['env', 'agents', 'server', 'eval', 'cluster']],
-    package_data={{
-        # Include all files for all packages
-        '{PACKAGE_NAME}': ['*.*'],
-        '{PACKAGE_NAME}.env': ['**/*.*'],
-        '{PACKAGE_NAME}.agents': ['**/*.*'],
-        '{PACKAGE_NAME}.server': ['**/*.*'],
-        '{PACKAGE_NAME}.eval': ['**/*.*'],
-        '{PACKAGE_NAME}.cluster': ['**/*.*', 'docker/**/*', 'scenarios/**/*'],
-    }},
-    include_package_data=True,
+    version="{VERSION}",
+    packages=["{PACKAGE_NAME}"],
 )
-    """)
+                    """)
+        else:
+            print("Warning: Failed to read setup.py template.")
+            # Fallback to minimal setup.py
+            with open(setup_py_path, "w") as f:
+                f.write(f"""
+from setuptools import setup
+setup(
+    name="factorio-learning-environment",
+    version="{VERSION}",
+    packages=["{PACKAGE_NAME}"],
+)
+                """)
 
         # Create or empty the dist directory
         if not os.path.exists("dist"):

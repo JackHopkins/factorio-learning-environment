@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "factorio-learning-environment"
-version = "0.2.0rc"
+version = "0.2.0rc1"
 description = "Factorio Learning Environment"
 authors = [
     {name = "Jack Hopkins", email = "noreply@github.com"},

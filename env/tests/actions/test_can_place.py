@@ -1,6 +1,4 @@
 import pytest
-from scipy.optimize import direct
-
 from entities import Position, Direction
 from game_types import Prototype, Resource
 

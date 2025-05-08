@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Optional
 from env.src.entities import Inventory, Entity
 from env.src.instance import FactorioInstance
 from eval.tasks.task_abc import TaskABC
@@ -22,7 +22,8 @@ class UnboundedThroughputTask(TaskABC):
                     show_number_of_steps_left_in_prompt = False,
                     include_stats = True,
                     use_populated_inventory = True,
-                    unlock_all_research = True) -> None:
+                    unlock_all_research = True, 
+                    agent_instructions: Optional[List[str]] = None) -> None:
         goal_description += f"\n{INSTRUCTIONS}"
         if include_stats:
             goal_description += "\n\n##Useful statistics\n" + CRAFTING_STATISTICS
@@ -33,7 +34,8 @@ class UnboundedThroughputTask(TaskABC):
                             starting_inventory = starting_inventory,
                             goal_description=goal_description, 
                             task_key = task_key,
-                            all_technology_reserached = unlock_all_research)
+                            all_technology_reserached = unlock_all_research,
+                            agent_instructions = agent_instructions)
         self.throughput_entity = throughput_entity
         self.holdout_wait_period = holdout_wait_period
         self.starting_game_state = None

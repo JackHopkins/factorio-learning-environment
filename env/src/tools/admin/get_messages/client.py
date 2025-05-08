@@ -1,6 +1,6 @@
 from typing import List, Dict, Optional, Union
-from tools.tool import Tool
-from tools.admin.message_utils import log_messages, deduplicate_broadcast_messages
+from env.src.tools.tool import Tool
+from env.src.tools.admin.message_utils import log_messages, deduplicate_broadcast_messages
 
 class GetMessages(Tool):
     def __init__(self, connection, game_state):
@@ -37,14 +37,14 @@ class GetMessages(Tool):
             # The response is a tuple where the first element is the parsed response and second is the raw lua_response
             if isinstance(response, tuple) and len(response) >= 2:
                 _, lua_response = response
-                # lua_response:  { ["a"] = true,["b"] = 1|Hello Agent 1|3650830|1,}
+                # lua_response:  { ["a"] = true,["b"] = Hello Agent 1|1|1|3650830,}
                 # Extract data after ["b"] = if present
                 if '["b"] = ' in lua_response:
                     lua_response = lua_response.split('["b"] = ')[1]
                     # Remove trailing comma and closing bracket
                     lua_response = lua_response.rstrip(',}')
                 
-                # Parse the simple string format: sender|message|timestamp|recipient
+                # Parse the simple string format: message|sender|recipient|timestamp
                 messages = []
                 current_message = []
                 for line in lua_response.split('\n'):
@@ -79,10 +79,7 @@ class GetMessages(Tool):
                     except ValueError:
                         # Still not enough parts, continue accumulating
                         continue
-                
-                #print(f'get_messages for player {player_index} messages: {messages}')
                 return messages
-            #print(f'get_messages for player {player_index} no messages')
             return []
             
         except Exception as e:

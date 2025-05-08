@@ -16,6 +16,8 @@ class TaskABC:
     def get_agent_instructions(self, agent_idx: int) -> Optional[str]:
         if self.agent_instructions is None:
             return None
+        elif agent_idx >= len(self.agent_instructions):
+            raise IndexError(f"Agent index {agent_idx} is out of bounds for agent instructions")
         else:
             return self.agent_instructions[agent_idx]
     

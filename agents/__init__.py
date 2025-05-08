@@ -4,7 +4,7 @@ from typing import Dict, Any
 from pydantic import BaseModel
 from env.src.models.achievements import ProductionFlows
 import datetime
-from models.conversation import Conversation
+from env.src.models.conversation import Conversation
 class Python(str):
     """A custom type that only accepts syntactically valid Python code."""
     

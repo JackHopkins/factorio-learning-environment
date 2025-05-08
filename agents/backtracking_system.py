@@ -7,12 +7,12 @@ from agents.backtracking_agent import BacktrackingAgent
 from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
 from agents.utils.llm_factory import LLMFactory
 from agents.utils.parse_response import parse_response
-from models.conversation import Conversation
-from models.message import Message
-from models.generation_parameters import GenerationParameters
+from env.src.models.conversation import Conversation
+from env.src.models.message import Message
+from env.src.models.generation_parameters import GenerationParameters
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
 from collections import deque
-from namespace import FactorioNamespace
+from env.src.namespace import FactorioNamespace
 from typing import Optional
 import copy
 
@@ -52,7 +52,7 @@ class BacktrackingSystem(AgentABC):
             - completed: bool, True if the agent should complete its turn
         """
         if response.error:
-            print(f"Error occurred in program evaluation. Skipping to next iteration.")
+            print(f"Error occurred in program evaluation. Attemptingto error-correct.")
             if self.backtracking_agent.memory_full:
                 # If the backtracking agent is full, we need to complete the turn but not update the state
                 update_state, completed = False, True

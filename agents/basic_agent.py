@@ -5,12 +5,12 @@ from agents.agent_abc import AgentABC
 from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
 from agents.utils.llm_factory import LLMFactory
 from agents.utils.parse_response import parse_response
-from models.conversation import Conversation
-from models.generation_parameters import GenerationParameters
+from env.src.models.conversation import Conversation
+from env.src.models.generation_parameters import GenerationParameters
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
 
 from typing import Optional
-from namespace import FactorioNamespace
+from env.src.namespace import FactorioNamespace
 
 GENERAL_INSTRUCTIONS = \
 """

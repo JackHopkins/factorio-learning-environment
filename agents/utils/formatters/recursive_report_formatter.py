@@ -10,7 +10,7 @@ from env.src.models.conversation import Conversation
 from env.src.models.message import Message
 import copy
 
-from namespace import FactorioNamespace
+from env.src.namespace import FactorioNamespace
 
 DEFAULT_INSTRUCTIONS = \
     """

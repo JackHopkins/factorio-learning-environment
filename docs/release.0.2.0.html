@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Multi-Agent Coordination in Factorio: FLE v0.2 Release</title>
+
+        <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet" />
+
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" />
+        <style>
+        body {
+            font-family: 'Noto Sans', 'Google Sans', sans-serif;
+            color: #333;
+        }
+
+        .title, .subtitle {
+            font-family: 'Google Sans', 'Noto Sans', sans-serif;
+        }
+
+        .hero {
+            background-color: #f5f5f5;
+            padding: 3rem 1.5rem;
+        }
+
+        .publication-title {
+            font-weight: bold;
+        }
+
+        .publication-authors {
+            margin-bottom: 1rem;
+        }
+
+        .author-block {
+            margin-right: 1rem;
+        }
+
+        .publication-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .link-block {
+            margin: 0.25rem;
+        }
+
+        .external-link {
+            border-radius: 4px;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            min-height: 150px;
+            background-color: #fff;
+            margin-bottom: 1rem;
+        }
+
+        .video-container video {
+            width: 100%;
+            object-fit: cover;
+            background-color: #fff;
+        }
+
+        .video-overlay {
+            position: absolute;
+            bottom: 10px;
+            left: 5px;
+            background-color: rgba(0, 0, 0, 0.4);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 16px;
+            max-width: 90%;
+            z-index: 10;
+            font-weight: 500;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .math-block {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-left: 3px solid #2196F3;
+        }
+
+        .definition {
+            margin: 10px 0;
+            padding: 5px;
+        }
+
+        .note {
+            font-style: italic;
+            color: #666;
+            margin: 10px 0;
+        }
+
+        .feature-box {
+            border-left: 3px solid #2196F3;
+            padding: 10px 15px;
+            margin: 15px 0;
+            background-color: #f8f9fa;
+        }
+
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .footer {
+            padding: 3rem 1.5rem;
+            background-color: #f5f5f5;
+        }
+
+        .release-date {
+            font-size: 1.2rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        .release-note {
+            border-left: 3px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            background-color: #f8f9fa;
+        }
+
+        @media (max-width: 767px) {
+            .video-container {
+                min-height: 120px;
+            }
+
+            .video-overlay {
+                font-size: 14px;
+                padding: 4px 8px;
+            }
+
+            .columns .column.video-column {
+                padding: 0 3px;
+            }
+        }
+
+.model-results-table {
+  width: 100%;
+  max-width: 1200px;
+  margin: 30px auto;
+  border-collapse: collapse;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  font-family: 'Noto Sans', 'Google Sans', sans-serif;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.model-results-table caption {
+  background-color: #2196F3;
+  color: white;
+  font-weight: bold;
+  padding: 15px;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.model-results-table th {
+  background-color: #f5f5f5;
+  color: #333;
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 2px solid #ddd;
+  font-weight: 600;
+}
+
+.model-results-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.model-results-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.model-results-table tr:hover {
+  background-color: #f1f7fa;
+}
+
+.model-results-table .score-cell {
+  text-align: left;
+    width: 180px;
+}
+
+.model-results-table .automation-record > img {
+    height: 32px;
+}
+.model-results-table .score-badge {
+  background-color: #e3f2fd;
+  color: #1976D2;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 500;
+  display: inline-block;
+  min-width: 60px;
+}
+
+.model-results-table .highlighted-model {
+  font-weight: bold;
+  color: #1976D2;
+}
+
+.model-results-table .table-footer {
+  background-color: #f5f5f5;
+  text-align: center;
+  padding: 10px;
+  font-style: italic;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.model-results-table-note {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  margin-top: 10px;
+}
+</style>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    </head>
+    <body>
+        <section class="hero">
+            <div class="hero-body">
+                <div class="container is-max-desktop">
+                    <div class="columns is-centered">
+                        <div class="column has-text-centered">
+                            <h1 class="title is-1 publication-title">Multi-Agent Factorio</h1>
+                            <h2 class="title is-3">FLE v0.2 Release Notes</h2>
+                            <div class="release-date">May 7, 2025</div>
+                            <br/>
+                            <div class="is-size-5 publication-authors">
+                                <span class="author-block">
+                                    <a href="#">Mart Bakler</a>,
+                                    <a href="#">Neel Kant</a>,
+                                    <a href="#">Jack Hopkins</a>
+                                </span>
+                            </div>
+
+                            <div class="is-size-5 publication-authors">
+                                <span class="author-block">Factorio Learning Environment Team</span>
+                            </div>
+
+                            <div class="column has-text-centered">
+                                <div class="publication-links">
+                                    <span class="link-block">
+                                        <a href="https://arxiv.org/abs/2503.09617" target="_blank" class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon">
+                                                <i class="ai ai-arxiv"></i>
+                                            </span>
+                                            <span>Paper</span>
+                                        </a>
+                                    </span>
+                                    <span class="link-block">
+                                        <a href="https://github.com/JackHopkins/factorio-learning-environment" class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon">
+                                                <i class="fab fa-github"></i>
+                                            </span>
+                                            <span>GitHub</span>
+                                        </a>
+                                    </span>
+                                    <span class="link-block">
+                                        <a href="https://discord.gg/2jTtTxw9" class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon">
+                                                <i class="fab fa-discord"></i>
+                                            </span>
+                                            <span>Discord</span>
+                                        </a>
+                                    </span>
+                                    <br>
+                                    <span class="link-block">
+                                        <a href="https://youtu.be/LhS8anmItJA" class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon">
+                                                <i class="fas fa-play-circle"></i>
+                                            </span>
+                                            <span>Multi-Agent</span>
+                                        </a>
+                                    </span>
+                                    <span class="link-block">
+                                        <a href="https://youtu.be/FphaEMxjBcw" class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon">
+                                                <i class="fas fa-play-circle"></i>
+                                            </span>
+                                            <span>MCP+Reasoning</span>
+                                        </a>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div class="columns">
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container" style="position: relative; width: 100%; height: 0; padding-bottom: 75%; /* 4:3 aspect ratio */ overflow: hidden;">
+<!--                                        <img src="/docs/assets/images/multiagent-thumb.png" alt="Multi-agent team collaborating on resource gathering" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" />-->
+                                        <video playsinline muted autoplay loop width="100%">
+                                            <!-- MP4 for desktop devices (loads first on desktop) -->
+                                            <source src="assets/videos/multiagent-thumb-h264.mp4" type="video/mp4">
+                                            Your browser does not support the video tag.
+                                        </video>
+
+                                        <div class="video-overlay"><span>Multi-Agent Coordination</span></br><span style="font-size: 85%; padding-top: -10px">Cooperative factory building</span></div>
+                                    </div>
+                                </div>
+
+
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container">
+                                        <video playsinline muted autoplay loop width="100%">
+                                            <!-- MP4 for desktop devices (loads first on desktop) -->
+                                            <source src="assets/videos/automation-science-h264.mp4" type="video/mp4">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                        <div class="video-overlay"><span>Reflection & Backtracking</span></br><span style="font-size: 85%; padding-top: -10px">unlocks stronger automation</span></div>
+                                    </div>
+                                </div>
+
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container">
+                                        <img src="/docs/assets/images/vision.png" alt="Vision agent demonstration" />
+
+                                        <div class="video-overlay"><span>Vision Agents</span></br><span style="font-size: 85%; padding-top: -10px">for enhanced spatial reasoning</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+<!--                <p style="padding-top: 10px; padding-left: 5px; font-size:110%">Key features of the Factorio Learning Environment v0.2 release</p>-->
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container is-max-desktop">
+                <!-- Introduction -->
+                 <div class="release-note">
+                <div class="content">
+                    <p style="font-size: 115%;">
+                        Hey everyone,
+                    </p>
+                    <p style="font-size: 115%;">
+                        It's Mart, Neel and Jack from the Factorio Learning Environment team.
+                    </p>
+                    <p style="font-size: 115%;">
+                        We believe in evaluating AI agents in <i>unbounded, open-ended</i> and <i>highly dynamic</i> settings - such that we can observe a uniquely strong signal of model capability even as they surpass human performance in various domains.
+                    </p>
+                    <p style="font-size: 115%;">
+                        Since our initial release, we have been working hard to expand the environment to support <b>multi-agent scenarios</b>, <b>reasoning models</b> and <b>MCP</b> for human-in-the-loop evals.
+                    </p>
+                    <p style="font-size: 115%;">
+                     We have also spent time experimenting with different ways to elicit more performance out of agents in the game, namely tools for <b>vision</b>  and <b>reflection</b>.
+
+<!--                        These steps set the stage for upcoming frontier agent research and engineering.-->
+                    </p>
+                    <p style="font-size: 115%;">
+                        Today, we are proud to release v0.2, which includes several exciting new features and improvements.
+                    </p>
+                    <p style="font-size: 115%;">
+                        Thanks for checking this out.
+                    </p>
+                </div>
+                 </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <h2 class="title is-3">Multi-Agent Support</h2>
+
+
+<!--                <div class="release-note">-->
+                    <p style="font-size: 110%;">
+                        We now leverage Factorio’s native multiplayer mechanics to support multi-agent scenarios.
+                        Agents can communicate in a broadcast or peer-to-peer fashion, and tasks can now be constructed with custom instructions for different agents.
+                        These features allow evaluation of cooperation, conflict and collusion between agents with partial observability.
+                    </p>
+                    <br/>
+                    <p style="font-size: 110%;">
+                        In this release, agents fully yield to each other when planning and taking actions in order to minimize coordination challenges.
+                        Despite the lack of true concurrency, we find agents can struggle to fully account for each others’ actions, leading to novel errors potentially difficult to recover from.
+                    </p>
+                <br/>
+                    <p style="font-size: 110%;">
+                        We are excited for the possibilities of interesting experiments in capability and safety research that this work opens up.
+                    </p>
+                <br/>
+<!--                </div>-->
+
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div style="text-align: center;">
+<!--                                <img src="/api/placeholder/800/400" alt="Multi-agent architecture diagram" style="display: block; margin-left: auto; margin-right: auto;" />-->
+                                <iframe style="width: 100%; min-height: 600px;"
+                                src="https://www.youtube.com/embed/LhS8anmItJA?vq=hd1080&;hq=1"
+                                title="Multi-Agent Factorio Demo"
+                                frameborder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowfullscreen></iframe>
+                                <br />
+                                <span style="font-size: 110%;">
+                                    <b>Multi-agent Support.</b> Here we see agents cooperatively dividing up responsibilities and communicating updates in order to accomplish a common goal.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <h2 class="title is-3">Reasoning Models + MCP</h2>
+
+                    <p style="font-size: 110%;">
+                        We now support reasoning models over MCP, with <i>tool invocation within reasoning chains</i>, which you can connect to with your client of choice. While we use Claude Code / Desktop by preference, you can find others <a href="https://github.com/punkpeye/awesome-mcp-clients">here</a>. You can now run entire agent trajectories from your terminal, or stop to help agents out when they get stuck. You can also turn on 'research mode' from OpenAI and Anthropic, to allow the agents to plan more deeply.
+                    </p>
+
+                <div style="margin: 30px 0;">
+                    <div style="text-align: center;">
+                        <iframe style="width: 100%; min-height: 600px;"
+                                src="https://www.youtube.com/embed/FphaEMxjBcw?vq=hd1080&;hq=1"
+                                title="MCP+Reasoning Factorio Demo"
+                                frameborder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowfullscreen></iframe>
+                        <br />
+                        <span style="font-size: 110%;">
+                            <b>Reasoning models with MCP integration.</b> The environment now supports deeper planning capabilities through integration with reasoning-enabled models from major providers. This enables more thoughtful factory design and long-term planning, with the option for human intervention when agents encounter difficulties.
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <h2 class="title is-3">Reflection and Backtracking</h2>
+                    <p style="font-size: 110%;">
+                        Agents are unable to efficiently reason and act in broken factory states.
+                    </p>
+                    <br/>
+                    <p style="font-size: 110%;">
+                        This often happens when an agent program errors out midway through execution, resulting in a "half-completed" game state. Continuing from these broken states results in the agents degenerating into error-correcting rabbit holes, where they unsuccessfully try to fix the game state over a long time horizon, while making no meaningful progress towards the goal.
+                    </p>
+                    <br />
+                    <p style="font-size: 110%;">
+                        To decrease the probability of agents ending up in these intermediate broken factory states, we implemented a simple yet effective backtracking system where the agent iteratively improves upon their programs using environment execution feedback until the program executes successfully (or the maximum number of iterations is reached).
+                    </p>
+                    <br />
+                    <p style="font-size: 110%;">
+                         If a program execution creates an error, the agent is able to synthesise an improved program using the error message and the history of explored programs. The improved program is crucially executed from the pre-error game state and the final game state is updated for a new program only if the execution is error-free.
+                    </p>
+                    <br />
+                    <p style="font-size: 110%;">
+                        This backtracking system resulted in a <b>7%</b> increase in lab-play performance using Claude Sonnet 3.5, both due to improved consistency in solving lower-level tasks, and solving previously-unsolved tasks (i.e creating an automation science factory / electronic circuit factory).
+                    </p>
+
+                <br />
+
+                <div class="columns">
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">Clean State Advantage</h4>
+                            <p>Agents always work from a clean game state, avoiding the compounding errors that previously occurred when working with partially broken factories.</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">Exploratory Learning</h4>
+                            <p>Agents can explore multiple approaches to achieve goals using environmental feedback without having to continue from messy game states.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="columns">
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">Improved Context Window</h4>
+                            <p>Context windows of agents include only successful traces, thus improving few-shot learning and reducing confusion from failed attempts.</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">SOTA Performance</h4>
+                            <p>The backtracking approach achieves state-of-the-art performance, enabling completion of previously unsolvable tasks by reducing error cascade effects.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div class="columns">
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container">
+                                        <video playsinline muted autoplay loop width="100%">
+                                            <!-- MP4 for desktop devices (loads first on desktop) -->
+                                            <source src="assets/videos/electronic-circuits-h264.mp4" type="video/mp4">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                        <div class="video-overlay"><span>Make 16 Electronic Circuits</span></br><span style="font-size: 85%; padding-top: -10px">per minute</span></div>
+                                    </div>
+                                </div>
+
+
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container">
+                                        <video playsinline muted autoplay loop width="100%">
+                                            <!-- MP4 for desktop devices (loads first on desktop) -->
+                                            <source src="assets/videos/automation-science-h264.mp4" type="video/mp4">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                        <div class="video-overlay"><span>Craft 16 Automation Science</span></br><span style="font-size: 85%; padding-top: -10px">per minute</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <span style="font-size: 110%;">
+                        <b>Backtracking and reflection improves reliability</b>. The agent can undo failed programs, to ensure that the game state remains relatively clean. This improves agent outcomes and reliability.
+                    </span>
+                </div>
+
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <h2 class="title is-3">Vision Agents</h2>
+
+                <p style="font-size: 110%;">
+                    We now include visual agents, which can render simplified snapshots of the game map with annotations for enhanced spatial reasoning - even when running on a headless server where the Factorio client is not connected.
+                    </p>
+                <br/>
+                 <p style="font-size: 110%;">
+                    Anecdotally however, current vision models are not yet strong enough to significantly improve benchmarked performance.
+                </p>
+                <br/>
+
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div class="columns">
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container" style="position: relative; width: 100%; height: 0; padding-bottom: 75%; /* 4:3 aspect ratio */ overflow: hidden;">
+                                        <img src="/docs/assets/images/vision-original.png" alt="Multi-agent team collaborating on resource gathering" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" />
+                                        <div class="video-overlay"><span>Game State</span></br><span style="font-size: 85%; padding-top: -10px">in the Factorio client</span></div>
+                                    </div>
+                                </div>
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container" style="position: relative; width: 100%; height: 0; padding-bottom: 75%; /* 4:3 aspect ratio */ overflow: hidden;">
+                                        <img src="/docs/assets/images/vision.png" alt="Multi-agent team collaborating on resource gathering" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" />
+                                        <div class="video-overlay"><span>Visual Observation + Legend</span></br><span style="font-size: 85%; padding-top: -10px">an agent can use to reason over</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <h2 class="title is-3">Model Testing Results</h2>
+
+                    <p style="font-size: 110%;">
+                        We conducted initial lab-play testing with Claude 3.7 and Gemini Pro 2.5 in v0.2.0
+                    </p>
+                <br/>
+                <table class="model-results-table">
+
+                  <thead>
+                    <tr>
+                      <th>Model</th>
+                      <th>Automation Record</th>
+                      <th>Lab Play (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="highlighted-model">Claude 3.7 Sonnet ⭐</td>
+                        <td class="automation-record">
+                            <img src="assets/images/icons/steel-plate.png"/>
+                        </td>
+                       <td class="score-cell"><span class="score-badge">0.29</span></td>
+                    </tr>
+                    <tr>
+                      <td class="highlighted-model">Claude 3.5 Sonnet w. reflexion ⭐</td>
+                        <td class="automation-record">
+                            <img src="assets/images/icons/steel-plate.png"/>
+                            <img src="assets/images/icons/electronic-circuit.png"/>
+
+                        </td>
+                      <td class="score-cell"><span class="score-badge">0.28</span></td>
+                    </tr>
+                    <tr>
+                      <td>Claude 3.5 Sonnet</td>
+                        <td class="automation-record">
+                            <img src="assets/images/icons/plastic-bar.png"/>
+                            <img src="assets/images/icons/sulfur.png"/>
+                        </td>
+                       <td class="score-cell"><span class="score-badge">0.22</span></td>
+                    </tr>
+                    <tr>
+                      <td class="highlighted-model">Gemini-2.5-pro (March 3rd) ⭐</td>
+                        <td class="automation-record">
+                            <img src="assets/images/icons/plastic-bar.png"/>
+                            <img src="assets/images/icons/sulfur.png"/>
+                        </td>
+                      <td class="score-cell"><span class="score-badge">0.18</span></td>
+                    </tr>
+                    <tr>
+                      <td>GPT-4o</td>
+                        <td class="automation-record">
+                            <img src="assets/images/icons/plastic-bar.png"/>
+                        </td>
+                      <td class="score-cell"><span class="score-badge">0.17</span></td>
+                    </tr>
+                    <tr>
+                      <td>Deepseek-v</td>
+                         <td class="automation-record">
+                            <img src="assets/images/icons/iron-gear-wheel.png"/>
+                        </td>
+                      <td class="score-cell"><span class="score-badge">0.15</span></td>
+                    </tr>
+                    <tr>
+                      <td>Gemini-2-Flash</td>
+                        <td class="automation-record">
+                            <img src="assets/images/icons/petroleum-gas.png"/>
+                        </td>
+                      <td class="score-cell"><span class="score-badge">0.13</span></td>
+                    </tr>
+                    <tr>
+                      <td>LLama-3.3-70b</td>
+                        <td class="automation-record">
+                            <img src="assets/images/icons/iron-plate.png"/>
+                        </td>
+                      <td class="score-cell"><span class="score-badge">0.05</span></td>
+                    </tr>
+                    <tr>
+                      <td>GPT-4o-Mini</td>
+                        <td class="automation-record">
+                            <img src="assets/images/icons/iron-plate.png"/>
+                        </td>
+                      <td class="score-cell"><span class="score-badge">0.04</span></td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="2" class="table-footer">Data from Factorio Learning Environment v0.2 Release (May 2025)</td>
+                    </tr>
+                  </tfoot>
+                </table>
+                <div class="model-results-table-note">⭐ Models highlighted with stars are new additions</div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <h2 class="title is-3">What's Next</h2>
+                <p style="font-size: 115%;">
+                    We are super excited to work on the next phase of this environment, including:
+                </p>
+
+                <div class="columns">
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">A2A Integration</h4>
+                            <p>Agent-to-agent integration with agents from across the internet, allowing diverse models to collaborate and compete in the Factorio environment.</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">Expanded Multi-Agent Scenarios</h4>
+                            <p>Support for countless combinations of multi-agent scenarios, including specialized teams, competitive environments, and mixed-capability collaborations.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="columns">
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">Training Infrastructure</h4>
+                            <p>Train Paperclip Maximisers on our (modest) cluster with optimized training pipelines for reinforcement learning from human feedback.</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">Benchmark Challenges</h4>
+                            <p>Beat our SOTA results for agents interacting in the game with new optimization techniques and collaborative strategies.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <h2 class="title is-3">Join Our Team</h2>
+                            <div class="content has-text-justified">
+                                <p style="font-size: 115%;">
+                                    Join our team and contribute to one of the AI research community's most challenging problems - building open-ended / unsaturateable evals for post-AGI frontier models.
+                                </p>
+                                <div class="columns is-centered">
+                                    <div class="column is-half">
+                                        <div class="buttons is-centered">
+                                            <a href="https://discord.gg/2jTtTxw9" class="button is-link is-medium">
+                                                <span class="icon">
+                                                    <i class="fab fa-discord"></i>
+                                                </span>
+                                                <span>Join Discord</span>
+                                            </a>
+                                            <a href="https://github.com/JackHopkins/factorio-learning-environment" class="button is-dark is-medium">
+                                                <span class="icon">
+                                                    <i class="fab fa-github"></i>
+                                                </span>
+                                                <span>GitHub Repository</span>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p style="font-size: 115%; text-align: center; margin-top: 2rem;">
+                                    Thanks to Wube and the Factorio team for building such a great game.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="columns is-centered">
+                    <div class="column">
+                        <div class="content has-text-centered">
+                            <p>
+                                Website template inspired by <a href="https://github.com/nerfies/nerfies.github.io" target="_blank">NeRFies</a>, <a href="https://github.com/cliport/cliport.github.io" target="_blank">CLIPort</a>, and <a href="https://voyager.minedojo.org/" target="_blank">Voyager</a>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // For a real implementation, this would handle video playback
+                console.log("Document loaded");
+            });
+        </script>
+    </body>
+</html>

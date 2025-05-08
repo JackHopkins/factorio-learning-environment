@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Optional
 from env.src.entities import Inventory, Entity
 from env.src.instance import FactorioInstance
 from eval.tasks.task_abc import TaskABC
@@ -72,14 +72,16 @@ After each step the throughput of the factory is evaluated during 60 seconds of 
 
 class ThroughputTask(TaskABC):
     def __init__(self, trajectory_length, goal_description: str, task_key: str,
-                  throughput_entity: Entity, quota: int, holdout_wait_period: int, pre_holdout_wait_period: int = 0):
+                  throughput_entity: Entity, quota: int, holdout_wait_period: int, pre_holdout_wait_period: int = 0,
+                  agent_instructions: Optional[List[str]] = None):
         goal_description += f"\n{INSTRUCTIONS}"
         goal_description += "\n\n##Useful statistics\n" + CRAFTING_STATISTICS
         super().__init__(trajectory_length, 
                             starting_inventory = LAB_PLAY_POPULATED_STARTING_INVENTORY,
                             goal_description=goal_description, 
                             task_key = task_key,
-                            all_technology_reserached = True)
+                            all_technology_reserached = True,
+                            agent_instructions = agent_instructions)
         self.throughput_entity = throughput_entity
         self.quota = quota
         self.holdout_wait_period = holdout_wait_period

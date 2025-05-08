@@ -1,0 +1,7 @@
+[
+    {
+        "task": "multiagent/iron_plate_throughput_impostor.json",
+        "model": "claude-3-5-sonnet-latest",
+        "num_agents": 2
+    }
+]

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Optional
 from env.src.entities import Inventory, Entity
 from env.src.instance import FactorioInstance
 from eval.tasks.task_abc import TaskABC
@@ -9,11 +9,12 @@ from agents import TaskResponse
 
 
 class DefaultTask(TaskABC):
-    def __init__(self, trajectory_length, goal_description: str, task_key: str):
+    def __init__(self, trajectory_length, goal_description: str, task_key: str, agent_instructions: Optional[List[str]] = None):
         super().__init__(trajectory_length, starting_inventory = {}, 
                          goal_description=goal_description, 
                          task_key = task_key,
-                         all_technology_reserached=False)
+                         all_technology_reserached=False,
+                         agent_instructions = agent_instructions)
         self.starting_game_state = None
         
     

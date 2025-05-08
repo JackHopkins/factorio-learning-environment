@@ -140,7 +140,7 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
                                          inventory={})
         self.instance.reset(game_state)
         ngame_state = GameState.from_instance(self.instance)
-        nvars = pickle.loads(ngame_state.namespace)
+        nvars = pickle.loads(ngame_state.namespaces[0])
 
         assert 'coal_position' in nvars and nvars['coal_position']
 

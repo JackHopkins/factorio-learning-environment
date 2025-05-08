@@ -3,7 +3,7 @@ import unittest
 from cluster.local.cluster_ips import get_local_container_ips
 from game_types import Prototype, Resource
 from instance import FactorioInstance, Direction
-from models.game_state import GameState
+from models.multiagent_game_state import MultiagentGameState
 
 
 def test_drop_box_chest():
@@ -26,7 +26,7 @@ def test_drop_box_chest():
     drill = instance.namespace.get_entities({Prototype.BurnerMiningDrill})[0]
 
 
-    state = GameState.from_instance(instance)
+    state = MultiagentGameState.from_instance(instance)
 
     instance.reset(state)
 
@@ -48,7 +48,7 @@ def test_full_chest():
         instance.namespace.insert_item(Prototype.Coal, chest, 50)
 
 
-    state = GameState.from_instance(instance)
+    state = MultiagentGameState.from_instance(instance)
 
     instance.reset(state)
 

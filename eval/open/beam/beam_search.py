@@ -406,7 +406,7 @@ class ParallelBeamSearch:
                     Message(role="system", content=self.config.system_prompt),
                     Message(role="assistant", content="print(f'Inventory: {inspect_inventory()}')\n"
                                                       "print(f'Entities: {get_entities()}')\n"),
-                    Message(role="user", content=f"1: ('Inventory: {state.inventory.__dict__}')\n"
+                    Message(role="user", content=f"1: ('Inventory: {state.inventories[0].__dict__}')\n"
                                                  f"2: ('Entities: {entities}')"),
                 ])
                 parent_id = None

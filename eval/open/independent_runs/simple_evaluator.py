@@ -6,7 +6,6 @@ from typing import List, Tuple, Union, Dict, Optional
 from eval.open.db_client import DBClient
 from env.src.models.achievements import ProductionFlows
 from env.src.models.game_state import GameState
-from env.src.models.multiagent_game_state import MultiagentGameState
 from env.src.models.program import Program
 from env.src.entities import Entity, EntityGroup
 from env.src.instance import FactorioInstance
@@ -29,7 +28,7 @@ class SimpleFactorioEvaluator:
         if logger:
             self.port_to_group = logger.port_to_group
 
-    async def evaluate(self, program: Program, start_state: Union[GameState, MultiagentGameState], task, agent_idx: int, step_statistics: dict = {}) -> Program:
+    async def evaluate(self, program: Program, start_state: GameState, task, agent_idx: int, step_statistics: dict = {}) -> Program:
         try:
             self.instance.reset(start_state)
             raw_reward, state, response, entities, achievements, flows, ticks = await self._evaluate_single(program, agent_idx)
@@ -112,10 +111,7 @@ class SimpleFactorioEvaluator:
 
             # Sleep for 3 seconds to get output flows
             await asyncio.sleep(self.value_accrual_time)
-            if self.instance.num_agents > 1:
-                state = MultiagentGameState.from_instance(self.instance)
-            else:
-                state = GameState.from_instance(self.instance)
+            state = GameState.from_instance(self.instance)
             score, _ = self.instance.first_namespace.score()
             final_reward = score - initial_value
             ticks = self.instance.get_elapsed_ticks()

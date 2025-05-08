@@ -16,7 +16,6 @@ from env.src.entities import Position, Direction, EntityStatus, BoundingBox, Bel
 
 from env.src.game_types import Prototype, Resource, Technology, prototype_by_name, RecipeName
 from env.src.models.serializable_function import SerializableFunction
-from env.src.models.game_state import GameState
 
 
 class LoopContext:

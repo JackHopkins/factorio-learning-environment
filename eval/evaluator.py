@@ -162,7 +162,7 @@ class Evaluator:
             state = GameState.from_instance(instance)
 
             # Get the namespace variables in a human readable format for debugging purposes
-            vars = pickle.loads(state.namespace)
+            vars = pickle.loads(state.namespaces[0])
 
             self.logger.update_instance(tcp_port, status=f"accruing value ({self.value_accrual_time}s)")
             await asyncio.sleep(self.value_accrual_time)

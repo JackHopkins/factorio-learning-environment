@@ -29,7 +29,6 @@ from env.src.transaction import FactorioTransaction
 from env.src.models.research_state import ResearchState
 from env.src.rcon.factorio_rcon import RCONClient
 from env.src.models.game_state import GameState
-from env.src.models.multiagent_game_state import MultiagentGameState
 from env.src.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 
 CHUNK_SIZE = 32
@@ -133,10 +132,10 @@ class FactorioInstance:
         else:
             raise ValueError("Can only use .namespace for single-agent instances")
 
-    def reset(self, game_state: Optional[Union[GameState, MultiagentGameState]] = None):
+    def reset(self, game_state: Optional[GameState] = None):
         # Reset the namespace (clear variables, functions etc)
-        assert not game_state or game_state.is_multiagent == (self.num_agents > 1), \
-            "Multiagent game state must be provided if num_agents > 1"
+        assert not game_state or len(game_state.inventories) == self.num_agents, \
+            "Game state must have the same number of inventories as num_agents"
         
         for namespace in self.namespaces:
             namespace.reset()
@@ -157,12 +156,7 @@ class FactorioInstance:
                 ))
         else:
             # Reset the game instance with the correct player's inventory and messages if multiagent
-            if game_state.is_multiagent:
-                inventories = game_state.inventories
-                agent_messages = [msg for sublist in game_state.agent_messages for msg in sublist]
-            else:
-                inventories = [game_state.inventory]
-            self._reset(inventories)
+            self._reset(game_state.inventories)
 
             # Load entities into the game
             self.first_namespace._load_entity_state(game_state.entities, decompress=True)
@@ -170,18 +164,15 @@ class FactorioInstance:
             # Load research state into the game
             self.first_namespace._load_research_state(game_state.research)
 
-            if game_state.is_multiagent:
-                self.first_namespace._load_messages(agent_messages)
+            agent_messages = [msg for sublist in game_state.agent_messages for msg in sublist]
+            self.first_namespace._load_messages(agent_messages)
 
             # Reset elapsed ticks
             self._reset_elapsed_ticks()
 
             # Load variables / functions from game state
-            if game_state.is_multiagent:
-                for i in range(self.num_agents):
-                    self.namespaces[i].load(game_state.namespaces[i])
-            else:
-                self.first_namespace.load(game_state.namespace)
+            for i in range(self.num_agents):
+                self.namespaces[i].load(game_state.namespaces[i])
 
         try:
             self.initial_score, goal = self.first_namespace.score()

@@ -16,8 +16,6 @@ from eval.open.db_client import PostgresDBClient, SQLliteDBClient
 from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
 from env.src.models.conversation import Conversation
 from env.src.models.message import Message
-from env.src.models.game_state import GameState
-from env.src.models.multiagent_game_state import MultiagentGameState
 from env.src.models.program import Program
 from env.src.instance import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
@@ -187,10 +185,7 @@ class TrajectoryRunner:
             self.evaluator.instance.reset(current_state)
             entities = self.evaluator.instance.first_namespace.get_entities()
             for agent_idx in range(len(self.agents)):
-                if current_state.is_multiagent:
-                    inventory = current_state.inventories[agent_idx]
-                else:
-                    inventory = current_state.inventory
+                inventory = current_state.inventories[agent_idx]
 
                 current_conversations[agent_idx] = Conversation(messages=[
                     Message(role="system", content=self.config.agents[agent_idx].system_prompt),
@@ -238,9 +233,8 @@ class TrajectoryRunner:
                 program.parent_id = parent_id
 
                 # Evaluate program
-                if current_state.is_multiagent:
-                    uptodate_messages = [namespace._get_messages() for namespace in self.evaluator.instance.namespaces]
-                    current_state.agent_messages = uptodate_messages
+                uptodate_messages = [namespace._get_messages() for namespace in self.evaluator.instance.namespaces]
+                current_state.agent_messages = uptodate_messages
                 self.evaluator.instance.reset(current_state)
                 evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.task, agent_idx=agent_idx, step_statistics={"current_step_id": iteration})
                 print(program.code + "\n"+"="*50)

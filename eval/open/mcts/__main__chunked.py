@@ -87,7 +87,7 @@ async def create_seed_programs(
         # Create conversation context
         conversation = Conversation(messages=[
             Message(role="system", content=mcts.system_prompt),
-            Message(role="user", content=f"Starting Inventory: {game_state.inventory.dict()}"),
+            Message(role="user", content=f"Starting Inventory: {game_state.inventories[0].dict()}"),
             Message(role="assistant", content=objective)
         ])
 
@@ -156,7 +156,7 @@ async def get_seed_programs(
             conversation = Conversation(messages=[
                 Message(role="system", content=mcts.system_prompt),
                 Message(role="user",
-                        content=f"Inventory: {json.dumps(game_state.inventory.__dict__)}\n\n{PLANNING_ADDITION_PROMPT}"),
+                        content=f"Inventory: {json.dumps(game_state.inventories[0].__dict__)}\n\n{PLANNING_ADDITION_PROMPT}"),
                 Message(role="assistant", content=objective)
             ])
             messages = conversation.model_dump()['messages']

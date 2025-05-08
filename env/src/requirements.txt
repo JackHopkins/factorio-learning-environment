@@ -1,4 +1,4 @@
-factorio-rcon-py
+factorio-rcon-py==1.2.1
 python-dotenv==1.0.1
 imageio
 anyio

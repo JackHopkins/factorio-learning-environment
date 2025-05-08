@@ -6,9 +6,9 @@ from enum import Enum
 from typing import Dict, Optional, Any, List
 
 
-from models.research_state import ResearchState
-from models.technology_state import TechnologyState
-from models.game_state import GameState, is_serializable, filter_serializable_vars
+from env.src.models.research_state import ResearchState
+from env.src.models.technology_state import TechnologyState
+from env.src.models.game_state import GameState, is_serializable, filter_serializable_vars
 
 @dataclass
 class MultiagentGameState:
@@ -91,7 +91,7 @@ class MultiagentGameState:
             timestamp=data['timestamp'] if 'timestamp' in data else time.time(),
             namespaces=namespaces,
             research=research,
-            agent_messages=data.get('agent_messages', [])
+            agent_messages=cls.parse_agent_messages(data)
         )
 
     @classmethod
@@ -120,8 +120,30 @@ class MultiagentGameState:
             timestamp=data['timestamp'] if 'timestamp' in data else time.time(),
             namespaces=namespaces,
             research=research,
-            agent_messages=data.get('agent_messages', [])
+            agent_messages=cls.parse_agent_messages(data)
         )
+
+    
+    def parse_agent_messages(data: dict) -> List[Dict[str, Any]]:
+        agent_messages = data.get('agent_messages', [])
+        if not isinstance(agent_messages, list):
+            raise ValueError("agent_messages must be a list")
+        if agent_messages and not all(isinstance(msg, dict) for msg in agent_messages):
+            
+            for idx, message in enumerate(agent_messages):
+                if isinstance(message, dict):
+                    continue
+                elif isinstance(message, list):
+                    if len(message) > 0:
+                        if isinstance(message[0], dict):
+                            agent_messages[idx] = message[0]
+                        else:
+                            raise ValueError(f"agent_messages[{idx}] must be a dictionary or a list of dictionaries, but got {type(message[0])}")
+                    else:
+                        agent_messages[idx] = {}
+                else:
+                    raise ValueError(f"agent_messages[{idx}] must be a dictionary or a list of dictionaries, but got {type(message)}")
+        return agent_messages
 
     def to_raw(self) -> str:
         """Convert state to JSON string"""

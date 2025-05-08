@@ -3,7 +3,7 @@ from typing import List, Dict, Tuple, Optional
 
 from env.src.models.conversation import Conversation
 from env.src.models.message import Message
-from namespace import FactorioNamespace
+from env.src.namespace import FactorioNamespace
 
 PLANNING_ADDITION_PROMPT = \
 """

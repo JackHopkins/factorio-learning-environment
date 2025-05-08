@@ -23,8 +23,8 @@ from env.src.instance import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
 from agents.utils.python_parser import PythonParser
 #from models.response import EnvironmentResponse
-from namespace import FactorioNamespace
-from tools.agent.send_message.client import AgentMessage
+from env.src.namespace import FactorioNamespace
+from env.src.tools.agent.send_message.client import AgentMessage
 
 from agents import Response
 import json
@@ -78,19 +78,19 @@ class TrajectoryRunner:
         conversation = copy.deepcopy(conversation)
         agent_idx = 0 if instance_param == -1 else instance_param
         try:
-            policy = await self.agents[agent_idx].step(conversation, response, namespace)
+            policy, policy_meta = await self.agents[agent_idx].step(conversation, response, namespace)
 
             if not policy:
                 raise Exception("Policy not valid Python. Skipping.")
 
             try:
-                messages = conversation.model_dump()['messages']
+                messages = policy.input_conversation.model_dump()['messages'] if policy.input_conversation else conversation.model_dump()['messages']
             except Exception:
-                messages = conversation.dict()['messages']
+                messages = policy.input_conversation.dict()['messages'] if policy.input_conversation else conversation.dict()['messages']
 
             program = Program(
                 code=policy.code,
-                conversation=conversation,
+                conversation=policy.input_conversation if policy.input_conversation else conversation,
                 response=response.response if response else None,
                 token_usage=policy.meta.total_tokens,
                 completion_token_usage=policy.meta.output_tokens,
@@ -105,7 +105,8 @@ class TrajectoryRunner:
 
             if meta:
                 program.meta.update(meta)
-
+            if policy_meta:
+                program.meta.update(policy_meta)
             return program
 
         except Exception as e:
@@ -173,13 +174,12 @@ class TrajectoryRunner:
         current_state = None
         current_conversations = [None] * len(self.agents)
         last_responses = [None] * len(self.agents)
-        
+        agent_step_counter = [0] * len(self.agents)
         if self.config.version:
             for agent_idx in range(len(self.agents)):
                 current_state, current_conversations[agent_idx], parent_id, depth = await self.db.get_resume_state(
                     resume_version = self.config.version, process_id = self.process_id, agent_idx = agent_idx
                 )
-                self.agents[agent_idx].conversation = current_conversations[agent_idx]
             
         if not current_state:
             current_state = self.config.task.starting_game_state
@@ -194,19 +194,22 @@ class TrajectoryRunner:
 
                 current_conversations[agent_idx] = Conversation(messages=[
                     Message(role="system", content=self.config.agents[agent_idx].system_prompt),
-                    Message(role="assistant", content="print(f'Inventory: {inspect_inventory()}')\n"
-                                                  "print(f'Entities: {get_entities()}')\n"),
+                    Message(role="assistant", content="```python\nprint(f'Inventory: {inspect_inventory()}')\n"
+                                                  "print(f'Entities: {get_entities()}')\n```"),
                     Message(role="user", content=f"1: ('Inventory: {inventory.__dict__}')\n"
                                                 f"2: ('Entities: {entities}')"),
                 ])
-                self.agents[agent_idx].conversation = current_conversations[agent_idx]
                 parent_id = None
 
         # Run trajectory
         for iteration, agent_idx in product(range(depth, self.config.task.trajectory_length), range(len(self.agents))):
+            # Check if the agent has steps left
+            if agent_step_counter[agent_idx] >= self.config.task.trajectory_length:
+                print(f"Agent {agent_idx} has no steps left. Skipping.")
+                continue
             iteration_start = time.time()
             time.sleep(COURTESY_SLEEP) # courtesy sleep
-            
+            agent_completed = False
             try:
                 # Collect new messages for this agent
                 new_messages_text = self._collect_new_messages(agent_idx)
@@ -215,7 +218,7 @@ class TrajectoryRunner:
                 if new_messages_text:
                     # Get the last user message
                     last_user_message = None
-                    for msg in reversed(self.agents[agent_idx].conversation.messages):
+                    for msg in reversed(current_conversations[agent_idx].messages):
                         if msg.role == "user":
                             last_user_message = msg
                             break
@@ -225,91 +228,105 @@ class TrajectoryRunner:
                         last_user_message.content += new_messages_text
                 
                 instance_param = -1 if len(self.agents) == 1 else agent_idx
-                program = await self._generate_program(self.agents[agent_idx].conversation, last_responses[agent_idx], self.evaluator.instance.namespaces[agent_idx], instance_param=instance_param)
-
-                print(f"Generated program {multiprocessing.current_process().name} - "
-                      f"Model: {self.config.agents[agent_idx].model} - "
-                      f"Iteration {iteration}/{self.config.task.trajectory_length}")
-
-                if not program:
-                    print(f"Program generation failed for agent {agent_idx} at iteration {iteration}")
-                    continue
-
-                program.parent_id = parent_id
-
-                # Evaluate program
-                if current_state.is_multiagent:
-                    uptodate_messages = [namespace._get_messages() for namespace in self.evaluator.instance.namespaces]
-                    current_state.agent_messages = uptodate_messages
-                self.evaluator.instance.reset(current_state)
-                evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.task, agent_idx=agent_idx, step_statistics={"current_step_id": iteration})
-                print(program.code + "\n"+"="*50)
-                print("\033[1m\n".join(['>>>\t'+line for line in program.response.strip().replace('\\n', '\n\t').split('\n')]).strip()+"\033[0m")
-                print(f"Evaluated program {multiprocessing.current_process().name} - "
-                      f"Model: {self.config.agents[agent_idx].model} - "
-                      f"Iteration {iteration}/{self.config.task.trajectory_length} - "
-                      f"Agent #{agent_idx}")
-
-                if not evaluated_program:
-                    print(f"Evaluation failed for agent {agent_idx} at iteration {iteration}")
-                    continue
-
-                program = evaluated_program
-                self.agents[agent_idx].conversation = program.conversation
-                program.meta["task_key"] = self.config.task.task_key
-                last_responses[agent_idx] = Response(
-                    code=program.code,
-                    created_at=program.created_at,
-                    score=program.value,
-                    achievements=program.achievements,
-                    step=depth,
-                    ticks = program.ticks,
-                    flows = program.flows,
-                    response=program.response,
-                    task=task_verification_response
-                )
-
-                # Save program
-                saved_program = await self.db.create_program(program)
-                print(f"Saved program {multiprocessing.current_process().name} - "
-                      f"Model: {self.config.agents[agent_idx].model} - "
-                      f"Iteration {iteration}/{self.config.task.trajectory_length}")
-
-                parent_id = saved_program.id
-
-                # Update state for next iteration
-                if program.state:
-                    current_state = program.state
-                    current_conversations[agent_idx] = program.conversation
-
-                # Record iteration time
-                iteration_time = time.time() - iteration_start
-                self.iteration_times.append(iteration_time)
-
-                # Keep only last 50 iterations for moving average
-                if len(self.iteration_times) > 50:
-                    self.iteration_times = self.iteration_times[-50:]
-
-                if iteration % 10 == 0:
-                    elapsed = time.time() - self.start_time
-                    elapsed_str = f"{int(elapsed // 3600):02d}:{int((elapsed % 3600) // 60):02d}:{int(elapsed % 60):02d}"
-                    eta = self.get_eta(iteration)
-                    print(f"\033[92m Process {multiprocessing.current_process().name} - "
+                # loop while the agent is not completed yet
+                while not agent_completed and agent_step_counter[agent_idx] < self.config.task.trajectory_length:
+                    program = await self._generate_program(current_conversations[agent_idx], last_responses[agent_idx], self.evaluator.instance.namespaces[agent_idx], instance_param=instance_param)
+                    agent_step_counter[agent_idx] += 1
+                    print(f"Generated program {multiprocessing.current_process().name} - "
                           f"Model: {self.config.agents[agent_idx].model} - "
-                          f"Iteration {iteration}/{self.config.task.trajectory_length} - "
-                          f"Value: {program.value:.2f} - "
-                          f"Elapsed: {elapsed_str} - "
-                          f"ETA: {eta}")
-                    
-                if task_verification_response.success and self.config.exit_on_task_success:
-                    print(f"Task verification success: {task_verification_response.success}")
-                    completion_result = CompletionResult(step = iteration, 
-                                                         reason = CompletionReason.SUCCESS)
-                    for agent in self.agents:
-                        await agent.end(program.conversation, completion_result)
-                    break 
+                          f"Iteration {agent_step_counter[agent_idx]}/{self.config.task.trajectory_length}")
+
+                    if not program:
+                        print(f"Program generation failed for agent {agent_idx} at iteration {agent_step_counter[agent_idx]}")
+                        break
+
+                    if not program.parent_id: program.parent_id = parent_id
+
+                    # Evaluate program
+                    if current_state.is_multiagent:
+                        update_messages = [namespace._get_messages() for namespace in self.evaluator.instance.namespaces]
+                        current_state.agent_messages = update_messages
+                    self.evaluator.instance.reset(current_state)
+                    instance_namespace_before_program = self.evaluator.instance.namespaces[agent_idx]
+                    evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.task, agent_idx=agent_idx, step_statistics={"current_step_id": agent_step_counter[agent_idx]})
+                    print(program.code + "\n"+"="*50)
+                    print("\033[1m\n".join(['>>>\t'+line for line in program.response.strip().replace('\\n', '\n\t').split('\n')]).strip()+"\033[0m")
+                    print(f"Evaluated program {multiprocessing.current_process().name} - "
+                          f"Model: {self.config.agents[agent_idx].model} - "
+                          f"Iteration {agent_step_counter[agent_idx]}/{self.config.task.trajectory_length} - "
+                          f"Agent #{agent_idx}")
+
+                    if not evaluated_program:
+                        print(f"Evaluation failed for agent {agent_idx} at iteration {agent_step_counter[agent_idx]}")
+                        break
+
+                    # Record iteration time
+                    iteration_time = time.time() - iteration_start
+                    self.iteration_times.append(iteration_time)
+
+                    # Keep only last 50 iterations for moving average
+                    if len(self.iteration_times) > 50:
+                        self.iteration_times = self.iteration_times[-50:]
+
+                    if agent_step_counter[agent_idx] % 10 == 0:
+                        elapsed = time.time() - self.start_time
+                        elapsed_str = f"{int(elapsed // 3600):02d}:{int((elapsed % 3600) // 60):02d}:{int(elapsed % 60):02d}"
+                        eta = self.get_eta(agent_step_counter[agent_idx])
+                        print(f"\033[92m Process {multiprocessing.current_process().name} - "
+                              f"Model: {self.config.agents[agent_idx].model} - "
+                              f"Iteration {agent_step_counter[agent_idx]}/{self.config.task.trajectory_length} - "
+                              f"Value: {program.value:.2f} - "
+                              f"Elapsed: {elapsed_str} - "
+                              f"ETA: {eta}")
+
+                    last_responses[agent_idx] = Response(
+                        code=f"```python\n{evaluated_program.code}\n```",
+                        created_at=evaluated_program.created_at,
+                        score=evaluated_program.value,
+                        achievements=evaluated_program.achievements,
+                        step=depth,
+                        ticks = evaluated_program.ticks,
+                        flows = evaluated_program.flows,
+                        response=evaluated_program.response,
+                        task=task_verification_response,
+                        error=evaluated_program.meta.get("error_occurred", False),
+                        program_id=evaluated_program.id,
+                    )
+
+                    # get the agent_completed flag from the agent
+                    agent_completed, update_state = self.agents[agent_idx].check_completion(last_responses[agent_idx])
+                    if update_state:
+                        current_state = program.state
+                    else:
+                        self.evaluator.instance.namespaces[agent_idx] = instance_namespace_before_program
+
+
+                    program = evaluated_program
+                    program.meta["task_key"] = self.config.task.task_key
+
+                    # Save program
+                    saved_program = await self.db.create_program(program)
+                    print(f"Saved program {multiprocessing.current_process().name} - "
+                          f"Model: {self.config.agents[agent_idx].model} - "
+                          f"Iteration {agent_step_counter[agent_idx]}/{self.config.task.trajectory_length}")
+
+                    parent_id = saved_program.id
+                    last_responses[agent_idx].program_id = saved_program.id
+                    # Update state for next iteration
+                    if program.state:
+                        # add the last 2 messages from program.conversation to the current conversation
+                        current_conversations[agent_idx].messages.extend(program.conversation.messages[-2:])
+
+                    if task_verification_response.success and self.config.exit_on_task_success:
+                        print(f"Task verification success: {task_verification_response.success}")
+                        completion_result = CompletionResult(step = agent_step_counter[agent_idx], 
+                                                             reason = CompletionReason.SUCCESS)
+                        for agent in self.agents:
+                            await agent.end(program.conversation, completion_result)
+                        # exit the loop
+                        return 
             except Exception as e:
-                print(f"Error in iteration {iteration}: {e}")
+                print(f"Error in iteration {agent_step_counter[agent_idx]}: {e}")
                 continue
 
 

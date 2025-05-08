@@ -3,8 +3,6 @@ from env.src.entities import Inventory, Entity
 from env.src.instance import FactorioInstance
 from eval.tasks.task_abc import TaskABC
 from env.src.utils.achievements import eval_program_with_achievements
-from models.game_state import GameState
-import copy
 from agents import TaskResponse
 
 LAB_PLAY_POPULATED_STARTING_INVENTORY = {"coal": 500, "burner-mining-drill": 50, "wooden-chest": 10, "burner-inserter": 50,"inserter": 50, "transport-belt": 500,
@@ -34,6 +32,7 @@ Low density structure - 4 per 60 seconds
 Copper plate - 18.75 per 60 seconds
 Iron plate - 18.75 per 60 seconds
 Stone brick - 18.75 per 60 seconds
+Automation science packs - 12 per 60 seconds
 Battery - 20 per 60 seconds. Can only be produced by a chemical plant
 
 Crafting speeds for liquids
@@ -66,7 +65,6 @@ Chemical plant - 1 (Example: Creates 600 Lubricant per 60 seconds)
 
 INSTRUCTIONS = """
 You must create an AUTOMATIC factory that automatically creates a target entity by itself. You are given the entity for which you need to create a factory for. You are also given the target throughput that the factory must achieve
-    
 After each step the throughput of the factory is evaluated during 60 seconds of worktime and the results are supplied to you in the response. If you have achieved the target throughput, make sure to fuel the factory and make small improvements but do not break the factory.
 """
 

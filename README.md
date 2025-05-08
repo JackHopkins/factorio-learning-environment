@@ -48,6 +48,70 @@ automation (e.g electronic-circuit manufacturing).
 - Docker 
 - Python 3.10+
 
+### Package Installation
+
+You can install the factorio-learning-environment package directly using pip:
+
+```bash
+# Install from PyPI
+pip install factorio-learning-environment
+
+# Install with optional components
+pip install factorio-learning-environment[agents]  # For agent support
+pip install factorio-learning-environment[eval]    # For evaluation tools
+pip install factorio-learning-environment[cluster] # For cluster deployment
+pip install factorio-learning-environment[all]     # All optional dependencies
+```
+
+### Development Installation
+
+For development, install the package in editable mode:
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/factorio-learning-environment.git
+cd factorio-learning-environment
+
+# Install in development mode
+python setuptools_build.py develop
+# OR
+python prepare_build.py && pip install -e .
+```
+
+See [BUILD.md](BUILD.md) for detailed build instructions.
+
+### Install using pip
+
+The Factorio Learning Environment package can be installed directly using pip:
+
+```bash
+pip install factorio-learning-environment
+```
+
+### Development Installation
+
+For development, you can install the package in editable mode:
+
+```bash
+# Clone the repository
+git clone https://github.com/JackHopkins/factorio-learning-environment.git
+cd factorio-learning-environment
+
+# Install in development mode
+pip install -e .
+
+# Install with development dependencies
+pip install -e ".[dev]"
+```
+
+### Usage
+
+After installation, you can import the package in your Python code:
+
+```python
+import factorio_learning_environment as fle
+```
+
 ### Quickstart
 
 1. **Clone the repository**:
@@ -172,93 +236,12 @@ And replace the `PostgresDBClient` object at `create_db_client` function in `eva
    1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
    2. Tasks (one parallel run of iron-ore task): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_lab_play.json`
 
-## Multiagent Experiments
-
-The Factorio Learning Environment supports multiagent experiments where multiple AI agents can work together (or against each other) in the same game world. Here's how to set up and run multiagent experiments:
-
-### 1. Task Configuration
-
-Multiagent tasks are defined in JSON files under `eval/tasks/task_definitions/multiagent/`. Each task can specify:
-- A shared goal description for all agents
-- Agent-specific instructions for each agent
-- Number of agents required
-- Other task parameters (trajectory length, holdout period, etc.)
-
-Example task configuration:
-```json
-{
-    "task_type": "unbounded_throughput",
-    "config": {
-        "goal_description": "Create an automatic iron plate factory...",
-        "agent_instructions": [
-            "You are Agent 1. Your role is to mine coal.",
-            "You are Agent 2. Your role is to mine iron."
-        ],
-        "throughput_entity": "iron-plate",
-        "trajectory_length": 16,
-        "holdout_wait_period": 60
-    }
-}
-```
-
-### 2. Run Configuration
-
-Create a run configuration file in `eval/open/independent_runs/multiagent/` that specifies:
-- The task file to use
-- The model to use for each agent
-- Number of agents
-
-Example run configuration:
-```json
-[
-    {
-        "task": "multiagent/iron_plate_throughput_free.json",
-        "model": "claude-3-5-sonnet-latest",
-        "num_agents": 2
-    }
-]
-```
-
-### 3. Running the Experiment
-```
-
-1. Run the experiment using the run configuration:
-```bash
-python eval/open/independent_runs/run.py --config eval/open/independent_runs/multiagent/your_config.json
-```
-
-### 4. Agent Communication
-
-Agents can communicate with each other using the `send_message()` tool. Each agent's system prompt includes instructions about:
-- Their role in the multiagent setup
-- How to communicate with other agents
-- When to send messages (start/end of programs)
-
-### 5. Example Scenarios
-
-The codebase includes several example multiagent scenarios:
-
-1. **Cooperative Factory Building**: Agents work together to build an efficient factory
-2. **Distrust Scenario**: Agents are suspicious of each other's actions
-3. **Impostor Scenario**: One agent tries to sabotage while the other tries to maintain the factory
-
-To run these examples, use the provided configuration files:
-- `claude_lab_free.json`: Cooperative scenario
-- `claude_lab_distrust.json`: Distrust scenario
-- `claude_lab_impostor.json`: Impostor scenario
-
 ## Troubleshooting
 - **"No valid programs found for version X"**: This is normal during initialization. The system will start generating programs shortly.
 - **Python import errors**: Make sure you're using the run.py script provided above to fix path issues.
 - **Database connection errors**: Verify your database configuration in the .env file and ensure the database exists.
 - **Docker issues**: Ensure your user has permission to run Docker without sudo.
 - **Connection issues**: Make sure the Factorio server is running and ports are properly configured.
-
-## MCP
-### Claude Code
-After starting and activating at least 1 Factorio server:
-
-`claude mcp add -- claude mcp add fle -- mcp run /PATH/TO/FLE/server.py `
 
 ## Environment
 

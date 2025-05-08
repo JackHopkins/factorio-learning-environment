@@ -17,9 +17,9 @@ from typing import Optional
 import copy
 
 class BacktrackingSystem(AgentABC):
-    def __init__(self, model, system_prompt, task, *args, **kwargs):
+    def __init__(self, model, system_prompt, task, agent_idx: Optional[int] = None, *args, **kwargs):
         self.backtracking_agent = BacktrackingAgent(model, system_prompt, task, *args, **kwargs)
-        self.generator_agent = BasicAgent(model, system_prompt, task, *args, **kwargs)
+        self.generator_agent = BasicAgent(model, system_prompt, task, agent_idx=agent_idx, *args, **kwargs)
         self.successful_conv = None
         self.last_successful_program_id = None
         self.task = task

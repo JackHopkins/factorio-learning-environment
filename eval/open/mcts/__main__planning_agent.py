@@ -97,7 +97,7 @@ async def get_seed_programs(
             conversation = Conversation(messages=[
                 Message(role="system", content=mcts.system_prompt),
                 Message(role="user",
-                        content=f"Inventory: {json.dumps(game_state.inventory.__dict__)}\n\n{PLANNING_ADDITION_PROMPT}"),
+                        content=f"Inventory: {json.dumps(game_state.inventories[0].__dict__)}\n\n{PLANNING_ADDITION_PROMPT}"),
                 Message(role="assistant", content=objective)
             ])
             try:

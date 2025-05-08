@@ -16,8 +16,6 @@ from eval.open.db_client import PostgresDBClient, SQLliteDBClient
 from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
 from env.src.models.conversation import Conversation
 from env.src.models.message import Message
-from env.src.models.game_state import GameState
-from env.src.models.multiagent_game_state import MultiagentGameState
 from env.src.models.program import Program
 from env.src.instance import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
@@ -187,10 +185,7 @@ class TrajectoryRunner:
             self.evaluator.instance.reset(current_state)
             entities = self.evaluator.instance.first_namespace.get_entities()
             for agent_idx in range(len(self.agents)):
-                if current_state.is_multiagent:
-                    inventory = current_state.inventories[agent_idx]
-                else:
-                    inventory = current_state.inventory
+                inventory = current_state.inventories[agent_idx]
 
                 current_conversations[agent_idx] = Conversation(messages=[
                     Message(role="system", content=self.config.agents[agent_idx].system_prompt),

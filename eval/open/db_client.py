@@ -411,7 +411,6 @@ class DBClient(ABC):
                 with conn.cursor() as cur:
                     cur.execute(query, (resume_version, process_id, agent_idx))
                     results = cur.fetchall()
-
             if not results:
                 print(f"No valid programs found for version {resume_version} ")
                 return None, None, None, None

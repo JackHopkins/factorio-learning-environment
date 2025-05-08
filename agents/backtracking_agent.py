@@ -162,13 +162,12 @@ sorted_furnaces = sorted(
 FINAL_INSTRUCTION = """## Frequent error modes to remember
 - Forgeting to rotate inserters when they need to insert items into a machine. Use the rotate_inserter function to rotate inserters when needed. When inserters need to take items from a machine, they do not need to be rotated after placing next to a entity
 - Errors like "Cannot connect to source inserter drop_position position x=18.5 y=81.5 as it is already occupied by following entities - ['wooden-chest at x=18.5 y=81.5'].",)" usually mean you need to rotate the inserter the other way around 
-- Not using to use drill.position when placing furnaces to catch outputs of a drill in place_entity_next_to. Furnaces are multiple tiles wide and using drill.drop_pos will break the placement. VERY IMPORTANT CONSIDERATION
+- Use drill.position when placing furnaces to catch outputs of a drill in place_entity_next_to. Furnaces are multiple tiles wide and using drill.drop_pos will break the placement. VERY IMPORTANT CONSIDERATION
 - When fixing power setups that previously worked, often all you need to do is refuel the boiler. If a power setup works, then you dont need to change anything in the layout.
 - Writing long and difficult to debug programs
-- Incorrectly doing many-to-one connections (many source inserters to one target inserter). Analyse the examples and apply best practices
+- Incorrectly doing many-to-one connections (many source inserters to one target inserter). Analyse the examples and apply best practices. First connect one entity and then connect the other entities to that main connection 
 - When you need to use water for a chemical plant or oil refinery, put down a new offshore pump! Do not use existing pumps as they likely already have pipes going out and the connection will likely error out.
 - When placing inserters with place_entity_next_to, always use 0 spacing as the inserter needs to benext to the entity. Using spacing higher than 0 will put the insertes too far away from target entity and break the factory
-- When connecting multiple entities to a single entity, first connect one entity and then connect the other entities to that main connection 
 """
 
 class BacktrackingAgent(AgentABC):

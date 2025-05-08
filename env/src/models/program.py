@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 from env.src.models.achievements import ProductionFlows
 from env.src.models.conversation import Conversation
 from env.src.models.game_state import GameState
-from env.src.models.multiagent_game_state import MultiagentGameState
 
 class Program(BaseModel):
     id: Optional[int] = None
@@ -17,7 +16,7 @@ class Program(BaseModel):
     value: float = 0.0
     visits: int = 0
     parent_id: Optional[int] = None
-    state: Optional[Union[MultiagentGameState, GameState]] = None
+    state: Optional[GameState] = None
     raw_reward: Optional[float] = None
     holdout_value: Optional[float] = None
     created_at: datetime = Field(default_factory=datetime.now)
@@ -55,13 +54,6 @@ class Program(BaseModel):
 
     @classmethod
     def from_row(cls, row: Dict):
-        if row['state_json']:
-            if "inventory" in row["state_json"]:
-                game_state_instantiator = GameState
-            else:
-                game_state_instantiator = MultiagentGameState
-        else:
-            game_state_instantiator = None
         return cls(
             id=row['id'],
             code=row['code'],
@@ -69,7 +61,7 @@ class Program(BaseModel):
             value=row['value'],
             visits=row['visits'],
             parent_id=row['parent_id'],
-            state=game_state_instantiator.parse(row['state_json']) if game_state_instantiator else None,
+            state=GameState.parse(row['state_json']) if row['state_json'] else None,
             raw_reward=row['raw_reward'],
             holdout_value=row['holdout_value'],
             created_at=row['created_at'],

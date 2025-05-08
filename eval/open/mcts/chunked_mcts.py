@@ -342,7 +342,7 @@ class ChunkedMCTS(MCTS):
         """
         current_state = start_state
         try:
-            vars = pickle.loads(current_state.namespace)
+            vars = pickle.loads(current_state.namespaces[0])
         except Exception as e:
             # This is good - the current state should be wiped.
             pass
@@ -376,7 +376,7 @@ class ChunkedMCTS(MCTS):
                     instance
                 )
 
-                new_namespace = pickle.loads(state.namespace)
+                new_namespace = pickle.loads(state.namespaces[0])
 
                 # Get holdout value after this chunk
                 #holdout_score, _ = self.evaluator.holdout.score()
@@ -436,7 +436,7 @@ class ChunkedMCTS(MCTS):
                 #Message(role="user", content=PLANNING_ADDITION_PROMPT),
                 Message(role="assistant", content="print(f'Inventory: {inspect_inventory()}')\n"
                                                   "print(f'Entities: {get_entities()}')\n"),
-                Message(role="user", content=f"1: ('Inventory: {start_state.inventory.__dict__}')\n"
+                Message(role="user", content=f"1: ('Inventory: {start_state.inventories[0].__dict__}')\n"
                                              f"2: ('Entities: {entities}')"),
             ])
         else:

@@ -3,7 +3,7 @@ import asyncio
 import argparse
 import multiprocessing
 from dotenv import load_dotenv
-from agents.backtracking_system import BacktrackingSystem
+from agents.basic_agent import BasicAgent
 from eval.open.independent_runs.trajectory_runner import run_process, get_next_version, create_factorio_instance, EvalConfig
 from eval.tasks.task_factory import TaskFactory
 from pathlib import Path
@@ -53,7 +53,7 @@ def main():
         agents = []
         for agent_idx in range(run_config.num_agents):
             system_prompt = instance.get_system_prompt(agent_idx)
-            agent = BacktrackingSystem(model=run_config.model, system_prompt=system_prompt, task=task)
+            agent = BasicAgent(model=run_config.model, system_prompt=system_prompt, task=task)
             agents.append(agent)
         if run_config.version is not None:
             version = run_config.version

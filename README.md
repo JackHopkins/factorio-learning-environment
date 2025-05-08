@@ -92,39 +92,20 @@ docker compose -f docker-compose-1.yml up -d
 ```
 **Note**: Use docker compose (with a space) instead of docker-compose as shown in the command above.
 
-6. **Set up multiple agents** (if needed):
-If you want to run multiple agents in parallel, you'll need to set up additional Factorio clients before loading the FLE mods. Run the following command right after starting the Docker container:
-
-```bash
-python cluster/local/setup_multiagent.py <num_clients> --server localhost:34197 --factorio /Applications/factorio.app/Contents/MacOS/factorio
-```
-
-Where:
-- `<num_clients>` is the number of agents you want to set up on the server. (Single agent experiments will still work just fine even if you have set up multiple agents.)
-- `--server` specifies the server address (default: localhost:34197)
-- `--factorio` specifies the path to your Factorio binary (default: /Applications/factorio.app/Contents/MacOS/factorio)
-
-This script will:
-1. Create separate config directories for each client
-2. Launch each client and verify their connection to the server
-3. Clean up temporary config files after setup
-
-**Important**: Run this script BEFORE loading any FLE mods into the server, as the clients won't be able to join if the mods are already installed.
-
-7. **Configure firewall** (if running server on a different machine):
+6. **Configure firewall** (if running server on a different machine):
 
     Open the following ports:
 - UDP 34197 (Game connection)
 - TCP 27015 (RCON)
 
 
-8. **Activate server**:
+7. **Activate server**:
 - Open Factorio client
 - Navigate to _Multiplayer_
 - Connect to `localhost:34197` (default) or your configured address in Docker. 
   - Once connected, you can safely disconnect. This step confirms your Factorio license with the server.
 
-9. **Configure DB**: Create an `.env` file in the root directory, modelled on `.example.env`
+8. **Configure DB**: Create an `.env` file in the root directory, modelled on `.example.env`
 
 First create the .env file. Note that API keys are only required for the respective model providers that will be used to run eval on
 
@@ -187,9 +168,84 @@ CREATE TABLE programs (
 
 And replace the `PostgresDBClient` object at `create_db_client` function in `eval\open\independent_runs\trajectory_runner.py` with the SQLliteDBClient object (see [Database](#database) section).
 
-10. **Run Eval**: Running open and lab play with example run configs:
+9. **Run Eval**: Running open and lab play with example run configs:
    1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
    2. Tasks (one parallel run of iron-ore task): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_lab_play.json`
+
+## Multiagent Experiments
+
+The Factorio Learning Environment supports multiagent experiments where multiple AI agents can work together (or against each other) in the same game world. Here's how to set up and run multiagent experiments:
+
+### 1. Task Configuration
+
+Multiagent tasks are defined in JSON files under `eval/tasks/task_definitions/multiagent/`. Each task can specify:
+- A shared goal description for all agents
+- Agent-specific instructions for each agent
+- Number of agents required
+- Other task parameters (trajectory length, holdout period, etc.)
+
+Example task configuration:
+```json
+{
+    "task_type": "unbounded_throughput",
+    "config": {
+        "goal_description": "Create an automatic iron plate factory...",
+        "agent_instructions": [
+            "You are Agent 1. Your role is to mine coal.",
+            "You are Agent 2. Your role is to mine iron."
+        ],
+        "throughput_entity": "iron-plate",
+        "trajectory_length": 16,
+        "holdout_wait_period": 60
+    }
+}
+```
+
+### 2. Run Configuration
+
+Create a run configuration file in `eval/open/independent_runs/multiagent/` that specifies:
+- The task file to use
+- The model to use for each agent
+- Number of agents
+
+Example run configuration:
+```json
+[
+    {
+        "task": "multiagent/iron_plate_throughput_free.json",
+        "model": "claude-3-5-sonnet-latest",
+        "num_agents": 2
+    }
+]
+```
+
+### 3. Running the Experiment
+```
+
+1. Run the experiment using the run configuration:
+```bash
+python eval/open/independent_runs/run.py --config eval/open/independent_runs/multiagent/your_config.json
+```
+
+### 4. Agent Communication
+
+Agents can communicate with each other using the `send_message()` tool. Each agent's system prompt includes instructions about:
+- Their role in the multiagent setup
+- How to communicate with other agents
+- When to send messages (start/end of programs)
+
+### 5. Example Scenarios
+
+The codebase includes several example multiagent scenarios:
+
+1. **Cooperative Factory Building**: Agents work together to build an efficient factory
+2. **Distrust Scenario**: Agents are suspicious of each other's actions
+3. **Impostor Scenario**: One agent tries to sabotage while the other tries to maintain the factory
+
+To run these examples, use the provided configuration files:
+- `claude_lab_free.json`: Cooperative scenario
+- `claude_lab_distrust.json`: Distrust scenario
+- `claude_lab_impostor.json`: Impostor scenario
 
 ## Troubleshooting
 - **"No valid programs found for version X"**: This is normal during initialization. The system will start generating programs shortly.

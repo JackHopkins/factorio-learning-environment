@@ -1,6 +1,6 @@
 import ast
 import enum
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from pydantic import BaseModel
 from env.src.models.achievements import ProductionFlows
 import datetime
@@ -54,7 +54,7 @@ class Response(BaseModel):
     created_at: datetime.datetime
     response: str
     error: bool = False
-    program_id: int = None
+    program_id: Optional[int] = None
 
 
 class CompletionReason(enum.Enum):

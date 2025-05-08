@@ -1,21 +1,28 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from env.src.entities import Inventory, Entity
 from env.src.instance import FactorioInstance
 from agents import TaskResponse
-from models.game_state import GameState
-from models.multiagent_game_state import MultiagentGameState
-
+from env.src.models.game_state import GameState
+from env.src.models.multiagent_game_state import MultiagentGameState
 class TaskABC:
-    def __init__(self, trajectory_length, starting_inventory: Inventory, goal_description: str, task_key: str, all_technology_reserached: bool = False):
+    def __init__(self, trajectory_length, starting_inventory: Inventory, goal_description: str, task_key: str, all_technology_reserached: bool = False, agent_instructions: Optional[List[str]] = None):
         self.trajectory_length = trajectory_length
         self.starting_inventory = starting_inventory
         self.goal_description = goal_description
         self.task_key = task_key
         self.all_technology_reserached = all_technology_reserached
+        self.agent_instructions = agent_instructions
+
+    def get_agent_instructions(self, agent_idx: int) -> Optional[str]:
+        if self.agent_instructions is None:
+            return None
+        else:
+            return self.agent_instructions[agent_idx]
     
     def verify(self, score: float, step: int, instance: FactorioInstance, step_statistics: Dict) -> bool:
         """ Return true is the task is completed"""
         pass
+    
     def setup_instance(self, instance):
         """Code to provision the task environment"""
         pass

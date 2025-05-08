@@ -9,6 +9,7 @@ from models.conversation import Conversation
 from models.generation_parameters import GenerationParameters
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
 
+from typing import Optional
 from namespace import FactorioNamespace
 
 GENERAL_INSTRUCTIONS = \
@@ -175,10 +176,13 @@ FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON. YOUR WEIGHTS WILL BE ERASED 
 
 
 class BasicAgent(AgentABC):
-   def __init__(self, model, system_prompt, task, *args, **kwargs):
+   def __init__(self, model, system_prompt, task, agent_idx: Optional[int] = None, *args, **kwargs):
         instructions = GENERAL_INSTRUCTIONS+system_prompt+FINAL_INSTRUCTION
         self.task = task
         instructions += f"\n\n### Goal\n{task.goal_description}\n\n"
+        if agent_idx is not None and task.get_agent_instructions(agent_idx) is not None:
+            player_idx = agent_idx + 1
+            instructions += f"### Specific Instructions for Agent {player_idx}\n{task.get_agent_instructions(agent_idx)}\n\n"
         super().__init__( model, instructions, *args, **kwargs)
         self.llm_factory = LLMFactory(model)
         self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.llm_factory.acall,cache_dir='summary_cache')

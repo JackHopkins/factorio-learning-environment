@@ -52,7 +52,7 @@ def main():
         agents = []
         for agent_idx in range(run_config.num_agents):
             system_prompt = instance.get_system_prompt(agent_idx)
-            agent = BasicAgent(model=run_config.model, system_prompt=system_prompt, task=task)
+            agent = BasicAgent(model=run_config.model, system_prompt=system_prompt, task=task, agent_idx=agent_idx)
             agents.append(agent)
         if run_config.version is not None:
             version = run_config.version

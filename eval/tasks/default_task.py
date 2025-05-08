@@ -13,7 +13,8 @@ class DefaultTask(TaskABC):
         super().__init__(trajectory_length, starting_inventory = {}, 
                          goal_description=goal_description, 
                          task_key = task_key,
-                         all_technology_reserached=False)
+                         all_technology_reserached=False,
+                         agent_instructions = None)
         self.starting_game_state = None
         
     

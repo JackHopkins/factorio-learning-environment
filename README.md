@@ -237,6 +237,82 @@ And replace the `PostgresDBClient` object at `create_db_client` function in `eva
    1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
    2. Tasks (one parallel run of iron-ore task): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_lab_play.json`
 
+
+## Multiagent Experiments
+
+The Factorio Learning Environment supports multiagent experiments where multiple AI agents can work together (or against each other) in the same game world. Here's how to set up and run multiagent experiments:
+
+### 1. Task Configuration
+
+Multiagent tasks are defined in JSON files under `eval/tasks/task_definitions/multiagent/`. Each task can specify:
+- A shared goal description for all agents
+- Agent-specific instructions for each agent
+- Number of agents required
+- Other task parameters (trajectory length, holdout period, etc.)
+
+Example task configuration:
+```json
+{
+    "task_type": "unbounded_throughput",
+    "config": {
+        "goal_description": "Create an automatic iron plate factory...",
+        "agent_instructions": [
+            "You are Agent 1. Your role is to mine coal.",
+            "You are Agent 2. Your role is to mine iron."
+        ],
+        "throughput_entity": "iron-plate",
+        "trajectory_length": 16,
+        "holdout_wait_period": 60
+    }
+}
+```
+
+### 2. Run Configuration
+
+Create a run configuration file in `eval/open/independent_runs/multiagent/` that specifies:
+- The task file to use
+- The model to use for each agent
+- Number of agents
+
+Example run configuration:
+```json
+[
+    {
+        "task": "multiagent/iron_plate_throughput_free.json",
+        "model": "claude-3-5-sonnet-latest",
+        "num_agents": 2
+    }
+]
+```
+
+### 3. Running the Experiment
+```
+1. Run the experiment using the run configuration:
+```bash
+python eval/open/independent_runs/run.py --config eval/open/independent_runs/multiagent/your_config.json
+```
+
+### 4. Agent Communication
+
+Agents can communicate with each other using the `send_message()` tool. Each agent's system prompt includes instructions about:
+- Their role in the multiagent setup
+- How to communicate with other agents
+- When to send messages (start/end of programs)
+
+### 5. Example Scenarios
+
+The codebase includes several example multiagent scenarios:
+
+1. **Cooperative Factory Building**: Agents work together to build an efficient factory
+2. **Distrust Scenario**: Agents are suspicious of each other's actions
+3. **Impostor Scenario**: One agent tries to sabotage while the other tries to maintain the factory
+
+To run these examples, use the provided configuration files:
+- `claude_lab_free.json`: Cooperative scenario
+- `claude_lab_distrust.json`: Distrust scenario
+- `claude_lab_impostor.json`: Impostor scenario
+
+
 ## Troubleshooting
 - **"No valid programs found for version X"**: This is normal during initialization. The system will start generating programs shortly.
 - **Python import errors**: Make sure you're using the run.py script provided above to fix path issues.

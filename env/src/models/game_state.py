@@ -6,8 +6,8 @@ from enum import Enum
 from typing import Dict, Optional, Any, List
 
 
-from models.research_state import ResearchState
-from models.technology_state import TechnologyState
+from env.src.models.research_state import ResearchState
+from env.src.models.technology_state import TechnologyState
 
 @dataclass
 class GameState:

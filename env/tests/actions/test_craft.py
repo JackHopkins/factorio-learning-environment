@@ -6,7 +6,7 @@ from env.src.game_types import Prototype, Resource
 @pytest.fixture()
 def game(instance):
     instance.reset()
-    instance.set_inventory(**{'iron-plate': 40,
+    instance.set_inventory({'iron-plate': 40,
                               'iron-gear-wheel': 1,
                               'electronic-circuit': 3,
                               'pipe': 1,
@@ -39,7 +39,7 @@ def test_craft_with_full_inventory(game):
 
     # Fill inventory with iron plates (assuming a reasonable inventory limit, e.g. 100 slots)
     # We'll use a large number to ensure we hit the inventory limit
-    game.set_inventory(**{'iron-plate': 5000})
+    game.set_inventory({'iron-plate': 5000})
 
     # Attempt to craft iron chests when inventory is full
     try:

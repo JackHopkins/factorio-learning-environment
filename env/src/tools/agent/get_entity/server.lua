@@ -12,8 +12,8 @@ global.actions.get_entity = function(player_index, entity, x, y)
     local width = 1--math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
     local height = 1--math.abs(collision_box.right_bottom.y - collision_box.left_top.y)
 
-    game.print("Width: " .. width)
-    game.print("Height: " .. height)
+    -- game.print("Width: " .. width)
+    -- game.print("Height: " .. height)
 
     local target_area = {
         {position.x - width , position.y - height },
@@ -21,7 +21,7 @@ global.actions.get_entity = function(player_index, entity, x, y)
     }
     --local entities = player.surface.find_entities_filtered{area = target_area} --, name = entity}
     local entities = player.surface.find_entities_filtered{area = target_area, name = entity}
-    game.print("Number of entities found: " .. #entities)
+    -- game.print("Number of entities found: " .. #entities)
 
     local closest_distance = math.huge
     local closest_entity = nil

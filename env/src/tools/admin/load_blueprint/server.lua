@@ -27,7 +27,7 @@ global.actions.load_blueprint = function(player_index, bp, offset_x, offset_y)
         else
             if (entity ~= nil and entity.name == 'entity-ghost' and entity.ghost_type ~= nil and entity.item_requests ~= nil) then
                 local items = util.table.deepcopy(entity.item_requests)
-                game.print(serpent.block(entity.items))
+                -- game.print(serpent.block(entity.items))
                 local p, ri = entity.revive();
                 if (ri ~= nil) then
                     for k, v in pairs(items) do

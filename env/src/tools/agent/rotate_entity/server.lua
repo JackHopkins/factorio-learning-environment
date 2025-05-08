@@ -38,8 +38,8 @@ global.actions.rotate_entity = function(player_index, x, y, direction, entity)
         error("Invalid direction " .. direction .. " provided. Please use 0 (north), 1 (east), 2 (south), or 3 (west).")
     end
 
-    game.print("Direction "..direction.. ", "..closest_entity.name..", "..closest_entity.direction)
-    game.print(global.utils.get_entity_direction(closest_entity.name, closest_entity.direction))
+    --  game.print("Direction "..direction.. ", "..closest_entity.name..", "..closest_entity.direction)
+    -- game.print(global.utils.get_entity_direction(closest_entity.name, closest_entity.direction))
 
     -- Rotate the entity
     closest_entity.direction = global.utils.get_entity_direction(closest_entity.name, direction)
@@ -50,14 +50,14 @@ global.actions.rotate_entity = function(player_index, x, y, direction, entity)
         x = math.floor(entity_position.x),
         y = math.floor(entity_position.y)
     }
-    game.print("Entity position: " .. entity_position.x .. ", " .. entity_position.y)
-    game.print("Aligned position: " .. aligned_position.x .. ", " .. aligned_position.y)
+    -- game.print("Entity position: " .. entity_position.x .. ", " .. entity_position.y)
+    -- game.print("Aligned position: " .. aligned_position.x .. ", " .. aligned_position.y)
 
     if entity_position.x ~= aligned_position.x or entity_position.y ~= aligned_position.y then
         closest_entity.teleport(aligned_position)
     end
 
-    game.print("Rotated " .. closest_entity.name .. " to " .. closest_entity.direction)
+    -- game.print("Rotated " .. closest_entity.name .. " to " .. closest_entity.direction)
 
     local serialized = global.utils.serialize_entity(closest_entity)
     return serialized

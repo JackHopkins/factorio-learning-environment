@@ -39,7 +39,7 @@ global.actions.set_entity_recipe = function(player_index, recipe_name, x, y)
         end
 
         local entity_json = game.table_to_json(serialized)
-        game.print(entity_json)
+        -- game.print(entity_json)
         return serialized
     else
         error("No building found that could have its recipe or filter set.")

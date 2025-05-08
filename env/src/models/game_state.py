@@ -18,6 +18,14 @@ class GameState:
     timestamp: float = field(default_factory=time.time)
     namespace: bytes = field(default_factory=bytes)
 
+    @property
+    def is_multiagent(self) -> bool:
+        return False
+    
+    @property
+    def num_agents(self) -> int:
+        return 1
+
     @classmethod
     def from_instance(cls, instance: 'FactorioInstance') -> 'GameState':
 
@@ -44,8 +52,6 @@ class GameState:
     def __repr__(self):
         readable_namespace=pickle.loads(self.namespace)
         return f"GameState(entities={self.entities}, inventory={self.inventory}, timestamp={self.timestamp}, namespace={{{readable_namespace}}})"
-
-
 
     @classmethod
     def parse_raw(cls, json_str: str) -> 'GameState':
@@ -135,7 +141,7 @@ class GameState:
     def to_instance(self, instance: 'FactorioInstance'):
         """Restore game state to Factorio instance"""
         instance.namespace._load_entity_state(self.entities, decode=True)
-        instance.set_inventory(**self.inventory)
+        instance.set_inventory(self.inventory)
 
         # Restore research state if present
         if self.research:

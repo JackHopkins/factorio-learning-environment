@@ -556,7 +556,7 @@ Only return python code between ```python and ``` tags, nothing else.
         """Verify that the refactored code produces identical entity placement."""
         try:
             instance.reset()
-            instance.set_inventory(**inventory)
+            instance.set_inventory(inventory)
             # Execute the code
             score, goal, result = instance.eval_with_error(
                 code.replace("game.", ""),

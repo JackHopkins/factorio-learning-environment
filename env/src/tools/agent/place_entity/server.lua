@@ -266,7 +266,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                     }
                     if have_built then
                         player.remove_item{name = entity, count = 1}
-                        game.print("Placed " .. entity .. " at " .. new_position.x .. ", " .. new_position.y)
+                        -- game.print("Placed " .. entity .. " at " .. new_position.x .. ", " .. new_position.y)
                         return global.actions.get_entity(player_index, entity, new_position.x, new_position.y)
                     end
                 else
@@ -330,7 +330,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
         if have_built then
             player.remove_item{name = entity, count = 1}
-            game.print("Placed " .. entity .. " at " .. position.x .. ", " .. position.y)
+            -- game.print("Placed " .. entity .. " at " .. position.x .. ", " .. position.y)
 
             -- Find and return the placed entity
             local width = 0.5

@@ -150,7 +150,7 @@ local function split_section_into_underground_segments(section, path, range, max
     while current_start + 1 < effective_end and segment_count < max_segments do
         iteration_count = iteration_count + 1
         if iteration_count > MAX_ITERATIONS then
-            game.print("Warning: Maximum iterations reached while splitting underground segments")
+            -- game.print("Warning: Maximum iterations reached while splitting underground segments")
             break
         end
         -- Calculate end index for this segment
@@ -271,7 +271,7 @@ local function serialize_belt_group(entity)
             end
         end
 
-        game.print("connected lines "..#connected_lines)
+        -- game.print("connected lines "..#connected_lines)
         -- Convert lines to unique belt entities
         for _, line in pairs(connected_lines) do
             if line and line.valid and not seen_owners[line.unit_number] then
@@ -279,14 +279,14 @@ local function serialize_belt_group(entity)
                 table.insert(connected_entities, line)
             end
         end
-        game.print("connected entities "..#connected_entities)
+        -- game.print("connected entities "..#connected_entities)
         return connected_entities
     end
 
     local function serialize_connected_belts(belt, is_output)
         iteration_count = iteration_count + 1
         if iteration_count > MAX_SERIALIZATION_ITERATIONS then
-            game.print("Warning: Belt serialization reached iteration limit")
+            -- game.print("Warning: Belt serialization reached iteration limit")
             return
         end
 
@@ -376,7 +376,7 @@ local function interpolate_manhattan(pos1, pos2)
     local dx = pos2.x - pos1.x
     local dy = pos2.y - pos1.y
     local manhattan_distance = math.abs(dx) + math.abs(dy)
-    game.print("Distance3 "..manhattan_distance)
+    -- game.print("Distance3 "..manhattan_distance)
     if manhattan_distance > 2 then
         local steps = math.max(math.abs(dx), math.abs(dy))
         local x_step = math.floor((dx / steps)*2)/2
@@ -483,7 +483,7 @@ local function place_at_position(player, connection_type, current_position, dir,
     end
 
     if existing_entity then
-        game.print("Existing entity "..existing_entity.name)
+        -- game.print("Existing entity "..existing_entity.name)
         -- Get the existing network ID before any modifications
         --local existing_network_id = has_valid_fluidbox(existing_entity) and existing_entity.fluidbox[1].get_fluid_system_id()
 
@@ -552,7 +552,7 @@ local function place_at_position(player, connection_type, current_position, dir,
             -- Check for collision with other entities
             local entities = player.surface.find_entities_filtered{area = target_area, force = player.force}
             for _, entity in pairs(entities) do
-                game.print("1 "..entity.name)
+                -- game.print("1 "..entity.name)
             end
 
             error("Cannot connect due to placement blockage 1.")
@@ -612,7 +612,7 @@ local function place_at_position(player, connection_type, current_position, dir,
         -- Check for collision with other entities
         local entities = player.surface.find_entities_filtered{area = target_area, force = player.force}
         for _, entity in pairs(entities) do
-            game.print("1: "..entity.name)
+            -- game.print("1: "..entity.name)
         end
 
         error("Cannot connect due to placement blockage.")
@@ -694,14 +694,14 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
 
     local raw_path = global.paths[path_handle]
-    game.print("Path length "..#raw_path)
-    game.print(serpent.line(start_position).." - "..serpent.line(end_position))
+    -- game.print("Path length "..#raw_path)
+    -- game.print(serpent.line(start_position).." - "..serpent.line(end_position))
 
     if not raw_path or type(raw_path) ~= "table" or #raw_path == 0 then
         error("Invalid path: " .. serpent.line(path))
     end
 
-    game.print("Normalising", {print_skip=defines.print_skip.never})
+    -- game.print("Normalising", {print_skip=defines.print_skip.never})
     local path = global.utils.normalise_path(raw_path, start_position, end_position)
 
     -- Get default and underground connection types
@@ -937,7 +937,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
             -- If we haven't achieved connectivity yet, place one final pole at the target
             if not dry_run and last_pole and target_entity and not are_poles_connected(last_pole, target_entity) then
                 local final_dir = global.utils.get_direction(path[#path].position, end_position)
-                game.print("Placing final pole at "..serpent.line(end_position))
+                -- game.print("Placing final pole at "..serpent.line(end_position))
                 place_at_position(player, default_connection_type, end_position,
                         global.utils.get_entity_direction(default_connection_type, final_dir/2),
                         serialized_entities, dry_run, counter_state)
@@ -1019,7 +1019,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         end
     end
 
-    game.print("Connection status: " .. tostring(is_connected))
+    -- game.print("Connection status: " .. tostring(is_connected))
 
 
     return {
@@ -1235,7 +1235,7 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
 
     local connection_types = {}
     for item in string.gmatch(connection_type_string, "([^,]+)") do
-        game.print(item)
+        -- game.print(item)
         table.insert(connection_types, item)
     end
     --First do a dry run
@@ -1244,8 +1244,8 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
     if not dry_run then
         -- Check if the player has enough entities in their inventory
         local required_count = result.number_of_entities
-        game.print("Required count: " .. required_count)
-        game.print("Available count: " .. number_of_connection_entities)
+        -- game.print("Required count: " .. required_count)
+        -- game.print("Available count: " .. number_of_connection_entities)
         if number_of_connection_entities < required_count then
             error("\"You do not have enough " .. connection_type_string .. " in you inventory to complete this connection. Required number - " .. required_count .. ", Available in inventory - " .. number_of_connection_entities.."\"")
         end

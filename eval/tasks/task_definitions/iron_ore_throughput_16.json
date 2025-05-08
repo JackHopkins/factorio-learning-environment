@@ -2,7 +2,7 @@
 {                          
    "task_type": "throughput",
     "config": {
-        "goal_description":"Create an automatic iron ore factory that produces 16 iron ore per 60 ingame seconds.",
+        "goal_description":"Create an automatic iron ore factory that produces 16 iron ore per 60 ingame seconds. IMPORTANT: Start and end every program with a message to the other agents using send_message() tool.",
         "throughput_entity":"iron-ore",
         "quota":16,
         "trajectory_length": 128,

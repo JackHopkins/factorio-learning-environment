@@ -68,7 +68,6 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
             area = {{-distance, -distance}, {distance, distance}},
             name = "item-on-ground"
         })
-
         -- Merge the arrays
         for _, item in pairs(ground_items) do
             table.insert(entities, item)
@@ -357,7 +356,13 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
                 direction = entity.direction,
                 entity_number = entity.unit_number or -1,
                 inventories = {},
-                agent_index = agent_index
+                agent_index = agent_index,
+                color = {
+                    r = serialize_number(entity.color.r),
+                    g = serialize_number(entity.color.g),
+                    b = serialize_number(entity.color.b),
+                    a = serialize_number(entity.color.a)
+                }
             }
             -- Get the character's inventory using defines
             local inventory = entity.get_inventory(defines.inventory.character_main)

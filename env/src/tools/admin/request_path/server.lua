@@ -5,7 +5,6 @@ end
 
 global.actions.request_path = function(player_index, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities, entity_size)
     local player = global.agent_characters[player_index]
-
     if not player then return nil end
     local size = entity_size/2 - 0.01
 

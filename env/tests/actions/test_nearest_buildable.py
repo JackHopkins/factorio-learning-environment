@@ -8,7 +8,7 @@ from env.src.instance import FactorioInstance
 # @pytest.fixture()
 # def game(instance):
 #     instance.reset()
-#     instance.set_inventory(**{
+#     instance.set_inventory({
 #         'wooden-chest': 100,
 #         'electric-mining-drill': 10,
 #         'steam-engine': 1,
@@ -43,7 +43,7 @@ def game():
                                     "pumpjack": 1,
                                 })
     instance.reset()
-    instance.set_inventory(**{
+    instance.set_inventory({
         'wooden-chest': 100,
         'electric-mining-drill': 10,
         'steam-engine': 1,

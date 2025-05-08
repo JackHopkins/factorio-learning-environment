@@ -186,7 +186,7 @@ global.actions.extract_item = function(player_index, extract_item, count, x, y, 
             number_extracted = inserted
         end
 
-        game.print("Extracted " .. number_extracted .. " " .. extract_item)
+        -- game.print("Extracted " .. number_extracted .. " " .. extract_item)
         return number_extracted
     else
         -- This should rarely happen given our prior checks

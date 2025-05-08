@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List, Union
 
 from env.src.entities import Inventory, Entity, Position
 from env.src.tools.tool import Tool
@@ -9,12 +9,20 @@ class InspectInventory(Tool):
     def __init__(self, *args):
         super().__init__(*args)
 
-    def __call__(self, entity=None) -> Inventory:
+    def __call__(self, entity=None, all_players: bool = False) -> Union[Inventory, List[Inventory]]:
         """
         Inspects the inventory of the given entity. If no entity is given, inspect your own inventory.
+        If all_players is True, returns a list of inventories for all players.
         :param entity: Entity to inspect
-        :return: Inventory of the given entity
+        :param all_players: If True, returns inventories for all players
+        :return: Inventory of the given entity or list of inventories for all players
         """
+
+        if all_players:
+            response, execution_time = self.execute(self.player_index, True, 0, 0, "", True)
+            if not isinstance(response, list):
+                raise Exception("Could not get inventories for all players", response)
+            return [Inventory(**inv) for inv in response]
 
         if entity:
             if isinstance(entity, Entity):

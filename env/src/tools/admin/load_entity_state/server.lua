@@ -35,7 +35,7 @@ global.actions.load_entity_state = function(player, stored_json_data)
                     force = game.forces.player
                 })
             else
-                game.print("Warning: Unknown item type " .. item_name)
+                -- game.print("Warning: Unknown item type " .. item_name)
             end
         elseif state.type == "simple-entity-with-owner" then
             -- Do nothing, we don't want to load in placeholder entities if they were somehow persisted!
@@ -98,6 +98,16 @@ global.actions.load_entity_state = function(player, stored_json_data)
                 global.agent_characters[agent_index] = new_character
             end
 
+            -- Restore character color if it exists
+            if character_state.color then
+                new_character.color = {
+                    r = tonumber(character_state.color.r),
+                    g = tonumber(character_state.color.g),
+                    b = tonumber(character_state.color.b),
+                    a = tonumber(character_state.color.a)
+                }
+            end
+
             -- Restore character inventory
             if character_state.inventory then
                 local main_inventory = new_character.get_inventory(defines.inventory.character_main)
@@ -112,12 +122,12 @@ global.actions.load_entity_state = function(player, stored_json_data)
                                     count = tonumber(count)
                                 })
                             else
-                                game.print("Warning: Unknown item " .. item_name)
+                                -- game.print("Warning: Unknown item " .. item_name)
                             end
                         end
                     end
                 else
-                    game.print("Warning: Could not get character main inventory")
+                    -- game.print("Warning: Could not get character main inventory")
                 end
             end
 
@@ -135,7 +145,7 @@ global.actions.load_entity_state = function(player, stored_json_data)
         local state = data.state
         local entity_type = entity.type
 
-        game.print("Processing entity: " .. entity.name .. " (type: " .. entity_type .. ")")
+        -- game.print("Processing entity: " .. entity.name .. " (type: " .. entity_type .. ")")
 
         -- Restore inventories based on entity type
         for inv_name, contents in pairs(state.inventories or {}) do
@@ -163,25 +173,25 @@ global.actions.load_entity_state = function(player, stored_json_data)
             end
 
             if inventory then
-                game.print("Found valid inventory for " .. inv_name)
+                -- game.print("Found valid inventory for " .. inv_name)
                 for quoted_item_name, count in pairs(contents) do
                     local item_name = unquote_string(quoted_item_name)
                     if item_name and item_name ~= "" then
                         if game.item_prototypes[item_name] then
-                            game.print("Inserting " .. count .. " " .. item_name)
+                            -- game.print("Inserting " .. count .. " " .. item_name)
                             inventory.insert({
                                 name = item_name,
                                 count = tonumber(count)
                             })
                         else
-                            game.print("Warning: Unknown item " .. item_name)
+                            -- game.print("Warning: Unknown item " .. item_name)
                         end
                     else
-                        game.print("Warning: Empty item name in " .. inv_name)
+                        -- game.print("Warning: Empty item name in " .. inv_name)
                     end
                 end
             else
-                game.print("No valid inventory found for " .. inv_name)
+                -- game.print("No valid inventory found for " .. inv_name)
             end
         end
 
@@ -194,7 +204,7 @@ global.actions.load_entity_state = function(player, stored_json_data)
                     entity.burner.remaining_burning_fuel = tonumber(state.burner.remaining_burning_fuel)
                     entity.burner.heat = tonumber(state.burner.heat)
                 else
-                    game.print("Warning: Unknown burning item " .. burning_name)
+                    -- game.print("Warning: Unknown burning item " .. burning_name)
                 end
             end
         end
@@ -209,26 +219,26 @@ global.actions.load_entity_state = function(player, stored_json_data)
 
                 local recipe_name = unquote_string(state.recipe.name)
                 if game.recipe_prototypes[recipe_name] then
-                    game.print("Setting recipe " .. recipe_name .. " on " .. entity.name)
+                    -- game.print("Setting recipe " .. recipe_name .. " on " .. entity.name)
                     pcall(function()
                         entity.set_recipe(recipe_name)
                     end)
                 else
-                    game.print("Warning: Unknown recipe " .. recipe_name)
+                    -- game.print("Warning: Unknown recipe " .. recipe_name)
                 end
             else
-                game.print("Warning: Skipping recipe for incompatible entity type: " .. entity.type)
+                -- game.print("Warning: Skipping recipe for incompatible entity type: " .. entity.type)
             end
         end
 
         -- Restore transport belt contents
         if entity_type == "transport-belt" and state.transport_lines then
-            game.print("Has transport_lines field: " .. tostring(state.transport_lines ~= nil))
+            -- game.print("Has transport_lines field: " .. tostring(state.transport_lines ~= nil))
             -- Handle front line (line 1)
             local line1 = entity.get_transport_line(1)
 
             if state.transport_lines["1"] then
-                game.print("Transport line 1")
+                -- game.print("Transport line 1")
                 for item_name, count in pairs(state.transport_lines["1"]) do
                     local name = unquote_string(item_name)
                     local item_count = tonumber(count)
@@ -248,7 +258,7 @@ global.actions.load_entity_state = function(player, stored_json_data)
             -- Handle back line (line 2)
             local line2 = entity.get_transport_line(2)
             if state.transport_lines["2"] then
-                game.print("Transport line 2")
+                -- game.print("Transport line 2")
                 for item_name, count in pairs(state.transport_lines["2"]) do
                     local name = unquote_string(item_name)
                     local item_count = tonumber(count)

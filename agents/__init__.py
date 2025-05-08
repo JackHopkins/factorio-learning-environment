@@ -4,7 +4,7 @@ from typing import Dict, Any
 from pydantic import BaseModel
 from env.src.models.achievements import ProductionFlows
 import datetime
-
+from env.src.models.conversation import Conversation
 class Python(str):
     """A custom type that only accepts syntactically valid Python code."""
     
@@ -36,6 +36,7 @@ class PolicyMeta(BaseModel):
 
 class Policy(BaseModel):
     code: Python
+    input_conversation: Conversation = None
     meta: PolicyMeta
 
 class TaskResponse(BaseModel):
@@ -52,6 +53,8 @@ class Response(BaseModel):
     code: str
     created_at: datetime.datetime
     response: str
+    error: bool = False
+    program_id: int = None
 
 
 class CompletionReason(enum.Enum):

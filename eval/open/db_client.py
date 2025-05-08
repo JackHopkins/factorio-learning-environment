@@ -12,9 +12,9 @@ import tenacity
 from psycopg2.extras import DictCursor
 from psycopg2.pool import ThreadedConnectionPool
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
-from models.program import Program
-from models.conversation import Conversation
-from models.game_state import GameState
+from env.src.models.program import Program
+from env.src.models.conversation import Conversation
+from env.src.models.game_state import GameState
 import sqlite3
 
 # Configure logging

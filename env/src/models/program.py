@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Dict
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 from pydantic import BaseModel, Field
@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 from env.src.models.achievements import ProductionFlows
 from env.src.models.conversation import Conversation
 from env.src.models.game_state import GameState
-
 
 class Program(BaseModel):
     id: Optional[int] = None

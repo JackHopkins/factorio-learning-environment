@@ -31,7 +31,7 @@ class SimpleFactorioEvaluator:
     async def evaluate(self, program: Program, start_state: GameState, task, agent_idx: int, step_statistics: dict = {}) -> Program:
         try:
             self.instance.reset(start_state)
-            raw_reward, state, response, entities, achievements, flows, ticks = await self._evaluate_single(program, agent_idx)
+            raw_reward, state, response, entities, achievements, flows, ticks, error_occurred = await self._evaluate_single(program, agent_idx)
             # enchance step statistics with the flows
             if not isinstance(flows, dict):
                 step_statistics.update(flows.to_dict())
@@ -50,15 +50,16 @@ class SimpleFactorioEvaluator:
             conversation = copy.deepcopy(program.conversation)
 
             final_response = task.enhance_response_with_task_output(response, task_response)
-            conversation.add_result(program.code, final_response, score=raw_reward, advantage=relative_reward,
+            conversation.add_result(f"```python\n{program.code}\n```", final_response, score=raw_reward, advantage=relative_reward,
                                     objectives=program.meta[
                                         'objectives'] if 'objectives' in program.meta else [])  #
             program.conversation = conversation
-            program.response = response
+            program.response = final_response
             program.achievements = achievements
             program.flows = flows
 
             program.meta['task_response'] = task_response.dict()
+            program.meta["error_occurred"] = error_occurred
             return program, task_response
 
         except Exception as e:
@@ -79,8 +80,8 @@ class SimpleFactorioEvaluator:
 
             initial_value, start_time = self.instance.namespaces[agent_idx].score()
             reward, time, result = self.instance.eval(program.code, agent_idx=agent_idx, timeout=60)
-
-
+            # Check if there was an error in the program execution
+            error_occurred = "error" in result.lower() or "exception: " in result.lower()
             entities = self.instance.namespaces[agent_idx].get_entities()
             final_inventory = self.instance.namespaces[agent_idx].inspect_inventory()
 
@@ -88,7 +89,7 @@ class SimpleFactorioEvaluator:
             # If so, we manually put a hint in the generated code and result from the game
             get_inventory_code = 'print(f"Current inventory {inspect_inventory()}")'
             if (start_inventory.__dict__ != final_inventory.__dict__
-                    and 'error' not in result.lower()
+                    and not error_occurred
                     and get_inventory_code not in program.code
                     and 'inspect_inventory()' not in program.code):
                 program.code += f'\n{get_inventory_code}'
@@ -97,7 +98,7 @@ class SimpleFactorioEvaluator:
             # Check to see if the entities are different
             # If they are, we put a hint in the code AND result
             get_entities_code = 'print(f"Entities on the map: {get_entities()}")'
-            if (start_entities != entities and 'error' not in result.lower()
+            if (start_entities != entities and not error_occurred
                     and get_entities_code not in program.code
                     and 'get_entities()' not in program.code):
                 program.code += f'\n{get_entities_code}\n'
@@ -105,7 +106,7 @@ class SimpleFactorioEvaluator:
 
             result = result.rstrip() + "\n"
 
-            if "error" in result.lower():
+            if error_occurred:
                 result += f'final: (\'Current inventory: {final_inventory}\',)\n'
                 result += f'final: (\'Entities on the map after the current step: {entities}\',)'
 
@@ -121,7 +122,7 @@ class SimpleFactorioEvaluator:
             achievements = get_achievements(start_production_flows.__dict__, post_production_flows.__dict__)
             flows = start_production_flows.get_new_flows(post_production_flows)#
 
-            return final_reward, state, result, entities, achievements, flows, ticks
+            return final_reward, state, result, entities, achievements, flows, ticks, error_occurred
 
         except Exception as e:
             print(f"Error in _evaluate_single:")

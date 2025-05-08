@@ -1,3 +1,4 @@
+
 import asyncio
 import argparse
 import multiprocessing
@@ -30,7 +31,9 @@ def main():
     with open(run_config_location, 'r') as f:
         run_configs_raw = json.load(f)
         run_configs = [RunConfig(**config) for config in run_configs_raw]
-
+    num_agents_in_configs = [run_config.num_agents for run_config in run_configs]
+    if any(num_agents == 1 for num_agents in num_agents_in_configs) and any(num_agents > 1 for num_agents in num_agents_in_configs):
+        raise ValueError("Cannot mix single agent and multi agent runs in the same run config file. Please split into separate files.")
     # Create initial state and get system prompt
     try:
         num_agents = run_configs[0].num_agents
@@ -72,16 +75,7 @@ def main():
         )
         p.start()
         processes.append(p)
-
-    # Reset message log file
-    # Get the root directory (fle) by going up 3 levels from the current file
-    root_dir = Path(__file__).parent.parent.parent.parent
-    message_log_path = root_dir / "message_log.txt"
-    if message_log_path.exists():
-        message_log_path.unlink()
-    message_log_path.touch()
-    message_log_path.write_text(f"Message log for version {base_version}\n")
-
+        
     # Wait for all processes to complete
     for p in processes:
         p.join()

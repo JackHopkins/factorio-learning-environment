@@ -4,8 +4,6 @@ from env.src.instance import FactorioInstance
 from eval.tasks.task_abc import TaskABC
 from eval.tasks.throughput_task import LAB_PLAY_POPULATED_STARTING_INVENTORY, CRAFTING_STATISTICS
 from env.src.utils.achievements import eval_program_with_achievements
-from models.game_state import GameState
-import copy
 from agents import TaskResponse
 
 

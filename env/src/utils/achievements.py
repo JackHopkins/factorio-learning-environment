@@ -1,7 +1,7 @@
 from typing import Dict, List, Tuple, Any, Optional
 from copy import deepcopy
 
-from models.achievements import ProfitConfig, ProductionFlows
+from env.src.models.achievements import ProfitConfig, ProductionFlows
 
 class AchievementTracker:
     """Tracks and calculates achievements from production flows."""

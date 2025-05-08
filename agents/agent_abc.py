@@ -40,5 +40,15 @@ class AgentABC:
         Cleanup for when a trajectory ends
         """
         pass
-
+    
+    def check_completion(self, response: Response) -> tuple[bool, bool]:
+        """
+        Check if the agent should complete its turn and if the state should be updated
+        returns:
+            - update_state: bool, True if the state should be updated
+            - completed: bool, True if the agent should complete its turn
+        """
+        # by default, we assume that the agent should complete its turn and update the state
+        update_state, completed = True, True
+        return update_state, completed
 

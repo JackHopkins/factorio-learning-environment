@@ -5,7 +5,6 @@ from env.src.utils.controller_loader.manual_generator import ManualGenerator
 from env.src.utils.controller_loader.schema_generator import SchemaGenerator
 from env.src.utils.controller_loader.type_definition_processor import TypeDefinitionProcessor
 
-
 class SystemPromptGenerator:
     """Generates system prompts for the Factorio environment."""
 
@@ -17,7 +16,6 @@ class SystemPromptGenerator:
         # Generate schema
         schema_generator = SchemaGenerator(str(self.tool_path))
         schema = schema_generator.generate_schema(with_docstring=True).replace("temp_module.", "")
-
         # Load and process type definitions
         type_defs = TypeDefinitionProcessor.load_and_clean_definitions(
             str(self.base_path / "game_types.py")

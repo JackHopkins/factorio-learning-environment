@@ -1,6 +1,6 @@
 <h1 align="center">Factorio Learning Environment</h1>
 <p align="center">
-  <a href="https://jackhopkins.github.io/factorio-learning-environment/leaderboard">Leaderboard</a> | <a href="https://arxiv.org/abs/2503.09617">Paper</a> | <a href="https://jackhopkins.github.io/factorio-learning-environment/">Website</a>
+  <a href="https://jackhopkins.github.io/factorio-learning-environment/leaderboard">Leaderboard</a> | <a href="https://arxiv.org/abs/2503.09617">Paper</a> | <a href="https://jackhopkins.github.io/factorio-learning-environment/">Website</a>| <a href="https://discord.com/invite/2jTtTxw9">Discord</a>
 </p>
 
 <p align="center">
@@ -28,6 +28,7 @@ exhibit promising short-horizon skills, they are unable to operate effectively i
 automation (e.g electronic-circuit manufacturing). 
 
 ## Updates
+- [08/5/2025] [Blog](https://jackhopkins.github.io/factorio-learning-environment/release.0.2.0): Added support for multi-agent coordination and MCP allowing reasoning models to invoke tools within their reasoning chain
 - [15/4/2025] Added a visual agent, that takes a rendering of the map as an additional input.
 
 ## Quick Links

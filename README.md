@@ -66,7 +66,7 @@ pip install factorio-learning-environment[all]     # All optional dependencies
 
 ### Development Installation
 
-For development, install the package in editable mode. Each method has specific use cases:
+For development, install the package in editable mode:
 
 ```bash
 # Clone the repository

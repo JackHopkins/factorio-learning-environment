@@ -73,20 +73,11 @@ For development, install the package in editable mode. Each method has specific 
 git clone https://github.com/yourusername/factorio-learning-environment.git
 cd factorio-learning-environment
 
-# Install in development mode (choose one method)
+# Install in development mode
 python setuptools_build.py develop
-
-# Method 2: Two-step build process
-# - First prepares the build environment and dependencies
-# - Then performs the editable installation
-# - Recommended for first-time setup
-python prepare_build.py && pip install -e .
 # OR
-pip install -e .
-
-# Install with development dependencies
-# - Adds testing, linting, and other development tools
-# - Required for running tests and contributing
+python prepare_build.py && pip install -e .
+# OR Install with development dependencies
 pip install -e ".[dev]"
 ```
 

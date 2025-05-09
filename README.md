@@ -66,42 +66,27 @@ pip install factorio-learning-environment[all]     # All optional dependencies
 
 ### Development Installation
 
-For development, install the package in editable mode:
+For development, install the package in editable mode. Each method has specific use cases:
 
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/factorio-learning-environment.git
 cd factorio-learning-environment
 
-# Install in development mode
+# Install in development mode (choose one method)
 python setuptools_build.py develop
-# OR
+
+# Method 2: Two-step build process
+# - First prepares the build environment and dependencies
+# - Then performs the editable installation
+# - Recommended for first-time setup
 python prepare_build.py && pip install -e .
-```
-
-See [BUILD.md](BUILD.md) for detailed build instructions.
-
-### Install using pip
-
-The Factorio Learning Environment package can be installed directly using pip:
-
-```bash
-pip install factorio-learning-environment
-```
-
-### Development Installation
-
-For development, you can install the package in editable mode:
-
-```bash
-# Clone the repository
-git clone https://github.com/JackHopkins/factorio-learning-environment.git
-cd factorio-learning-environment
-
-# Install in development mode
+# OR
 pip install -e .
 
 # Install with development dependencies
+# - Adds testing, linting, and other development tools
+# - Required for running tests and contributing
 pip install -e ".[dev]"
 ```
 

@@ -90,6 +90,8 @@ pip install -e .
 pip install -e ".[dev]"
 ```
 
+See [BUILD.md](BUILD.md) for detailed build instructions.
+
 ### Usage
 
 After installation, you can import the package in your Python code:

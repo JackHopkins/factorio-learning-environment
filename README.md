@@ -847,6 +847,9 @@ Executing tools as part of a Python policy string, without a game client.
    - `connect_entities` is consistently the slowest operation across all configurations (because it relies on pathfinding)
    - `craft_item` and `extract_item` tend to be among the fastest operations
 
+## Contributions
+
+Join our team and contribute to one of the AI research community's most challenging problems - building open-ended / unsaturateable evals for post-AGI frontier models. If you want to contribute, please read[CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 
 [//]: # (## Data)

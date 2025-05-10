@@ -54,8 +54,7 @@ If you prefer using Hatch, you can still do so:
 For development, you can install the package in editable mode:
 
 ```bash
-python prepare_build.py
-pip install -e .
+python prepare_build.py && pip install -e
 ```
 
 This creates the necessary package structure and installs the package in development mode, allowing changes to be reflected immediately without reinstalling.

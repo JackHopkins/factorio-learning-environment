@@ -32,7 +32,7 @@ class UnboundedThroughputTask(TaskABC):
                             starting_inventory = starting_inventory,
                             goal_description=goal_description, 
                             task_key = task_key,
-                            all_technology_reserached = unlock_all_research,
+                            all_technology_researched = unlock_all_research,
                             agent_instructions = agent_instructions)
         self.throughput_entity = throughput_entity
         self.holdout_wait_period = holdout_wait_period

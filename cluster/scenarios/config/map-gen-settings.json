@@ -1,0 +1,68 @@
+{
+  "_comment_width+height": "Width and height of map, in tiles; 0 means infinite",
+  "width": 0,
+  "height": 0,
+
+  "_starting_area_comment": "Multiplier for 'biter free zone radius'",
+  "starting_area": 1,
+
+  "peaceful_mode": false,
+  "autoplace_controls":
+  {
+    "coal": {"frequency": 1, "size": 1, "richness": 1},
+    "stone": {"frequency": 1, "size": 1, "richness": 1},
+    "copper-ore": {"frequency": 1, "size": 1,"richness": 1},
+    "iron-ore": {"frequency": 1, "size": 1, "richness": 1},
+    "uranium-ore": {"frequency": 1, "size": 1, "richness": 1},
+    "crude-oil": {"frequency": 1, "size": 1, "richness": 1},
+    "water": {"frequency": 1, "size": 1},
+    "trees": {"frequency": 1, "size": 1},
+    "enemy-base": {"frequency": 1, "size": 1}
+  },
+
+  "cliff_settings":
+  {
+    "_name_comment": "Name of the cliff prototype",
+    "name": "cliff",
+
+    "_cliff_elevation_0_comment": "Elevation of first row of cliffs",
+    "cliff_elevation_0": 10,
+
+    "_cliff_elevation_interval_comment":
+    [
+      "Elevation difference between successive rows of cliffs.",
+      "This is inversely proportional to 'frequency' in the map generation GUI. Specifically, when set from the GUI the value is 40 / frequency."
+    ],
+    "cliff_elevation_interval": 40,
+
+    "_richness_comment": "Called 'cliff continuity' in the map generator GUI. 0 will result in no cliffs, 10 will make all cliff rows completely solid",
+    "richness": 1
+  },
+
+  "_property_expression_names_comment":
+  [
+    "Overrides for property value generators (map type)",
+    "Leave 'elevation' blank to get 'normal' terrain.",
+    "Use 'elevation': 'elevation_island' to get an island.",
+    "Moisture and terrain type are also controlled via this.",
+    "'control:moisture:frequency' is the inverse of the 'moisture scale' in the map generator GUI.",
+    "'control:moisture:bias' is the 'moisture bias' in the map generator GUI.",
+    "'control:aux:frequency' is the inverse of the 'terrain type scale' in the map generator GUI.",
+    "'control:aux:bias' is the 'terrain type bias' in the map generator GUI."
+  ],
+  "property_expression_names":
+  {
+    "control:moisture:frequency": "1",
+    "control:moisture:bias": "0",
+    "control:aux:frequency": "1",
+    "control:aux:bias": "0"
+  },
+
+  "starting_points":
+  [
+    { "x": 0, "y": 0}
+  ],
+
+  "_seed_comment": "Use null for a random seed, number for a specific seed.",
+  "seed": null
+}

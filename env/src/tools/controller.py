@@ -9,7 +9,7 @@ from env.src.lua_manager import LuaScriptManager
 from env.src.namespace import FactorioNamespace
 from env.src.utils.rcon import _lua2python
 
-COMMAND = "/silent-command"
+COMMAND = "/command"
 
 class Controller:
 

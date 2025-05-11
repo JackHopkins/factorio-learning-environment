@@ -1,17 +1,17 @@
 import pytest
 
-from entities import Position
-from instance import Direction
-from game_types import Prototype, Resource
+from env.src.entities import Position
+from env.src.instance import Direction
+from env.src.game_types import Prototype, Resource
 
 
 @pytest.fixture()
 def game(instance):
     instance.initial_inventory = {'stone-furnace': 1,
-                                  'iron-chest': 3,
-                                  'burner-inserter': 6,
+                                  'iron-chest': 5,
+                                  'burner-inserter': 10,
                                   'coal': 50,
-                                  'transport-belt': 50,
+                                  'transport-belt': 100,
                                   'burner-mining-drill': 5}
     instance.reset()
     instance.speed(10)
@@ -20,7 +20,7 @@ def game(instance):
     #instance.speed(1)
 
 def test_build_auto_refilling_coal_system(game):
-    num_drills = 3
+    num_drills = 5
 
     # Start at the origin
     game.move_to(Position(x=0, y=0))

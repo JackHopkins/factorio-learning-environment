@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 from env.src.entities import Inventory, Entity
 from env.src.instance import FactorioInstance
+from eval.tasks.spatial_reasoning_task import SpatialReasoningTask
 from eval.tasks.throughput_task import ThroughputTask
 from eval.tasks.default_task import DefaultTask
 from eval.tasks.task_abc import TaskABC
@@ -24,7 +25,8 @@ class TaskFactory:
         task_type_mapping = {
             "throughput": ThroughputTask,
             "default": DefaultTask,
-            "unbounded_throughput": UnboundedThroughputTask
+            "unbounded-throughput": UnboundedThroughputTask,
+            "spatial-reasoning": SpatialReasoningTask
         }
         task_type = input_json["task_type"]
         task_config = input_json["config"]

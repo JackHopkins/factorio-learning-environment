@@ -78,7 +78,7 @@ class ThroughputTask(TaskABC):
                             starting_inventory = LAB_PLAY_POPULATED_STARTING_INVENTORY,
                             goal_description=goal_description, 
                             task_key = task_key,
-                            all_technology_reserached = True,
+                            all_technology_researched = True,
                             agent_instructions = agent_instructions)
         self.throughput_entity = throughput_entity
         self.quota = quota

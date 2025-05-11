@@ -1,0 +1,13 @@
+{
+    "task_type": "spatial-reasoning",
+    "config":
+    {                    
+        "goal_description":"Identify the spatial errors in this factory.",
+        "trajectory_length": 16,
+        "task_key": "spatial_auto_refueling_coal_4_errors",
+        "scenario": "auto_refueling_coal_scenario",
+        "scenario_params": {
+            "num_drills": 3
+        }
+    }
+}

@@ -213,6 +213,7 @@ class BacktrackingAgent(AgentABC):
             new_conversation.messages.append(step["assistant_message"])
             new_conversation.messages.append(step["environment_message"])
         return new_conversation
+
     async def step(self, conversation: Conversation, response: Optional[Response], namespace: FactorioNamespace) -> Policy:
         conversation = self.create_backtracking_conversation(conversation, namespace, response)
         temp_conv = Conversation(messages = copy.deepcopy(conversation.messages[3:]))

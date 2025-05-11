@@ -38,8 +38,8 @@ class SimpleFactorioEvaluator:
             else:
                 step_statistics.update(flows)
             task_response = task.verify(score=raw_reward, 
-                                                 instance=self.instance, 
-                                                 step_statistics=step_statistics)
+                                        instance=self.instance,
+                                        step_statistics=step_statistics)
             relative_reward = raw_reward  # - holdout_value
 
 

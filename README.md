@@ -56,12 +56,6 @@ You can install the factorio-learning-environment package directly using pip:
 ```bash
 # Install from PyPI
 pip install factorio-learning-environment
-
-# Install with optional components
-pip install factorio-learning-environment[agents]  # For agent support
-pip install factorio-learning-environment[eval]    # For evaluation tools
-pip install factorio-learning-environment[cluster] # For cluster deployment
-pip install factorio-learning-environment[all]     # All optional dependencies
 ```
 
 ### Development Installation
@@ -74,36 +68,10 @@ git clone https://github.com/yourusername/factorio-learning-environment.git
 cd factorio-learning-environment
 
 # Install in development mode
-python setuptools_build.py develop
-# OR
-python prepare_build.py && pip install -e .
+python prepare_build.py && pip install -e
 ```
 
 See [BUILD.md](BUILD.md) for detailed build instructions.
-
-### Install using pip
-
-The Factorio Learning Environment package can be installed directly using pip:
-
-```bash
-pip install factorio-learning-environment
-```
-
-### Development Installation
-
-For development, you can install the package in editable mode:
-
-```bash
-# Clone the repository
-git clone https://github.com/JackHopkins/factorio-learning-environment.git
-cd factorio-learning-environment
-
-# Install in development mode
-pip install -e .
-
-# Install with development dependencies
-pip install -e ".[dev]"
-```
 
 ### Usage
 

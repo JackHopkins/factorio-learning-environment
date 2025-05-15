@@ -11,13 +11,48 @@ script.on_event(defines.events.on_console_chat, function(event)
 end)
 
 global.actions.send_message = function(player_index, message, recipient)
-    -- Create message entry
-    local message_entry = {
-        message = message,
-        sender = player_index,
-        recipient = recipient,
-        timestamp = game.tick,
-    }
+    -- Parse A2A message if it's in JSON format
+    local message_entry
+    if type(message) == "string" and message:sub(1,1) == "{" then
+        -- Try to parse as A2A message
+        local success, parsed = pcall(function()
+            return game.json_to_table(message)
+        end)
+        
+        if success then
+            message_entry = {
+                message = parsed.content,
+                sender = parsed.sender,
+                recipient = parsed.recipient,
+                timestamp = parsed.timestamp or game.tick,
+                message_type = parsed.message_type or "text",
+                metadata = parsed.metadata or {},
+                is_new = parsed.is_new
+            }
+        else
+            -- Fallback to regular message if JSON parsing fails
+            message_entry = {
+                message = message,
+                sender = player_index,
+                recipient = recipient,
+                timestamp = game.tick,
+                message_type = "text",
+                metadata = {},
+                is_new = true
+            }
+        end
+    else
+        -- Legacy message format
+        message_entry = {
+            message = message,
+            sender = player_index,
+            recipient = recipient,
+            timestamp = game.tick,
+            message_type = "text",
+            metadata = {},
+            is_new = true
+        }
+    end
     
     if recipient >= 0 then
         -- Send to specific recipient only

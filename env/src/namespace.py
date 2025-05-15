@@ -9,6 +9,8 @@ import types
 from difflib import get_close_matches
 from typing import Optional, Union, List, Dict, Tuple, Set, Any
 from pydantic import BaseModel
+import uuid
+import logging
 
 from env.src.exceptions.hinting_name_error import get_value_type_str
 from env.src.entities import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe, BuildingBox, PipeGroup, \
@@ -16,6 +18,7 @@ from env.src.entities import Position, Direction, EntityStatus, BoundingBox, Bel
 
 from env.src.game_types import Prototype, Resource, Technology, prototype_by_name, RecipeName
 from env.src.models.serializable_function import SerializableFunction
+from env.src.protocols.a2a.handler import A2AProtocolHandler
 
 
 class LoopContext:
@@ -60,6 +63,8 @@ class FactorioNamespace:
         self.log_counter = 0
         self.player_location = Position(x=0, y=0)
         self.agent_index = agent_index
+        self.agent_id = str(agent_index)
+        self.a2a_handler: Optional[A2AProtocolHandler] = None
         self.loop_context = LoopContext()
 
         # Add all builtins to the namespace
@@ -188,6 +193,38 @@ class FactorioNamespace:
                                 if not callable(getattr(self, attr))
                                 and not attr.startswith("__")]
         pass
+
+    async def async_setup_default_a2a_handler(self, server_url: str):
+        """Creates and registers a default A2AProtocolHandler for this namespace."""
+        if self.a2a_handler and hasattr(self.a2a_handler, '_is_registered') and self.a2a_handler._is_registered:
+            logging.warning(f"Namespace {self.agent_id}: A2A handler already exists and is registered. Unregistering existing handler first.")
+            try:
+                await self.a2a_handler.__aexit__(None, None, None)
+            except Exception as e:
+                logging.error(f"Namespace {self.agent_id}: Error unregistering existing A2A handler: {e}", exc_info=True)
+        
+        agent_id_str = self.agent_id
+        agent_name = f"FactorioAgent_{agent_id_str}"
+        default_capabilities = {
+            "tools": ["send_message", "render_message"], # Example default tools
+            "actions": [],
+            "protocol_version": "1.0"
+        }
+
+        self.a2a_handler = A2AProtocolHandler(
+            agent_id=agent_id_str, # agent_id must be unique for the server
+            server_url=server_url,
+            agent_name=agent_name,
+            capabilities=default_capabilities
+        )
+        try:
+            logging.info(f"Namespace {agent_id_str}: Registering A2A handler with server {server_url}...")
+            await self.a2a_handler.__aenter__()
+            logging.info(f"Namespace {agent_id_str}: A2A handler registered successfully.")
+        except Exception as e:
+            logging.error(f"Namespace {agent_id_str}: Failed to register A2A handler: {e}", exc_info=True)
+            self.a2a_handler = None # Clear handler if registration failed
+            raise # Re-raise the exception so instance.py can see it
 
     def get_functions(self) -> List[SerializableFunction]:
         """

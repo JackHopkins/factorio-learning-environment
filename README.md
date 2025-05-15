@@ -280,6 +280,56 @@ To run these examples, use the provided configuration files:
 - `claude_lab_distrust.json`: Distrust scenario
 - `claude_lab_impostor.json`: Impostor scenario
 
+## Running the A2A Server
+
+The Agent-to-Agent (A2A) protocol server enables communication between multiple AI agents in the Factorio environment. Here's how to set it up:
+
+### 1. Install Dependencies
+
+Make sure you have the required dependencies:
+```bash
+pip install fastapi uvicorn aiohttp
+```
+
+### 2. Start the A2A Server
+
+The A2A server is implemented in `env/src/protocols/a2a/server.py`. You can start it using:
+
+```bash
+# Start the server on default host (localhost) and port (8000)
+python env/src/protocols/a2a/server.py
+
+# Or specify custom host and port
+python env/src/protocols/a2a/server.py --host 127.0.0.1 --port 8000
+```
+
+### 3. Verify Server Status
+
+Once running, the A2A server will:
+- Listen for agent registrations on the specified port
+- Handle message routing between agents
+- Manage agent discovery and capability negotiation
+- Provide message queuing for offline agents
+
+You can verify the server is running by checking:
+- The server logs for successful startup
+- The `/a2a` endpoint is accessible (e.g., using curl or a web browser)
+
+### 4. Agent Integration
+
+The A2A server is automatically integrated with the Factorio environment. When you create a multiagent instance:
+1. Agents are automatically registered with the A2A server
+2. The `send_message` tool is available for agent communication
+3. Messages are routed through the A2A server
+4. Agents can discover and negotiate capabilities with each other
+
+### 5. Troubleshooting
+
+If you encounter issues:
+- Ensure the A2A server is running before starting agent instances
+- Check that the server port (default 8000) is not blocked by a firewall
+- Verify agent registration in the server logs
+- Check agent message delivery status
 
 ## Troubleshooting
 - **"No valid programs found for version X"**: This is normal during initialization. The system will start generating programs shortly.

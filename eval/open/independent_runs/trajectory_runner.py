@@ -22,7 +22,7 @@ from cluster.local.cluster_ips import get_local_container_ips
 from agents.utils.python_parser import PythonParser
 #from models.response import EnvironmentResponse
 from env.src.namespace import FactorioNamespace
-from env.src.tools.agent.send_message.client import AgentMessage
+from env.src.protocols.a2a.handler import A2AMessage, AgentA2AConfig
 
 from agents import Response
 import json
@@ -39,6 +39,7 @@ class EvalConfig:
     version_description: str
     exit_on_task_success: bool
     task: Optional[TaskABC] = None
+    a2a_configs: Optional[List[AgentA2AConfig]] = None
 
     def __post_init__(self):
         if self.task is None and hasattr(self.agents[0], 'task'):
@@ -62,7 +63,7 @@ class TrajectoryRunner:
         self.iteration_times = []
         self.process_id = process_id
         # Track messages for each agent
-        self.agent_messages: Dict[int, List[AgentMessage]] = {i: [] for i in range(len(agents))}
+        self.agent_messages: Dict[int, List[A2AMessage]] = {i: [] for i in range(len(agents))}
         # Track the last timestamp we've shown for each agent
         self.last_message_timestamps: Dict[int, float] = {i: 0.0 for i in range(len(agents))}
 
@@ -135,18 +136,21 @@ class TrajectoryRunner:
         # Get new messages from the game state
         raw_messages = self.evaluator.instance.namespaces[agent_idx]._get_messages()
         for msg in raw_messages:
-            # Create AgentMessage object and check if newer than last shown
-            agent_msg = AgentMessage(
-                sender=msg['sender'],
-                recipient=msg['recipient'],
+            # Create A2AMessage object and check if newer than last shown
+            a2a_msg = A2AMessage(
+                sender=str(msg['sender']),
+                recipient=str(msg['recipient']) if msg['recipient'] != -1 else None,
                 content=msg['message'],
-                timestamp=msg['timestamp']
+                timestamp=msg['timestamp'],
+                message_type=msg.get('message_type', 'text'),
+                metadata=msg.get('metadata', {}),
+                is_new=msg.get('is_new', True)
             )
-            if agent_msg.timestamp > self.last_message_timestamps[agent_idx]:
-                new_messages.append(agent_msg)
+            if a2a_msg.timestamp > self.last_message_timestamps[agent_idx]:
+                new_messages.append(a2a_msg)
                 # Add to agent_messages collection
-                self.agent_messages[agent_idx].append(agent_msg)
-                latest_timestamp = max(latest_timestamp, agent_msg.timestamp)
+                self.agent_messages[agent_idx].append(a2a_msg)
+                latest_timestamp = max(latest_timestamp, a2a_msg.timestamp)
                 
         # Update the last timestamp
         if new_messages:
@@ -158,7 +162,7 @@ class TrajectoryRunner:
             
         formatted_messages = "\n\nMessages received:\n"
         for msg in new_messages:
-            sender_info = f"Agent {msg.sender}" if msg.sender != 0 else "Leader"
+            sender_info = f"Agent {msg.sender}" if msg.sender != "0" else "Leader"
             formatted_messages += f"[{sender_info}]: {msg.content}\n"
             
         return formatted_messages
@@ -325,8 +329,8 @@ class TrajectoryRunner:
                 continue
 
 
-def create_factorio_instance(instance_id: int, num_agents: int = 1) -> FactorioInstance:
-    """Create a single Factorio instance"""
+async def create_factorio_instance(instance_id: int, num_agents: int = 1, a2a_configs_list: Optional[List[AgentA2AConfig]] = None) -> FactorioInstance:
+    """Create and asynchronously initialize a single Factorio instance"""
     ips, udp_ports, tcp_ports = get_local_container_ips()
 
     instance = FactorioInstance(
@@ -337,9 +341,10 @@ def create_factorio_instance(instance_id: int, num_agents: int = 1) -> FactorioI
         cache_scripts=True,
         inventory={},
         all_technologies_researched=True,
-        num_agents=num_agents
+        num_agents=num_agents,
+        a2a_configs=a2a_configs_list
     )
-    instance.speed(10)
+    await instance.async_initialise()
     return instance
 
 
@@ -359,10 +364,8 @@ async def create_db_client() -> PostgresDBClient:
 
 async def run_trajectory(process_id: int, config: EvalConfig):
     """Entry point for running a single trajectory"""
-    # Initialize components
     db_client = await create_db_client()
-    #llm_factory = LLMFactory(model=config.model)
-    instance = create_factorio_instance(process_id, len(config.agents))
+    instance = await create_factorio_instance(process_id, len(config.agents), config.a2a_configs)
     evaluator = SimpleFactorioEvaluator(
         db_client=db_client,
         instance=instance,
@@ -370,9 +373,9 @@ async def run_trajectory(process_id: int, config: EvalConfig):
         error_penalty=0
     )
 
-    # setup the instance
     task = config.task
     task.setup(instance)
+    
     runner = TrajectoryRunner(config.agents, db_client, evaluator, config, process_id)
     
     await runner.run()

@@ -247,6 +247,7 @@ class TrajectoryRunner:
                     print(program.code + "\n"+"="*50)
                     print("\033[1m\n".join(['>>>\t'+line for line in program.response.strip().replace('\\n', '\n\t').split('\n')]).strip()+"\033[0m")
                     print(f"Evaluated program {multiprocessing.current_process().name} - "
+                          f"Agent: {self.config.agents[agent_idx].__class__.__name__}"
                           f"Model: {self.config.agents[agent_idx].model} - "
                           f"Iteration {agent_step_counter[agent_idx]}/{self.config.task.trajectory_length} - "
                           f"Agent #{agent_idx}")
@@ -298,6 +299,7 @@ class TrajectoryRunner:
 
                     program = evaluated_program
                     program.meta["task_key"] = self.config.task.task_key
+                    program.meta["agent"] = str(self.config.agents[agent_idx].__class__)
 
                     # Save program
                     saved_program = await self.db.create_program(program)

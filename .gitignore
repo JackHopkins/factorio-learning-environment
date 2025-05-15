@@ -74,3 +74,4 @@ environment/src/skills/ground_truth_skills/*
 /factorio_learning_environment.egg-info/
 /dist/
 /build/
+/summary_cache/

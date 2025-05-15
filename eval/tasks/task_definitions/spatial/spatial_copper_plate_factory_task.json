@@ -4,10 +4,9 @@
     {                    
         "goal_description":"Identify the spatial errors in this factory.",
         "trajectory_length": 16,
-        "task_key": "troubleshoot_auto_refueling_coal",
-        "scenario": "auto_refueling_coal_scenario",
+        "task_key": "troubleshoot_copper_plate_factory",
+        "scenario": "copper_plate_factory_scenario",
         "scenario_params": {
-            "num_drills": 4
         }
     }
 }

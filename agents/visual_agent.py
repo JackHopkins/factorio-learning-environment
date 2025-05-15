@@ -1,7 +1,7 @@
-import base64
-import io
+from typing import Optional
+
 import tenacity
-from typing import Optional, List, Dict, Any
+from tenacity import wait_exponential, retry_if_exception_type
 
 from agents import Response, CompletionResult, Policy
 from agents.agent_abc import AgentABC
@@ -9,13 +9,10 @@ from agents.basic_agent import GENERAL_INSTRUCTIONS, FINAL_INSTRUCTION
 from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
 from agents.utils.llm_factory import LLMFactory
 from agents.utils.parse_response import parse_response
-from models.conversation import Conversation
-from models.generation_parameters import GenerationParameters
-from tenacity import wait_exponential, retry_if_exception_type
-from env.src.entities import Layer, Position, BoundingBox
-from namespace import FactorioNamespace
-
-from env.src.tools.admin.render.client import Render
+from env.src.entities import Layer, Position
+from env.src.models.conversation import Conversation
+from env.src.models.generation_parameters import GenerationParameters
+from env.src.namespace import FactorioNamespace
 
 VISUAL_INSTRUCTIONS = \
 """
@@ -114,6 +111,10 @@ class VisualAgent(AgentABC):
                             {
                                 "type": "text",
                                 "text": f"[Current map view (radius: {self.render_radius}) - Use this visual information to guide your decisions. Be sure to reference to legend to understand what each entity is.]"
+                            },
+                            {
+                                "type": "text",
+                                "text": str(namespace.get_entities())
                             }
                         ]
                         break
@@ -122,7 +123,9 @@ class VisualAgent(AgentABC):
             self.set_conversation(formatted_conversation)
 
             # Get the next policy
-            return await self._get_policy(formatted_conversation)
+            policy = await self._get_policy(formatted_conversation)
+
+            return policy
 
         except Exception as e:
             print(f"Error in visual agent step: {str(e)}")
@@ -157,7 +160,7 @@ class VisualAgent(AgentABC):
 
             # Convert image to base64 for embedding
             self.last_image_base64 = render.to_base64()
-            # render.show()
+            #render.show()
             return self.last_image_base64
 
         except Exception as e:
@@ -190,7 +193,7 @@ class VisualAgent(AgentABC):
         if not policy:
             raise Exception("Not a valid Python policy")
 
-        return policy
+        return policy, None
 
     async def end(self, conversation: Conversation, completion: CompletionResult):
         """

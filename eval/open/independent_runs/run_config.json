@@ -1,4 +1,18 @@
 [
-{"task": "spatial/spatial_auto_refueling_coal_task.json",
-"model": "gpt-4o-mini-2024-07-18"}
+
+  {"task": "spatial/spatial_research_station_task.json", "model": "google/gemini-2.0-flash-001-open-router", "agent": "VisualAgent"},
+  {"task": "spatial/spatial_power_station_task.json", "model": "google/gemini-2.0-flash-001-open-router", "agent": "VisualAgent"},
+  {"task": "spatial/spatial_copper_plate_factory_task.json", "model": "google/gemini-2.0-flash-001-open-router", "agent": "VisualAgent"},
+  {"task": "spatial/spatial_oil_pipeline_task.json", "model": "google/gemini-2.0-flash-001-open-router", "agent": "VisualAgent"},
+  {"task": "spatial/spatial_auto_refueling_coal_task.json", "model": "google/gemini-2.0-flash-001-open-router", "agent": "VisualAgent"},
+  {"task": "spatial/spatial_research_station_task.json", "model": "google/gemini-2.0-flash-001-open-router", "agent": "VisualAgent"},
+  {"task": "spatial/spatial_power_station_task.json", "model": "google/gemini-2.0-flash-001-open-router", "agent": "VisualAgent"},
+  {"task": "spatial/spatial_copper_plate_factory_task.json", "model": "google/gemini-2.0-flash-001-open-router", "agent": "VisualAgent"},
+  {"task": "spatial/spatial_oil_pipeline_task.json", "model": "google/gemini-2.0-flash-001-open-router", "agent": "VisualAgent"},
+  {"task": "spatial/spatial_auto_refueling_coal_task.json", "model": "google/gemini-2.0-flash-001-open-router", "agent": "VisualAgent"},
+  {"task": "spatial/spatial_research_station_task.json", "model": "google/gemini-2.0-flash-001-open-router", "agent": "VisualAgent"},
+  {"task": "spatial/spatial_power_station_task.json", "model": "google/gemini-2.0-flash-001-open-router", "agent": "VisualAgent"},
+  {"task": "spatial/spatial_copper_plate_factory_task.json", "model": "google/gemini-2.0-flash-001-open-router", "agent": "VisualAgent"},
+  {"task": "spatial/spatial_oil_pipeline_task.json", "model": "google/gemini-2.0-flash-001-open-router", "agent": "VisualAgent"},
+  {"task": "spatial/spatial_auto_refueling_coal_task.json", "model": "google/gemini-2.0-flash-001-open-router", "agent": "VisualAgent"}
 ]

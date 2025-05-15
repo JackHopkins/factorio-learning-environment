@@ -925,4 +925,4 @@ class FactorioInstance:
                 except Exception as e:
                     print(f"Error joining thread {thread.name}: {e}")
 
-        sys.exit(0)
+        #sys.exit(0)

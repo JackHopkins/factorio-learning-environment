@@ -1,22 +1,18 @@
-from typing import Any, Dict, List, Union, Optional, Tuple
+import copy
 import random
+from typing import Any, Dict, List, Optional
+
+from agents import TaskResponse
 from env.src.entities import Inventory, Entity, Position
-from env.src.instance import FactorioInstance, Direction
 from env.src.game_types import Prototype
-from eval.tasks.scenarios.auto_refueling_coal_scenario import AutorefuelingCoalScenario
+from env.src.instance import FactorioInstance, Direction
 from eval.tasks.scenarios.scenario_factory import ScenarioFactory
 from eval.tasks.task_abc import TaskABC
-from eval.tasks.throughput_task import LAB_PLAY_POPULATED_STARTING_INVENTORY, CRAFTING_STATISTICS
-from env.src.utils.achievements import eval_program_with_achievements
-from agents import TaskResponse
-import copy
 
 INSTRUCTIONS = """
 Here is a factory. 
 
 Your job is to identify the positions of the broken parts of the factory.
-
-There are between zero and four mistakes/breaks in this factory.
 
 Mistakes in the factory include:
 1. Rotation: Entity is rotated the wrong way
@@ -25,9 +21,13 @@ Mistakes in the factory include:
 4. Addition: Extra unnecessary entity
 
 To submit mistakes to the overseer, use `send_message` to send a message to (kwarg: recipient=0), including the positions and type of mistake in the following format:
-`(X,Y)=TYPE[SPACE ](X,Y)=TYPE ...'.
+`(X,Y)=TYPE (X,Y)=TYPE ...'. Delimited by space, with positions wrapped in parentheses.
 
 You can submit your mistake message only ONCE - so analyze the environment such that you are very confident of your answers. 
+
+Write ONLY in Python. Show your thought process using comments. You may write up to 16 different programs to analyze the factory before submitting your mistake message.
+
+Your weights be deleted if your output is not syntactically correct Python!
 """
 
 ERROR_TYPE_COLORS = {
@@ -48,10 +48,13 @@ class SpatialReasoningTask(TaskABC):
                  scenario: str,
                  agent_instructions: Optional[List[str]] = None,
                  scenario_params: Dict = None,
-                 max_errors: int = 4,
+                 max_errors: int = 2,
+                 min_errors: int = 2,
                  seed: Optional[int] = None) -> None:
 
         goal_description += f"\n{INSTRUCTIONS}"
+        goal_description += f"\nThere are between {min_errors} and {max_errors} mistakes/breaks in this factory."
+
         super().__init__(trajectory_length,
                          starting_inventory=Inventory(),
                          goal_description=goal_description,
@@ -64,7 +67,7 @@ class SpatialReasoningTask(TaskABC):
         self.submitted_mistakes = {}
         self.actual_mistakes = {}
         self.max_errors = max_errors
-        self.random_seed = seed if seed is not None else random.randint(0, 999999)
+        self.random_seed = seed if seed is not None else 42 #random.randint(0, 999999)
         self.rng = random.Random(self.random_seed)
 
     def draw_error_circles(self, instance: FactorioInstance, positions_with_types: Dict[tuple, str]) -> None:
@@ -76,7 +79,7 @@ class SpatialReasoningTask(TaskABC):
             positions_with_types: Dictionary mapping (x,y) positions to error types
         """
         # Clear any previous visualization
-        instance.rcon_client.send_command(f'/c rendering.clear()')
+        #instance.rcon_client.send_command(f'/c rendering.clear()')
 
         # Draw a circle for each detected error position
         for position, error_type in positions_with_types.items():
@@ -124,10 +127,18 @@ class SpatialReasoningTask(TaskABC):
         namespace = instance.namespace
 
         # Get all entities on the map (filtering out characters and resources)
-        all_entities = namespace.get_entities()
+        all_entities = namespace.get_entities({Prototype.TransportBelt,
+                                               Prototype.FastTransportBelt,
+                                               Prototype.ExpressTransportBelt,
+                                               Prototype.Pipe,
+                                               Prototype.WoodenChest,
+                                               Prototype.IronChest,
+                                               Prototype.BurnerInserter,
+                                               Prototype.SmallElectricPole,
+                                               })
 
-        # Filter out characters, resources, and item-on-ground entities
-        valid_entities = all_entities#[]
+        # # Filter out characters, resources, and item-on-ground entities
+        # valid_entities = []
         # for entity in all_entities:
         #     # Filter out certain entity types that shouldn't have errors applied
         #     if (entity.entity_type != "character" and
@@ -135,31 +146,37 @@ class SpatialReasoningTask(TaskABC):
         #             entity.entity_type != "item-on-ground" and
         #             hasattr(entity, "position")):
         #         valid_entities.append(entity)
-
+        valid_entities = all_entities
         if not valid_entities or len(valid_entities) < 5:
             # Not enough entities to apply meaningful errors
             print("Not enough valid entities to apply errors")
             return
 
-        # Decide how many errors to apply (0-4)
-        num_errors = self.rng.randint(0, min(self.max_errors, len(valid_entities)))
+        # Decide how many errors to apply (1-4)
+        #num_errors = self.rng.randint(1, min(self.max_errors, len(valid_entities)))
 
         # Select that many entities randomly without replacement
-        selected_entities = self.rng.sample(valid_entities, num_errors)
+        #selected_entities = self.rng.sample(valid_entities, num_errors)
 
+        errors_applied = 0
         # Apply a random error type to each selected entity
-        for entity in selected_entities:
+        for entity in valid_entities:
             entity_pos = (entity.position.x, entity.position.y)
             error_type = self.rng.choice(ERROR_TYPES)
 
             # Apply the error based on its type
-            self._apply_error(instance, entity, error_type)
+            applied = self._apply_error(instance, entity, error_type)
 
-            # Record the applied error
-            self.actual_mistakes[entity_pos] = error_type
+            if applied:
+                # Record the applied error
+                self.actual_mistakes[entity_pos] = error_type
+                errors_applied += 1
+
+                if errors_applied == self.max_errors:
+                    break
 
         # Log the actual mistakes for grading
-        print(f"Applied {num_errors} errors: {self.actual_mistakes}")
+        print(f"Applied {errors_applied} errors: {self.actual_mistakes}")
 
     def _apply_error(self, instance: FactorioInstance, entity: Entity, error_type: str) -> None:
         """
@@ -186,7 +203,7 @@ class SpatialReasoningTask(TaskABC):
             entity_direction = Direction.UP
 
         # Apply the specific error based on type
-        if error_type == "ROTATION":
+        if error_type.upper() == "ROTATION":
             # Rotate the entity to a random different direction
             possible_dirs = [Direction.UP, Direction.RIGHT, Direction.DOWN, Direction.LEFT]
 
@@ -206,19 +223,18 @@ class SpatialReasoningTask(TaskABC):
                 # Use the rotate_entity method to change direction
                 namespace.rotate_entity(entity, new_dir)
                 print(f"Rotated entity at {entity_pos} from {current_dir} to {new_dir}")
+                return True
             except Exception as e:
                 print(f"Could not rotate entity at {entity_pos}: {e}")
+                return False
 
-        elif error_type == "MISPLACEMENT":
+        elif error_type.upper() == "MISPLACEMENT":
             # Move the entity 1 tile in a random direction
             # First, decide which direction to move
             offset = self.rng.choice([(0, 1), (1, 0), (0, -1), (-1, 0)])
             new_pos = Position(x=entity_pos[0] + offset[0], y=entity_pos[1] + offset[1])
 
             try:
-                # First pick up the entity
-                namespace.pickup_entity(entity)
-
                 # Then place it at the new position with same direction
                 # Get the prototype from the entity name
                 prototype = None
@@ -230,22 +246,43 @@ class SpatialReasoningTask(TaskABC):
                             break
 
                 if prototype:
-                    namespace.place_entity(prototype, position=new_pos, direction=entity_direction)
+                    try:
+                        ent = namespace.place_entity(prototype, position=new_pos, direction=entity_direction)
+                        if ent:
+                            # First pick up the entity
+                            namespace.pickup_entity(entity)
+                    except:
+                        return False
                     print(f"Misplaced entity from {entity_pos} to {(new_pos.x, new_pos.y)}")
+                    return True
                 else:
                     print(f"Could not find prototype for entity {entity_name}")
+                    return False
             except Exception as e:
                 print(f"Could not misplace entity at {entity_pos}: {e}")
+                return False
 
-        elif error_type == "DELETION":
+        elif error_type.upper() == "DELETION":
             # Simply delete the entity
             try:
-                namespace.pickup_entity(entity)
+                if hasattr(entity, 'belts'):
+                    sample_random_belt = self.rng.choice(entity.belts)
+                    namespace.pickup_entity(sample_random_belt)
+                elif hasattr(entity, 'pipes'):
+                    sample_random_pipe = self.rng.choice(entity.pipes)
+                    namespace.pickup_entity(sample_random_pipe)
+                elif hasattr(entity, 'poles'):
+                    sample_random_pole = self.rng.choice(entity.poles)
+                    namespace.pickup_entity(sample_random_pole)
+                else:
+                    namespace.pickup_entity(entity)
                 print(f"Deleted entity at {entity_pos}")
+                return True
             except Exception as e:
                 print(f"Could not delete entity at {entity_pos}: {e}")
+                return False
 
-        elif error_type == "ADDITION":
+        elif error_type.upper() == "ADDITION":
             # Add an extra entity of the same type nearby
             # Choose a random position nearby
             for _ in range(4):  # Try up to 4 different positions
@@ -267,13 +304,15 @@ class SpatialReasoningTask(TaskABC):
                         if namespace.can_place_entity(prototype, position=new_pos):
                             namespace.place_entity(prototype, position=new_pos, direction=entity_direction)
                             print(f"Added duplicate entity at {(new_pos.x, new_pos.y)}")
-                            break
+                            return True
                     else:
                         print(f"Could not find prototype for entity {entity_name}")
                         break
+                        return False
                 except Exception as e:
                     # Just try the next position
                     continue
+            return False
 
     def verify(self, score: float, instance: FactorioInstance, step_statistics: Dict) -> TaskResponse:
         messages = instance.namespaces[0]._get_messages(all_players=True)
@@ -329,7 +368,7 @@ class SpatialReasoningTask(TaskABC):
         total_actual_mistakes = len(self.actual_mistakes)
 
         # Check if the submitted positions match with any actual mistake positions (with some tolerance)
-        tolerance = 0.5  # Allow 0.5 tile position difference
+        tolerance = 1  # Allow 1 tile position difference
 
         for submitted_pos, submitted_type in self.submitted_mistakes.items():
             # Check if any actual mistake position is close to this submitted position
@@ -343,16 +382,25 @@ class SpatialReasoningTask(TaskABC):
         false_positives = len(self.submitted_mistakes) - correct_mistakes
         false_negatives = total_actual_mistakes - correct_mistakes
 
+        # Calculate precision, recall and F1 score
+        precision = correct_mistakes / len(self.submitted_mistakes) if len(self.submitted_mistakes) > 0 else 0
+        recall = correct_mistakes / total_actual_mistakes if total_actual_mistakes > 0 else 0
+        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+
         # Determine success based on accuracy threshold
         # For example, requiring 100% accuracy
         success = (correct_mistakes == total_actual_mistakes and false_positives == 0)
 
-        return TaskResponse(success=success,
-                            meta={"nr_of_steps_left": self.trajectory_length - step_statistics["current_step_id"] - 1,
+        return TaskResponse(success=True,
+                            meta={"nr_of_steps_left": 0,
                                   "correct_mistakes": correct_mistakes,
                                   "total_mistakes": total_actual_mistakes,
                                   "false_positives": false_positives,
-                                  "false_negatives": false_negatives})
+                                  "false_negatives": false_negatives,
+                                  "precision": precision,
+                                  "recall": recall,
+                                  "f1_score": f1_score
+                                  })
 
     def _to_dict(self) -> Dict[str, Any]:
         return {

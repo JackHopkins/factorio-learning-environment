@@ -256,18 +256,19 @@ class LLMFactory:
                 else:
                     formatted_messages = messages
 
-                return await client.chat.completions.create(
+                response = await client.chat.completions.create(
                     model=model_to_use,
                     max_tokens=kwargs.get('max_tokens', 256),
                     temperature=kwargs.get('temperature', 0.3),
                     messages=formatted_messages,
                     logit_bias=kwargs.get('logit_bias', None),
                     n=kwargs.get('n_samples', None),
-                    stop=kwargs.get('stop_sequences', None),
+                    stop=kwargs.get('stop_sequences') if kwargs.get('stop_sequences') else "",
                     stream=False,
                     presence_penalty=kwargs.get('presence_penalty', None),
                     frequency_penalty=kwargs.get('frequency_penalty', None),
                 )
+                return response
             except Exception as e:
                 print(e)
                 try:
@@ -291,7 +292,7 @@ class LLMFactory:
                         messages=formatted_messages,
                         logit_bias=kwargs.get('logit_bias', None),
                         n=kwargs.get('n_samples', None),
-                        stop=kwargs.get('stop_sequences', None),
+                        stop=kwargs.get('stop_sequences') if kwargs.get('stop_sequences') else "",
                         stream=False,
                         presence_penalty=kwargs.get('presence_penalty', None),
                         frequency_penalty=kwargs.get('frequency_penalty', None),

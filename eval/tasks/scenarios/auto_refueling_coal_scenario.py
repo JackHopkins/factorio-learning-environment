@@ -26,7 +26,7 @@ class AutorefuelingCoalScenario(ScenarioABC):
         coal_patch = game.get_resource_patch(Resource.Coal, game.nearest(Resource.Coal))
 
         # Move to the center of the coal patch
-        game.move_to(coal_patch.bounding_box.left_top)
+        game.move_to(coal_patch.bounding_box.left_top + Position(x=0, y=-5))
 
         # Place the first drill
         drill = game.place_entity(Prototype.BurnerMiningDrill, Direction.UP, coal_patch.bounding_box.left_top)

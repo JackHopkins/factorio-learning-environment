@@ -2,9 +2,9 @@ import time
 
 import pytest
 
-from entities import BurnerMiningDrill, EntityStatus, Layer
-from instance import FactorioInstance, Direction
-from game_types import Prototype, Resource
+from env.src.entities import BurnerMiningDrill, EntityStatus, Layer
+from env.src.instance import FactorioInstance, Direction
+from env.src.game_types import Prototype, Resource
 
 
 @pytest.fixture()

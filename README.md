@@ -119,11 +119,16 @@ sudo systemctl start docker
 cd cluster/docker
 docker build -t factorio .
 
-# Run a single server
+# Run Factorio servers
 cd ../local
-docker compose -f docker-compose-1.yml up -d
+./run-envs.sh  # Starts 1 instance with default lab scenario
+
+# Alternatively, with more options (see cluster/local/!README.md):
+./run-envs.sh -n 3 -s open_world  # Starts 3 instances with open world scenario
+./run-envs.sh stop                # Stops all running instances
+./run-envs.sh restart             # Restarts with previous configuration
 ```
-**Note**: Use docker compose (with a space) instead of docker-compose as shown in the command above.
+**Note**: The script automatically detects your platform (arm64/amd64) and configures Docker appropriately.
 
 6. **Configure firewall** (if running server on a different machine):
 

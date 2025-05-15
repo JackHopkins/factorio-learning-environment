@@ -9,13 +9,14 @@ The system allows you to:
 - Automatically connect to and initialize each server instance
 - Configure server settings, ports, and resources for each instance
 - Share scenarios across instances
+- Choose between different scenarios (open_world or default_lab_scenario)
 
 ## Files
 
+- `run-envs.sh` - Main script for running and managing Factorio instances with options for scenario selection
 - `create_docker_compose_config.py` - Generates Docker Compose configuration for multiple Factorio instances
 - `cluster_ips.py` - Utility for retrieving IP addresses and ports of running Factorio containers
 - `factorio_server_login.py` - Automates the process of connecting to and initializing each server instance
-- `docker-compose-4.yml` - Example configuration for running 4 Factorio server instances
 
 ## Setup and Usage
 
@@ -30,7 +31,55 @@ The system allows you to:
   - opencv-python-headless
 - Factorio game client installed locally
 
-### Creating Server Instances
+### Managing Server Instances with run-envs.sh
+
+The `run-envs.sh` script provides a convenient way to start, stop, and manage Factorio server instances.
+
+#### Basic Usage
+
+```bash
+# Start a single instance with default settings (default_lab_scenario)
+./run-envs.sh
+
+# Start 5 instances with default scenario
+./run-envs.sh -n 5
+
+# Start 3 instances with open_world scenario
+./run-envs.sh -n 3 -s open_world
+
+# Stop all running instances
+./run-envs.sh stop
+
+# Restart the current cluster with the same configuration
+./run-envs.sh restart
+
+# Show help information
+./run-envs.sh help
+```
+
+#### Command Line Options
+
+- `-n NUMBER` - Number of Factorio instances to run (1-33, default: 1)
+- `-s SCENARIO` - Scenario to run (open_world or default_lab_scenario, default: default_lab_scenario)
+
+#### Available Commands
+
+- `start` - Start Factorio instances (default command)
+- `stop` - Stop all running instances
+- `restart` - Restart the current cluster with the same configuration
+- `help` - Show help information
+
+#### Examples with Explicit Commands
+
+```bash
+# Start 10 instances with open_world scenario
+./run-envs.sh start -n 10 -s open_world
+
+# Restart the current cluster
+./run-envs.sh restart
+```
+
+### Creating Server Instances (Legacy Method)
 
 1. Generate a Docker Compose configuration:
 ```bash
@@ -49,6 +98,7 @@ Each Factorio instance is configured with:
 - Shared scenarios directory
 - Unique UDP port for game traffic (starting at 34197)
 - Unique TCP port for RCON (starting at 27015)
+- Choice of scenario (open_world or default_lab_scenario)
 
 ### Server Initialization
 
@@ -65,18 +115,20 @@ This script will:
 
 ## Port Mappings
 
-- Game ports (UDP): 34197-34200
-- RCON ports (TCP): 27015-27018
+- Game ports (UDP): 34197 + instance_number
+- RCON ports (TCP): 27000 + instance_number
 
 ## Volume Mounts
 
 The following directories are mounted in each container:
 - Scenarios: `../scenarios/default_lab_scenario`, `../scenarios/open_world`
+- Mods: `~/Applications/Factorio.app/Contents/Resources/mods`
+- Screenshots: `../../data/_screenshots`
 
 ## Notes
 
 - The server instances use the `factorio:latest` Docker image (which you can build from the provided Dockerfile in the `docker` directory)
-- Each instance runs with the `default_lab_scenario` by default - which is a laboratory environment.
+- Each instance can run with either the `default_lab_scenario` or `open_world` scenario
 - RCON password is set to "factorio"
 - Containers are configured to restart unless stopped manually
 

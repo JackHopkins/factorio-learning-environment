@@ -57,6 +57,7 @@ class SendMessage(Tool):
         if not server_url:
             server_url = "http://localhost:8000/a2a"  # Default fallback
             logging.warning(f"SendMessage: Using default server URL: {server_url}")
+            return False
         
         # Create message payload
         a2a_message = {

@@ -67,7 +67,7 @@ class GameState:
 
         # Get inventories for all players
         inventories = [namespace.inspect_inventory() for namespace in instance.namespaces]
-        agent_messages = [namespace._get_messages() for namespace in instance.namespaces]
+        agent_messages = [namespace.get_messages() for namespace in instance.namespaces]
 
         return cls(
             entities=entities,
@@ -190,8 +190,9 @@ class GameState:
         
         # Load messages for each player
         if self.agent_messages:
-            agent_messages = [msg for sublist in self.agent_messages for msg in sublist]
-            instance.first_namespace._load_messages(agent_messages)
+            for i in range(instance.num_agents):
+                if i < len(self.agent_messages):
+                    instance.namespaces[i].load_messages(self.agent_messages[i])
 
         # Merge pickled namespace with existing persistent_vars for each player
         if self.namespaces:

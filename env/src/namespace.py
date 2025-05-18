@@ -64,7 +64,6 @@ class FactorioNamespace:
         self.player_location = Position(x=0, y=0)
         self.agent_index = agent_index
         self.agent_id = str(agent_index)
-        self.a2a_handler: Optional[A2AProtocolHandler] = None
         self.loop_context = LoopContext()
 
         # Add all builtins to the namespace
@@ -192,39 +191,6 @@ class FactorioNamespace:
         self._static_members = [attr for attr in dir(self)
                                 if not callable(getattr(self, attr))
                                 and not attr.startswith("__")]
-        pass
-
-    async def async_setup_default_a2a_handler(self, server_url: str):
-        """Creates and registers a default A2AProtocolHandler for this namespace."""
-        if self.a2a_handler and hasattr(self.a2a_handler, '_is_registered') and self.a2a_handler._is_registered:
-            logging.warning(f"Namespace {self.agent_id}: A2A handler already exists and is registered. Unregistering existing handler first.")
-            try:
-                await self.a2a_handler.__aexit__(None, None, None)
-            except Exception as e:
-                logging.error(f"Namespace {self.agent_id}: Error unregistering existing A2A handler: {e}", exc_info=True)
-        
-        agent_id_str = self.agent_id
-        agent_name = f"FactorioAgent_{agent_id_str}"
-        default_capabilities = {
-            "tools": ["send_message", "render_message"], # Example default tools
-            "actions": [],
-            "protocol_version": "1.0"
-        }
-
-        self.a2a_handler = A2AProtocolHandler(
-            agent_id=agent_id_str, # agent_id must be unique for the server
-            server_url=server_url,
-            agent_name=agent_name,
-            capabilities=default_capabilities
-        )
-        try:
-            logging.info(f"Namespace {agent_id_str}: Registering A2A handler with server {server_url}...")
-            await self.a2a_handler.__aenter__()
-            logging.info(f"Namespace {agent_id_str}: A2A handler registered successfully.")
-        except Exception as e:
-            logging.error(f"Namespace {agent_id_str}: Failed to register A2A handler: {e}", exc_info=True)
-            self.a2a_handler = None # Clear handler if registration failed
-            raise # Re-raise the exception so instance.py can see it
 
     def get_functions(self) -> List[SerializableFunction]:
         """
@@ -745,6 +711,12 @@ class FactorioNamespace:
             #raise Exception(result_output)
 
         return score, goal, result_output
+
+    def get_messages(self) -> List[Dict]:
+        return []
+    
+    def load_messages(self, messages: List[Dict]):
+        pass
 
 
 def wrap_for_serialization(value):

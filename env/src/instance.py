@@ -34,6 +34,7 @@ from env.src.rcon.factorio_rcon import RCONClient
 from env.src.models.game_state import GameState
 from env.src.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 from env.src.protocols.a2a.handler import A2AProtocolHandler, AgentCard
+from env.src.protocols.a2a.server import ServerManager
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000
@@ -72,7 +73,6 @@ class Direction(Enum):
         return direction.value * 2
 
 class FactorioInstance:
-
     def __init__(self,
                  address=None,
                  fast=False,
@@ -112,10 +112,20 @@ class FactorioInstance:
         if inventory is None:
             inventory = {}
         self.initial_inventory = inventory
+        self.initialise(fast)
         self.initial_score = 0
+        try:
+            self.first_namespace.score()
+        except Exception as e:
+            # Invalidate cache if there is an error
+            self.lua_script_manager = LuaScriptManager(self.rcon_client, False)
+            self.script_dict = {**self.lua_script_manager.lib_scripts, **self.lua_script_manager.tool_scripts}
+            self.setup_tools(self.lua_script_manager)
+            self.initialise(fast)
 
+        self.initial_score, goal = self.first_namespace.score()
+        # Register the cleanup method to be called on exit
         atexit.register(self.cleanup)
-        logging.info(f"FactorioInstance {self.id} created. Call async_initialise() to complete setup.")
     
     @property
     def namespace(self):
@@ -132,7 +142,6 @@ class FactorioInstance:
         for namespace in self.namespaces:
             namespace.reset()
         
-        self.first_namespace._get_messages(True)
         if not game_state:
             # Reset the game instance
             inventories = [self.initial_inventory] * self.num_agents
@@ -156,8 +165,11 @@ class FactorioInstance:
             # Load research state into the game
             self.first_namespace._load_research_state(game_state.research)
 
-            agent_messages = [msg for sublist in game_state.agent_messages for msg in sublist]
-            self.first_namespace._load_messages(agent_messages)
+            # Load messages for each agent
+            if game_state.agent_messages:
+                for i in range(self.num_agents):
+                    if i < len(game_state.agent_messages):
+                        self.namespaces[i].load_messages(game_state.agent_messages[i])
 
             # Reset elapsed ticks
             self._reset_elapsed_ticks()
@@ -513,17 +525,6 @@ class FactorioInstance:
         # print(lua_response)
         return _lua2python(command, lua_response, start=start)
 
-    # def comment(self, comment: str, *args):
-    #     """
-    #     Send a comment to the Factorio game console
-    #     :param comment:
-    #     :param args:
-    #     :return:
-    #     """
-    #     # game.players[1].print({"","[img=entity/character][color=orange]",{"engineer-title"},": [/color]",{"think-"..thought}})
-    #     #self.rcon_client.send_command(f'/c game.players[1].print("[img=entity/character][color=orange]" {{"{comment}"}},": ",{args}}})')
-    #     self.rcon_client.send_command(f"[img=entity/character] " + str(comment) + ", ".join(args))
-
     def _reset_static_achievement_counters(self):
         """
         This resets the cached production flows that we track for achievements and diversity sampling.
@@ -602,6 +603,45 @@ class FactorioInstance:
     def execute_transaction(self) -> Dict[str, Any]:
         return self._execute_transaction()
 
+    def initialise(self, fast=True):
+
+        self.begin_transaction()
+        self.add_command('/sc global.alerts = {}', raw=True)
+        self.add_command('/sc global.elapsed_ticks = 0', raw=True)
+        self.add_command('/sc global.fast = {}'.format('true' if fast else 'false'), raw=True)
+        #self.add_command('/sc script.on_nth_tick(nil)', raw=True)
+        # Peaceful mode
+        # self.add_command('/sc game.map_settings.enemy_expansion.enabled = false', raw=True)
+        # self.add_command('/sc game.map_settings.enemy_evolution.enabled = false', raw=True)
+        # self.add_command('/sc game.forces.enemy.kill_all_units()', raw=True)
+        if self.peaceful:
+            self.lua_script_manager.load_init_into_game('enemies')
+        # Create characters for all agents
+
+        self.add_command('/sc player = game.players[1]')
+        color_logic = ''
+        if self.num_agents > 1:
+            color_logic = 'if i==1 then char.color={r=0,g=1,b=0,a=1} elseif i==2 then char.color={r=0,g=0,b=1,a=1} end;'
+        
+        self.add_command(f'/sc global.agent_characters = {{}}; for _,c in pairs(game.surfaces[1].find_entities_filtered{{type="character"}}) do if c then c.destroy() end end; for i=1,{self.num_agents} do local char = game.surfaces[1].create_entity{{name="character",position={{x=0,y=(i-1)*2}},force=game.forces.player}}; {color_logic} global.agent_characters[i]=char end', raw=True)
+        self.execute_transaction()
+
+        self.lua_script_manager.load_init_into_game('initialise')
+        self.lua_script_manager.load_init_into_game('clear_entities')
+        self.lua_script_manager.load_init_into_game('alerts')
+        self.lua_script_manager.load_init_into_game('util')
+        self.lua_script_manager.load_init_into_game('priority_queue')
+        self.lua_script_manager.load_init_into_game('connection_points')
+        self.lua_script_manager.load_init_into_game('recipe_fluid_connection_mappings')
+        self.lua_script_manager.load_init_into_game('serialize')
+        self.lua_script_manager.load_init_into_game('production_score')
+        self.lua_script_manager.load_init_into_game('initialise_inventory')
+
+        inventories = [self.initial_inventory] * self.num_agents
+        self._reset(inventories)
+
+        self.first_namespace._clear_collision_boxes()
+
     def _create_agent_game_characters(self):
         """Create Factorio characters for all agents in the game."""
         # Create characters in Factorio
@@ -614,60 +654,6 @@ class FactorioInstance:
         self.add_command(f'/sc global.agent_characters = {{}}; for _,c in pairs(game.surfaces[1].find_entities_filtered{{type="character"}}) do if c then c.destroy() end end; for i=1,{self.num_agents} do local char = game.surfaces[1].create_entity{{name="character",position={{x=0,y=(i-1)*2}},force=game.forces.player}}; {color_logic} global.agent_characters[i]=char end', raw=True)
         self.execute_transaction()
 
-    async def _unregister_agents(self):
-        # Unregister all agents from the A2A server
-        # print(f"Instance {self.id}: Attempting to unregister agents...") # Debug
-        for i, namespace in enumerate(self.namespaces):
-            try:
-                await namespace.a2a_handler.__aexit__(None, None, None)
-            except Exception as e:
-                print(f"Instance {self.id}: Error during a2a_handler.__aexit__ for {getattr(namespace.a2a_handler, 'agent_id', f'agent_in_namespace_{i}')}: {e}")
-
-    async def async_initialise(self):
-        if self._is_initialised:
-            logging.info(f"Instance {self.id}: Already initialised. Re-initialising.")
-        logging.info(f"Instance {self.id}: Starting async_initialise (fast={self.fast})...")
-        
-        # Ensure any previous A2A handlers are closed before potentially overwriting them
-        await self._unregister_agents()
-
-        # Original initialise RCON commands (ensure these are run after connect)
-        self.begin_transaction()
-        self.add_command('/sc global.alerts = {}', raw=True)
-        self.add_command('/sc global.elapsed_ticks = 0', raw=True)
-        self.add_command('/sc global.fast = {}'.format('true' if self.fast else 'false'), raw=True)
-        self.execute_transaction()
-        
-        # Load Lua scripts (ensure LuaScriptManager is ready)
-        if self.peaceful: 
-            self.lua_script_manager.load_init_into_game('enemies') 
-        
-        init_scripts = ['initialise', 'clear_entities', 'alerts', 'util', 'priority_queue', 
-                        'connection_points', 'recipe_fluid_connection_mappings', 
-                        'serialize', 'production_score', 'initialise_inventory']
-        for script_name in init_scripts:
-            self.lua_script_manager.load_init_into_game(script_name)
-
-        inventories = [self.initial_inventory] * self.num_agents
-        self._reset(inventories)
-        self.first_namespace._clear_collision_boxes()
-
-        # Create in-game characters for agents if there are any
-        self._create_agent_game_characters() # Call the renamed synchronous method
-        
-        # Setup A2A handlers for multi-agent using the namespace's async method
-        server_url = os.getenv("A2A_SERVER_URL", "http://localhost:8000/a2a")
-        for i in range(self.num_agents):
-            try:
-                await self.namespaces[i].async_setup_default_a2a_handler(server_url)
-            except Exception as e:
-                agent_identifier = self.namespaces[i].agent_id 
-                logging.error(f"Instance {self.id}: Error during namespace A2A setup for agent {agent_identifier}: {e}", exc_info=True)
-
-        self._is_initialised = True
-        logging.info(f"Instance {self.id}: async_initialise completed.")
-        return self
-
     @property
     def first_namespace(self) -> Optional[FactorioNamespace]: # Add this property if used
         return self.namespaces[0] if self.namespaces else None
@@ -675,44 +661,6 @@ class FactorioInstance:
     def speed(self, speed): 
         response = self.rcon_client.send_command(f'/sc game.speed = {speed}')
         self._speed = speed
-            
-    def cleanup(self):
-        # Close A2A handlers
-        if self._is_initialised:
-            try:
-                # Create a new event loop for cleanup
-                temp_loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(temp_loop)
-                
-                # Run the unregister function
-                temp_loop.run_until_complete(self._unregister_agents())
-                
-                # Clean up the loop
-                temp_loop.close()
-            except Exception as e:
-                logging.error(f"Instance {self.id}: Error during A2A handler cleanup: {e}")
-        
-        # Close RCON client
-        if self.rcon_client:
-            try:
-                logging.debug(f"Instance {self.id}: Closing RCON client.")
-                self.rcon_client.close()
-            except Exception as e:
-                logging.error(f"Instance {self.id}: Error closing RCON client: {e}")
-        
-        # Clear hooks
-        self.post_tool_hooks.clear()
-        self.pre_tool_hooks.clear()
-
-        for thread in threading.enumerate():
-            if thread != threading.current_thread() and thread.is_alive() and not thread.daemon:
-                try:
-                    thread.join(timeout=5)  # Wait up to 5 seconds for each thread
-                except Exception as e:
-                    print(f"Error joining thread {thread.name}: {e}")
-        
-        logging.info(f"Instance {self.id}: FactorioInstance cleanup completed.")
-        sys.exit(0)
 
     def get_warnings(self, seconds=10):
         """
@@ -972,3 +920,22 @@ class FactorioInstance:
                     callback(tool_instance, *args, **kwargs)
                 except Exception as e:
                     print(f"Error in pre-tool hook for {tool_name}: {e}")
+
+
+    def cleanup(self):
+        # Close the RCON connection
+        if hasattr(self, 'rcon_client') and self.rcon_client:
+            self.rcon_client.close()
+
+        self.post_tool_hooks = {}
+        self.pre_tool_hooks = {}
+
+        # Join all non-daemon threads
+        for thread in threading.enumerate():
+            if thread != threading.current_thread() and thread.is_alive() and not thread.daemon:
+                try:
+                    thread.join(timeout=5)  # Wait up to 5 seconds for each thread
+                except Exception as e:
+                    print(f"Error joining thread {thread.name}: {e}")
+
+        sys.exit(0)

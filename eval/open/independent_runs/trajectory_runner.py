@@ -134,7 +134,7 @@ class TrajectoryRunner:
         latest_timestamp = 0
 
         # Get new messages from the game state
-        raw_messages = self.evaluator.instance.namespaces[agent_idx]._get_messages()
+        raw_messages = self.evaluator.instance.namespaces[agent_idx].get_messages()
         for msg in raw_messages:
             # Create A2AMessage object and check if newer than last shown
             a2a_msg = A2AMessage(
@@ -243,7 +243,7 @@ class TrajectoryRunner:
 
                     # Evaluate program
                     if current_state.is_multiagent:
-                        update_messages = [namespace._get_messages() for namespace in self.evaluator.instance.namespaces]
+                        update_messages = [namespace.get_messages() for namespace in self.evaluator.instance.namespaces]
                         current_state.agent_messages = update_messages
                     self.evaluator.instance.reset(current_state)
                     instance_namespace_before_program = self.evaluator.instance.namespaces[agent_idx]
@@ -329,7 +329,7 @@ class TrajectoryRunner:
                 continue
 
 
-async def create_factorio_instance(instance_id: int, num_agents: int = 1, a2a_configs_list: Optional[List[AgentA2AConfig]] = None) -> FactorioInstance:
+def create_factorio_instance(instance_id: int, num_agents: int = 1, a2a_configs_list: Optional[List[AgentA2AConfig]] = None) -> FactorioInstance:
     """Create and asynchronously initialize a single Factorio instance"""
     ips, udp_ports, tcp_ports = get_local_container_ips()
 
@@ -344,7 +344,7 @@ async def create_factorio_instance(instance_id: int, num_agents: int = 1, a2a_co
         num_agents=num_agents,
         a2a_configs=a2a_configs_list
     )
-    await instance.async_initialise()
+    instance.speed(10)
     return instance
 
 
@@ -365,7 +365,7 @@ async def create_db_client() -> PostgresDBClient:
 async def run_trajectory(process_id: int, config: EvalConfig):
     """Entry point for running a single trajectory"""
     db_client = await create_db_client()
-    instance = await create_factorio_instance(process_id, len(config.agents), config.a2a_configs)
+    instance = create_factorio_instance(process_id, len(config.agents), config.a2a_configs)
     evaluator = SimpleFactorioEvaluator(
         db_client=db_client,
         instance=instance,

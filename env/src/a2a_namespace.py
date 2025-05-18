@@ -8,8 +8,10 @@ class A2AFactorioNamespace(FactorioNamespace):
     """A FactorioNamespace with A2A (Agent-to-Agent) communication support."""
     
     def __init__(self, instance, agent_index):
-        super().__init__(instance, agent_index)
         self.a2a_handler: Optional[A2AProtocolHandler] = None
+        self.called_setup = False
+        super().__init__(instance, agent_index)
+        logging.info(f"Namespace {self.agent_id}: Initializing A2A namespace")
 
     async def async_setup_default_a2a_handler(self, server_url: str):
         """Creates and registers a default A2AProtocolHandler for this namespace."""
@@ -38,6 +40,9 @@ class A2AFactorioNamespace(FactorioNamespace):
             logging.info(f"Namespace {agent_id_str}: Registering A2A handler with server {server_url}...")
             await self.a2a_handler.__aenter__()
             logging.info(f"Namespace {agent_id_str}: A2A handler registered successfully.")
+            self.called_setup = True
+            assert self.a2a_handler is not None
+            logging.info(f"Namespace {agent_id_str}: A2A handler is not None")
         except Exception as e:
             logging.error(f"Namespace {agent_id_str}: Failed to register A2A handler: {e}", exc_info=True)
             self.a2a_handler = None # Clear handler if registration failed
@@ -51,7 +56,10 @@ class A2AFactorioNamespace(FactorioNamespace):
         try:
             # Get the A2A handler from the game state
             if not self.a2a_handler:
-                raise Exception("A2A handler not found in namespace")
+                if not self.called_setup:
+                    raise Exception("A2A namespace not setup")
+                else:
+                    raise Exception("A2A handler not found in namespace")
 
             # Get messages using the A2A handler
             messages = self.a2a_handler.get_messages()
@@ -66,6 +74,7 @@ class A2AFactorioNamespace(FactorioNamespace):
                     'recipient': int(msg['recipient']) if msg['recipient'] else None
                 })
             
+            print('got messages', formatted_messages)
             return formatted_messages
             
         except Exception as e:

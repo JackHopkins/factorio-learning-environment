@@ -87,6 +87,7 @@ async def main():
             task=task,
             a2a_configs=current_run_a2a_configs # Pass the list of A2A configs for this run
         )
+        assert eval_conf.a2a_configs is not None
 
         p = multiprocessing.Process(
             target=run_process,

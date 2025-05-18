@@ -73,6 +73,9 @@ class Direction(Enum):
         return direction.value * 2
 
 class FactorioInstance:
+
+    namespace_class = FactorioNamespace
+
     def __init__(self,
                  address=None,
                  fast=False,
@@ -97,7 +100,7 @@ class FactorioInstance:
         self._is_initialised = False
 
         self.peaceful = peaceful
-        self.namespaces = [FactorioNamespace(self, i) for i in range(num_agents)]
+        self.namespaces = [self.namespace_class(self, i) for i in range(num_agents)]
 
         self.lua_script_manager = LuaScriptManager(self.rcon_client, cache_scripts)
         self.script_dict = {**self.lua_script_manager.lib_scripts, **self.lua_script_manager.tool_scripts}
@@ -167,6 +170,7 @@ class FactorioInstance:
 
             # Load messages for each agent
             if game_state.agent_messages:
+                print('loading messages', game_state.agent_messages)
                 for i in range(self.num_agents):
                     if i < len(game_state.agent_messages):
                         self.namespaces[i].load_messages(game_state.agent_messages[i])

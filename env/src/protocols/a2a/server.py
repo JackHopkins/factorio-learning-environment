@@ -44,6 +44,11 @@ class ServerManager:
             except socket.error:
                 return True
 
+    @staticmethod
+    def run_server(host: str, port: int):
+        """Static method to run the server"""
+        uvicorn.run(app, host=host, port=port)
+
     def start_server(self):
         """Start the server in a separate process if it's not already running"""
         with self._lock:
@@ -54,10 +59,7 @@ class ServerManager:
             if self.is_port_in_use():
                 logging.warning(f"Port {self.port} is in use but server health check failed. Attempting to start server anyway.")
 
-            def run_server():
-                uvicorn.run(app, host=self.host, port=self.port)
-
-            self.process = multiprocessing.Process(target=run_server)
+            self.process = multiprocessing.Process(target=self.run_server, args=(self.host, self.port))
             self.process.daemon = True  # Process will be terminated when main process exits
             self.process.start()
 

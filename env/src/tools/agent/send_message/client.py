@@ -55,9 +55,8 @@ class SendMessage(Tool):
             server_url = getattr(self.namespace.a2a_handler, 'server_url', None)
         
         if not server_url:
-            server_url = "http://localhost:8000/a2a"  # Default fallback
+            server_url = "http://localhost:8000/a2a"  # Default fallback with correct endpoint
             logging.warning(f"SendMessage: Using default server URL: {server_url}")
-            return False
         
         # Create message payload
         a2a_message = {
@@ -86,6 +85,7 @@ class SendMessage(Tool):
         # Send request using synchronous requests library
         try:
             logging.debug(f"SendMessage: Sending message directly. Sender: {sender_id}, Recipient: {recipient}, Server: {server_url}")
+            print(request)
             response = requests.post(server_url, json=request, timeout=10)
             
             if response.status_code == 200:

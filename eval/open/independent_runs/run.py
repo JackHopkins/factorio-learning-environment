@@ -22,7 +22,7 @@ class RunConfig:
     exit_on_task_success: bool = True
 
 
-def main():
+async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--run_config', type=str, help='Path of the run config file', default=Path("eval", "open", "independent_runs","run_config.json"))
     args = parser.parse_args()
@@ -37,7 +37,7 @@ def main():
     # Create initial state and get system prompt
     try:
         num_agents = run_configs[0].num_agents
-        instance = create_factorio_instance(0, num_agents)
+        instance = await create_factorio_instance(0, num_agents)
         system_prompt = instance.get_system_prompt()
     except Exception as e:
         raise(f"Error creating Factorio instance: {e}")
@@ -83,4 +83,4 @@ def main():
 
 if __name__ == "__main__":
     multiprocessing.set_start_method('spawn')
-    main()
+    asyncio.run(main())

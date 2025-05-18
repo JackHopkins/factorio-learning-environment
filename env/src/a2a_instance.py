@@ -1,7 +1,7 @@
 import logging
 import asyncio
 from typing import Optional, List
-
+from threading import Lock
 from env.src.instance import FactorioInstance
 from env.src.protocols.a2a.handler import A2AProtocolHandler
 from env.src.protocols.a2a.server import ServerManager
@@ -10,18 +10,18 @@ from env.src.a2a_namespace import A2AFactorioNamespace
 class A2AFactorioInstance(FactorioInstance):
     """A FactorioInstance with A2A (Agent-to-Agent) communication support."""
     
+    namespace_class = A2AFactorioNamespace
     _server_manager = None
     _initialized = False
-    _init_lock = asyncio.Lock()
+    _init_lock = Lock()
     
     def __new__(cls, *args, **kwargs):
-        with cls._init_lock:
-            if not cls._initialized:
-                raise RuntimeError(
-                    "Direct instantiation of A2AFactorioInstance is not allowed. "
-                    "Please use A2AFactorioInstance.create() instead."
-                )
-            return super().__new__(cls)
+        if not cls._initialized:
+            raise RuntimeError(
+                "Direct instantiation of A2AFactorioInstance is not allowed. "
+                "Please use A2AFactorioInstance.create() instead."
+            )
+        return super().__new__(cls)
 
     @classmethod
     async def create(cls, *args, **kwargs):
@@ -30,14 +30,14 @@ class A2AFactorioInstance(FactorioInstance):
         Usage:
             instance = await A2AFactorioInstance.create(address='localhost', ...)
         """
-        async with cls._init_lock:
-            cls._initialized = True
-            try:
-                instance = cls(*args, **kwargs)
-                await instance.async_initialise()
-                return instance
-            finally:
-                cls._initialized = False  # Reset for next creation, even if an error occurs
+        cls._initialized = True
+        try:
+            instance = cls(*args, **kwargs)
+            cls._ensure_server_running()
+            await instance.async_initialise()
+            return instance
+        finally:
+            cls._initialized = False  # Reset for next creation, even if an error occurs
 
     async def __aenter__(self):
         """Async context manager entry"""
@@ -47,10 +47,6 @@ class A2AFactorioInstance(FactorioInstance):
         """Async context manager exit"""
         self.cleanup()
     
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Override namespaces with A2A-enabled ones
-        self.namespaces = [A2AFactorioNamespace(self, i) for i in range(self.num_agents)]
 
     @classmethod
     def _ensure_server_running(cls):

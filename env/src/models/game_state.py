@@ -1,6 +1,7 @@
 import json
 import pickle
 import time
+import logging
 from dataclasses import dataclass, field, asdict
 from enum import Enum
 from typing import Dict, Optional, Any, List
@@ -177,7 +178,7 @@ class GameState:
         """Restore game state to a Factorio instance"""
         # Load entity state to all instances (since it's shared)
         assert instance.num_agents == self.num_agents, f"GameState can only be restored to a multiagent instance with the same number of agents (num_agents={self.num_agents})"
-        instance.first_namespace._load_entity_state(self.entities, decode=True)
+        instance.first_namespace._load_entity_state(self.entities, decompress=True)
         
         # Set inventory for each player
         if self.inventories:
@@ -185,7 +186,7 @@ class GameState:
                 instance.set_inventory(self.inventories[i], i)
 
         # Restore research state if present (only need to do this once)
-        if self.research and instance.player_index == 1:  # Only do this for the first instance
+        if self.research:  # Only do this for the first instance
             instance.first_namespace._load_research_state(self.research)
         
         # Load messages for each player

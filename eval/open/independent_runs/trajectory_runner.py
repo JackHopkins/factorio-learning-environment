@@ -7,6 +7,8 @@ import time
 from dataclasses import dataclass
 from typing import Optional, Dict, List
 import multiprocessing
+from env.src.a2a_instance import A2AFactorioInstance
+from env.src.a2a_namespace import A2AFactorioNamespace
 from dotenv import load_dotenv
 
 from agents import CompletionResult, CompletionReason
@@ -128,7 +130,7 @@ class TrajectoryRunner:
 
         return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
         
-    def _collect_new_messages(self, agent_idx: int) -> str:
+    async def _collect_new_messages(self, agent_idx: int) -> str:
         """Collect new messages for an agent and format them for display"""
         new_messages = []
         latest_timestamp = 0
@@ -186,7 +188,7 @@ class TrajectoryRunner:
         if not current_state:
             current_state = self.config.task.starting_game_state
             depth = 0
-            self.evaluator.instance.reset(current_state)
+            current_state.to_instance(self.evaluator.instance)
             entities = self.evaluator.instance.first_namespace.get_entities()
             for agent_idx in range(len(self.agents)):
                 inventory = current_state.inventories[agent_idx]
@@ -211,7 +213,7 @@ class TrajectoryRunner:
             agent_completed = False
             try:
                 # Collect new messages for this agent
-                new_messages_text = self._collect_new_messages(agent_idx)
+                new_messages_text = await self._collect_new_messages(agent_idx)
                 
                 # Update the conversation with new messages if any
                 if new_messages_text:
@@ -245,7 +247,7 @@ class TrajectoryRunner:
                     if current_state.is_multiagent:
                         update_messages = [namespace.get_messages() for namespace in self.evaluator.instance.namespaces]
                         current_state.agent_messages = update_messages
-                    self.evaluator.instance.reset(current_state)
+                    current_state.to_instance(self.evaluator.instance)
                     instance_namespace_before_program = self.evaluator.instance.namespaces[agent_idx]
                     evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.task, agent_idx=agent_idx, step_statistics={"current_step_id": agent_step_counter[agent_idx]})
                     print(program.code + "\n"+"="*50)
@@ -326,24 +328,34 @@ class TrajectoryRunner:
                         return 
             except Exception as e:
                 print(f"Error in iteration {agent_step_counter[agent_idx]}: {e}")
+                raise e
                 continue
 
 
-def create_factorio_instance(instance_id: int, num_agents: int = 1, a2a_configs_list: Optional[List[AgentA2AConfig]] = None) -> FactorioInstance:
+async def create_factorio_instance(instance_id: int, num_agents: int = 1, a2a_configs_list: Optional[List[AgentA2AConfig]] = None) -> FactorioInstance:
     """Create and asynchronously initialize a single Factorio instance"""
     ips, udp_ports, tcp_ports = get_local_container_ips()
 
-    instance = FactorioInstance(
-        address=ips[instance_id],
-        tcp_port=tcp_ports[instance_id],
-        bounding_box=200,
-        fast=True,
-        cache_scripts=True,
-        inventory={},
-        all_technologies_researched=True,
-        num_agents=num_agents,
-        a2a_configs=a2a_configs_list
-    )
+    common_kwargs = {
+        "address": ips[instance_id],
+        "tcp_port": tcp_ports[instance_id],
+        "bounding_box": 200,
+        "fast": True,
+        "cache_scripts": True,
+        "inventory": {},
+        "all_technologies_researched": True,
+        "num_agents": num_agents
+    }
+
+    if a2a_configs_list is not None:
+        instance = await A2AFactorioInstance.create(
+            **common_kwargs,
+            a2a_configs=a2a_configs_list
+        )
+    else:
+        instance = FactorioInstance(**common_kwargs)
+
+    assert isinstance(instance, A2AFactorioInstance)
     instance.speed(10)
     return instance
 
@@ -365,14 +377,14 @@ async def create_db_client() -> PostgresDBClient:
 async def run_trajectory(process_id: int, config: EvalConfig):
     """Entry point for running a single trajectory"""
     db_client = await create_db_client()
-    instance = create_factorio_instance(process_id, len(config.agents), config.a2a_configs)
+    assert config.a2a_configs is not None
+    instance = await create_factorio_instance(process_id, len(config.agents), config.a2a_configs)
     evaluator = SimpleFactorioEvaluator(
         db_client=db_client,
         instance=instance,
         value_accrual_time=1,
         error_penalty=0
     )
-
     task = config.task
     task.setup(instance)
     

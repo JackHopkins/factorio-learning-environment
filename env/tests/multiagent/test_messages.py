@@ -3,7 +3,7 @@ import time
 import pytest
 from unittest.mock import MagicMock, patch
 
-from tools.agent.send_message.client import AgentMessage, SendMessage
+from tools.agent.send_message.client import SendMessage
 from env.src.instance import FactorioInstance
 from eval.open.independent_runs.trajectory_runner import TrajectoryRunner
 from models.conversation import Conversation

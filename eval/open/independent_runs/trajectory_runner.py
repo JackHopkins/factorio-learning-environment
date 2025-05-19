@@ -130,7 +130,7 @@ class TrajectoryRunner:
 
         return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
         
-    async def _collect_new_messages(self, agent_idx: int) -> str:
+    def _collect_new_messages(self, agent_idx: int) -> str:
         """Collect new messages for an agent and format them for display"""
         new_messages = []
         latest_timestamp = 0

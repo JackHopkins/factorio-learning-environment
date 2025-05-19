@@ -3,12 +3,29 @@
 # Function to detect and set host architecture
 setup_platform() {
     ARCH=$(uname -m)
+    OS=$(uname -s)
     if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
         export DOCKER_PLATFORM="linux/arm64"
     else
         export DOCKER_PLATFORM="linux/amd64"
     fi
+    # Detect OS for mods path
+    if [[ "$OS" == *"MINGW"* ]] || [[ "$OS" == *"MSYS"* ]] || [[ "$OS" == *"CYGWIN"* ]]; then
+        # Windows detected
+        export OS_TYPE="windows"
+        # Use %APPDATA% which is available in Windows bash environments
+        export MODS_PATH="${APPDATA}/Factorio/mods"
+        # Fallback if APPDATA isn't available
+        if [ -z "$MODS_PATH" ] || [ "$MODS_PATH" == "/Factorio/mods" ]; then
+            export MODS_PATH="${USERPROFILE}/AppData/Roaming/Factorio/mods"
+        fi
+    else
+        # Assume Unix-like OS (Linux, macOS)
+        export OS_TYPE="unix"
+        export MODS_PATH="~/Applications/Factorio.app/Contents/Resources/mods"
+    fi
     echo "Detected architecture: $ARCH, using platform: $DOCKER_PLATFORM"
+    echo "Using mods path: $MODS_PATH"
 }
 
 # Function to check for docker compose command
@@ -92,7 +109,7 @@ EOF
     - source: ../scenarios/open_world
       target: /opt/factorio/scenarios/open_world
       type: bind
-    - source: ~/Applications/Factorio.app/Contents/Resources/mods
+    - source: ${MODS_PATH}
       target: /opt/factorio/mods
       type: bind
     - source: ../../data/_screenshots

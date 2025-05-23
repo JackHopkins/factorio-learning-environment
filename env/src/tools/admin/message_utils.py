@@ -20,13 +20,13 @@ def log_messages(messages: List[Dict]) -> None:
     # Write messages to file
     with open(os.path.join(ROOT_DIR, 'message_log.txt'), 'w') as f:
         for msg in sorted_messages:
-            if msg['sender'] == 0:
+            if msg['sender'] == -1:
                 agent_name = "Leader"
                 colored_name = f"{ORANGE}{agent_name}{RESET}"
-            elif msg['sender'] == 1:
+            elif msg['sender'] == 0:
                 agent_name = f"Agent {msg['sender']}"
                 colored_name = f"{GREEN}{agent_name}{RESET}"
-            elif msg['sender'] == 2:
+            elif msg['sender'] == 1:
                 agent_name = f"Agent {msg['sender']}"
                 colored_name = f"{BLUE}{agent_name}{RESET}"
             else:

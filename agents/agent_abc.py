@@ -1,19 +1,48 @@
 from abc import abstractmethod
+from typing import List, Optional
+import uuid
+import os
 
 from agents import Response, Python, CompletionResult, Policy
 from env.src.models.conversation import Conversation
 from env.src.namespace import FactorioNamespace
+from env.src.protocols.a2a.handler import A2AProtocolHandler, AgentCard
 
 
 class AgentABC:
     model: str
     system_prompt: str
     conversation: Conversation
-
+    a2a_handler: Optional[A2AProtocolHandler] = None
     def __init__(self, model, system_prompt, *args, **kwargs):
        self.model = model
        self.system_prompt = system_prompt
+       
+    def _create_agent_card(self) -> AgentCard:
+        """Create an A2A agent card describing this agent's capabilities"""
+        return AgentCard(
+            name=f"FactorioAgent_{self.model}",
+            capabilities={
+                "tools": self._get_available_tools(),
+                "actions": self._get_available_actions(),
+                "protocol_version": "1.0"
+            },
+            connection_info={
+                "type": "factorio",
+                "version": "1.0"
+            }
+        )
 
+    def _get_available_tools(self) -> List[str]:
+        """Get list of available tools for this agent"""
+        # This should be implemented by subclasses
+        return []
+
+    def _get_available_actions(self) -> List[str]:
+        """Get list of available actions for this agent"""
+        # This should be implemented by subclasses
+        return []
+    
     def set_conversation(self, conversation: Conversation) -> None:
         """
         Overrides the current conversation state for this agent. This is useful for context modification strategies,

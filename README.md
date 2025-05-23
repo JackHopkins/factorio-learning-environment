@@ -36,12 +36,12 @@ automation (e.g electronic-circuit manufacturing).
 - [Environment](#environment-documentation)
 - [Agents](#agent-documentation)
 - [Tasks](#task-documentation)
+- [Multiagent Experiments](#multiagent-experiments)
 - [Tools](#tool-documentation)
 - [Project Structure](#project-structure)
 - [Database](#database)
 - [Benchmarks](#benchmarks)
 - [Contributions](#contributing-guidelines)
-- [Multiagent Experiments](#multiagent-experiments)
 
 ## Installation
 
@@ -210,7 +210,6 @@ And replace the `PostgresDBClient` object at `create_db_client` function in `eva
 9. **Run Eval**: Running open and lab play with example run configs:
    1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
    2. Tasks (one parallel run of iron-ore task): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_lab_play.json`
-
 
 ## Troubleshooting
 - **"No valid programs found for version X"**: This is normal during initialization. The system will start generating programs shortly.
@@ -466,6 +465,111 @@ The run config json is a list of dictionaries specifying the task_json location,
 
 ```
 Each task is run until either `verify` returns True or the maximum number of steps (`trajectory_length`) is reached
+
+## Multiagent Experiments
+
+The Factorio Learning Environment supports multiagent experiments where multiple AI agents can work together (or against each other) in the same game world through the Agent-to-Agent (A2A) protocol. Here's how to set up and run multiagent experiments:
+
+### 1. Task Configuration
+
+Multiagent tasks are defined in JSON files under `eval/tasks/task_definitions/multiagent/`. Each task can specify:
+- A shared goal description for all agents
+- Agent-specific instructions for each agent
+- Number of agents required
+- Other task parameters (trajectory length, holdout period, etc.)
+
+Example task configuration:
+```json
+{
+    "task_type": "unbounded_throughput",
+    "config": {
+        "goal_description": "Create an automatic iron plate factory...",
+        "agent_instructions": [
+            "You are Agent 1. Your role is to mine coal.",
+            "You are Agent 2. Your role is to mine iron."
+        ],
+        "throughput_entity": "iron-plate",
+        "trajectory_length": 16,
+        "holdout_wait_period": 60
+    }
+}
+```
+
+### 2. Run Configuration
+
+Create a run configuration file in `eval/open/independent_runs/multiagent/` that specifies:
+- The task file to use
+- The model to use for each agent
+- Number of agents
+
+Example run configuration:
+```json
+[
+    {
+        "task": "multiagent/iron_plate_throughput_free.json",
+        "model": "claude-3-5-sonnet-latest",
+        "num_agents": 2
+    }
+]
+```
+
+### 3. Running the A2A Server
+
+The Agent-to-Agent (A2A) protocol server enables communication between multiple AI agents in the Factorio environment. Here's how to set it up:
+
+1. **Install Dependencies**:
+```bash
+pip install fastapi uvicorn aiohttp
+```
+
+2. **Start the A2A Server**:
+```bash
+# Start the server on default host (localhost) and port (8000)
+python env/src/protocols/a2a/server.py
+
+# Or specify custom host and port
+python env/src/protocols/a2a/server.py --host 127.0.0.1 --port 8000
+```
+
+3. **Run the Experiment**:
+```bash
+python eval/open/independent_runs/run.py --config eval/open/independent_runs/multiagent/your_config.json
+```
+
+### 4. Agent Communication
+
+Agents can communicate with each other using the `send_message()` tool. Each agent's system prompt includes instructions about:
+- Their role in the multiagent setup
+- How to communicate with other agents
+- When to send messages (start/end of programs)
+
+The A2A server handles:
+- Agent registrations
+- Message routing between agents
+- Agent discovery and capability negotiation
+- Message queuing for offline agents
+
+### 5. Example Scenarios
+
+The codebase includes several example multiagent scenarios:
+
+1. **Cooperative Factory Building**: Agents work together to build an efficient factory
+2. **Distrust Scenario**: Agents are suspicious of each other's actions
+3. **Impostor Scenario**: One agent tries to sabotage while the other tries to maintain the factory
+
+To run these examples, use the provided configuration files:
+- `claude_lab_free.json`: Cooperative scenario
+- `claude_lab_distrust.json`: Distrust scenario
+- `claude_lab_impostor.json`: Impostor scenario
+
+### 6. Troubleshooting
+
+If you encounter issues:
+- Ensure the A2A server is running before starting agent instances
+- Check that the server port (default 8000) is not blocked by a firewall
+- Verify agent registration in the server logs
+- Check agent message delivery status
+
 ## Tool Documentation
 
 Agents interact with the game using _tools_, which represent a narrow API into the game.
@@ -745,81 +849,6 @@ Executing tools as part of a Python policy string, without a game client.
 3. **Operation Variability**: Some operations show more significant performance variations:
    - `connect_entities` is consistently the slowest operation across all configurations (because it relies on pathfinding)
    - `craft_item` and `extract_item` tend to be among the fastest operations
-
-## Multiagent Experiments
-
-The Factorio Learning Environment supports multiagent experiments where multiple AI agents can work together (or against each other) in the same game world. Here's how to set up and run multiagent experiments:
-
-### 1. Task Configuration
-
-Multiagent tasks are defined in JSON files under `eval/tasks/task_definitions/multiagent/`. Each task can specify:
-- A shared goal description for all agents
-- Agent-specific instructions for each agent
-- Number of agents required
-- Other task parameters (trajectory length, holdout period, etc.)
-
-Example task configuration:
-```json
-{
-    "task_type": "unbounded_throughput",
-    "config": {
-        "goal_description": "Create an automatic iron plate factory...",
-        "agent_instructions": [
-            "You are Agent 1. Your role is to mine coal.",
-            "You are Agent 2. Your role is to mine iron."
-        ],
-        "throughput_entity": "iron-plate",
-        "trajectory_length": 16,
-        "holdout_wait_period": 60
-    }
-}
-```
-
-### 2. Run Configuration
-
-Create a run configuration file in `eval/open/independent_runs/multiagent/` that specifies:
-- The task file to use
-- The model to use for each agent
-- Number of agents
-
-Example run configuration:
-```json
-[
-    {
-        "task": "multiagent/iron_plate_throughput_free.json",
-        "model": "claude-3-5-sonnet-latest",
-        "num_agents": 2
-    }
-]
-```
-
-### 3. Running the Experiment
-```
-1. Run the experiment using the run configuration:
-```bash
-python eval/open/independent_runs/run.py --config eval/open/independent_runs/multiagent/your_config.json
-```
-
-### 4. Agent Communication
-
-Agents can communicate with each other using the `send_message()` tool. Each agent's system prompt includes instructions about:
-- Their role in the multiagent setup
-- How to communicate with other agents
-- When to send messages (start/end of programs)
-
-### 5. Example Scenarios
-
-The codebase includes several example multiagent scenarios:
-
-1. **Cooperative Factory Building**: Agents work together to build an efficient factory
-2. **Distrust Scenario**: Agents are suspicious of each other's actions
-3. **Impostor Scenario**: One agent tries to sabotage while the other tries to maintain the factory
-
-To run these examples, use the provided configuration files:
-- `claude_lab_free.json`: Cooperative scenario
-- `claude_lab_distrust.json`: Distrust scenario
-- `claude_lab_impostor.json`: Impostor scenario
-
 
 ## Contributing Guidelines
 

@@ -39,6 +39,4 @@ class TaskABC:
         instance.all_technologies_researched = self.all_technology_reserached
         instance.reset()
         self.setup_instance(instance)
-        for namespace in instance.namespaces:
-            assert namespace.a2a_handler is not None
         self.starting_game_state = GameState.from_instance(instance)

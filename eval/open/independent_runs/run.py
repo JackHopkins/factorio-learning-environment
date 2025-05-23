@@ -48,7 +48,7 @@ async def main():
         raise ValueError(f"Not enough containers for {len(run_configs)} runs. Only {len(ips)} containers available.")
     version_offset = 0
     # Get starting version number for new runs
-    base_version = asyncio.run(get_next_version())
+    base_version = await get_next_version()
     processes = []
     for run_idx, run_config in enumerate(run_configs):
         task = TaskFactory.create_task(run_config.task)

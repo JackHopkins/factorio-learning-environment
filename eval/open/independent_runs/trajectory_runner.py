@@ -213,7 +213,7 @@ class TrajectoryRunner:
             agent_completed = False
             try:
                 # Collect new messages for this agent
-                new_messages_text = await self._collect_new_messages(agent_idx)
+                new_messages_text = self._collect_new_messages(agent_idx)
                 
                 # Update the conversation with new messages if any
                 if new_messages_text:
@@ -355,7 +355,6 @@ async def create_factorio_instance(instance_id: int, num_agents: int = 1, a2a_co
     else:
         instance = FactorioInstance(**common_kwargs)
 
-    assert isinstance(instance, A2AFactorioInstance)
     instance.speed(10)
     return instance
 
@@ -377,7 +376,6 @@ async def create_db_client() -> PostgresDBClient:
 async def run_trajectory(process_id: int, config: EvalConfig):
     """Entry point for running a single trajectory"""
     db_client = await create_db_client()
-    assert config.a2a_configs is not None
     instance = await create_factorio_instance(process_id, len(config.agents), config.a2a_configs)
     evaluator = SimpleFactorioEvaluator(
         db_client=db_client,

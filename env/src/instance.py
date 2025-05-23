@@ -137,6 +137,14 @@ class FactorioInstance:
         else:
             raise ValueError("Can only use .namespace for single-agent instances")
 
+    @property
+    def first_namespace(self) -> Optional[FactorioNamespace]: # Add this property if used
+        return self.namespaces[0] if self.namespaces else None
+
+    @property
+    def is_multiagent(self):
+        return self.num_agents > 1
+
     def reset(self, game_state: Optional[GameState] = None):
         # Reset the namespace (clear variables, functions etc)
         assert not game_state or len(game_state.inventories) == self.num_agents, \
@@ -546,13 +554,12 @@ class FactorioInstance:
     def _reset(self, inventories: List[Dict[str, Any]]):
 
         self.begin_transaction()
-        self.add_command('/sc global.alerts = {}; global.agent_inbox = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)', raw=True)
+        self.add_command('/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)', raw=True)
         #self.add_command('/sc script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
         for i in range(self.num_agents):
             player_index = i + 1
             self.add_command(f'/sc global.actions.regenerate_resources({player_index})', raw=True)
             #self.add_command('clear_inventory', player_index)
-            #self.add_command('reset_position', player_index, 0, 0)
 
         self.execute_transaction()
 
@@ -613,37 +620,23 @@ class FactorioInstance:
         self.add_command('/sc global.alerts = {}', raw=True)
         self.add_command('/sc global.elapsed_ticks = 0', raw=True)
         self.add_command('/sc global.fast = {}'.format('true' if fast else 'false'), raw=True)
-        #self.add_command('/sc script.on_nth_tick(nil)', raw=True)
-        # Peaceful mode
-        # self.add_command('/sc game.map_settings.enemy_expansion.enabled = false', raw=True)
-        # self.add_command('/sc game.map_settings.enemy_evolution.enabled = false', raw=True)
-        # self.add_command('/sc game.forces.enemy.kill_all_units()', raw=True)
-        if self.peaceful:
-            self.lua_script_manager.load_init_into_game('enemies')
-        # Create characters for all agents
-
-        self.add_command('/sc player = game.players[1]')
-        color_logic = ''
-        if self.num_agents > 1:
-            color_logic = 'if i==1 then char.color={r=0,g=1,b=0,a=1} elseif i==2 then char.color={r=0,g=0,b=1,a=1} end;'
-        
-        self.add_command(f'/sc global.agent_characters = {{}}; for _,c in pairs(game.surfaces[1].find_entities_filtered{{type="character"}}) do if c then c.destroy() end end; for i=1,{self.num_agents} do local char = game.surfaces[1].create_entity{{name="character",position={{x=0,y=(i-1)*2}},force=game.forces.player}}; {color_logic} global.agent_characters[i]=char end', raw=True)
         self.execute_transaction()
+        
+        # Create characters for all agents
+        self._create_agent_game_characters()
 
-        self.lua_script_manager.load_init_into_game('initialise')
-        self.lua_script_manager.load_init_into_game('clear_entities')
-        self.lua_script_manager.load_init_into_game('alerts')
-        self.lua_script_manager.load_init_into_game('util')
-        self.lua_script_manager.load_init_into_game('priority_queue')
-        self.lua_script_manager.load_init_into_game('connection_points')
-        self.lua_script_manager.load_init_into_game('recipe_fluid_connection_mappings')
-        self.lua_script_manager.load_init_into_game('serialize')
-        self.lua_script_manager.load_init_into_game('production_score')
-        self.lua_script_manager.load_init_into_game('initialise_inventory')
+        init_scripts = [
+            'initialise', 'clear_entities', 'alerts', 'util', 'priority_queue', 
+            'connection_points', 'recipe_fluid_connection_mappings', 
+            'serialize', 'production_score', 'initialise_inventory'
+        ]
+        if self.peaceful:
+            init_scripts.append('enemies')
+        for script_name in init_scripts:
+            self.lua_script_manager.load_init_into_game(script_name)
 
         inventories = [self.initial_inventory] * self.num_agents
         self._reset(inventories)
-
         self.first_namespace._clear_collision_boxes()
 
     def _create_agent_game_characters(self):
@@ -657,10 +650,6 @@ class FactorioInstance:
         
         self.add_command(f'/sc global.agent_characters = {{}}; for _,c in pairs(game.surfaces[1].find_entities_filtered{{type="character"}}) do if c then c.destroy() end end; for i=1,{self.num_agents} do local char = game.surfaces[1].create_entity{{name="character",position={{x=0,y=(i-1)*2}},force=game.forces.player}}; {color_logic} global.agent_characters[i]=char end', raw=True)
         self.execute_transaction()
-
-    @property
-    def first_namespace(self) -> Optional[FactorioNamespace]: # Add this property if used
-        return self.namespaces[0] if self.namespaces else None
 
     def speed(self, speed): 
         response = self.rcon_client.send_command(f'/sc game.speed = {speed}')

@@ -164,7 +164,7 @@ class TrajectoryRunner:
             
         formatted_messages = "\n\nMessages received:\n"
         for msg in new_messages:
-            sender_info = f"Agent {msg.sender}" if msg.sender != "0" else "Leader"
+            sender_info = f"Agent {msg.sender}" if msg.sender != "-1" else "Leader"
             formatted_messages += f"[{sender_info}]: {msg.content}\n"
             
         return formatted_messages

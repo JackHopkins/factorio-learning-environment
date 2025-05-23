@@ -41,8 +41,9 @@ class A2AFactorioNamespace(FactorioNamespace):
             await self.a2a_handler.__aenter__()
             logging.info(f"Namespace {agent_id_str}: A2A handler registered successfully.")
             self.called_setup = True
-            assert self.a2a_handler is not None
-            logging.info(f"Namespace {agent_id_str}: A2A handler is not None")
+            # do this to reset the messages for the agent.
+            self.load_messages([])
+
         except Exception as e:
             logging.error(f"Namespace {agent_id_str}: Failed to register A2A handler: {e}", exc_info=True)
             self.a2a_handler = None # Clear handler if registration failed
@@ -74,7 +75,6 @@ class A2AFactorioNamespace(FactorioNamespace):
                     'recipient': int(msg['recipient']) if msg['recipient'] else None
                 })
             
-            print('got messages', formatted_messages)
             return formatted_messages
             
         except Exception as e:

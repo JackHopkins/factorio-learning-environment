@@ -4,11 +4,11 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 from tools.agent.send_message.client import SendMessage
-from env.src.instance import FactorioInstance
+from env.src.a2a_instance import A2AFactorioInstance
 from eval.open.independent_runs.trajectory_runner import TrajectoryRunner
-from models.conversation import Conversation
-from models.message import Message
-from models.game_state import GameState
+from env.src.models.conversation import Conversation
+from env.src.models.message import Message
+from env.src.models.game_state import GameState
 from agents.agent_abc import AgentABC
 from agents.basic_agent import BasicAgent
 from eval.open.db_client import PostgresDBClient
@@ -24,7 +24,7 @@ def multi_instance(instance):
     single_instance = instance
     inventory = single_instance.initial_inventory
 
-    multi_instance = FactorioInstance(
+    multi_instance = asyncio.run(A2AFactorioInstance.create(
         address='localhost',
         bounding_box=200,
         tcp_port=single_instance.tcp_port,
@@ -32,7 +32,8 @@ def multi_instance(instance):
         fast=True,
         inventory=inventory,
         num_agents=2
-    )
+    ))
+
     yield multi_instance
     
     # Cleanup
@@ -95,7 +96,9 @@ def trajectory_runner(multi_instance, mock_db_client, mock_config):
         process_id=1
     )
     
-    return runner
+    yield runner
+
+    runner.evaluator.instance.reset()
 
 
 def test_collaborative_scenario(trajectory_runner, mock_config):
@@ -139,18 +142,19 @@ def test_collaborative_scenario(trajectory_runner, mock_config):
         new_messages_text = trajectory_runner._collect_new_messages(1)
         # Check that messages were delivered correctly
         # Agent 0 should have received messages from Agent 1
-        assert any(msg.sender == 2 and "need 20 steel plates" in msg.content 
+        # Check Agent 0 received messages from Agent 1
+        assert any(msg.sender == '1' and "need 20 steel plates" in msg.content 
                    for msg in trajectory_runner.agent_messages[0])
-        
-        # Agent 1 should have received messages from Agent 0
-        assert any(msg.sender == 1 and "gathered 100 iron plates" in msg.content 
+
+        # Check Agent 1 received messages from Agent 0
+        assert any(msg.sender == '0' and "gathered 100 iron plates" in msg.content 
                    for msg in trajectory_runner.agent_messages[1])
-        assert any(msg.sender == 1 and "steel plates" in msg.content 
+
+        assert any(msg.sender == '0' and "steel plates" in msg.content 
                    for msg in trajectory_runner.agent_messages[1])
-        
-        
-        # Check that the messages were formatted correctly
-        assert "Agent 1" in new_messages_text
+
+        # Check message formatting
+        assert "Agent 0" in new_messages_text
         assert "gathered 100 iron plates" in new_messages_text
         assert "steel plates" in new_messages_text
 
@@ -163,12 +167,10 @@ def test_send_message_to_specific_agent(trajectory_runner, mock_config):
     trajectory_runner._collect_new_messages(0)
     trajectory_runner._collect_new_messages(1)
 
-    print(f'trajectory_runner.agent_messages: {trajectory_runner.agent_messages}')
-    
     # Check that Agent 1 received the message
     assert len(trajectory_runner.agent_messages[1]) == 1
-    assert trajectory_runner.agent_messages[1][0].sender == 1
-    assert trajectory_runner.agent_messages[1][0].recipient == 2
+    assert trajectory_runner.agent_messages[1][0].sender == '0'
+    assert trajectory_runner.agent_messages[1][0].recipient == '1'
     assert trajectory_runner.agent_messages[1][0].content == "Hello Agent 1"
     
     # Agent 0 should not have received the message (sender is excluded)
@@ -243,22 +245,20 @@ def test_multiple_messages(trajectory_runner, mock_config):
     """Test handling multiple messages"""
     # Agent 0 sends a message to Agent 1
     instance = trajectory_runner.evaluator.instance
-    instance.namespaces[0].send_message("Hello Agent 2", recipient=1)
+    instance.namespaces[0].send_message("Hello Agent 1", recipient=1)
     
     # Agent 1 sends a message to Agent 0
-    instance.namespaces[1].send_message("Hello from Agent 2", recipient=0)
+    instance.namespaces[1].send_message("Hello from Agent 1", recipient=0)
     
     # Collect new messages for Agent 0
     new_messages_text = trajectory_runner._collect_new_messages(0)
     
     # Check that the message was collected
-    assert "Agent 2" in new_messages_text
-    assert "Hello from Agent 2" in new_messages_text
+    assert "Hello from Agent 1" in new_messages_text
     
     # Collect new messages for Agent 1
     new_messages_text = trajectory_runner._collect_new_messages(1)
     
     # Check that the message was collected
-    assert "Agent 1" in new_messages_text
-    assert "Hello Agent 2" in new_messages_text
+    assert "Hello Agent 1" in new_messages_text
 

@@ -94,7 +94,6 @@ class A2AProtocolHandler:
             "params": params,
             "id": request_id
         }
-        print(request)
         
         for attempt in range(self.max_retries):
             try:
@@ -124,7 +123,6 @@ class A2AProtocolHandler:
             "params": params,
             "id": request_id
         }
-        print(request)
         
         for attempt in range(self.max_retries):
             try:

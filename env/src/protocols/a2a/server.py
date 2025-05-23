@@ -135,7 +135,6 @@ class AgentRegistry:
 
     def get_messages(self, agent_id: str) -> List[Dict[str, Any]]:
         messages = self.messages.get(agent_id, [])
-        self.messages[agent_id] = []  # Clear messages after retrieval
         return messages
 
     def load_messages(self, agent_id: str, messages: List[Dict[str, Any]]) -> None:
@@ -144,8 +143,7 @@ class AgentRegistry:
         :param agent_id: The ID of the agent to load messages for
         :param messages: List of message dictionaries to load
         """
-        if agent_id not in self.messages:
-            self.messages[agent_id] = []
+        self.messages[agent_id] = []
         
         # Validate and store messages
         for msg in messages:
@@ -252,7 +250,8 @@ async def handle_jsonrpc(request: JSONRPCRequest) -> JSONRPCResponse:
                     status_message = f"sent_broadcast_to_{len(agents_to_notify)}_agents"
             else:
                 # Handle targeted message: recipient_id must be a non-empty string and exist
-                if not isinstance(recipient_id, str) or not recipient_id.strip():
+                recipient_id = str(recipient_id)
+                if not recipient_id.strip():
                     raise HTTPException(status_code=400, detail="Invalid recipient_id (must be a non-empty string)")
                 
                 if not registry.get_agent(recipient_id):

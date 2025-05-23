@@ -80,31 +80,7 @@ class A2AFactorioInstance(FactorioInstance):
         
         # Ensure any previous A2A handlers are closed before potentially overwriting them
         await self._unregister_agents()
-
-        # Original initialise RCON commands (ensure these are run after connect)
-        self.begin_transaction()
-        self.add_command('/sc global.alerts = {}', raw=True)
-        self.add_command('/sc global.elapsed_ticks = 0', raw=True)
-        self.add_command('/sc global.fast = {}'.format('true' if self.fast else 'false'), raw=True)
-        self.execute_transaction()
-        
-        # Load Lua scripts (ensure LuaScriptManager is ready)
-        if self.peaceful: 
-            self.lua_script_manager.load_init_into_game('enemies') 
-        
-        init_scripts = ['initialise', 'clear_entities', 'alerts', 'util', 'priority_queue', 
-                        'connection_points', 'recipe_fluid_connection_mappings', 
-                        'serialize', 'production_score', 'initialise_inventory']
-        for script_name in init_scripts:
-            self.lua_script_manager.load_init_into_game(script_name)
-
-        inventories = [self.initial_inventory] * self.num_agents
-        self._reset(inventories)
-        self.first_namespace._clear_collision_boxes()
-
-        # Create in-game characters for agents if there are any
-        self._create_agent_game_characters()
-        
+        super().initialise(fast=self.fast)
         # Setup A2A handlers for multi-agent using the namespace's async method
         server_url = self._ensure_server_running()
         for i in range(self.num_agents):

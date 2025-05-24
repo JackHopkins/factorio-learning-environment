@@ -1,6 +1,6 @@
 <h1 align="center">Factorio Learning Environment</h1>
 <p align="center">
-  <a href="https://jackhopkins.github.io/factorio-learning-environment/leaderboard">Leaderboard</a> | <a href="https://arxiv.org/abs/2503.09617">Paper</a> | <a href="https://jackhopkins.github.io/factorio-learning-environment/">Website</a>| <a href="https://discord.com/invite/2jTtTxw9">Discord</a>
+  <a href="https://jackhopkins.github.io/factorio-learning-environment/leaderboard">Leaderboard</a> | <a href="https://arxiv.org/abs/2503.09617">Paper</a> | <a href="https://jackhopkins.github.io/factorio-learning-environment/">Website</a>| <a href="https://discord.com/invite/gnzn2y3B">Discord</a>
 </p>
 
 <p align="center">

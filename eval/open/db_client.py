@@ -375,6 +375,11 @@ class DBClient(ABC):
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
+                    # Handle timing_metrics separately since it needs to be JSON serialized
+                    timing_metrics = updates.pop('timing_metrics', None)
+                    if timing_metrics is not None:
+                        updates['timing_metrics_json'] = json.dumps([m.dict() for m in timing_metrics])
+
                     set_clauses = [f"{k} = %s" for k in updates.keys()]
                     values = list(updates.values())
 

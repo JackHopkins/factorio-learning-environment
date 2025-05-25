@@ -7,6 +7,7 @@ from tenacity import retry, wait_exponential
 
 from agents.utils.llm_utils import remove_whitespace_blocks, merge_contiguous_messages, format_messages_for_openai, \
     format_messages_for_anthropic, has_image_content
+from agents.utils.metrics import track_timing_async, track_timing, timing_tracker
 
 
 class LLMFactory:
@@ -49,6 +50,7 @@ class LLMFactory:
 
         return False
 
+    @track_timing_async("llm_api_call")
     @retry(wait=wait_exponential(multiplier=2, min=2, max=15))
     async def acall(self, *args, **kwargs):
         max_tokens = kwargs.get('max_tokens', 2000)
@@ -63,101 +65,15 @@ class LLMFactory:
             raise ValueError(f"Model {model_to_use} does not support image inputs, but images were provided.")
 
         if 'open-router' in model_to_use:
-            client = AsyncOpenAI(
-                base_url="https://openrouter.ai/api/v1",
-                api_key=os.getenv('OPEN_ROUTER_API_KEY'),
-            )
-            response = await client.chat.completions.create(
-                model=model_to_use.replace('open-router', '').strip('-'),
-                max_tokens=kwargs.get('max_tokens', 256),
-                temperature=kwargs.get('temperature', 0.3),
-                messages=kwargs.get('messages', None),
-                logit_bias=kwargs.get('logit_bias', None),
-                n=kwargs.get('n_samples', None),
-                stop=kwargs.get('stop_sequences', None),
-                stream=False,
-                presence_penalty=kwargs.get('presence_penalty', None),
-                frequency_penalty=kwargs.get('frequency_penalty', None),
-            )
-            return response
-
-        if "claude" in model_to_use:
-            # Set up and call the Anthropic API
-            api_key = os.getenv('ANTHROPIC_API_KEY')
-
-            # Process system message
-            system_message = ""
-            if messages and messages[0]['role'] == "system":
-                system_message = messages[0]['content']
-                if isinstance(system_message, list):
-                    # Extract just the text parts for system message
-                    system_text_parts = []
-                    for part in system_message:
-                        if isinstance(part, dict) and part.get('type') == 'text':
-                            system_text_parts.append(part.get('text', ''))
-                        elif isinstance(part, str):
-                            system_text_parts.append(part)
-                    system_message = "\n".join(system_text_parts)
-                system_message = system_message.strip()
-
-            # If the most recent message is from the assistant and ends with whitespace, clean it
-            if messages and messages[-1]['role'] == "assistant":
-                if isinstance(messages[-1]['content'], str):
-                    messages[-1]['content'] = messages[-1]['content'].strip()
-
-            # If the most recent message is from the assistant, add a user message to prompt the assistant
-            if messages and messages[-1]['role'] == "assistant":
-                messages.append({
-                    "role": "user",
-                    "content": "Success."
-                })
-
-            if not has_images:
-                # For text-only messages, use the standard processing
-                messages = remove_whitespace_blocks(messages)
-                messages = merge_contiguous_messages(messages)
-
-                # Format for Claude API
-                anthropic_messages = []
-                for msg in messages:
-                    if msg['role'] != 'system':  # System message handled separately
-                        anthropic_messages.append({
-                            "role": msg['role'],
-                            "content": msg['content']
-                        })
-            else:
-                # For messages with images, use the special formatter
-                anthropic_messages = format_messages_for_anthropic(messages, system_message)
-
-            if not system_message:
-                raise RuntimeError("No system message!!")
-
-            try:
-                client = anthropic.Anthropic()
-                # Use asyncio.to_thread for CPU-bound operations
-                response = await asyncio.to_thread(
-                    client.messages.create,
-                    temperature=kwargs.get('temperature', 0.7),
-                    max_tokens=max_tokens,
-                    model=model_to_use,
-                    messages=anthropic_messages,
-                    system=system_message,
-                    stop_sequences=kwargs.get('stop_sequences', ["```END"]),
+            async with timing_tracker.track_async("open_router_api_call", 
+                                              model=model_to_use, 
+                                              llm=True):
+                client = AsyncOpenAI(
+                    base_url="https://openrouter.ai/api/v1",
+                    api_key=os.getenv('OPEN_ROUTER_API_KEY'),
                 )
-            except Exception as e:
-                print(e)
-                raise
-
-            return response
-
-        elif "deepseek" in model_to_use:
-            if has_images:
-                raise ValueError(f"Deepseek models do not support image inputs, but images were provided.")
-
-            client = AsyncOpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
-            try:
                 response = await client.chat.completions.create(
-                    model=model_to_use,
+                    model=model_to_use.replace('open-router', '').strip('-'),
                     max_tokens=kwargs.get('max_tokens', 256),
                     temperature=kwargs.get('temperature', 0.3),
                     messages=kwargs.get('messages', None),
@@ -169,114 +85,199 @@ class LLMFactory:
                     frequency_penalty=kwargs.get('frequency_penalty', None),
                 )
                 return response
-            except Exception as e:
-                print(e)
-                raise
+
+        if "claude" in model_to_use:
+            async with timing_tracker.track_async("claude_api_call", 
+                                              model=model_to_use, 
+                                              llm=True):
+                # Set up and call the Anthropic API
+                api_key = os.getenv('ANTHROPIC_API_KEY')
+
+                # Process system message
+                system_message = ""
+                if messages and messages[0]['role'] == "system":
+                    system_message = messages[0]['content']
+                    if isinstance(system_message, list):
+                        # Extract just the text parts for system message
+                        system_text_parts = []
+                        for part in system_message:
+                            if isinstance(part, dict) and part.get('type') == 'text':
+                                system_text_parts.append(part.get('text', ''))
+                            elif isinstance(part, str):
+                                system_text_parts.append(part)
+                        system_message = "\n".join(system_text_parts)
+                    system_message = system_message.strip()
+
+                # If the most recent message is from the assistant and ends with whitespace, clean it
+                if messages and messages[-1]['role'] == "assistant":
+                    if isinstance(messages[-1]['content'], str):
+                        messages[-1]['content'] = messages[-1]['content'].strip()
+
+                # If the most recent message is from the assistant, add a user message to prompt the assistant
+                if messages and messages[-1]['role'] == "assistant":
+                    messages.append({
+                        "role": "user",
+                        "content": "Success."
+                    })
+
+                if not has_images:
+                    # For text-only messages, use the standard processing
+                    messages = remove_whitespace_blocks(messages)
+                    messages = merge_contiguous_messages(messages)
+
+                    # Format for Claude API
+                    anthropic_messages = []
+                    for msg in messages:
+                        if msg['role'] != 'system':  # System message handled separately
+                            anthropic_messages.append({
+                                "role": msg['role'],
+                                "content": msg['content']
+                            })
+                else:
+                    # For messages with images, use the special formatter
+                    anthropic_messages = format_messages_for_anthropic(messages, system_message)
+
+                if not system_message:
+                    raise RuntimeError("No system message!!")
+
+                try:
+                    client = anthropic.Anthropic(max_retries=0)
+                    # Use asyncio.to_thread for CPU-bound operations
+                    response = await asyncio.to_thread(
+                        client.messages.create,
+                        temperature=kwargs.get('temperature', 0.7),
+                        max_tokens=max_tokens,
+                        model=model_to_use,
+                        messages=anthropic_messages,
+                        system=system_message,
+                        stop_sequences=kwargs.get('stop_sequences', ["```END"]),
+                    )
+                except Exception as e:
+                    print(e)
+                    raise
+
+                return response
+
+        elif "deepseek" in model_to_use:
+            if has_images:
+                raise ValueError(f"Deepseek models do not support image inputs, but images were provided.")
+
+            async with timing_tracker.track_async("deepseek_api_call", 
+                                              model=model_to_use, 
+                                              llm=True):
+                client = AsyncOpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
+                try:
+                    response = await client.chat.completions.create(
+                        model=model_to_use,
+                        max_tokens=kwargs.get('max_tokens', 256),
+                        temperature=kwargs.get('temperature', 0.3),
+                        messages=kwargs.get('messages', None),
+                        logit_bias=kwargs.get('logit_bias', None),
+                        n=kwargs.get('n_samples', None),
+                        stop=kwargs.get('stop_sequences', None),
+                        stream=False,
+                        presence_penalty=kwargs.get('presence_penalty', None),
+                        frequency_penalty=kwargs.get('frequency_penalty', None),
+                    )
+                    return response
+                except Exception as e:
+                    print(e)
+                    raise
 
         elif "gemini" in model_to_use:
             if has_images:
                 raise ValueError(f"Gemini integration doesn't support image inputs through this interface.")
 
-            client = AsyncOpenAI(api_key=os.getenv("GEMINI_API_KEY"),
-                                 base_url="https://generativelanguage.googleapis.com/v1beta/openai/")
-            response = await client.chat.completions.create(
-                model=model_to_use,
-                max_tokens=kwargs.get('max_tokens', 256),
-                temperature=kwargs.get('temperature', 0.3),
-                messages=kwargs.get('messages', None),
-                # logit_bias=kwargs.get('logit_bias', None),
-                n=kwargs.get('n_samples', None),
-                # stop=kwargs.get('stop_sequences', None),
-                stream=False
-                # presence_penalty=kwargs.get('presence_penalty', None),
-                # frequency_penalty=kwargs.get('frequency_penalty', None),
-            )
-            return response
+            async with timing_tracker.track_async("gemini_api_call", 
+                                              model=model_to_use, 
+                                              llm=True):
+                client = AsyncOpenAI(api_key=os.getenv("GEMINI_API_KEY"),
+                                     base_url="https://generativelanguage.googleapis.com/v1beta/openai/")
+                response = await client.chat.completions.create(
+                    model=model_to_use,
+                    max_tokens=kwargs.get('max_tokens', 256),
+                    temperature=kwargs.get('temperature', 0.3),
+                    messages=kwargs.get('messages', None),
+                    n=kwargs.get('n_samples', None),
+                    stream=False
+                )
+                return response
 
         elif any(model in model_to_use for model in ["llama", "Qwen"]):
             if has_images:
                 raise ValueError(f"Llama and Qwen models do not support image inputs through this interface.")
 
-            client = AsyncOpenAI(api_key=os.getenv("TOGETHER_API_KEY"), base_url="https://api.together.xyz/v1")
-            return await client.chat.completions.create(
-                model=model_to_use,
-                max_tokens=kwargs.get('max_tokens', 256),
-                temperature=kwargs.get('temperature', 0.3),
-                messages=kwargs.get('messages', None),
-                logit_bias=kwargs.get('logit_bias', None),
-                n=kwargs.get('n_samples', None),
-                stop=kwargs.get('stop_sequences', None),
-                stream=False
-            )
+            async with timing_tracker.track_async("together_api_call", 
+                                              model=model_to_use, 
+                                              llm=True):
+                client = AsyncOpenAI(api_key=os.getenv("TOGETHER_API_KEY"), base_url="https://api.together.xyz/v1")
+                return await client.chat.completions.create(
+                    model=model_to_use,
+                    max_tokens=kwargs.get('max_tokens', 256),
+                    temperature=kwargs.get('temperature', 0.3),
+                    messages=kwargs.get('messages', None),
+                    logit_bias=kwargs.get('logit_bias', None),
+                    n=kwargs.get('n_samples', None),
+                    stop=kwargs.get('stop_sequences', None),
+                    stream=False
+                )
 
         elif "o1-mini" in model_to_use or 'o3-mini' in model_to_use:
             if has_images:
                 raise ValueError(f"Claude o1-mini and o3-mini models do not support image inputs.")
 
-            client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-            # replace `max_tokens` with `max_completion_tokens` for OpenAI API
-            if "max_tokens" in kwargs:
-                kwargs.pop("max_tokens")
-            messages = kwargs.get('messages')
-            messages[0]['role'] = 'developer'
-            try:
-                reasoning_length = "low"
-                if "med" in model_to_use:
-                    reasoning_length = "medium"
-                elif "high" in model_to_use:
-                    reasoning_length = "high"
-                model = kwargs.get('model', 'o3-mini')
-                if 'o3-mini' in model:
-                    model = 'o3-mini'
-                elif 'o1-mini' in model:
-                    model = 'o1-mini'
-
-                response = await client.chat.completions.create(
-                    *args,
-                    n=self.beam,
-                    model=model,
-                    messages=messages,
-                    stream=False,
-                    response_format={
-                        "type": "text"
-                    },
-                    reasoning_effort=reasoning_length
-                )
-                return response
-            except Exception as e:
-                print(e)
-        else:
-            try:
+            async with timing_tracker.track_async("o1_mini_api_call", 
+                                              model=model_to_use, 
+                                              llm=True):
                 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-                assert "messages" in kwargs, "You must provide a list of messages to the model."
+                # replace `max_tokens` with `max_completion_tokens` for OpenAI API
+                if "max_tokens" in kwargs:
+                    kwargs.pop("max_tokens")
+                messages = kwargs.get('messages')
+                messages[0]['role'] = 'developer'
+                try:
+                    reasoning_length = "low"
+                    if "med" in model_to_use:
+                        reasoning_length = "medium"
+                    elif "high" in model_to_use:
+                        reasoning_length = "high"
+                    model = kwargs.get('model', 'o3-mini')
+                    if 'o3-mini' in model:
+                        model = 'o3-mini'
+                    elif 'o1-mini' in model:
+                        model = 'o1-mini'
 
-                if has_images:
-                    # Format messages for OpenAI with image support
-                    formatted_messages = format_messages_for_openai(messages)
-                else:
-                    formatted_messages = messages
+                    response = await client.chat.completions.create(
+                        *args,
+                        n=self.beam,
+                        model=model,
+                        messages=messages,
+                        stream=False,
+                        response_format={
+                            "type": "text"
+                        },
+                        reasoning_effort=reasoning_length
+                    )
 
-                return await client.chat.completions.create(
-                    model=model_to_use,
-                    max_tokens=kwargs.get('max_tokens', 256),
-                    temperature=kwargs.get('temperature', 0.3),
-                    messages=formatted_messages,
-                    logit_bias=kwargs.get('logit_bias', None),
-                    n=kwargs.get('n_samples', None),
-                    stop=kwargs.get('stop_sequences', None),
-                    stream=False,
-                    presence_penalty=kwargs.get('presence_penalty', None),
-                    frequency_penalty=kwargs.get('frequency_penalty', None),
-                )
-            except Exception as e:
-                print(e)
+                    # Track reasoning metrics if available
+                    if hasattr(response, 'usage') and hasattr(response.usage, 'reasoning_tokens'):
+                        async with timing_tracker.track_async("reasoning", 
+                                                          model=model_to_use,
+                                                          tokens=response.usage.reasoning_tokens,
+                                                          reasoning_length=reasoning_length):
+                            # This is just a marker for the timing - the actual reasoning happened in the API
+                            pass
+
+                    return response
+                except Exception as e:
+                    print(e)
+        else:
+            async with timing_tracker.track_async("openai_api_call", 
+                                              model=model_to_use, 
+                                              llm=True):
                 try:
                     client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
                     assert "messages" in kwargs, "You must provide a list of messages to the model."
-
-                    # Attempt with truncated message history as fallback
-                    sys = kwargs.get('messages', None)[0]
-                    messages = [sys] + kwargs.get('messages', None)[8:]
 
                     if has_images:
                         # Format messages for OpenAI with image support
@@ -284,7 +285,7 @@ class LLMFactory:
                     else:
                         formatted_messages = messages
 
-                    return await client.chat.completions.create(
+                    response = await client.chat.completions.create(
                         model=model_to_use,
                         max_tokens=kwargs.get('max_tokens', 256),
                         temperature=kwargs.get('temperature', 0.3),
@@ -296,9 +297,57 @@ class LLMFactory:
                         presence_penalty=kwargs.get('presence_penalty', None),
                         frequency_penalty=kwargs.get('frequency_penalty', None),
                     )
+
+                    # Track reasoning metrics if available
+                    if hasattr(response, 'usage') and hasattr(response.usage, 'reasoning_tokens'):
+                        async with timing_tracker.track_async("reasoning", 
+                                                          model=model_to_use,
+                                                          tokens=response.usage.reasoning_tokens):
+                            # This is just a marker for the timing - the actual reasoning happened in the API
+                            pass
+
+                    return response
                 except Exception as e:
                     print(e)
-                    raise
+                    try:
+                        client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+                        assert "messages" in kwargs, "You must provide a list of messages to the model."
+
+                        # Attempt with truncated message history as fallback
+                        sys = kwargs.get('messages', None)[0]
+                        messages = [sys] + kwargs.get('messages', None)[8:]
+
+                        if has_images:
+                            # Format messages for OpenAI with image support
+                            formatted_messages = format_messages_for_openai(messages)
+                        else:
+                            formatted_messages = messages
+
+                        response = await client.chat.completions.create(
+                            model=model_to_use,
+                            max_tokens=kwargs.get('max_tokens', 256),
+                            temperature=kwargs.get('temperature', 0.3),
+                            messages=formatted_messages,
+                            logit_bias=kwargs.get('logit_bias', None),
+                            n=kwargs.get('n_samples', None),
+                            stop=kwargs.get('stop_sequences', None),
+                            stream=False,
+                            presence_penalty=kwargs.get('presence_penalty', None),
+                            frequency_penalty=kwargs.get('frequency_penalty', None),
+                        )
+
+                        # Track reasoning metrics if available
+                        if hasattr(response, 'usage') and hasattr(response.usage, 'reasoning_tokens'):
+                            async with timing_tracker.track_async("reasoning", 
+                                                              model=model_to_use,
+                                                              tokens=response.usage.reasoning_tokens):
+                                # This is just a marker for the timing - the actual reasoning happened in the API
+                                pass
+
+                        return response
+                    except Exception as e:
+                        print(e)
+                        raise
 
     def call(self, *args, **kwargs):
         # For the synchronous version, we should also implement image support,

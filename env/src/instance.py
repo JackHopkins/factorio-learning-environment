@@ -178,7 +178,6 @@ class FactorioInstance:
 
             # Load messages for each agent
             if game_state.agent_messages:
-                print('loading messages', game_state.agent_messages)
                 for i in range(self.num_agents):
                     if i < len(game_state.agent_messages):
                         self.namespaces[i].load_messages(game_state.agent_messages[i])

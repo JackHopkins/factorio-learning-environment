@@ -10,6 +10,13 @@ from agents.utils.llm_utils import remove_whitespace_blocks, merge_contiguous_me
 from agents.utils.metrics import track_timing_async, track_timing, timing_tracker
 
 
+class NoRetryAsyncOpenAI(AsyncOpenAI):
+    """Wrapper around AsyncOpenAI that always sets max_retries=0"""
+    def __init__(self, **kwargs):
+        kwargs['max_retries'] = 0
+        super().__init__(**kwargs)
+
+
 class LLMFactory:
     # Models that support image input
     MODELS_WITH_IMAGE_SUPPORT = [
@@ -68,7 +75,7 @@ class LLMFactory:
             async with timing_tracker.track_async("open_router_api_call", 
                                               model=model_to_use, 
                                               llm=True):
-                client = AsyncOpenAI(
+                client = NoRetryAsyncOpenAI(
                     base_url="https://openrouter.ai/api/v1",
                     api_key=os.getenv('OPEN_ROUTER_API_KEY'),
                 )
@@ -165,7 +172,7 @@ class LLMFactory:
             async with timing_tracker.track_async("deepseek_api_call", 
                                               model=model_to_use, 
                                               llm=True):
-                client = AsyncOpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
+                client = NoRetryAsyncOpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
                 try:
                     response = await client.chat.completions.create(
                         model=model_to_use,
@@ -191,7 +198,7 @@ class LLMFactory:
             async with timing_tracker.track_async("gemini_api_call", 
                                               model=model_to_use, 
                                               llm=True):
-                client = AsyncOpenAI(api_key=os.getenv("GEMINI_API_KEY"),
+                client = NoRetryAsyncOpenAI(api_key=os.getenv("GEMINI_API_KEY"),
                                      base_url="https://generativelanguage.googleapis.com/v1beta/openai/")
                 response = await client.chat.completions.create(
                     model=model_to_use,
@@ -210,7 +217,7 @@ class LLMFactory:
             async with timing_tracker.track_async("together_api_call", 
                                               model=model_to_use, 
                                               llm=True):
-                client = AsyncOpenAI(api_key=os.getenv("TOGETHER_API_KEY"), base_url="https://api.together.xyz/v1")
+                client = NoRetryAsyncOpenAI(api_key=os.getenv("TOGETHER_API_KEY"), base_url="https://api.together.xyz/v1")
                 return await client.chat.completions.create(
                     model=model_to_use,
                     max_tokens=kwargs.get('max_tokens', 256),
@@ -229,7 +236,7 @@ class LLMFactory:
             async with timing_tracker.track_async("o1_mini_api_call", 
                                               model=model_to_use, 
                                               llm=True):
-                client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+                client = NoRetryAsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
                 # replace `max_tokens` with `max_completion_tokens` for OpenAI API
                 if "max_tokens" in kwargs:
                     kwargs.pop("max_tokens")
@@ -276,7 +283,7 @@ class LLMFactory:
                                               model=model_to_use, 
                                               llm=True):
                 try:
-                    client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+                    client = NoRetryAsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
                     assert "messages" in kwargs, "You must provide a list of messages to the model."
 
                     if has_images:
@@ -310,7 +317,7 @@ class LLMFactory:
                 except Exception as e:
                     print(e)
                     try:
-                        client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+                        client = NoRetryAsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
                         assert "messages" in kwargs, "You must provide a list of messages to the model."
 
                         # Attempt with truncated message history as fallback

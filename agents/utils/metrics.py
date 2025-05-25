@@ -137,12 +137,8 @@ def print_metrics(metrics: List[Dict[str, Any]], indent: int = 0):
                     meta_parts.append(f"tokens={value}")
                 elif key == 'reasoning_length':
                     meta_parts.append(f"reasoning={value}")
-                elif key == 'attempt':
-                    meta_parts.append(f"attempt={value}")
-                elif key == 'model':
-                    meta_parts.append(f"model={value}")
-                elif key == 'retry_wait':
-                    meta_parts.append(f"retry_wait={value:.3f}")
+                elif key == 'llm':
+                    meta_parts.append(f"llm={value}")
             if meta_parts:
                 meta_str = f" ({', '.join(meta_parts)})"
         

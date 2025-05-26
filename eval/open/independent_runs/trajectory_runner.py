@@ -24,7 +24,8 @@ from cluster.local.cluster_ips import get_local_container_ips
 from agents.utils.python_parser import PythonParser
 #from models.response import EnvironmentResponse
 from env.src.namespace import FactorioNamespace
-from env.src.protocols.a2a.handler import A2AMessage, AgentA2AConfig
+from env.src.protocols.a2a.handler import A2AMessage
+from a2a.types import AgentCard
 
 from agents import Response
 import json
@@ -41,7 +42,7 @@ class EvalConfig:
     version_description: str
     exit_on_task_success: bool
     task: Optional[TaskABC] = None
-    a2a_configs: Optional[List[AgentA2AConfig]] = None
+    a2a_configs: Optional[List[AgentCard]] = None
 
     def __post_init__(self):
         if self.task is None and hasattr(self.agents[0], 'task'):
@@ -332,7 +333,7 @@ class TrajectoryRunner:
                 continue
 
 
-async def create_factorio_instance(instance_id: int, num_agents: int = 1, a2a_configs_list: Optional[List[AgentA2AConfig]] = None) -> FactorioInstance:
+async def create_factorio_instance(instance_id: int, num_agents: int = 1, a2a_configs_list: Optional[List[AgentCard]] = None) -> FactorioInstance:
     """Create and asynchronously initialize a single Factorio instance"""
     ips, udp_ports, tcp_ports = get_local_container_ips()
 

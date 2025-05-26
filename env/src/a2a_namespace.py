@@ -1,6 +1,9 @@
 import logging
 from typing import Optional, List, Dict
+import uuid
+from a2a.types import Message, Part, TextPart, AgentCard
 
+from agents.agent_abc import create_default_agent_card
 from env.src.namespace import FactorioNamespace
 from env.src.protocols.a2a.handler import A2AProtocolHandler
 
@@ -13,8 +16,12 @@ class A2AFactorioNamespace(FactorioNamespace):
         super().__init__(instance, agent_index)
         logging.info(f"Namespace {self.agent_id}: Initializing A2A namespace")
 
-    async def async_setup_default_a2a_handler(self, server_url: str):
-        """Creates and registers a default A2AProtocolHandler for this namespace."""
+    async def async_setup_default_a2a_handler(self, server_url: str, agent_card: Optional[AgentCard] = None):
+        """Creates and registers a default A2AProtocolHandler for this namespace.
+        
+        :param server_url: URL of the A2A server
+        :param agent_card: Optional AgentCard with agent capabilities and info
+        """
         if self.a2a_handler and hasattr(self.a2a_handler, '_is_registered') and self.a2a_handler._is_registered:
             logging.warning(f"Namespace {self.agent_id}: A2A handler already exists and is registered. Unregistering existing handler first.")
             try:
@@ -24,17 +31,16 @@ class A2AFactorioNamespace(FactorioNamespace):
         
         agent_id_str = self.agent_id
         agent_name = f"FactorioAgent_{agent_id_str}"
-        default_capabilities = {
-            "tools": ["send_message", "render_message"], # Example default tools
-            "actions": [],
-            "protocol_version": "1.0"
-        }
-
+        
+        # Create default agent card if none provided
+        if agent_card is None:
+            agent_card = create_default_agent_card()
+        
         self.a2a_handler = A2AProtocolHandler(
-            agent_id=agent_id_str, # agent_id must be unique for the server
+            agent_id=agent_id_str,
             server_url=server_url,
             agent_name=agent_name,
-            capabilities=default_capabilities
+            agent_card=agent_card
         )
         try:
             logging.info(f"Namespace {agent_id_str}: Registering A2A handler with server {server_url}...")
@@ -62,17 +68,21 @@ class A2AFactorioNamespace(FactorioNamespace):
                 else:
                     raise Exception("A2A handler not found in namespace")
 
-            # Get messages using the A2A handler
+            # Get messages using the A2A handler (now returns List[Message])
             messages = self.a2a_handler.get_messages()
             
-            # Convert A2A message format to our expected format
+            # Convert Message objects to our expected dictionary format
             formatted_messages = []
             for msg in messages:
+                # Extract text content from the first part
+                content = msg.parts[0].root.text if msg.parts else ""
+                
                 formatted_messages.append({
-                    'sender': int(msg['sender']),
-                    'message': msg['content'],
-                    'timestamp': int(msg['timestamp']),
-                    'recipient': int(msg['recipient']) if msg['recipient'] else None
+                    'messageId': msg.messageId,
+                    'sender': msg.metadata.get('sender', ''),
+                    'message': content,
+                    'timestamp': int(msg.metadata.get('timestamp', 0)),
+                    'recipient': msg.metadata.get('recipient')
                 })
             
             return formatted_messages
@@ -89,18 +99,25 @@ class A2AFactorioNamespace(FactorioNamespace):
             if not self.a2a_handler:
                 raise Exception("A2A handler not found in namespace")
 
-            # Convert our message format to A2A format
+            # Convert dictionary messages to A2A Message objects
             a2a_messages = []
             for msg in messages:
-                if not all(k in msg for k in ['sender', 'message', 'timestamp', 'recipient']):
-                    raise ValueError("Message missing required fields: sender, message, timestamp, recipient")
+                if not all(k in msg for k in ['sender', 'message', 'timestamp', 'recipient', 'messageId']):
+                    raise ValueError("Message missing required fields: sender, message, timestamp, recipient, messageId")
                 
-                a2a_messages.append({
-                    'sender': str(msg['sender']),
-                    'content': msg['message'],
-                    'timestamp': str(msg['timestamp']),
-                    'recipient': str(msg['recipient']) if msg['recipient'] is not None else None
-                })
+                # Create Message object with proper structure
+                a2a_message = Message(
+                    messageId=msg['messageId'],
+                    role="user",
+                    parts=[Part(root=TextPart(text=msg['message']))],
+                    metadata={
+                        'sender': str(msg['sender']),
+                        'message_type': "text",
+                        'timestamp': str(msg['timestamp']),
+                        'recipient': str(msg['recipient']) if msg['recipient'] is not None else None
+                    }
+                )
+                a2a_messages.append(a2a_message)
 
             # Load messages into the A2A handler
             self.a2a_handler.load_messages(a2a_messages)

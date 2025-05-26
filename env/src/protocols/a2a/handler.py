@@ -6,14 +6,7 @@ import aiohttp
 import asyncio
 from pydantic import BaseModel
 import requests
-
-
-class AgentCard(BaseModel):
-    """A2A Agent Card implementation"""
-    name: str
-    capabilities: Dict[str, Any]
-    connection_info: Dict[str, Any]
-    version: str = "1.0"
+from a2a.types import Message, MessageSendParams, MessageSendConfiguration, Part, TextPart, AgentCard, Role
 
 
 class A2AMessage(BaseModel):
@@ -27,21 +20,13 @@ class A2AMessage(BaseModel):
     is_new: bool = True
 
 
-class AgentA2AConfig(BaseModel):
-    agent_name: str
-    capabilities: List[str]
-    # Add other fields here if A2AProtocolHandler constructor needs them
-    # based on its actual definition.
-    # For now, matching agent_name and capabilities which are explicit in A2AProtocolHandler constructor.
-
-
 class A2AProtocolHandler:
     def __init__(
         self,
         agent_id: str,
         server_url: str,
         agent_name: str = "FactorioAgent",
-        capabilities: Optional[List[str]] = None,
+        agent_card: Optional[AgentCard] = None,
         max_retries: int = 3,
         retry_delay: int = 5,
     ):
@@ -51,7 +36,11 @@ class A2AProtocolHandler:
         if not self.server_url.endswith('/a2a'):
             self.server_url = f"{self.server_url}/a2a"
         self.agent_name = agent_name
-        self.capabilities = capabilities or []
+        self.agent_card = agent_card or AgentCard(
+            name=agent_name,
+            capabilities=[],
+            connection_info={}
+        )
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self._is_registered = False
@@ -144,11 +133,7 @@ class A2AProtocolHandler:
         try:
             await self._make_request("register", {
                 "agent_id": self.agent_id,
-                "agent_card": {
-                    "name": self.agent_name,
-                    "capabilities": self.capabilities,
-                    "connection_info": {}
-                }
+                "agent_card": self.agent_card.dict()
             })
             self._is_registered = True
         except Exception as e:
@@ -180,30 +165,54 @@ class A2AProtocolHandler:
         })
         return result
 
-    async def send_message(self, message: A2AMessage) -> None:
+    def send_message(self, message: Message) -> None:
         """Send a message to another agent through the A2A server"""
-        await self._make_request("send_message", {
+        self._make_sync_request("send_message", {
             "sender_id": self.agent_id,
-            "recipient_id": message.recipient,
-            "message": message.dict()
+            "recipient_id": message.metadata.get("recipient"),
+            "message": {
+                "messageId": message.messageId,
+                "role": str(message.role),
+                "parts": [{"root": {"text": part.root.text}} for part in message.parts],
+                "metadata": message.metadata
+            }
         })
 
-    def get_messages(self) -> List[Dict[str, Any]]:
+    def get_messages(self) -> List[Message]:
         """Get messages sent to this agent"""
         result = self._make_sync_request("get_messages", {
             "agent_id": self.agent_id
         })
-        return result.get("messages", [])
+        messages = result.get("messages", [])
+        return [
+            Message(
+                messageId=msg.get("messageId", str(uuid.uuid4())),
+                role=Role.agent,  # Default to "agent" if not specified
+                parts=[Part(root=TextPart(text=msg.get("content", "")))],
+                metadata=msg.get("metadata", {})
+            )
+            for msg in messages
+        ]
 
-    def load_messages(self, messages: List[Dict[str, Any]]) -> None:
+    def load_messages(self, messages: List[Message]) -> None:
         """
         Load messages into the agent's message queue on the server.
-        :param messages: List of message dictionaries to load
+        :param messages: List of Message objects to load
         """
         if not self._is_registered:
             raise Exception("Agent must be registered before loading messages")
             
+        # Convert Message objects to server format
+        server_messages = []
+        for msg in messages:
+            server_messages.append({
+                "messageId": msg.messageId,
+                "role": str(msg.role),
+                "parts": [{"root": {"text": part.root.text}} for part in msg.parts],
+                "metadata": msg.metadata
+            })
+            
         self._make_sync_request("load_messages", {
             "agent_id": self.agent_id,
-            "messages": messages
+            "messages": server_messages
         }) 

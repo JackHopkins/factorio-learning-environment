@@ -24,5 +24,6 @@ fastapi>=0.68.0
 uvicorn>=0.15.0
 aiohttp>=3.8.0
 pydantic>=1.8.0 
+a2a-sdk
 # For slpp, use the git version since it's likely more up to date:
 git+https://github.com/SirAnthony/slpp

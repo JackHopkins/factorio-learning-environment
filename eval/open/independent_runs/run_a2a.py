@@ -10,7 +10,7 @@ import json
 from dataclasses import dataclass
 load_dotenv()
 from cluster.local.cluster_ips import get_local_container_ips
-from env.src.protocols.a2a.handler import AgentA2AConfig
+from a2a.types import AgentCard
 
 
 @dataclass  
@@ -39,12 +39,7 @@ async def main():
     if any(run_config.num_agents != num_agents for run_config in run_configs):
         raise ValueError("Cannot mix single agent and multi agent runs in the same run config file. Please split into separate files.")
     try:
-        # dummy a2a configs for initial instance
-        initial_a2a_configs = [
-            AgentA2AConfig(agent_name=f"InitialAgent-{i}", capabilities=[])
-            for i in range(num_agents)
-        ]
-        instance = await create_factorio_instance(0, num_agents, initial_a2a_configs)
+        instance = await create_factorio_instance(0, num_agents)
     except Exception as e:
         raise Exception(f"Error creating initial Factorio instance: {e}")
     
@@ -59,22 +54,17 @@ async def main():
     for run_idx, run_config_item in enumerate(run_configs):
         task = TaskFactory.create_task(run_config_item.task)
         
-        # Create actual agents and their A2A configs for this specific run
+        # Create actual agents and their agent cards for this specific run
         current_run_agents = []
-        current_run_a2a_configs = []
+        current_run_agent_cards = []
         for agent_idx in range(run_config_item.num_agents):
             # System prompt can be fetched from the shared initial instance for consistency, or per-agent if it varies
             system_prompt = instance.get_system_prompt(agent_idx=agent_idx) 
             agent = BasicAgent(model=run_config_item.model, system_prompt=system_prompt, task=task, agent_idx=agent_idx)
             current_run_agents.append(agent)
             
-            agent_card = agent._create_agent_card() # AgentABC provides this
-            a2a_conf = AgentA2AConfig(
-                agent_name=agent_card.name,
-                # Ensure capabilities are List[str] as per AgentA2AConfig model
-                capabilities=agent_card.capabilities.get("tools", []) if isinstance(agent_card.capabilities.get("tools"), list) else []
-            )
-            current_run_a2a_configs.append(a2a_conf)
+            agent_card = agent.get_agent_card()
+            current_run_agent_cards.append(agent_card)
 
         version = run_config_item.version if run_config_item.version is not None else base_version + version_offset
         version_offset += 1
@@ -85,7 +75,7 @@ async def main():
             version_description=f"model:{run_config_item.model}\ntype:{task.task_key}\nnum_agents:{run_config_item.num_agents}",
             exit_on_task_success=run_config_item.exit_on_task_success,
             task=task,
-            a2a_configs=current_run_a2a_configs # Pass the list of A2A configs for this run
+            a2a_configs=current_run_agent_cards
         )
         assert eval_conf.a2a_configs is not None
 

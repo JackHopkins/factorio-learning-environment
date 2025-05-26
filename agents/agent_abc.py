@@ -6,43 +6,21 @@ import os
 from agents import Response, Python, CompletionResult, Policy
 from env.src.models.conversation import Conversation
 from env.src.namespace import FactorioNamespace
-from env.src.protocols.a2a.handler import A2AProtocolHandler, AgentCard
+from a2a.types import AgentCard, AgentCapabilities, AgentSkill, AgentProvider
 
 
 class AgentABC:
     model: str
     system_prompt: str
     conversation: Conversation
-    a2a_handler: Optional[A2AProtocolHandler] = None
     def __init__(self, model, system_prompt, *args, **kwargs):
        self.model = model
        self.system_prompt = system_prompt
-       
-    def _create_agent_card(self) -> AgentCard:
-        """Create an A2A agent card describing this agent's capabilities"""
-        return AgentCard(
-            name=f"FactorioAgent_{self.model}",
-            capabilities={
-                "tools": self._get_available_tools(),
-                "actions": self._get_available_actions(),
-                "protocol_version": "1.0"
-            },
-            connection_info={
-                "type": "factorio",
-                "version": "1.0"
-            }
-        )
-
-    def _get_available_tools(self) -> List[str]:
-        """Get list of available tools for this agent"""
-        # This should be implemented by subclasses
-        return []
-
-    def _get_available_actions(self) -> List[str]:
-        """Get list of available actions for this agent"""
-        # This should be implemented by subclasses
-        return []
     
+    def get_agent_card(self) -> AgentCard:
+        """Get the agent card for this agent"""
+        return create_default_agent_card()
+
     def set_conversation(self, conversation: Conversation) -> None:
         """
         Overrides the current conversation state for this agent. This is useful for context modification strategies,
@@ -81,3 +59,43 @@ class AgentABC:
         update_state, completed = True, True
         return update_state, completed
 
+       
+def create_default_agent_card() -> AgentCard:
+    """Create a default A2A agent card describing a Factorio agent's capabilities"""
+    return AgentCard(
+        name="FactorioAgent",
+        version="1.0", 
+        description="An AI agent specialized in Factorio game automation and assistance",
+        url="https://github.com/JackHopkins/factorio-learning-environment",
+        capabilities=AgentCapabilities(
+            pushNotifications=False,
+            stateTransitionHistory=False,
+            streaming=False
+        ),
+        defaultInputModes=[
+            "text/plain",
+            "application/json"
+        ],
+        defaultOutputModes=[
+            "text/plain",
+            "application/json"
+        ],
+        skills=[
+            AgentSkill(
+                id="factorio_automation",
+                name="Factorio Automation", 
+                description="Automate and optimize Factorio gameplay",
+                tags=["automation", "optimization", "gameplay"],
+                examples=[
+                    "Automate resource gathering",
+                    "Optimize production lines",
+                    "Design efficient layouts"
+                ]
+            ),
+        ],
+        provider=AgentProvider(
+            organization="FLE team",
+            url="https://github.com/JackHopkins/factorio-learning-environment"
+        )
+    )
+    

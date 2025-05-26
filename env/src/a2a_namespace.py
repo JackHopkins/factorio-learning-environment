@@ -30,16 +30,13 @@ class A2AFactorioNamespace(FactorioNamespace):
                 logging.error(f"Namespace {self.agent_id}: Error unregistering existing A2A handler: {e}", exc_info=True)
         
         agent_id_str = self.agent_id
-        agent_name = f"FactorioAgent_{agent_id_str}"
-        
         # Create default agent card if none provided
         if agent_card is None:
-            agent_card = create_default_agent_card()
+            agent_card = create_default_agent_card(agent_id_str)
         
         self.a2a_handler = A2AProtocolHandler(
             agent_id=agent_id_str,
             server_url=server_url,
-            agent_name=agent_name,
             agent_card=agent_card
         )
         try:

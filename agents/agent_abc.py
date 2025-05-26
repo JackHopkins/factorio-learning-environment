@@ -19,7 +19,7 @@ class AgentABC:
     
     def get_agent_card(self) -> AgentCard:
         """Get the agent card for this agent"""
-        return create_default_agent_card()
+        return create_default_agent_card(self.__class__.__name__)
 
     def set_conversation(self, conversation: Conversation) -> None:
         """
@@ -60,10 +60,10 @@ class AgentABC:
         return update_state, completed
 
        
-def create_default_agent_card() -> AgentCard:
+def create_default_agent_card(name: str) -> AgentCard:
     """Create a default A2A agent card describing a Factorio agent's capabilities"""
     return AgentCard(
-        name="FactorioAgent",
+        name=name,
         version="1.0", 
         description="An AI agent specialized in Factorio game automation and assistance",
         url="https://github.com/JackHopkins/factorio-learning-environment",

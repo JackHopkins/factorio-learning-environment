@@ -75,9 +75,9 @@ async def main():
             version_description=f"model:{run_config_item.model}\ntype:{task.task_key}\nnum_agents:{run_config_item.num_agents}",
             exit_on_task_success=run_config_item.exit_on_task_success,
             task=task,
-            a2a_configs=current_run_agent_cards
+            agent_cards=current_run_agent_cards
         )
-        assert eval_conf.a2a_configs is not None
+        assert eval_conf.agent_cards is not None
 
         p = multiprocessing.Process(
             target=run_process,

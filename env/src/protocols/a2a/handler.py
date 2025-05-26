@@ -25,8 +25,7 @@ class A2AProtocolHandler:
         self,
         agent_id: str,
         server_url: str,
-        agent_name: str = "FactorioAgent",
-        agent_card: Optional[AgentCard] = None,
+        agent_card: AgentCard,
         max_retries: int = 3,
         retry_delay: int = 5,
     ):
@@ -35,12 +34,7 @@ class A2AProtocolHandler:
         self.server_url = server_url.rstrip('/')
         if not self.server_url.endswith('/a2a'):
             self.server_url = f"{self.server_url}/a2a"
-        self.agent_name = agent_name
-        self.agent_card = agent_card or AgentCard(
-            name=agent_name,
-            capabilities=[],
-            connection_info={}
-        )
+        self.agent_card = agent_card
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self._is_registered = False

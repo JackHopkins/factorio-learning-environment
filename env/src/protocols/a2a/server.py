@@ -11,6 +11,8 @@ import time
 import socket
 import logging
 from contextlib import contextmanager
+from a2a.types import Message, Part, TextPart
+import uuid
 
 app = FastAPI()
 
@@ -129,8 +131,11 @@ class AgentRegistry:
             self.messages[recipient_id] = []
         self.messages[recipient_id].append({
             "sender": sender_id,
-            "timestamp": datetime.utcnow().isoformat(),
-            **message
+            "messageId": message.get("messageId", str(uuid.uuid4())),
+            "role": message.get("role", "user"),
+            "content": message.get("parts", [{"root": {"text": ""}}])[0]["root"]["text"],
+            "metadata": message.get("metadata", {}),
+            "timestamp": datetime.utcnow().isoformat()
         })
 
     def get_messages(self, agent_id: str) -> List[Dict[str, Any]]:
@@ -141,20 +146,26 @@ class AgentRegistry:
         """
         Load messages into an agent's message queue.
         :param agent_id: The ID of the agent to load messages for
-        :param messages: List of message dictionaries to load
+        :param messages: List of message dictionaries in A2A Message format
         """
         self.messages[agent_id] = []
         
         # Validate and store messages
         for msg in messages:
-            if not all(k in msg for k in ['sender', 'content', 'timestamp']):
-                raise ValueError("Message missing required fields: sender, content, timestamp")
+            if not all(k in msg for k in ['messageId', 'role', 'parts', 'metadata']):
+                raise ValueError("Message missing required fields: messageId, role, parts, metadata")
+            
+            # Extract text content from the first part
+            content = msg['parts'][0]['root']['text'] if msg['parts'] else ""
             
             self.messages[agent_id].append({
-                'sender': msg['sender'],
-                'content': msg['content'],
-                'timestamp': msg['timestamp'],
-                'recipient': msg.get('recipient')  # Optional field
+                'sender': msg['metadata'].get('sender', ''),
+                'recipient': msg['metadata'].get('recipient', ''),
+                'messageId': msg['messageId'],
+                'role': msg['role'],
+                'content': content,
+                'metadata': msg['metadata'],
+                'timestamp': msg['metadata'].get('timestamp', datetime.utcnow().isoformat())
             })
 
 
@@ -244,7 +255,7 @@ async def handle_jsonrpc(request: JSONRPCRequest) -> JSONRPCResponse:
                     status_message = "sent_broadcast_no_other_agents"
                 else:
                     for target_agent_id in agents_to_notify:
-                        # Ensure the recipient exists before trying to store (paranoid check, should be true if from agents.keys())
+                        # Ensure the recipient exists before trying to store
                         if registry.get_agent(target_agent_id):
                              registry.store_message(sender_id, target_agent_id, message_content)
                     status_message = f"sent_broadcast_to_{len(agents_to_notify)}_agents"

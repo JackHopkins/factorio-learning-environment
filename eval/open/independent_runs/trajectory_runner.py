@@ -25,7 +25,8 @@ from agents.utils.python_parser import PythonParser
 from agents.utils.metrics import timing_tracker, log_metrics
 #from models.response import EnvironmentResponse
 from env.src.namespace import FactorioNamespace
-from env.src.protocols.a2a.handler import A2AMessage, AgentA2AConfig
+from env.src.protocols.a2a.handler import A2AMessage
+from a2a.types import AgentCard
 
 from agents import Response
 import json
@@ -42,7 +43,7 @@ class EvalConfig:
     version_description: str
     exit_on_task_success: bool
     task: Optional[TaskABC] = None
-    a2a_configs: Optional[List[AgentA2AConfig]] = None
+    agent_cards: Optional[List[AgentCard]] = None
 
     def __post_init__(self):
         if self.task is None and hasattr(self.agents[0], 'task'):
@@ -336,7 +337,7 @@ class TrajectoryRunner:
                 continue
 
 
-async def create_factorio_instance(instance_id: int, num_agents: int = 1, a2a_configs_list: Optional[List[AgentA2AConfig]] = None) -> FactorioInstance:
+async def create_factorio_instance(instance_id: int, num_agents: int = 1, agent_cards: Optional[List[AgentCard]] = None) -> FactorioInstance:
     """Create and asynchronously initialize a single Factorio instance"""
     ips, udp_ports, tcp_ports = get_local_container_ips()
 
@@ -351,12 +352,13 @@ async def create_factorio_instance(instance_id: int, num_agents: int = 1, a2a_co
         "num_agents": num_agents
     }
 
-    if a2a_configs_list is not None:
+    if agent_cards is not None:
         instance = await A2AFactorioInstance.create(
             **common_kwargs,
-            a2a_configs=a2a_configs_list
+            agent_cards=agent_cards
         )
     else:
+        assert num_agents == 1, "Multiagent runs are not supported without agent cards"
         instance = FactorioInstance(**common_kwargs)
 
     instance.speed(10)
@@ -380,7 +382,7 @@ async def create_db_client() -> PostgresDBClient:
 async def run_trajectory(process_id: int, config: EvalConfig):
     """Entry point for running a single trajectory"""
     db_client = await create_db_client()
-    instance = await create_factorio_instance(process_id, len(config.agents), config.a2a_configs)
+    instance = await create_factorio_instance(process_id, len(config.agents), config.agent_cards)
     evaluator = SimpleFactorioEvaluator(
         db_client=db_client,
         instance=instance,

@@ -33,8 +33,6 @@ from env.src.models.research_state import ResearchState
 from env.src.rcon.factorio_rcon import RCONClient
 from env.src.models.game_state import GameState
 from env.src.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
-from env.src.protocols.a2a.handler import A2AProtocolHandler, AgentCard
-from env.src.protocols.a2a.server import ServerManager
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000

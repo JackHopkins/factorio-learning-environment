@@ -3,9 +3,9 @@ import asyncio
 from typing import Optional, List
 from threading import Lock
 from env.src.instance import FactorioInstance
-from env.src.protocols.a2a.handler import A2AProtocolHandler
-from env.src.protocols.a2a.server import ServerManager
 from env.src.a2a_namespace import A2AFactorioNamespace
+from env.src.protocols.a2a.server import ServerManager
+from a2a.types import AgentCard
 
 class A2AFactorioInstance(FactorioInstance):
     """A FactorioInstance with A2A (Agent-to-Agent) communication support."""
@@ -24,17 +24,21 @@ class A2AFactorioInstance(FactorioInstance):
         return super().__new__(cls)
 
     @classmethod
-    async def create(cls, *args, **kwargs):
+    async def create(cls, *args, agent_cards: Optional[List[AgentCard]] = None, **kwargs):
         """Factory method to create and initialize an A2AFactorioInstance.
         
+        :param agent_cards: Optional list of AgentCard objects for each agent
+        :param args: Additional arguments passed to FactorioInstance
+        :param kwargs: Additional keyword arguments passed to FactorioInstance
+        
         Usage:
-            instance = await A2AFactorioInstance.create(address='localhost', ...)
+            instance = await A2AFactorioInstance.create(address='localhost', agent_cards=[card1, card2], ...)
         """
         cls._initialized = True
         try:
             instance = cls(*args, **kwargs)
             cls._ensure_server_running()
-            await instance.async_initialise()
+            await instance.async_initialise(agent_cards=agent_cards)
             return instance
         finally:
             cls._initialized = False  # Reset for next creation, even if an error occurs
@@ -72,7 +76,7 @@ class A2AFactorioInstance(FactorioInstance):
             except Exception as e:
                 logging.error(f"Instance {self.id}: Error during a2a_handler.__aexit__ for {getattr(namespace.a2a_handler, 'agent_id', f'agent_in_namespace_{i}')}: {e}")
 
-    async def async_initialise(self):
+    async def async_initialise(self, agent_cards: Optional[List[AgentCard]] = None):
         """Initialize the instance with A2A support"""
         if self._is_initialised:
             logging.info(f"Instance {self.id}: Already initialised. Re-initialising.")
@@ -85,7 +89,8 @@ class A2AFactorioInstance(FactorioInstance):
         server_url = self._ensure_server_running()
         for i in range(self.num_agents):
             try:
-                await self.namespaces[i].async_setup_default_a2a_handler(server_url)
+                agent_card = agent_cards[i] if agent_cards and i < len(agent_cards) else None
+                await self.namespaces[i].async_setup_default_a2a_handler(server_url, agent_card)
             except Exception as e:
                 agent_identifier = self.namespaces[i].agent_id 
                 logging.error(f"Instance {self.id}: Error during namespace A2A setup for agent {agent_identifier}: {e}", exc_info=True)

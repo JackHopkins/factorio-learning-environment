@@ -1,18 +1,25 @@
 from abc import abstractmethod
+from typing import List, Optional
+import uuid
+import os
 
 from agents import Response, Python, CompletionResult, Policy
 from env.src.models.conversation import Conversation
 from env.src.namespace import FactorioNamespace
+from a2a.types import AgentCard, AgentCapabilities, AgentSkill, AgentProvider
 
 
 class AgentABC:
     model: str
     system_prompt: str
     conversation: Conversation
-
     def __init__(self, model, system_prompt, *args, **kwargs):
        self.model = model
        self.system_prompt = system_prompt
+    
+    def get_agent_card(self) -> AgentCard:
+        """Get the agent card for this agent"""
+        return create_default_agent_card(self.__class__.__name__)
 
     def set_conversation(self, conversation: Conversation) -> None:
         """
@@ -52,3 +59,43 @@ class AgentABC:
         update_state, completed = True, True
         return update_state, completed
 
+       
+def create_default_agent_card(name: str) -> AgentCard:
+    """Create a default A2A agent card describing a Factorio agent's capabilities"""
+    return AgentCard(
+        name=name,
+        version="1.0", 
+        description="An AI agent specialized in Factorio game automation and assistance",
+        url="https://github.com/JackHopkins/factorio-learning-environment",
+        capabilities=AgentCapabilities(
+            pushNotifications=False,
+            stateTransitionHistory=False,
+            streaming=False
+        ),
+        defaultInputModes=[
+            "text/plain",
+            "application/json"
+        ],
+        defaultOutputModes=[
+            "text/plain",
+            "application/json"
+        ],
+        skills=[
+            AgentSkill(
+                id="factorio_automation",
+                name="Factorio Automation", 
+                description="Automate and optimize Factorio gameplay",
+                tags=["automation", "optimization", "gameplay"],
+                examples=[
+                    "Automate resource gathering",
+                    "Optimize production lines",
+                    "Design efficient layouts"
+                ]
+            ),
+        ],
+        provider=AgentProvider(
+            organization="FLE team",
+            url="https://github.com/JackHopkins/factorio-learning-environment"
+        )
+    )
+    

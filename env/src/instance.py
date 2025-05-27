@@ -12,10 +12,13 @@ import threading
 import time
 import traceback
 import types
+import asyncio
 from concurrent.futures import TimeoutError
 from pathlib import Path
+import logging
 from timeit import default_timer as timer
 from typing_extensions import deprecated
+import uuid
 
 from dotenv import load_dotenv
 from slpp import slpp as lua
@@ -69,6 +72,8 @@ class Direction(Enum):
 
 class FactorioInstance:
 
+    namespace_class = FactorioNamespace
+
     def __init__(self,
                  address=None,
                  fast=False,
@@ -81,6 +86,7 @@ class FactorioInstance:
                  **kwargs
                  ):
 
+        self.id = str(uuid.uuid4())[:8]
         self.num_agents = num_agents
         self.persistent_vars = {}
         self.tcp_port = tcp_port
@@ -89,10 +95,10 @@ class FactorioInstance:
         self.fast = fast
         self._speed = 1
         self._ticks_elapsed = 0
+        self._is_initialised = False
 
         self.peaceful = peaceful
-        self.namespaces = [FactorioNamespace(self, i) for i in range(num_agents)]
-        self.first_namespace = self.namespaces[0]  # for arbitrary namespace access
+        self.namespaces = [self.namespace_class(self, i) for i in range(num_agents)]
 
         self.lua_script_manager = LuaScriptManager(self.rcon_client, cache_scripts)
         self.script_dict = {**self.lua_script_manager.lib_scripts, **self.lua_script_manager.tool_scripts}
@@ -109,8 +115,6 @@ class FactorioInstance:
         self.initial_inventory = inventory
         self.initialise(fast)
         self.initial_score = 0
-
-
         try:
             self.first_namespace.score()
         except Exception as e:
@@ -121,7 +125,6 @@ class FactorioInstance:
             self.initialise(fast)
 
         self.initial_score, goal = self.first_namespace.score()
-
         # Register the cleanup method to be called on exit
         atexit.register(self.cleanup)
     
@@ -132,6 +135,14 @@ class FactorioInstance:
         else:
             raise ValueError("Can only use .namespace for single-agent instances")
 
+    @property
+    def first_namespace(self) -> Optional[FactorioNamespace]: # Add this property if used
+        return self.namespaces[0] if self.namespaces else None
+
+    @property
+    def is_multiagent(self):
+        return self.num_agents > 1
+
     def reset(self, game_state: Optional[GameState] = None):
         # Reset the namespace (clear variables, functions etc)
         assert not game_state or len(game_state.inventories) == self.num_agents, \
@@ -140,7 +151,6 @@ class FactorioInstance:
         for namespace in self.namespaces:
             namespace.reset()
         
-        self.first_namespace._get_messages(True)
         if not game_state:
             # Reset the game instance
             inventories = [self.initial_inventory] * self.num_agents
@@ -164,8 +174,11 @@ class FactorioInstance:
             # Load research state into the game
             self.first_namespace._load_research_state(game_state.research)
 
-            agent_messages = [msg for sublist in game_state.agent_messages for msg in sublist]
-            self.first_namespace._load_messages(agent_messages)
+            # Load messages for each agent
+            if game_state.agent_messages:
+                for i in range(self.num_agents):
+                    if i < len(game_state.agent_messages):
+                        self.namespaces[i].load_messages(game_state.agent_messages[i])
 
             # Reset elapsed ticks
             self._reset_elapsed_ticks()
@@ -521,17 +534,6 @@ class FactorioInstance:
         # print(lua_response)
         return _lua2python(command, lua_response, start=start)
 
-    # def comment(self, comment: str, *args):
-    #     """
-    #     Send a comment to the Factorio game console
-    #     :param comment:
-    #     :param args:
-    #     :return:
-    #     """
-    #     # game.players[1].print({"","[img=entity/character][color=orange]",{"engineer-title"},": [/color]",{"think-"..thought}})
-    #     #self.rcon_client.send_command(f'/c game.players[1].print("[img=entity/character][color=orange]" {{"{comment}"}},": ",{args}}})')
-    #     self.rcon_client.send_command(f"[img=entity/character] " + str(comment) + ", ".join(args))
-
     def _reset_static_achievement_counters(self):
         """
         This resets the cached production flows that we track for achievements and diversity sampling.
@@ -549,13 +551,12 @@ class FactorioInstance:
     def _reset(self, inventories: List[Dict[str, Any]]):
 
         self.begin_transaction()
-        self.add_command('/sc global.alerts = {}; global.agent_inbox = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)', raw=True)
+        self.add_command('/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)', raw=True)
         #self.add_command('/sc script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
         for i in range(self.num_agents):
             player_index = i + 1
             self.add_command(f'/sc global.actions.regenerate_resources({player_index})', raw=True)
             #self.add_command('clear_inventory', player_index)
-            #self.add_command('reset_position', player_index, 0, 0)
 
         self.execute_transaction()
 
@@ -616,15 +617,29 @@ class FactorioInstance:
         self.add_command('/sc global.alerts = {}', raw=True)
         self.add_command('/sc global.elapsed_ticks = 0', raw=True)
         self.add_command('/sc global.fast = {}'.format('true' if fast else 'false'), raw=True)
-        #self.add_command('/sc script.on_nth_tick(nil)', raw=True)
-        # Peaceful mode
-        # self.add_command('/sc game.map_settings.enemy_expansion.enabled = false', raw=True)
-        # self.add_command('/sc game.map_settings.enemy_evolution.enabled = false', raw=True)
-        # self.add_command('/sc game.forces.enemy.kill_all_units()', raw=True)
-        if self.peaceful:
-            self.lua_script_manager.load_init_into_game('enemies')
+        self.execute_transaction()
+        
         # Create characters for all agents
+        self._create_agent_game_characters()
 
+        init_scripts = [
+            'initialise', 'clear_entities', 'alerts', 'util', 'priority_queue', 
+            'connection_points', 'recipe_fluid_connection_mappings', 
+            'serialize', 'production_score', 'initialise_inventory'
+        ]
+        if self.peaceful:
+            init_scripts.append('enemies')
+        for script_name in init_scripts:
+            self.lua_script_manager.load_init_into_game(script_name)
+
+        inventories = [self.initial_inventory] * self.num_agents
+        self._reset(inventories)
+        self.first_namespace._clear_collision_boxes()
+
+    def _create_agent_game_characters(self):
+        """Create Factorio characters for all agents in the game."""
+        # Create characters in Factorio
+        self.begin_transaction()
         self.add_command('/sc player = game.players[1]')
         color_logic = ''
         if self.num_agents > 1:
@@ -633,21 +648,9 @@ class FactorioInstance:
         self.add_command(f'/sc global.agent_characters = {{}}; for _,c in pairs(game.surfaces[1].find_entities_filtered{{type="character"}}) do if c then c.destroy() end end; for i=1,{self.num_agents} do local char = game.surfaces[1].create_entity{{name="character",position={{x=0,y=(i-1)*2}},force=game.forces.player}}; {color_logic} global.agent_characters[i]=char end', raw=True)
         self.execute_transaction()
 
-        self.lua_script_manager.load_init_into_game('initialise')
-        self.lua_script_manager.load_init_into_game('clear_entities')
-        self.lua_script_manager.load_init_into_game('alerts')
-        self.lua_script_manager.load_init_into_game('util')
-        self.lua_script_manager.load_init_into_game('priority_queue')
-        self.lua_script_manager.load_init_into_game('connection_points')
-        self.lua_script_manager.load_init_into_game('recipe_fluid_connection_mappings')
-        self.lua_script_manager.load_init_into_game('serialize')
-        self.lua_script_manager.load_init_into_game('production_score')
-        self.lua_script_manager.load_init_into_game('initialise_inventory')
-
-        inventories = [self.initial_inventory] * self.num_agents
-        self._reset(inventories)
-
-        self.first_namespace._clear_collision_boxes()
+    def speed(self, speed): 
+        response = self.rcon_client.send_command(f'/sc game.speed = {speed}')
+        self._speed = speed
 
     def get_warnings(self, seconds=10):
         """

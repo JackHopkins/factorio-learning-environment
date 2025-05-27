@@ -9,6 +9,8 @@ import types
 from difflib import get_close_matches
 from typing import Optional, Union, List, Dict, Tuple, Set, Any
 from pydantic import BaseModel
+import uuid
+import logging
 
 from env.src.exceptions.hinting_name_error import get_value_type_str
 from env.src.entities import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe, BuildingBox, PipeGroup, \
@@ -60,6 +62,7 @@ class FactorioNamespace:
         self.log_counter = 0
         self.player_location = Position(x=0, y=0)
         self.agent_index = agent_index
+        self.agent_id = str(agent_index)
         self.loop_context = LoopContext()
 
         # Add all builtins to the namespace
@@ -187,7 +190,6 @@ class FactorioNamespace:
         self._static_members = [attr for attr in dir(self)
                                 if not callable(getattr(self, attr))
                                 and not attr.startswith("__")]
-        pass
 
     def get_functions(self) -> List[SerializableFunction]:
         """
@@ -708,6 +710,12 @@ class FactorioNamespace:
             #raise Exception(result_output)
 
         return score, goal, result_output
+
+    def get_messages(self) -> List[Dict]:
+        return []
+    
+    def load_messages(self, messages: List[Dict]):
+        pass
 
 
 def wrap_for_serialization(value):

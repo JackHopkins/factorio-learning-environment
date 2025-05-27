@@ -1,6 +1,7 @@
 import json
 import pickle
 import time
+import logging
 from dataclasses import dataclass, field, asdict
 from enum import Enum
 from typing import Dict, Optional, Any, List
@@ -67,7 +68,7 @@ class GameState:
 
         # Get inventories for all players
         inventories = [namespace.inspect_inventory() for namespace in instance.namespaces]
-        agent_messages = [namespace._get_messages() for namespace in instance.namespaces]
+        agent_messages = [namespace.get_messages() for namespace in instance.namespaces]
 
         return cls(
             entities=entities,
@@ -177,7 +178,7 @@ class GameState:
         """Restore game state to a Factorio instance"""
         # Load entity state to all instances (since it's shared)
         assert instance.num_agents == self.num_agents, f"GameState can only be restored to a multiagent instance with the same number of agents (num_agents={self.num_agents})"
-        instance.first_namespace._load_entity_state(self.entities, decode=True)
+        instance.first_namespace._load_entity_state(self.entities, decompress=True)
         
         # Set inventory for each player
         if self.inventories:
@@ -185,13 +186,14 @@ class GameState:
                 instance.set_inventory(self.inventories[i], i)
 
         # Restore research state if present (only need to do this once)
-        if self.research and instance.player_index == 1:  # Only do this for the first instance
+        if self.research:  # Only do this for the first instance
             instance.first_namespace._load_research_state(self.research)
         
         # Load messages for each player
         if self.agent_messages:
-            agent_messages = [msg for sublist in self.agent_messages for msg in sublist]
-            instance.first_namespace._load_messages(agent_messages)
+            for i in range(instance.num_agents):
+                if i < len(self.agent_messages):
+                    instance.namespaces[i].load_messages(self.agent_messages[i])
 
         # Merge pickled namespace with existing persistent_vars for each player
         if self.namespaces:

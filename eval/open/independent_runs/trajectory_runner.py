@@ -189,7 +189,7 @@ class TrajectoryRunner:
         if not current_state:
             current_state = self.config.task.starting_game_state
             depth = 0
-            current_state.to_instance(self.evaluator.instance)
+            self.evaluator.instance.reset(current_state)
             entities = self.evaluator.instance.first_namespace.get_entities()
             for agent_idx in range(len(self.agents)):
                 inventory = current_state.inventories[agent_idx]
@@ -248,7 +248,7 @@ class TrajectoryRunner:
                     if current_state.is_multiagent:
                         update_messages = [namespace.get_messages() for namespace in self.evaluator.instance.namespaces]
                         current_state.agent_messages = update_messages
-                    current_state.to_instance(self.evaluator.instance)
+                    self.evaluator.instance.reset(current_state)
                     instance_namespace_before_program = self.evaluator.instance.namespaces[agent_idx]
                     evaluated_program, task_verification_response = await self.evaluator.evaluate(program, current_state, self.config.task, agent_idx=agent_idx, step_statistics={"current_step_id": agent_step_counter[agent_idx]})
                     print(program.code + "\n"+"="*50)

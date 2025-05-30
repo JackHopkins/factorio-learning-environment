@@ -1,4 +1,5 @@
 /venv/
+.venv/
 cortex
 /dev/
 .idea

@@ -711,7 +711,7 @@ factorio-learning-environment/
 ```
 
 ## Database
-To run long trajectories in FLE, we support checkpointing at every agent step using a SQL database. The `db_client` implements the interface for saving and loading agent outputs, environment feedbacks, game states and histories of the current trajectory. We support out of the box SQLite (default) and Postgres databases. The easiest way how to set up a FLE-compatible databse is to use SQLite and setup the programs table:
+To run long trajectories in FLE, we support checkpointing at every agent step using a SQL database. The `db_client` implements the interface for saving and loading agent outputs, environment feedbacks, game states and histories of the current trajectory. We support out of the box SQLite (default) and Postgres databases. The easiest way how to set up a FLE-compatible databse is to use the default SQLite.
 
 We recommend setting up the FLE_DB_TYPE variable in the .env file. It defaults to `.fle/data.db` in your working directory.
 
@@ -732,8 +732,6 @@ SKILLS_DB_NAME=fle_database
 SKILLS_DB_USER=fle_user
 SKILLS_DB_PASSWORD=fle123
 ```
-
-
 
 ## Benchmarks
 

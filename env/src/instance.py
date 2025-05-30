@@ -256,8 +256,8 @@ class FactorioInstance:
 
         try:
             rcon_client.connect()
-            player_exists = rcon_client.send_command('/sc rcon.print(game.players[1].position)')
-            if not player_exists:
+            player_count = rcon_client.send_command('/sc rcon.print(#game.players)')
+            if int(player_count) <= 0:
                 raise Exception(
                     "Player hasn't been initialised into the game. Please log in once to make this node operational.")
             #rcon_client.send_command('/sc global = {}')

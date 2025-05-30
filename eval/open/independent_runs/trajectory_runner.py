@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from agents import CompletionResult, CompletionReason
 from agents.agent_abc import AgentABC
 from agents.basic_agent import BasicAgent
-from eval.open.db_client import PostgresDBClient, SQLliteDBClient
+from eval.open.db_client import DBClient, create_db_client
 from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
 from env.src.models.conversation import Conversation
 from env.src.models.message import Message
@@ -55,7 +55,7 @@ class TrajectoryRunner:
     def __init__(self,
                  #llm_factory: LLMFactory,
                  agents: list[AgentABC],
-                 db_client: PostgresDBClient,
+                 db_client: DBClient,
                  evaluator: SimpleFactorioEvaluator,
                  config: EvalConfig,
                  process_id: int):
@@ -359,20 +359,6 @@ async def create_factorio_instance(instance_id: int, num_agents: int = 1, agent_
 
     instance.speed(10)
     return instance
-
-
-async def create_db_client() -> PostgresDBClient:
-    """Create database client with connection pool"""
-    return PostgresDBClient(
-        max_conversation_length=40,
-        min_connections=2,
-        max_connections=5,
-        host=os.getenv("SKILLS_DB_HOST"),
-        port=os.getenv("SKILLS_DB_PORT"),
-        dbname=os.getenv("SKILLS_DB_NAME"),
-        user=os.getenv("SKILLS_DB_USER"),
-        password=os.getenv("SKILLS_DB_PASSWORD")
-    )
 
 
 async def run_trajectory(process_id: int, config: EvalConfig):

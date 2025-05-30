@@ -16,6 +16,8 @@ from env.src.models.program import Program
 from env.src.models.conversation import Conversation
 from env.src.models.game_state import GameState
 import sqlite3
+import os
+from pathlib import Path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -515,7 +517,7 @@ class SQLliteDBClient(DBClient):
             print(f"Error fetching largest version: {e}")
 
 
-    async def get_resume_state(self, resume_version, process_id) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
+    async def get_resume_state(self, resume_version, process_id, agent_idx=-1) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
         """Get the state to resume from"""
         try:
             # Get most recent successful program to resume from
@@ -525,13 +527,14 @@ class SQLliteDBClient(DBClient):
             AND state_json IS NOT NULL
             AND value IS NOT NULL
             AND json_extract(meta, '$.process_id') = ?
+            AND instance = ?
             ORDER BY created_at DESC
             LIMIT 1
             """
 
             with self.get_connection() as conn:
                 cur = conn.cursor()
-                cur.execute(query, (resume_version, process_id))
+                cur.execute(query, (resume_version, process_id, agent_idx))
                 results = cur.fetchall()
 
             if not results:
@@ -606,3 +609,102 @@ class SQLliteDBClient(DBClient):
             conn.rollback()
             print(f"Error creating program: {e}")
             raise e
+
+def create_default_sqlite_db(db_file: str) -> None:
+    """Create SQLite database with required schema if it doesn't exist"""
+    db_path = Path(db_file)
+    
+    # Create directory if it doesn't exist
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Create database and table if they don't exist
+    conn = sqlite3.connect(db_file)
+    try:
+        cursor = conn.cursor()
+        
+        # Check if programs table exists
+        cursor.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='programs'
+        """)
+        
+        if not cursor.fetchone():
+            print(f"Creating SQLite database schema in {db_file}")
+            cursor.execute("""
+                CREATE TABLE programs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    code TEXT NOT NULL,
+                    value REAL DEFAULT 0.0,
+                    visits INTEGER DEFAULT 0,
+                    parent_id INTEGER,
+                    state_json TEXT,
+                    conversation_json TEXT NOT NULL,
+                    completion_token_usage INTEGER,
+                    prompt_token_usage INTEGER,
+                    token_usage INTEGER,
+                    response TEXT,
+                    holdout_value REAL,
+                    raw_reward REAL,
+                    version INTEGER DEFAULT 1,
+                    version_description TEXT DEFAULT '',
+                    model TEXT DEFAULT 'gpt-4o',
+                    meta TEXT,
+                    achievements_json TEXT,
+                    instance INTEGER DEFAULT -1,
+                    depth REAL DEFAULT 0.0,
+                    advantage REAL DEFAULT 0.0,
+                    ticks INTEGER DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+            print("SQLite database schema created successfully!")
+        
+    finally:
+        conn.close()
+
+
+async def create_db_client(max_conversation_length: int = 40, 
+                          min_connections: int = 2, 
+                          max_connections: int = 5) -> DBClient:
+    """
+    Create database client based on environment configuration.
+    Defaults to SQLite with automatic setup.
+    """
+    # Check for database type preference
+    db_type = os.getenv("FLE_DB_TYPE", "sqlite").lower()
+    
+    if db_type == "postgres" or db_type == "postgresql":
+        # Use PostgreSQL if explicitly requested and configured
+        required_vars = ["SKILLS_DB_HOST", "SKILLS_DB_PORT", "SKILLS_DB_NAME", "SKILLS_DB_USER", "SKILLS_DB_PASSWORD"]
+        missing_vars = [var for var in required_vars if not os.getenv(var)]
+        
+        if missing_vars:
+            print(f"Warning: PostgreSQL requested but missing environment variables: {missing_vars}")
+            print("Falling back to SQLite...")
+            db_type = "sqlite"
+            raise Exception(f"Missing environment variables: {missing_vars}")
+        else:
+            return PostgresDBClient(
+                max_conversation_length=max_conversation_length,
+                min_connections=min_connections,
+                max_connections=max_connections,
+                host=os.getenv("SKILLS_DB_HOST"),
+                port=os.getenv("SKILLS_DB_PORT"),
+                dbname=os.getenv("SKILLS_DB_NAME"),
+                user=os.getenv("SKILLS_DB_USER"),
+                password=os.getenv("SKILLS_DB_PASSWORD")
+            )
+    
+    # Default to SQLite
+    sqlite_file = os.getenv("SQLITE_DB_FILE") or os.path.expanduser("~/.factorio-learning-environment/data.db")
+    
+    # Auto-create SQLite database if it doesn't exist
+    create_default_sqlite_db(sqlite_file)
+    
+    return SQLliteDBClient(
+        max_conversation_length=max_conversation_length,
+        min_connections=min_connections,
+        max_connections=max_connections,
+        database_file=sqlite_file
+    )

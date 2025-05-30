@@ -5,6 +5,7 @@ cortex
 /.idea/
 .DS_Store
 .env
+.fle/
 ~/PycharmProjects/PaperclipMaximiser/dev/
 /client/log/
 /client/unscored_log/

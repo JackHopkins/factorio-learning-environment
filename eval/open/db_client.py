@@ -667,6 +667,66 @@ def create_default_sqlite_db(db_file: str) -> None:
         conn.close()
 
 
+def create_default_postgres_db(**db_config) -> None:
+    """Create PostgreSQL database with required schema if it doesn't exist"""
+    conn = None
+    try:
+        conn = psycopg2.connect(**db_config)
+        cursor = conn.cursor()
+        
+        # Check if programs table exists
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'programs'
+            )
+        """)
+        
+        table_exists = cursor.fetchone()[0]
+        
+        if not table_exists:
+            print(f"Creating PostgreSQL database schema")
+            cursor.execute("""
+                CREATE TABLE programs (
+                    id SERIAL PRIMARY KEY,
+                    code TEXT NOT NULL,
+                    value REAL DEFAULT 0.0,
+                    visits INTEGER DEFAULT 0,
+                    parent_id INTEGER,
+                    state_json TEXT,
+                    conversation_json TEXT NOT NULL,
+                    completion_token_usage INTEGER,
+                    prompt_token_usage INTEGER,
+                    token_usage INTEGER,
+                    response TEXT,
+                    holdout_value REAL,
+                    raw_reward REAL,
+                    version INTEGER DEFAULT 1,
+                    version_description TEXT DEFAULT '',
+                    model TEXT DEFAULT 'gpt-4o',
+                    meta TEXT,
+                    achievements_json TEXT,
+                    instance INTEGER DEFAULT -1,
+                    depth REAL DEFAULT 0.0,
+                    advantage REAL DEFAULT 0.0,
+                    ticks INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+            print("PostgreSQL database schema created successfully!")
+        
+    except Exception as e:
+        print(f"Error creating PostgreSQL schema: {e}")
+        if conn:
+            conn.rollback()
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+
 async def create_db_client(max_conversation_length: int = 40, 
                           min_connections: int = 2, 
                           max_connections: int = 5) -> DBClient:
@@ -688,15 +748,21 @@ async def create_db_client(max_conversation_length: int = 40,
             db_type = "sqlite"
             raise Exception(f"Missing environment variables: {missing_vars}")
         else:
+            # Auto-create PostgreSQL database schema if it doesn't exist
+            db_config = {
+                "host": os.getenv("SKILLS_DB_HOST"),
+                "port": os.getenv("SKILLS_DB_PORT"),
+                "dbname": os.getenv("SKILLS_DB_NAME"),
+                "user": os.getenv("SKILLS_DB_USER"),
+                "password": os.getenv("SKILLS_DB_PASSWORD")
+            }
+            create_default_postgres_db(**db_config)
+            
             return PostgresDBClient(
                 max_conversation_length=max_conversation_length,
                 min_connections=min_connections,
                 max_connections=max_connections,
-                host=os.getenv("SKILLS_DB_HOST"),
-                port=os.getenv("SKILLS_DB_PORT"),
-                dbname=os.getenv("SKILLS_DB_NAME"),
-                user=os.getenv("SKILLS_DB_USER"),
-                password=os.getenv("SKILLS_DB_PASSWORD")
+                **db_config
             )
     
     # Default to SQLite

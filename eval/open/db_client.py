@@ -256,9 +256,10 @@ class DBClient(ABC):
                 with conn.cursor() as cur:
                     cur.execute(query)
                     result = cur.fetchone()
-                    return result[0] if result else 0
+                    return result[0] if result and result[0] is not None else 0
         except Exception as e:
             print(f"Error fetching largest version: {e}")
+            return 0
 
     async def get_largest_depth_in_version(self, version):
         query = f"""
@@ -272,9 +273,10 @@ class DBClient(ABC):
                 with conn.cursor() as cur:
                     cur.execute(query)
                     result = cur.fetchone()
-                    return result[0] if result else 0
+                    return result[0] if result and result[0] is not None else 0
         except Exception as e:
-            print(f"Error fetching largest version: {e}")
+            print(f"Error fetching largest depth: {e}")
+            return 0
 
 
     @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
@@ -512,9 +514,10 @@ class SQLliteDBClient(DBClient):
                 cur = conn.cursor()
                 cur.execute(query)
                 result = cur.fetchone()
-                return result[0] if result[0] else 0
+                return result[0] if result and result[0] is not None else 0
         except Exception as e:
             print(f"Error fetching largest version: {e}")
+            return 0
 
 
     async def get_resume_state(self, resume_version, process_id, agent_idx=-1) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
@@ -697,7 +700,8 @@ async def create_db_client(max_conversation_length: int = 40,
             )
     
     # Default to SQLite
-    sqlite_file = os.getenv("SQLITE_DB_FILE") or os.path.expanduser("~/.factorio-learning-environment/data.db")
+    sqlite_file = os.getenv("SQLITE_DB_FILE", ".fle/data.db") 
+    print(f"Using SQLite database file: {sqlite_file}")
     
     # Auto-create SQLite database if it doesn't exist
     create_default_sqlite_db(sqlite_file)

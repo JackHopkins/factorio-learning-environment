@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict
+from typing import Dict, List
 from typing import Optional, Union
 
 import numpy as np
@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from env.src.models.achievements import ProductionFlows
 from env.src.models.conversation import Conversation
 from env.src.models.game_state import GameState
+from agents import TimingMetrics
 
 class Program(BaseModel):
     id: Optional[int] = None
@@ -34,6 +35,7 @@ class Program(BaseModel):
     advantage: float = 0
     ticks: int = 0
     flows: Optional[ProductionFlows] = None
+    timing_metrics: List[TimingMetrics] = Field(default_factory=list)
 
     def __repr__(self):
         return self.code
@@ -76,5 +78,6 @@ class Program(BaseModel):
             instance=row['instance'],
             depth=row['depth'],
             advantage=row['advantage'],
-            ticks=row['ticks']
+            ticks=row['ticks'],
+            timing_metrics=[TimingMetrics.parse_raw(m) for m in row['timing_metrics_json']] if row.get('timing_metrics_json') else []
         )

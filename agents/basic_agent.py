@@ -5,6 +5,7 @@ from agents.agent_abc import AgentABC
 from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
 from agents.utils.llm_factory import LLMFactory
 from agents.utils.parse_response import parse_response
+from agents.utils.metrics import track_timing_async, track_timing, timing_tracker
 from env.src.models.conversation import Conversation
 from env.src.models.generation_parameters import GenerationParameters
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
@@ -188,9 +189,11 @@ class BasicAgent(AgentABC):
         self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.llm_factory.acall,cache_dir='summary_cache')
         self.generation_params = GenerationParameters(n=1, max_tokens=4096, model=model)
 
+   @track_timing_async("agent_step")
    async def step(self, conversation: Conversation, response: Response, namespace: FactorioNamespace) -> Policy:
         # We format the conversation every N steps to add a context summary to the system prompt
-        formatted_conversation = await self.formatter.format_conversation(conversation, namespace)
+        async with timing_tracker.track_async("format_conversation"):
+            formatted_conversation = await self.formatter.format_conversation(conversation, namespace)
         # We set the new conversation state for external use
         self.set_conversation(formatted_conversation)
         return await self._get_policy(formatted_conversation), None
@@ -199,21 +202,26 @@ class BasicAgent(AgentABC):
        retry=retry_if_exception_type(Exception),
        wait=wait_exponential(multiplier=1, min=4, max=10)
    )
+   @track_timing_async("get_policy")
    async def _get_policy(self, conversation: Conversation):
-        response = await self.llm_factory.acall(
-            messages=self.formatter.to_llm_messages(conversation),
-            n_samples=1,  # We only need one program per iteration
-            temperature=self.generation_params.temperature,
-            max_tokens=self.generation_params.max_tokens,
-            model=self.generation_params.model,
-        )
+        async with timing_tracker.track_async("llm_call"):
+            messages = self.formatter.to_llm_messages(conversation)
+            response = await self.llm_factory.acall(
+                messages=messages,
+                n_samples=1,  # We only need one program per iteration
+                temperature=self.generation_params.temperature,
+                max_tokens=self.generation_params.max_tokens,
+                model=self.generation_params.model,
+            )
 
-        policy = parse_response(response)
-        if not policy:
-            raise Exception("Not a valid Python policy")
-        policy.input_conversation = conversation
-        return policy
+        async with timing_tracker.track_async("parse_response"):
+            policy = parse_response(response)
+            if not policy:
+                raise Exception("Not a valid Python policy")
+            policy.input_conversation = conversation
+            return policy
 
+   @track_timing_async("agent_end")
    async def end(self, conversation: Conversation, completion: CompletionResult):
        pass
 

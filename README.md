@@ -711,15 +711,20 @@ factorio-learning-environment/
 ```
 
 ## Database
-To run long trajectories in FLE, we support checkpointing at every agent step using a SQL database. The `db_client` implements the interface for saving and loading agent outputs, environment feedbacks, game states and histories of the current trajectory. We support out of the box SQLite (default) and Postgres databases. The easiest way how to set up a FLE-compatible databse is to use the default SQLite.
+To run long trajectories in FLE, we support checkpointing at every agent step using a SQL database. The `db_client` implements the interface for saving and loading agent outputs, environment feedbacks, game states and histories of the current trajectory. We support out of the box SQLite (default) and Postgres databases. The easiest way to set up a FLE-compatible database is to use the default SQLite, the env variable `FLE_DB_TYPE="sqlite"` lets you select the DB.
 
-We recommend setting up the FLE_DB_TYPE variable in the .env file. It defaults to `.fle/data.db` in your working directory.
+We recommend changing and setting up the `SQLITE_DB_FILE` variable in the `.env` file. It defaults to `.fle/data.db` in your working directory.
 
-To utilize postgres database you need to setup an instance of the db server yourself. The easiest way is to use it via Docker:
+### Postgres
+
+You then need to make sure all the correct variables are put in the `.env` file. With the `FLE_DB_TYPE="postgres"`.
+
+To utilize postgres database you need to setup an instance of the db server yourself. The easiest way is to run it via Docker:
 
 `docker run --name fle-postgres -e POSTGRES_PASSWORD=fle123 -e POSTGRES_USER=fle_user -e POSTGRES_DB=fle_database -p 5432:5432 -d postgres:15`
 
-You then need to make sure all the correct variables are put in the `.env` file. With the `FLE_DB_TYPE="postgres"`
+This launches a postgres:15 server with the defined settings, it can be used via the corresponding `.env` variables:
+
 
 ```
 # Database Configuration - Set to postgres to use PostgreSQL

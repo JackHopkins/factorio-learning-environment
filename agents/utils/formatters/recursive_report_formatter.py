@@ -11,6 +11,7 @@ from env.src.models.message import Message
 import copy
 
 from env.src.namespace import FactorioNamespace
+from env.src.models.serializable_function import SerializableFunction
 
 DEFAULT_INSTRUCTIONS = \
     """
@@ -87,7 +88,6 @@ class RecursiveReportFormatter(ConversationFormatter):
                  summarize_history: bool = True,
                  max_chars: int = 200000):
         """
-
         @param chunk_size:
         @param llm_factory:
         @param cache_dir:
@@ -248,7 +248,7 @@ class RecursiveReportFormatter(ConversationFormatter):
         } for msg in messages if msg.role == "user"], sort_keys=True)
         return hashlib.sha256(chunk_content.encode()).hexdigest()
     
-    async def format_conversation(self, conversation: Conversation, namespace: FactorioNamespace) -> Conversation:
+    async def format_conversation(self, conversation: Conversation, namespace_functions: List[SerializableFunction]) -> Conversation:
         """
         Format conversation by recursively summarizing historical messages from left to right.
         Returns [system_message (if present), historical_summary, recent_messages].
@@ -270,12 +270,9 @@ class RecursiveReportFormatter(ConversationFormatter):
             system_message = messages[0]
             messages = messages[1:]
 
-        # Add defined functions to system prompt
-        function_definitions = namespace.get_functions()
-
         # Add function definitions to system prompt
-        if function_definitions:
-            system_message.content += "# Your utility functions:\n\n" + "\n\n".join([str(f) for f in function_definitions])
+        if namespace_functions:
+            system_message.content += "# Your utility functions:\n\n" + "\n\n".join([str(f) for f in namespace_functions])
 
         new_messages = copy.deepcopy(messages[-self.chunk_size:])
         new_formatted_messages = [

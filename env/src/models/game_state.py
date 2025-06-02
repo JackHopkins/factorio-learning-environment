@@ -174,6 +174,7 @@ class GameState:
         return json.dumps(data)
 
 
+    @deprecated
     def to_instance(self, instance: 'FactorioInstance'):
         """Restore game state to a Factorio instance"""
         # Load entity state to all instances (since it's shared)

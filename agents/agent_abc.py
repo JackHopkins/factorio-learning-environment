@@ -13,6 +13,7 @@ class AgentABC:
     model: str
     system_prompt: str
     conversation: Conversation
+    
     def __init__(self, model, system_prompt, *args, **kwargs):
        self.model = model
        self.system_prompt = system_prompt

@@ -113,6 +113,10 @@ newgrp docker
 
 5. **Launch FLE Docker server**:
 ```bash
+# For macOS and Windows:
+# - Open Docker Desktop application
+
+# For Linux:
 # Start Docker daemon
 sudo systemctl start docker
 
@@ -137,6 +141,7 @@ cd ../local
 - UDP 34197 (Game connection)
 - TCP 27015 (RCON)
 
+**Note**: On Windows, you may need to configure Windows Defender Firewall to allow these ports.
 
 7. **Activate server**:
 - Open Factorio client

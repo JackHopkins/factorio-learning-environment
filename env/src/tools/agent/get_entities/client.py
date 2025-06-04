@@ -1,6 +1,6 @@
 from time import sleep
 from typing import List, Set, Union
-from env.src.entities import Position, Entity
+from env.src.entities import Position, Entity, EntityGroup
 from env.src.game_types import Prototype
 from env.src.tools.agent.connect_entities.groupable_entities import agglomerate_groupable_entities
 from env.src.tools.tool import Tool
@@ -10,7 +10,7 @@ class GetEntities(Tool):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
-    def __call__(self, entities: Union[Set[Prototype], Prototype] = set(), position: Position = None, radius: float = 1000) -> List[Entity]:
+    def __call__(self, entities: Union[Set[Prototype], Prototype] = set(), position: Position = None, radius: float = 1000) -> List[Union[Entity, EntityGroup]]:
         """
         Get entities within a radius of a given position.
         :param entities: Set of entity prototypes to filter by. If empty, all entities are returned.

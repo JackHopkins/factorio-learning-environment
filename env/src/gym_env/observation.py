@@ -6,7 +6,7 @@ from env.src.models.technology_state import TechnologyState
 from env.src.models.research_state import ResearchState
 from env.src.models.achievements import ProductionFlows
 from agents import TaskResponse
-from env.src.entities import Entity, Direction, Position, EntityStatus, TileDimensions, Dimensions, Inventory
+from env.src.entities import Entity, Direction, Position, EntityStatus, TileDimensions, Dimensions, Inventory, EntityGroup
 
 @dataclass
 class GameInfo:
@@ -72,7 +72,7 @@ class Observation:
     """Complete observation of the game state"""
     raw_text: str
     errors: List[str]
-    entities: List[Entity]
+    entities: List[Union[Entity, EntityGroup]]  # Updated to handle both Entity and EntityGroup
     inventory: Inventory
     research: ResearchState
     game_info: GameInfo
@@ -83,7 +83,6 @@ class Observation:
     task_verification: Optional[TaskResponse]
     messages: List[AgentMessage]
     serialized_functions: List[Dict[str, Any]]  # List of serialized functions
-    logging_results: Dict[int, List[Tuple[int, str]]]  # Line number -> list of (line number, value) tuples
 
     @classmethod
     def from_dict(cls, obs_dict: Dict[str, Any]) -> 'Observation':
@@ -91,26 +90,65 @@ class Observation:
         # Convert entities
         entities = []
         for e in obs_dict.get('entities', []):
-            entity = Entity(
-                name=e['name'],
-                direction=Direction(e['direction']),
-                position=Position(x=e['position'][0], y=e['position'][1]),
-                energy=e['energy'],
-                dimensions=Dimensions(
-                    width=e['dimensions']['width'],
-                    height=e['dimensions']['height']
-                ),
-                tile_dimensions=TileDimensions(
-                    tile_width=e['tile_dimensions']['tile_width'],
-                    tile_height=e['tile_dimensions']['tile_height']
-                ),
-                prototype=None,  # Default value as it's not in observation space
-                health=e['health'],
-                status=EntityStatus.from_int(e['status']),
-                warnings=e['warnings'],
-                id=e['id'],
-                type=e['type']
-            )
+            # Check if this is an entity group
+            if isinstance(e, dict) and e.get('type') in ['belt-group', 'pipe-group', 'electricity-group', 'wall-group']:
+                # Handle entity groups based on their type
+                if e['type'] == 'belt-group':
+                    from env.src.entities import BeltGroup
+                    entity = BeltGroup(
+                        id=e.get('id', 0),
+                        belts=[Entity.from_dict(belt) for belt in e.get('belts', [])],
+                        inputs=[Entity.from_dict(input) for input in e.get('inputs', [])],
+                        outputs=[Entity.from_dict(output) for output in e.get('outputs', [])],
+                        inventory=e.get('inventory', Inventory()),
+                        status=EntityStatus.from_int(e.get('status', 0)),
+                        position=Position(x=e['position'][0], y=e['position'][1])
+                    )
+                elif e['type'] == 'pipe-group':
+                    from env.src.entities import PipeGroup
+                    entity = PipeGroup(
+                        id=e.get('id', 0),
+                        pipes=[Entity.from_dict(pipe) for pipe in e.get('pipes', [])],
+                        status=EntityStatus.from_int(e.get('status', 0)),
+                        position=Position(x=e['position'][0], y=e['position'][1])
+                    )
+                elif e['type'] == 'electricity-group':
+                    from env.src.entities import ElectricityGroup
+                    entity = ElectricityGroup(
+                        id=e.get('id', 0),
+                        poles=[Entity.from_dict(pole) for pole in e.get('poles', [])],
+                        status=EntityStatus.from_int(e.get('status', 0)),
+                        position=Position(x=e['position'][0], y=e['position'][1])
+                    )
+                elif e['type'] == 'wall-group':
+                    from env.src.entities import WallGroup
+                    entity = WallGroup(
+                        id=e.get('id', 0),
+                        entities=[Entity.from_dict(wall) for wall in e.get('entities', [])],
+                        position=Position(x=e['position'][0], y=e['position'][1])
+                    )
+            else:
+                # Handle regular entities
+                entity = Entity(
+                    name=e['name'],
+                    direction=Direction(e['direction']),
+                    position=Position(x=e['position'][0], y=e['position'][1]),
+                    energy=e['energy'],
+                    dimensions=Dimensions(
+                        width=e['dimensions']['width'],
+                        height=e['dimensions']['height']
+                    ),
+                    tile_dimensions=TileDimensions(
+                        tile_width=e['tile_dimensions']['tile_width'],
+                        tile_height=e['tile_dimensions']['tile_height']
+                    ),
+                    prototype=None,  # Default value as it's not in observation space
+                    health=e['health'],
+                    status=EntityStatus.from_int(e['status']),
+                    warnings=e['warnings'],
+                    id=e['id'],
+                    type=e['type']
+                )
             entities.append(entity)
 
         # Convert inventory
@@ -173,6 +211,7 @@ class Observation:
                     change=change['change']
                 )
                 for change in obs_dict.get('state_changes', {}).get('inventory_changes', [])
+                if change['change'] != 0
             ]
         )
 
@@ -209,9 +248,6 @@ class Observation:
         # Get serialized functions
         serialized_functions = obs_dict.get('serialized_functions', [])
 
-        # Get logging results
-        logging_results = obs_dict.get('logging_results', {})
-
         return cls(
             raw_text=obs_dict.get('raw_text', ''),
             errors=obs_dict.get('errors', []),
@@ -225,8 +261,7 @@ class Observation:
             flows=flows,
             task_verification=task_verification,
             messages=messages,
-            serialized_functions=serialized_functions,
-            logging_results=logging_results
+            serialized_functions=serialized_functions
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -237,22 +272,30 @@ class Observation:
             'entities': [
                 {
                     'name': e.name,
-                    'direction': e.direction.value,
+                    'direction': e.direction.value if hasattr(e, 'direction') else 0,
                     'position': [e.position.x, e.position.y],
-                    'energy': e.energy,
+                    'energy': e.energy if hasattr(e, 'energy') else 0,
                     'dimensions': {
-                        'width': e.dimensions.width,
-                        'height': e.dimensions.height
-                    },
+                        'width': e.dimensions.width if hasattr(e, 'dimensions') else 0,
+                        'height': e.dimensions.height if hasattr(e, 'dimensions') else 0
+                    } if hasattr(e, 'dimensions') else {'width': 0, 'height': 0},
                     'tile_dimensions': {
-                        'tile_width': e.tile_dimensions.tile_width,
-                        'tile_height': e.tile_dimensions.tile_height
-                    },
-                    'health': e.health,
-                    'status': list(EntityStatus).index(e.status),
-                    'warnings': e.warnings,
-                    'id': e.id if e.id is not None else 0,
-                    'type': e.type if e.type is not None else e.name
+                        'tile_width': e.tile_dimensions.tile_width if hasattr(e, 'tile_dimensions') else 0,
+                        'tile_height': e.tile_dimensions.tile_height if hasattr(e, 'tile_dimensions') else 0
+                    } if hasattr(e, 'tile_dimensions') else {'tile_width': 0, 'tile_height': 0},
+                    'health': e.health if hasattr(e, 'health') else 1.0,
+                    'status': list(EntityStatus).index(e.status) if hasattr(e, 'status') else 0,
+                    'warnings': e.warnings if hasattr(e, 'warnings') else [],
+                    'id': e.id if hasattr(e, 'id') else 0,
+                    'type': e.type if hasattr(e, 'type') else e.name,
+                    # Add group-specific fields
+                    # 'belts': [belt.to_dict() for belt in e.belts] if hasattr(e, 'belts') else None,
+                    # 'pipes': [pipe.to_dict() for pipe in e.pipes] if hasattr(e, 'pipes') else None,
+                    # 'poles': [pole.to_dict() for pole in e.poles] if hasattr(e, 'poles') else None,
+                    # 'entities': [entity.to_dict() for entity in e.entities] if hasattr(e, 'entities') else None,
+                    # 'inputs': [input.to_dict() for input in e.inputs] if hasattr(e, 'inputs') else None,
+                    # 'outputs': [output.to_dict() for output in e.outputs] if hasattr(e, 'outputs') else None,
+                    # 'inventory': e.inventory.to_dict() if hasattr(e, 'inventory') else None
                 }
                 for e in self.entities
             ],
@@ -322,7 +365,6 @@ class Observation:
                 }
                 for msg in self.messages
             ],
-            'serialized_functions': self.serialized_functions,
-            'logging_results': self.logging_results
+            'serialized_functions': self.serialized_functions
         }
 

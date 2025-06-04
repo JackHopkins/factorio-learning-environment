@@ -205,56 +205,13 @@ class FactorioGymEnv(gym.Env):
         namespace = self.instance.namespaces[agent_idx]
         
         # Get entities
-        entities = namespace.get_entities()
-        entity_obs = [
-            Entity(
-                name=entity.type,
-                direction=Direction(entity.direction.value if hasattr(entity, 'direction') else 0),
-                position=Position(x=entity.position.x, y=entity.position.y),
-                energy=entity.energy if hasattr(entity, 'energy') else 0.0,
-                dimensions=Dimensions(
-                    width=entity.dimensions.width if hasattr(entity, 'dimensions') else 1.0,
-                    height=entity.dimensions.height if hasattr(entity, 'dimensions') else 1.0
-                ),
-                tile_dimensions=TileDimensions(
-                    tile_width=entity.tile_dimensions.tile_width if hasattr(entity, 'tile_dimensions') else 1.0,
-                    tile_height=entity.tile_dimensions.tile_height if hasattr(entity, 'tile_dimensions') else 1.0
-                ),
-                prototype=None,
-                health=entity.health if hasattr(entity, 'health') else 1.0,
-                status=entity.status if hasattr(entity, 'status') else EntityStatus.NORMAL,
-                warnings=entity.warnings if hasattr(entity, 'warnings') else [],
-                id=entity.id if hasattr(entity, 'id') else None,
-                type=entity.type
-            )
-            for entity in entities
-        ]
+        entity_obs = namespace.get_entities()
             
         # Get inventory
-        inventory = namespace.inspect_inventory()
-        inventory_obs = inventory  # Now we can use the Inventory object directly
+        inventory_obs = namespace.inspect_inventory()
         
         # Get research state
-        research_state = namespace._save_research_state()
-        research_obs = ResearchState(
-            technologies={
-                name: TechnologyState(
-                    name=name,
-                    researched=tech_state.researched,
-                    enabled=tech_state.enabled,
-                    level=tech_state.level,
-                    research_unit_count=tech_state.research_unit_count,
-                    research_unit_energy=tech_state.research_unit_energy,
-                    prerequisites=tech_state.prerequisites,
-                    ingredients=tech_state.ingredients
-                )
-                for name, tech_state in research_state.technologies.items()
-            },
-            current_research=research_state.current_research,
-            research_progress=research_state.research_progress,
-            research_queue=research_state.research_queue,
-            progress=research_state.progress
-        )
+        research_obs = namespace._save_research_state()
         
         # Get game info
         game_info = GameInfo(
@@ -312,8 +269,8 @@ class FactorioGymEnv(gym.Env):
         )
         if self.last_observation:
             # Compare entities
-            last_entities = {e.name: e for e in self.last_observation.entities}
-            current_entities = {e.name: e for e in entity_obs}
+            last_entities = {getattr(e, 'name', getattr(e, 'type', '')): e for e in self.last_observation.entities}
+            current_entities = {getattr(e, 'name', getattr(e, 'type', '')): e for e in entity_obs}
             
             # Aggregate entity changes by type
             entity_changes = {}
@@ -346,23 +303,6 @@ class FactorioGymEnv(gym.Env):
                 'name': func.name,
                 'pickled_function': pickle.dumps(func).hex()
             })
-
-        # Parse logging results from response
-        logging_results = {}
-        if response and response.response:
-            for line in response.response.split('\n'):
-                if ':' in line:
-                    try:
-                        line_num, value = line.split(':', 1)
-                        line_num = int(line_num.strip())
-                        value = value.strip()
-                        if line_num not in logging_results:
-                            logging_results[line_num] = []
-                        logging_results[line_num].append((line_num, value))
-                    except ValueError:
-                        # Ignore lines that don't parse as integers e.g. 
-                        # Here is the current throughput of your factory: {...}
-                        continue
         
         observation = Observation(
             raw_text=response.response if response else '',
@@ -377,8 +317,7 @@ class FactorioGymEnv(gym.Env):
             flows=flows_obs,
             task_verification=task_verification,
             messages=message_obs,
-            serialized_functions=serialized_functions,
-            logging_results=logging_results
+            serialized_functions=serialized_functions
         )
         
         # Store current observation for next state change comparison

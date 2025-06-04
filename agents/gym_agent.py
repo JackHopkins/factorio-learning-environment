@@ -159,7 +159,7 @@ class GymAgent(AgentABC):
 
         self.conversation.add_result(formatted_program, formatted_obs)
         self.conversation = await self.formatter.format_conversation(self.conversation)
-        self.last_response = self.observation_formatter.format_logging_results(observation.logging_results)
+        self.last_response = observation.raw_text
 
 
 #    @tenacity.retry(

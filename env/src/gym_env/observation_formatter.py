@@ -83,15 +83,6 @@ class FormattedObservation:
     ```
     Shows function names, parameter types, return types, and docstrings."""
 
-    logging_results_str: str
-    """Formatted string showing the output from each step of the agent's code execution.
-    Example:
-    ### Step Output
-    - Line 1: Placed mining drill at (10, 10)
-    - Line 2: Connected power line
-    - Line 3: Started mining operation
-    Shows the line number and output value for each step."""
-
     raw_str: str
     """Complete formatted observation combining all components.
     Example:
@@ -128,11 +119,6 @@ class FormattedObservation:
     - **[Agent 1]**: Need more iron plates
     - **[Agent 2]**: I'll help with that
 
-    ### Step Output
-    - Line 1: Placed mining drill at (10, 10)
-    - Line 2: Connected power line
-    - Line 3: Started mining operation
-
     ### Raw Output
     ```
     [Any raw output from the last action]
@@ -151,7 +137,6 @@ class BasicObservationFormatter:
                  include_task: bool = True,
                  include_messages: bool = True,
                  include_functions: bool = True,
-                 include_logging_results: bool = True,
                  include_state_changes: bool = True,
                  include_raw_output: bool = True,
                  include_research: bool = True):
@@ -164,7 +149,6 @@ class BasicObservationFormatter:
         self.include_task = include_task
         self.include_messages = include_messages
         self.include_functions = include_functions
-        self.include_logging_results = include_logging_results
         self.include_state_changes = include_state_changes
         self.include_raw_output = include_raw_output
         self.include_research = include_research
@@ -232,7 +216,6 @@ class BasicObservationFormatter:
                     detail_parts.append(f"pos=({x:.1f}, {y:.1f})")
                 
                 if 'direction' in entity:
-                    print(f"direction: {entity['direction']}")
                     direction = Direction(entity['direction'])
                     if direction:
                         detail_parts.append(f"dir={direction.name}")
@@ -287,6 +270,46 @@ class BasicObservationFormatter:
                     if 'contents' in entity:
                         detail_parts.append(f"contents={entity['contents']:.1f}")
 
+                # Handle entity group specific fields
+                if entity_type == 'belt-group':
+                    if 'belts' in entity:
+                        belt_count = len(entity['belts'])
+                        detail_parts.append(f"[{belt_count} belts]")
+                    if 'inputs' in entity:
+                        input_count = len(entity['inputs'])
+                        detail_parts.append(f"inputs={input_count}")
+                    if 'outputs' in entity:
+                        output_count = len(entity['outputs'])
+                        detail_parts.append(f"outputs={output_count}")
+                    if 'inventory' in entity:
+                        inv_items = [f"{item}: {qty}" for item, qty in entity['inventory'].items() if qty > 0]
+                        if inv_items:
+                            detail_parts.append(f"inventory=[{', '.join(inv_items)}]")
+
+                elif entity_type == 'pipe-group':
+                    if 'pipes' in entity:
+                        pipe_count = len(entity['pipes'])
+                        detail_parts.append(f"[{pipe_count} pipes]")
+                    if 'fluid' in entity:
+                        detail_parts.append(f"fluid={entity['fluid']}")
+                    if 'flow_rate' in entity:
+                        detail_parts.append(f"flow={entity['flow_rate']:.1f}")
+
+                elif entity_type == 'electricity-group':
+                    if 'poles' in entity:
+                        pole_count = len(entity['poles'])
+                        positions = [f"(x={p['position'][0]:.1f},y={p['position'][1]:.1f})" for p in entity['poles']]
+                        if len(positions) > 6:
+                            positions = positions[:3] + ['...'] + positions[-3:]
+                        detail_parts.append(f"[{pole_count} poles: {','.join(positions)}]")
+                    if 'voltage' in entity:
+                        detail_parts.append(f"voltage={entity['voltage']:.1f}")
+
+                elif entity_type == 'wall-group':
+                    if 'entities' in entity:
+                        wall_count = len(entity['entities'])
+                        detail_parts.append(f"[{wall_count} walls]")
+
                 # Add entity details if there are any
                 if detail_parts:
                     entity_details.append(f"  - {', '.join(detail_parts)}")
@@ -310,7 +333,7 @@ class BasicObservationFormatter:
     @staticmethod
     def format_flows(flows: Dict[str, Any]) -> str:
         """Format production flow information"""
-        if not flows:
+        if not flows or not any(flows.values()):
             return "### Production Flows\nNone"
 
         flow_str = "### Production Flows\n"
@@ -414,8 +437,8 @@ class BasicObservationFormatter:
     @staticmethod
     def format_achievements(achievements: List[Union[Achievement, Dict[str, Any]]]) -> str:
         """Format achievement information"""
-        if not achievements:
-            return ""
+        if not achievements or not any(achievements):
+            return "### Achievement Progress\nNone"
 
         achievement_strs = ["### Achievement Progress"]
 
@@ -481,8 +504,8 @@ class BasicObservationFormatter:
     @staticmethod
     def format_state_changes(changes: Dict[str, Any]) -> str:
         """Format state change information"""
-        if not changes:
-            return ""
+        if not changes or not any(changes.values()):
+            return "### State Changes\nNone"
 
         change_strs = ["### State Changes"]
 
@@ -498,6 +521,8 @@ class BasicObservationFormatter:
             change_strs.append("\n**Inventory Changes:**")
             for change in changes['inventory_changes']:
                 sign = "+" if change['change'] > 0 else ""
+                if change['change'] == 0:
+                    continue
                 change_strs.append(f"- {change['item']}: {sign}{change['change']}")
 
         return "\n".join(change_strs)
@@ -522,23 +547,6 @@ class BasicObservationFormatter:
                 function_strs.append(f"\n- {func_data['name']}: [Error unpickling function: {str(e)}]")
 
         return "\n".join(function_strs)
-
-    @staticmethod
-    def format_logging_results(logging_results: Dict[int, List[Tuple[int, str]]]) -> str:
-        """Format logging results from agent's code execution"""
-        if not logging_results:
-            return ""
-
-        # Sort by line number for consistent output
-        sorted_lines = sorted(logging_results.items())
-
-        # Format each line's output
-        output_lines = ["### Step Output"]
-        for line_num, outputs in sorted_lines:
-            for _, value in outputs:
-                output_lines.append(f"- Line {line_num}: {value}")
-
-        return "\n".join(output_lines)
 
     def format(self, observation: Observation, last_message_timestamp: float = 0.0) -> FormattedObservation:
         """Format a complete observation into helpful strings"""
@@ -591,11 +599,6 @@ class BasicObservationFormatter:
             if messages_str:
                 formatted_parts.append(messages_str)
 
-        if self.include_logging_results:
-            logging_results_str = self.format_logging_results(obs_dict.get('logging_results', {}))
-            if logging_results_str:
-                formatted_parts.append(logging_results_str)
-
         if self.include_state_changes:
             state_changes = self.format_state_changes(obs_dict.get('state_changes', {}))
             if state_changes:
@@ -619,6 +622,5 @@ class BasicObservationFormatter:
             task_str=self.format_task(obs_dict.get('task_verification')) if self.include_task else "",
             messages_str=self.format_messages(obs_dict.get('messages', []), last_message_timestamp) if self.include_messages else "",
             functions_str=self.format_functions(obs_dict.get('serialized_functions', [])) if self.include_functions else "",
-            logging_results_str=self.format_logging_results(obs_dict.get('logging_results', {})) if self.include_logging_results else "",
             raw_str=raw_str
         )

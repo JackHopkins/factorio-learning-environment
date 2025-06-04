@@ -32,21 +32,16 @@ def run_process(run_idx: int, config: GymEvalConfig):
 
 async def run_trajectory(run_idx: int, config: GymEvalConfig):
     """Run a single gym evaluation process"""
-    # try:
     # Create trajectory runner
+    instance = await create_factorio_instance(run_idx, len(config.agents))
+    config.task.setup(instance)
     runner = GymTrajectoryRunner(
-        agents=config.agents,
-        instance=await create_factorio_instance(run_idx, len(config.agents)),
         config=config,
+        instance=instance,
         process_id=run_idx
     )
-    
     # Run the evaluation
     await runner.run()
-        
-    # except Exception as e:
-    #     print(f"Error in run {run_idx}: {e}")
-    #     raise
 
 async def main():
     parser = argparse.ArgumentParser()

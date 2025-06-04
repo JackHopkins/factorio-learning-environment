@@ -9,7 +9,7 @@ from typing import List, Optional
 
 from agents.gym_agent import GymAgent
 from gym_env.trajectory_runner import GymTrajectoryRunner, GymEvalConfig
-from gym_env.observation import BasicObservationFormatter
+from gym_env.observation_formatter import BasicObservationFormatter
 from eval.tasks.task_factory import TaskFactory
 from cluster.local.cluster_ips import get_local_container_ips
 from eval.open.independent_runs.trajectory_runner import get_next_version, create_factorio_instance
@@ -98,7 +98,7 @@ async def main():
                 system_prompt=system_prompt,
                 task=task,
                 agent_idx=agent_idx,
-                observation_formatter=run_config.observation_formatter or BasicObservationFormatter()
+                observation_formatter=BasicObservationFormatter(include_research=False)
             )
             agents.append(agent)
 

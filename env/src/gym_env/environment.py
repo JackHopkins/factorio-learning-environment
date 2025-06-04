@@ -360,7 +360,8 @@ class FactorioGymEnv(gym.Env):
                             logging_results[line_num] = []
                         logging_results[line_num].append((line_num, value))
                     except ValueError:
-                        print(f"Error parsing logging result: {line}")
+                        # Ignore lines that don't parse as integers e.g. 
+                        # Here is the current throughput of your factory: {...}
                         continue
         
         observation = Observation(

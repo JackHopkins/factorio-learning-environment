@@ -11,7 +11,6 @@ from env.src.models.message import Message
 import copy
 
 from env.src.namespace import FactorioNamespace
-from env.src.models.serializable_function import SerializableFunction
 
 DEFAULT_INSTRUCTIONS = \
     """
@@ -269,10 +268,12 @@ class RecursiveReportFormatter(ConversationFormatter):
         if messages[0].role == "system":
             system_message = messages[0]
             messages = messages[1:]
+        
+        function_definitions = namespace.get_functions()
 
         # Add function definitions to system prompt
-        if namespace is not None:
-            system_message.content += "# Your utility functions:\n\n" + "\n\n".join([str(f) for f in namespace.get_functions()])
+        if function_definitions:
+            system_message.content += "# Your utility functions:\n\n" + "\n\n".join([str(f) for f in function_definitions])
 
         new_messages = copy.deepcopy(messages[-self.chunk_size:])
         new_formatted_messages = [

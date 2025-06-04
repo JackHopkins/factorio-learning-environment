@@ -9,7 +9,7 @@ from env.src.models.conversation import Conversation
 from env.src.models.generation_parameters import GenerationParameters
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
 
-from typing import Optional, List
+from typing import Optional
 from env.src.namespace import FactorioNamespace
 
 GENERAL_INSTRUCTIONS = \
@@ -189,11 +189,8 @@ class BasicAgent(AgentABC):
         self.generation_params = GenerationParameters(n=1, max_tokens=4096, model=model)
 
    async def step(self, conversation: Conversation, response: Response, namespace: FactorioNamespace) -> Policy:
-        # Get serialized functions from namespace
-        namespace_functions = namespace.get_functions()
-        
         # We format the conversation every N steps to add a context summary to the system prompt
-        formatted_conversation = await self.formatter.format_conversation(conversation, namespace_functions)
+        formatted_conversation = await self.formatter.format_conversation(conversation, namespace)
         # We set the new conversation state for external use
         self.set_conversation(formatted_conversation)
         return await self._get_policy(formatted_conversation), None

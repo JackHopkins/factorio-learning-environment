@@ -1,16 +1,18 @@
 import asyncio
+import time
 import gym
 import numpy as np
 from gym import spaces
 from typing import Dict, List, Optional, Tuple, Union, Any
 import pickle
+import datetime
 
 from env.src.instance import FactorioInstance
 from env.src.models.game_state import GameState
 from env.src.models.program import Program
 from env.src.models.achievements import ProductionFlows
 from env.src.entities import Entity, EntityGroup
-from agents import Response
+from agents import Response, TaskResponse
 from env.src.gym_env.observation import Observation, Entity, InventoryItem, Technology, GameInfo, StateChanges, Achievement, Flow, ProductionFlows, TaskCriterion, TaskVerification, Message, Research
 from eval.tasks.task_abc import TaskABC
 
@@ -136,7 +138,7 @@ class FactorioGymEnv(gym.Env):
         # Track last message timestamp for each agent
         self.last_message_timestamps = {i: 0.0 for i in range(instance.num_agents)}
         
-    def _get_observation(self, agent_idx: int = 0, response: Optional[Response] = None) -> Observation:
+    def get_observation(self, agent_idx: int = 0, response: Optional[Response] = None) -> Observation:
         """Convert the current game state into a gym observation"""
         namespace = self.instance.namespaces[agent_idx]
         
@@ -164,17 +166,18 @@ class FactorioGymEnv(gym.Env):
         research_state = namespace._save_research_state()
         research_obs = Research(
             technologies=[
-                Technology(name=tech, level=level)
-                for tech, level in research_state.get('technologies', {}).items()
+                Technology(name=name, level=tech_state.level)
+                for name, tech_state in research_state.technologies.items()
             ],
-            current_research=research_state.get('current_research', ''),
-            research_progress=research_state.get('research_progress', 0.0)
+            current_research=research_state.current_research,
+            research_progress=research_state.research_progress,
         )
         
         # Get game info
         game_info = GameInfo(
             tick=self.instance.get_elapsed_ticks(),
-            time=self.instance.get_elapsed_time(),
+            #time=self.instance.get_elapsed_time(),
+            time=self.instance.get_elapsed_ticks() / 60,
             speed=self.instance._speed
         )
         
@@ -259,6 +262,22 @@ class FactorioGymEnv(gym.Env):
                 'name': func.name,
                 'pickled_function': pickle.dumps(func).hex()
             })
+
+        # Parse logging results from response
+        logging_results = {}
+        if response and response.response:
+            for line in response.response.split('\n'):
+                if ':' in line:
+                    try:
+                        line_num, value = line.split(':', 1)
+                        line_num = int(line_num.strip())
+                        value = value.strip()
+                        if line_num not in logging_results:
+                            logging_results[line_num] = []
+                        logging_results[line_num].append((line_num, value))
+                    except ValueError:
+                        print(f"Error parsing logging result: {line}")
+                        continue
         
         observation = Observation(
             raw_text=response.response if response else '',
@@ -273,7 +292,8 @@ class FactorioGymEnv(gym.Env):
             flows=flows_obs,
             task_verification=task_verification,
             messages=message_obs,
-            serialized_functions=serialized_functions
+            serialized_functions=serialized_functions,
+            logging_results=logging_results
         )
         
         # Store current observation for next state change comparison
@@ -306,7 +326,7 @@ class FactorioGymEnv(gym.Env):
             initial_score, _ = namespace.score()
             
             # Execute the action
-            score, time, result = self.instance.eval(code, agent_idx=agent_idx, timeout=60)
+            score, eval_time, result = self.instance.eval(code, agent_idx=agent_idx, timeout=60)
             
             # Check for errors
             error_occurred = "error" in result.lower() or "exception: " in result.lower()
@@ -316,35 +336,39 @@ class FactorioGymEnv(gym.Env):
                 reward = -self.error_penalty
             else:
                 # Wait for value accrual
-                asyncio.run(asyncio.sleep(self.value_accrual_time))
+                # asyncio.run(asyncio.sleep(self.value_accrual_time))
+                time.sleep(self.value_accrual_time)
                 reward = score - initial_score
             
             # Get task verification if task exists
-            task_verification = None
+            task_response = None
             done = False
             if self.task:
-                task_verification = self.task.verify(reward, self.instance)
-                done = task_verification.success
-                info['task_verification'] = task_verification
+                # First get the raw verification
+                task_success = self.task.verify(reward, self.instance, step_statistics={})
+                # Then enhance the response with task output
+                task_response = self.task.enhance_response_with_task_output(result, task_success)
+                done = task_success
                 
             # Create response object for observation
             response = Response(
-                code=code,
-                created_at=time.time(),
+                code=f"```python\n{code}\n```",
+                created_at=datetime.datetime.now(),
                 score=reward,
-                achievements=None,  # Would need to be populated from task
-                step=0,  # Would need to be tracked
+                achievements={},  # Empty dict instead of None
+                step=0,
                 ticks=self.instance.get_elapsed_ticks(),
                 flows=ProductionFlows.from_dict(start_production_flows).get_new_flows(
                     ProductionFlows.from_dict(namespace._get_production_stats())
                 ),
                 response=result,
-                task=task_verification,
-                error=error_occurred
+                task=task_response if self.task else TaskResponse(success=False, meta={}),
+                error=error_occurred,
+                program_id=None
             )
             
             # Get observation for the acting agent
-            observation = self._get_observation(agent_idx, response)
+            observation = self.get_observation(agent_idx, response)
             
             # Get additional info
             info = {
@@ -353,7 +377,8 @@ class FactorioGymEnv(gym.Env):
                 'ticks': self.instance.get_elapsed_ticks(),
                 'flows': response.flows,
                 'agent_idx': agent_idx,
-                'last_message_timestamp': self.last_message_timestamps[agent_idx]
+                'last_message_timestamp': self.last_message_timestamps[agent_idx],
+                'task_verification': task_response
             }
             
             return observation.to_dict(), reward, done, info
@@ -384,15 +409,15 @@ class FactorioGymEnv(gym.Env):
         return self.instance.eval(code, agent_idx=agent_idx, timeout=timeout)
 
             
-    def reset(self) -> Dict[str, Any]:
+    def reset(self, state: Optional[GameState] = None) -> Dict[str, Any]:
         """Reset the environment to initial state"""
-        self.reset_instance()
+        self.reset_instance(state)
         self.initial_score, _ = self.instance.namespaces[0].score()
         self.last_observation = None  # Reset last observation
         # Reset message timestamps
         self.last_message_timestamps = {i: 0.0 for i in range(self.instance.num_agents)}
         # Convert observation to dictionary to match gym standards
-        return self._get_observation(0).to_dict()  # Return observation for first agent
+        return self.get_observation(0).to_dict()  # Return observation for first agent
         
     def close(self):
         """Clean up resources"""

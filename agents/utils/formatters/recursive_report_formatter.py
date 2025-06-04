@@ -248,7 +248,7 @@ class RecursiveReportFormatter(ConversationFormatter):
         } for msg in messages if msg.role == "user"], sort_keys=True)
         return hashlib.sha256(chunk_content.encode()).hexdigest()
     
-    async def format_conversation(self, conversation: Conversation, namespace_functions: List[SerializableFunction]) -> Conversation:
+    async def format_conversation(self, conversation: Conversation, namespace: Optional[FactorioNamespace] = None) -> Conversation:
         """
         Format conversation by recursively summarizing historical messages from left to right.
         Returns [system_message (if present), historical_summary, recent_messages].
@@ -271,8 +271,8 @@ class RecursiveReportFormatter(ConversationFormatter):
             messages = messages[1:]
 
         # Add function definitions to system prompt
-        if namespace_functions:
-            system_message.content += "# Your utility functions:\n\n" + "\n\n".join([str(f) for f in namespace_functions])
+        if namespace is not None:
+            system_message.content += "# Your utility functions:\n\n" + "\n\n".join([str(f) for f in namespace.get_functions()])
 
         new_messages = copy.deepcopy(messages[-self.chunk_size:])
         new_formatted_messages = [

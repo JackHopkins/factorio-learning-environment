@@ -13,10 +13,11 @@ class AgentABC:
     model: str
     system_prompt: str
     conversation: Conversation
-    
+
     def __init__(self, model, system_prompt, *args, **kwargs):
        self.model = model
        self.system_prompt = system_prompt
+       self.conversation = None
     
     def get_agent_card(self) -> AgentCard:
         """Get the agent card for this agent"""

@@ -11,6 +11,7 @@ from env.src.instance import FactorioInstance
 from env.src.gym_env.environment import FactorioGymEnv
 from env.src.gym_env.observation import Observation, BasicObservationFormatter
 from eval.tasks.task_abc import TaskABC
+from a2a.types import AgentCard
 
 @dataclass
 class GymEvalConfig:
@@ -20,6 +21,7 @@ class GymEvalConfig:
     version_description: str
     exit_on_task_success: bool
     task: Optional[TaskABC] = None
+    agent_cards: Optional[List[AgentCard]] = None
 
     def __post_init__(self):
         if self.task is None and hasattr(self.agents[0], 'task'):
@@ -46,32 +48,68 @@ class GymTrajectoryRunner:
         self.config = config
         self.process_id = process_id
         self.iteration_times = []
-        self.formatter = BasicObservationFormatter()
+
+    def get_eta(self, current_iteration: int) -> str:
+        """Calculate estimated time remaining"""
+        if not self.iteration_times:
+            return "calculating..."
+
+        self.iteration_times = self.iteration_times[-50:]
+        avg_iteration_time = sum(self.iteration_times) / len(self.iteration_times)
+        remaining_iterations = self.config.task.trajectory_length - current_iteration
+        seconds_remaining = avg_iteration_time * remaining_iterations
+
+        # Convert to hours:minutes:seconds
+        hours = int(seconds_remaining // 3600)
+        minutes = int((seconds_remaining % 3600) // 60)
+        seconds = int(seconds_remaining % 60)
+
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+    def _log_progress(self, agent: GymAgent, iteration: int, program_value: float):
+        """Log progress of the trajectory run"""
+        elapsed = time.time() - self.start_time
+        elapsed_str = f"{int(elapsed // 3600):02d}:{int((elapsed % 3600) // 60):02d}:{int(elapsed % 60):02d}"
+        eta = self.get_eta(iteration)
+        print(f"Process {self.process_id} - "
+              f"Model: {agent.model} - "
+              f"Iteration {iteration}/{self.config.task.trajectory_length} - "
+              f"Value: {program_value:.2f} - "
+              f"Elapsed: {elapsed_str} - "
+              f"ETA: {eta}")
 
     async def run(self):
         """Run a single trajectory"""
+        print("Starting trajectory run")
         self.start_time = time.time()
         
         # Initialize state
+        print("Initializing game state")
         current_state = self.config.task.starting_game_state
-        self.gym_env.reset_instance(current_state)
+        self.gym_env.reset(current_state)
         
         # Initialize agent conversations
-        for agent in self.agents:
-            agent.conversation = agent.create_initial_conversation()
+        print("Initializing agent conversations")
+        for agent_idx, agent in enumerate(self.agents):
+            print(f"Resetting agent {agent_idx}")
+            agent.reset(self.gym_env.get_observation(agent_idx))
         
         # Run trajectory
+        print("Starting trajectory loop")
         for iteration in range(self.config.task.trajectory_length):
+            print(f"\nIteration {iteration}")
             for agent_idx, agent in enumerate(self.agents):
+                print(f"\nProcessing agent {agent_idx}")
                 iteration_start = time.time()
                 
                 try:
                     # Get observation from environment
-                    observation_dict = self.gym_env._get_observation(agent_idx)
+                    print("Getting observation from environment")
+                    observation_dict = self.gym_env.get_observation(agent_idx)
                     
                     # Generate program using agent's method
+                    print("Generating program")
                     program = await agent.generate_program(
-                        observation_dict,
                         agent_idx,
                         self.config.version,
                         self.config.version_description,
@@ -83,43 +121,30 @@ class GymTrajectoryRunner:
                         continue
                     
                     # Execute step in the environment
+                    print("Executing step in environment")
+                    self.gym_env.reset_instance(current_state)
                     observation_dict, reward, done, info = self.gym_env.step({
                         'agent_idx': agent_idx,
                         'code': program.code
                     })
+                    print(f"Step reward: {reward}")
                     
                     # Update program with results
+                    print("Updating program with results")
                     program.value = reward
-                    program.state = GameState.from_instance(self.instance)
+                    program.state = current_state = GameState.from_instance(self.instance)
                     program.meta["error_occurred"] = info.get('error_occurred', False)
                     
-                    # Format the observation for the agent's conversation
-                    observation = Observation.from_dict(observation_dict)
-                    formatted_obs = self.formatter.format(observation)
-                    
                     # Update agent's conversation with the program and its results
-                    agent.conversation.add_result(
-                        program=program.code,
-                        response=formatted_obs.raw_str,
-                    )
+                    print("Updating agent conversation")
+                    observation = Observation.from_dict(observation_dict)
+                    await agent.update_conversation(program, observation)
                     
-                    # Record iteration time
-                    iteration_time = time.time() - iteration_start
-                    self.iteration_times.append(iteration_time)
-                    
-                    # Keep only last 50 iterations for moving average
-                    if len(self.iteration_times) > 50:
-                        self.iteration_times = self.iteration_times[-50:]
-                    
-                    # Print progress
+                    # logging
+                    print("Updating metrics")
+                    self.iteration_times.append(time.time() - iteration_start)
                     if iteration % 10 == 0:
-                        elapsed = time.time() - self.start_time
-                        elapsed_str = f"{int(elapsed // 3600):02d}:{int((elapsed % 3600) // 60):02d}:{int(elapsed % 60):02d}"
-                        print(f"Process {self.process_id} - "
-                              f"Model: {agent.model} - "
-                              f"Iteration {iteration}/{self.config.task.trajectory_length} - "
-                              f"Value: {program.value:.2f} - "
-                              f"Elapsed: {elapsed_str}")
+                        self._log_progress(agent, iteration, program.value)
                     
                     # Check if done and exit if configured
                     if done and self.config.exit_on_task_success:

@@ -80,77 +80,74 @@ class GymTrajectoryRunner:
 
     async def run(self):
         """Run a single trajectory"""
-        print("Starting trajectory run")
         self.start_time = time.time()
         
         # Initialize state
-        print("Initializing game state")
         current_state = self.config.task.starting_game_state
         self.gym_env.reset(current_state)
         
         # Initialize agent conversations
-        print("Initializing agent conversations")
         for agent_idx, agent in enumerate(self.agents):
-            print(f"Resetting agent {agent_idx}")
             agent.reset(self.gym_env.get_observation(agent_idx))
         
         # Run trajectory
-        print("Starting trajectory loop")
         for iteration in range(self.config.task.trajectory_length):
-            print(f"\nIteration {iteration}")
             for agent_idx, agent in enumerate(self.agents):
-                print(f"\nProcessing agent {agent_idx}")
                 iteration_start = time.time()
+                print(f"Starting iteration at {iteration_start}")
                 
-                try:
-                    # Get observation from environment
-                    print("Getting observation from environment")
-                    observation_dict = self.gym_env.get_observation(agent_idx)
-                    
-                    # Generate program using agent's method
-                    print("Generating program")
-                    program = await agent.generate_program(
-                        agent_idx,
-                        self.config.version,
-                        self.config.version_description,
-                        self.process_id
-                    )
-                    
-                    if not program:
-                        print(f"Program generation failed for agent {agent_idx} at iteration {iteration}")
-                        continue
-                    
-                    # Execute step in the environment
-                    print("Executing step in environment")
-                    self.gym_env.reset_instance(current_state)
-                    observation_dict, reward, done, info = self.gym_env.step({
-                        'agent_idx': agent_idx,
-                        'code': program.code
-                    })
-                    print(f"Step reward: {reward}")
-                    
-                    # Update program with results
-                    print("Updating program with results")
-                    program.value = reward
-                    program.state = current_state = GameState.from_instance(self.instance)
-                    program.meta["error_occurred"] = info.get('error_occurred', False)
-                    
-                    # Update agent's conversation with the program and its results
-                    print("Updating agent conversation")
-                    observation = Observation.from_dict(observation_dict)
-                    await agent.update_conversation(program, observation)
-                    
-                    # logging
-                    print("Updating metrics")
-                    self.iteration_times.append(time.time() - iteration_start)
-                    if iteration % 10 == 0:
-                        self._log_progress(agent, iteration, program.value)
-                    
-                    # Check if done and exit if configured
-                    if done and self.config.exit_on_task_success:
-                        print("Task completed successfully!")
-                        return
+                # try:
+                # Get observation from environment
+                print("Getting observation from environment...")
+                observation_dict = self.gym_env.get_observation(agent_idx)
+                print(f"Got observation for agent {agent_idx}")
                 
-                except Exception as e:
-                    print(f"Error in iteration {iteration}: {e}")
+                # Generate program using agent's method
+                print("Generating program...")
+                program = await agent.generate_program(
+                    agent_idx,
+                    self.config.version,
+                    self.config.version_description,
+                    self.process_id
+                )
+                print("Program generation complete")
+                
+                if not program:
+                    print("No valid program generated, continuing to next iteration")
                     continue
+                
+                # Execute step in the environment
+                print("Resetting instance and executing step...")
+                self.gym_env.reset_instance(current_state)
+                observation_dict, reward, done, info = self.gym_env.step({
+                    'agent_idx': agent_idx,
+                    'code': program.code
+                })
+                print(f"Step executed with reward: {reward}")
+                
+                # Update program with results
+                print("Updating program state...")
+                program.value = reward
+                program.state = current_state = GameState.from_instance(self.instance)
+                program.meta["error_occurred"] = info.get('error_occurred', False)
+                print(f"Program state updated, error occurred: {program.meta['error_occurred']}")
+                
+                # Update agent's conversation with the program and its results
+                print("Updating agent conversation...")
+                observation = Observation.from_dict(observation_dict)
+                await agent.update_conversation(program, observation)
+                self.iteration_times.append(time.time() - iteration_start)
+                print("Agent conversation updated")
+                
+                if iteration % 10 == 0:
+                    self._log_progress(agent, iteration, program.value)
+                    print("Progress logged")
+                
+                # Check if done and exit if configured
+                if done and self.config.exit_on_task_success:
+                    print("Task completed successfully!")
+                    return
+                
+                # except Exception as e:
+                #     print(f"Error in iteration {iteration}: {e}")
+                #     continue

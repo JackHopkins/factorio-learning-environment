@@ -152,16 +152,13 @@ class GymAgent(AgentABC):
             instructions += f"### Specific Instructions for Agent {player_idx}\n{task.get_agent_instructions(agent_idx)}\n\n"
         return instructions
 
-    @tenacity.retry(
-        retry=retry_if_exception_type(Exception),
-        wait=wait_exponential(multiplier=1, min=4, max=10)
-    )
     async def update_conversation(self, program: Program, observation: Observation):
         formatted_program = f"```python\n{program.code}\n```"
         formatted_obs = self.observation_formatter.format(observation).raw_str
+
         self.conversation.add_result(formatted_program, formatted_obs)
         self.conversation = await self.formatter.format_conversation(self.conversation)
-        self.last_response = observation.logging_results
+        self.last_response = self.observation_formatter.format_logging_results(observation.logging_results)
 
 
 #    @tenacity.retry(
@@ -182,7 +179,6 @@ class GymAgent(AgentABC):
             Program if generation was successful, None otherwise
         """
         try:
-            print("Calling LLM factory...")
             model_response = await self.llm_factory.acall(
                 messages=self.formatter.to_llm_messages(self.conversation),
                 n_samples=1,
@@ -190,26 +186,16 @@ class GymAgent(AgentABC):
                 max_tokens=self.generation_params.max_tokens,
                 model=self.generation_params.model,
             )
-            print(f"Got model response: {model_response}")
 
-            print("Parsing response into policy...")
             policy = parse_response(model_response)
             if not policy:
                 raise Exception("Policy not valid Python. Skipping.")
             policy.input_conversation = self.conversation
-            print(f"Policy code: {policy.code}")
 
-            print("Getting conversation messages...")
             # get depth
-            try:
-                print("Trying model_dump() to get messages...")
-                messages = policy.input_conversation.model_dump()['messages'] 
-            except Exception:
-                print("model_dump() failed, falling back to dict()...")
-                messages = policy.input_conversation.dict()['messages'] 
-            print(f"Got {len(messages)} messages")
+            messages = policy.input_conversation.model_dump()['messages']
+            depth = len(messages) - 2
 
-            print("Creating program from policy...")
             # Create program from policy
             program = Program(
                 code=policy.code,
@@ -226,9 +212,8 @@ class GymAgent(AgentABC):
                     "model": self.model,
                     "process_id": process_id
                 },
-                depth=len(messages) - 2
+                depth=depth
             )
-            print("Program created successfully")
 
             return program
 

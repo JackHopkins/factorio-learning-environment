@@ -41,8 +41,23 @@ class StateChanges:
 @dataclass
 class Achievement:
     """Represents achievement progress"""
-    name: str
-    progress: float
+    static: Dict[str, float]  # Static achievements (crafted/harvested items)
+    dynamic: Dict[str, float]  # Dynamic achievements (ongoing production)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Dict[str, float]]) -> 'Achievement':
+        """Create an Achievement from a dictionary"""
+        return cls(
+            static=data.get('static', {}),
+            dynamic=data.get('dynamic', {})
+        )
+
+    def to_dict(self) -> Dict[str, Dict[str, float]]:
+        """Convert Achievement to dictionary"""
+        return {
+            'static': self.static,
+            'dynamic': self.dynamic
+        }
 
 
 @dataclass
@@ -64,7 +79,7 @@ class Observation:
     game_info: GameInfo
     state_changes: StateChanges
     score: float
-    achievements: Optional[Achievement]
+    achievements: List[Achievement]
     flows: ProductionFlows
     task_verification: Optional[TaskResponse]
     messages: List[AgentMessage]
@@ -101,8 +116,15 @@ class Observation:
 
         # Convert inventory
         inventory = Inventory()
-        for item in obs_dict.get('inventory', []):
-            inventory[item['type']] = item['quantity']
+        if isinstance(obs_dict.get('inventory'), dict):
+            # Handle direct dictionary format
+            for item_type, quantity in obs_dict['inventory'].items():
+                inventory[item_type] = quantity
+        else:
+            # Handle list of dicts format
+            for item in obs_dict.get('inventory', []):
+                if isinstance(item, dict):
+                    inventory[item['type']] = item['quantity']
 
         # Convert research state
         research = ResearchState(
@@ -156,12 +178,13 @@ class Observation:
         )
 
         # Convert achievements if present
-        achievements = None
+        achievements = []
         if obs_dict.get('achievements'):
-            achievements = Achievement(
-                name=obs_dict['achievements']['name'],
-                progress=obs_dict['achievements']['progress']
-            )
+            for achievement in obs_dict['achievements']:
+                achievements.append(Achievement(
+                    static=achievement['static'],
+                    dynamic=achievement['dynamic']
+                ))
 
         # Convert flows
         flows = ProductionFlows.from_dict(obs_dict.get('flows', {}))
@@ -171,7 +194,6 @@ class Observation:
         if obs_dict.get('task_verification'):
             task_verification = TaskResponse(
                 success=bool(obs_dict['task_verification']['success']),
-                message=obs_dict['task_verification']['message'],
                 meta=obs_dict['task_verification'].get('meta', {})
             )
 
@@ -281,14 +303,16 @@ class Observation:
                 ]
             },
             'score': self.score,
-            'achievements': {
-                'name': self.achievements.name,
-                'progress': self.achievements.progress
-            } if self.achievements else None,
+            'achievements': [
+                {
+                    'static': achievement.static,
+                    'dynamic': achievement.dynamic
+                }
+                for achievement in self.achievements
+            ],
             'flows': self.flows.to_dict(),
             'task_verification': {
                 'success': int(self.task_verification.success),
-                'message': self.task_verification.message,
                 'meta': self.task_verification.meta
             } if self.task_verification else None,
             'messages': [
@@ -538,6 +562,7 @@ class BasicObservationFormatter:
             return "### Production Flows\nNone"
             
         flow_str = "### Production Flows\n"
+        print(flows)
         
         # Format input flows
         if flows.get('input'):
@@ -561,7 +586,10 @@ class BasicObservationFormatter:
                 flow_str += "\n"
             flow_str += "#### Crafted Items\n"
             for item in flows['crafted']:
-                flow_str += f"- {item['name']}: {item.get('count', 1)}\n"
+                # Each item in crafted is a Dict[str, Any]
+                item_name = item.get('type', 'unknown')
+                count = item.get('count', 1)
+                flow_str += f"- {item_name}: {count}\n"
                 
         # Format harvested items
         if flows.get('harvested'):
@@ -633,12 +661,29 @@ class BasicObservationFormatter:
         return research_str
     
     @staticmethod
-    def format_achievements(achievements: Optional[Dict[str, Any]]) -> str:
+    def format_achievements(achievements: List[Union[Achievement, Dict[str, Any]]]) -> str:
         """Format achievement information"""
         if not achievements:
             return ""
             
-        return f"### Achievement Progress\n- {achievements['name']}: {achievements['progress']*100:.1f}%"
+        achievement_strs = ["### Achievement Progress"]
+        
+        for achievement in achievements:
+            # Handle both dictionary and Achievement object formats
+            static = achievement.get('static', {}) if isinstance(achievement, dict) else achievement.static
+            dynamic = achievement.get('dynamic', {}) if isinstance(achievement, dict) else achievement.dynamic
+            
+            if static:
+                achievement_strs.append("\n#### Static Achievements")
+                for item, value in static.items():
+                    achievement_strs.append(f"- {item}: {value:.1f}")
+                    
+            if dynamic:
+                achievement_strs.append("\n#### Dynamic Achievements")
+                for item, value in dynamic.items():
+                    achievement_strs.append(f"- {item}: {value:.1f}/s")
+        
+        return "\n".join(achievement_strs)
     
     @staticmethod
     def format_task(task: Optional[Dict[str, Any]]) -> str:
@@ -781,7 +826,7 @@ class BasicObservationFormatter:
                 formatted_parts.append(errors_str)
                 
         if self.include_achievements:
-            achievements_str = self.format_achievements(obs_dict.get('achievements'))
+            achievements_str = self.format_achievements(obs_dict.get('achievements', []))
             if achievements_str:
                 formatted_parts.append(achievements_str)
                 
@@ -819,7 +864,7 @@ class BasicObservationFormatter:
             entities_str=self.format_entities(obs_dict.get('entities', [])) if self.include_entities else "",
             errors_str=self.format_errors(obs_dict.get('errors', [])) if self.include_errors else "",
             flows_str=self.format_flows(obs_dict.get('flows', {})) if self.include_flows else "",
-            achievements_str=self.format_achievements(obs_dict.get('achievements')) if self.include_achievements else "",
+            achievements_str=self.format_achievements(obs_dict.get('achievements', [])) if self.include_achievements else "",
             task_str=self.format_task(obs_dict.get('task_verification')) if self.include_task else "",
             messages_str=self.format_messages(obs_dict.get('messages', []), last_message_timestamp) if self.include_messages else "",
             functions_str=self.format_functions(obs_dict.get('serialized_functions', [])) if self.include_functions else "",

@@ -14,6 +14,7 @@ from env.src.models.achievements import ProductionFlows
 from env.src.entities import Entity, EntityStatus, Direction, Position, Dimensions, TileDimensions
 from env.src.models.technology_state import TechnologyState
 from env.src.models.research_state import ResearchState
+from env.src.utils.profits import get_achievements
 from agents import Response, TaskResponse
 from env.src.gym_env.observation import (
     Observation, 
@@ -130,10 +131,16 @@ class FactorioGymEnv(gym.Env):
             'score': spaces.Box(low=-np.inf, high=np.inf, shape=(), dtype=np.float32),
             
             # Achievements
-            'achievements': spaces.Dict({
-                'name': spaces.Text(max_length=200),
-                'progress': spaces.Box(low=0, high=1, shape=(), dtype=np.float32),
-            }),
+            'achievements': spaces.Sequence(spaces.Dict({
+                'static': spaces.Dict({
+                    'type': spaces.Text(max_length=200),
+                    'value': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                }),
+                'dynamic': spaces.Dict({
+                    'type': spaces.Text(max_length=200),
+                    'value': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                }),
+            })),
             
             # Production flows
             'flows': spaces.Dict({
@@ -290,17 +297,13 @@ class FactorioGymEnv(gym.Env):
         if response and hasattr(response, 'task'):
             task_verification = TaskResponse(
                 success=response.task.success,
-                message=response.task.message,
                 meta=response.task.meta if hasattr(response.task, 'meta') else {}
             )
         
         # Get achievements if available
-        achievements = None
+        achievements = []
         if response and hasattr(response, 'achievements'):
-            achievements = Achievement(
-                name=response.achievements.name,
-                progress=response.achievements.progress
-            )
+            achievements.append(Achievement.from_dict(response.achievements))
         
         # Get state changes by comparing with last observation
         state_changes = StateChanges(
@@ -403,7 +406,7 @@ class FactorioGymEnv(gym.Env):
             
             # Get initial state information
             namespace = self.instance.namespaces[agent_idx]
-            start_production_flows = namespace._get_production_stats()
+            start_production_flows = ProductionFlows.from_dict(namespace._get_production_stats())
             initial_score, _ = namespace.score()
             
             # Execute the action
@@ -417,33 +420,34 @@ class FactorioGymEnv(gym.Env):
                 reward = -self.error_penalty
             else:
                 # Wait for value accrual
-                # asyncio.run(asyncio.sleep(self.value_accrual_time))
                 time.sleep(self.value_accrual_time)
                 reward = score - initial_score
             
             # Get task verification if task exists
-            task_response = None
+            task_response = task_success = None
             done = False
             if self.task:
                 # First get the raw verification
                 task_success = self.task.verify(reward, self.instance, step_statistics={})
                 # Then enhance the response with task output
                 task_response = self.task.enhance_response_with_task_output(result, task_success)
-                done = task_success
+                done = task_success.success
 
+            # Get post-execution flows and calculate achievements
             current_flows = ProductionFlows.from_dict(namespace._get_production_stats())
+            achievements = get_achievements(start_production_flows.__dict__, current_flows.__dict__)
                 
             # Create response object for observation
             response = Response(
                 code=f"```python\n{code}\n```",
                 created_at=datetime.datetime.now(),
                 score=reward,
-                achievements={},  # Empty dict instead of None
+                achievements=achievements,
                 step=0,
                 ticks=self.instance.get_elapsed_ticks(),
-                flows=ProductionFlows.from_dict(start_production_flows).get_new_flows(current_flows),
-                response=result,
-                task=TaskResponse(success=task_success if self.task else False, meta={}) if not isinstance(task_response, TaskResponse) else task_response,
+                flows=start_production_flows.get_new_flows(current_flows),
+                response=task_response if task_response else result,
+                task=task_success if task_success else TaskResponse(success=False, meta={}),
                 error=error_occurred,
                 program_id=None
             )
@@ -459,7 +463,8 @@ class FactorioGymEnv(gym.Env):
                 'flows': response.flows,
                 'agent_idx': agent_idx,
                 'last_message_timestamp': self.last_message_timestamps[agent_idx],
-                'task_verification': task_response
+                'task_verification': task_response,
+                'achievements': achievements  # Add achievements to info
             }
             
             return observation.to_dict(), reward, done, info

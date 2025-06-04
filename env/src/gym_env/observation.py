@@ -3,28 +3,11 @@ from dataclasses import dataclass
 import numpy as np
 import pickle
 
-@dataclass
-class Entity:
-    """Represents an entity in the game world"""
-    type: str
-    position: np.ndarray  # shape (2,)
-    direction: int  # 0-7 for 8 possible directions
-    health: float  # 0-1
-
-
-@dataclass
-class InventoryItem:
-    """Represents an item in the inventory"""
-    type: str
-    quantity: int
-
-
-@dataclass
-class Technology:
-    """Represents a researched technology"""
-    name: str
-    level: int
-
+from env.src.models.technology_state import TechnologyState
+from env.src.models.research_state import ResearchState
+from env.src.models.achievements import ProductionFlows
+from agents import TaskResponse
+from env.src.entities import Entity, Direction, Position, EntityStatus, TileDimensions, Dimensions, Inventory
 
 @dataclass
 class GameInfo:
@@ -42,10 +25,16 @@ class InventoryChange:
 
 
 @dataclass
+class EntityChange:
+    """Represents a change in entity state"""
+    entity: str
+    change: int  # positive for added, negative for removed
+
+
+@dataclass
 class StateChanges:
     """Represents changes in game state since last observation"""
-    entities_added: List[str]
-    entities_removed: List[str]
+    entity_changes: List[EntityChange]
     inventory_changes: List[InventoryChange]
 
 
@@ -57,84 +46,11 @@ class Achievement:
 
 
 @dataclass
-class Flow:
-    """Represents a production flow rate"""
-    type: str
-    rate: float
-
-
-@dataclass
-class ProductionFlows:
-    """Represents input and output production flows"""
-    inputs: List[Flow]
-    outputs: List[Flow]
-
-    @classmethod
-    def from_dict(cls, flows_dict: Dict[str, Any]) -> 'ProductionFlows':
-        """Create a ProductionFlows instance from a dictionary"""
-        return cls(
-            inputs=[
-                Flow(type=item, rate=rate)
-                for item, rate in flows_dict.get('inputs', {}).items()
-            ],
-            outputs=[
-                Flow(type=item, rate=rate)
-                for item, rate in flows_dict.get('outputs', {}).items()
-            ]
-        )
-
-    def get_new_flows(self, other: 'ProductionFlows') -> 'ProductionFlows':
-        """Calculate the difference between two ProductionFlows instances"""
-        # Convert to dictionaries for easier comparison
-        self_inputs = {flow.type: flow.rate for flow in self.inputs}
-        self_outputs = {flow.type: flow.rate for flow in self.outputs}
-        other_inputs = {flow.type: flow.rate for flow in other.inputs}
-        other_outputs = {flow.type: flow.rate for flow in other.outputs}
-
-        # Calculate differences
-        new_inputs = [
-            Flow(type=item, rate=rate - self_inputs.get(item, 0))
-            for item, rate in other_inputs.items()
-            if rate != self_inputs.get(item, 0)
-        ]
-        new_outputs = [
-            Flow(type=item, rate=rate - self_outputs.get(item, 0))
-            for item, rate in other_outputs.items()
-            if rate != self_outputs.get(item, 0)
-        ]
-
-        return ProductionFlows(inputs=new_inputs, outputs=new_outputs)
-
-
-@dataclass
-class TaskCriterion:
-    """Represents a task completion criterion"""
-    name: str
-    met: bool
-
-
-@dataclass
-class TaskVerification:
-    """Represents task verification status"""
-    success: bool
-    message: str
-    criteria: List[TaskCriterion]
-
-
-@dataclass
-class Message:
+class AgentMessage:
     """Represents a message from another agent"""
     sender: str
     content: str
     timestamp: float
-
-
-@dataclass
-class Research:
-    """Represents the current research state"""
-    technologies: List[Technology]
-    current_research: str
-    research_progress: float
 
 
 @dataclass
@@ -143,15 +59,15 @@ class Observation:
     raw_text: str
     errors: List[str]
     entities: List[Entity]
-    inventory: List[InventoryItem]
-    research: Research
+    inventory: Inventory
+    research: ResearchState
     game_info: GameInfo
     state_changes: StateChanges
     score: float
     achievements: Optional[Achievement]
     flows: ProductionFlows
-    task_verification: Optional[TaskVerification]
-    messages: List[Message]
+    task_verification: Optional[TaskResponse]
+    messages: List[AgentMessage]
     serialized_functions: List[Dict[str, Any]]  # List of serialized functions
     logging_results: Dict[int, List[Tuple[int, str]]]  # Line number -> list of (line number, value) tuples
 
@@ -159,36 +75,54 @@ class Observation:
     def from_dict(cls, obs_dict: Dict[str, Any]) -> 'Observation':
         """Create an Observation from a dictionary matching the gym observation space"""
         # Convert entities
-        entities = [
-            Entity(
-                type=e['type'],
-                position=np.array(e['position']),
-                direction=e['direction'],
-                health=e['health']
+        entities = []
+        for e in obs_dict.get('entities', []):
+            entity = Entity(
+                name=e['name'],
+                direction=Direction(e['direction']),
+                position=Position(x=e['position'][0], y=e['position'][1]),
+                energy=e['energy'],
+                dimensions=Dimensions(
+                    width=e['dimensions']['width'],
+                    height=e['dimensions']['height']
+                ),
+                tile_dimensions=TileDimensions(
+                    tile_width=e['tile_dimensions']['tile_width'],
+                    tile_height=e['tile_dimensions']['tile_height']
+                ),
+                prototype=None,  # Default value as it's not in observation space
+                health=e['health'],
+                status=EntityStatus.from_int(e['status']),
+                warnings=e['warnings'],
+                id=e['id'],
+                type=e['type']
             )
-            for e in obs_dict.get('entities', [])
-        ]
+            entities.append(entity)
 
         # Convert inventory
-        inventory = [
-            InventoryItem(
-                type=item['type'],
-                quantity=item['quantity']
-            )
-            for item in obs_dict.get('inventory', [])
-        ]
+        inventory = Inventory()
+        for item in obs_dict.get('inventory', []):
+            inventory[item['type']] = item['quantity']
 
-        # Convert research
-        research = Research(
-            technologies=[
-                Technology(
+        # Convert research state
+        research = ResearchState(
+            technologies={
+                name: TechnologyState(
                     name=tech['name'],
-                    level=tech['level']
+                    researched=tech['researched'],
+                    enabled=tech['enabled'],
+                    level=tech['level'],
+                    research_unit_count=tech['research_unit_count'],
+                    research_unit_energy=tech['research_unit_energy'],
+                    prerequisites=tech['prerequisites'],
+                    ingredients=tech['ingredients']
                 )
-                for tech in obs_dict.get('research', {}).get('technologies', [])
-            ],
-            current_research=obs_dict.get('research', {}).get('current_research', ''),
-            research_progress=obs_dict.get('research', {}).get('research_progress', 0.0)
+                for name, tech in obs_dict.get('research', {}).get('technologies', {}).items()
+            },
+            current_research=obs_dict.get('research', {}).get('current_research'),
+            research_progress=obs_dict.get('research', {}).get('research_progress', 0.0),
+            research_queue=obs_dict.get('research', {}).get('research_queue', []),
+            progress=obs_dict.get('research', {}).get('progress', {})
         )
 
         # Convert game info
@@ -199,9 +133,19 @@ class Observation:
         )
 
         # Convert state changes
+        # Aggregate entity changes by type
+        entity_changes = {}
+        for entity in obs_dict.get('state_changes', {}).get('entities_added', []):
+            entity_changes[entity] = entity_changes.get(entity, 0) + 1
+        for entity in obs_dict.get('state_changes', {}).get('entities_removed', []):
+            entity_changes[entity] = entity_changes.get(entity, 0) - 1
+            
         state_changes = StateChanges(
-            entities_added=obs_dict.get('state_changes', {}).get('entities_added', []),
-            entities_removed=obs_dict.get('state_changes', {}).get('entities_removed', []),
+            entity_changes=[
+                EntityChange(entity=entity, change=change)
+                for entity, change in entity_changes.items()
+                if change != 0  # Only include non-zero changes
+            ],
             inventory_changes=[
                 InventoryChange(
                     item=change['item'],
@@ -225,21 +169,15 @@ class Observation:
         # Convert task verification if present
         task_verification = None
         if obs_dict.get('task_verification'):
-            task_verification = TaskVerification(
+            task_verification = TaskResponse(
                 success=bool(obs_dict['task_verification']['success']),
                 message=obs_dict['task_verification']['message'],
-                criteria=[
-                    TaskCriterion(
-                        name=c['name'],
-                        met=bool(c['met'])
-                    )
-                    for c in obs_dict['task_verification']['criteria']
-                ]
+                meta=obs_dict['task_verification'].get('meta', {})
             )
 
         # Convert messages
         messages = [
-            Message(
+            AgentMessage(
                 sender=msg['sender'],
                 content=msg['content'],
                 timestamp=msg['timestamp']
@@ -277,30 +215,49 @@ class Observation:
             'errors': self.errors,
             'entities': [
                 {
-                    'type': e.type,
-                    'position': e.position.tolist(),
-                    'direction': e.direction,
-                    'health': e.health
+                    'name': e.name,
+                    'direction': e.direction.value,
+                    'position': [e.position.x, e.position.y],
+                    'energy': e.energy,
+                    'dimensions': {
+                        'width': e.dimensions.width,
+                        'height': e.dimensions.height
+                    },
+                    'tile_dimensions': {
+                        'tile_width': e.tile_dimensions.tile_width,
+                        'tile_height': e.tile_dimensions.tile_height
+                    },
+                    'health': e.health,
+                    'status': list(EntityStatus).index(e.status),
+                    'warnings': e.warnings,
+                    'id': e.id if e.id is not None else 0,
+                    'type': e.type if e.type is not None else e.name
                 }
                 for e in self.entities
             ],
-            'inventory': [
-                {
-                    'type': item.type,
-                    'quantity': item.quantity
-                }
-                for item in self.inventory
-            ],
+            'inventory': {
+                item: quantity 
+                for item, quantity in self.inventory.items() 
+                if quantity > 0
+            },
             'research': {
-                'technologies': [
-                    {
+                'technologies': {
+                    name: {
                         'name': tech.name,
-                        'level': tech.level
+                        'researched': tech.researched,
+                        'enabled': tech.enabled,
+                        'level': tech.level,
+                        'research_unit_count': tech.research_unit_count,
+                        'research_unit_energy': tech.research_unit_energy,
+                        'prerequisites': tech.prerequisites,
+                        'ingredients': tech.ingredients
                     }
-                    for tech in self.research.technologies
-                ],
+                    for name, tech in self.research.technologies.items()
+                },
                 'current_research': self.research.current_research,
-                'research_progress': self.research.research_progress
+                'research_progress': self.research.research_progress,
+                'research_queue': self.research.research_queue,
+                'progress': self.research.progress
             },
             'game_info': {
                 'tick': self.game_info.tick,
@@ -308,8 +265,13 @@ class Observation:
                 'speed': self.game_info.speed
             },
             'state_changes': {
-                'entities_added': self.state_changes.entities_added,
-                'entities_removed': self.state_changes.entities_removed,
+                'entity_changes': [
+                    {
+                        'entity': change.entity,
+                        'change': change.change
+                    }
+                    for change in self.state_changes.entity_changes
+                ],
                 'inventory_changes': [
                     {
                         'item': change.item,
@@ -323,32 +285,11 @@ class Observation:
                 'name': self.achievements.name,
                 'progress': self.achievements.progress
             } if self.achievements else None,
-            'flows': {
-                'inputs': [
-                    {
-                        'type': flow.type,
-                        'rate': flow.rate
-                    }
-                    for flow in self.flows.inputs
-                ],
-                'outputs': [
-                    {
-                        'type': flow.type,
-                        'rate': flow.rate
-                    }
-                    for flow in self.flows.outputs
-                ]
-            },
+            'flows': self.flows.to_dict(),
             'task_verification': {
                 'success': int(self.task_verification.success),
                 'message': self.task_verification.message,
-                'criteria': [
-                    {
-                        'name': c.name,
-                        'met': int(c.met)
-                    }
-                    for c in self.task_verification.criteria
-                ]
+                'meta': self.task_verification.meta
             } if self.task_verification else None,
             'messages': [
                 {
@@ -509,22 +450,9 @@ class BasicObservationFormatter:
                  include_functions: bool = True,
                  include_logging_results: bool = True,
                  include_state_changes: bool = True,
-                 include_raw_output: bool = True):
-        """Initialize the formatter with flags for which fields to include
-        
-        Args:
-            include_inventory: Whether to include inventory information
-            include_entities: Whether to include entity information
-            include_errors: Whether to include error messages
-            include_flows: Whether to include production flows
-            include_achievements: Whether to include achievement progress
-            include_task: Whether to include task verification status
-            include_messages: Whether to include messages from other agents
-            include_functions: Whether to include available functions
-            include_logging_results: Whether to include step-by-step output
-            include_state_changes: Whether to include state changes
-            include_raw_output: Whether to include raw output
-        """
+                 include_raw_output: bool = True,
+                 include_research: bool = True):
+        """Initialize the formatter with flags for which fields to include"""
         self.include_inventory = include_inventory
         self.include_entities = include_entities
         self.include_errors = include_errors
@@ -536,21 +464,22 @@ class BasicObservationFormatter:
         self.include_logging_results = include_logging_results
         self.include_state_changes = include_state_changes
         self.include_raw_output = include_raw_output
+        self.include_research = include_research
 
     @staticmethod
-    def format_inventory(inventory: List[Dict[str, Any]]) -> str:
+    def format_inventory(inventory: Dict[str, Any]) -> str:
         """Format inventory information"""
         if not inventory:
             return "### Inventory\nEmpty"
             
         # Sort items by quantity for consistent output
-        sorted_items = sorted(inventory, key=lambda x: x['quantity'], reverse=True)
+        sorted_items = sorted(inventory.items(), key=lambda x: x[1], reverse=True)
         
         # Format each item
         item_strs = []
-        for item in sorted_items:
-            if item['quantity'] > 0:
-                item_strs.append(f"- {item['type']}: {item['quantity']}")
+        for item_type, quantity in sorted_items:
+            if quantity > 0:
+                item_strs.append(f"- {item_type}: {quantity}")
                 
         return "### Inventory\n" + "\n".join(item_strs)
     
@@ -572,7 +501,25 @@ class BasicObservationFormatter:
         group_strs = []
         for entity_type, group in sorted(entity_groups.items()):
             count = len(group)
-            group_strs.append(f"- {entity_type}: {count}")
+            # Get status information for the group
+            statuses = {}
+            for entity in group:
+                status = entity.get('status', 0)
+                if status not in statuses:
+                    statuses[status] = 0
+                statuses[status] += 1
+            
+            # Format the group with status information
+            status_str = ""
+            if statuses:
+                status_str = " ["
+                status_parts = []
+                for status, count in statuses.items():
+                    status_name = EntityStatus.from_int(status).name
+                    status_parts.append(f"{status_name}: {count}")
+                status_str += ", ".join(status_parts) + "]"
+            
+            group_strs.append(f"- {entity_type}: {count}{status_str}")
             
         return "### Entities\n" + "\n".join(group_strs)
     
@@ -590,30 +537,100 @@ class BasicObservationFormatter:
         if not flows:
             return "### Production Flows\nNone"
             
-        input_strs = []
-        output_strs = []
+        flow_str = "### Production Flows\n"
         
         # Format input flows
-        if flows.get('inputs'):
-            for flow in flows['inputs']:
-                if flow['rate'] > 0:
-                    input_strs.append(f"- {flow['type']}: {flow['rate']:.2f}/s")
+        if flows.get('input'):
+            flow_str += "#### Inputs\n"
+            for item, rate in flows['input'].items():
+                if rate > 0:
+                    flow_str += f"- {item}: {rate:.2f}/s\n"
                     
         # Format output flows
-        if flows.get('outputs'):
-            for flow in flows['outputs']:
-                if flow['rate'] > 0:
-                    output_strs.append(f"- {flow['type']}: {flow['rate']:.2f}/s")
+        if flows.get('output'):
+            if flows.get('input'):
+                flow_str += "\n"
+            flow_str += "#### Outputs\n"
+            for item, rate in flows['output'].items():
+                if rate > 0:
+                    flow_str += f"- {item}: {rate:.2f}/s\n"
                     
-        flow_str = "### Production Flows\n"
-        if input_strs:
-            flow_str += "#### Inputs\n" + "\n".join(input_strs) + "\n"
-        if input_strs and output_strs:
-            flow_str += "\n"
-        if output_strs:
-            flow_str += "#### Outputs\n" + "\n".join(output_strs)
+        # Format crafted items
+        if flows.get('crafted'):
+            if flows.get('input') or flows.get('output'):
+                flow_str += "\n"
+            flow_str += "#### Crafted Items\n"
+            for item in flows['crafted']:
+                flow_str += f"- {item['name']}: {item.get('count', 1)}\n"
+                
+        # Format harvested items
+        if flows.get('harvested'):
+            if flows.get('input') or flows.get('output') or flows.get('crafted'):
+                flow_str += "\n"
+            flow_str += "#### Harvested Items\n"
+            for item, amount in flows['harvested'].items():
+                if amount > 0:
+                    flow_str += f"- {item}: {amount:.2f}\n"
+
+        # Format price list
+        if flows.get('price_list'):
+            if any(flows.get(k) for k in ['input', 'output', 'crafted', 'harvested']):
+                flow_str += "\n"
+            flow_str += "#### Price List\n"
+            for item, price in flows['price_list'].items():
+                flow_str += f"- {item}: {price:.2f}\n"
+
+        # Format static items
+        if flows.get('static_items'):
+            if any(flows.get(k) for k in ['input', 'output', 'crafted', 'harvested', 'price_list']):
+                flow_str += "\n"
+            flow_str += "#### Static Items\n"
+            for item, value in flows['static_items'].items():
+                flow_str += f"- {item}: {value:.2f}\n"
         
         return flow_str
+    
+    @staticmethod
+    def format_research(research: Dict[str, Any]) -> str:
+        """Format research state information"""
+        if not research:
+            return "### Research\nNone"
+            
+        research_str = "### Research\n"
+        
+        # Format current research
+        if research.get('current_research'):
+            research_str += f"#### Current Research\n- {research['current_research']}: {research['research_progress']*100:.1f}%\n"
+            
+        # Format research queue
+        if research.get('research_queue'):
+            if research.get('current_research'):
+                research_str += "\n"
+            research_str += "#### Research Queue\n"
+            for tech in research['research_queue']:
+                research_str += f"- {tech}\n"
+                
+        # Format technologies
+        if research.get('technologies'):
+            if research.get('current_research') or research.get('research_queue'):
+                research_str += "\n"
+            research_str += "#### Technologies\n"
+            for name, tech in research['technologies'].items():
+                status = "✅" if tech['researched'] else "⏳"
+                enabled = "🔓" if tech['enabled'] else "🔒"
+                research_str += f"- {status} {enabled} {name} (Level {tech['level']})\n"
+                if tech['prerequisites']:
+                    research_str += f"  Prerequisites: {', '.join(tech['prerequisites'])}\n"
+                if tech['ingredients']:
+                    # Handle both list of dicts and dict formats
+                    if isinstance(tech['ingredients'], list):
+                        research_str += f"  Ingredients: {', '.join(f'{ing.get('name', '')} x{ing.get('amount', 0)}' for ing in tech['ingredients'])}\n"
+                    else:
+                        research_str += f"  Ingredients: {', '.join(f'{item} x{amount}' for item, amount in tech['ingredients'].items())}\n"
+                if tech['research_unit_count'] > 0:
+                    research_str += f"  Research Units: {tech['research_unit_count']} (Energy: {tech['research_unit_energy']:.1f})\n"
+        
+        return research_str
     
     @staticmethod
     def format_achievements(achievements: Optional[Dict[str, Any]]) -> str:
@@ -635,11 +652,10 @@ class BasicObservationFormatter:
         if task.get('message'):
             task_str += f"\n**Message:** {task['message']}\n"
             
-        if task.get('criteria'):
-            task_str += "\n**Criteria:**\n"
-            for criterion in task['criteria']:
-                status = "✅" if criterion['met'] else "❌"
-                task_str += f"- {status} {criterion['name']}\n"
+        if task.get('meta'):
+            task_str += "\n**Task Details:**\n"
+            for key, value in task['meta'].items():
+                task_str += f"- {key}: {value}\n"
                 
         return task_str
     
@@ -675,14 +691,11 @@ class BasicObservationFormatter:
         change_strs = ["### State Changes"]
         
         # Format entity changes
-        if changes.get('entities_added'):
-            change_strs.append("\n**Added Entities:**")
-            for entity in changes['entities_added']:
-                change_strs.append(f"- {entity}")
-        if changes.get('entities_removed'):
-            change_strs.append("\n**Removed Entities:**")
-            for entity in changes['entities_removed']:
-                change_strs.append(f"- {entity}")
+        if changes.get('entity_changes'):
+            change_strs.append("\n**Entity Changes:**")
+            for change in changes['entity_changes']:
+                sign = "+" if change['change'] > 0 else ""
+                change_strs.append(f"- {change['entity']}: {sign}{change['change']}")
             
         # Format inventory changes
         if changes.get('inventory_changes'):
@@ -740,7 +753,8 @@ class BasicObservationFormatter:
         formatted_parts = []
         
         if self.include_inventory:
-            inventory_str = self.format_inventory(obs_dict.get('inventory', []))
+            assert isinstance(obs_dict.get('inventory', {}), dict), obs_dict.get('inventory', {})
+            inventory_str = self.format_inventory(obs_dict.get('inventory', {}))
             formatted_parts.append(inventory_str)
             
         if self.include_entities:
@@ -754,6 +768,11 @@ class BasicObservationFormatter:
         if self.include_functions:
             functions_str = self.format_functions(obs_dict.get('serialized_functions', []))
             formatted_parts.append(functions_str)
+            
+        # Add research information
+        if self.include_research:
+            research_str = self.format_research(obs_dict.get('research', {}))
+            formatted_parts.append(research_str)
         
         # Add optional components if they exist and are enabled
         if self.include_errors:
@@ -796,7 +815,7 @@ class BasicObservationFormatter:
         
         # Create FormattedObservation with all fields, even if they're empty
         return FormattedObservation(
-            inventory_str=self.format_inventory(obs_dict.get('inventory', [])) if self.include_inventory else "",
+            inventory_str=self.format_inventory(obs_dict.get('inventory', {})) if self.include_inventory else "",
             entities_str=self.format_entities(obs_dict.get('entities', [])) if self.include_entities else "",
             errors_str=self.format_errors(obs_dict.get('errors', [])) if self.include_errors else "",
             flows_str=self.format_flows(obs_dict.get('flows', {})) if self.include_flows else "",

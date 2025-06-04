@@ -10,7 +10,7 @@ from env.src.models.conversation import Conversation
 from env.src.models.message import Message as ConvMessage
 from env.src.models.generation_parameters import GenerationParameters
 from env.src.models.program import Program
-from env.src.gym_env.observation import Message, Observation, BasicObservationFormatter
+from env.src.gym_env.observation import AgentMessage, Observation, BasicObservationFormatter
 from env.src.namespace import FactorioNamespace
 from tenacity import wait_exponential, retry_if_exception_type
 

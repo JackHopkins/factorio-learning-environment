@@ -11,9 +11,19 @@ from env.src.instance import FactorioInstance
 from env.src.models.game_state import GameState
 from env.src.models.program import Program
 from env.src.models.achievements import ProductionFlows
-from env.src.entities import Entity, EntityGroup
+from env.src.entities import Entity, EntityStatus, Direction, Position, Dimensions, TileDimensions
+from env.src.models.technology_state import TechnologyState
+from env.src.models.research_state import ResearchState
 from agents import Response, TaskResponse
-from env.src.gym_env.observation import Observation, Entity, InventoryItem, Technology, GameInfo, StateChanges, Achievement, Flow, ProductionFlows, TaskCriterion, TaskVerification, Message, Research
+from env.src.gym_env.observation import (
+    Observation, 
+    GameInfo, 
+    StateChanges, 
+    Achievement, 
+    AgentMessage,
+    EntityChange,
+    InventoryChange
+)
 from eval.tasks.task_abc import TaskABC
 
 
@@ -48,26 +58,53 @@ class FactorioGymEnv(gym.Env):
             
             # Entities on the map
             'entities': spaces.Sequence(spaces.Dict({
-                'type': spaces.Text(max_length=200),
-                'position': spaces.Box(low=-np.inf, high=np.inf, shape=(2,), dtype=np.float32),
+                'name': spaces.Text(max_length=200),
                 'direction': spaces.Discrete(8),  # 8 possible directions
+                'position': spaces.Box(low=-np.inf, high=np.inf, shape=(2,), dtype=np.float32),
+                'energy': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                'dimensions': spaces.Dict({
+                    'width': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                    'height': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                }),
+                'tile_dimensions': spaces.Dict({
+                    'tile_width': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                    'tile_height': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                }),
                 'health': spaces.Box(low=0, high=1, shape=(), dtype=np.float32),
+                'status': spaces.Discrete(len(EntityStatus)),  # Number of possible status values
+                'warnings': spaces.Sequence(spaces.Text(max_length=200)),
+                'id': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
+                'type': spaces.Text(max_length=200),
             })),
             
             # Current inventory state
-            'inventory': spaces.Sequence(spaces.Dict({
+            'inventory': spaces.Dict({
                 'type': spaces.Text(max_length=200),
                 'quantity': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
-            })),
+            }),
             
             # Research state
             'research': spaces.Dict({
-                'technologies': spaces.Sequence(spaces.Dict({
+                'technologies': spaces.Dict({
                     'name': spaces.Text(max_length=200),
+                    'researched': spaces.Discrete(2),  # 0 or 1
+                    'enabled': spaces.Discrete(2),  # 0 or 1
                     'level': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
-                })),
+                    'research_unit_count': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
+                    'research_unit_energy': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                    'prerequisites': spaces.Sequence(spaces.Text(max_length=200)),
+                    'ingredients': spaces.Sequence(spaces.Dict({
+                        'item': spaces.Text(max_length=200),
+                        'amount': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
+                    })),
+                }),
                 'current_research': spaces.Text(max_length=200),
                 'research_progress': spaces.Box(low=0, high=1, shape=(), dtype=np.float32),
+                'research_queue': spaces.Sequence(spaces.Text(max_length=200)),
+                'progress': spaces.Dict({
+                    'name': spaces.Text(max_length=200),
+                    'value': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                }),
             }),
             
             # Game information
@@ -79,10 +116,12 @@ class FactorioGymEnv(gym.Env):
             
             # State changes since last step
             'state_changes': spaces.Dict({
-                'entities_added': spaces.Sequence(spaces.Text(max_length=200)),
-                'entities_removed': spaces.Sequence(spaces.Text(max_length=200)),
                 'inventory_changes': spaces.Sequence(spaces.Dict({
                     'item': spaces.Text(max_length=200),
+                    'change': spaces.Box(low=-np.inf, high=np.inf, shape=(), dtype=np.int32),
+                })),
+                'entity_changes': spaces.Sequence(spaces.Dict({
+                    'entity': spaces.Text(max_length=200),
                     'change': spaces.Box(low=-np.inf, high=np.inf, shape=(), dtype=np.int32),
                 })),
             }),
@@ -98,24 +137,40 @@ class FactorioGymEnv(gym.Env):
             
             # Production flows
             'flows': spaces.Dict({
-                'inputs': spaces.Sequence(spaces.Dict({
+                'input': spaces.Dict({
                     'type': spaces.Text(max_length=200),
                     'rate': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                })),
-                'outputs': spaces.Sequence(spaces.Dict({
+                }),
+                'output': spaces.Dict({
                     'type': spaces.Text(max_length=200),
                     'rate': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                }),
+                'crafted': spaces.Sequence(spaces.Dict({
+                    'name': spaces.Text(max_length=200),
+                    'count': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
                 })),
+                'harvested': spaces.Dict({
+                    'type': spaces.Text(max_length=200),
+                    'amount': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                }),
+                'price_list': spaces.Dict({
+                    'type': spaces.Text(max_length=200),
+                    'price': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                }),
+                'static_items': spaces.Dict({
+                    'type': spaces.Text(max_length=200),
+                    'value': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                }),
             }),
             
             # Task verification status
             'task_verification': spaces.Dict({
                 'success': spaces.Discrete(2),  # 0 or 1
                 'message': spaces.Text(max_length=200),
-                'criteria': spaces.Sequence(spaces.Dict({
-                    'name': spaces.Text(max_length=200),
-                    'met': spaces.Discrete(2),  # 0 or 1
-                })),
+                'meta': spaces.Dict({
+                    'key': spaces.Text(max_length=200),
+                    'value': spaces.Text(max_length=1000),
+                }),
             }),
             
             # Messages from other agents
@@ -146,37 +201,57 @@ class FactorioGymEnv(gym.Env):
         entities = namespace.get_entities()
         entity_obs = [
             Entity(
-                type=entity.type,
-                position=np.array(entity.position, dtype=np.float32),
-                direction=entity.direction.value if hasattr(entity, 'direction') else 0,
+                name=entity.type,
+                direction=Direction(entity.direction.value if hasattr(entity, 'direction') else 0),
+                position=Position(x=entity.position.x, y=entity.position.y),
+                energy=entity.energy if hasattr(entity, 'energy') else 0.0,
+                dimensions=Dimensions(
+                    width=entity.dimensions.width if hasattr(entity, 'dimensions') else 1.0,
+                    height=entity.dimensions.height if hasattr(entity, 'dimensions') else 1.0
+                ),
+                tile_dimensions=TileDimensions(
+                    tile_width=entity.tile_dimensions.tile_width if hasattr(entity, 'tile_dimensions') else 1.0,
+                    tile_height=entity.tile_dimensions.tile_height if hasattr(entity, 'tile_dimensions') else 1.0
+                ),
+                prototype=None,
                 health=entity.health if hasattr(entity, 'health') else 1.0,
+                status=entity.status if hasattr(entity, 'status') else EntityStatus.NORMAL,
+                warnings=entity.warnings if hasattr(entity, 'warnings') else [],
+                id=entity.id if hasattr(entity, 'id') else None,
+                type=entity.type
             )
             for entity in entities
         ]
             
         # Get inventory
         inventory = namespace.inspect_inventory()
-        inventory_obs = [
-            InventoryItem(type=item, quantity=quantity)
-            for item, quantity in inventory.__dict__.items()
-            if quantity > 0
-        ]
+        inventory_obs = inventory  # Now we can use the Inventory object directly
         
         # Get research state
         research_state = namespace._save_research_state()
-        research_obs = Research(
-            technologies=[
-                Technology(name=name, level=tech_state.level)
+        research_obs = ResearchState(
+            technologies={
+                name: TechnologyState(
+                    name=name,
+                    researched=tech_state.researched,
+                    enabled=tech_state.enabled,
+                    level=tech_state.level,
+                    research_unit_count=tech_state.research_unit_count,
+                    research_unit_energy=tech_state.research_unit_energy,
+                    prerequisites=tech_state.prerequisites,
+                    ingredients=tech_state.ingredients
+                )
                 for name, tech_state in research_state.technologies.items()
-            ],
+            },
             current_research=research_state.current_research,
             research_progress=research_state.research_progress,
+            research_queue=research_state.research_queue,
+            progress=research_state.progress
         )
         
         # Get game info
         game_info = GameInfo(
             tick=self.instance.get_elapsed_ticks(),
-            #time=self.instance.get_elapsed_time(),
             time=self.instance.get_elapsed_ticks() / 60,
             speed=self.instance._speed
         )
@@ -184,14 +259,12 @@ class FactorioGymEnv(gym.Env):
         # Get production flows
         flows = namespace._get_production_stats()
         flows_obs = ProductionFlows(
-            inputs=[
-                Flow(type=item, rate=rate)
-                for item, rate in flows.get('inputs', {}).items()
-            ],
-            outputs=[
-                Flow(type=item, rate=rate)
-                for item, rate in flows.get('outputs', {}).items()
-            ]
+            input=flows.get('inputs', {}),
+            output=flows.get('outputs', {}),
+            crafted=flows.get('crafted', []),
+            harvested=flows.get('harvested', {}),
+            price_list=flows.get('price_list'),
+            static_items=flows.get('static_items')
         )
         
         # Get messages and update timestamp
@@ -201,7 +274,7 @@ class FactorioGymEnv(gym.Env):
         
         for msg in messages:
             if msg['timestamp'] > self.last_message_timestamps[agent_idx]:
-                message_obs.append(Message(
+                message_obs.append(AgentMessage(
                     sender=str(msg['sender']),
                     content=msg['message'],
                     timestamp=msg['timestamp']
@@ -215,13 +288,10 @@ class FactorioGymEnv(gym.Env):
         # Get task verification if available
         task_verification = None
         if response and hasattr(response, 'task'):
-            task_verification = TaskVerification(
+            task_verification = TaskResponse(
                 success=response.task.success,
                 message=response.task.message,
-                criteria=[
-                    TaskCriterion(name=name, met=met)
-                    for name, met in response.task.criteria.items()
-                ]
+                meta=response.task.meta if hasattr(response.task, 'meta') else {}
             )
         
         # Get achievements if available
@@ -234,26 +304,37 @@ class FactorioGymEnv(gym.Env):
         
         # Get state changes by comparing with last observation
         state_changes = StateChanges(
-            entities_added=[],
-            entities_removed=[],
-            inventory_changes=[]
+            inventory_changes=[],
+            entity_changes=[]
         )
         if self.last_observation:
             # Compare entities
-            last_entities = {e.type: e for e in self.last_observation.entities}
-            current_entities = {e.type: e for e in entity_obs}
-            state_changes.entities_added = [t for t in current_entities if t not in last_entities]
-            state_changes.entities_removed = [t for t in last_entities if t not in current_entities]
+            last_entities = {e.name: e for e in self.last_observation.entities}
+            current_entities = {e.name: e for e in entity_obs}
+            
+            # Aggregate entity changes by type
+            entity_changes = {}
+            for entity_name in current_entities:
+                if entity_name not in last_entities:
+                    entity_changes[entity_name] = entity_changes.get(entity_name, 0) + 1
+            for entity_name in last_entities:
+                if entity_name not in current_entities:
+                    entity_changes[entity_name] = entity_changes.get(entity_name, 0) - 1
+                    
+            # Add non-zero changes to state_changes
+            for entity_name, change in entity_changes.items():
+                if change != 0:  # Only include non-zero changes
+                    state_changes.entity_changes.append(EntityChange(entity=entity_name, change=change))
             
             # Compare inventory
-            last_inv = {i.type: i.quantity for i in self.last_observation.inventory}
-            current_inv = {i.type: i.quantity for i in inventory_obs}
+            last_inv = self.last_observation.inventory
+            current_inv = inventory_obs
             for item, quantity in current_inv.items():
                 if item not in last_inv or quantity != last_inv[item]:
-                    state_changes.inventory_changes.append({
-                        'item': item,
-                        'change': quantity - last_inv.get(item, 0)
-                    })
+                    state_changes.inventory_changes.append(InventoryChange(
+                        item=item,
+                        change=quantity - last_inv.get(item, 0)
+                    ))
         
         # Get serialized functions
         serialized_functions = []
@@ -349,6 +430,8 @@ class FactorioGymEnv(gym.Env):
                 # Then enhance the response with task output
                 task_response = self.task.enhance_response_with_task_output(result, task_success)
                 done = task_success
+
+            current_flows = ProductionFlows.from_dict(namespace._get_production_stats())
                 
             # Create response object for observation
             response = Response(
@@ -358,11 +441,9 @@ class FactorioGymEnv(gym.Env):
                 achievements={},  # Empty dict instead of None
                 step=0,
                 ticks=self.instance.get_elapsed_ticks(),
-                flows=ProductionFlows.from_dict(start_production_flows).get_new_flows(
-                    ProductionFlows.from_dict(namespace._get_production_stats())
-                ),
+                flows=ProductionFlows.from_dict(start_production_flows).get_new_flows(current_flows),
                 response=result,
-                task=task_response if self.task else TaskResponse(success=False, meta={}),
+                task=TaskResponse(success=task_success if self.task else False, meta={}) if not isinstance(task_response, TaskResponse) else task_response,
                 error=error_occurred,
                 program_id=None
             )

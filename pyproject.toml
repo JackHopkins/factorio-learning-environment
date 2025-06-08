@@ -25,7 +25,7 @@ classifiers = [
 ]
 dependencies = [
     "dotenv>=0.9.9",
-    "pydantic>=2.10.6",
+    "pydantic>=1.8.0",
     "lupa>=2.4",
     "slpp>=1.2.3",
     "factorio-rcon-py==1.2.1",
@@ -33,7 +33,27 @@ dependencies = [
     "pillow>=11.1.0",
     "tomli",
     "mcp[cli]",
-    "numpy>=2.2.3"
+    "numpy>=2.2.3",
+    "python-dotenv==1.0.1",
+    "imageio>=2.37.0",
+    "anyio>=4.8.0",
+    "pygame>=2.6.1",
+    "neptune>=1.14.0",
+    "pyopenssl==24.0.0",
+    "rich>=14.0.0",
+    "openai>=1.66.3",
+    "anthropic>=0.49.0",
+    "scipy>=1.15.2",
+    "scikit-image>=0.25.2",
+    "pyautogui>=0.9.54",
+    "psycopg2>=2.9.10",
+    "backoff>=2.2.1",
+    "tenacity>=9.0.0",
+    "pytest-asyncio>=1.0.0",
+    "fastapi>=0.68.0",
+    "uvicorn>=0.15.0",
+    "aiohttp>=3.8.0",
+    "a2a-sdk>=0.2.5",
 ]
 
 [project.optional-dependencies]
@@ -131,3 +151,6 @@ dependencies = [
 [tool.hatch.envs.docs.scripts]
 build = "mkdocs build"
 serve = "mkdocs serve"
+
+[tool.uv.sources]
+slpp = { git = "https://github.com/SirAnthony/slpp" }

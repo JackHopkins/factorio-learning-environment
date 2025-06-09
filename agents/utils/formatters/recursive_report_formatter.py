@@ -269,7 +269,7 @@ class RecursiveReportFormatter(ConversationFormatter):
             system_message = messages[0]
             messages = messages[1:]
         
-        function_definitions = namespace.get_functions()
+        function_definitions = namespace.get_functions() if namespace else []
 
         # Add function definitions to system prompt
         if function_definitions:

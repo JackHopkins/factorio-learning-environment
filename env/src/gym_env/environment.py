@@ -9,21 +9,15 @@ import datetime
 
 from env.src.instance import FactorioInstance
 from env.src.models.game_state import GameState
-from env.src.models.program import Program
 from env.src.models.achievements import ProductionFlows
-from env.src.entities import Entity, EntityStatus, Direction, Position, Dimensions, TileDimensions
-from env.src.models.technology_state import TechnologyState
-from env.src.models.research_state import ResearchState
+from env.src.entities import EntityStatus
 from env.src.utils.profits import get_achievements
 from agents import Response, TaskResponse
 from env.src.gym_env.observation import (
     Observation, 
     GameInfo, 
-    StateChanges, 
     Achievement, 
     AgentMessage,
-    EntityChange,
-    InventoryChange
 )
 from eval.tasks.task_abc import TaskABC
 
@@ -54,39 +48,18 @@ class FactorioGymEnv(gym.Env):
             # Raw text output from the last action
             'raw_text': spaces.Text(max_length=10000),
             
-            # Any errors that occurred
-            'errors': spaces.Sequence(spaces.Text(max_length=2000)),
-            
-            # Entities on the map
-            'entities': spaces.Sequence(spaces.Dict({
-                'name': spaces.Text(max_length=200),
-                'direction': spaces.Discrete(8),  # 8 possible directions
-                'position': spaces.Box(low=-np.inf, high=np.inf, shape=(2,), dtype=np.float32),
-                'energy': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                'dimensions': spaces.Dict({
-                    'width': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                    'height': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                }),
-                'tile_dimensions': spaces.Dict({
-                    'tile_width': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                    'tile_height': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                }),
-                'health': spaces.Box(low=0, high=1, shape=(), dtype=np.float32),
-                'status': spaces.Discrete(len(EntityStatus)),  # Number of possible status values
-                'warnings': spaces.Sequence(spaces.Text(max_length=200)),
-                'id': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
-                'type': spaces.Text(max_length=200),
-            })),
+            # Entities on the map - now as text representations
+            'entities': spaces.Sequence(spaces.Text(max_length=1000)),  # Each entity's repr string
             
             # Current inventory state
-            'inventory': spaces.Dict({
+            'inventory': spaces.Sequence(spaces.Dict({
                 'type': spaces.Text(max_length=200),
                 'quantity': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
-            }),
+            })),
             
             # Research state
             'research': spaces.Dict({
-                'technologies': spaces.Dict({
+                'technologies': spaces.Sequence(spaces.Dict({
                     'name': spaces.Text(max_length=200),
                     'researched': spaces.Discrete(2),  # 0 or 1
                     'enabled': spaces.Discrete(2),  # 0 or 1
@@ -98,14 +71,14 @@ class FactorioGymEnv(gym.Env):
                         'item': spaces.Text(max_length=200),
                         'amount': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
                     })),
-                }),
+                })),
                 'current_research': spaces.Text(max_length=200),
                 'research_progress': spaces.Box(low=0, high=1, shape=(), dtype=np.float32),
                 'research_queue': spaces.Sequence(spaces.Text(max_length=200)),
-                'progress': spaces.Dict({
+                'progress': spaces.Sequence(spaces.Dict({
                     'name': spaces.Text(max_length=200),
                     'value': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                }),
+                })),
             }),
             
             # Game information
@@ -113,18 +86,6 @@ class FactorioGymEnv(gym.Env):
                 'tick': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
                 'time': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
                 'speed': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-            }),
-            
-            # State changes since last step
-            'state_changes': spaces.Dict({
-                'inventory_changes': spaces.Sequence(spaces.Dict({
-                    'item': spaces.Text(max_length=200),
-                    'change': spaces.Box(low=-np.inf, high=np.inf, shape=(), dtype=np.int32),
-                })),
-                'entity_changes': spaces.Sequence(spaces.Dict({
-                    'entity': spaces.Text(max_length=200),
-                    'change': spaces.Box(low=-np.inf, high=np.inf, shape=(), dtype=np.int32),
-                })),
             }),
             
             # Current score
@@ -144,40 +105,46 @@ class FactorioGymEnv(gym.Env):
             
             # Production flows
             'flows': spaces.Dict({
-                'input': spaces.Dict({
+                'input': spaces.Sequence(spaces.Dict({
                     'type': spaces.Text(max_length=200),
                     'rate': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                }),
-                'output': spaces.Dict({
-                    'type': spaces.Text(max_length=200),
-                    'rate': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                }),
-                'crafted': spaces.Sequence(spaces.Dict({
-                    'name': spaces.Text(max_length=200),
-                    'count': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
                 })),
-                'harvested': spaces.Dict({
+                'output': spaces.Sequence(spaces.Dict({
+                    'type': spaces.Text(max_length=200),
+                    'rate': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                })),
+                'crafted': spaces.Sequence(spaces.Dict({
+                    'crafted_count': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
+                    'inputs': spaces.Dict({
+                        'type': spaces.Text(max_length=200),
+                        'amount': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                    }),
+                    'outputs': spaces.Dict({
+                        'type': spaces.Text(max_length=200),
+                        'amount': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
+                    }),
+                })),
+                'harvested': spaces.Sequence(spaces.Dict({
                     'type': spaces.Text(max_length=200),
                     'amount': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                }),
-                'price_list': spaces.Dict({
+                })),
+                'price_list': spaces.Sequence(spaces.Dict({
                     'type': spaces.Text(max_length=200),
                     'price': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                }),
-                'static_items': spaces.Dict({
+                })),
+                'static_items': spaces.Sequence(spaces.Dict({
                     'type': spaces.Text(max_length=200),
                     'value': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                }),
+                })),
             }),
             
             # Task verification status
             'task_verification': spaces.Dict({
                 'success': spaces.Discrete(2),  # 0 or 1
-                'message': spaces.Text(max_length=200),
-                'meta': spaces.Dict({
+                'meta': spaces.Sequence(spaces.Dict({
                     'key': spaces.Text(max_length=200),
                     'value': spaces.Text(max_length=1000),
-                }),
+                })),
             }),
             
             # Messages from other agents
@@ -199,18 +166,18 @@ class FactorioGymEnv(gym.Env):
         self.last_observation = None
         # Track last message timestamp for each agent
         self.last_message_timestamps = {i: 0.0 for i in range(instance.num_agents)}
-        
+     
     def get_observation(self, agent_idx: int = 0, response: Optional[Response] = None) -> Observation:
         """Convert the current game state into a gym observation"""
         namespace = self.instance.namespaces[agent_idx]
+        # Get entity observations
+        entities = namespace.get_entities()
+        entity_obs = [str(e) for e in entities]
         
-        # Get entities
-        entity_obs = namespace.get_entities()
-            
-        # Get inventory
+        # Get inventory observations
         inventory_obs = namespace.inspect_inventory()
         
-        # Get research state
+        # Get research observations
         research_obs = namespace._save_research_state()
         
         # Get game info
@@ -220,22 +187,15 @@ class FactorioGymEnv(gym.Env):
             speed=self.instance._speed
         )
         
-        # Get production flows
+        # Get flows
         flows = namespace._get_production_stats()
-        flows_obs = ProductionFlows(
-            input=flows.get('inputs', {}),
-            output=flows.get('outputs', {}),
-            crafted=flows.get('crafted', []),
-            harvested=flows.get('harvested', {}),
-            price_list=flows.get('price_list'),
-            static_items=flows.get('static_items')
-        )
+        flows_obs = ProductionFlows.from_dict(flows)
         
-        # Get messages and update timestamp
+        # Get messages
         messages = namespace.get_messages()
         message_obs = []
         latest_timestamp = self.last_message_timestamps[agent_idx]
-        
+
         for msg in messages:
             if msg['timestamp'] > self.last_message_timestamps[agent_idx]:
                 message_obs.append(AgentMessage(
@@ -244,7 +204,7 @@ class FactorioGymEnv(gym.Env):
                     timestamp=msg['timestamp']
                 ))
                 latest_timestamp = max(latest_timestamp, msg['timestamp'])
-        
+
         # Update last message timestamp
         if message_obs:
             self.last_message_timestamps[agent_idx] = latest_timestamp
@@ -262,40 +222,6 @@ class FactorioGymEnv(gym.Env):
         if response and hasattr(response, 'achievements'):
             achievements.append(Achievement.from_dict(response.achievements))
         
-        # Get state changes by comparing with last observation
-        state_changes = StateChanges(
-            inventory_changes=[],
-            entity_changes=[]
-        )
-        if self.last_observation:
-            # Compare entities
-            last_entities = {getattr(e, 'name', getattr(e, 'type', '')): e for e in self.last_observation.entities}
-            current_entities = {getattr(e, 'name', getattr(e, 'type', '')): e for e in entity_obs}
-            
-            # Aggregate entity changes by type
-            entity_changes = {}
-            for entity_name in current_entities:
-                if entity_name not in last_entities:
-                    entity_changes[entity_name] = entity_changes.get(entity_name, 0) + 1
-            for entity_name in last_entities:
-                if entity_name not in current_entities:
-                    entity_changes[entity_name] = entity_changes.get(entity_name, 0) - 1
-                    
-            # Add non-zero changes to state_changes
-            for entity_name, change in entity_changes.items():
-                if change != 0:  # Only include non-zero changes
-                    state_changes.entity_changes.append(EntityChange(entity=entity_name, change=change))
-            
-            # Compare inventory
-            last_inv = self.last_observation.inventory
-            current_inv = inventory_obs
-            for item, quantity in current_inv.items():
-                if item not in last_inv or quantity != last_inv[item]:
-                    state_changes.inventory_changes.append(InventoryChange(
-                        item=item,
-                        change=quantity - last_inv.get(item, 0)
-                    ))
-        
         # Get serialized functions
         serialized_functions = []
         for func in namespace.get_functions():
@@ -306,21 +232,19 @@ class FactorioGymEnv(gym.Env):
         
         observation = Observation(
             raw_text=response.response if response else '',
-            errors=[str(e) for e in response.errors] if response and hasattr(response, 'errors') else [],
-            entities=entity_obs,
+            entities=entity_obs,  # Convert entities to strings
             inventory=inventory_obs,
             research=research_obs,
             game_info=game_info,
-            state_changes=state_changes,
             score=response.score if response else 0.0,
             achievements=achievements,
             flows=flows_obs,
             task_verification=task_verification,
-            messages=message_obs,
+            messages=messages,
             serialized_functions=serialized_functions
         )
         
-        # Store current observation for next state change comparison
+        # Store observation for next step
         self.last_observation = observation
         
         return observation
@@ -421,20 +345,6 @@ class FactorioGymEnv(gym.Env):
         """
         self.instance.reset(state)
 
-    def eval(self, code: str, agent_idx: int, timeout: int = 60) -> Tuple[float, float, str]:
-        """Execute code in the Factorio instance.
-        
-        Args:
-            code: Python code string to execute
-            agent_idx: Index of the agent executing the code
-            timeout: Maximum time in seconds to wait for execution
-            
-        Returns:
-            Tuple of (reward, time, result)
-        """
-        return self.instance.eval(code, agent_idx=agent_idx, timeout=timeout)
-
-            
     def reset(self, state: Optional[GameState] = None) -> Dict[str, Any]:
         """Reset the environment to initial state"""
         self.reset_instance(state)
@@ -443,7 +353,8 @@ class FactorioGymEnv(gym.Env):
         # Reset message timestamps
         self.last_message_timestamps = {i: 0.0 for i in range(self.instance.num_agents)}
         # Convert observation to dictionary to match gym standards
-        return self.get_observation(0).to_dict()  # Return observation for first agent
+        observation = self.get_observation(0).to_dict()
+        return observation, {} # Return observation for first agent
         
     def close(self):
         """Clean up resources"""

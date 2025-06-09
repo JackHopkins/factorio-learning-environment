@@ -14,8 +14,6 @@ from env.src.gym_env.environment import FactorioGymEnv
 from env.src.gym_env.observation import Observation
 from eval.tasks.task_abc import TaskABC
 from a2a.types import AgentCard
-from gym_env.observation_formatter import BasicObservationFormatter
-from eval.open.db_client import PostgresDBClient
 
 @dataclass
 class GymEvalConfig:
@@ -51,20 +49,6 @@ class GymTrajectoryRunner:
         )
         self.process_id = process_id
         self.iteration_times = []
-        self.db_client = None
-
-    async def initialize_db(self):
-        """Initialize database client with connection pool"""
-        self.db_client = PostgresDBClient(
-            max_conversation_length=40,
-            min_connections=2,
-            max_connections=5,
-            host=os.getenv("SKILLS_DB_HOST"),
-            port=os.getenv("SKILLS_DB_PORT"),
-            dbname=os.getenv("SKILLS_DB_NAME"),
-            user=os.getenv("SKILLS_DB_USER"),
-            password=os.getenv("SKILLS_DB_PASSWORD")
-        )
 
     def get_eta(self, current_iteration: int) -> str:
         """Calculate estimated time remaining"""
@@ -125,9 +109,6 @@ class GymTrajectoryRunner:
 
     async def run(self):
         """Run a single trajectory"""
-        # Initialize database
-        await self.initialize_db()
-        
         self.start_time = time.time()
         
         # Create version-specific directory for logging
@@ -189,7 +170,3 @@ class GymTrajectoryRunner:
                 #except Exception as e:
                 #    print(f"Error in iteration {iteration}: {e}")
                 #    continue
-        
-        # Cleanup database connection
-        if self.db_client:
-            await self.db_client.cleanup()

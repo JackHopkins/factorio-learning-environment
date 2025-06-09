@@ -38,7 +38,7 @@ class ProductionFlows:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert ProductionFlows to a dictionary."""
-        return {
+        d = {
             'input': self.input,
             'output': self.output,
             'crafted': self.crafted,
@@ -46,7 +46,7 @@ class ProductionFlows:
             'price_list': self.price_list,
             'static_items': self.static_items
         }
-
+        return d
     def is_valid(self) -> bool:
         """Check if the production flows data is valid."""
         return isinstance(self.input, dict) and 'output' in self.__dict__

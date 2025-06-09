@@ -12,7 +12,7 @@ from gym_env.trajectory_runner import GymTrajectoryRunner, GymEvalConfig
 from gym_env.observation_formatter import BasicObservationFormatter
 from eval.tasks.task_factory import TaskFactory
 from cluster.local.cluster_ips import get_local_container_ips
-from eval.open.independent_runs.trajectory_runner import get_next_version, create_factorio_instance
+from eval.open.independent_runs.trajectory_runner import get_next_version, create_factorio_instance, create_db_client
 
 load_dotenv()
 
@@ -32,16 +32,24 @@ def run_process(run_idx: int, config: GymEvalConfig):
 
 async def run_trajectory(run_idx: int, config: GymEvalConfig):
     """Run a single gym evaluation process"""
+    # Create db client
+    db_client = await create_db_client()
+    
     # Create trajectory runner
     instance = await create_factorio_instance(run_idx, len(config.agents))
     config.task.setup(instance)
     runner = GymTrajectoryRunner(
         config=config,
         instance=instance,
+        db_client=db_client,
         process_id=run_idx
     )
+    
     # Run the evaluation
     await runner.run()
+    
+    # Clean up db client
+    await db_client.cleanup()
 
 async def main():
     parser = argparse.ArgumentParser()

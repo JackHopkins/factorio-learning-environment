@@ -161,23 +161,23 @@ class GymAgent(AgentABC):
         self.conversation = await self.formatter.format_conversation(self.conversation)
         self.last_response = observation.raw_text
 
-
+    def get_conversation(self) -> Conversation:
+        """Get the current conversation state"""
+        return self.conversation
+    
+    def get_last_response(self) -> str:
+        """Get the last response from the environment"""
+        return self.last_response
+    
 #    @tenacity.retry(
 #        retry=retry_if_exception_type(Exception),
 #        wait=wait_exponential(multiplier=1, min=4, max=10)
 #    )
-    async def generate_program(self, agent_idx: int, version: int, version_description: str, process_id: int) -> Program:
-        """Generate a program from the current observation.
+    async def generate_policy(self) -> Policy:
+        """Generate a policy from the current observation.
         
-        Args:
-            observation_dict: Dictionary containing the current observation state
-            agent_idx: Index of the agent in the multi-agent setup
-            version: Version number for the program
-            version_description: Description of the version
-            process_id: ID of the current process
-            
         Returns:
-            Program if generation was successful, None otherwise
+            Policy if generation was successful, None otherwise
         """
         try:
             model_response = await self.llm_factory.acall(
@@ -192,33 +192,9 @@ class GymAgent(AgentABC):
             if not policy:
                 raise Exception("Policy not valid Python. Skipping.")
             policy.input_conversation = self.conversation
-
-            # get depth
-            messages = policy.input_conversation.model_dump()['messages']
-            depth = len(messages) - 2
-
-            # Create program from policy
-            program = Program(
-                code=policy.code,
-                conversation=policy.input_conversation if policy.input_conversation else self.conversation,
-                response=self.last_response,
-                token_usage=policy.meta.total_tokens,
-                completion_token_usage=policy.meta.output_tokens,
-                prompt_token_usage=policy.meta.input_tokens,
-                version=version,
-                instance=agent_idx,
-                model=self.model,
-                version_description=version_description,
-                meta={
-                    "model": self.model,
-                    "process_id": process_id
-                },
-                depth=depth
-            )
-
-            return program
+            return policy
 
         except Exception as e:
-            print(f"Program generation failed: {str(e)}")
-            return
+            print(f"Policy generation failed: {str(e)}")
+            return None
 

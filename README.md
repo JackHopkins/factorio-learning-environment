@@ -33,9 +33,9 @@ automation (e.g electronic-circuit manufacturing).
 
 ## Quick Links
 - [Installation](#installation)
-- [Environment](#environment-documentation)
-- [Agents](#agent-documentation)
-- [Tasks](#task-documentation)
+- [Environment](#environment)
+- [Agents](#agents)
+- [Tasks](#tasks)
 - [Multiagent Experiments](#multiagent-experiments)
 - [Tools](#tool-documentation)
 - [Project Structure](#project-structure)

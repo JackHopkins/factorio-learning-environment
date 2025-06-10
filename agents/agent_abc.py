@@ -50,7 +50,7 @@ class AgentABC:
         """
         pass
     
-    def check_completion(self, response: Response) -> tuple[bool, bool]:
+    def check_step_completion(self, response: Response) -> tuple[bool, bool]:
         """
         Check if the agent should complete its turn and if the state should be updated
         returns:

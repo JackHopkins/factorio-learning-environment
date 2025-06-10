@@ -296,7 +296,7 @@ class TrajectoryRunner:
                     )
 
                     # get the agent_completed flag from the agent
-                    agent_completed, update_state = self.agents[agent_idx].check_completion(last_responses[agent_idx])
+                    agent_completed, update_state = self.agents[agent_idx].check_step_completion(last_responses[agent_idx])
                     if update_state:
                         current_state = program.state
                     else:

@@ -1,5 +1,5 @@
+import copy
 from gym_env.observation_formatter import BasicObservationFormatter
-import tenacity
 from typing import Dict, Any, Optional, Tuple
 
 from agents import Response, CompletionResult, Policy
@@ -8,11 +8,12 @@ from agents.utils.formatters.recursive_report_formatter import RecursiveReportFo
 from agents.utils.llm_factory import LLMFactory
 from agents.utils.parse_response import parse_response
 from env.src.models.conversation import Conversation
-from env.src.models.message import Message as ConvMessage
+from env.src.models.message import Message
 from env.src.models.generation_parameters import GenerationParameters
 from env.src.models.program import Program
 from env.src.gym_env.observation import AgentMessage, Observation
 from env.src.namespace import FactorioNamespace
+from eval.tasks.task_abc import TaskABC
 from tenacity import wait_exponential, retry_if_exception_type
 
 GENERAL_INSTRUCTIONS = \
@@ -111,11 +112,12 @@ FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON AND REMEMBER MAXIMUM 30 LINES
 
 class GymAgent(AgentABC):
     def __init__(self, model: str, system_prompt: str, task: Any, agent_idx: Optional[int] = None, observation_formatter: Optional[BasicObservationFormatter] = None, *args, **kwargs):
-        instructions = self.get_instructions(system_prompt, task, agent_idx)
+        instructions = self._get_instructions(system_prompt, task, agent_idx)
         super().__init__(model, instructions, *args, **kwargs)
         self.task = task
         self.llm_factory = LLMFactory(model)
         self.observation_formatter = observation_formatter or BasicObservationFormatter()
+        self.conversation = Conversation()
         self.formatter = RecursiveReportFormatter(
             chunk_size=16,
             llm_call=self.llm_factory.acall,
@@ -126,26 +128,8 @@ class GymAgent(AgentABC):
             max_tokens=4096,
             model=model
         )
-        self.last_response = None
 
-    async def step(self, conversation: Conversation) -> Policy:
-        pass
-
-    async def end(self, conversation: Conversation, completion: CompletionResult):
-        """Cleanup when the trajectory ends"""
-        pass
-
-
-    def reset(self, observation: Observation):
-        formatted_obs = self.observation_formatter.format(observation).raw_str
-        self.conversation = Conversation(
-            messages=[
-                ConvMessage(role="system", content=self.system_prompt),
-                ConvMessage(role="user", content=formatted_obs),
-            ]
-        )
-
-    def get_instructions(self, system_prompt: str, task: Any, agent_idx: Optional[int] = None):
+    def _get_instructions(self, system_prompt: str, task: TaskABC, agent_idx: Optional[int] = None):
         instructions = GENERAL_INSTRUCTIONS + system_prompt + FINAL_INSTRUCTION
         instructions += f"\n\n### Goal\n{task.goal_description}\n\n"
         if agent_idx is not None and task.get_agent_instructions(agent_idx) is not None:
@@ -153,32 +137,28 @@ class GymAgent(AgentABC):
             instructions += f"### Specific Instructions for Agent {player_idx}\n{task.get_agent_instructions(agent_idx)}\n\n"
         return instructions
 
-    async def update_conversation(self, program: Program, observation: Observation):
-        formatted_program = f"```python\n{program.code}\n```"
+    def reset(self, conversation: Conversation):
+        self.conversation = copy.deepcopy(conversation)
+        if self.conversation.messages[0].role != "system":
+            self.conversation.set_system_message(self.system_prompt)
+
+    async def update_conversation(self, observation: Observation, previous_program: Optional[Program] = None):
+        if previous_program:
+            formatted_program = f"```python\n{previous_program.code}\n```"
+            self.conversation.add_agent_message(formatted_program)
+        
         formatted_obs = self.observation_formatter.format(observation).raw_str
-
-        self.conversation.add_result(formatted_program, formatted_obs)
+        self.conversation.add_user_message(formatted_obs)
         self.conversation = await self.formatter.format_conversation(self.conversation)
-        self.last_response = observation.raw_text
 
-    def get_conversation(self) -> Conversation:
-        """Get the current conversation state"""
-        return self.conversation
-    
-    def get_last_response(self) -> str:
-        """Get the last response from the environment"""
-        return self.last_response
-    
-#    @tenacity.retry(
-#        retry=retry_if_exception_type(Exception),
-#        wait=wait_exponential(multiplier=1, min=4, max=10)
-#    )
-    async def generate_policy(self) -> Policy:
+    async def generate_policy(self, observation: Optional[Observation] = None, previous_program: Optional[Program] = None) -> Policy:
         """Generate a policy from the current observation.
         
         Returns:
             Policy if generation was successful, None otherwise
         """
+        if observation:
+            await self.update_conversation(observation, previous_program)
         try:
             model_response = await self.llm_factory.acall(
                 messages=self.formatter.to_llm_messages(self.conversation),
@@ -187,7 +167,6 @@ class GymAgent(AgentABC):
                 max_tokens=self.generation_params.max_tokens,
                 model=self.generation_params.model,
             )
-
             policy = parse_response(model_response)
             if not policy:
                 raise Exception("Policy not valid Python. Skipping.")
@@ -197,4 +176,11 @@ class GymAgent(AgentABC):
         except Exception as e:
             print(f"Policy generation failed: {str(e)}")
             return None
+
+    async def step(self, conversation: Conversation) -> Policy:
+        pass
+
+    async def end(self, completion: CompletionResult):
+        """Cleanup when the trajectory ends"""
+        pass
 

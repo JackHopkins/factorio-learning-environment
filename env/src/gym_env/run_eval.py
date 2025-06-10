@@ -4,7 +4,6 @@ import multiprocessing
 from dotenv import load_dotenv
 from pathlib import Path
 import json
-from typing import List, Optional
 
 from agents.gym_agent import GymAgent
 from gym_env.trajectory_runner import GymTrajectoryRunner
@@ -13,7 +12,6 @@ from gym_env.observation_formatter import BasicObservationFormatter
 from eval.tasks.task_factory import TaskFactory
 from cluster.local.cluster_ips import get_local_container_ips
 from eval.open.independent_runs.trajectory_runner import get_next_version, create_factorio_instance, create_db_client
-from a2a.types import AgentCard
 
 load_dotenv()
 
@@ -57,8 +55,9 @@ async def main():
     if any(num_agents == 1 for num_agents in num_agents_in_configs) and any(num_agents > 1 for num_agents in num_agents_in_configs):
         raise ValueError("Cannot mix single agent and multi agent runs in the same run config file. Please split into separate files.")
 
-    # Create initial state and get system prompt
     try:
+        # TODO: the server currently has only default agent cards. 
+        # But we aren't doing anything with them yet anyway.
         num_agents = run_configs[0].num_agents
         instance = await create_factorio_instance(0, num_agents)
         system_prompt = instance.get_system_prompt()

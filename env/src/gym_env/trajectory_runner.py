@@ -18,23 +18,10 @@ from env.src.instance import FactorioInstance
 from env.src.gym_env.environment import FactorioGymEnv
 from env.src.gym_env.observation import Observation
 from gym_env.trajectory_logger import TrajectoryLogger
+from gym_env.config import GymEvalConfig
 from eval.tasks.task_abc import TaskABC
 from eval.open.db_client import PostgresDBClient
 from a2a.types import AgentCard
-
-@dataclass
-class GymEvalConfig:
-    """Configuration for gym evaluation"""
-    agents: List[GymAgent]
-    version: int
-    version_description: str
-    exit_on_task_success: bool
-    task: Optional[TaskABC] = None
-    agent_cards: Optional[List[AgentCard]] = None
-
-    def __post_init__(self):
-        if self.task is None and hasattr(self.agents[0], 'task'):
-            self.task = self.agents[0].task
 
 class GymTrajectoryRunner:
     """Handles program generation and evaluation for a single trajectory in the gym environment"""
@@ -236,5 +223,5 @@ class GymTrajectoryRunner:
                         return
                         
             except Exception as e:
-                print(f"Error in iteration {agent_steps[agent_idx]}: {e}")
+                print(f"Error in trajectory runner iteration {agent_steps[agent_idx]}: {e}")
                 continue

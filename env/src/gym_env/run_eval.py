@@ -4,31 +4,23 @@ import multiprocessing
 from dotenv import load_dotenv
 from pathlib import Path
 import json
-from dataclasses import dataclass
 from typing import List, Optional
 
 from agents.gym_agent import GymAgent
-from gym_env.trajectory_runner import GymTrajectoryRunner, GymEvalConfig
+from gym_env.trajectory_runner import GymTrajectoryRunner
+from gym_env.config import GymRunConfig, GymEvalConfig
 from gym_env.observation_formatter import BasicObservationFormatter
 from eval.tasks.task_factory import TaskFactory
 from cluster.local.cluster_ips import get_local_container_ips
 from eval.open.independent_runs.trajectory_runner import get_next_version, create_factorio_instance, create_db_client
+from a2a.types import AgentCard
 
 load_dotenv()
-
-@dataclass
-class GymRunConfig:
-    """Configuration for a single gym environment evaluation run"""
-    task: str
-    model: str
-    version: Optional[int] = None
-    num_agents: int = 1
-    exit_on_task_success: bool = True
-    observation_formatter: Optional[BasicObservationFormatter] = None
 
 def run_process(run_idx: int, config: GymEvalConfig):
     """Run a single gym evaluation process"""
     asyncio.run(run_trajectory(run_idx, config))
+
 
 async def run_trajectory(run_idx: int, config: GymEvalConfig):
     """Run a single gym evaluation process"""
@@ -44,11 +36,7 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
         db_client=db_client,
         process_id=run_idx
     )
-    
-    # Run the evaluation
     await runner.run()
-    
-    # Clean up db client
     await db_client.cleanup()
 
 async def main():
@@ -75,7 +63,7 @@ async def main():
         instance = await create_factorio_instance(0, num_agents)
         system_prompt = instance.get_system_prompt()
     except Exception as e:
-        raise Exception(f"Error creating gym instance: {e}")
+        raise Exception(f"Error creating factorio instance: {e}")
 
     # Check if we have enough containers
     ips, udp_ports, tcp_ports = get_local_container_ips()
@@ -92,8 +80,9 @@ async def main():
         # Create task
         task = TaskFactory.create_task(run_config.task)
 
-        # Create agents
+        # Create agents and their agent cards
         agents = []
+        agent_cards = []
         for agent_idx in range(run_config.num_agents):
             system_prompt = instance.get_system_prompt(agent_idx)
             agent = GymAgent(
@@ -104,20 +93,27 @@ async def main():
                 observation_formatter=BasicObservationFormatter(include_research=False)
             )
             agents.append(agent)
+            
+            # Create agent card for a2a support
+            agent_card = agent.get_agent_card()
+            agent_cards.append(agent_card)
 
         # Set version
         version = run_config.version if run_config.version is not None else base_version + version_offset
         version_offset += 1
 
-        # Create eval config
+        # Create eval config with agent cards for a2a support
         config = GymEvalConfig(
             agents=agents,
             version=version,
             version_description=f"model:{run_config.model}\ntype:{task.task_key}\nnum_agents:{run_config.num_agents}",
             exit_on_task_success=run_config.exit_on_task_success,
             task=task,
-            agent_cards=run_config.agent_cards if hasattr(run_config, 'agent_cards') else None
+            agent_cards=agent_cards
         )
+        
+        # Ensure agent cards are properly set for a2a functionality
+        assert config.agent_cards is not None
 
         # Start process
         p = multiprocessing.Process(

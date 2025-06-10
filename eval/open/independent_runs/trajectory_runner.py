@@ -348,13 +348,12 @@ async def create_factorio_instance(instance_id: int, num_agents: int = 1, agent_
         "num_agents": num_agents
     }
 
-    if agent_cards is not None:
+    if num_agents > 1:
         instance = await A2AFactorioInstance.create(
             **common_kwargs,
             agent_cards=agent_cards
         )
     else:
-        assert num_agents == 1, "Multiagent runs are not supported without agent cards"
         instance = FactorioInstance(**common_kwargs)
 
     instance.speed(10)

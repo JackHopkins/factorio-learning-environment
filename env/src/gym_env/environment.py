@@ -193,20 +193,20 @@ class FactorioGymEnv(gym.Env):
         
         # Get messages
         messages = namespace.get_messages()
-        message_obs = []
+        messages_obs = []
         latest_timestamp = self.last_message_timestamps[agent_idx]
 
         for msg in messages:
             if msg['timestamp'] > self.last_message_timestamps[agent_idx]:
-                message_obs.append(AgentMessage(
-                    sender=str(msg['sender']),
+                messages_obs.append(AgentMessage(
+                    sender=msg['sender'],
                     content=msg['message'],
                     timestamp=msg['timestamp']
                 ))
                 latest_timestamp = max(latest_timestamp, msg['timestamp'])
 
         # Update last message timestamp
-        if message_obs:
+        if messages_obs:
             self.last_message_timestamps[agent_idx] = latest_timestamp
         
         # Get task verification if available
@@ -240,7 +240,7 @@ class FactorioGymEnv(gym.Env):
             achievements=achievements,
             flows=flows_obs,
             task_verification=task_verification,
-            messages=messages,
+            messages=messages_obs,
             serialized_functions=serialized_functions
         )
         
@@ -264,78 +264,73 @@ class FactorioGymEnv(gym.Env):
             done: Whether the episode is done
             info: Additional information
         """
-        try:
-            agent_idx = action['agent_idx']
-            code = action['code']
-            
-            # Get initial state information
-            namespace = self.instance.namespaces[agent_idx]
-            start_production_flows = ProductionFlows.from_dict(namespace._get_production_stats())
-            initial_score, _ = namespace.score()
-            
-            # Execute the action
-            score, eval_time, result = self.instance.eval(code, agent_idx=agent_idx, timeout=60)
-            
-            # Check for errors
-            error_occurred = "error" in result.lower() or "exception: " in result.lower()
-            
-            # Calculate reward
-            if error_occurred:
-                reward = -self.error_penalty
-            else:
-                # Wait for value accrual
-                time.sleep(self.value_accrual_time)
-                reward = score - initial_score
-            
-            # Get task verification if task exists
-            task_response = task_success = None
-            done = False
-            if self.task:
-                # First get the raw verification
-                task_success = self.task.verify(reward, self.instance, step_statistics={})
-                # Then enhance the response with task output
-                task_response = self.task.enhance_response_with_task_output(result, task_success)
-                done = task_success.success
+        agent_idx = action['agent_idx']
+        code = action['code']
+        
+        # Get initial state information
+        namespace = self.instance.namespaces[agent_idx]
+        start_production_flows = ProductionFlows.from_dict(namespace._get_production_stats())
+        initial_score, _ = namespace.score()
+        
+        # Execute the action
+        score, eval_time, result = self.instance.eval(code, agent_idx=agent_idx, timeout=60)
+        
+        # Check for errors
+        error_occurred = "error" in result.lower() or "exception: " in result.lower()
+        
+        # Calculate reward
+        if error_occurred:
+            reward = -self.error_penalty
+        else:
+            # Wait for value accrual
+            time.sleep(self.value_accrual_time)
+            reward = score - initial_score
+        
+        # Get task verification if task exists
+        task_response = task_success = None
+        done = False
+        if self.task:
+            # First get the raw verification
+            task_success = self.task.verify(reward, self.instance, step_statistics={})
+            # Then enhance the response with task output
+            task_response = self.task.enhance_response_with_task_output(result, task_success)
+            done = task_success.success
 
-            # Get post-execution flows and calculate achievements
-            current_flows = ProductionFlows.from_dict(namespace._get_production_stats())
-            achievements = get_achievements(start_production_flows.__dict__, current_flows.__dict__)
-                
-            # Create response object for observation
-            response = Response(
-                code=f"```python\n{code}\n```",
-                created_at=datetime.datetime.now(),
-                score=reward,
-                achievements=achievements,
-                step=0,
-                ticks=self.instance.get_elapsed_ticks(),
-                flows=start_production_flows.get_new_flows(current_flows),
-                response=task_response if task_response else result,
-                task=task_success if task_success else TaskResponse(success=False, meta={}),
-                error=error_occurred,
-                program_id=None
-            )
+        # Get post-execution flows and calculate achievements
+        current_flows = ProductionFlows.from_dict(namespace._get_production_stats())
+        achievements = get_achievements(start_production_flows.__dict__, current_flows.__dict__)
             
-            # Get observation for the acting agent
-            observation = self.get_observation(agent_idx, response)
-            
-            # Get additional info
-            info = {
-                'error_occurred': error_occurred,
-                'result': result,
-                'ticks': self.instance.get_elapsed_ticks(),
-                'flows': response.flows,
-                'agent_idx': agent_idx,
-                'last_message_timestamp': self.last_message_timestamps[agent_idx],
-                'task_verification': task_response,
-                'achievements': achievements  # Add achievements to info
-            }
-            
-            return observation.to_dict(), reward, done, info
-            
-        except Exception as e:
-            print(f"Error in step: {str(e)}")
-            raise e
+        # Create response object for observation
+        response = Response(
+            code=f"```python\n{code}\n```",
+            created_at=datetime.datetime.now(),
+            score=reward,
+            achievements=achievements,
+            step=0,
+            ticks=self.instance.get_elapsed_ticks(),
+            flows=start_production_flows.get_new_flows(current_flows),
+            response=task_response if task_response else result,
+            task=task_success if task_success else TaskResponse(success=False, meta={}),
+            error=error_occurred,
+            program_id=None
+        )
+        
+        # Get observation for the acting agent
+        observation = self.get_observation(agent_idx, response)
+        
+        # Get additional info
+        info = {
+            'error_occurred': error_occurred,
+            'result': result,
+            'ticks': self.instance.get_elapsed_ticks(),
+            'flows': response.flows,
+            'agent_idx': agent_idx,
+            'last_message_timestamp': self.last_message_timestamps[agent_idx],
+            'task_verification': task_response,
+            'achievements': achievements  # Add achievements to info
+        }
+        
+        return observation.to_dict(), reward, done, info
 
     def reset_instance(self, state: Optional[GameState] = None) -> None:
         """Reset the Factorio instance to a given state or initial state.

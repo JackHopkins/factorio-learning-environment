@@ -1,1 +1,1 @@
-[{"task": "logistics_science_pack_throughput_16.json", "model": "claude-3-5-sonnet-latest"}]
+[{"task": "logistics_science_pack_throughput_16.json", "model": "claude-3-5-sonnet-latest", "num_agents": 2}]

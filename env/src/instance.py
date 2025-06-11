@@ -257,9 +257,8 @@ class FactorioInstance:
         try:
             rcon_client.connect()
             player_count = rcon_client.send_command('/sc rcon.print(#game.players)')
-            if int(player_count) <= 0:
-                raise Exception(
-                    "Player hasn't been initialised into the game. Please log in once to make this node operational.")
+            if int(player_count) == 0:
+                print("WARNING: LuaPlayer hasn't been initialised into the game. Entity placement behavior can be incorrect for boilers and pumps.")
             #rcon_client.send_command('/sc global = {}')
             #rcon_client.send_command('/sc global.actions = {}')
 
@@ -570,7 +569,7 @@ class FactorioInstance:
             self.add_command(f"/sc global.actions.initialise_inventory({player_index}, '{inventory_items_json}')", raw=True)
 
         if self.all_technologies_researched:
-            self.add_command("/sc game.players[1].force.research_all_technologies()", raw=True)
+            self.add_command("/sc global.agent_characters[1].force.research_all_technologies()", raw=True)
         self.execute_transaction()
         #self.clear_entities()
         self._reset_static_achievement_counters()
@@ -640,12 +639,12 @@ class FactorioInstance:
         """Create Factorio characters for all agents in the game."""
         # Create characters in Factorio
         self.begin_transaction()
-        self.add_command('/sc player = game.players[1]')
         color_logic = ''
         if self.num_agents > 1:
             color_logic = 'if i==1 then char.color={r=0,g=1,b=0,a=1} elseif i==2 then char.color={r=0,g=0,b=1,a=1} end;'
         
         self.add_command(f'/sc global.agent_characters = {{}}; for _,c in pairs(game.surfaces[1].find_entities_filtered{{type="character"}}) do if c then c.destroy() end end; for i=1,{self.num_agents} do local char = game.surfaces[1].create_entity{{name="character",position={{x=0,y=(i-1)*2}},force=game.forces.player}}; {color_logic} global.agent_characters[i]=char end', raw=True)
+        self.add_command('/sc player = global.agent_characters[1]', raw=True)
         self.execute_transaction()
 
     def speed(self, speed): 

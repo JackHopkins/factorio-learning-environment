@@ -210,7 +210,9 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         end
         global.utils.avoid_entity(player_index, entity, position, direction)
         -- need to use game.players[1] since player.can_place_entity behaves differently for offshore pumps
-        local can_build = game.players[1].can_place_entity{
+        -- but fallback to LuaSurface if no LuaPlayer exist
+        local can_place_checker = (#game.players > 0 and game.players[1]) or player.surface
+        local can_build = can_place_checker.can_place_entity{
             name = entity,
             force = player.force,
             position = position,

@@ -1,7 +1,7 @@
 import time
 import os
 import multiprocessing
-from typing import List
+from typing import List, Optional
 
 from agents.gym_agent import GymAgent
 from env.src.models.program import Program
@@ -11,7 +11,7 @@ from env.src.gym_env.observation import Observation
 class TrajectoryLogger:
     """Handles logging for trajectory runs with persistent state"""
     
-    def __init__(self, start_time: float, trajectory_length: int, log_dir: str):
+    def __init__(self, start_time: float, trajectory_length: int, log_dir: Optional[str] = None):
         """Initialize the trajectory logger
         
         Args:
@@ -23,6 +23,8 @@ class TrajectoryLogger:
         self.trajectory_length = trajectory_length
         self.log_dir = log_dir
         self.iteration_times = []
+        if log_dir is not None:
+            os.makedirs(log_dir, exist_ok=True)
     
     def get_eta(self, current_iteration: int) -> str:
         """Calculate estimated time remaining
@@ -82,18 +84,20 @@ class TrajectoryLogger:
         print(f"\n\033[95mProgram for agent {agent_idx} at iteration {iteration}:\033[0m")
         print(program.code)
         
-        prog_file = os.path.join(self.log_dir, f"agent{agent_idx}_iter{iteration}_program.py")
-        with open(prog_file, 'w') as f:
-            f.write(program.code) 
+        if self.log_dir:
+            prog_file = os.path.join(self.log_dir, f"agent{agent_idx}_iter{iteration}_program.py")
+            with open(prog_file, 'w') as f:
+                f.write(program.code) 
             
         # Log observation
         formatted_obs = agent.observation_formatter.format(observation).raw_str
         print(f"\n\033[94mObservation for agent {agent_idx} at iteration {iteration}:\033[0m")
         print(formatted_obs)
         
-        obs_file = os.path.join(self.log_dir, f"agent{agent_idx}_iter{iteration}_observation.txt")
-        with open(obs_file, 'w') as f:
-            f.write(formatted_obs)
+        if self.log_dir:
+            obs_file = os.path.join(self.log_dir, f"agent{agent_idx}_iter{iteration}_observation.txt")
+            with open(obs_file, 'w') as f:
+                f.write(formatted_obs)
 
     def add_iteration_time(self, iteration_time: float):
         """Add an iteration time to the tracking list

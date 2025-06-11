@@ -31,6 +31,7 @@ class GymTrajectoryRunner:
                  instance: FactorioInstance,
                  process_id: int,
                  db_client: Optional[PostgresDBClient],
+                 log_dir: Optional[str] = None,
                  value_accrual_time: float = 1.0,
                  error_penalty: float = 0.0):
         self.config = config
@@ -45,10 +46,6 @@ class GymTrajectoryRunner:
         )
         self.process_id = process_id
         self.start_time = time.time()
-        
-        # Create version-specific directory for logging
-        log_dir = f"trajectory_logs_v{self.config.version}"
-        os.makedirs(log_dir, exist_ok=True)
         
         # Initialize trajectory logger
         self.logger = TrajectoryLogger(

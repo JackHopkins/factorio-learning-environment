@@ -1,6 +1,7 @@
 import asyncio
 import argparse
 import multiprocessing
+import os
 from dotenv import load_dotenv
 from pathlib import Path
 import json
@@ -22,16 +23,15 @@ def run_process(run_idx: int, config: GymEvalConfig):
 
 async def run_trajectory(run_idx: int, config: GymEvalConfig):
     """Run a single gym evaluation process"""
-    # Create db client
     db_client = await create_db_client()
-    
-    # Create trajectory runner
     instance = await create_factorio_instance(run_idx, len(config.agents))
     config.task.setup(instance)
+    log_dir = os.path.join("trajectory_logs", f"v{config.version}")
     runner = GymTrajectoryRunner(
         config=config,
         instance=instance,
         db_client=db_client,
+        log_dir=log_dir,
         process_id=run_idx
     )
     await runner.run()

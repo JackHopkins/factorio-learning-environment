@@ -23,20 +23,19 @@ async def evaluate_program_trace(version: int = 330) -> None:
         port=os.getenv("SKILLS_DB_PORT"),
         dbname=os.getenv("SKILLS_DB_NAME"),
         user=os.getenv("SKILLS_DB_USER"),
-        password=os.getenv("SKILLS_DB_PASSWORD")
+        password=os.getenv("SKILLS_DB_PASSWORD"),
     )
 
     # Create Factorio instance using pytest fixture
     def game_instance():
-
         try:
             instance = FactorioInstance(
-                address='localhost',
+                address="localhost",
                 bounding_box=200,
                 tcp_port=27000,
                 cache_scripts=False,
                 fast=False,
-                inventory={}
+                inventory={},
             )
             instance.speed(20)
             return instance
@@ -108,7 +107,7 @@ async def evaluate_program_trace(version: int = 330) -> None:
         try:
             # Evaluate the code
             reward, _, result = instance.eval(code, timeout=30)
-            print(f"Evaluation result:")
+            print("Evaluation result:")
             print(f"Reward: {reward}")
             print(f"Result: {result}")
         except Exception as e:

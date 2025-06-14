@@ -1,11 +1,9 @@
-
 from time import sleep
 
 from env.src.tools.tool import Tool
 
 
 class Sleep(Tool):
-
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 

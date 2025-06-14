@@ -2,7 +2,6 @@ from env.src.tools.tool import Tool
 
 
 class GetProductionStats(Tool):
-
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
         self.name = "production_stats"

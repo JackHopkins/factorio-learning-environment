@@ -8,21 +8,22 @@ from pstats import SortKey
 from instance import FactorioInstance
 
 INVENTORY = {
-    'coal': 50,
-    'copper-plate': 50,
-    'iron-plate': 50,
-    'iron-chest': 2,
-    'burner-mining-drill': 3,
-    'electric-mining-drill': 1,
-    'assembling-machine-1': 1,
-    'stone-furnace': 9,
-    'transport-belt': 50,
-    'boiler': 1,
-    'burner-inserter': 32,
-    'pipe': 15,
-    'steam-engine': 1,
-    'small-electric-pole': 10
+    "coal": 50,
+    "copper-plate": 50,
+    "iron-plate": 50,
+    "iron-chest": 2,
+    "burner-mining-drill": 3,
+    "electric-mining-drill": 1,
+    "assembling-machine-1": 1,
+    "stone-furnace": 9,
+    "transport-belt": 50,
+    "boiler": 1,
+    "burner-inserter": 32,
+    "pipe": 15,
+    "steam-engine": 1,
+    "small-electric-pole": 10,
 }
+
 
 def profile(func):
     def wrapper(*args, **kwargs):
@@ -35,7 +36,9 @@ def profile(func):
         ps.print_stats(20)  # Print top 20 time-consuming functions
         print(s.getvalue())
         return result
+
     return wrapper
+
 
 @profile
 def test_script_caching():
@@ -47,14 +50,16 @@ def test_script_caching():
         avg = fmean(times)
         print(f"Run {run + 1} - {category} running average: {avg:.4f} seconds")
 
-
     print("\nTesting cached performance:")
     for i in range(RUNS):
         start_time = time.time()
-        instance = FactorioInstance(address='localhost',
-                                    bounding_box=200,
-                                    tcp_port=27000,
-                                    inventory=INVENTORY, cache_scripts=True)
+        instance = FactorioInstance(
+            address="localhost",
+            bounding_box=200,
+            tcp_port=27000,
+            inventory=INVENTORY,
+            cache_scripts=True,
+        )
         end_time = time.time() - start_time
         cached_times.append(end_time)
         print(f"Run {i + 1} - Cached time: {end_time:.4f} seconds")
@@ -64,10 +69,13 @@ def test_script_caching():
     print("Testing uncached performance:")
     for i in range(RUNS):
         start_time = time.time()
-        instance = FactorioInstance(address='localhost',
-                                    bounding_box=200,
-                                    tcp_port=27000,
-                                    inventory=INVENTORY, cache_scripts=False)
+        instance = FactorioInstance(
+            address="localhost",
+            bounding_box=200,
+            tcp_port=27000,
+            inventory=INVENTORY,
+            cache_scripts=False,
+        )
         end_time = time.time() - start_time
         uncached_times.append(end_time)
         print(f"Run {i + 1} - Uncached time: {end_time:.4f} seconds")
@@ -77,12 +85,17 @@ def test_script_caching():
     mean_uncached = fmean(uncached_times)
     mean_cached = fmean(cached_times)
 
-    print(f"Final Results:")
+    print("Final Results:")
     print(f"Mean Uncached Time: {mean_uncached:.4f} seconds")
     print(f"Mean Cached Time: {mean_cached:.4f} seconds")
-    print(f"Performance Improvement: {(mean_uncached - mean_cached) / mean_uncached * 100:.2f}%")
+    print(
+        f"Performance Improvement: {(mean_uncached - mean_cached) / mean_uncached * 100:.2f}%"
+    )
 
-    assert mean_cached < mean_uncached, "Caching did not improve performance as expected."
+    assert mean_cached < mean_uncached, (
+        "Caching did not improve performance as expected."
+    )
+
 
 if __name__ == "__main__":
     test_script_caching()

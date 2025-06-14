@@ -22,16 +22,22 @@ load_dotenv()
 def create_factorio_instances() -> List[FactorioInstance]:
     def init_instance(params: Tuple[str, int, int]) -> FactorioInstance:
         ip, udp_port, tcp_port = params
-        return FactorioInstance(address=ip, tcp_port=tcp_port, bounding_box=200,
-                                fast=True, cache_scripts=False, inventory={}, all_technologies_researched=False)
+        return FactorioInstance(
+            address=ip,
+            tcp_port=tcp_port,
+            bounding_box=200,
+            fast=True,
+            cache_scripts=False,
+            inventory={},
+            all_technologies_researched=False,
+        )
 
     ips, udp_ports, tcp_ports = get_local_container_ips()
     with concurrent.futures.ThreadPoolExecutor() as executor:
         return list(executor.map(init_instance, zip(ips, udp_ports, tcp_ports)))
 
 
-SYSTEM_PROMPT_OLD = \
-    """
+SYSTEM_PROMPT_OLD = """
     You are an agent designed to operate within FactoryEnv, a novel evaluation framework built on the game Factorio, with capabilities in long-horizon planning, spatial reasoning, and systematic automation. 
     
     You interact with the environment through Python program synthesis, using any of the API's 28 core methods below.
@@ -55,8 +61,7 @@ SYSTEM_PROMPT_OLD = \
     You are now ready to begin playing FactoryEnv! Good luck!
     """
 
-SYSTEM_PROMPT = \
-"""
+SYSTEM_PROMPT = """
 You are an agent designed to operate within FactoryEnv, a novel evaluation framework built on the game Factorio, with capabilities in long-horizon planning, spatial reasoning, and systematic automation. 
 You interact with the environment through Python program synthesis, using any of the API's 28 core methods below.
 The environment behaves like an interactive shell, with the user responses representing the STDOUT of the REPL, and your messages acting as the Python programs to be executed. 
@@ -75,8 +80,7 @@ Do not encapsulate your code in a function - just write it as if you were typing
 You are now ready to begin playing FactoryEnv! Good luck!
 """
 
-OBSERVATION_SPACE = \
-"""
+OBSERVATION_SPACE = """
 You observe the STDOUT and STDERR of your program.
 
 ```stderr
@@ -96,8 +100,7 @@ This response indicates that `print(get_entities())` was called at line 78 to ge
 with open("../MANUAL_short.md", "r") as f:
     MANUAL = f.read()
 
-HISTORY_SUMMARIZATION_INSTRUCTIONS = \
-f"""
+HISTORY_SUMMARIZATION_INSTRUCTIONS = f"""
 {MANUAL}
 
 # Instructions
@@ -122,33 +125,43 @@ async def main():
             port=os.getenv("SKILLS_DB_PORT"),
             dbname=os.getenv("SKILLS_DB_NAME"),
             user=os.getenv("SKILLS_DB_USER"),
-            password=os.getenv("SKILLS_DB_PASSWORD")
+            password=os.getenv("SKILLS_DB_PASSWORD"),
         )
-    except Exception as e:
-        print("\033[91mError connecting to the database. Please check your credentials and try again.\033[91m")
+    except Exception:
+        print(
+            "\033[91mError connecting to the database. Please check your credentials and try again.\033[91m"
+        )
         return
-
-
 
     # Initialize components
     try:
         instances = create_factorio_instances()
         for instance in instances:
             instance.speed(10)  # Speed up the game for faster evaluation
-    except Exception as e:
+    except Exception:
         print(
-            "\033[91mError initialising Factorio instances. Are the docker containers running, and have they been activated?\033[91m")
+            "\033[91mError initialising Factorio instances. Are the docker containers running, and have they been activated?\033[91m"
+        )
         return
     instances = instances[-4:]
     API_SCHEMA = instances[0].get_system_prompt()
-    prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\n# Observations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
+    prompt = (
+        SYSTEM_PROMPT
+        + "\n\n"
+        + API_SCHEMA
+        + "\n\n# Observations:\n"
+        + OBSERVATION_SPACE
+        + "\n\n"
+        + MANUAL
+        + "\n```"
+    )
     initial_state = GameState.from_instance(instances[0])
 
     # Add argument parsing for version
     parser = argparse.ArgumentParser()
-    parser.add_argument('--resume-version', type=int, help='Version to resume from')
+    parser.add_argument("--resume-version", type=int, help="Version to resume from")
     args = parser.parse_args()
-    resume_version = 453 #args.resume_version
+    resume_version = 453  # args.resume_version
 
     # Get version to use
     # Get version to use
@@ -171,7 +184,9 @@ async def main():
         # Ensure all depths are the same for the beam heads
         depth = resume_heads[0].depth
         for prog in resume_heads:
-            assert prog.depth == depth, "All beam head depths must be the same in order to resume."
+            assert prog.depth == depth, (
+                "All beam head depths must be the same in order to resume."
+            )
 
         current_depth = depth
     else:
@@ -180,9 +195,12 @@ async def main():
         resume_heads = None
         current_depth = 0
 
-
-    for model in ['gpt-4o', 'deepseek-chat', 'meta-llama/Llama-3.3-70B-Instruct-Turbo', 'gpt-4-turbo']: #[ 'gpt-4o', 'claude-3-5-sonnet-20241022', 'gpt-4o-mini']:#['gemini-2.0-flash-exp']: #['gpt-4o-mini']:#['deepseek-chat']:#['gemini-2.0-flash-exp']: #['meta-llama/Llama-3.3-70B-Instruct-Turbo']:#['gemini-2.0-flash-exp']:#['gpt-4o']:#['claude-3-5-sonnet-20241022']:
-
+    for model in [
+        "gpt-4o",
+        "deepseek-chat",
+        "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+        "gpt-4-turbo",
+    ]:  # [ 'gpt-4o', 'claude-3-5-sonnet-20241022', 'gpt-4o-mini']:#['gemini-2.0-flash-exp']: #['gpt-4o-mini']:#['deepseek-chat']:#['gemini-2.0-flash-exp']: #['meta-llama/Llama-3.3-70B-Instruct-Turbo']:#['gemini-2.0-flash-exp']:#['gpt-4o']:#['claude-3-5-sonnet-20241022']:
         config = ParallelBeamConfig(
             beam_width=4,  # 4 parallel groups = beam width of 4
             expansion_factor=1,  # Generate 4 candidates per position
@@ -190,22 +208,22 @@ async def main():
             initial_state=initial_state,
             model=model,
             beam_kwargs={
-                'error_penalty': 0,
+                "error_penalty": 0,
                 #'frequency_penalty': 0.25
-            }
+            },
         )
-        #model = 'claude-3-5-sonnet-20241022'
-        #model = 'gpt-4o'
-        #current_depth = 0#await db_client.get_largest_depth_in_version(largest_version_to_date)
+        # model = 'claude-3-5-sonnet-20241022'
+        # model = 'gpt-4o'
+        # current_depth = 0#await db_client.get_largest_depth_in_version(largest_version_to_date)
 
         llm_factory = LLMFactory(model=model)
 
         formatter = RecursiveFormatter(
             chunk_size=32,
             llm_factory=llm_factory,
-            cache_dir='summary_cache',
+            cache_dir="summary_cache",
             summary_instructions=API_SCHEMA + HISTORY_SUMMARIZATION_INSTRUCTIONS,
-            summarize_history=False # Summarizing history seems to make it worse. We clip instead.
+            summarize_history=False,  # Summarizing history seems to make it worse. We clip instead.
         )
 
         parallel_beam = ParallelBeamSearch(
@@ -219,7 +237,7 @@ async def main():
             formatter=formatter,
             base_port=instances[0].tcp_port,
             resume_version=resume_version,
-            resume_heads=resume_heads
+            resume_heads=resume_heads,
         )
 
         if resume_version:
@@ -229,6 +247,6 @@ async def main():
         await parallel_beam.search(n_iterations=512)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.get_event_loop().set_debug(True)
     asyncio.run(main())

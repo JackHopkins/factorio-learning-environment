@@ -8,29 +8,33 @@ from gym import spaces
 from legacy_gym_env import FactorioInstance
 from legacy_gym_env import Vocabulary
 
-#PLAYER = 1
+# PLAYER = 1
 # NONE = 'nil'
 # CHUNK_SIZE = 32
 # MAX_SAMPLES = 5000
 
+
 class FactorioEnv(gym.Env, FactorioInstance):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self,
-                 address: str = None,
-                 vocabulary: Vocabulary = None,
-                 bounding_box=100,
-                 tcp_port=27000,
-                 render_mode: Optional[str] = None,
-                 inventory: dict = {}):
-
+    def __init__(
+        self,
+        address: str = None,
+        vocabulary: Vocabulary = None,
+        bounding_box=100,
+        tcp_port=27000,
+        render_mode: Optional[str] = None,
+        inventory: dict = {},
+    ):
         assert render_mode is None or render_mode in self.metadata["render_modes"]
 
-        super(FactorioEnv, self).__init__(address=address,
-                                          vocabulary=vocabulary,
-                                          bounding_box=bounding_box,
-                                          tcp_port=tcp_port,
-                                          inventory=inventory)
+        super(FactorioEnv, self).__init__(
+            address=address,
+            vocabulary=vocabulary,
+            bounding_box=bounding_box,
+            tcp_port=tcp_port,
+            inventory=inventory,
+        )
 
         self.window_size = 512
         self.inventory = inventory
@@ -38,7 +42,7 @@ class FactorioEnv(gym.Env, FactorioInstance):
         mu, sigma = 0, CHUNK_SIZE * 20
         self.minimap_normal = s = np.random.normal(mu, sigma, MAX_SAMPLES)
         self.chunk_cursor = 0
-        #self.minimaps: spaces.Dict = self._initialise_minimaps()
+        # self.minimaps: spaces.Dict = self._initialise_minimaps()
 
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
@@ -62,13 +66,22 @@ class FactorioEnv(gym.Env, FactorioInstance):
         # The following line uses the util class Renderer to gather a collection of frames
         # using a method that computes a single frame. We will define _render_frame below.
         # self.renderer = Renderer(render_mode, self._render_frame)
-        self.observation_space = spaces.Dict({
-            'local': spaces.Box(0, 256, shape=(self.bounding_box, self.bounding_box), dtype=int),
-            'minimap': spaces.Box(0, 32*32, shape=(12,self.bounding_box*4, self.bounding_box*4), dtype=int),
-            #'compass': spaces.Box(0, 32*32, shape=(12,self.bounding_box*4, self.bounding_box*4), dtype=int),
-        })
+        self.observation_space = spaces.Dict(
+            {
+                "local": spaces.Box(
+                    0, 256, shape=(self.bounding_box, self.bounding_box), dtype=int
+                ),
+                "minimap": spaces.Box(
+                    0,
+                    32 * 32,
+                    shape=(12, self.bounding_box * 4, self.bounding_box * 4),
+                    dtype=int,
+                ),
+                #'compass': spaces.Box(0, 32*32, shape=(12,self.bounding_box*4, self.bounding_box*4), dtype=int),
+            }
+        )
 
-        #self.action_space = spaces.Discrete(4)
+        # self.action_space = spaces.Discrete(4)
 
     def reset(
         self,
@@ -77,12 +90,12 @@ class FactorioEnv(gym.Env, FactorioInstance):
         return_info: bool = False,
         options: Optional[dict] = None,
     ):
-        #super().reset()
+        # super().reset()
         # We need the following line to seed self.np_random
-        #super().reset()
+        # super().reset()
         observation = self.initialise(**self.inventory)
-        #self.renderer.reset()
-        #self.renderer.render_step()
+        # self.renderer.reset()
+        # self.renderer.render_step()
         return observation
 
     def _get_obs(self):
@@ -94,9 +107,13 @@ class FactorioEnv(gym.Env, FactorioInstance):
     def _get_reward(self):
         return
 
-    def step(self, action_tuple: Tuple[int,int,int]):
+    def step(self, action_tuple: Tuple[int, int, int]):
         action, direction, entity_index = action_tuple
-        entity = self.vocabulary.i_vocabulary[entity_index] if entity_index in self.vocabulary.i_vocabulary else None
+        entity = (
+            self.vocabulary.i_vocabulary[entity_index]
+            if entity_index in self.vocabulary.i_vocabulary
+            else None
+        )
         if action == 0:
             self.move(direction)
         elif action == 1 and entity:
@@ -108,16 +125,15 @@ class FactorioEnv(gym.Env, FactorioInstance):
         elif action == 4:
             self.interact()
 
-
         # An episode is done if the agent has reached the target
         done = False
-        #reward = 1 if done else 0  # Binary sparse rewards
+        # reward = 1 if done else 0  # Binary sparse rewards
         observation = self._get_obs()
         reward = self._get_reward()
         info = self._get_info()
 
         # add a frame to the render collection
-        #self.renderer.render_step()
+        # self.renderer.render_step()
 
         return observation, reward, done, info
 
@@ -130,7 +146,7 @@ class FactorioEnv(gym.Env, FactorioInstance):
         canvas = pygame.Surface((self.window_size, self.window_size))
         canvas.fill((255, 255, 255))
         pix_square_size = (
-                self.window_size / self.size
+            self.window_size / self.size
         )  # The size of a single grid square in pixels
 
         # First we draw the target
@@ -192,13 +208,14 @@ class FactorioEnv(gym.Env, FactorioInstance):
             except:
                 pass
 
-if hasattr(__loader__, 'name'):
-  module_path = __loader__.name
-elif hasattr(__loader__, 'fullname'):
-  module_path = __loader__.fullname
+
+if hasattr(__loader__, "name"):
+    module_path = __loader__.name
+elif hasattr(__loader__, "fullname"):
+    module_path = __loader__.fullname
 
 register(
-    id='Factorio-v0',
-    entry_point=module_path + ':FactorioEnv',
+    id="Factorio-v0",
+    entry_point=module_path + ":FactorioEnv",
     max_episode_steps=15000,
 )

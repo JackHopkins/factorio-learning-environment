@@ -54,7 +54,7 @@ class RenderConfig:
             "coal": (50, 50, 50),
             "stone": (130, 130, 110),
             "uranium-ore": (50, 190, 50),
-            "crude-oil": (20, 20, 20)
+            "crude-oil": (20, 20, 20),
         },
         # Tree and rock related settings
         "tree_color": (20, 120, 20),  # Base green color for trees
@@ -63,15 +63,15 @@ class RenderConfig:
             (40, 130, 40),  # Medium green
             (60, 150, 60),  # Lighter green
             (80, 150, 40),  # Yellow-green
-            (100, 160, 60)  # Bright green
+            (100, 160, 60),  # Bright green
         ],
         "rock_color": (120, 110, 100),  # Base color for rocks
         "rock_color_variations": [  # Different shades for rock variations
             (100, 90, 80),  # Dark grey-brown
             (130, 120, 110),  # Medium grey
             (160, 150, 140),  # Light grey
-            (140, 130, 100)  # Brownish grey
-        ]
+            (140, 130, 100),  # Brownish grey
+        ],
     }
 
     # Fixed colors for common entity categories
@@ -94,7 +94,7 @@ class RenderConfig:
         "uranium-ore": (50, 190, 50),  # Uranium resource
         "crude-oil": (20, 20, 20),  # Oil resource
         "tree": (50, 150, 50),  # Trees
-        "rock": (120, 110, 100)  # Rocks
+        "rock": (120, 110, 100),  # Rocks
     }
 
     # Shape mappings for different entity categories
@@ -117,7 +117,7 @@ class RenderConfig:
         "uranium-ore": "circle",  # Uranium is circle with radiation symbol
         "crude-oil": "circle",  # Oil is circle with bubbles
         "tree": "circle",  # Trees are circles with special rendering
-        "rock": "pentagon"  # Rocks are pentagons with rougher edges
+        "rock": "pentagon",  # Rocks are pentagons with rougher edges
     }
 
     def __init__(self, style: Optional[Dict[str, Any]] = None):
@@ -144,15 +144,21 @@ class RenderConfig:
 
     def get_status_color(self, status: EntityStatus) -> Tuple[int, int, int]:
         """Get the color for an entity status"""
-        return self.style["status_colors"].get(status, (255, 0, 255))  # Magenta for unknown status
+        return self.style["status_colors"].get(
+            status, (255, 0, 255)
+        )  # Magenta for unknown status
 
     def get_resource_color(self, resource_name: str) -> Tuple[int, int, int]:
         """Get the color for a resource type"""
-        return self.style["resource_colors"].get(resource_name, (150, 150, 150))  # Gray for unknown resources
+        return self.style["resource_colors"].get(
+            resource_name, (150, 150, 150)
+        )  # Gray for unknown resources
 
     def get_tree_color(self, tree_size: int = None) -> Tuple[int, int, int]:
         """Get a color for a tree, optionally based on its size/variation"""
-        if tree_size is not None and 0 <= tree_size < len(self.style["tree_color_variations"]):
+        if tree_size is not None and 0 <= tree_size < len(
+            self.style["tree_color_variations"]
+        ):
             return self.style["tree_color_variations"][tree_size]
         return self.style["tree_color"]  # Default tree color
 
@@ -164,7 +170,9 @@ class RenderConfig:
             return self.style["rock_color_variations"][index]
         return self.style["rock_color"]  # Default rock color
 
-    def get_backing_rectangle_color(self, shape_color: Tuple[int, int, int]) -> Tuple[int, int, int, int]:
+    def get_backing_rectangle_color(
+        self, shape_color: Tuple[int, int, int]
+    ) -> Tuple[int, int, int, int]:
         """Get the backing rectangle color based on the shape color"""
         if not self.style["backing_rectangle_enabled"]:
             return (0, 0, 0, 0)  # Fully transparent if disabled

@@ -21,7 +21,10 @@ from models.message import Message
 from models.generation_parameters import GenerationParameters
 from models.game_state import GameState
 from models.program import Program
-from agents.utils.formatters.conversation_formatter_abc import ConversationFormatter, DefaultFormatter
+from agents.utils.formatters.conversation_formatter_abc import (
+    ConversationFormatter,
+    DefaultFormatter,
+)
 from instance import FactorioInstance
 
 # Configure logging
@@ -49,7 +52,7 @@ MODEL_LOGIT_BIASES = {
         "145968": -100,  # ' CUT'
         "27": -100,  # '<'
         "20225": -100,  # '/>'
-        "7032": -100  # 'while'
+        "7032": -100,  # 'while'
     },
     ModelFamily.LLAMA: {
         "8429": -100,  # 'LINE'
@@ -58,7 +61,7 @@ MODEL_LOGIT_BIASES = {
         "27": -100,  # '<'
         "9883": -100,  # '/>'
         "3556": -100,  # 'while'
-        "1418": -100  # ' while'
+        "1418": -100,  # ' while'
     },
     ModelFamily.QWEN: {},  # Placeholder for Qwen-specific biases
     ModelFamily.GEMINI: {},  # Placeholder for Gemini-specific biases
@@ -96,6 +99,7 @@ def get_logit_bias(model_name: str) -> Dict[str, float]:
 @dataclass
 class ParallelBeamConfig:
     """Configuration for parallel beam search"""
+
     beam_width: int  # Number of parallel groups (equivalent to beam width)
     expansion_factor: int  # Number of programs to generate per beam position
     system_prompt: str
@@ -112,51 +116,59 @@ class ParallelBeamConfig:
             # Add model-specific logit biases
             logit_bias = get_logit_bias(self.model)
             if logit_bias:
-                current_bias = self.beam_kwargs.get('logit_bias', {})
+                current_bias = self.beam_kwargs.get("logit_bias", {})
                 # Merge with any existing biases, preferring new ones
                 current_bias.update(logit_bias)
-                self.beam_kwargs['logit_bias'] = current_bias
+                self.beam_kwargs["logit_bias"] = current_bias
 
 
 class BeamGroup(InstanceGroup):
     """Represents a group running one position in the beam"""
 
-    def __init__(self,
-                 group_id: int,
-                 beam: 'BeamSearch',
-                 evaluator: Evaluator,
-                 active_instances: List['FactorioInstance'],
-                 resume_head: Optional[Program] = None):
+    def __init__(
+        self,
+        group_id: int,
+        beam: "BeamSearch",
+        evaluator: Evaluator,
+        active_instances: List["FactorioInstance"],
+        resume_head: Optional[Program] = None,
+    ):
         super().__init__(
             group_id=group_id,
             mcts=beam,  # For compatibility with existing code
             evaluator=evaluator,
-            active_instances=active_instances
+            active_instances=active_instances,
         )
         self.beam = beam
-        self.current_program: Optional[Program] = resume_head  # Initialize with resume head if available
-        self.current_state: Optional[GameState] = resume_head.state if resume_head else None
-        self.current_conversation: Optional[Conversation] = resume_head.conversation if resume_head else None
+        self.current_program: Optional[Program] = (
+            resume_head  # Initialize with resume head if available
+        )
+        self.current_state: Optional[GameState] = (
+            resume_head.state if resume_head else None
+        )
+        self.current_conversation: Optional[Conversation] = (
+            resume_head.conversation if resume_head else None
+        )
 
 
 class BeamSearch(MCTS):
     """Beam Search implementation that works as part of parallel beam search"""
 
-    def __init__(self,
-                 llm_factory: 'LLMFactory',
-                 db_client: DBClient,
-                 evaluator: Evaluator,
-                 system_prompt: str,
-                 initial_state: GameState,
-                 formatter: ConversationFormatter = DefaultFormatter(),
-                 version=1,
-                 version_description="",
-                 presence_penalty=0,
-                 frequency_penalty=0,
-                 error_penalty=0,
-                 logit_bias={}
-                 ):
-
+    def __init__(
+        self,
+        llm_factory: "LLMFactory",
+        db_client: DBClient,
+        evaluator: Evaluator,
+        system_prompt: str,
+        initial_state: GameState,
+        formatter: ConversationFormatter = DefaultFormatter(),
+        version=1,
+        version_description="",
+        presence_penalty=0,
+        frequency_penalty=0,
+        error_penalty=0,
+        logit_bias={},
+    ):
         self.llm = llm_factory
         self.db = db_client
         self.evaluator = evaluator
@@ -171,7 +183,17 @@ class BeamSearch(MCTS):
         self.logit_bias = logit_bias
 
         self._monitor_task = asyncio.create_task(self._monitor_tasks())
-        super().__init__(llm_factory, db_client, evaluator, None, system_prompt, initial_state, formatter, version, version_description)
+        super().__init__(
+            llm_factory,
+            db_client,
+            evaluator,
+            None,
+            system_prompt,
+            initial_state,
+            formatter,
+            version,
+            version_description,
+        )
 
     async def _monitor_tasks(self):
         """Monitor and log task states for debugging"""
@@ -182,7 +204,11 @@ class BeamSearch(MCTS):
 
                 for task in pending_tasks:
                     # Get task name or coroutine name
-                    task_name = task.get_name() if hasattr(task, 'get_name') else str(task.get_coro())
+                    task_name = (
+                        task.get_name()
+                        if hasattr(task, "get_name")
+                        else str(task.get_coro())
+                    )
 
                     # Get task state
                     if task.done():
@@ -196,7 +222,9 @@ class BeamSearch(MCTS):
                     logger.debug(f"Task {task_name}: {state}")
 
                 # Log summary
-                logger.info(f"Tasks - Total: {len(all_tasks)}, Pending: {len(pending_tasks)}")
+                logger.info(
+                    f"Tasks - Total: {len(all_tasks)}, Pending: {len(pending_tasks)}"
+                )
 
                 await asyncio.sleep(10)  # Check every 10 seconds
 
@@ -204,11 +232,13 @@ class BeamSearch(MCTS):
                 logger.error(f"Error in task monitor: {e}")
                 await asyncio.sleep(1)
 
-    async def evaluate_candidates(self,
-                                  state: GameState,
-                                  conversation: Conversation,
-                                  parent_id: Optional[int],
-                                  n_samples: int) -> List[Program]:
+    async def evaluate_candidates(
+        self,
+        state: GameState,
+        conversation: Conversation,
+        parent_id: Optional[int],
+        n_samples: int,
+    ) -> List[Program]:
         """Generate and evaluate candidates from current state"""
         generation_parameters = GenerationParameters(
             n=n_samples,
@@ -216,12 +246,11 @@ class BeamSearch(MCTS):
             presence_penalty=self.presence_penalty,
             frequency_penalty=self.frequency_penalty,
             logit_bias=self.logit_bias,
-            max_tokens=2048
+            max_tokens=2048,
         )
 
         programs = await self._generate_programs_batch(
-            conversation,
-            generation_parameters
+            conversation, generation_parameters
         )
 
         if not programs:
@@ -230,10 +259,7 @@ class BeamSearch(MCTS):
         for program in programs:
             program.parent_id = parent_id
 
-        evaluated_programs = await self.evaluator.evaluate_batch(
-            programs,
-            state
-        )
+        evaluated_programs = await self.evaluator.evaluate_batch(programs, state)
 
         return evaluated_programs
 
@@ -241,21 +267,20 @@ class BeamSearch(MCTS):
 class ParallelBeamSearch:
     """Manages parallel beam search across multiple instance groups"""
 
-    def __init__(self,
-                 instances: List['FactorioInstance'],
-                 db_client: DBClient,
-                 llm_factory: 'LLMFactory',
-                 config: ParallelBeamConfig,
-                 version: int,
-                 version_description: str,
-                 current_depth=0,
-                 formatter: ConversationFormatter = DefaultFormatter(),
-                 base_port=27000,
-                 resume_version=False,
-                 resume_heads: Optional[List[Program]] = None
-                 ):
-
-
+    def __init__(
+        self,
+        instances: List["FactorioInstance"],
+        db_client: DBClient,
+        llm_factory: "LLMFactory",
+        config: ParallelBeamConfig,
+        version: int,
+        version_description: str,
+        current_depth=0,
+        formatter: ConversationFormatter = DefaultFormatter(),
+        base_port=27000,
+        resume_version=False,
+        resume_heads: Optional[List[Program]] = None,
+    ):
         self.console = Console()
         self.config = config
         self.db_client = db_client
@@ -273,8 +298,10 @@ class ParallelBeamSearch:
 
         if self.resume_version:
             if not self.resume_heads or len(self.resume_heads) != config.beam_width:
-                print(f"Number of resume heads ({len(self.resume_heads) if self.resume_heads else 0}) "
-                                 f"doesn't match beam width ({config.beam_width})")
+                print(
+                    f"Number of resume heads ({len(self.resume_heads) if self.resume_heads else 0}) "
+                    f"doesn't match beam width ({config.beam_width})"
+                )
                 config.beam_width = len(self.resume_heads)
 
         # Validate instance count
@@ -285,8 +312,8 @@ class ParallelBeamSearch:
         self.logger = GroupedFactorioLogger(
             n_groups=config.beam_width,
             instances_per_group=instances_per_group,
-            base_port = base_port,
-            resume_version=resume_version
+            base_port=base_port,
+            resume_version=resume_version,
         )
         self.logger.start()
 
@@ -317,12 +344,14 @@ class ParallelBeamSearch:
             raise ValueError(f"No metadata found for version {self.version}")
 
         # Check model compatibility
-        if self.llm_factory.model+'\n' not in metadata.get('version_description'):
-            raise ValueError(f"Model mismatch: Version uses {metadata.get('model')}, "
-                             f"but current config uses {self.llm_factory.model}")
+        if self.llm_factory.model + "\n" not in metadata.get("version_description"):
+            raise ValueError(
+                f"Model mismatch: Version uses {metadata.get('model')}, "
+                f"but current config uses {self.llm_factory.model}"
+            )
 
         # Check other relevant configuration parameters
-        if 'beam' not in metadata.get('version_description', '').lower():
+        if "beam" not in metadata.get("version_description", "").lower():
             raise ValueError(f"Version {self.version} is not from a beam search run")
 
     def _validate_instance_count(self, total_instances: int, beam_width: int):
@@ -335,7 +364,9 @@ class ParallelBeamSearch:
                 f"(got {total_instances})"
             )
 
-    def _create_beam_groups(self, instances: List['FactorioInstance']) -> List[BeamGroup]:
+    def _create_beam_groups(
+        self, instances: List["FactorioInstance"]
+    ) -> List[BeamGroup]:
         """Create groups for parallel beam search, optionally using resume states"""
         instances_per_group = floor(len(instances) / self.config.beam_width)
         groups = []
@@ -352,7 +383,7 @@ class ParallelBeamSearch:
                 instances=group_instances,
                 value_accrual_time=3,
                 logger=self.logger,
-                error_penalty=self.config.beam_kwargs.get('error_penalty', 0)
+                error_penalty=self.config.beam_kwargs.get("error_penalty", 0),
             )
 
             # Create beam search instance
@@ -365,17 +396,21 @@ class ParallelBeamSearch:
                 initial_state=self.config.initial_state,
                 version=self.version,
                 version_description=self.version_description,
-                **self.config.beam_kwargs
+                **self.config.beam_kwargs,
             )
             # Pass resume head directly to BeamGroup if available
-            resume_head = self.resume_heads[group_id] if self.resume_version and self.resume_heads else None
+            resume_head = (
+                self.resume_heads[group_id]
+                if self.resume_version and self.resume_heads
+                else None
+            )
 
             group = BeamGroup(
                 group_id=group_id,
                 beam=beam,
                 evaluator=evaluator,
                 active_instances=group_instances,
-                resume_head=resume_head
+                resume_head=resume_head,
             )
 
             # Reset instance to resumed state if available
@@ -386,12 +421,14 @@ class ParallelBeamSearch:
 
         return groups
 
-    async def _select_top_k_programs(self, all_programs: List[Program], k: int) -> List[Program]:
+    async def _select_top_k_programs(
+        self, all_programs: List[Program], k: int
+    ) -> List[Program]:
         """Select top k programs based on scores"""
         sorted_programs = sorted(
             [p for p in all_programs if p.state is not None and p.value is not None],
             key=lambda p: p.value,
-            reverse=True
+            reverse=True,
         )
         return sorted_programs[:k]
 
@@ -402,13 +439,21 @@ class ParallelBeamSearch:
                 state = self.config.initial_state
                 group.evaluator.instances[0].reset(state)
                 entities = group.evaluator.instances[0].namespace.get_entities()
-                conversation = Conversation(messages=[
-                    Message(role="system", content=self.config.system_prompt),
-                    Message(role="assistant", content="print(f'Inventory: {inspect_inventory()}')\n"
-                                                      "print(f'Entities: {get_entities()}')\n"),
-                    Message(role="user", content=f"1: ('Inventory: {state.inventories[0].__dict__}')\n"
-                                                 f"2: ('Entities: {entities}')"),
-                ])
+                conversation = Conversation(
+                    messages=[
+                        Message(role="system", content=self.config.system_prompt),
+                        Message(
+                            role="assistant",
+                            content="print(f'Inventory: {inspect_inventory()}')\n"
+                            "print(f'Entities: {get_entities()}')\n",
+                        ),
+                        Message(
+                            role="user",
+                            content=f"1: ('Inventory: {state.inventories[0].__dict__}')\n"
+                            f"2: ('Entities: {entities}')",
+                        ),
+                    ]
+                )
                 parent_id = None
             else:
                 if not group.current_program:
@@ -421,7 +466,7 @@ class ParallelBeamSearch:
                 state=state,
                 conversation=conversation,
                 parent_id=parent_id,
-                n_samples=self.config.expansion_factor
+                n_samples=self.config.expansion_factor,
             )
 
             if not result:
@@ -429,7 +474,10 @@ class ParallelBeamSearch:
 
             return result
         except Exception as e:
-            print(f"Error generating candidates for group {group.group_id}: {e}", exc_info=True)
+            print(
+                f"Error generating candidates for group {group.group_id}: {e}",
+                exc_info=True,
+            )
             return []
 
     async def _update_beam_groups(self, best_programs):
@@ -439,7 +487,9 @@ class ParallelBeamSearch:
             with self.db_client.get_connection() as conn:
                 for group, program in zip(self.beam_groups, best_programs):
                     if program:
-                        update_tasks.append(self._update_single_group(conn, group, program))
+                        update_tasks.append(
+                            self._update_single_group(conn, group, program)
+                        )
 
                 if update_tasks:
                     await asyncio.gather(*update_tasks)
@@ -484,22 +534,22 @@ class ParallelBeamSearch:
                     program.parent_id,
                     program.state.to_raw() if program.state else None,
                     json.dumps(program.conversation.dict()),
-                    getattr(program, 'completion_token_usage', None),
-                    getattr(program, 'prompt_token_usage', None),
-                    getattr(program, 'token_usage', None),
-                    getattr(program, 'response', None),
-                    getattr(program, 'holdout_value', None),
-                    getattr(program, 'raw_reward', None),
+                    getattr(program, "completion_token_usage", None),
+                    getattr(program, "prompt_token_usage", None),
+                    getattr(program, "token_usage", None),
+                    getattr(program, "response", None),
+                    getattr(program, "holdout_value", None),
+                    getattr(program, "raw_reward", None),
                     self.version,
                     self.version_description,
-                    getattr(program, 'model', None),
-                    json.dumps(getattr(program, 'meta', {})),
-                    json.dumps(getattr(program, 'achievements', [])),
-                    getattr(program, 'instance', None),
+                    getattr(program, "model", None),
+                    json.dumps(getattr(program, "meta", {})),
+                    json.dumps(getattr(program, "achievements", [])),
+                    getattr(program, "instance", None),
                     program.depth / 2,  # Maintain the depth division from original
-                    getattr(program, 'advantage', None),
-                    getattr(program, 'ticks', None)
-                )
+                    getattr(program, "advantage", None),
+                    getattr(program, "ticks", None),
+                ),
             )
 
             # Get the inserted program's ID and created_at timestamp
@@ -548,7 +598,9 @@ class ParallelBeamSearch:
 
                 # Create individual tasks for each group
                 for group in self.beam_groups:
-                    task = asyncio.create_task(self._generate_group_candidates(group, iteration))
+                    task = asyncio.create_task(
+                        self._generate_group_candidates(group, iteration)
+                    )
                     tasks.append(task)
 
                 # Wait for tasks with individual timeouts
@@ -580,19 +632,19 @@ class ParallelBeamSearch:
 
                 # Select top k programs
                 best_programs = await self._select_top_k_programs(
-                    all_programs,
-                    self.config.beam_width
+                    all_programs, self.config.beam_width
                 )
 
                 if not best_programs:
-                    logger.warning(f"No valid programs selected in iteration {iteration}")
+                    logger.warning(
+                        f"No valid programs selected in iteration {iteration}"
+                    )
                     continue
 
                 try:
                     # Use separate timeout for database operations
                     await asyncio.wait_for(
-                        self._update_beam_groups(best_programs),
-                        timeout=60
+                        self._update_beam_groups(best_programs), timeout=60
                     )
                 except asyncio.TimeoutError:
                     print(f"Database update timed out in iteration {iteration}")
@@ -602,7 +654,9 @@ class ParallelBeamSearch:
                     continue
 
                 iteration_time = time.time() - iteration_start
-                logger.info(f"Iteration {iteration} completed in {iteration_time:.2f} seconds")
+                logger.info(
+                    f"Iteration {iteration} completed in {iteration_time:.2f} seconds"
+                )
 
                 if self.current_depth > n_iterations:
                     return
@@ -627,14 +681,16 @@ class ParallelBeamSearch:
         """Run parallel beam search with resume support"""
         try:
             if self.resume_version:
-                print(f"Resuming search from version {self.version} at depth {self.current_depth}")
+                print(
+                    f"Resuming search from version {self.version} at depth {self.current_depth}"
+                )
 
             # Start monitors before search
-            #await self.start_monitors()
+            # await self.start_monitors()
             await self._run_beam_iteration(n_iterations)
         finally:
             # Stop monitors and cleanup
-            #await self.stop_monitors()
+            # await self.stop_monitors()
             await self.cleanup()
 
     async def cleanup(self):
@@ -642,9 +698,9 @@ class ParallelBeamSearch:
         try:
             self.logger.stop()
             for group in self.beam_groups:
-                if hasattr(group.evaluator, 'logger'):
+                if hasattr(group.evaluator, "logger"):
                     group.evaluator.logger.stop()
-            if hasattr(self.db_client, 'cleanup'):
+            if hasattr(self.db_client, "cleanup"):
                 await self.db_client.cleanup()
         except Exception as e:
             print(f"Error during cleanup: {e}")
@@ -654,16 +710,22 @@ class ParallelBeamSearch:
         if 0 <= group_id < len(self.beam_groups):
             group = self.beam_groups[group_id]
             return {
-                'active_instances': len(group.active_instances),
-                'total_programs': sum(
+                "active_instances": len(group.active_instances),
+                "total_programs": sum(
                     inst.total_programs
-                    for inst in group.evaluator.logger.groups[group_id].instances.values()
+                    for inst in group.evaluator.logger.groups[
+                        group_id
+                    ].instances.values()
                 ),
-                'error_count': sum(
+                "error_count": sum(
                     inst.error_count
-                    for inst in group.evaluator.logger.groups[group_id].instances.values()
+                    for inst in group.evaluator.logger.groups[
+                        group_id
+                    ].instances.values()
                 ),
-                'current_score': group.current_program.value if group.current_program else None
+                "current_score": group.current_program.value
+                if group.current_program
+                else None,
             }
         return {}
 
@@ -671,13 +733,11 @@ class ParallelBeamSearch:
         """Start both monitoring tasks"""
         if self._monitor_task is None:
             self._monitor_task = asyncio.create_task(
-                self._monitor_tasks(),
-                name="task_monitor"
+                self._monitor_tasks(), name="task_monitor"
             )
         if self._progress_monitor_task is None:
             self._progress_monitor_task = asyncio.create_task(
-                self._monitor_progress(),
-                name="progress_monitor"
+                self._monitor_progress(), name="progress_monitor"
             )
 
     async def stop_monitors(self):
@@ -706,15 +766,19 @@ class ParallelBeamSearch:
                 # Group tasks by their names/types
                 task_groups = {}
                 for task in pending_tasks:
-                    name = task.get_name() if hasattr(task, 'get_name') else str(task.get_coro())
-                    if 'generate_group_candidates' in name:
-                        group = 'generation'
-                    elif 'create_program' in name:
-                        group = 'database'
-                    elif 'evaluate' in name:
-                        group = 'evaluation'
+                    name = (
+                        task.get_name()
+                        if hasattr(task, "get_name")
+                        else str(task.get_coro())
+                    )
+                    if "generate_group_candidates" in name:
+                        group = "generation"
+                    elif "create_program" in name:
+                        group = "database"
+                    elif "evaluate" in name:
+                        group = "evaluation"
                     else:
-                        group = 'other'
+                        group = "other"
 
                     task_groups.setdefault(group, []).append(task)
 
@@ -741,7 +805,9 @@ class ParallelBeamSearch:
                 await asyncio.sleep(30)  # Check every 30 seconds
                 current_time = time.time()
                 if current_time - self._last_progress_time > self._progress_timeout:
-                    logger.warning(f"Operation potentially hanging - no progress for {self._progress_timeout} seconds")
+                    logger.warning(
+                        f"Operation potentially hanging - no progress for {self._progress_timeout} seconds"
+                    )
                     self._hanging_detector.set()
                     return
             except Exception as e:

@@ -12,18 +12,28 @@ from server.repository import FactorioMCPRepository
 
 class FactorioMCPState:
     """Manages the state of the Factorio MCP server"""
-    
+
     def __init__(self):
         self.available_servers: Dict[int, FactorioServer] = {}  # instance_id -> server
         self.active_server: Optional[FactorioInstance] = None
-        self.server_entities: Dict[int, Dict[str, Any]] = {}  # instance_id -> {entity_id -> entity}
-        self.server_resources: Dict[int, Dict[str, ResourcePatch]] = {}  # instance_id -> {resource_id -> resource}
+        self.server_entities: Dict[
+            int, Dict[str, Any]
+        ] = {}  # instance_id -> {entity_id -> entity}
+        self.server_resources: Dict[
+            int, Dict[str, ResourcePatch]
+        ] = {}  # instance_id -> {resource_id -> resource}
         self.recipes: Dict[str, Recipe] = {}  # Global recipes
-        self.recipes_loaded = False  # Flag to track if recipes have been loaded from file
-        self.checkpoints: Dict[int, Dict[str, str]] = {}  # instance_id -> {checkpoint_name -> save file path}
+        self.recipes_loaded = (
+            False  # Flag to track if recipes have been loaded from file
+        )
+        self.checkpoints: Dict[
+            int, Dict[str, str]
+        ] = {}  # instance_id -> {checkpoint_name -> save file path}
         self.current_task: Optional[str] = None
         self.last_entity_update = 0
-        self.vcs_repos: Dict[int, 'FactorioMCPRepository'] = {}  # instance_id -> VCS repo
+        self.vcs_repos: Dict[
+            int, "FactorioMCPRepository"
+        ] = {}  # instance_id -> VCS repo
 
     def create_factorio_instance(self, instance_id: int) -> FactorioInstance:
         """Create a single Factorio instance"""
@@ -36,7 +46,7 @@ class FactorioMCPState:
                 fast=True,
                 cache_scripts=True,
                 inventory={},
-                all_technologies_researched=True
+                all_technologies_researched=True,
             )
             instance.speed(10)
             return instance
@@ -44,11 +54,11 @@ class FactorioMCPState:
             print(f"Error creating Factorio instance: {e}")
             raise e
 
-    async def scan_for_servers(self, ctx = None) -> List[FactorioServer]:
+    async def scan_for_servers(self, ctx=None) -> List[FactorioServer]:
         """Scan for running Factorio servers"""
         try:
             ips, udp_ports, tcp_ports = get_local_container_ips()
-            #print("scanning for servers")
+            # print("scanning for servers")
             # Create server objects for each detected instance
             new_servers = {}
             for i in range(len(ips)):
@@ -67,7 +77,9 @@ class FactorioMCPState:
                     server.tcp_port = tcp_ports[i]
 
                     # Try to verify if it's active
-                    if not server.is_active:# or time.time() - server.last_checked > 60:
+                    if (
+                        not server.is_active
+                    ):  # or time.time() - server.last_checked > 60:
                         try:
                             self.create_factorio_instance(i)
                             server.is_active = True
@@ -84,7 +96,7 @@ class FactorioMCPState:
                         tcp_port=int(tcp_ports[i]),
                         instance_id=instance_id,
                         name=f"Factorio Server {i + 1}",
-                        last_checked=time.time()
+                        last_checked=time.time(),
                     )
                     # Try to verify if it's active
                     try:
@@ -93,7 +105,7 @@ class FactorioMCPState:
                     except Exception as e:
                         server.is_active = False
                         server.system_response = str(e)
-                        #print(e)
+                        # print(e)
 
                     new_servers[instance_id] = server
 
@@ -139,11 +151,11 @@ class FactorioMCPState:
                 self.vcs_repos[instance_id] = FactorioMCPRepository(instance)
 
             return True
-        except Exception as e:
-            #print(f"Error connecting to Factorio server: {e}")
+        except Exception:
+            # print(f"Error connecting to Factorio server: {e}")
             return False
 
-    def get_vcs(self) -> Optional['FactorioVCS']:
+    def get_vcs(self) -> Optional["FactorioVCS"]:
         """Get the VCS repository for the active server"""
         if not self.active_server:
             return None
@@ -162,21 +174,24 @@ class FactorioMCPState:
         self.last_entity_update = time.time()
         return True
 
-
     def load_recipes_from_file(self) -> Dict[str, Recipe]:
         """Load recipes from the jsonl file"""
         if self.recipes_loaded:
             return self.recipes
-            
-        recipes_path = Path(__file__).parent.parent / "data" / "recipes" / "recipes.jsonl"
-        
+
+        recipes_path = (
+            Path(__file__).parent.parent / "data" / "recipes" / "recipes.jsonl"
+        )
+
         if not recipes_path.exists():
             # Fall back to absolute path if relative path fails
-            recipes_path = Path("/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/data/recipes/recipes.jsonl")
+            recipes_path = Path(
+                "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/data/recipes/recipes.jsonl"
+            )
 
         try:
             recipes = {}
-            with open(recipes_path, 'r') as f:
+            with open(recipes_path, "r") as f:
                 for line in f:
                     if line.strip():
                         try:
@@ -186,19 +201,23 @@ class FactorioMCPState:
                             # For simplicity, we'll use just the name and amount from ingredients
                             simplified_ingredients = []
                             for ingredient in ingredients:
-                                simplified_ingredients.append({
-                                    "name": ingredient.get("name", ""),
-                                    "amount": ingredient.get("amount", 1)
-                                })
-                            
+                                simplified_ingredients.append(
+                                    {
+                                        "name": ingredient.get("name", ""),
+                                        "amount": ingredient.get("amount", 1),
+                                    }
+                                )
+
                             # Most recipes don't have a results field in the JSONL, so we'll create one
-                            results = [{"name": recipe_data.get("name", ""), "amount": 1}]
-                            
+                            results = [
+                                {"name": recipe_data.get("name", ""), "amount": 1}
+                            ]
+
                             recipes[recipe_data["name"]] = Recipe(
                                 name=recipe_data["name"],
                                 ingredients=simplified_ingredients,
                                 results=results,
-                                energy_required=1.0  # Default value as it's not in the JSONL
+                                energy_required=1.0,  # Default value as it's not in the JSONL
                             )
                         except json.JSONDecodeError:
                             print(f"Warning: Could not parse recipe line: {line}")
@@ -206,7 +225,7 @@ class FactorioMCPState:
                             print(f"Warning: Missing key in recipe: {e}")
                         except Exception as e:
                             print(f"Warning: Error processing recipe: {e}")
-                            
+
             self.recipes_loaded = True
             return recipes
         except Exception as e:

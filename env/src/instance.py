@@ -12,12 +12,9 @@ import threading
 import time
 import traceback
 import types
-import asyncio
 from concurrent.futures import TimeoutError
 from pathlib import Path
-import logging
 from timeit import default_timer as timer
-from typing_extensions import deprecated
 import uuid
 
 from dotenv import load_dotenv
@@ -32,17 +29,20 @@ from env.src.transaction import FactorioTransaction
 from env.src.models.research_state import ResearchState
 from env.src.rcon.factorio_rcon import RCONClient
 from env.src.models.game_state import GameState
-from env.src.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
+from env.src.utils.controller_loader.system_prompt_generator import (
+    SystemPromptGenerator,
+)
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000
 
 load_dotenv()
 
-NONE = 'nil'
+NONE = "nil"
 
 global var
 var = {}
+
 
 class Direction(Enum):
     UP = NORTH = 0
@@ -70,22 +70,22 @@ class Direction(Enum):
     def from_factorio_direction(cls, direction):
         return direction.value * 2
 
-class FactorioInstance:
 
+class FactorioInstance:
     namespace_class = FactorioNamespace
 
-    def __init__(self,
-                 address=None,
-                 fast=False,
-                 tcp_port=27000,
-                 inventory=None,
-                 cache_scripts=True,
-                 all_technologies_researched=True,
-                 peaceful=True,
-                 num_agents=1,
-                 **kwargs
-                 ):
-
+    def __init__(
+        self,
+        address=None,
+        fast=False,
+        tcp_port=27000,
+        inventory=None,
+        cache_scripts=True,
+        all_technologies_researched=True,
+        peaceful=True,
+        num_agents=1,
+        **kwargs,
+    ):
         self.id = str(uuid.uuid4())[:8]
         self.num_agents = num_agents
         self.persistent_vars = {}
@@ -101,7 +101,10 @@ class FactorioInstance:
         self.namespaces = [self.namespace_class(self, i) for i in range(num_agents)]
 
         self.lua_script_manager = LuaScriptManager(self.rcon_client, cache_scripts)
-        self.script_dict = {**self.lua_script_manager.lib_scripts, **self.lua_script_manager.tool_scripts}
+        self.script_dict = {
+            **self.lua_script_manager.lib_scripts,
+            **self.lua_script_manager.tool_scripts,
+        }
 
         # Initialize hooks as dictionaries to organize callbacks by tool name
         self.pre_tool_hooks = {}
@@ -117,17 +120,20 @@ class FactorioInstance:
         self.initial_score = 0
         try:
             self.first_namespace.score()
-        except Exception as e:
+        except Exception:
             # Invalidate cache if there is an error
             self.lua_script_manager = LuaScriptManager(self.rcon_client, False)
-            self.script_dict = {**self.lua_script_manager.lib_scripts, **self.lua_script_manager.tool_scripts}
+            self.script_dict = {
+                **self.lua_script_manager.lib_scripts,
+                **self.lua_script_manager.tool_scripts,
+            }
             self.setup_tools(self.lua_script_manager)
             self.initialise(fast)
 
         self.initial_score, goal = self.first_namespace.score()
         # Register the cleanup method to be called on exit
         atexit.register(self.cleanup)
-    
+
     @property
     def namespace(self):
         if len(self.namespaces) == 1:
@@ -136,7 +142,9 @@ class FactorioInstance:
             raise ValueError("Can only use .namespace for single-agent instances")
 
     @property
-    def first_namespace(self) -> Optional[FactorioNamespace]: # Add this property if used
+    def first_namespace(
+        self,
+    ) -> Optional[FactorioNamespace]:  # Add this property if used
         return self.namespaces[0] if self.namespaces else None
 
     @property
@@ -145,31 +153,36 @@ class FactorioInstance:
 
     def reset(self, game_state: Optional[GameState] = None):
         # Reset the namespace (clear variables, functions etc)
-        assert not game_state or len(game_state.inventories) == self.num_agents, \
+        assert not game_state or len(game_state.inventories) == self.num_agents, (
             "Game state must have the same number of inventories as num_agents"
-        
+        )
+
         for namespace in self.namespaces:
             namespace.reset()
-        
+
         if not game_state:
             # Reset the game instance
             inventories = [self.initial_inventory] * self.num_agents
             self._reset(inventories)
             # Reset the technologies
             if not self.all_technologies_researched:
-                self.first_namespace._load_research_state(ResearchState(
-                    technologies={},
-                    research_progress=0,
-                    current_research=None,
-                    research_queue=[],
-                    progress={}
-                ))
+                self.first_namespace._load_research_state(
+                    ResearchState(
+                        technologies={},
+                        research_progress=0,
+                        current_research=None,
+                        research_queue=[],
+                        progress={},
+                    )
+                )
         else:
             # Reset the game instance with the correct player's inventory and messages if multiagent
             self._reset(game_state.inventories)
 
             # Load entities into the game
-            self.first_namespace._load_entity_state(game_state.entities, decompress=True)
+            self.first_namespace._load_entity_state(
+                game_state.entities, decompress=True
+            )
 
             # Load research state into the game
             self.first_namespace._load_research_state(game_state.research)
@@ -189,18 +202,17 @@ class FactorioInstance:
 
         try:
             self.initial_score, goal = self.first_namespace.score()
-        except Exception as e:
+        except Exception:
             self.initial_score, goal = 0, None
 
         # Clear renderings
         self.begin_transaction()
-        self.add_command('/sc rendering.clear()', raw=True)
+        self.add_command("/sc rendering.clear()", raw=True)
         self.execute_transaction()
-
 
     def set_inventory(self, inventory: Dict[str, Any], agent_idx: int = 0):
         self.begin_transaction()
-        self.add_command('clear_inventory', agent_idx)
+        self.add_command("clear_inventory", agent_idx)
         self.execute_transaction()
 
         self.begin_transaction()
@@ -208,17 +220,23 @@ class FactorioInstance:
         inventory_items = {k: v for k, v in inventory.items()}
         inventory_items_json = json.dumps(inventory_items)
         player_idx = agent_idx + 1
-        self.add_command(f"/sc global.actions.initialise_inventory({player_idx}, '{inventory_items_json}')", raw=True)
+        self.add_command(
+            f"/sc global.actions.initialise_inventory({player_idx}, '{inventory_items_json}')",
+            raw=True,
+        )
 
         self.execute_transaction()
 
     def speed(self, speed):
-        response = self.rcon_client.send_command(f'/sc game.speed = {speed}')
+        response = self.rcon_client.send_command(f"/sc game.speed = {speed}")
         self._speed = speed
 
     def get_elapsed_ticks(self):
-        response = self.rcon_client.send_command(f'/sc rcon.print(global.elapsed_ticks or 0)')
-        if not response: return 0
+        response = self.rcon_client.send_command(
+            "/sc rcon.print(global.elapsed_ticks or 0)"
+        )
+        if not response:
+            return 0
         return int(response)
 
     def get_system_prompt(self, agent_idx: int = 0) -> str:
@@ -246,24 +264,27 @@ class FactorioInstance:
 
     def connect_to_server(self, address, tcp_port):
         try:
-            rcon_client = RCONClient(address, tcp_port, 'factorio') #'quai2eeha3Lae7v')
+            rcon_client = RCONClient(address, tcp_port, "factorio")  #'quai2eeha3Lae7v')
             address = address
         except ConnectionError as e:
             print(e)
-            rcon_client = RCONClient('localhost', tcp_port, 'factorio')
-            address = 'localhost'
+            rcon_client = RCONClient("localhost", tcp_port, "factorio")
+            address = "localhost"
 
         try:
             rcon_client.connect()
-            player_count = rcon_client.send_command('/sc rcon.print(#game.players)')
+            player_count = rcon_client.send_command("/sc rcon.print(#game.players)")
             if int(player_count) <= 0:
                 raise Exception(
-                    "Player hasn't been initialised into the game. Please log in once to make this node operational.")
-            #rcon_client.send_command('/sc global = {}')
-            #rcon_client.send_command('/sc global.actions = {}')
+                    "Player hasn't been initialised into the game. Please log in once to make this node operational."
+                )
+            # rcon_client.send_command('/sc global = {}')
+            # rcon_client.send_command('/sc global.actions = {}')
 
         except Exception as e:
-            raise ConnectionError(f"Could not connect to {address} at tcp/{tcp_port}: \n{e.args[0]}")
+            raise ConnectionError(
+                f"Could not connect to {address} at tcp/{tcp_port}: \n{e.args[0]}"
+            )
 
         print(f"Connected to {address} client at tcp/{tcp_port}.")
         return rcon_client, address
@@ -286,7 +307,9 @@ class FactorioInstance:
             def wrapper(*args, **kwargs):
                 # Execute pre-tool hooks
                 try:
-                    self.execute_pre_tool_hooks(tool_name, original_callable, *args, **kwargs)
+                    self.execute_pre_tool_hooks(
+                        tool_name, original_callable, *args, **kwargs
+                    )
                 except Exception as e:
                     print(f"Error in pre-tool hook for {tool_name}: {e}")
 
@@ -321,8 +344,8 @@ class FactorioInstance:
                 # Load the Python module
                 module_spec = importlib.util.spec_from_file_location(
                     tool_name,
-                    client_file
-                    #str(Path(client_file))
+                    client_file,
+                    # str(Path(client_file))
                 )
                 module = importlib.util.module_from_spec(module_spec)
                 module_spec.loader.exec_module(module)
@@ -339,25 +362,38 @@ class FactorioInstance:
                     for i in range(self.num_agents):
                         # Get and instantiate the controller class
                         callable_class = getattr(module, class_name)
-                        callable_instance = callable_class(lua_script_manager, self.namespaces[i])
+                        callable_instance = callable_class(
+                            lua_script_manager, self.namespaces[i]
+                        )
 
                         # Create a wrapper that will execute hooks
-                        wrapped_instance = create_hook_wrapper(tool_name.lower(), callable_instance)
+                        wrapped_instance = create_hook_wrapper(
+                            tool_name.lower(), callable_instance
+                        )
 
                         # Store the controller and add it to namespace
                         self.controllers[tool_name.lower()] = callable_instance
 
-                        if directory_name == 'admin':
+                        if directory_name == "admin":
                             # If this is an admin method, we hide it in the namespace by adding a shebang
-                            setattr(self.namespaces[i], f"_{tool_name.lower()}", wrapped_instance)
+                            setattr(
+                                self.namespaces[i],
+                                f"_{tool_name.lower()}",
+                                wrapped_instance,
+                            )
                         else:
-                            setattr(self.namespaces[i], tool_name.lower(), wrapped_instance)
+                            setattr(
+                                self.namespaces[i], tool_name.lower(), wrapped_instance
+                            )
 
                 except Exception as e:
-                    raise Exception(f"Could not instantiate {class_name} from {client_file}. {e}")
+                    raise Exception(
+                        f"Could not instantiate {class_name} from {client_file}. {e}"
+                    )
 
     def eval_with_error(self, expr, agent_idx=0, timeout=60):
-        """ Evaluate an expression with a timeout, and return the result without error handling"""
+        """Evaluate an expression with a timeout, and return the result without error handling"""
+
         # with ThreadPoolExecutor(max_workers=1) as executor:
         #     future = executor.submit(self._eval_with_timeout, expr)
         #     score, goal, result = future.result(timeout)
@@ -373,7 +409,6 @@ class FactorioInstance:
         finally:
             signal.alarm(0)
 
-
     def eval(self, expr, agent_idx=0, timeout=60):
         "Evaluate several lines of input, returning the result of the last line with a timeout"
         try:
@@ -382,15 +417,17 @@ class FactorioInstance:
             return -1, "", "Error: Evaluation timed out"
         except Exception as e:
             trace = e.__traceback__
-            message = e.args[0].replace('\\n', '')
+            message = e.args[0].replace("\\n", "")
             return -1, "", f"{message}".strip()
 
     def _get_command(self, command, parameters=[], measured=True):
-        prefix = "/sc " if not measured else '/command '
+        prefix = "/sc " if not measured else "/command "
         if command in self.script_dict:
             script = prefix + self.script_dict[command]
             for index in range(len(parameters)):
-                script = script.replace(f"arg{index + 1}", lua.encode(parameters[index]))
+                script = script.replace(
+                    f"arg{index + 1}", lua.encode(parameters[index])
+                )
         else:
             script = command
         return script
@@ -410,7 +447,7 @@ class FactorioInstance:
             return 1
 
         # Parse resolution
-        width, height = map(int, resolution.split('x'))
+        width, height = map(int, resolution.split("x"))
         aspect_ratio = width / height
 
         # Get factory dimensions
@@ -442,8 +479,14 @@ class FactorioInstance:
 
         return round(optimal_zoom, 2)
 
-
-    def screenshot(self, script_output_path, resolution="1920x1080", save_path=None, zoom=None, center_on_factory=False):
+    def screenshot(
+        self,
+        script_output_path,
+        resolution="1920x1080",
+        save_path=None,
+        zoom=None,
+        center_on_factory=False,
+    ):
         """
         Take a screenshot in game and optionally save it to a specific location.
 
@@ -462,7 +505,9 @@ class FactorioInstance:
         POS_STRING = ""
         if camera:
             centroid = camera.position
-            POS_STRING = ", position={x="+str(centroid.x)+", y="+str(centroid.y)+"}"
+            POS_STRING = (
+                ", position={x=" + str(centroid.x) + ", y=" + str(centroid.y) + "}"
+            )
 
         self.rcon_client.send_command("/sc rendering.clear()")
 
@@ -470,14 +515,22 @@ class FactorioInstance:
         # if zoom is None:
         #     zoom = self.calculate_optimal_zoom(bounds, resolution)
 
-        command = "/sc game.take_screenshot({player=1, zoom="+str(camera.zoom)+", show_entity_info=true, hide_clouds=true, hide_fog=true "+POS_STRING+"})"
+        command = (
+            "/sc game.take_screenshot({player=1, zoom="
+            + str(camera.zoom)
+            + ", show_entity_info=true, hide_clouds=true, hide_fog=true "
+            + POS_STRING
+            + "})"
+        )
         response = self.rcon_client.send_command(command)
         time.sleep(1)
         # if not response:
         #     return None
 
         # Wait for the screenshot file to appear and get its path
-        screenshot_path = self._get_latest_screenshot(script_output_path=script_output_path)
+        screenshot_path = self._get_latest_screenshot(
+            script_output_path=script_output_path
+        )
         if not screenshot_path:
             print("Screenshot file not found")
             return None
@@ -506,13 +559,20 @@ class FactorioInstance:
         while time.time() - start_time < max_wait:
             try:
                 # Get list of screenshot files
-                screenshots = [f for f in os.listdir(script_output_path)
-                               if f.endswith('.png') and f.startswith('screenshot')]
+                screenshots = [
+                    f
+                    for f in os.listdir(script_output_path)
+                    if f.endswith(".png") and f.startswith("screenshot")
+                ]
 
                 if screenshots:
                     # Sort by modification time to get the latest
-                    latest = max(screenshots,
-                                 key=lambda x: os.path.getmtime(os.path.join(script_output_path, x)))
+                    latest = max(
+                        screenshots,
+                        key=lambda x: os.path.getmtime(
+                            os.path.join(script_output_path, x)
+                        ),
+                    )
                     return os.path.join(script_output_path, latest)
             except Exception as e:
                 print(f"Error checking for screenshots: {e}")
@@ -528,8 +588,8 @@ class FactorioInstance:
         start = timer()
         script = self._get_command(command, parameters=list(parameters), measured=False)
         lua_response = self.rcon_client.send_command(script)
-        #self.add_command(command, *parameters)
-        #response = self._execute_transaction()
+        # self.add_command(command, *parameters)
+        # response = self._execute_transaction()
         # print(lua_response)
         return _lua2python(command, lua_response, start=start)
 
@@ -537,52 +597,69 @@ class FactorioInstance:
         """
         This resets the cached production flows that we track for achievements and diversity sampling.
         """
-        self.add_command('/sc global.crafted_items = {}; global.harvested_items = {}', raw=True)
+        self.add_command(
+            "/sc global.crafted_items = {}; global.harvested_items = {}", raw=True
+        )
         self.execute_transaction()
 
     def _reset_elapsed_ticks(self):
         """
         This resets the cached production flows that we track for achievements and diversity sampling.
         """
-        self.add_command('/sc global.elapsed_ticks = 0', raw=True)
+        self.add_command("/sc global.elapsed_ticks = 0", raw=True)
         self.execute_transaction()
 
     def _reset(self, inventories: List[Dict[str, Any]]):
-
         self.begin_transaction()
-        self.add_command('/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)', raw=True)
-        #self.add_command('/sc script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
+        self.add_command(
+            "/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)",
+            raw=True,
+        )
+        # self.add_command('/sc script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
         for i in range(self.num_agents):
             player_index = i + 1
-            self.add_command(f'/sc global.actions.regenerate_resources({player_index})', raw=True)
-            #self.add_command('clear_inventory', player_index)
+            self.add_command(
+                f"/sc global.actions.regenerate_resources({player_index})", raw=True
+            )
+            # self.add_command('clear_inventory', player_index)
 
         self.execute_transaction()
 
         self.begin_transaction()
-        self.add_command('/sc global.actions.clear_walking_queue()', raw=True)
+        self.add_command("/sc global.actions.clear_walking_queue()", raw=True)
         for i in range(self.num_agents):
             player_index = i + 1
-            self.add_command(f'/sc global.actions.clear_entities({player_index})', raw=True)
+            self.add_command(
+                f"/sc global.actions.clear_entities({player_index})", raw=True
+            )
             inventory_items = {k: v for k, v in inventories[i].items()}
             inventory_items_json = json.dumps(inventory_items)
-            self.add_command(f"/sc global.actions.initialise_inventory({player_index}, '{inventory_items_json}')", raw=True)
+            self.add_command(
+                f"/sc global.actions.initialise_inventory({player_index}, '{inventory_items_json}')",
+                raw=True,
+            )
 
         if self.all_technologies_researched:
-            self.add_command("/sc game.players[1].force.research_all_technologies()", raw=True)
+            self.add_command(
+                "/sc game.players[1].force.research_all_technologies()", raw=True
+            )
         self.execute_transaction()
-        #self.clear_entities()
+        # self.clear_entities()
         self._reset_static_achievement_counters()
         self._reset_elapsed_ticks()
 
     def _execute_transaction(self) -> Dict[str, Any]:
         start = timer()
         rcon_commands = {}
-        for idx, (command, parameters, is_raw) in enumerate(self.current_transaction.get_commands()):
+        for idx, (command, parameters, is_raw) in enumerate(
+            self.current_transaction.get_commands()
+        ):
             if is_raw:
                 rcon_commands[f"{idx}_{command}"] = command
             else:
-                script = self._get_command(command, parameters=parameters, measured=False)
+                script = self._get_command(
+                    command, parameters=parameters, measured=False
+                )
                 rcon_commands[f"{idx}_{command}"] = script
 
         lua_responses = self.rcon_client.send_commands(rcon_commands)
@@ -595,7 +672,7 @@ class FactorioInstance:
         return results
 
     def begin_transaction(self):
-        if not hasattr(self, 'current_transaction'):
+        if not hasattr(self, "current_transaction"):
             self.current_transaction = FactorioTransaction()
         elif self.current_transaction:
             self.current_transaction.clear()
@@ -603,7 +680,7 @@ class FactorioInstance:
             self.current_transaction = FactorioTransaction()
 
     def add_command(self, command: str, *parameters, raw=False):
-        if not hasattr(self, 'current_transaction'):
+        if not hasattr(self, "current_transaction"):
             self.begin_transaction()
         self.current_transaction.add_command(command, *parameters, raw=raw)
 
@@ -611,23 +688,31 @@ class FactorioInstance:
         return self._execute_transaction()
 
     def initialise(self, fast=True):
-
         self.begin_transaction()
-        self.add_command('/sc global.alerts = {}', raw=True)
-        self.add_command('/sc global.elapsed_ticks = 0', raw=True)
-        self.add_command('/sc global.fast = {}'.format('true' if fast else 'false'), raw=True)
+        self.add_command("/sc global.alerts = {}", raw=True)
+        self.add_command("/sc global.elapsed_ticks = 0", raw=True)
+        self.add_command(
+            "/sc global.fast = {}".format("true" if fast else "false"), raw=True
+        )
         self.execute_transaction()
-        
+
         # Create characters for all agents
         self._create_agent_game_characters()
 
         init_scripts = [
-            'initialise', 'clear_entities', 'alerts', 'util', 'priority_queue', 
-            'connection_points', 'recipe_fluid_connection_mappings', 
-            'serialize', 'production_score', 'initialise_inventory'
+            "initialise",
+            "clear_entities",
+            "alerts",
+            "util",
+            "priority_queue",
+            "connection_points",
+            "recipe_fluid_connection_mappings",
+            "serialize",
+            "production_score",
+            "initialise_inventory",
         ]
         if self.peaceful:
-            init_scripts.append('enemies')
+            init_scripts.append("enemies")
         for script_name in init_scripts:
             self.lua_script_manager.load_init_into_game(script_name)
 
@@ -639,16 +724,19 @@ class FactorioInstance:
         """Create Factorio characters for all agents in the game."""
         # Create characters in Factorio
         self.begin_transaction()
-        self.add_command('/sc player = game.players[1]')
-        color_logic = ''
+        self.add_command("/sc player = game.players[1]")
+        color_logic = ""
         if self.num_agents > 1:
-            color_logic = 'if i==1 then char.color={r=0,g=1,b=0,a=1} elseif i==2 then char.color={r=0,g=0,b=1,a=1} end;'
-        
-        self.add_command(f'/sc global.agent_characters = {{}}; for _,c in pairs(game.surfaces[1].find_entities_filtered{{type="character"}}) do if c then c.destroy() end end; for i=1,{self.num_agents} do local char = game.surfaces[1].create_entity{{name="character",position={{x=0,y=(i-1)*2}},force=game.forces.player}}; {color_logic} global.agent_characters[i]=char end', raw=True)
+            color_logic = "if i==1 then char.color={r=0,g=1,b=0,a=1} elseif i==2 then char.color={r=0,g=0,b=1,a=1} end;"
+
+        self.add_command(
+            f'/sc global.agent_characters = {{}}; for _,c in pairs(game.surfaces[1].find_entities_filtered{{type="character"}}) do if c then c.destroy() end end; for i=1,{self.num_agents} do local char = game.surfaces[1].create_entity{{name="character",position={{x=0,y=(i-1)*2}},force=game.forces.player}}; {color_logic} global.agent_characters[i]=char end',
+            raw=True,
+        )
         self.execute_transaction()
 
-    def speed(self, speed): 
-        response = self.rcon_client.send_command(f'/sc game.speed = {speed}')
+    def speed(self, speed):
+        response = self.rcon_client.send_command(f"/sc game.speed = {speed}")
         self._speed = speed
 
     def get_warnings(self, seconds=10):
@@ -658,16 +746,20 @@ class FactorioInstance:
         :return:
         """
         start = timer()
-        command = f'/silent-command rcon.print(dump(global.get_alerts({seconds})))'
+        command = f"/silent-command rcon.print(dump(global.get_alerts({seconds})))"
         lua_response = self.rcon_client.send_command(command)
         # print(lua_response)
-        alert_dict, duration = _lua2python('alerts', lua_response, start=start)
+        alert_dict, duration = _lua2python("alerts", lua_response, start=start)
         if isinstance(alert_dict, dict):
             alerts = list(alert_dict.values())
             alert_strings = []
             for alert in alerts:
-                issues = ", ".join([al.replace("_", " ") for al in list(alert['issues'].values())])
-                alert_strings.append(f"{alert['entity_name']} at {tuple(alert['position'].values())}: {issues}")
+                issues = ", ".join(
+                    [al.replace("_", " ") for al in list(alert["issues"].values())]
+                )
+                alert_strings.append(
+                    f"{alert['entity_name']} at {tuple(alert['position'].values())}: {issues}"
+                )
 
             return alert_strings
         else:
@@ -678,7 +770,7 @@ class FactorioInstance:
             if inspect.ismethod(value) or inspect.isfunction(value):
                 # For methods and functions, bind them to the instance
                 return value.__get__(self, self.__class__)
-            elif hasattr(value, '__call__'):
+            elif hasattr(value, "__call__"):
                 # For objects with a __call__ method (like your controllers)
                 return lambda *args, **kwargs: value(*args, **kwargs)
             else:
@@ -697,11 +789,11 @@ class FactorioInstance:
                 namespace[name] = value
                 for member_name, member_value in value.__members__.items():
                     namespace[f"{name}.{member_name}"] = member_value
-            elif inspect.ismodule(value) and value.__name__.startswith('factorio_'):
+            elif inspect.ismodule(value) and value.__name__.startswith("factorio_"):
                 # For Factorio-related modules, add the module and its attributes
                 namespace[name] = value
                 for attr_name, attr_value in inspect.getmembers(value):
-                    if not attr_name.startswith('_'):
+                    if not attr_name.startswith("_"):
                         namespace[f"{name}.{attr_name}"] = attr_value
             elif isinstance(value, type):
                 # For classes, add the class itself
@@ -712,7 +804,7 @@ class FactorioInstance:
 
         # Add all public instance attributes and methods
         for name, value in vars(self).items():
-            if not name.startswith('_'):
+            if not name.startswith("_"):
                 add_to_namespace(name, value)
 
         # Add dynamically loaded controllers
@@ -721,13 +813,13 @@ class FactorioInstance:
 
         # Add all class-level attributes
         for name, value in vars(self.__class__).items():
-            if not name.startswith('_') and name not in namespace:
+            if not name.startswith("_") and name not in namespace:
                 add_to_namespace(name, value)
 
         # Add all global variables from the module where FactorioInstance is defined
         module_globals = inspect.getmodule(self.__class__).__dict__
         for name, value in module_globals.items():
-            if not name.startswith('_') and name not in namespace:
+            if not name.startswith("_") and name not in namespace:
                 add_to_namespace(name, value)
 
         return types.SimpleNamespace(**namespace)
@@ -738,14 +830,20 @@ class FactorioInstance:
         :param func:
         :return:
         """
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             factorio_ns = self.create_factorio_namespace()
 
             # Create a new function with the Factorio namespace as its globals
             new_globals = {**func.__globals__, **vars(factorio_ns)}
-            new_func = types.FunctionType(func.__code__, new_globals, func.__name__, func.__defaults__,
-                                          func.__closure__)
+            new_func = types.FunctionType(
+                func.__code__,
+                new_globals,
+                func.__name__,
+                func.__defaults__,
+                func.__closure__,
+            )
 
             return new_func(*args, **kwargs)
 
@@ -762,14 +860,14 @@ class FactorioInstance:
 
         # Prepare the globals for the snippet execution
         snippet_globals = {
-            '__name__': '__main__',
-            '__file__': file_path,
-            **vars(factorio_ns)
+            "__name__": "__main__",
+            "__file__": file_path,
+            **vars(factorio_ns),
         }
         try:
             # Execute the file directly
-            with open(file_path, 'r') as file:
-                code = compile(file.read(), file_path, 'exec')
+            with open(file_path, "r") as file:
+                code = compile(file.read(), file_path, "exec")
                 exec(code, snippet_globals)
         except Exception as e:
             print(f"Error executing file {file_path}: {e}")
@@ -798,7 +896,7 @@ class FactorioInstance:
         if tool_name is not None and callback is None and callable(tool_name):
             callback = tool_name
             tool_name = callback.__name__
-            if not hasattr(self, 'post_tool_hooks'):
+            if not hasattr(self, "post_tool_hooks"):
                 self.post_tool_hooks = {}
             if tool_name not in self.post_tool_hooks:
                 self.post_tool_hooks[tool_name] = []
@@ -807,8 +905,9 @@ class FactorioInstance:
 
         # When used as a decorator with arguments: @register_post_tool_hook("tool_name")
         if callback is None:
+
             def decorator(func):
-                if not hasattr(self, 'post_tool_hooks'):
+                if not hasattr(self, "post_tool_hooks"):
                     self.post_tool_hooks = {}
                 if tool_name not in self.post_tool_hooks:
                     self.post_tool_hooks[tool_name] = []
@@ -821,7 +920,7 @@ class FactorioInstance:
         if not callable(callback):
             raise TypeError("Callback must be callable")
 
-        if not hasattr(self, 'post_tool_hooks'):
+        if not hasattr(self, "post_tool_hooks"):
             self.post_tool_hooks = {}
         if tool_name not in self.post_tool_hooks:
             self.post_tool_hooks[tool_name] = []
@@ -847,7 +946,7 @@ class FactorioInstance:
         if tool_name is not None and callback is None and callable(tool_name):
             callback = tool_name
             tool_name = callback.__name__
-            if not hasattr(self, 'pre_tool_hooks'):
+            if not hasattr(self, "pre_tool_hooks"):
                 self.pre_tool_hooks = {}
             if tool_name not in self.pre_tool_hooks:
                 self.pre_tool_hooks[tool_name] = []
@@ -856,8 +955,9 @@ class FactorioInstance:
 
         # When used as a decorator with arguments: @register_pre_tool_hook("tool_name")
         if callback is None:
+
             def decorator(func):
-                if not hasattr(self, 'pre_tool_hooks'):
+                if not hasattr(self, "pre_tool_hooks"):
                     self.pre_tool_hooks = {}
                 if tool_name not in self.pre_tool_hooks:
                     self.pre_tool_hooks[tool_name] = []
@@ -870,7 +970,7 @@ class FactorioInstance:
         if not callable(callback):
             raise TypeError("Callback must be callable")
 
-        if not hasattr(self, 'pre_tool_hooks'):
+        if not hasattr(self, "pre_tool_hooks"):
             self.pre_tool_hooks = {}
         if tool_name not in self.pre_tool_hooks:
             self.pre_tool_hooks[tool_name] = []
@@ -910,10 +1010,9 @@ class FactorioInstance:
                 except Exception as e:
                     print(f"Error in pre-tool hook for {tool_name}: {e}")
 
-
     def cleanup(self):
         # Close the RCON connection
-        if hasattr(self, 'rcon_client') and self.rcon_client:
+        if hasattr(self, "rcon_client") and self.rcon_client:
             self.rcon_client.close()
 
         self.post_tool_hooks = {}
@@ -921,7 +1020,11 @@ class FactorioInstance:
 
         # Join all non-daemon threads
         for thread in threading.enumerate():
-            if thread != threading.current_thread() and thread.is_alive() and not thread.daemon:
+            if (
+                thread != threading.current_thread()
+                and thread.is_alive()
+                and not thread.daemon
+            ):
                 try:
                     thread.join(timeout=5)  # Wait up to 5 seconds for each thread
                 except Exception as e:

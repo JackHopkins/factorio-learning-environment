@@ -2,11 +2,14 @@ import pytest
 from typing import NamedTuple
 from agents.utils.python_parser import PythonParser
 
+
 class MockMessage(NamedTuple):
     content: str
 
+
 class MockLLMResponse(NamedTuple):
     """Mock LLM response object for testing"""
+
     message: MockMessage
 
 
@@ -31,19 +34,19 @@ for i in range(10):
 
 This will print numbers 0-9
 """
-        expected = '''# Let's create a loop to process items
+        expected = """# Let's create a loop to process items
 
 for i in range(10):
     print(i)
 
-# This will print numbers 0-9'''
+# This will print numbers 0-9"""
 
         result, _ = PythonParser.extract_code(MockLLMResponse(MockMessage(content)))
         assert result.strip() == expected.strip()
 
     def test_complex_pipe_example_1(self):
         """Test the first complex pipe placement example"""
-        content = '''The repeated attempts to place pipes indicate that the terrain or path chosen is not suitable for pipe placement. Let's try a different approach by moving further away from the current path and using a combination of underground and regular pipes to bypass any potential obstacles.
+        content = """The repeated attempts to place pipes indicate that the terrain or path chosen is not suitable for pipe placement. Let's try a different approach by moving further away from the current path and using a combination of underground and regular pipes to bypass any potential obstacles.
 
 # Define positions for offshore pump and boiler
 offshore_pump_position = Position(x=-11.5, y=26.5)
@@ -61,23 +64,26 @@ for pos in pipe_path_positions:
     for entity in entities:
         if not isinstance(entity, Pipe):
             pickup_entity(entity)
-            print(f"Cleared obstruction at {entity.position}.")'''
+            print(f"Cleared obstruction at {entity.position}.")"""
 
         result, _ = PythonParser.extract_code(MockLLMResponse(MockMessage(content)))
         assert "# The repeated attempts" in result
         assert "offshore_pump_position = Position(x=-11.5, y=26.5)" in result
-        assert "pipe_path_positions = [Position(x=i, y=28.5) for i in range(-11, -3)]" in result
+        assert (
+            "pipe_path_positions = [Position(x=i, y=28.5) for i in range(-11, -3)]"
+            in result
+        )
 
     def test_complex_pipe_example_2(self):
         """Test the second complex pipe placement example"""
-        content = '''The current approach of trying to place pipes at various y-coordinates has not been successful. Let's try a different strategy by placing the pipes directly from the offshore pump to the boiler without skipping positions, ensuring that we use both underground and regular pipes where necessary.
+        content = """The current approach of trying to place pipes at various y-coordinates has not been successful. Let's try a different strategy by placing the pipes directly from the offshore pump to the boiler without skipping positions, ensuring that we use both underground and regular pipes where necessary.
 
 # Define positions for offshore pump and boiler
 offshore_pump_position = Position(x=-11.5, y=26.5)
 boiler_position = Position(x=-3.5, y=26.0)
 
 # Move to offshore pump position
-move_to(offshore_pump_position)'''
+move_to(offshore_pump_position)"""
 
         result, _ = PythonParser.extract_code(MockLLMResponse(MockMessage(content)))
         assert "# The current approach" in result
@@ -97,7 +103,7 @@ with multiple lines
 but no actual code
 """
         result, _ = PythonParser.extract_code(MockLLMResponse(MockMessage(content)))
-        assert result.startswith('"""') or result.startswith('#')
+        assert result.startswith('"""') or result.startswith("#")
 
     def test_invalid_python(self):
         """Test handling of invalid Python syntax"""
@@ -106,11 +112,11 @@ for i in range(10)    # Missing colon
     print(i)
 """
         result, _ = PythonParser.extract_code(MockLLMResponse(MockMessage(content)))
-        assert result.startswith('"""') or result.startswith('#')
+        assert result.startswith('"""') or result.startswith("#")
 
     def test_markdown_code_blocks(self):
         """Test handling of markdown code blocks"""
-        content = '''
+        content = """
 Here's some explanation
 
 ```python
@@ -120,7 +126,7 @@ print(x + y)
 ```
 
 More explanation here
-'''
+"""
         result, _ = PythonParser.extract_code(MockLLMResponse(MockMessage(content)))
         assert "x = 1" in result
 
@@ -183,6 +189,7 @@ y = 2
         assert "x = 1  # Inline comment" in result
         assert "# Another comment" in result
         assert "y = 2" in result
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

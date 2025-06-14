@@ -1,27 +1,17 @@
-from multiprocessing import Lock, Manager, RLock
+from multiprocessing import Lock, Manager
 
 
 class Vocabulary:
-
     def __init__(self, thread_safe=False):
-
         if thread_safe:
             self.mutex = Lock()
             manager = Manager()
 
-            self.vocabulary = manager.dict({
-                "character": -2
-            })
-            self.i_vocabulary = manager.dict({
-                -2: "character"
-            })
+            self.vocabulary = manager.dict({"character": -2})
+            self.i_vocabulary = manager.dict({-2: "character"})
         else:
-            self.vocabulary = {
-                "character": -2
-            }
-            self.i_vocabulary = {
-                -2: "character"
-            }
+            self.vocabulary = {"character": -2}
+            self.i_vocabulary = {-2: "character"}
             self.mutex = None
 
     def _get_vocabulary(self):
@@ -40,7 +30,7 @@ class Vocabulary:
                     if item not in keys:
                         self.vocabulary[item] = next_index
                         self.i_vocabulary[next_index] = item
-                        #print(f"vocab: {item} = {next_index}")
+                        # print(f"vocab: {item} = {next_index}")
 
                 item = self.vocabulary[item]
             except Exception as e:
@@ -51,7 +41,7 @@ class Vocabulary:
             if item not in keys:
                 self.vocabulary[item] = next_index
                 self.i_vocabulary[next_index] = item
-                #print(f"vocab: {item} = {next_index}")
+                # print(f"vocab: {item} = {next_index}")
 
             item = self.vocabulary[item]
         return item

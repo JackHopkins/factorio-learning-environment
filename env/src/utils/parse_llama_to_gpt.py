@@ -2,7 +2,6 @@ import json
 
 
 def parse_and_format(data):
-
     # Extract needed data
     messages = data.get("input", [])
 
@@ -13,13 +12,17 @@ def parse_and_format(data):
     # Transform the messages into the desired output format
     output_messages = {
         "messages": [
-            {"role": msg["role"], "content": msg["message"].replace("Recent History: \n", "")}
+            {
+                "role": msg["role"],
+                "content": msg["message"].replace("Recent History: \n", ""),
+            }
             for msg in messages
         ]
     }
 
     # Convert back to JSON string format for each message set
     return json.dumps(output_messages)
+
 
 if __name__ == "__main__":
     # Read the JSON string
@@ -30,7 +33,7 @@ if __name__ == "__main__":
     file = open("//llama_events.jsonl")
     out_file = open("//gpt_events.jsonl", "w")
 
-    #json_obj = json.loads(file.read())
+    # json_obj = json.loads(file.read())
     lines = file.readlines()
 
     # Parse each line

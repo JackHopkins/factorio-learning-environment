@@ -23,21 +23,27 @@ class BeamSampler(DBSampler):
         exploration_prob: Probability of selecting a random program instead of from beam
     """
 
-    def __init__(self,
-                 db_client: DBClient,
-                 beam_width: int = 5,
-                 max_conversation_length: int = 20,
-                 exploration_prob: float = 0.1):
+    def __init__(
+        self,
+        db_client: DBClient,
+        beam_width: int = 5,
+        max_conversation_length: int = 20,
+        exploration_prob: float = 0.1,
+    ):
         super().__init__(db_client)
         self.beam_width = beam_width
         self.max_conversation_length = max_conversation_length
         self.exploration_prob = exploration_prob
 
     @tenacity.retry(
-        retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
-        wait=wait_exponential(multiplier=1, min=4, max=10)
+        retry=retry_if_exception_type(
+            (psycopg2.OperationalError, psycopg2.InterfaceError)
+        ),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
     )
-    async def sample_parent(self, version: int = 1, update_visits: bool = False) -> Optional[Program]:
+    async def sample_parent(
+        self, version: int = 1, update_visits: bool = False
+    ) -> Optional[Program]:
         """
         Note: update_visits parameter is ignored for beam sampling since
         visit statistics are not relevant for beam search selection
@@ -59,7 +65,8 @@ class BeamSampler(DBSampler):
                     # Decide whether to explore or exploit
                     if random.random() < self.exploration_prob:
                         # Exploration: Sample from recent programs outside the beam
-                        cur.execute("""
+                        cur.execute(
+                            """
                             WITH beam AS (
                                 SELECT id
                                 FROM programs 
@@ -82,11 +89,19 @@ class BeamSampler(DBSampler):
                             SELECT id FROM exploration_candidates
                             ORDER BY RANDOM()
                             LIMIT 1
-                        """, (version, max_assistant_length, self.beam_width,
-                              version, max_assistant_length))
+                        """,
+                            (
+                                version,
+                                max_assistant_length,
+                                self.beam_width,
+                                version,
+                                max_assistant_length,
+                            ),
+                        )
                     else:
                         # Exploitation: Sample from the beam (top N programs)
-                        cur.execute("""
+                        cur.execute(
+                            """
                             WITH beam AS (
                                 SELECT id, value
                                 FROM programs 
@@ -99,16 +114,21 @@ class BeamSampler(DBSampler):
                             SELECT id FROM beam
                             ORDER BY RANDOM()
                             LIMIT 1
-                        """, (version, max_assistant_length, self.beam_width))
+                        """,
+                            (version, max_assistant_length, self.beam_width),
+                        )
 
                     result = cur.fetchone()
                     if not result:
                         return None
 
                     # Fetch the complete program
-                    cur.execute("""
+                    cur.execute(
+                        """
                         SELECT * FROM programs WHERE id = %s
-                    """, (result['id'],))
+                    """,
+                        (result["id"],),
+                    )
 
                     row = cur.fetchone()
                     return Program.from_row(dict(row)) if row else None
@@ -130,7 +150,8 @@ class BeamSampler(DBSampler):
         try:
             with self.db_client.get_connection() as conn:
                 with conn.cursor(cursor_factory=DictCursor) as cur:
-                    cur.execute("""
+                    cur.execute(
+                        """
                         WITH beam AS (
                             SELECT value
                             FROM programs 
@@ -145,7 +166,9 @@ class BeamSampler(DBSampler):
                             MIN(value) as min_value,
                             MAX(value) as max_value
                         FROM beam
-                    """, (version, self.beam_width))
+                    """,
+                        (version, self.beam_width),
+                    )
 
                     result = cur.fetchone()
                     return dict(result) if result else {}

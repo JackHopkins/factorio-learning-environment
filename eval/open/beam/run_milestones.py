@@ -16,108 +16,123 @@ from eval.open.db_client import DBClient
 from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
 from eval.open.mcts.parallel_supervised_config import SupervisedExecutorConfig
 from models.game_state import GameState
-from eval.tasks.throughput_task import ThroughputTask, LAB_PLAY_POPULATED_STARTING_INVENTORY
+from eval.tasks.throughput_task import (
+    ThroughputTask,
+    LAB_PLAY_POPULATED_STARTING_INVENTORY,
+)
 
 os.environ.update({"FORCE_COLOR": "1", "TERM": "xterm-256color"})
 load_dotenv()
 
 
 def plot_throughput_timeseries_mean(input_data, file_path, task):
-        throughput_entity = task.throughput_entity
-        input_data = input_data["results"][0]
-        data = {}
-        for key, value in input_data.items():
-            values = [x["holdout_achievements"]["dynamic"].get(f"{throughput_entity}", 0) for x in value]
-            data[key] = values
-        
+    throughput_entity = task.throughput_entity
+    input_data = input_data["results"][0]
+    data = {}
+    for key, value in input_data.items():
+        values = [
+            x["holdout_achievements"]["dynamic"].get(f"{throughput_entity}", 0)
+            for x in value
+        ]
+        data[key] = values
 
-        # Convert the data into a numpy array for easier calculation
-        values = np.array(list(data.values()))
+    # Convert the data into a numpy array for easier calculation
+    values = np.array(list(data.values()))
 
-        # Calculate mean and standard deviation across series
-        mean = np.mean(values, axis=0)
-        std = np.std(values, axis=0)
+    # Calculate mean and standard deviation across series
+    mean = np.mean(values, axis=0)
+    std = np.std(values, axis=0)
 
-        # Create time points (x-axis)
-        time_points = np.arange(len(mean))
+    # Create time points (x-axis)
+    time_points = np.arange(len(mean))
 
-        # Create the plot
-        plt.figure(figsize=(10, 6))
+    # Create the plot
+    plt.figure(figsize=(10, 6))
 
-        # Plot individual series
-        #for series_name, series_data in data.items():
-        #    plt.plot(time_points, series_data, 'o-', alpha=0.3, label=series_name)
+    # Plot individual series
+    # for series_name, series_data in data.items():
+    #    plt.plot(time_points, series_data, 'o-', alpha=0.3, label=series_name)
 
-        # Plot mean
-        plt.plot(time_points, mean, 'k-', linewidth=2, label='Mean')
+    # Plot mean
+    plt.plot(time_points, mean, "k-", linewidth=2, label="Mean")
 
-        # Plot confidence bands (mean ± 2*std)
-        plt.fill_between(time_points, 
-                         mean - 2*std,
-                         mean + 2*std,
-                         color='gray',
-                         alpha=0.2,
-                         label='±2 STD')
+    # Plot confidence bands (mean ± 2*std)
+    plt.fill_between(
+        time_points,
+        mean - 2 * std,
+        mean + 2 * std,
+        color="gray",
+        alpha=0.2,
+        label="±2 STD",
+    )
 
-        # Customize the plot
-        plt.title(f'{throughput_entity} throughput ')
-        plt.xlabel('Steps')
-        plt.ylabel(f'{throughput_entity}/20s')
-        plt.grid(True, alpha=0.3)
+    # Customize the plot
+    plt.title(f"{throughput_entity} throughput ")
+    plt.xlabel("Steps")
+    plt.ylabel(f"{throughput_entity}/20s")
+    plt.grid(True, alpha=0.3)
 
-        # Set y-axis to start at 0
-        plt.ylim(bottom=0)
+    # Set y-axis to start at 0
+    plt.ylim(bottom=0)
 
-        # Show the plot
-        plt.tight_layout()
-        plt.savefig(file_path)
-
+    # Show the plot
+    plt.tight_layout()
+    plt.savefig(file_path)
 
 
 def plot_throughput_timeseries(data, file_path, task):
-        throughput_entity = task.throughput_entity
-        data = data["results"][0]
-        data_to_plot = {}
-        for key, value in data.items():
-            values = [x["holdout_achievements"]["dynamic"].get(throughput_entity, 0) for x in value]
-            data_to_plot[key] = values
+    throughput_entity = task.throughput_entity
+    data = data["results"][0]
+    data_to_plot = {}
+    for key, value in data.items():
+        values = [
+            x["holdout_achievements"]["dynamic"].get(throughput_entity, 0)
+            for x in value
+        ]
+        data_to_plot[key] = values
 
-        # Create a figure and axis
-        plt.figure(figsize=(10, 6))
+    # Create a figure and axis
+    plt.figure(figsize=(10, 6))
 
-        # Plot each series
-        for series_name, values in data_to_plot.items():
-            plt.plot(values, label=series_name, marker='o')
+    # Plot each series
+    for series_name, values in data_to_plot.items():
+        plt.plot(values, label=series_name, marker="o")
 
-        # Customize the plot
-        plt.title(f'{throughput_entity} throughput ')
-        plt.xlabel('Steps')
-        plt.ylabel(f'{throughput_entity}/20s')
-        plt.legend()
-        plt.grid(True)
+    # Customize the plot
+    plt.title(f"{throughput_entity} throughput ")
+    plt.xlabel("Steps")
+    plt.ylabel(f"{throughput_entity}/20s")
+    plt.legend()
+    plt.grid(True)
 
-        # save the plot to the file path
-        plt.savefig(file_path)
+    # save the plot to the file path
+    plt.savefig(file_path)
 
-def initiate_executor(config, instances, version, db_client, version_description, llm_factory, formatter):
+
+def initiate_executor(
+    config, instances, version, db_client, version_description, llm_factory, formatter
+):
     executor = config["executor"](
         instances=instances,
         version=version,
         db_client=db_client,
         version_description=version_description,
         llm_factory=llm_factory,
-        config = config["config"],
-        formatter=formatter
+        config=config["config"],
+        formatter=formatter,
     )
     return executor
 
 
 def initiate_task_configs(input_task):
     if input_task["task_type"] == "populated_lab_play":
-        input_task["config"]["starting_inventory"] = LAB_PLAY_POPULATED_STARTING_INVENTORY
+        input_task["config"]["starting_inventory"] = (
+            LAB_PLAY_POPULATED_STARTING_INVENTORY
+        )
         return ThroughputTask(**input_task["config"])
     task_config = ThroughputTask(**input_task["config"])
     return task_config
+
 
 def initialise_starting_state(instance, task, reset_game_state):
     # reset the instance
@@ -138,13 +153,13 @@ def create_factorio_instance(instance_id: int) -> FactorioInstance:
         fast=True,
         cache_scripts=True,
         inventory={},
-        all_technologies_researched=True
+        all_technologies_researched=True,
     )
     instance.speed(10)
     return instance
 
-SYSTEM_PROMPT = \
-    """You are an agent designed to operate within FactoryEnv, a novel evaluation framework built on the game Factorio, with capabilities in long-horizon planning, spatial reasoning, and systematic automation. 
+
+SYSTEM_PROMPT = """You are an agent designed to operate within FactoryEnv, a novel evaluation framework built on the game Factorio, with capabilities in long-horizon planning, spatial reasoning, and systematic automation. 
     
     You interact with the environment through Python program synthesis, using any of the API's 28 core methods below.
     
@@ -184,8 +199,7 @@ SYSTEM_PROMPT = \
     
     You are now ready to begin playing FactoryEnv! Good luck!"""
 
-OBSERVATION_SPACE = \
-   """You observe the STDOUT and STDERR of your program.
+OBSERVATION_SPACE = """You observe the STDOUT and STDERR of your program.
    
     ```stderr
     Error: 1: ("Initial Inventory: {'stone-furnace': 2, 'coal': 50, 'stone': 1610, 'iron-ore': 50, 'iron-gear-wheel': 31}",)
@@ -213,36 +227,46 @@ async def main():
             port=os.getenv("SKILLS_DB_PORT"),
             dbname=os.getenv("SKILLS_DB_NAME"),
             user=os.getenv("SKILLS_DB_USER"),
-            password=os.getenv("SKILLS_DB_PASSWORD")
+            password=os.getenv("SKILLS_DB_PASSWORD"),
         )
-    except Exception as e:
-        print("\033[91mError connecting to the database. Please check your credentials and try again.\033[91m")
+    except Exception:
+        print(
+            "\033[91mError connecting to the database. Please check your credentials and try again.\033[91m"
+        )
         return
-
-
 
     # Initialize components
     try:
         instances = [create_factorio_instance(i) for i in range(4)]
-        #for instance in instances:
+        # for instance in instances:
         #    instance.speed(10)  # Speed up the game for faster evaluation
-    except Exception as e:
+    except Exception:
         print(
-            "\033[91mError initialising Factorio instances. Are the docker containers running, and have they been activated?\033[91m")
+            "\033[91mError initialising Factorio instances. Are the docker containers running, and have they been activated?\033[91m"
+        )
         return
-    
+
     API_SCHEMA = instances[0].get_system_prompt()
-    prompt = SYSTEM_PROMPT + '\n\n' + API_SCHEMA + '\n\nObservations:\n' + OBSERVATION_SPACE + '\n\n' + MANUAL + '\n```'
+    prompt = (
+        SYSTEM_PROMPT
+        + "\n\n"
+        + API_SCHEMA
+        + "\n\nObservations:\n"
+        + OBSERVATION_SPACE
+        + "\n\n"
+        + MANUAL
+        + "\n```"
+    )
     zero_state = GameState.from_instance(instances[0])
 
     model_to_evaluate = "claude-3-5-sonnet-20241022"
-    #model_to_evaluate = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
-    #model_to_evaluate = "Qwen/Qwen2.5-72B-Instruct-Turbo"
-    #model_to_evaluate = "gpt-4o"
-    #model_to_evaluate = 'gpt-4o-mini-2024-07-18'
-    #model_to_evaluate = "o1-mini-2024-09-12"
-    #model_to_evaluate = 'deepseek-chat'
-    version = 332 # 120 and 121 was the last version before this change
+    # model_to_evaluate = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+    # model_to_evaluate = "Qwen/Qwen2.5-72B-Instruct-Turbo"
+    # model_to_evaluate = "gpt-4o"
+    # model_to_evaluate = 'gpt-4o-mini-2024-07-18'
+    # model_to_evaluate = "o1-mini-2024-09-12"
+    # model_to_evaluate = 'deepseek-chat'
+    version = 332  # 120 and 121 was the last version before this change
     llm_factory = LLMFactory(model=model_to_evaluate)
     version_description = "eval_agentic_supervised"
 
@@ -256,57 +280,76 @@ async def main():
     formatter = RecursiveReportFormatter(
         chunk_size=128,
         llm_call=llm_factory.acall,
-        cache_dir='./summary_cache',
+        cache_dir="./summary_cache",
     )
-    configs = {"beam_supervised": {"config": SupervisedExecutorConfig(
-        n_parallel=1,
-        model_to_evaluate=model_to_evaluate,
-        supervised_kwargs = {"system_prompt": prompt}),
-        "executor": MilestonesBeamSearchExecutor}
+    configs = {
+        "beam_supervised": {
+            "config": SupervisedExecutorConfig(
+                n_parallel=1,
+                model_to_evaluate=model_to_evaluate,
+                supervised_kwargs={"system_prompt": prompt},
+            ),
+            "executor": MilestonesBeamSearchExecutor,
         }
-    
+    }
+
     # get the current date and time
     now = datetime.now()
     dt_string = now.strftime("%Y%m%d_%H%M%S")
-    
+
     save_path = os.path.join(result_path, search_type, model_to_evaluate, dt_string)
     # check if the path exists
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
-    executor = initiate_executor(configs[search_type], instances, version, db_client, version_description, llm_factory, formatter)
-    
+    executor = initiate_executor(
+        configs[search_type],
+        instances,
+        version,
+        db_client,
+        version_description,
+        llm_factory,
+        formatter,
+    )
+
     for task_key in tasks:
         # read in the input task
         with open(os.path.join(task_folder, f"{task_key}.json"), "r") as f:
             input_task = json.load(f)
         task = initiate_task_configs(input_task)
         task = initialise_starting_state(instances[0], task, zero_state)
-        config_dict = {"iterations": search_iterations,
-                   "executor_kwargs": executor.config._to_dict(),
-                   "task_config": task._to_dict()}
+        config_dict = {
+            "iterations": search_iterations,
+            "executor_kwargs": executor.config._to_dict(),
+            "task_config": task._to_dict(),
+        }
         # save the config dict
         with open(os.path.join(save_path, f"{task_key}_config.json"), "w") as f:
             json.dump(config_dict, f)
         print(f"Starting MCTS search for task {task.task}")
         results = await executor.search_supervised(
-        n_iterations=search_iterations,
-        skip_failures=False,
-        task=task,
-        run_id = f"{task_key}_{dt_string}"
+            n_iterations=search_iterations,
+            skip_failures=False,
+            task=task,
+            run_id=f"{task_key}_{dt_string}",
         )
         print(f"Task: {task.task} has been completed")
-        result_dict = {"results" :results,
-                       "starting_inventory": task.starting_inventory,
-                       "target_entity": task.throughput_entity,}
+        result_dict = {
+            "results": results,
+            "starting_inventory": task.starting_inventory,
+            "target_entity": task.throughput_entity,
+        }
         with open(os.path.join(save_path, f"{task_key}.json"), "w") as f:
             json.dump(result_dict, f)
-        plot_throughput_timeseries(result_dict, os.path.join(save_path, f"{task_key}_individual.png"), task)
-        plot_throughput_timeseries_mean(result_dict, os.path.join(save_path, f"{task_key}_mean.png"), task)
+        plot_throughput_timeseries(
+            result_dict, os.path.join(save_path, f"{task_key}_individual.png"), task
+        )
+        plot_throughput_timeseries_mean(
+            result_dict, os.path.join(save_path, f"{task_key}_mean.png"), task
+        )
     print("All tasks completed")
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.get_event_loop().set_debug(True)
     asyncio.run(main())

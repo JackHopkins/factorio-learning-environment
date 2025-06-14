@@ -2,7 +2,7 @@ import math
 from typing import Tuple, Optional
 from PIL import ImageDraw
 
-from env.src.entities import Direction, Entity, EntityStatus
+from env.src.entities import Direction, EntityStatus
 from env.src.tools.admin.render.utils.render_config import RenderConfig
 
 
@@ -12,8 +12,17 @@ class ShapeRenderer:
     def __init__(self, config: RenderConfig):
         self.config = config
 
-    def draw_shape(self, draw: ImageDraw.ImageDraw, x1: float, y1: float, x2: float, y2: float,
-                   shape_type: str, color: Tuple[int, int, int], direction: Optional[Direction] = None) -> None:
+    def draw_shape(
+        self,
+        draw: ImageDraw.ImageDraw,
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+        shape_type: str,
+        color: Tuple[int, int, int],
+        direction: Optional[Direction] = None,
+    ) -> None:
         """Draw a shape of specified type at the given coordinates, optionally rotated by direction"""
         cx, cy = (x1 + x2) / 2, (y1 + y2) / 2  # Center point
         width, height = x2 - x1, y2 - y1
@@ -52,20 +61,26 @@ class ShapeRenderer:
         shape_y1 = cy - (height * shrink_factor / 2)
         shape_x2 = cx + (width * shrink_factor / 2)
         shape_y2 = cy + (height * shrink_factor / 2)
-        size = min(shape_x2 - shape_x1, shape_y2 - shape_y1)  # Recalculate size for shape
+        size = min(
+            shape_x2 - shape_x1, shape_y2 - shape_y1
+        )  # Recalculate size for shape
 
         # For simple shapes like square and circle
         if shape_type == "square":
             if angle_rad == 0:
                 # No rotation needed for square
-                draw.rectangle([shape_x1, shape_y1, shape_x2, shape_y2], fill=color, outline=(0, 0, 0))
+                draw.rectangle(
+                    [shape_x1, shape_y1, shape_x2, shape_y2],
+                    fill=color,
+                    outline=(0, 0, 0),
+                )
             else:
                 # For rotated square, use polygon
                 points = [
                     (shape_x1, shape_y1),  # Top-left
                     (shape_x2, shape_y1),  # Top-right
                     (shape_x2, shape_y2),  # Bottom-right
-                    (shape_x1, shape_y2)  # Bottom-left
+                    (shape_x1, shape_y2),  # Bottom-left
                 ]
                 # Rotate all points
                 rotated_points = [rotate_point(px, py, angle_rad) for px, py in points]
@@ -73,14 +88,16 @@ class ShapeRenderer:
 
         elif shape_type == "circle":
             # Circle is rotation-invariant
-            draw.ellipse([shape_x1, shape_y1, shape_x2, shape_y2], fill=color, outline=(0, 0, 0))
+            draw.ellipse(
+                [shape_x1, shape_y1, shape_x2, shape_y2], fill=color, outline=(0, 0, 0)
+            )
 
         elif shape_type == "triangle":
             # Define triangle points
             points = [
                 (cx, shape_y1),  # Top
                 (shape_x1, shape_y2),  # Bottom left
-                (shape_x2, shape_y2)  # Bottom right
+                (shape_x2, shape_y2),  # Bottom right
             ]
             # Rotate points if needed
             if angle_rad != 0:
@@ -93,7 +110,7 @@ class ShapeRenderer:
                 (cx, shape_y1),  # Top
                 (shape_x2, cy),  # Right
                 (cx, shape_y2),  # Bottom
-                (shape_x1, cy)  # Left
+                (shape_x1, cy),  # Left
             ]
             # Rotate points if needed
             if angle_rad != 0:
@@ -144,28 +161,30 @@ class ShapeRenderer:
             thickness = size / 4
             if angle_rad == 0 or angle_rad == math.pi:  # 0 or 180 degrees
                 # Vertical bar
-                draw.rectangle([
-                    cx - thickness / 2, shape_y1,
-                    cx + thickness / 2, shape_y2
-                ], fill=color, outline=(0, 0, 0))
+                draw.rectangle(
+                    [cx - thickness / 2, shape_y1, cx + thickness / 2, shape_y2],
+                    fill=color,
+                    outline=(0, 0, 0),
+                )
                 # Horizontal bar
-                draw.rectangle([
-                    shape_x1, cy - thickness / 2,
-                    shape_x2, cy + thickness / 2
-                ], fill=color, outline=(0, 0, 0))
+                draw.rectangle(
+                    [shape_x1, cy - thickness / 2, shape_x2, cy + thickness / 2],
+                    fill=color,
+                    outline=(0, 0, 0),
+                )
             else:  # 90 or 270 degrees
                 # Use polygon for rotated cross
                 v_points = [
                     (cx - thickness / 2, shape_y1),
                     (cx + thickness / 2, shape_y1),
                     (cx + thickness / 2, shape_y2),
-                    (cx - thickness / 2, shape_y2)
+                    (cx - thickness / 2, shape_y2),
                 ]
                 h_points = [
                     (shape_x1, cy - thickness / 2),
                     (shape_x2, cy - thickness / 2),
                     (shape_x2, cy + thickness / 2),
-                    (shape_x1, cy + thickness / 2)
+                    (shape_x1, cy + thickness / 2),
                 ]
                 # Rotate all points
                 v_rotated = [rotate_point(px, py, angle_rad) for px, py in v_points]
@@ -193,7 +212,9 @@ class ShapeRenderer:
             # Default to rectangle for unknown shapes - no need to draw since backing is already a rectangle
             pass
 
-    def get_backing_rectangle_color(self, shape_color: Tuple[int, int, int]) -> Tuple[int, int, int, int]:
+    def get_backing_rectangle_color(
+        self, shape_color: Tuple[int, int, int]
+    ) -> Tuple[int, int, int, int]:
         """Generate a semi-transparent backing rectangle color based on the shape color"""
         # Use shape_color as base, but make it slightly lighter and semi-transparent
         r, g, b = shape_color
@@ -206,9 +227,15 @@ class ShapeRenderer:
         alpha = 120  # Semi-transparent (0-255)
         return (lighter_r, lighter_g, lighter_b, alpha)
 
-    def draw_direction_indicator(self, draw: ImageDraw.ImageDraw,
-                                 x1: float, y1: float, x2: float, y2: float,
-                                 direction: Direction) -> None:
+    def draw_direction_indicator(
+        self,
+        draw: ImageDraw.ImageDraw,
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+        direction: Direction,
+    ) -> None:
         """Draw a direction indicator arrow on the entity"""
         if not self.config.style["direction_indicator_enabled"]:
             return
@@ -234,41 +261,53 @@ class ShapeRenderer:
             end_y = cy + dy * indicator_size
 
             # Draw arrow shaft
-            draw.line([(cx, cy), (end_x, end_y)],
-                      fill=(255, 255, 255), width=2)
+            draw.line([(cx, cy), (end_x, end_y)], fill=(255, 255, 255), width=2)
 
             # Draw arrow head
             arrow_size = indicator_size * 0.5
             if dx != 0:  # Horizontal arrow
-                draw.polygon([
-                    (end_x, end_y),
-                    (end_x - dx * arrow_size, end_y + arrow_size / 2),
-                    (end_x - dx * arrow_size, end_y - arrow_size / 2)
-                ], fill=(255, 255, 255))
+                draw.polygon(
+                    [
+                        (end_x, end_y),
+                        (end_x - dx * arrow_size, end_y + arrow_size / 2),
+                        (end_x - dx * arrow_size, end_y - arrow_size / 2),
+                    ],
+                    fill=(255, 255, 255),
+                )
             else:  # Vertical arrow
-                draw.polygon([
-                    (end_x, end_y),
-                    (end_x + arrow_size / 2, end_y - dy * arrow_size),
-                    (end_x - arrow_size / 2, end_y - dy * arrow_size)
-                ], fill=(255, 255, 255))
+                draw.polygon(
+                    [
+                        (end_x, end_y),
+                        (end_x + arrow_size / 2, end_y - dy * arrow_size),
+                        (end_x - arrow_size / 2, end_y - dy * arrow_size),
+                    ],
+                    fill=(255, 255, 255),
+                )
 
-    def draw_status_indicator(self, draw: ImageDraw.ImageDraw,
-                              x1: float, y1: float, x2: float, y2: float,
-                              status: EntityStatus) -> None:
+    def draw_status_indicator(
+        self,
+        draw: ImageDraw.ImageDraw,
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+        status: EntityStatus,
+    ) -> None:
         """Draw a status indicator in the corner if the entity status is not normal"""
-        if not self.config.style["status_indicator_enabled"] or status == EntityStatus.NORMAL:
+        if (
+            not self.config.style["status_indicator_enabled"]
+            or status == EntityStatus.NORMAL
+        ):
             return
 
         status_color = self.config.get_status_color(status)
 
         # Draw a small triangle in the top-left corner
-        draw.polygon([
-            (x1, y1),
-            (x1 + 8, y1),
-            (x1, y1 + 8)
-        ], fill=status_color)
+        draw.polygon([(x1, y1), (x1 + 8, y1), (x1, y1 + 8)], fill=status_color)
 
-    def draw_origin_marker(self, draw: ImageDraw.ImageDraw, x: float, y: float, font) -> None:
+    def draw_origin_marker(
+        self, draw: ImageDraw.ImageDraw, x: float, y: float, font
+    ) -> None:
         """Draw a marker for the origin (0,0) point"""
         if not self.config.style["origin_marker_enabled"]:
             return
@@ -278,26 +317,16 @@ class ShapeRenderer:
 
         # Draw a distinctive origin marker
         draw.ellipse(
-            [x - marker_size, y - marker_size,
-             x + marker_size, y + marker_size],
-            outline=marker_color, width=2
+            [x - marker_size, y - marker_size, x + marker_size, y + marker_size],
+            outline=marker_color,
+            width=2,
         )
 
         # Add crosshair
-        draw.line(
-            [x - marker_size, y, x + marker_size, y],
-            fill=marker_color, width=2
-        )
-        draw.line(
-            [x, y - marker_size, x, y + marker_size],
-            fill=marker_color, width=2
-        )
+        draw.line([x - marker_size, y, x + marker_size, y], fill=marker_color, width=2)
+        draw.line([x, y - marker_size, x, y + marker_size], fill=marker_color, width=2)
 
         # Add text label for origin
         draw.text(
-            (x, y - marker_size - 5),
-            "(0,0)",
-            fill=marker_color,
-            anchor="ms",
-            font=font
+            (x, y - marker_size - 5), "(0,0)", fill=marker_color, anchor="ms", font=font
         )

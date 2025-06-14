@@ -27,8 +27,11 @@ class CodeAnalyzer:
 
             def _get_docstring(self, node) -> str | None:
                 """Extract docstring from a node if present."""
-                if (node.body and isinstance(node.body[0], ast.Expr) and
-                        isinstance(node.body[0].value, ast.Str)):
+                if (
+                    node.body
+                    and isinstance(node.body[0], ast.Expr)
+                    and isinstance(node.body[0].value, ast.Str)
+                ):
                     return node.body[0].value.s
                 return None
 
@@ -48,15 +51,17 @@ class CodeAnalyzer:
                 docstring = self._get_docstring(node)
                 if docstring:
                     # Format multi-line docstrings properly
-                    formatted_docstring = f'"""'
-                    if '\n' in docstring:
-                        formatted_docstring += '\n' + ('    ' * self.current_indent)
-                        formatted_docstring += docstring.strip() + '\n'
-                        formatted_docstring += '    ' * self.current_indent
+                    formatted_docstring = '"""'
+                    if "\n" in docstring:
+                        formatted_docstring += "\n" + ("    " * self.current_indent)
+                        formatted_docstring += docstring.strip() + "\n"
+                        formatted_docstring += "    " * self.current_indent
                     else:
                         formatted_docstring += docstring
                     formatted_docstring += '"""'
-                    self.lines.append(f"{'    ' * self.current_indent}{formatted_docstring}")
+                    self.lines.append(
+                        f"{'    ' * self.current_indent}{formatted_docstring}"
+                    )
 
                 for item in node.body:
                     self.visit(item)
@@ -66,7 +71,7 @@ class CodeAnalyzer:
                 # Build function arguments with type annotations
                 args = []
                 for arg in node.args.args:
-                    if hasattr(arg, 'annotation') and arg.annotation:
+                    if hasattr(arg, "annotation") and arg.annotation:
                         args.append(f"{arg.arg}: {ast.unparse(arg.annotation)}")
                     else:
                         args.append(arg.arg)
@@ -82,14 +87,18 @@ class CodeAnalyzer:
                 # Handle annotated assignments (type hints)
                 target = ast.unparse(node.target)
                 annotation = ast.unparse(node.annotation)
-                self.lines.append(f"{'    ' * self.current_indent}{target}: {annotation}")
+                self.lines.append(
+                    f"{'    ' * self.current_indent}{target}: {annotation}"
+                )
 
             def visit_Assign(self, node: ast.Assign) -> None:
                 # Handle regular assignments
                 for target in node.targets:
                     if isinstance(target, ast.Name):
                         value = ast.unparse(node.value)
-                        self.lines.append(f"{'    ' * self.current_indent}{target.id} = {value}")
+                        self.lines.append(
+                            f"{'    ' * self.current_indent}{target.id} = {value}"
+                        )
 
         try:
             tree = ast.parse(code)
@@ -111,7 +120,7 @@ class CodeAnalyzer:
             str: Formatted string containing class structures and method signatures
         """
         try:
-            with open(file_path, 'r') as file:
+            with open(file_path, "r") as file:
                 code = file.read()
             return CodeAnalyzer.extract_class_structure(code)
         except FileNotFoundError:
@@ -122,7 +131,7 @@ class CodeAnalyzer:
     @staticmethod
     def extract_call_info(cls: Any) -> CallInfo:
         """Extract information about a class's __call__ method."""
-        if not hasattr(cls, '__call__'):
+        if not hasattr(cls, "__call__"):
             return CallInfo("", "", "", "")
 
         call_signature = inspect.signature(cls.__call__)
@@ -136,5 +145,5 @@ class CodeAnalyzer:
             input_types=input_types,
             output_type=output_type,
             docstring=docstring,
-            signature=str(call_signature)
+            signature=str(call_signature),
         )

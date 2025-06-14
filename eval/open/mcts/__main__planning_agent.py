@@ -8,7 +8,9 @@ from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
 from eval.open.mcts.parallel_planning_mcts import ParallelPlanningMCTS
 from eval.open.mcts.planning_mcts import PlanningMCTS
 from models.program import Program
-from eval.open.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
+from eval.open.mcts.samplers.kld_achievement_sampler import (
+    KLDiversityAchievementSampler,
+)
 
 os.environ["FORCE_COLOR"] = "1"
 os.environ["TERM"] = "xterm-256color"
@@ -28,6 +30,7 @@ from agents.utils.llm_factory import LLMFactory
 
 load_dotenv()
 
+
 def create_instance(params: Tuple[str, int, int]) -> FactorioInstance:
     """Create a single Factorio instance with the given parameters"""
     ip, udp_port, tcp_port = params
@@ -37,12 +40,13 @@ def create_instance(params: Tuple[str, int, int]) -> FactorioInstance:
         bounding_box=200,
         fast=True,
         cache_scripts=False,
-        inventory={}
+        inventory={},
     )
 
 
 def create_factorio_instances() -> List[FactorioInstance]:
     """Create Factorio instances in parallel from local servers"""
+
     def init_instance(params: Tuple[str, int, int]) -> FactorioInstance:
         ip, udp_port, tcp_port = params
         return FactorioInstance(
@@ -51,7 +55,7 @@ def create_factorio_instances() -> List[FactorioInstance]:
             bounding_box=200,
             fast=True,
             cache_scripts=False,
-            inventory={}
+            inventory={},
         )
 
     ips, udp_ports, tcp_ports = get_local_container_ips()
@@ -60,20 +64,27 @@ def create_factorio_instances() -> List[FactorioInstance]:
 
 
 async def get_seed_programs(
-        mcts: PlanningMCTS,
-        plan_sampler: 'PlanSampler',
-        n_seeds: int = 100,
+    mcts: PlanningMCTS,
+    plan_sampler: "PlanSampler",
+    n_seeds: int = 100,
 ) -> List[Program]:
     existing_rewards = await mcts.db.get_all_program_rewards(version=mcts.version)
     # filter out rewards < 0
     existing_rewards = list(filter(lambda x: x >= 0, existing_rewards))
-    default_reward = (max(existing_rewards)-min(existing_rewards))/2 if existing_rewards else 10.0
+    default_reward = (
+        (max(existing_rewards) - min(existing_rewards)) / 2
+        if existing_rewards
+        else 10.0
+    )
     seeded_programs: List[Program] = []
     instance = mcts.evaluator.instances[0]
 
     # Get all available scenarios
-    scenarios = [f for f in os.listdir(plan_sampler.starting_scenarios_folder)
-                 if os.path.isdir(os.path.join(plan_sampler.starting_scenarios_folder, f))]
+    scenarios = [
+        f
+        for f in os.listdir(plan_sampler.starting_scenarios_folder)
+        if os.path.isdir(os.path.join(plan_sampler.starting_scenarios_folder, f))
+    ]
 
     seeds_per_scenario = n_seeds // len(scenarios)
     remaining_seeds = n_seeds % len(scenarios)
@@ -92,20 +103,22 @@ async def get_seed_programs(
             if len(objective) < 100:
                 continue
 
-
-
-            conversation = Conversation(messages=[
-                Message(role="system", content=mcts.system_prompt),
-                Message(role="user",
-                        content=f"Inventory: {json.dumps(game_state.inventories[0].__dict__)}\n\n{PLANNING_ADDITION_PROMPT}"),
-                Message(role="assistant", content=objective)
-            ])
+            conversation = Conversation(
+                messages=[
+                    Message(role="system", content=mcts.system_prompt),
+                    Message(
+                        role="user",
+                        content=f"Inventory: {json.dumps(game_state.inventories[0].__dict__)}\n\n{PLANNING_ADDITION_PROMPT}",
+                    ),
+                    Message(role="assistant", content=objective),
+                ]
+            )
             try:
-                messages = conversation.model_dump()['messages']
+                messages = conversation.model_dump()["messages"]
             except:
-                messages = conversation.dict()['messages']
+                messages = conversation.dict()["messages"]
             if not objective.strip().startswith('"""'):
-                objective = '"""\n'+objective
+                objective = '"""\n' + objective
 
             program = Program(
                 id=hash((objective, json.dumps(messages))),
@@ -115,42 +128,64 @@ async def get_seed_programs(
                 state=game_state,
                 version=mcts.version,
                 version_description=mcts.version_description,
-                token_usage=response.usage.total_tokens if hasattr(response, 'usage') else None,
-                completion_token_usage=response.usage.completion_tokens if hasattr(response, 'usage') else None,
-                prompt_token_usage=response.usage.prompt_tokens if hasattr(response, 'usage') else None,
+                token_usage=response.usage.total_tokens
+                if hasattr(response, "usage")
+                else None,
+                completion_token_usage=response.usage.completion_tokens
+                if hasattr(response, "usage")
+                else None,
+                prompt_token_usage=response.usage.prompt_tokens
+                if hasattr(response, "usage")
+                else None,
             )
             seeded_programs.append(program)
 
     return seeded_programs
 
+
 async def main():
-    step_executor_model_path = "ft:gpt-4o-2024-08-06:paperplane-ai:fact-instruct-1:ATSVGf4d:ckpt-step-214"
+    step_executor_model_path = (
+        "ft:gpt-4o-2024-08-06:paperplane-ai:fact-instruct-1:ATSVGf4d:ckpt-step-214"
+    )
     planner_model = "claude-3-5-sonnet-20241022"
-    objective_model = "ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91"
-    step_executor_prompt_path = r"../../../data/prompts/bottoms_up_prompts/finetuning_prompts/step_supervised"
-    step_generator_prompt_path = r"../../../data/prompts/bottoms_up_prompts/finetuning_prompts/step_generator"
-    executor_plan_prompt_path = r"../../../data/prompts/bottoms_up_prompts/finetuning_prompts/executor_plan"
-    step_judge_prompt_path = r"../../../data/prompts/bottoms_up_prompts/finetuning_prompts/step_judge"
+    objective_model = (
+        "ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91"
+    )
+    step_executor_prompt_path = (
+        r"../../../data/prompts/bottoms_up_prompts/finetuning_prompts/step_supervised"
+    )
+    step_generator_prompt_path = (
+        r"../../../data/prompts/bottoms_up_prompts/finetuning_prompts/step_generator"
+    )
+    executor_plan_prompt_path = (
+        r"../../../data/prompts/bottoms_up_prompts/finetuning_prompts/executor_plan"
+    )
+    step_judge_prompt_path = (
+        r"../../../data/prompts/bottoms_up_prompts/finetuning_prompts/step_judge"
+    )
     starting_scenario_folder = r"../../skills/data_scenarios/starting_scenarios"
     objective_model_prompt_path = r"../../../data/prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_self_gen.md"
     nr_of_seeded_programs = 4
     version = 101
     version = 43
     parent_version = 4
-    version_description = "KLD Diversity Sampling / Scratch / Planning MCTS / Errors not saved"
-
+    version_description = (
+        "KLD Diversity Sampling / Scratch / Planning MCTS / Errors not saved"
+    )
 
     # Initialize components
     llm = LLMFactory(step_executor_model_path)
-    db_client = DBClient(host=os.getenv("SKILLS_DB_HOST"),
-                         port=os.getenv("SKILLS_DB_PORT"),
-                         dbname=os.getenv("SKILLS_DB_NAME"),
-                         user=os.getenv("SKILLS_DB_USER"),
-                         password=os.getenv("SKILLS_DB_PASSWORD"))
+    db_client = DBClient(
+        host=os.getenv("SKILLS_DB_HOST"),
+        port=os.getenv("SKILLS_DB_PORT"),
+        dbname=os.getenv("SKILLS_DB_NAME"),
+        user=os.getenv("SKILLS_DB_USER"),
+        password=os.getenv("SKILLS_DB_PASSWORD"),
+    )
 
     instances = create_factorio_instances()
     for instance in instances:
-        instance.speed(10) # Set the game speed to 10x normal speed for faster testing
+        instance.speed(10)  # Set the game speed to 10x normal speed for faster testing
 
     # Initialize FactorioEvaluator with the list of instances
 
@@ -173,30 +208,32 @@ async def main():
         max_steps_per_objective=8,
         number_of_steps_for_judge=3,
         mcts_kwargs={
-            "planning_model":planner_model,
-            "executor_model":step_executor_model_path,
-            "objective_model":objective_model,
-            "step_executor_prompt_path":step_executor_prompt_path,
-            "step_generator_prompt_path":step_generator_prompt_path,
-            "step_judge_prompt_path":step_judge_prompt_path,
-            "example_plan_prompt_path":executor_plan_prompt_path,
+            "planning_model": planner_model,
+            "executor_model": step_executor_model_path,
+            "objective_model": objective_model,
+            "step_executor_prompt_path": step_executor_prompt_path,
+            "step_generator_prompt_path": step_generator_prompt_path,
+            "step_judge_prompt_path": step_judge_prompt_path,
+            "example_plan_prompt_path": executor_plan_prompt_path,
             "system_prompt": system_prompt,
-            "initial_state": initial_state
-        }
+            "initial_state": initial_state,
+        },
     )
 
-    mcts = ParallelPlanningMCTS(instances,
-                db_client,
-                llm,
-                config,
-                version=version,
-                version_description=version_description)
+    mcts = ParallelPlanningMCTS(
+        instances,
+        db_client,
+        llm,
+        config,
+        version=version,
+        version_description=version_description,
+    )
 
-    #sampler = PlanSampler(objective_model, objective_model_prompt_path, starting_scenario_folder)
+    # sampler = PlanSampler(objective_model, objective_model_prompt_path, starting_scenario_folder)
 
-    #print("Sampling seed scenarios...")
-    #seeded_programs = await get_seed_programs(mcts, sampler, n_seeds=nr_of_seeded_programs)
-    #for program in seeded_programs:
+    # print("Sampling seed scenarios...")
+    # seeded_programs = await get_seed_programs(mcts, sampler, n_seeds=nr_of_seeded_programs)
+    # for program in seeded_programs:
     #    await db_client.create_program(program)
 
     print("Starting MCTS search...")
@@ -204,9 +241,10 @@ async def main():
         n_iterations=1000,
         skip_failures=False,
     )
-            
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # run asynchronously
     import asyncio
+
     asyncio.run(main())

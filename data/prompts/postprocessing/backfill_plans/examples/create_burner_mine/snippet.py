@@ -7,7 +7,7 @@ Step 1: Place the burner mining drill. We need to carry out the following subste
 - Add coal to fuel the burner mining drill
 """
 # Inventory at the start of step {'wooden-chest': 1, 'transport-belt': 100, 'burner-inserter': 5, 'burner-mining-drill': 3, 'stone-furnace': 9, 'coal': 10}
-#Step Execution
+# Step Execution
 
 # Find the nearest copper ore patch
 copper_ore_position = nearest(Resource.CopperOre)
@@ -18,7 +18,9 @@ move_to(copper_ore_position)
 print(f"Moved to copper ore patch at: {copper_ore_position}")
 
 # Place the burner mining drill on the copper ore patch
-drill = place_entity(Prototype.BurnerMiningDrill, direction=Direction.UP, position=copper_ore_position)
+drill = place_entity(
+    Prototype.BurnerMiningDrill, direction=Direction.UP, position=copper_ore_position
+)
 print(f"Placed burner mining drill at: {drill.position}")
 
 # Add coal to fuel the burner mining drill
@@ -26,7 +28,9 @@ coal_inserted = insert_item(Prototype.Coal, drill, quantity=5)
 print(f"Inserted {coal_inserted} coal into the burner mining drill")
 
 # Verify that the drill is placed and fueled
-entities_around = get_entities({Prototype.BurnerMiningDrill}, position=copper_ore_position, radius=1)
+entities_around = get_entities(
+    {Prototype.BurnerMiningDrill}, position=copper_ore_position, radius=1
+)
 assert len(entities_around) > 0, "Failed to place burner mining drill"
 print("Burner mining drill successfully placed and fueled")
 
@@ -41,7 +45,7 @@ Step 2: Place the wooden chest. We need to carry out the following substeps:
 - Place the wooden chest at this position
 """
 # Inventory at the start of step {'wooden-chest': 1, 'transport-belt': 100, 'burner-inserter': 5, 'burner-mining-drill': 2, 'stone-furnace': 9, 'coal': 5}
-#Step Execution
+# Step Execution
 
 # Calculate a position 7 tiles to the right of the drill
 drill_position = drill.position
@@ -52,11 +56,15 @@ print(f"Moving to position: {chest_position}")
 move_to(chest_position)
 
 # Place the wooden chest
-chest = place_entity(Prototype.WoodenChest, direction=Direction.UP, position=chest_position)
+chest = place_entity(
+    Prototype.WoodenChest, direction=Direction.UP, position=chest_position
+)
 print(f"Placed wooden chest at: {chest.position}")
 
 # Verify that the chest has been placed correctly
-entities_around = get_entities({Prototype.WoodenChest}, position=chest_position, radius=1)
+entities_around = get_entities(
+    {Prototype.WoodenChest}, position=chest_position, radius=1
+)
 if len(entities_around) > 0:
     print("Wooden chest successfully placed")
 else:
@@ -75,13 +83,15 @@ Step 3: Set up the burner inserter. We need to carry out the following substeps:
 - Add coal to fuel the burner inserter
 """
 # Inventory at the start of step {'transport-belt': 100, 'burner-inserter': 5, 'burner-mining-drill': 2, 'stone-furnace': 9, 'coal': 5}
-#Step Execution
+# Step Execution
 
 # Move next to the wooden chest
 move_to(chest_position)
 
 # Place the burner inserter adjacent to the chest
-inserter = place_entity_next_to(Prototype.BurnerInserter, chest_position, direction=Direction.RIGHT) 
+inserter = place_entity_next_to(
+    Prototype.BurnerInserter, chest_position, direction=Direction.RIGHT
+)
 print(f"Placed burner inserter at: {inserter.position}")
 
 # Rotate the inserter so it will insert items into the chest
@@ -108,11 +118,13 @@ Step 4: Connect the drill to the inserter. We need to carry out the following su
 - Ensure the belt is properly aligned and connected
 """
 # Inventory at the start of step {'transport-belt': 100, 'burner-inserter': 4, 'burner-mining-drill': 2, 'stone-furnace': 9, 'coal': 4}
-#Step Execution
+# Step Execution
 
 # Connect the drill's drop position to the inserter's pickup position with transport belts
 print("Connecting drill to inserter with transport belts...")
-belts = connect_entities(drill.drop_position, inserter.pickup_position, Prototype.TransportBelt)
+belts = connect_entities(
+    drill.drop_position, inserter.pickup_position, Prototype.TransportBelt
+)
 assert belts, "Failed to connect drill to inserter with transport belts"
 print("Successfully connected drill to inserter with transport belts")
 
@@ -124,7 +136,7 @@ Step 5: Verify the setup. We need to carry out the following substeps:
 - If copper ore is present, the setup is working correctly
 """
 # Inventory at the start of step {'transport-belt': 91, 'burner-inserter': 4, 'burner-mining-drill': 2, 'stone-furnace': 9, 'coal': 4}
-#Step Execution
+# Step Execution
 
 # Wait for 30 seconds to allow the system to operate
 print("Waiting for 30 seconds to allow the system to operate...")
@@ -139,5 +151,7 @@ move_to(chest.position)
 chest_inventory = inspect_inventory(chest)
 copper_ore_count = chest_inventory.get(Prototype.CopperOre, 0)
 print(f"Copper ore in the wooden chest: {copper_ore_count}")
-assert copper_ore_count > 0, "No copper ore found in the wooden chest. Setup verification failed."
+assert copper_ore_count > 0, (
+    "No copper ore found in the wooden chest. Setup verification failed."
+)
 print("\nSetup verification complete.")

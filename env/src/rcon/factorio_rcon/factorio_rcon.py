@@ -1,4 +1,5 @@
 """RCON client for factorio servers"""
+
 import functools
 import socket
 
@@ -18,8 +19,8 @@ PACKET_PARSER = construct.GreedyRange(
             "id" / construct.Int32sl,
             "type" / construct.Int32sl,
             "body" / construct.CString("utf8"),
-            construct.Default(construct.CString("utf8"), "")
-        )
+            construct.Default(construct.CString("utf8"), ""),
+        ),
     )
 )
 
@@ -27,28 +28,46 @@ PACKET_PARSER = construct.GreedyRange(
 class RCONBaseError(Exception):
     """Exception base for all exceptions in this library"""
 
+
 class ClientBusy(RCONBaseError):
     """Client is already busy with another call"""
+
+
 class InvalidPassword(RCONBaseError):
     """RCON password is incorrect"""
+
+
 class InvalidResponse(RCONBaseError):
     """RCON server returned an unparsable response or one with an unknown ID"""
 
+
 class RCONNetworkError(RCONBaseError):
     """Base for all network related exceptions"""
+
+
 class RCONNotConnected(RCONNetworkError):
     """Client is not connected to the RCON server"""
+
+
 class RCONClosed(RCONNetworkError):
     """RCON server closed the connection"""
+
+
 class RCONConnectError(RCONNetworkError):
     """Error connecting to the RCON server"""
+
+
 class RCONSendError(RCONNetworkError):
     """Error sending data to the RCON server"""
+
+
 class RCONReceiveError(RCONNetworkError):
     """Error receiving data from the RCON server"""
 
+
 class RCONSharedBase:
     """Methods and data shared between both client classes"""
+
     def __init__(self):
         self.id_seq = 0
         self.socket_locked = False
@@ -57,7 +76,7 @@ class RCONSharedBase:
 
     def get_id(self):
         """Gets an id for a command to be sent"""
-        if self.id_seq == 2 ** 31 - 1: # signed int32 max
+        if self.id_seq == 2**31 - 1:  # signed int32 max
             self.id_seq = 0
         else:
             self.id_seq += 1
@@ -66,6 +85,7 @@ class RCONSharedBase:
 
 def handle_socket_errors(alive_socket_required=True):
     """Socket error checking decorator"""
+
     def real_decorator(function):
         @functools.wraps(function)
         def wrapper(self, *args, **kwargs):
@@ -84,12 +104,15 @@ def handle_socket_errors(alive_socket_required=True):
                 raise
             finally:
                 self.socket_locked = False
+
         return wrapper
+
     return real_decorator
 
 
 def async_handle_socket_errors(alive_socket_required=True):
     """Socket error checking decorator (async)"""
+
     def real_decorator(function):
         @functools.wraps(function)
         async def wrapper(self, *args, **kwargs):
@@ -108,8 +131,11 @@ def async_handle_socket_errors(alive_socket_required=True):
                 raise
             finally:
                 self.socket_locked = False
+
         return wrapper
+
     return real_decorator
+
 
 class RCONClient(RCONSharedBase):
     """RCON client for factorio servers
@@ -131,6 +157,7 @@ class RCONClient(RCONSharedBase):
         large or the server slow.
         A specified timeout of zero will disable any timeout rather than set non-blocking mode.
     """
+
     def __init__(self, ip_address, port, password, timeout=None, connect_on_init=True):
         super().__init__()
         self.timeout = timeout
@@ -210,7 +237,9 @@ class RCONClient(RCONSharedBase):
         Extra information:
             See RCON protocol specification for what the id and type represent.
         """
-        packet = PACKET_PARSER.build([dict(id=packet_id, type=packet_type, body=packet_body)])
+        packet = PACKET_PARSER.build(
+            [dict(id=packet_id, type=packet_type, body=packet_body)]
+        )
         try:
             self.rcon_socket.sendall(packet)
         except socket.timeout as exc:
@@ -276,7 +305,7 @@ class RCONClient(RCONSharedBase):
         for attempt in range(max_retries):
             try:
                 return self.send_commands(dict(command=command))["command"]
-            except RCONBaseError as e:
+            except RCONBaseError:
                 if attempt == max_retries - 1:  # Last attempt failed
                     raise  # Re-raise the last error
                 try:
@@ -351,15 +380,17 @@ class AsyncRCONClient(RCONSharedBase):
         The server will not respond to any RCON requests if it is saving, so you should
         use a timeout if you are not prepared to wait a few seconds if the map is
         large or the server slow.
-        """
+    """
+
     def __init__(self, ip_address, port, password):
         if not ASYNC_AVAILABLE:
-            raise ImportError("anyio must be installed to use the async client", name="anyio")
+            raise ImportError(
+                "anyio must be installed to use the async client", name="anyio"
+            )
         super().__init__()
         self.ip_address = ip_address
         self.port = port
         self.password = password
-
 
     @async_handle_socket_errors(alive_socket_required=False)
     async def connect(self):
@@ -427,7 +458,9 @@ class AsyncRCONClient(RCONSharedBase):
         Extra information:
             See RCON protocol specification for what the id and type represent.
         """
-        packet = PACKET_PARSER.build([dict(id=packet_id, type=packet_type, body=packet_body)])
+        packet = PACKET_PARSER.build(
+            [dict(id=packet_id, type=packet_type, body=packet_body)]
+        )
         try:
             await self.rcon_socket.execute_script(packet)
         except Exception as exc:
@@ -533,17 +566,25 @@ class AsyncRCONClient(RCONSharedBase):
         return results
 
 
-CLIENT_BUSY = ("The client is already busy with another call. If sending multiple commands, "
-               "use send_commands() rather than calling send_command() multiple times.")
+CLIENT_BUSY = (
+    "The client is already busy with another call. If sending multiple commands, "
+    "use send_commands() rather than calling send_command() multiple times."
+)
 INVALID_PASS = "The RCON password is incorrect"
-INVALID_ID = ("The RCON server returned a response with an unknown sequence ID. This means that "
-              "a response was received for a command that was not sent. This situation implies "
-              "a bug in this RCON library or the RCON server behaving incorrectly. "
-              "If this behaviour is intentional, you can use receive_packets().")
-PARSE_FAILED = "The RCON server returned data that could not be parsed into response messages"
+INVALID_ID = (
+    "The RCON server returned a response with an unknown sequence ID. This means that "
+    "a response was received for a command that was not sent. This situation implies "
+    "a bug in this RCON library or the RCON server behaving incorrectly. "
+    "If this behaviour is intentional, you can use receive_packets()."
+)
+PARSE_FAILED = (
+    "The RCON server returned data that could not be parsed into response messages"
+)
 NOT_CONNECTED = "The RCON client is currently not connected to the server"
-RCON_FAILED = ("An error has occured and the client is no longer connected to the RCON server "
-               "(reconnect with connect())")
+RCON_FAILED = (
+    "An error has occured and the client is no longer connected to the RCON server "
+    "(reconnect with connect())"
+)
 CONN_CLOSED = "The RCON server closed the connection"
 CONN_TIMEOUT = "The connection timed out while communicating with the server"
 CONNECT_SOCKET_ERROR = "Failed to establish a connection to the server"

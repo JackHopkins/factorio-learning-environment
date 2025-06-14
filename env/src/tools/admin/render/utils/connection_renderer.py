@@ -12,10 +12,13 @@ class ConnectionRenderer:
     def __init__(self, color_manager: ColourManager):
         self.color_manager = color_manager
 
-    def draw_underground_belt_connection(self, draw: ImageDraw.ImageDraw,
-                                         entity: 'UndergroundBelt',
-                                         game_to_img_func: Callable,
-                                         color: Tuple[int, int, int]) -> None:
+    def draw_underground_belt_connection(
+        self,
+        draw: ImageDraw.ImageDraw,
+        entity: "UndergroundBelt",
+        game_to_img_func: Callable,
+        color: Tuple[int, int, int],
+    ) -> None:
         """
         Draw a dotted line between connected Underground Belts
 
@@ -65,17 +68,29 @@ class ConnectionRenderer:
         end_y = mid_y + dy * arrow_size
 
         # Draw arrow head
-        draw.polygon([
-            (end_x, end_y),
-            (end_x - dx * arrow_size - dy * arrow_size / 2, end_y - dy * arrow_size + dx * arrow_size / 2),
-            (end_x - dx * arrow_size + dy * arrow_size / 2, end_y - dy * arrow_size - dx * arrow_size / 2)
-        ], fill=color)
+        draw.polygon(
+            [
+                (end_x, end_y),
+                (
+                    end_x - dx * arrow_size - dy * arrow_size / 2,
+                    end_y - dy * arrow_size + dx * arrow_size / 2,
+                ),
+                (
+                    end_x - dx * arrow_size + dy * arrow_size / 2,
+                    end_y - dy * arrow_size - dx * arrow_size / 2,
+                ),
+            ],
+            fill=color,
+        )
 
-    def draw_underground_pipe_connection(self, draw: ImageDraw.ImageDraw,
-                                         input_pipe: 'Pipe',
-                                         output_pipe: 'Pipe',
-                                         game_to_img_func: Callable,
-                                         color: Tuple[int, int, int]) -> None:
+    def draw_underground_pipe_connection(
+        self,
+        draw: ImageDraw.ImageDraw,
+        input_pipe: "Pipe",
+        output_pipe: "Pipe",
+        game_to_img_func: Callable,
+        color: Tuple[int, int, int],
+    ) -> None:
         """
         Draw a dotted line between connected Underground Pipes
 
@@ -106,7 +121,9 @@ class ConnectionRenderer:
         dash_length = distance / segments * 0.6  # Make dashes 60% of segment length
 
         # Draw dotted line with different pattern for pipes
-        self.draw_dotted_line(draw, x1, y1, x2, y2, dash_length, color, width=2, pattern=[4, 2])
+        self.draw_dotted_line(
+            draw, x1, y1, x2, y2, dash_length, color, width=2, pattern=[4, 2]
+        )
 
         # Draw small fluid flow indicator in the middle of the line
         mid_x = (x1 + x2) / 2
@@ -123,8 +140,14 @@ class ConnectionRenderer:
         # Draw small fluid flow indicator (circular with direction)
         flow_size = 4
         draw.ellipse(
-            [mid_x - flow_size, mid_y - flow_size, mid_x + flow_size, mid_y + flow_size],
-            fill=color, outline=(255, 255, 255)
+            [
+                mid_x - flow_size,
+                mid_y - flow_size,
+                mid_x + flow_size,
+                mid_y + flow_size,
+            ],
+            fill=color,
+            outline=(255, 255, 255),
         )
 
         # Draw flow direction indicator (small arrow)
@@ -133,16 +156,33 @@ class ConnectionRenderer:
         arrow_size = 4
 
         draw.line([(mid_x, mid_y), (end_x, end_y)], fill=(255, 255, 255), width=1)
-        draw.polygon([
-            (end_x, end_y),
-            (end_x - dx * arrow_size - dy * arrow_size / 2, end_y - dy * arrow_size + dx * arrow_size / 2),
-            (end_x - dx * arrow_size + dy * arrow_size / 2, end_y - dy * arrow_size - dx * arrow_size / 2)
-        ], fill=(255, 255, 255))
+        draw.polygon(
+            [
+                (end_x, end_y),
+                (
+                    end_x - dx * arrow_size - dy * arrow_size / 2,
+                    end_y - dy * arrow_size + dx * arrow_size / 2,
+                ),
+                (
+                    end_x - dx * arrow_size + dy * arrow_size / 2,
+                    end_y - dy * arrow_size - dx * arrow_size / 2,
+                ),
+            ],
+            fill=(255, 255, 255),
+        )
 
-    def draw_dotted_line(self, draw: ImageDraw.ImageDraw, x1: float, y1: float,
-                         x2: float, y2: float, segment_length: float,
-                         color: Tuple[int, int, int], width: int = 1,
-                         pattern: List[int] = None) -> None:
+    def draw_dotted_line(
+        self,
+        draw: ImageDraw.ImageDraw,
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+        segment_length: float,
+        color: Tuple[int, int, int],
+        width: int = 1,
+        pattern: List[int] = None,
+    ) -> None:
         """
         Helper function to draw a dotted line between two points
 
@@ -192,8 +232,11 @@ class ConnectionRenderer:
             dash_end_y = current_y + dy * dash_length
 
             # Draw dash
-            draw.line([(current_x, current_y), (dash_end_x, dash_end_y)],
-                      fill=color, width=width)
+            draw.line(
+                [(current_x, current_y), (dash_end_x, dash_end_y)],
+                fill=color,
+                width=width,
+            )
 
             # Move to next dash start
             current_x = dash_end_x + dx * gap_length

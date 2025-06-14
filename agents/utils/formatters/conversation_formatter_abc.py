@@ -5,8 +5,7 @@ from env.src.models.conversation import Conversation
 from env.src.models.message import Message
 from env.src.namespace import FactorioNamespace
 
-PLANNING_ADDITION_PROMPT = \
-"""
+PLANNING_ADDITION_PROMPT = """
 Your goal is to automate an increasingly complex factory process.
 Identify an appropriate next task given the recent history and environment feedback to achieve this goal.
 Develop thorough step-by-step plans for how you can achieve the next task and then create the python script to achieve the task.
@@ -25,7 +24,7 @@ class CodeProcessor:
     def is_comment_start(line: str) -> bool:
         """Check if line starts a comment (either # or \"\"\")"""
         stripped = line.strip()
-        return stripped.startswith('#') or stripped.startswith('"""')
+        return stripped.startswith("#") or stripped.startswith('"""')
 
     @staticmethod
     def is_comment_end(line: str) -> bool:
@@ -47,14 +46,10 @@ class CodeProcessor:
         for i, line in enumerate(lines, 1):  # Start line counting from 1
             stripped = line.strip()
 
-            if stripped.startswith('#'):
+            if stripped.startswith("#"):
                 # If we have an active block, end it
                 if current_block:
-                    blocks.append((
-                        '\n'.join(current_block),
-                        block_start,
-                        i - 1
-                    ))
+                    blocks.append(("\n".join(current_block), block_start, i - 1))
                     current_block = []
                     block_start = None
             else:
@@ -67,11 +62,7 @@ class CodeProcessor:
 
         # Handle any remaining block
         if current_block:
-            blocks.append((
-                '\n'.join(current_block),
-                block_start,
-                len(lines)
-            ))
+            blocks.append(("\n".join(current_block), block_start, len(lines)))
 
         # If no blocks found, treat entire content as one block
         if not blocks:
@@ -80,8 +71,12 @@ class CodeProcessor:
         return blocks
 
     @staticmethod
-    def summarize_code_block(code: str, start_line: int = None, end_line: int = None,
-                             preserve_comments: bool = True) -> str:
+    def summarize_code_block(
+        code: str,
+        start_line: int = None,
+        end_line: int = None,
+        preserve_comments: bool = True,
+    ) -> str:
         """
         Summarize a code block by replacing code sections with line count indicators.
         Handles both inline (#) and block (\"\"\") comments.
@@ -106,7 +101,9 @@ class CodeProcessor:
                         if code_lines == 1:
                             result.append(f"<LINE {code_start} CUT/>")
                         else:
-                            result.append(f"<LINES {code_start}-{code_start + code_lines - 1} CUT/>")
+                            result.append(
+                                f"<LINES {code_start}-{code_start + code_lines - 1} CUT/>"
+                            )
                         code_start = None
                         code_lines = 0
                     in_docstring = True
@@ -120,12 +117,14 @@ class CodeProcessor:
                 continue
 
             # Handle regular comments and code
-            if stripped.startswith('#'):
+            if stripped.startswith("#"):
                 if code_start is not None:
                     if code_lines == 1:
                         result.append(f"<LINE {code_start} CUT/>")
                     else:
-                        result.append(f"<LINES {code_start}-{code_start + code_lines - 1} CUT/>")
+                        result.append(
+                            f"<LINES {code_start}-{code_start + code_lines - 1} CUT/>"
+                        )
                     code_start = None
                     code_lines = 0
                 result.append(line)
@@ -140,15 +139,20 @@ class CodeProcessor:
             if code_lines == 1:
                 result.append(f"<LINE {code_start} CUT/>")
             else:
-                result.append(f"<LINES {code_start}-{code_start + code_lines - 1} CUT/>")
+                result.append(
+                    f"<LINES {code_start}-{code_start + code_lines - 1} CUT/>"
+                )
 
-        return '\n'.join(result)
+        return "\n".join(result)
+
 
 class ConversationFormatter(ABC):
     """Abstract base class for conversation formatting strategies"""
 
     @abstractmethod
-    def format_conversation(self, conversation: Conversation, namespace: FactorioNamespace) -> List[Message]:
+    def format_conversation(
+        self, conversation: Conversation, namespace: FactorioNamespace
+    ) -> List[Message]:
         """
         Format a conversation according to the specific strategy.
         Returns a list of formatted messages ready for LLM consumption.
@@ -160,12 +164,20 @@ class ConversationFormatter(ABC):
         """Format a single message according to the strategy"""
         pass
 
-    def to_llm_messages(self, formatted_conversation: Conversation) -> List[Dict[str, str]]:
+    def to_llm_messages(
+        self, formatted_conversation: Conversation
+    ) -> List[Dict[str, str]]:
         """Convert formatted messages to LLM-compatible format"""
-        return [{"role": msg.role, "content": msg.content} for msg in formatted_conversation.messages]
+        return [
+            {"role": msg.role, "content": msg.content}
+            for msg in formatted_conversation.messages
+        ]
+
 
 class DefaultFormatter(ConversationFormatter):
-    def format_conversation(self, conversation: Conversation, namespace: FactorioNamespace) -> List[Message]:
+    def format_conversation(
+        self, conversation: Conversation, namespace: FactorioNamespace
+    ) -> List[Message]:
         return conversation.messages
 
     def format_message(self, message: Message) -> Message:
@@ -182,7 +194,9 @@ class StructurePreservingFormatter(ConversationFormatter):
         self.code_processor = CodeProcessor()
         self.planning = planning
 
-    def format_message(self, message: Message, should_format: bool = True) -> Optional[Message]:
+    def format_message(
+        self, message: Message, should_format: bool = True
+    ) -> Optional[Message]:
         if message.role == "system":
             return Message(role="system", content=message.content)
 
@@ -190,41 +204,37 @@ class StructurePreservingFormatter(ConversationFormatter):
             if should_format:  # Summarize all but the last program
                 content = self.code_processor.summarize_code_block(message.content)
                 return Message(
-                    role="assistant",
-                    content=content,
-                    metadata={"summarized": True}
+                    role="assistant", content=content, metadata={"summarized": True}
                 )
             else:
                 return Message(
                     role="assistant",
                     content=message.content,
-                    metadata={"summarized": False}
+                    metadata={"summarized": False},
                 )
 
         elif message.role == "user":
             content = message.content
             try:
                 if "Execution result:" in content:
-                    result = content.split("Execution result:")[1].split("Updated state:")[0]
-                    #content = f"Execution result:\n{result.strip()}"
-                    #if self.planning:
+                    result = content.split("Execution result:")[1].split(
+                        "Updated state:"
+                    )[0]
+                    # content = f"Execution result:\n{result.strip()}"
+                    # if self.planning:
                     #    content = PLANNING_ADDITION_PROMPT + '\n' + content
-                    return Message(
-                        role="user",
-                        content=result.strip()
-                    )
+                    return Message(role="user", content=result.strip())
                 else:
-                    return Message(
-                        role="user",
-                        content=content.strip()
-                    )
+                    return Message(role="user", content=content.strip())
             except Exception as e:
                 print(f"Error formatting user message: {str(e)}")
                 return None
 
         return None
 
-    def format_conversation(self, conversation: Conversation, namespace: FactorioNamespace) -> List[Message]:
+    def format_conversation(
+        self, conversation: Conversation, namespace: FactorioNamespace
+    ) -> List[Message]:
         formatted = []
 
         # Handle system message if present
@@ -238,10 +248,14 @@ class StructurePreservingFormatter(ConversationFormatter):
 
         # Format each message
         for i, msg in enumerate(messages):
-            if last_message_role == 'assistant':
-                formatted_msg = self.format_message(msg, should_format=(i != len(messages) - 1))
-            elif last_message_role == 'user':
-                formatted_msg = self.format_message(msg, should_format=(i != len(messages) - 2))
+            if last_message_role == "assistant":
+                formatted_msg = self.format_message(
+                    msg, should_format=(i != len(messages) - 1)
+                )
+            elif last_message_role == "user":
+                formatted_msg = self.format_message(
+                    msg, should_format=(i != len(messages) - 2)
+                )
             if formatted_msg:
                 formatted.append(formatted_msg)
 

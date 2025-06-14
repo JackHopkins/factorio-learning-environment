@@ -10,13 +10,13 @@ import requests
 import re
 from bs4 import BeautifulSoup
 from pathlib import Path
-import xml.etree.ElementTree as ET
 
 from dotenv import load_dotenv
 from openai import OpenAI
 from typing import Dict, List, Optional, Tuple
 import logging
 import urllib.parse
+
 load_dotenv()
 
 from data.plans.prompts import classifier_prompt, extract_steps
@@ -29,17 +29,17 @@ logger = logging.getLogger(__name__)
 def split_queries(queries: List[str], num_splits: int) -> List[List[str]]:
     """Split queries into approximately equal chunks"""
     chunk_size = math.ceil(len(queries) / num_splits)
-    return [queries[i:i + chunk_size] for i in range(0, len(queries), chunk_size)]
+    return [queries[i : i + chunk_size] for i in range(0, len(queries), chunk_size)]
+
 
 def crawler_worker(args: Tuple[List[str], str, str, int]):
     """Worker function for parallel processing"""
     queries, serper_key, openai_key, worker_id = args
     crawler = FactorioCrawler(
-        serper_api_key=serper_key,
-        openai_api_key=openai_key,
-        worker_id=worker_id
+        serper_api_key=serper_key, openai_api_key=openai_key, worker_id=worker_id
     )
     crawler.process_all(queries)
+
 
 class FactorioCrawler:
     def __init__(self, serper_api_key: str, openai_api_key: str, worker_id: int = 0):
@@ -59,7 +59,7 @@ class FactorioCrawler:
     def url_to_filename(self, url: str) -> str:
         """Convert URL to a safe filename"""
         # Remove protocol and www
-        clean_url = re.sub(r'^https?://(www\.)?', '', url)
+        clean_url = re.sub(r"^https?://(www\.)?", "", url)
         # Convert to safe filename using URL encoding
         return urllib.parse.quote_plus(clean_url)
 
@@ -76,41 +76,35 @@ class FactorioCrawler:
     def clean_content(self, text: str) -> str:
         """Clean and normalize text content"""
         # Replace multiple newlines with max two newlines
-        text = re.sub(r'\n{3,}', '\n\n', text)
+        text = re.sub(r"\n{3,}", "\n\n", text)
 
         # Remove excess whitespace
-        text = re.sub(r'[ \t]+', ' ', text)
+        text = re.sub(r"[ \t]+", " ", text)
 
         # Remove spaces at the beginning of lines
-        text = re.sub(r'(?m)^[ \t]+', '', text)
+        text = re.sub(r"(?m)^[ \t]+", "", text)
 
         # Remove spaces at the end of lines
-        text = re.sub(r'(?m)[ \t]+$', '', text)
+        text = re.sub(r"(?m)[ \t]+$", "", text)
 
         # Ensure consistent newline character
-        text = text.replace('\r\n', '\n')
+        text = text.replace("\r\n", "\n")
 
         # Remove any zero-width spaces or other invisible characters
-        text = re.sub(r'[\u200B-\u200D\uFEFF]', '', text)
+        text = re.sub(r"[\u200B-\u200D\uFEFF]", "", text)
 
         # Standardize unicode quotes and dashes
         text = text.replace('"', '"').replace('"', '"')
-        text = text.replace(''', "'").replace(''', "'")
-        text = text.replace('—', '-').replace('–', '-')
+        text = text.replace(""", "'").replace(""", "'")
+        text = text.replace("—", "-").replace("–", "-")
 
         return text.strip()
 
     def search_guides(self, query: str) -> Dict:
         """Search for Factorio guides using SERPER API"""
         conn = http.client.HTTPSConnection("google.serper.dev")
-        payload = json.dumps({
-            "q": f"factorio {query} guide tutorial tips",
-            "num": 100
-        })
-        headers = {
-            'X-API-KEY': self.serper_api_key,
-            'Content-Type': 'application/json'
-        }
+        payload = json.dumps({"q": f"factorio {query} guide tutorial tips", "num": 100})
+        headers = {"X-API-KEY": self.serper_api_key, "Content-Type": "application/json"}
 
         try:
             conn.request("POST", "/search", payload, headers)
@@ -124,8 +118,8 @@ class FactorioCrawler:
     def fetch_page_content(self, url: str) -> str:
         """Fetch and parse webpage content"""
         try:
-            response = requests.get(url, headers={'User-Agent': 'FactorioCrawler/1.0'})
-            soup = BeautifulSoup(response.text, 'html.parser')
+            response = requests.get(url, headers={"User-Agent": "FactorioCrawler/1.0"})
+            soup = BeautifulSoup(response.text, "html.parser")
             # Remove script and style elements
             for script in soup(["script", "style"]):
                 script.decompose()
@@ -140,7 +134,7 @@ class FactorioCrawler:
         file_path = self.base_dir / "raw" / f"{hash(url)}.txt"
         file_path.parent.mkdir(exist_ok=True)
 
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             f.write(f"URL: {url}\n\n")
             f.write(content)
 
@@ -150,12 +144,14 @@ class FactorioCrawler:
             response = self.client.chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system",
-                     "content": classifier_prompt},
-                    {"role": "user", "content": content[:8000]}  # Truncate to avoid token limits
-                ]
+                    {"role": "system", "content": classifier_prompt},
+                    {
+                        "role": "user",
+                        "content": content[:8000],
+                    },  # Truncate to avoid token limits
+                ],
             )
-            return response.choices[0].message.content.strip().lower() == 'true'
+            return response.choices[0].message.content.strip().lower() == "true"
         except Exception as e:
             logger.error(f"Error classifying content: {e}")
             return False
@@ -168,12 +164,12 @@ class FactorioCrawler:
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": extract_steps},
-                    {"role": "user", "content": content[:4000]}
-                ]
+                    {"role": "user", "content": content[:4000]},
+                ],
             )
 
             string = response.choices[0].message.content.strip()
-            string = string.replace('```xml', '').replace('```', '')
+            string = string.replace("```xml", "").replace("```", "")
             return string
         except Exception as e:
             logger.error(f"Error extracting steps: {e}\n\n{string}\n===")
@@ -184,31 +180,35 @@ class FactorioCrawler:
         file_path = self.base_dir / "processed" / f"{hash(url)}.xml"
         file_path.parent.mkdir(exist_ok=True)
 
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             f.write(object)
 
     def process_all(self, search_queries: List[str]):
         """Main processing function"""
-        logger.info(f"Worker {self.worker_id} starting with {len(search_queries)} queries")
+        logger.info(
+            f"Worker {self.worker_id} starting with {len(search_queries)} queries"
+        )
 
         for query in search_queries:
             logger.info(f"Worker {self.worker_id} processing query: {query}")
             search_results = self.search_guides(query)
 
-            if 'organic' not in search_results:
+            if "organic" not in search_results:
                 continue
 
-            for result in search_results['organic']:
-                url = result.get('link')
+            for result in search_results["organic"]:
+                url = result.get("link")
                 if not url:
                     continue
 
-                if 'youtube' in url.lower():
+                if "youtube" in url.lower():
                     continue
 
                 # Use file-based locking for URL visited check
                 if self.is_url_visited(url):
-                    logger.info(f"Worker {self.worker_id} skipping previously visited URL: {url}")
+                    logger.info(
+                        f"Worker {self.worker_id} skipping previously visited URL: {url}"
+                    )
                     continue
 
                 # Respect rate limits - different delay for each worker
@@ -237,7 +237,7 @@ class FactorioCrawler:
 
 def main():
     SERPER_KEYS = os.getenv("SERPER_KEYS")
-    SERPER_KEYS = SERPER_KEYS.split(',')
+    SERPER_KEYS = SERPER_KEYS.split(",")
     # Configuration
     num_workers_per_key = 2
     total_workers = len(SERPER_KEYS) * num_workers_per_key
@@ -252,7 +252,6 @@ def main():
         "basic controls tutorial",
         "survival basics guide",
         "early game tips tricks",
-
         # Initial Resources
         "coal mining guide early",
         "iron mining setup",
@@ -260,7 +259,6 @@ def main():
         "stone mining early game",
         "manual resource gathering",
         "starting resource management",
-
         # First Automation
         "burner inserter setup",
         "first automation steps",
@@ -269,7 +267,6 @@ def main():
         "coal power generation",
         "basic inserter patterns",
         "early smelting setup",
-
         # Science Production
         "red science automation",
         "green science setup",
@@ -277,7 +274,6 @@ def main():
         "science pack production",
         "research priorities guide",
         "laboratory setup guide",
-
         # Basic Infrastructure
         "belt layout guide",
         "early game logistics",
@@ -286,7 +282,6 @@ def main():
         "chest usage tutorial",
         "underground belt guide",
         "splitter tutorial basic",
-
         # Power Systems
         "basic power setup",
         "steam engine layout",
@@ -294,7 +289,6 @@ def main():
         "power management early",
         "electricity network guide",
         "power pole placement",
-
         # Defense
         "early game defense",
         "basic military setup",
@@ -303,7 +297,6 @@ def main():
         "wall construction guide",
         "biter defense basics",
         "early game military research",
-
         # Manufacturing
         "basic factory layout",
         "early production lines",
@@ -311,14 +304,12 @@ def main():
         "manufacturing priorities",
         "component production guide",
         "intermediate products guide",
-
         # Resource Processing
         "basic ore processing",
         "early smelting layouts",
         "furnace setup guide",
         "plate production tutorial",
         "smelting column design",
-
         # Fluids
         "basic fluid handling",
         "pipe systems tutorial",
@@ -326,7 +317,6 @@ def main():
         "early oil processing",
         "fluid storage basics",
         "pump mechanics guide",
-
         # Organization
         "main bus concept",
         "early base organization",
@@ -334,21 +324,18 @@ def main():
         "basic ratios tutorial",
         "production efficiency",
         "base layout principles",
-
         # Expansion
         "base expansion guide",
         "resource outpost setup",
         "early trains tutorial",
         "expanding production guide",
         "scaling up basics",
-
         # Specific Production Lines
         "electronic circuit production",
         "iron gear wheel automation",
         "copper cable manufacturing",
         "steel production setup",
         "basic materials flow",
-
         # Common Problems
         "bottleneck solutions early",
         "production backup fixes",
@@ -356,28 +343,24 @@ def main():
         "resource management tips",
         "common mistakes avoid",
         "troubleshooting guide early",
-
         # Efficiency
         "early game optimization",
         "basic factory ratios",
         "production efficiency guide",
         "resource balancing tips",
         "throughput optimization",
-
         # Quality of Life
         "early automation tips",
         "manual crafting guide",
         "inventory management",
         "quickbar setup guide",
         "hotkey optimization",
-
         # Progression Path
         "tech tree progression",
         "research order guide",
         "milestone planning",
         "advancement strategy",
         "progress benchmarks",
-
         # Starting Automation
         "first automation priority",
         "automating coal mining",
@@ -385,7 +368,6 @@ def main():
         "burner phase automation",
         "crafting queue efficiency",
         "manual to automated transition",
-
         # Early Production
         "iron plate automation",
         "copper plate production line",
@@ -393,7 +375,6 @@ def main():
         "starter base layout",
         "initial factory setup",
         "early game ratios",
-
         # Resource Collection
         "automated mining setup",
         "coal power sustainability",
@@ -401,7 +382,6 @@ def main():
         "starting miners layout",
         "resource field optimization",
         "initial mining outpost",
-
         # Power Management
         "early power scaling",
         "coal supply automation",
@@ -409,7 +389,6 @@ def main():
         "backup power systems",
         "power grid layout",
         "electricity management tips",
-
         # Basic Logistics
         "initial belt systems",
         "early sorting methods",
@@ -417,7 +396,6 @@ def main():
         "starter bus design",
         "item balancing early",
         "material distribution",
-
         # Science Production
         "automated red science",
         "science pack scaling",
@@ -425,7 +403,6 @@ def main():
         "lab feeding setup",
         "science production ratio",
         "research facility layout",
-
         # Military Production
         "automated ammo production",
         "turret feeding systems",
@@ -433,7 +410,6 @@ def main():
         "defensive production",
         "automated wall building",
         "military automation priority",
-
         # Component Production
         "gear wheel automation",
         "circuit production line",
@@ -441,7 +417,6 @@ def main():
         "belt production setup",
         "automated components",
         "intermediate products flow",
-
         # Early Base Design
         "starter factory layout",
         "production block design",
@@ -449,7 +424,6 @@ def main():
         "factory organization",
         "modular design basics",
         "scalable layouts early",
-
         # Resource Management
         "coal distribution system",
         "ore processing layout",
@@ -457,7 +431,6 @@ def main():
         "resource priority system",
         "material overflow handling",
         "resource buffer design",
-
         # Production Lines
         "assembly line basics",
         "production cell design",
@@ -465,7 +438,6 @@ def main():
         "automated crafting setup",
         "production flow design",
         "assembly machine layout",
-
         # Belt Systems
         "belt balancing early",
         "underground belt usage",
@@ -473,7 +445,6 @@ def main():
         "belt compression tips",
         "belt priority system",
         "logistics optimization",
-
         # Power Grid
         "steam engine array",
         "boiler automation",
@@ -481,7 +452,6 @@ def main():
         "power pole coverage",
         "early grid design",
         "power distribution",
-
         # Factory Planning
         "initial base planning",
         "expansion preparation",
@@ -489,7 +459,6 @@ def main():
         "factory scaling tips",
         "base organization",
         "design principles early",
-
         # Optimization
         "early efficiency tips",
         "production bottlenecks",
@@ -497,7 +466,6 @@ def main():
         "resource efficiency",
         "automation priorities",
         "system bottlenecks",
-
         # Troubleshooting
         "common automation issues",
         "production line fixes",
@@ -505,7 +473,6 @@ def main():
         "belt backup solutions",
         "inserter timing fixes",
         "resource starvation",
-
         # Quality Improvements
         "factory efficiency",
         "automation upgrades",
@@ -513,14 +480,13 @@ def main():
         "system improvements",
         "optimization methods",
         "performance enhancement",
-
         # Progression
         "automation milestones",
         "production goals",
         "development stages",
         "expansion timing",
         "upgrade priorities",
-        "advancement planning"
+        "advancement planning",
     ]
 
     # shuffle queries
@@ -535,12 +501,9 @@ def main():
         for worker_num in range(num_workers_per_key):
             worker_id = (key_idx * num_workers_per_key) + worker_num
             if worker_id < len(query_chunks):  # Ensure we have queries for this worker
-                worker_args.append((
-                    query_chunks[worker_id],
-                    serper_key,
-                    openai_api_key,
-                    worker_id
-                ))
+                worker_args.append(
+                    (query_chunks[worker_id], serper_key, openai_api_key, worker_id)
+                )
 
     # Start parallel processing
     with Pool(processes=total_workers) as pool:

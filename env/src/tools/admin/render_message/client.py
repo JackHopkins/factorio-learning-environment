@@ -1,4 +1,3 @@
-from typing import Dict, Optional
 from env.src.tools.tool import Tool
 
 
@@ -18,11 +17,11 @@ class RenderMessage(Tool):
         try:
             # Execute the server command with positional arguments
             response = self.execute(self.player_index, message)
-            
+
             if isinstance(response, str):
                 raise Exception(f"Could not render message: {response}")
-            
+
             return True
-            
+
         except Exception as e:
             raise Exception(f"Error rendering message: {str(e)}")

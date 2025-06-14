@@ -25,7 +25,9 @@ class BlueprintScenarioSampler:
         self.system_prompt = system_prompt
         self.conn = psycopg2.connect(**db_config)
 
-    def _get_blueprint_scenarios(self, limit: int = 100, version: str = 'v1.4') -> List[Dict]:
+    def _get_blueprint_scenarios(
+        self, limit: int = 100, version: str = "v1.4"
+    ) -> List[Dict]:
         """Get blueprint scenarios from skills database"""
         query = """
             SELECT description, implementation, score, complexity, dependencies
@@ -38,13 +40,18 @@ class BlueprintScenarioSampler:
         """
 
         with self.conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute(query, (version, limit, ))
+            cur.execute(
+                query,
+                (
+                    version,
+                    limit,
+                ),
+            )
             return [dict(row) for row in cur.fetchall()]
 
-    def _prepare_scenario(self,
-                          instance: FactorioInstance,
-                          blueprint: Dict,
-                          inventory: Dict) -> Tuple[Optional[GameState], str, str]:
+    def _prepare_scenario(
+        self, instance: FactorioInstance, blueprint: Dict, inventory: Dict
+    ) -> Tuple[Optional[GameState], str, str]:
         """
         Prepare a scenario from a blueprint implementation
 
@@ -57,30 +64,32 @@ class BlueprintScenarioSampler:
             instance.set_inventory(inventory)
 
             # Run the implementation to set up initial state
-            reward, _, result = instance.eval(blueprint['implementation'], timeout=30)
+            reward, _, result = instance.eval(blueprint["implementation"], timeout=30)
 
-            if 'error' in result.lower():
+            if "error" in result.lower():
                 raise Exception("Could not initialise scenario")
 
             # Capture the game state
             game_state = GameState.from_instance(instance)
 
             # Format objective from description
-            objective = blueprint['description']
+            objective = blueprint["description"]
             if not objective.startswith('"""'):
                 objective = f'"""\n{objective}\n"""'
 
-            return game_state, objective, blueprint['implementation']
+            return game_state, objective, blueprint["implementation"]
 
         except Exception as e:
             print(f"Error preparing scenario: {str(e)}")
             raise e
 
-    async def sample_scenarios(self,
-                               instance: FactorioInstance,
-                               n_samples: int = 10,
-                               version: int = 17,
-                               skill_version: str = 'v1.4') -> List[Program]:
+    async def sample_scenarios(
+        self,
+        instance: FactorioInstance,
+        n_samples: int = 10,
+        version: int = 17,
+        skill_version: str = "v1.4",
+    ) -> List[Program]:
         """
         Sample scenarios and create seed programs
 
@@ -92,17 +101,19 @@ class BlueprintScenarioSampler:
             List of Program objects ready for seeding
         """
         # Get blueprint scenarios
-        blueprints = self._get_blueprint_scenarios(limit=n_samples, version=skill_version)
+        blueprints = self._get_blueprint_scenarios(
+            limit=n_samples, version=skill_version
+        )
 
         programs = []
 
         for blueprint in blueprints:
             # Parse depenencies into inventory object
-            dependencies = blueprint['dependencies']
+            dependencies = blueprint["dependencies"]
             inventory = {}
             for dependency in dependencies:
-                item, count = dependency.strip().split(':')
-                inventory[item.strip("\'")] = int(count)
+                item, count = dependency.strip().split(":")
+                inventory[item.strip("'")] = int(count)
 
             # Prepare scenario
             try:
@@ -116,23 +127,25 @@ class BlueprintScenarioSampler:
                 continue
 
             # Create conversation context
-            conversation = Conversation(messages=[
-                Message(role="system", content=self.system_prompt),
-                Message(role="user", content=f"Starting Inventory: {inventory}"),
-                Message(role="assistant", content=objective),
-                Message(role="user", content=f"Execution result: \n"),
-                Message(role="assistant", content=implementation.strip())
-            ])
+            conversation = Conversation(
+                messages=[
+                    Message(role="system", content=self.system_prompt),
+                    Message(role="user", content=f"Starting Inventory: {inventory}"),
+                    Message(role="assistant", content=objective),
+                    Message(role="user", content="Execution result: \n"),
+                    Message(role="assistant", content=implementation.strip()),
+                ]
+            )
 
             # Create seed program
             program = Program(
                 id=hash((objective, str(conversation.messages))),
                 code=implementation.strip(),
                 conversation=conversation,
-                value=float(blueprint['score']),  # Use skill score as initial value
+                value=float(blueprint["score"]),  # Use skill score as initial value
                 state=game_state,
                 version=version,  # Set appropriate version
-                version_description="Blueprint-based scenario seed"
+                version_description="Blueprint-based scenario seed",
             )
 
             programs.append(program)
@@ -141,5 +154,5 @@ class BlueprintScenarioSampler:
 
     def __del__(self):
         """Clean up database connection"""
-        if hasattr(self, 'conn'):
+        if hasattr(self, "conn"):
             self.conn.close()

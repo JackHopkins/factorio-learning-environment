@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Callable, List, Optional
+from typing import Dict, Callable
 from PIL import ImageDraw
 
-from env.src.entities import Position
 from env.src.tools.admin.render.utils.render_config import RenderConfig
 
 
@@ -22,10 +21,13 @@ class LayerRenderer(ABC):
         self.config = config
 
     @abstractmethod
-    def render(self, draw: ImageDraw.ImageDraw,
-               game_to_img_func: Callable,
-               boundaries: Dict[str, float],
-               **kwargs) -> None:
+    def render(
+        self,
+        draw: ImageDraw.ImageDraw,
+        game_to_img_func: Callable,
+        boundaries: Dict[str, float],
+        **kwargs,
+    ) -> None:
         """
         Render this layer to the provided image.
 

@@ -7,13 +7,12 @@ from agents.utils.llm_factory import LLMFactory
 from agents.utils.parse_response import parse_response
 from env.src.models.conversation import Conversation
 from env.src.models.generation_parameters import GenerationParameters
-from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
+from tenacity import wait_exponential, retry_if_exception_type
 
 from typing import Optional
 from env.src.namespace import FactorioNamespace
 
-GENERAL_INSTRUCTIONS = \
-"""
+GENERAL_INSTRUCTIONS = """
 # Factorio LLM Agent Instructions
 
 ## Overview
@@ -173,33 +172,51 @@ sorted_furnaces = sorted(
 - Its a lot easier to manually add coil to boilers rather than make a automated system for it. Prefer manual fueling
 """
 
-FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON AND REMEMBER MAXIMUM 30 LINES OF CODE PER POLICY. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON." # Annoying how effective this is
+FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON AND REMEMBER MAXIMUM 30 LINES OF CODE PER POLICY. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON."  # Annoying how effective this is
+
 
 class BasicAgent(AgentABC):
-   def __init__(self, model, system_prompt, task, agent_idx: Optional[int] = None, *args, **kwargs):
-        instructions = GENERAL_INSTRUCTIONS+system_prompt+FINAL_INSTRUCTION
+    def __init__(
+        self,
+        model,
+        system_prompt,
+        task,
+        agent_idx: Optional[int] = None,
+        *args,
+        **kwargs,
+    ):
+        instructions = GENERAL_INSTRUCTIONS + system_prompt + FINAL_INSTRUCTION
         self.task = task
         instructions += f"\n\n### Goal\n{task.goal_description}\n\n"
         if agent_idx is not None and task.get_agent_instructions(agent_idx) is not None:
             player_idx = agent_idx + 1
             instructions += f"### Specific Instructions for Agent {player_idx}\n{task.get_agent_instructions(agent_idx)}\n\n"
-        super().__init__( model, instructions, *args, **kwargs)
+        super().__init__(model, instructions, *args, **kwargs)
         self.llm_factory = LLMFactory(model)
-        self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.llm_factory.acall,cache_dir='summary_cache')
+        self.formatter = RecursiveReportFormatter(
+            chunk_size=16, llm_call=self.llm_factory.acall, cache_dir="summary_cache"
+        )
         self.generation_params = GenerationParameters(n=1, max_tokens=4096, model=model)
 
-   async def step(self, conversation: Conversation, response: Response, namespace: FactorioNamespace) -> Policy:
+    async def step(
+        self,
+        conversation: Conversation,
+        response: Response,
+        namespace: FactorioNamespace,
+    ) -> Policy:
         # We format the conversation every N steps to add a context summary to the system prompt
-        formatted_conversation = await self.formatter.format_conversation(conversation, namespace)
+        formatted_conversation = await self.formatter.format_conversation(
+            conversation, namespace
+        )
         # We set the new conversation state for external use
         self.set_conversation(formatted_conversation)
         return await self._get_policy(formatted_conversation), None
 
-   @tenacity.retry(
-       retry=retry_if_exception_type(Exception),
-       wait=wait_exponential(multiplier=1, min=4, max=10)
-   )
-   async def _get_policy(self, conversation: Conversation):
+    @tenacity.retry(
+        retry=retry_if_exception_type(Exception),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+    )
+    async def _get_policy(self, conversation: Conversation):
         response = await self.llm_factory.acall(
             messages=self.formatter.to_llm_messages(conversation),
             n_samples=1,  # We only need one program per iteration
@@ -214,7 +231,5 @@ class BasicAgent(AgentABC):
         policy.input_conversation = conversation
         return policy
 
-   async def end(self, conversation: Conversation, completion: CompletionResult):
-       pass
-
-
+    async def end(self, conversation: Conversation, completion: CompletionResult):
+        pass

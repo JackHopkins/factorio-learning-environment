@@ -1,10 +1,20 @@
-from typing import Any, Dict, List, Optional
-from env.src.entities import Inventory, Entity
+from typing import Dict, List, Optional
+from env.src.entities import Inventory
 from env.src.instance import FactorioInstance
 from agents import TaskResponse
 from env.src.models.game_state import GameState
+
+
 class TaskABC:
-    def __init__(self, trajectory_length, starting_inventory: Inventory, goal_description: str, task_key: str, all_technology_reserached: bool = False, agent_instructions: Optional[List[str]] = None):
+    def __init__(
+        self,
+        trajectory_length,
+        starting_inventory: Inventory,
+        goal_description: str,
+        task_key: str,
+        all_technology_reserached: bool = False,
+        agent_instructions: Optional[List[str]] = None,
+    ):
         self.trajectory_length = trajectory_length
         self.starting_inventory = starting_inventory
         self.goal_description = goal_description
@@ -16,11 +26,15 @@ class TaskABC:
         if self.agent_instructions is None:
             return None
         elif agent_idx >= len(self.agent_instructions):
-            raise IndexError(f"Agent index {agent_idx} is out of bounds for agent instructions")
+            raise IndexError(
+                f"Agent index {agent_idx} is out of bounds for agent instructions"
+            )
         else:
             return self.agent_instructions[agent_idx]
-    
-    def verify(self, score: float, step: int, instance: FactorioInstance, step_statistics: Dict) -> TaskResponse:
+
+    def verify(
+        self, score: float, step: int, instance: FactorioInstance, step_statistics: Dict
+    ) -> TaskResponse:
         """Verify if the task is completed based on the current state.
 
         Args:
@@ -33,16 +47,17 @@ class TaskABC:
             TaskResponse: Response object indicating task completion status and metadata
         """
         pass
-    
+
     def setup_instance(self, instance):
         """Code to provision the task environment"""
         pass
-    
-    def enhance_response_with_task_output(self, response: str, task_response: TaskResponse) -> str:
+
+    def enhance_response_with_task_output(
+        self, response: str, task_response: TaskResponse
+    ) -> str:
         """Add task specific information to the environment response"""
         return response
-    
-    
+
     def setup(self, instance):
         """setup function"""
         instance.initial_inventory = self.starting_inventory

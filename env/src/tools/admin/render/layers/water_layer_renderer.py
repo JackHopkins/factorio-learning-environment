@@ -1,4 +1,4 @@
-from typing import Dict, Callable, List
+from typing import Dict, Callable
 from PIL import ImageDraw
 
 from env.src.tools.admin.render.layers.layer_renderer import LayerRenderer
@@ -11,12 +11,15 @@ class WaterLayerRenderer(LayerRenderer):
     def layer_name(self) -> str:
         return "water"
 
-    def render(self, draw: ImageDraw.ImageDraw,
-               game_to_img_func: Callable,
-               boundaries: Dict[str, float],
-               **kwargs) -> None:
+    def render(
+        self,
+        draw: ImageDraw.ImageDraw,
+        game_to_img_func: Callable,
+        boundaries: Dict[str, float],
+        **kwargs,
+    ) -> None:
         """Draw water tiles on the map"""
-        water_tiles = kwargs.get('water_tiles', [])
+        water_tiles = kwargs.get("water_tiles", [])
         if not water_tiles:
             return
 
@@ -25,7 +28,7 @@ class WaterLayerRenderer(LayerRenderer):
             "water": (0, 70, 140),  # Regular water
             "deepwater": (0, 50, 120),  # Deep water
             "water-shallow": (30, 90, 150),  # Shallow water
-            "water-mud": (70, 80, 50)  # Mud water
+            "water-mud": (70, 80, 50),  # Mud water
         }
 
         cell_size = self.config.style["cell_size"]
@@ -36,7 +39,7 @@ class WaterLayerRenderer(LayerRenderer):
 
         for tile in water_tiles:
             # Get tile position
-            x, y = tile.get('x', 0), tile.get('y', 0)
+            x, y = tile.get("x", 0), tile.get("y", 0)
             x += 0.5
             y += 0.5
 
@@ -44,7 +47,7 @@ class WaterLayerRenderer(LayerRenderer):
             if x < min_x or x > max_x or y < min_y or y > max_y:
                 continue
 
-            tile_name = tile.get('name', 'water')
+            tile_name = tile.get("name", "water")
 
             # Get color based on water type
             water_color = water_colors.get(tile_name, water_colors["water"])
@@ -54,10 +57,14 @@ class WaterLayerRenderer(LayerRenderer):
 
             # Draw water tile background
             draw.rectangle(
-                [img_x - cell_size / 2, img_y - cell_size / 2,
-                 img_x + cell_size / 2, img_y + cell_size / 2],
+                [
+                    img_x - cell_size / 2,
+                    img_y - cell_size / 2,
+                    img_x + cell_size / 2,
+                    img_y + cell_size / 2,
+                ],
                 fill=water_color,
-                outline=None
+                outline=None,
             )
 
             # Add cross-hatched pattern
@@ -69,14 +76,24 @@ class WaterLayerRenderer(LayerRenderer):
                 line_end_y = img_y - cell_size / 2
 
                 # Only draw if endpoints are within tile bounds
-                if line_end_x >= img_x - cell_size / 2 and line_start_y <= img_y + cell_size / 2:
+                if (
+                    line_end_x >= img_x - cell_size / 2
+                    and line_start_y <= img_y + cell_size / 2
+                ):
                     draw.line(
-                        [(line_start_x, line_start_y),
-                         (min(line_end_x, img_x + cell_size / 2),
-                          max(line_end_y, img_y - cell_size / 2))],
-                        fill=(min(water_color[0] +
-                                  30, 255), min(water_color[1] + 30, 255), min(water_color[2] + 40, 255)),
-                        width=1
+                        [
+                            (line_start_x, line_start_y),
+                            (
+                                min(line_end_x, img_x + cell_size / 2),
+                                max(line_end_y, img_y - cell_size / 2),
+                            ),
+                        ],
+                        fill=(
+                            min(water_color[0] + 30, 255),
+                            min(water_color[1] + 30, 255),
+                            min(water_color[2] + 40, 255),
+                        ),
+                        width=1,
                     )
 
             # Second set of diagonal lines (perpendicular to first set)
@@ -87,12 +104,22 @@ class WaterLayerRenderer(LayerRenderer):
                 line_end_y = img_y + cell_size / 2
 
                 # Only draw if endpoints are within tile bounds
-                if line_end_x >= img_x - cell_size / 2 and line_start_y >= img_y - cell_size / 2:
+                if (
+                    line_end_x >= img_x - cell_size / 2
+                    and line_start_y >= img_y - cell_size / 2
+                ):
                     draw.line(
-                        [(line_start_x, line_start_y),
-                         (min(line_end_x, img_x + cell_size / 2),
-                          min(line_end_y, img_y + cell_size / 2))],
-                        fill=(min(water_color[0] +
-                                  15, 255), min(water_color[1] + 15, 255), min(water_color[2] + 25, 255)),
-                        width=1
+                        [
+                            (line_start_x, line_start_y),
+                            (
+                                min(line_end_x, img_x + cell_size / 2),
+                                min(line_end_y, img_y + cell_size / 2),
+                            ),
+                        ],
+                        fill=(
+                            min(water_color[0] + 15, 255),
+                            min(water_color[1] + 15, 255),
+                            min(water_color[2] + 25, 255),
+                        ),
+                        width=1,
                     )

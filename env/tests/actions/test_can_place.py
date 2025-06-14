@@ -1,5 +1,4 @@
 import pytest
-from scipy.optimize import direct
 
 from env.src.entities import Position, Direction
 from env.src.game_types import Prototype, Resource
@@ -10,6 +9,7 @@ def game(instance):
     instance.reset()
     yield instance.namespace
     instance.reset()
+
 
 def test_can_place(game):
     """
@@ -29,18 +29,19 @@ def test_can_place(game):
     can_place = game.can_place_entity(Prototype.Pipe, position=(5, 0))
     assert can_place == False
 
+
 def test_can_place_over_resources(game):
     copper_ore = game.nearest(Resource.CopperOre)
     game.move_to(copper_ore)
-    can_build = game.can_place_entity(
-        Prototype.BurnerMiningDrill,
-        position=copper_ore
-    )
+    can_build = game.can_place_entity(Prototype.BurnerMiningDrill, position=copper_ore)
     assert can_build
+
 
 def test_can_place_over_player_large(game):
     game.move_to(Position(x=0, y=0))
     assert game.can_place_entity(Prototype.SteamEngine, position=Position(x=0, y=0))
 
-    game.place_entity(Prototype.SteamEngine, position=Position(x=0, y=0), direction=Direction.UP)
+    game.place_entity(
+        Prototype.SteamEngine, position=Position(x=0, y=0), direction=Direction.UP
+    )
     pass

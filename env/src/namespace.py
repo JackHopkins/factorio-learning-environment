@@ -7,16 +7,31 @@ import sys
 import traceback
 import types
 from difflib import get_close_matches
-from typing import Optional, Union, List, Dict, Tuple, Set, Any
+from typing import Optional, Union, List, Dict, Tuple, Set
 from pydantic import BaseModel
-import uuid
-import logging
 
 from env.src.exceptions.hinting_name_error import get_value_type_str
-from env.src.entities import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe, BuildingBox, PipeGroup, \
-    ElectricityGroup, Pipe, Entity
+from env.src.entities import (
+    Position,
+    Direction,
+    EntityStatus,
+    BoundingBox,
+    BeltGroup,
+    Recipe,
+    BuildingBox,
+    PipeGroup,
+    ElectricityGroup,
+    Pipe,
+    Entity,
+)
 
-from env.src.game_types import Prototype, Resource, Technology, prototype_by_name, RecipeName
+from env.src.game_types import (
+    Prototype,
+    Resource,
+    Technology,
+    prototype_by_name,
+    RecipeName,
+)
 from env.src.models.serializable_function import SerializableFunction
 
 
@@ -50,7 +65,6 @@ class LoopContext:
 
 
 class FactorioNamespace:
-
     def __init__(self, instance, agent_index):
         self.logging_results = {}
         self.line_value = 0
@@ -67,7 +81,7 @@ class FactorioNamespace:
 
         # Add all builtins to the namespace
         for name in dir(builtins):
-            if not name.startswith('_'):  # Skip private/special names
+            if not name.startswith("_"):  # Skip private/special names
                 try:
                     setattr(self, name, getattr(builtins, name))
                     self.persistent_vars[name] = getattr(builtins, name)
@@ -81,33 +95,33 @@ class FactorioNamespace:
 
         # Add specific builtins that we definitely want to expose to the agent
         self.essential_builtins = {
-            'print': print,
-            'len': len,
-            'range': range,
-            'int': int,
-            'str': str,
-            'float': float,
-            'bool': bool,
-            'list': list,
-            'dict': dict,
-            'tuple': tuple,
-            'set': set,
-            'sum': sum,
-            'min': min,
-            'max': max,
-            'enumerate': enumerate,
-            'zip': zip,
-            'map': map,
-            'filter': filter,
-            'any': any,
-            'all': all,
-            'sorted': sorted,
-            'reversed': reversed,
-            'round': round,
-            'abs': abs,
-            'isinstance': isinstance,
-            'type': type,
-            'assert': assert_
+            "print": print,
+            "len": len,
+            "range": range,
+            "int": int,
+            "str": str,
+            "float": float,
+            "bool": bool,
+            "list": list,
+            "dict": dict,
+            "tuple": tuple,
+            "set": set,
+            "sum": sum,
+            "min": min,
+            "max": max,
+            "enumerate": enumerate,
+            "zip": zip,
+            "map": map,
+            "filter": filter,
+            "any": any,
+            "all": all,
+            "sorted": sorted,
+            "reversed": reversed,
+            "round": round,
+            "abs": abs,
+            "isinstance": isinstance,
+            "type": type,
+            "assert": assert_,
         }
 
         for name, func in self.essential_builtins.items():
@@ -176,10 +190,10 @@ class FactorioNamespace:
         entity_classes = inspect.getmembers(
             entity_module,
             lambda member: (
-                    inspect.isclass(member) and
-                    issubclass(member, BaseModel) and
-                    member != BaseModel
-            )
+                inspect.isclass(member)
+                and issubclass(member, BaseModel)
+                and member != BaseModel
+            ),
         )
 
         # Add each entity class to both the namespace and persistent vars
@@ -187,18 +201,24 @@ class FactorioNamespace:
             setattr(self, name, entity_class)
 
         # Add all the members of this class as static members so they can be accessed by the agent program.
-        self._static_members = [attr for attr in dir(self)
-                                if not callable(getattr(self, attr))
-                                and not attr.startswith("__")]
+        self._static_members = [
+            attr
+            for attr in dir(self)
+            if not callable(getattr(self, attr)) and not attr.startswith("__")
+        ]
 
     def get_functions(self) -> List[SerializableFunction]:
         """
         Gets all defined functions mapped from their attribute name in the namespace.
         @return:
         """
-        #return [SerializableFunction(name=name, func=getattr(self, name)) for name in dir(self) if callable(getattr(self, name)) and not name.startswith("__")]
-        return list(filter(lambda x: isinstance(x, SerializableFunction), self.persistent_vars.values()))
-
+        # return [SerializableFunction(name=name, func=getattr(self, name)) for name in dir(self) if callable(getattr(self, name)) and not name.startswith("__")]
+        return list(
+            filter(
+                lambda x: isinstance(x, SerializableFunction),
+                self.persistent_vars.values(),
+            )
+        )
 
     def load(self, namespace_str: bytes):
         try:
@@ -236,11 +256,15 @@ class FactorioNamespace:
         @return:
         """
         for attr in dir(self):
-            if not callable(getattr(self, attr)) and attr[0] != "_" and attr not in self._static_members:
+            if (
+                not callable(getattr(self, attr))
+                and attr[0] != "_"
+                and attr not in self._static_members
+            ):
                 self[attr] = None
 
     def __getitem__(self, key):
-        if key not in dir(self) or key.startswith('__'):
+        if key not in dir(self) or key.startswith("__"):
             raise KeyError(key)
         return getattr(self, key)
 
@@ -248,10 +272,11 @@ class FactorioNamespace:
         setattr(self, key, value)
 
     def log(self, *arg):
-
         if self.execution_trace:
             self.log_counter += 1  # Increment counter
-            self.logging_results[self.log_counter] = [(self.line_value, repr(arg))]  # Store line number with the log
+            self.logging_results[self.log_counter] = [
+                (self.line_value, repr(arg))
+            ]  # Store line number with the log
 
         else:
             if self.line_value not in self.logging_results:
@@ -264,7 +289,9 @@ class FactorioNamespace:
         #     print(f"\033[0m{self.tcp_port}: {repr(arg)}\x1b[0m")
         return None  # Return None instead of the args
 
-    def _get_suggestions_from_name_error(self, eval_dict, error_msg) -> List[Tuple[str, str]]:
+    def _get_suggestions_from_name_error(
+        self, eval_dict, error_msg
+    ) -> List[Tuple[str, str]]:
         var_name = error_msg.split("'")[1]
 
         # Get available variables from both eval_dict and class attributes
@@ -272,12 +299,12 @@ class FactorioNamespace:
 
         # Add variables from eval_dict with their types
         for name, value in eval_dict.items():
-            if not name.startswith('_'):
+            if not name.startswith("_"):
                 available_vars[name] = value
 
         # Add class attributes
         for name in dir(self):
-            if not name.startswith('_'):
+            if not name.startswith("_"):
                 available_vars[name] = getattr(self, name)
 
         # Get close matches using difflib
@@ -305,15 +332,27 @@ class FactorioNamespace:
     def _change_print_to_log(self, node):
         if isinstance(node, ast.Expr):
             # check if its print, if it is, then we route to log
-            if isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) and node.value.func.id == 'print':
+            if (
+                isinstance(node.value, ast.Call)
+                and isinstance(node.value.func, ast.Name)
+                and node.value.func.id == "print"
+            ):
                 # change print to log function
-                node.value.func.id = 'log'
+                node.value.func.id = "log"
 
-            elif isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) and node.value.func.id == 'time.sleep':
+            elif (
+                isinstance(node.value, ast.Call)
+                and isinstance(node.value.func, ast.Name)
+                and node.value.func.id == "time.sleep"
+            ):
                 # change print to log function
-                node.value.func.id = 'sleep'
+                node.value.func.id = "sleep"
 
-        elif isinstance(node, ast.If) or isinstance(node, ast.For) or isinstance(node, ast.While):
+        elif (
+            isinstance(node, ast.If)
+            or isinstance(node, ast.For)
+            or isinstance(node, ast.While)
+        ):
             for subnode_idx, subnode in enumerate(node.body):
                 node.body[subnode_idx] = self._change_print_to_log(subnode)
             for subnode_idx, subnode in enumerate(node.orelse):
@@ -348,7 +387,9 @@ class FactorioNamespace:
                 return None
 
             # Handle string literals for forward references
-            if isinstance(annotation, ast.Constant) and isinstance(annotation.value, str):
+            if isinstance(annotation, ast.Constant) and isinstance(
+                annotation.value, str
+            ):
                 return annotation.value
 
             # Handle basic types (like int, str, etc)
@@ -359,19 +400,22 @@ class FactorioNamespace:
             if isinstance(annotation, ast.Subscript):
                 base_type = process_annotation(annotation.value, eval_dict)
                 if isinstance(annotation.slice, ast.Tuple):
-                    type_args = [process_annotation(arg, eval_dict) for arg in annotation.slice.elts]
+                    type_args = [
+                        process_annotation(arg, eval_dict)
+                        for arg in annotation.slice.elts
+                    ]
                     return f"{base_type}[{', '.join(map(str, type_args))}]"
                 else:
                     type_arg = process_annotation(annotation.slice, eval_dict)
                     return f"{base_type}[{type_arg}]"
 
             try:
-                compiled = compile(ast.Expression(annotation), 'annotation', 'eval')
+                compiled = compile(ast.Expression(annotation), "annotation", "eval")
                 return eval(compiled, eval_dict)
-            except Exception as e:
+            except Exception:
                 return ast.unparse(annotation)
 
-        if hasattr(node, 'lineno'):
+        if hasattr(node, "lineno"):
             self.line_value = node.lineno
 
         if isinstance(node, ast.Break):
@@ -383,7 +427,9 @@ class FactorioNamespace:
         elif isinstance(node, ast.For):
             try:
                 self.loop_context.enter_loop(node)
-                iter_obj = eval(compile(ast.Expression(node.iter), 'file', 'eval'), eval_dict)
+                iter_obj = eval(
+                    compile(ast.Expression(node.iter), "file", "eval"), eval_dict
+                )
                 for item in iter_obj:
                     self._assign_target(node.target, item, eval_dict)
                     result = self.execute_body(node.body, eval_dict, node)
@@ -403,7 +449,9 @@ class FactorioNamespace:
         elif isinstance(node, ast.While):
             self.loop_context.enter_loop(node)
             try:
-                while eval(compile(ast.Expression(node.test), 'file', 'eval'), eval_dict):
+                while eval(
+                    compile(ast.Expression(node.test), "file", "eval"), eval_dict
+                ):
                     result = self.execute_body(node.body, eval_dict, node)
 
                     if self.loop_context.state == "BREAK":
@@ -420,7 +468,9 @@ class FactorioNamespace:
 
         elif isinstance(node, ast.If):
             # Handle if statements
-            test_result = eval(compile(ast.Expression(node.test), 'file', 'eval'), eval_dict)
+            test_result = eval(
+                compile(ast.Expression(node.test), "file", "eval"), eval_dict
+            )
             if test_result:
                 self.execute_body(node.body, eval_dict, node)
             elif node.orelse:
@@ -429,7 +479,9 @@ class FactorioNamespace:
 
         elif isinstance(node, ast.FunctionDef):
             # Process return type annotation if present
-            return_annotation = process_annotation(node.returns, eval_dict) if node.returns else None
+            return_annotation = (
+                process_annotation(node.returns, eval_dict) if node.returns else None
+            )
 
             # Process argument annotations
             arg_annotations = {}
@@ -438,47 +490,53 @@ class FactorioNamespace:
             # Handle positional args
             for arg in node.args.args:
                 if arg.annotation:
-                    arg_annotations[arg.arg] = process_annotation(arg.annotation, eval_dict)
+                    arg_annotations[arg.arg] = process_annotation(
+                        arg.annotation, eval_dict
+                    )
 
             # Handle keyword only args
             for arg in node.args.kwonlyargs:
                 if arg.annotation:
-                    arg_annotations[arg.arg] = process_annotation(arg.annotation, eval_dict)
+                    arg_annotations[arg.arg] = process_annotation(
+                        arg.annotation, eval_dict
+                    )
 
             # Handle positional only args if they exist
-            for arg in getattr(node.args, 'posonlyargs', []):
+            for arg in getattr(node.args, "posonlyargs", []):
                 if arg.annotation:
-                    arg_annotations[arg.arg] = process_annotation(arg.annotation, eval_dict)
+                    arg_annotations[arg.arg] = process_annotation(
+                        arg.annotation, eval_dict
+                    )
 
             # Handle variadic args
             if node.args.vararg and node.args.vararg.annotation:
-                arg_annotations['*' + node.args.vararg.arg] = process_annotation(node.args.vararg.annotation,
-                                                                                 eval_dict)
+                arg_annotations["*" + node.args.vararg.arg] = process_annotation(
+                    node.args.vararg.annotation, eval_dict
+                )
 
             # Handle variadic kwargs
             if node.args.kwarg and node.args.kwarg.annotation:
-                arg_annotations['**' + node.args.kwarg.arg] = process_annotation(node.args.kwarg.annotation,
-                                                                                 eval_dict)
+                arg_annotations["**" + node.args.kwarg.arg] = process_annotation(
+                    node.args.kwarg.annotation, eval_dict
+                )
 
             # Store annotations in function's metadata
-            setattr(node, '__annotations__', {
-                'return': return_annotation,
-                'args': arg_annotations
-            })
+            setattr(
+                node,
+                "__annotations__",
+                {"return": return_annotation, "args": arg_annotations},
+            )
 
-            function_namespace = {
-                **self.essential_builtins,
-                **eval_dict
-            }
+            function_namespace = {**self.essential_builtins, **eval_dict}
 
             wrapped_node = ast.Module([node], type_ignores=[])
-            compiled = compile(wrapped_node, 'file', 'exec')
+            compiled = compile(wrapped_node, "file", "exec")
             exec(compiled, function_namespace)
 
             func = function_namespace[node.name]
 
-            if hasattr(node, '__annotations__'):
-                func.__annotations__ = getattr(node, '__annotations__')
+            if hasattr(node, "__annotations__"):
+                func.__annotations__ = getattr(node, "__annotations__")
 
             serialized_func = SerializableFunction(func, self)
             self.persistent_vars[node.name] = serialized_func
@@ -488,12 +546,11 @@ class FactorioNamespace:
             return True
 
         elif isinstance(node, ast.Assign):
-
             # Get the original eval_dict keys before execution
             original_keys = set(eval_dict.keys())
 
             # Compile and execute the assignment
-            compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
+            compiled = compile(ast.Module([node], type_ignores=[]), "file", "exec")
             exec(compiled, eval_dict)
 
             # Find all new or updated variables
@@ -510,7 +567,7 @@ class FactorioNamespace:
 
             # Persist all new or updated variables
             for name in new_or_updated_keys:
-                if name in eval_dict and not name.startswith('_'):
+                if name in eval_dict and not name.startswith("_"):
                     value = eval_dict[name]
                     self.persistent_vars[name] = wrap_for_serialization(value)
                     setattr(self, name, value)
@@ -518,7 +575,7 @@ class FactorioNamespace:
 
         elif isinstance(node, ast.AnnAssign):
             if node.value:
-                compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
+                compiled = compile(ast.Module([node], type_ignores=[]), "file", "exec")
                 exec(compiled, eval_dict)
 
                 if isinstance(node.target, ast.Name):
@@ -527,13 +584,11 @@ class FactorioNamespace:
                         value = eval_dict[name]
                         self.persistent_vars[name] = wrap_for_serialization(value)
                         setattr(self, name, value)
-                        #print(f"{self.tcp_port}: Stored annotated variable {name} - {type(value)}")
+                        # print(f"{self.tcp_port}: Stored annotated variable {name} - {type(value)}")
 
             return True
 
-
         elif isinstance(node, ast.Expr):
-
             # For expressions (including function calls)
             # compiled = compile(ast.Expression(node.value), 'file', 'eval')
             #
@@ -543,7 +598,9 @@ class FactorioNamespace:
             #     pass
 
             # For expressions (including function calls)
-            if isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name):
+            if isinstance(node.value, ast.Call) and isinstance(
+                node.value.func, ast.Name
+            ):
                 func_name = node.value.func.id
                 if func_name in eval_dict:
                     # Get the function from eval_dict
@@ -557,28 +614,41 @@ class FactorioNamespace:
                     args = []
                     kwargs = {}
                     for arg in node.value.args:
-                        args.append(eval(compile(ast.Expression(arg), 'file', 'eval'), eval_dict, eval_dict))
+                        args.append(
+                            eval(
+                                compile(ast.Expression(arg), "file", "eval"),
+                                eval_dict,
+                                eval_dict,
+                            )
+                        )
                     for keyword in node.value.keywords:
                         key = keyword.arg
-                        value = eval(compile(ast.Expression(keyword.value), 'file', 'eval'), eval_dict, eval_dict)
+                        value = eval(
+                            compile(ast.Expression(keyword.value), "file", "eval"),
+                            eval_dict,
+                            eval_dict,
+                        )
                         kwargs[key] = value
 
                     # Call the function and let exceptions propagate
                     response = func(*args, **kwargs)
             else:
                 # For non-function call expressions
-                compiled = compile(ast.Expression(node.value), 'file', 'eval')
+                compiled = compile(ast.Expression(node.value), "file", "eval")
                 response = eval(compiled, eval_dict, eval_dict)
 
             # Only log if it's not a print statement (which has already been converted to log)
             if self.capture_whole_output:
-                if not (isinstance(node.value, ast.Call) and
-
-                        isinstance(node.value.func, ast.Name) and
-
-                        node.value.func.id == 'print'):
-
-                    if response is not True and response is not None and not isinstance(node.value, ast.Constant):
+                if not (
+                    isinstance(node.value, ast.Call)
+                    and isinstance(node.value.func, ast.Name)
+                    and node.value.func.id == "print"
+                ):
+                    if (
+                        response is not True
+                        and response is not None
+                        and not isinstance(node.value, ast.Constant)
+                    ):
                         self._sequential_exception_count = 0
 
                         self.log(response)
@@ -591,8 +661,13 @@ class FactorioNamespace:
             except Exception as e:
                 handled = False
                 for handler in node.handlers:
-                    if handler.type is None or isinstance(e, eval(compile(ast.Expression(handler.type), 'file',
-                                                                          'eval'), eval_dict)):
+                    if handler.type is None or isinstance(
+                        e,
+                        eval(
+                            compile(ast.Expression(handler.type), "file", "eval"),
+                            eval_dict,
+                        ),
+                    ):
                         if handler.name:
                             eval_dict[handler.name] = e
                         self.execute_body(handler.body, eval_dict, handler)
@@ -610,7 +685,7 @@ class FactorioNamespace:
             return True
 
         else:
-            compiled = compile(ast.Module([node], type_ignores=[]), 'file', 'exec')
+            compiled = compile(ast.Module([node], type_ignores=[]), "file", "exec")
             exec(compiled, eval_dict)
             return True
 
@@ -630,17 +705,18 @@ class FactorioNamespace:
                     for value in values:
                         result.append(f"{key}: {value}")
             if len(result) > max_lines:
-                result = [f"{len(result)-max_lines} lines truncated..."] + result[max_lines:]
+                result = [f"{len(result) - max_lines} lines truncated..."] + result[
+                    max_lines:
+                ]
 
             return "\n".join(result)
 
         def find_actual_line_number(node, code_lines):
             """Find the actual line number in the source code for a given node"""
-            if not hasattr(node, 'lineno'):
+            if not hasattr(node, "lineno"):
                 return 0
 
             return node.lineno
-
 
         tree = ast.parse(expr)
         self.logging_results = {}
@@ -648,9 +724,17 @@ class FactorioNamespace:
         self.loop_context = LoopContext()
 
         eval_dict = {
-            **{name: getattr(builtins, name) for name in dir(builtins) if not name.startswith('_')},
-            **{name: getattr(self, name) for name in dir(self) if not name.startswith('_')},
-            **self.persistent_vars
+            **{
+                name: getattr(builtins, name)
+                for name in dir(builtins)
+                if not name.startswith("_")
+            },
+            **{
+                name: getattr(self, name)
+                for name in dir(self)
+                if not name.startswith("_")
+            },
+            **self.persistent_vars,
         }
 
         # Bind any SerializableFunction objects
@@ -668,7 +752,6 @@ class FactorioNamespace:
                 self.execute_node(node, eval_dict)
                 last_successful_state = dict(self.persistent_vars)
             except (Exception, NameError) as e:
-
                 had_error = True
                 self._sequential_exception_count += 1
                 error_traceback = traceback.format_exc()
@@ -679,13 +762,22 @@ class FactorioNamespace:
                     error_message += "Error occurred:\n"
                     for line_num, line_content in error_lines:
                         error_message += f"  Line {line_num}: {line_content}\n"
-                error_type = error_traceback.strip().split('\n')[-1]
+                error_type = error_traceback.strip().split("\n")[-1]
 
-                if isinstance(e, NameError) and "name '" in str(e) and "' is not defined" in str(e):
-                    suggestions = [f"{sug} ({_type})" for sug, _type in self._get_suggestions_from_name_error(eval_dict, str(e))]
+                if (
+                    isinstance(e, NameError)
+                    and "name '" in str(e)
+                    and "' is not defined" in str(e)
+                ):
+                    suggestions = [
+                        f"{sug} ({_type})"
+                        for sug, _type in self._get_suggestions_from_name_error(
+                            eval_dict, str(e)
+                        )
+                    ]
                     error_message += f"\n{error_type}"
                     if suggestions:
-                        error_message+=f"\nDid you mean one of these?\n{suggestions}"
+                        error_message += f"\nDid you mean one of these?\n{suggestions}"
                 else:
                     error_message += f"\n{error_type}"
 
@@ -694,7 +786,7 @@ class FactorioNamespace:
                 if last_successful_state is not None:
                     self.persistent_vars = last_successful_state.copy()
 
-                #if self._sequential_exception_count >= self.max_sequential_exception_count:
+                # if self._sequential_exception_count >= self.max_sequential_exception_count:
                 break
 
             eval_dict.update(self.persistent_vars)
@@ -706,14 +798,14 @@ class FactorioNamespace:
         score, goal = self.score()
         result_output = parse_result_into_str(self.logging_results)
 
-        #if had_error:
-            #raise Exception(result_output)
+        # if had_error:
+        # raise Exception(result_output)
 
         return score, goal, result_output
 
     def get_messages(self) -> List[Dict]:
         return []
-    
+
     def load_messages(self, messages: List[Dict]):
         pass
 
@@ -722,7 +814,7 @@ def wrap_for_serialization(value):
     """Wrap values that need special serialization handling"""
     if isinstance(value, types.FunctionType):
         # Skip builtin functions
-        if value.__module__ == 'builtins':
+        if value.__module__ == "builtins":
             return value
 
         return SerializableFunction(value)
@@ -734,6 +826,3 @@ def unwrap_after_deserialization(instance, value):
     if isinstance(value, SerializableFunction):
         return value.bind(instance)
     return value
-
-
-

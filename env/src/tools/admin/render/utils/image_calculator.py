@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional, Dict, Callable
+from typing import List, Optional, Dict, Callable
 
 from env.src.entities import Entity, Position, BoundingBox, Direction
 from env.src.tools.admin.render.utils.render_config import RenderConfig
@@ -11,10 +11,13 @@ class ImageCalculator:
         self.config = config
         self.boundaries = {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0}
 
-    def calculate_boundaries(self, entities: List[Entity],
-                             center_pos: Optional[Position] = None,
-                             bounding_box: Optional[BoundingBox] = None,
-                             max_tiles: int = 50) -> Dict:
+    def calculate_boundaries(
+        self,
+        entities: List[Entity],
+        center_pos: Optional[Position] = None,
+        bounding_box: Optional[BoundingBox] = None,
+        max_tiles: int = 50,
+    ) -> Dict:
         """
         Calculate the rendering boundaries based on entities, center position, or bounding box
 
@@ -56,10 +59,21 @@ class ImageCalculator:
                 positions = []
                 for entity in entities:
                     pos = entity.position
-                    width = entity.tile_dimensions.tile_width if hasattr(entity, "tile_dimensions") else 1
-                    height = entity.tile_dimensions.tile_height if hasattr(entity, "tile_dimensions") else 1
+                    width = (
+                        entity.tile_dimensions.tile_width
+                        if hasattr(entity, "tile_dimensions")
+                        else 1
+                    )
+                    height = (
+                        entity.tile_dimensions.tile_height
+                        if hasattr(entity, "tile_dimensions")
+                        else 1
+                    )
 
-                    if entity.direction.value in (Direction.LEFT.value, Direction.RIGHT.value):
+                    if entity.direction.value in (
+                        Direction.LEFT.value,
+                        Direction.RIGHT.value,
+                    ):
                         width1 = width
                         width = height
                         height = width1
@@ -89,12 +103,14 @@ class ImageCalculator:
             "min_x": min_x,
             "max_x": max_x,
             "min_y": min_y,
-            "max_y": max_y
+            "max_y": max_y,
         }
 
         return self.boundaries
 
-    def calculate_image_dimensions(self, legend_dimensions: Optional[Dict] = None) -> Dict:
+    def calculate_image_dimensions(
+        self, legend_dimensions: Optional[Dict] = None
+    ) -> Dict:
         """
         Calculate the final image dimensions based on map size and legend
 
@@ -132,7 +148,7 @@ class ImageCalculator:
             "img_width": img_width,
             "img_height": img_height,
             "map_width": map_width,
-            "map_height": map_height
+            "map_height": map_height,
         }
 
     def get_game_to_image_coordinate_function(self) -> Callable:
@@ -148,7 +164,6 @@ class ImageCalculator:
         cell_size = self.config.style["cell_size"]
 
         def game_to_img(x, y):
-            return (margin + (x - min_x) * cell_size,
-                    margin + (y - min_y) * cell_size)
+            return (margin + (x - min_x) * cell_size, margin + (y - min_y) * cell_size)
 
         return game_to_img

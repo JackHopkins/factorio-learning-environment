@@ -1,5 +1,6 @@
 from env.src.entities import Position, BoundingBox
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+
 
 class Camera(BaseModel):
     centroid: Position

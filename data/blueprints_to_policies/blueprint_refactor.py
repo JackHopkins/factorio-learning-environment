@@ -50,10 +50,13 @@ class WorkerState:
         self.last_heartbeat = time.time()
 
     def is_healthy(self) -> bool:
-        return time.time() - self.last_heartbeat < 30  # Consider worker dead if no heartbeat for 30s
+        return (
+            time.time() - self.last_heartbeat < 30
+        )  # Consider worker dead if no heartbeat for 30s
 
     def update_heartbeat(self):
         self.last_heartbeat = time.time()
+
 
 class BlueprintMetrics(NamedTuple):
     total_entities: int
@@ -62,22 +65,24 @@ class BlueprintMetrics(NamedTuple):
     total_attempts: int
     success_rate: float
 
+
 def count_code_lines(code: str) -> int:
     """Count non-empty, non-comment lines of code."""
-    lines = code.split('\n')
-    return sum(1 for line in lines
-              if line.strip()
-              and not line.strip().startswith('#'))
+    lines = code.split("\n")
+    return sum(1 for line in lines if line.strip() and not line.strip().startswith("#"))
+
+
 class BlueprintRefactor:
     """
     Refactor Factorio naive blueprint policies using language models to generate more efficient and diverse code.
     """
+
     def __init__(self, config: RefactorConfig):
         self.config = config
         self.anthropic = Anthropic()
         self.deepseek = OpenAI(
             api_key=os.getenv("DEEPSEEK_API_KEY"),
-            base_url="https://api.deepseek.com/v1"
+            base_url="https://api.deepseek.com/v1",
         )
         self.openai_client = OpenAI(
             api_key=os.getenv("OPENAI_API_KEY"),
@@ -88,11 +93,11 @@ class BlueprintRefactor:
         os.makedirs(log_dir, exist_ok=True)
 
         # Main logger
-        self.logger = logging.getLogger('blueprint_refactor')
+        self.logger = logging.getLogger("blueprint_refactor")
         self.logger.setLevel(logging.INFO)
 
         # File handler for all logs
-        fh = logging.FileHandler(os.path.join(log_dir, 'refactor.log'))
+        fh = logging.FileHandler(os.path.join(log_dir, "refactor.log"))
         fh.setLevel(logging.INFO)
 
         # Console handler for important logs
@@ -100,7 +105,9 @@ class BlueprintRefactor:
         ch.setLevel(logging.INFO)
 
         # Formatting
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         fh.setFormatter(formatter)
         ch.setFormatter(formatter)
 
@@ -110,11 +117,11 @@ class BlueprintRefactor:
         # Create worker-specific loggers
         self.worker_loggers = {}
         for i in range(config.num_workers):
-            worker_logger = logging.getLogger(f'worker_{i}')
+            worker_logger = logging.getLogger(f"worker_{i}")
             worker_logger.setLevel(logging.INFO)
 
             # Worker-specific file handler
-            wfh = logging.FileHandler(os.path.join(log_dir, f'worker_{i}.log'))
+            wfh = logging.FileHandler(os.path.join(log_dir, f"worker_{i}.log"))
             wfh.setFormatter(formatter)
             worker_logger.addHandler(wfh)
             worker_logger.addHandler(ch)  # Also log to console
@@ -140,24 +147,37 @@ class BlueprintRefactor:
 
     def _init_metrics_df(self) -> pd.DataFrame:
         """Initialize or load existing metrics DataFrame."""
-        metrics_file = os.path.join(self.config.output_dir, f"refactor_metrics_{self.config.model}.csv")
+        metrics_file = os.path.join(
+            self.config.output_dir, f"refactor_metrics_{self.config.model}.csv"
+        )
         if os.path.exists(metrics_file):
             return pd.read_csv(metrics_file)
-        return pd.DataFrame(columns=[
-            'model', 'blueprint_name', 'total_entities', 'distinct_entities',
-            'successful_attempts', 'total_attempts', 'success_rate',
-            'original_loc', 'min_refactored_loc', 'max_refactored_loc',
-            'avg_refactored_loc', 'best_compression_ratio', 'avg_compression_ratio'
-        ])
+        return pd.DataFrame(
+            columns=[
+                "model",
+                "blueprint_name",
+                "total_entities",
+                "distinct_entities",
+                "successful_attempts",
+                "total_attempts",
+                "success_rate",
+                "original_loc",
+                "min_refactored_loc",
+                "max_refactored_loc",
+                "avg_refactored_loc",
+                "best_compression_ratio",
+                "avg_compression_ratio",
+            ]
+        )
 
     def _update_metrics(
-            self,
-            base_name: str,
-            blueprint: dict,
-            original_loc: int,
-            refactored_locs: List[int],
-            successful_attempts: int,
-            total_attempts: int
+        self,
+        base_name: str,
+        blueprint: dict,
+        original_loc: int,
+        refactored_locs: List[int],
+        successful_attempts: int,
+        total_attempts: int,
     ):
         """
         Update metrics for a blueprint in a thread-safe manner.
@@ -172,8 +192,10 @@ class BlueprintRefactor:
         """
         with self.results_lock:
             # Calculate complexity metrics
-            total_entities = len(blueprint['entities'])
-            distinct_entities = len({entity['name'] for entity in blueprint['entities']})
+            total_entities = len(blueprint["entities"])
+            distinct_entities = len(
+                {entity["name"] for entity in blueprint["entities"]}
+            )
 
             # Calculate code metrics
             if refactored_locs:
@@ -185,38 +207,47 @@ class BlueprintRefactor:
             else:
                 min_loc = max_loc = avg_loc = best_compression = avg_compression = 0
 
-            success_rate = successful_attempts / total_attempts if total_attempts > 0 else 0
+            success_rate = (
+                successful_attempts / total_attempts if total_attempts > 0 else 0
+            )
 
             # Create new metrics row
-            new_metrics = pd.DataFrame([{
-                'model': self.config.model,
-                'blueprint_name': base_name,
-                'total_entities': total_entities,
-                'distinct_entities': distinct_entities,
-                'successful_attempts': successful_attempts,
-                'total_attempts': total_attempts,
-                'success_rate': success_rate,
-                'original_loc': original_loc,
-                'min_refactored_loc': min_loc,
-                'max_refactored_loc': max_loc,
-                'avg_refactored_loc': avg_loc,
-                'best_compression_ratio': best_compression,
-                'avg_compression_ratio': avg_compression
-            }])
+            new_metrics = pd.DataFrame(
+                [
+                    {
+                        "model": self.config.model,
+                        "blueprint_name": base_name,
+                        "total_entities": total_entities,
+                        "distinct_entities": distinct_entities,
+                        "successful_attempts": successful_attempts,
+                        "total_attempts": total_attempts,
+                        "success_rate": success_rate,
+                        "original_loc": original_loc,
+                        "min_refactored_loc": min_loc,
+                        "max_refactored_loc": max_loc,
+                        "avg_refactored_loc": avg_loc,
+                        "best_compression_ratio": best_compression,
+                        "avg_compression_ratio": avg_compression,
+                    }
+                ]
+            )
 
             # Remove existing metrics for this blueprint/model if any
             self.metrics_df = self.metrics_df[
-                ~((self.metrics_df['blueprint_name'] == base_name) &
-                  (self.metrics_df['model'] == self.config.model))
+                ~(
+                    (self.metrics_df["blueprint_name"] == base_name)
+                    & (self.metrics_df["model"] == self.config.model)
+                )
             ]
 
             # Append new metrics
-            self.metrics_df = pd.concat([self.metrics_df, new_metrics], ignore_index=True)
+            self.metrics_df = pd.concat(
+                [self.metrics_df, new_metrics], ignore_index=True
+            )
 
             # Save metrics to file
             metrics_path = os.path.join(
-                self.config.output_dir,
-                f"refactor_metrics_{self.config.model}.csv"
+                self.config.output_dir, f"refactor_metrics_{self.config.model}.csv"
             )
             self.metrics_df.to_csv(metrics_path, index=False)
 
@@ -239,8 +270,7 @@ class BlueprintRefactor:
         :param size: Size of patch
         :return: A lua script to create more ore
         """
-        return \
-f"""
+        return f"""
 /c local surface=game.players[1].surface
 local ore=nil
 local size={size}
@@ -261,18 +291,24 @@ for y=-size, size do
 	end
 end
 """.strip()
+
     def _init_server_pool(self) -> List[ServerConfig]:
         """Initialize the pool of available Factorio servers."""
         if self.config.cluster_name:
             # Get servers from ECS cluster
             ips = get_public_ips(self.config.cluster_name)
-            self.logger.info(f"Found {len(ips)} servers in ECS cluster {self.config.cluster_name}")
+            self.logger.info(
+                f"Found {len(ips)} servers in ECS cluster {self.config.cluster_name}"
+            )
             return [ServerConfig(ip, 27000) for ip in ips]
         else:
             # Use local development setup
             self.logger.info("No cluster name provided - using local server")
             self.config.num_workers = 1
-            return [ServerConfig('localhost', 27000 + i) for i in range(self.config.num_workers)]
+            return [
+                ServerConfig("localhost", 27000 + i)
+                for i in range(self.config.num_workers)
+            ]
 
     def _worker_heartbeat(self, worker_id: int):
         """Update worker heartbeat and log status."""
@@ -291,7 +327,9 @@ end
         self.worker_states[worker_id] = WorkerState(server_config, worker_id)
         state = self.worker_states[worker_id]
 
-        worker_logger.info(f"Worker {worker_id} starting on {server_config.address}:{server_config.tcp_port}")
+        worker_logger.info(
+            f"Worker {worker_id} starting on {server_config.address}:{server_config.tcp_port}"
+        )
 
         # Start heartbeat thread
         def heartbeat_routine():
@@ -302,7 +340,7 @@ end
         heartbeat_thread = threading.Thread(
             target=heartbeat_routine,
             name=f"heartbeat-{worker_id}",
-            daemon=True  # Make thread daemon so it exits when main thread exits
+            daemon=True,  # Make thread daemon so it exits when main thread exits
         )
         heartbeat_thread.start()
 
@@ -314,17 +352,23 @@ end
                 bounding_box=200,
                 fast=True,
                 cache_scripts=False,
-                inventory={}
+                inventory={},
             )
-            time.sleep(3) # Wait for Factorio to start
-            copper_ore_patch = state.instance.get_resource_patch(Resource.CopperOre, state.instance.nearest(Resource.CopperOre))
+            time.sleep(3)  # Wait for Factorio to start
+            copper_ore_patch = state.instance.get_resource_patch(
+                Resource.CopperOre, state.instance.nearest(Resource.CopperOre)
+            )
             center_position = copper_ore_patch.bounding_box.center
             create_more_ore_command = self._create_more_ore(center_position)
             state.instance.add_command(create_more_ore_command, raw=True)
             state.instance.execute_transaction()
 
-            expanded_copper_ore_patch = state.instance.get_resource_patch(Resource.CopperOre, state.instance.nearest(Resource.CopperOre))
-            assert expanded_copper_ore_patch.size != copper_ore_patch.size, f"Failed to expand copper ore patch from {copper_ore_patch.size} to {expanded_copper_ore_patch.size}"
+            expanded_copper_ore_patch = state.instance.get_resource_patch(
+                Resource.CopperOre, state.instance.nearest(Resource.CopperOre)
+            )
+            assert expanded_copper_ore_patch.size != copper_ore_patch.size, (
+                f"Failed to expand copper ore patch from {copper_ore_patch.size} to {expanded_copper_ore_patch.size}"
+            )
 
             while True:
                 try:
@@ -338,10 +382,7 @@ end
 
                     # Process blueprint
                     self._process_single_blueprint(
-                        blueprint_path,
-                        code_path,
-                        state.instance,
-                        worker_logger
+                        blueprint_path, code_path, state.instance, worker_logger
                     )
 
                     state.busy = False
@@ -358,21 +399,25 @@ end
             if state.instance:
                 state.instance.close()
 
-    def code_contains_required_actions(self, code, required_actions=["connect_entities", "place_entity_next_to"]):
+    def code_contains_required_actions(
+        self, code, required_actions=["connect_entities", "place_entity_next_to"]
+    ):
         return any(action in code for action in required_actions)
 
     def _process_single_blueprint(
-            self,
-            blueprint_path: str,
-            code_path: str,
-            instance: FactorioInstance,
-            logger: logging.Logger
+        self,
+        blueprint_path: str,
+        code_path: str,
+        instance: FactorioInstance,
+        logger: logging.Logger,
     ):
         """Process a single blueprint with the given Factorio instance."""
         base_name = os.path.splitext(os.path.basename(code_path))[0]
 
         # Load files
-        blueprint, original_code = self.load_blueprint_and_code(blueprint_path, code_path)
+        blueprint, original_code = self.load_blueprint_and_code(
+            blueprint_path, code_path
+        )
         original_loc = count_code_lines(original_code)
         original_code = original_code.replace("game.", "")
 
@@ -388,36 +433,48 @@ end
         total_attempts = 0
         refactored_locs = []
 
-        while (successful_attempts < self.config.max_attempts and
-               total_attempts < self.config.max_attempts):
+        while (
+            successful_attempts < self.config.max_attempts
+            and total_attempts < self.config.max_attempts
+        ):
             try:
                 logger.info(f"Attempt {total_attempts + 1} for `{base_name}`")
 
                 # Get refactored code
-                refactored_code = self.get_refactored_code(blueprint, original_code, base_name)
+                refactored_code = self.get_refactored_code(
+                    blueprint, original_code, base_name
+                )
                 refactored_loc = count_code_lines(refactored_code)
-                refactored_code = refactored_code.replace("```python", "").replace("```", "")
+                refactored_code = refactored_code.replace("```python", "").replace(
+                    "```", ""
+                )
 
                 logger.info("Verifying placement...")
-                if self.verify_placement(refactored_code, blueprint, instance, inventory) and self.code_contains_required_actions(refactored_code):
+                if self.verify_placement(
+                    refactored_code, blueprint, instance, inventory
+                ) and self.code_contains_required_actions(refactored_code):
                     # Save successful refactor
                     output_path = os.path.join(
                         base_output_dir,
-                        f"place_entity_next_to_{self.config.model}_{successful_attempts + 1}.py"
+                        f"place_entity_next_to_{self.config.model}_{successful_attempts + 1}.py",
                     )
 
-                    with open(output_path, 'w') as f:
+                    with open(output_path, "w") as f:
                         f.write(refactored_code)
 
                     successful_attempts += 1
                     refactored_locs.append(refactored_loc)
-                    logger.info(f"Successfully generated refactor {successful_attempts} "
-                                f"(Compression: {original_loc / refactored_loc:.2f}x)")
+                    logger.info(
+                        f"Successfully generated refactor {successful_attempts} "
+                        f"(Compression: {original_loc / refactored_loc:.2f}x)"
+                    )
                 else:
                     logger.warning("Refactor failed verification")
 
             except Exception as e:
-                logger.error(f"Error during refactoring attempt: {str(e)}", exc_info=True)
+                logger.error(
+                    f"Error during refactoring attempt: {str(e)}", exc_info=True
+                )
 
             total_attempts += 1
             with self.results_lock:
@@ -431,7 +488,7 @@ end
             original_loc,
             refactored_locs,
             successful_attempts,
-            total_attempts
+            total_attempts,
         )
 
     def process_directory(self, implementation_dir: str, blueprints_dir: str):
@@ -447,8 +504,7 @@ end
                     continue
 
                 blueprint_path = os.path.join(
-                    blueprints_dir,
-                    filename.replace(".py", ".json")
+                    blueprints_dir, filename.replace(".py", ".json")
                 )
                 code_path = os.path.join(implementation_dir, filename)
 
@@ -472,21 +528,28 @@ end
         """Log current status of all workers."""
         status = []
         for worker_id, state in self.worker_states.items():
-            status.append(f"Worker {worker_id} - "
-                          f"{'Busy' if state.busy else 'Idle'} - "
-                          f"Blueprint: {state.current_blueprint or 'None'} - "
-                          f"Healthy: {state.is_healthy()}")
+            status.append(
+                f"Worker {worker_id} - "
+                f"{'Busy' if state.busy else 'Idle'} - "
+                f"Blueprint: {state.current_blueprint or 'None'} - "
+                f"Healthy: {state.is_healthy()}"
+            )
         self.logger.info("Worker Status:\n" + "\n".join(status))
-    def load_blueprint_and_code(self, blueprint_path: str, code_path: str) -> tuple[dict, str]:
+
+    def load_blueprint_and_code(
+        self, blueprint_path: str, code_path: str
+    ) -> tuple[dict, str]:
         """Load the blueprint JSON and corresponding Python code."""
-        with open(blueprint_path, 'r') as f:
+        with open(blueprint_path, "r") as f:
             blueprint = json.loads(f.read())
-        with open(code_path, 'r') as f:
+        with open(code_path, "r") as f:
             original_code = f.read()
         return blueprint, original_code
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10))
-    def get_refactored_code(self, blueprint: dict, original_code: str, base_name: str) -> str:
+    def get_refactored_code(
+        self, blueprint: dict, original_code: str, base_name: str
+    ) -> str:
         """Get refactored code from the specified LLM."""
         prompt = f"""You are an expert Python programmer and player of the game Factorio.
 
@@ -527,7 +590,7 @@ Only return python code between ```python and ``` tags, nothing else.
             response = self.openai_client.chat.completions.create(
                 model=self.config.model,
                 messages=[{"role": "user", "content": prompt}],
-                temperature=self.config.temperature
+                temperature=self.config.temperature,
             )
             return response.choices[0].message.content
 
@@ -536,31 +599,32 @@ Only return python code between ```python and ``` tags, nothing else.
                 model="claude-3-5-sonnet-20241022",
                 temperature=self.config.temperature,
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=4096
+                max_tokens=4096,
             )
             return response.content[0].text
 
         elif self.config.model == "deepseek-coder":
             try:
                 response = self.deepseek.chat.completions.create(
-                    model="deepseek-coder", #-33b-instruct
+                    model="deepseek-coder",  # -33b-instruct
                     messages=[{"role": "user", "content": prompt}],
                     max_tokens=4096,
-                    temperature=self.config.temperature
+                    temperature=self.config.temperature,
                 )
             except openai.error.OpenAIError as e:
                 print(f"Error during DeepSeek request: {str(e)}")
             return response.choices[0].message.content
 
-    def verify_placement(self, code: str, blueprint: dict, instance: FactorioInstance, inventory: dict) -> bool:
+    def verify_placement(
+        self, code: str, blueprint: dict, instance: FactorioInstance, inventory: dict
+    ) -> bool:
         """Verify that the refactored code produces identical entity placement."""
         try:
             instance.reset()
             instance.set_inventory(inventory)
             # Execute the code
             score, goal, result = instance.eval_with_error(
-                code.replace("game.", ""),
-                timeout=60
+                code.replace("game.", ""), timeout=60
             )
 
             if "error" in result:
@@ -578,8 +642,8 @@ Only return python code between ```python and ``` tags, nothing else.
 
     def calculate_blueprint_complexity(self, blueprint: dict) -> tuple[int, int]:
         """Calculate complexity metrics for a blueprint."""
-        total_entities = len(blueprint['entities'])
-        distinct_entities = len({entity['name'] for entity in blueprint['entities']})
+        total_entities = len(blueprint["entities"])
+        distinct_entities = len({entity["name"] for entity in blueprint["entities"]})
         return total_entities, distinct_entities
 
     # def process_blueprint2(self, blueprint_path: str, code_path: str):
@@ -723,45 +787,57 @@ Only return python code between ```python and ``` tags, nothing else.
 
     def save_metrics(self):
         """Save metrics to CSV file."""
-        metrics_path = os.path.join(self.config.output_dir, f"refactor_metrics_(place_next_to)_{self.config.model}.csv")
+        metrics_path = os.path.join(
+            self.config.output_dir,
+            f"refactor_metrics_(place_next_to)_{self.config.model}.csv",
+        )
         self.metrics_df.to_csv(metrics_path, index=False)
 
     def analyze_metrics(self) -> pd.DataFrame:
         """Analyze and return summary statistics of the metrics."""
-        summary = self.metrics_df.groupby('model').agg({
-            'success_rate': ['mean', 'std'],
-            'total_entities': ['mean', 'std'],
-            'distinct_entities': ['mean', 'std'],
-            'best_compression_ratio': ['mean', 'std', 'max'],
-            'avg_compression_ratio': ['mean', 'std']
-        }).round(3)
+        summary = (
+            self.metrics_df.groupby("model")
+            .agg(
+                {
+                    "success_rate": ["mean", "std"],
+                    "total_entities": ["mean", "std"],
+                    "distinct_entities": ["mean", "std"],
+                    "best_compression_ratio": ["mean", "std", "max"],
+                    "avg_compression_ratio": ["mean", "std"],
+                }
+            )
+            .round(3)
+        )
 
         # Calculate correlations
-        correlations = pd.DataFrame({
-            'total_entities_correlation': self.metrics_df.groupby('model').apply(
-                lambda x: x['total_entities'].corr(x['success_rate'])
-            ),
-            'distinct_entities_correlation': self.metrics_df.groupby('model').apply(
-                lambda x: x['distinct_entities'].corr(x['success_rate'])
-            ),
-            'complexity_compression_correlation': self.metrics_df.groupby('model').apply(
-                lambda x: x['total_entities'].corr(x['best_compression_ratio'])
-            )
-        })
+        correlations = pd.DataFrame(
+            {
+                "total_entities_correlation": self.metrics_df.groupby("model").apply(
+                    lambda x: x["total_entities"].corr(x["success_rate"])
+                ),
+                "distinct_entities_correlation": self.metrics_df.groupby("model").apply(
+                    lambda x: x["distinct_entities"].corr(x["success_rate"])
+                ),
+                "complexity_compression_correlation": self.metrics_df.groupby(
+                    "model"
+                ).apply(
+                    lambda x: x["total_entities"].corr(x["best_compression_ratio"])
+                ),
+            }
+        )
 
         return pd.concat([summary, correlations], axis=1)
 
 
 if __name__ == "__main__":
-
-    for model in ['deepseek-coder', 'claude-3', 'gpt-4o']:
+    for model in ["deepseek-coder", "claude-3", "gpt-4o"]:
         config = RefactorConfig(
             model=model,
             temperature=1,
             max_attempts=20,
             output_dir="place_next_to_connect",
             num_workers=8,
-            cluster_name="FactorioCluster"
+            cluster_name="FactorioCluster",
         )
         exec_directory = os.path.dirname(os.path.abspath(__file__))
         refactor = BlueprintRefactor(config)

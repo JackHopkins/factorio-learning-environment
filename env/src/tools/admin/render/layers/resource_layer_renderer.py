@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Callable, List
+from typing import Dict, Callable
 from PIL import ImageDraw
 
 from env.src.tools.admin.render.layers.layer_renderer import LayerRenderer
@@ -12,12 +12,15 @@ class ResourcesLayerRenderer(LayerRenderer):
     def layer_name(self) -> str:
         return "resources"
 
-    def render(self, draw: ImageDraw.ImageDraw,
-               game_to_img_func: Callable,
-               boundaries: Dict[str, float],
-               **kwargs) -> None:
+    def render(
+        self,
+        draw: ImageDraw.ImageDraw,
+        game_to_img_func: Callable,
+        boundaries: Dict[str, float],
+        **kwargs,
+    ) -> None:
         """Draw resource entities (ore patches) on the map"""
-        resources = kwargs.get('resource_entities', [])
+        resources = kwargs.get("resource_entities", [])
         if not resources:
             return
 
@@ -28,7 +31,7 @@ class ResourcesLayerRenderer(LayerRenderer):
             "coal": (50, 50, 50),
             "stone": (130, 130, 110),
             "uranium-ore": (50, 190, 50),
-            "crude-oil": (20, 20, 20)
+            "crude-oil": (20, 20, 20),
         }
 
         cell_size = self.config.style["cell_size"]
@@ -38,14 +41,17 @@ class ResourcesLayerRenderer(LayerRenderer):
 
         for resource in resources:
             # Get resource position and type
-            x, y = resource.get('position', {}).get('x', 0), resource.get('position', {}).get('y', 0)
+            x, y = (
+                resource.get("position", {}).get("x", 0),
+                resource.get("position", {}).get("y", 0),
+            )
 
             # Skip resources outside the grid boundaries
             if x < min_x or x > max_x or y < min_y or y > max_y:
                 continue
 
-            resource_name = resource.get('name', 'unknown')
-            amount = resource.get('amount', 0)
+            resource_name = resource.get("name", "unknown")
+            amount = resource.get("amount", 0)
 
             # Get color based on resource type
             resource_color = resource_colors.get(resource_name, (150, 150, 150))
@@ -66,19 +72,30 @@ class ResourcesLayerRenderer(LayerRenderer):
                 draw.ellipse(
                     [img_x - radius, img_y - radius, img_x + radius, img_y + radius],
                     fill=adjusted_color,
-                    outline=(0, 0, 0)
+                    outline=(0, 0, 0),
                 )
                 # Add oil "bubbles"
                 small_radius = radius / 4
-                offsets = [(radius / 2, 0), (0, radius / 2), (-radius / 2, 0), (0, -radius / 2)]
+                offsets = [
+                    (radius / 2, 0),
+                    (0, radius / 2),
+                    (-radius / 2, 0),
+                    (0, -radius / 2),
+                ]
                 for dx, dy in offsets:
                     draw.ellipse(
-                        [img_x + dx - small_radius, img_y + dy - small_radius,
-                         img_x + dx + small_radius, img_y + dy + small_radius],
-                        fill=(min(adjusted_color[0] + 40, 255),
-                              min(adjusted_color[1] + 40, 255),
-                              min(adjusted_color[2] + 40, 255)),
-                        outline=None
+                        [
+                            img_x + dx - small_radius,
+                            img_y + dy - small_radius,
+                            img_x + dx + small_radius,
+                            img_y + dy + small_radius,
+                        ],
+                        fill=(
+                            min(adjusted_color[0] + 40, 255),
+                            min(adjusted_color[1] + 40, 255),
+                            min(adjusted_color[2] + 40, 255),
+                        ),
+                        outline=None,
                     )
             else:
                 # Other resources are drawn as small squares or diamonds
@@ -89,40 +106,48 @@ class ResourcesLayerRenderer(LayerRenderer):
                     draw.rectangle(
                         [img_x - size, img_y - size, img_x + size, img_y + size],
                         fill=adjusted_color,
-                        outline=(0, 0, 0)
+                        outline=(0, 0, 0),
                     )
 
                     # Add small texture dots
                     dot_size = size / 4
-                    dot_color = (min(adjusted_color[0] + 30, 255),
-                                 min(adjusted_color[1] + 30, 255),
-                                 min(adjusted_color[2] + 30, 255))
+                    dot_color = (
+                        min(adjusted_color[0] + 30, 255),
+                        min(adjusted_color[1] + 30, 255),
+                        min(adjusted_color[2] + 30, 255),
+                    )
 
                     dot_positions = [
                         (img_x - size / 2, img_y - size / 2),
                         (img_x + size / 2, img_y - size / 2),
                         (img_x, img_y),
                         (img_x - size / 2, img_y + size / 2),
-                        (img_x + size / 2, img_y + size / 2)
+                        (img_x + size / 2, img_y + size / 2),
                     ]
 
                     for dot_x, dot_y in dot_positions:
                         draw.ellipse(
-                            [dot_x - dot_size, dot_y - dot_size,
-                             dot_x + dot_size, dot_y + dot_size],
+                            [
+                                dot_x - dot_size,
+                                dot_y - dot_size,
+                                dot_x + dot_size,
+                                dot_y + dot_size,
+                            ],
                             fill=dot_color,
-                            outline=None
+                            outline=None,
                         )
 
                 elif resource_name in ["coal", "stone"]:
                     # Diamond for coal and stone
                     draw.polygon(
-                        [(img_x, img_y - size),  # Top
-                         (img_x + size, img_y),  # Right
-                         (img_x, img_y + size),  # Bottom
-                         (img_x - size, img_y)],  # Left
+                        [
+                            (img_x, img_y - size),  # Top
+                            (img_x + size, img_y),  # Right
+                            (img_x, img_y + size),  # Bottom
+                            (img_x - size, img_y),
+                        ],  # Left
                         fill=adjusted_color,
-                        outline=(0, 0, 0)
+                        outline=(0, 0, 0),
                     )
 
                 elif resource_name == "uranium-ore":
@@ -130,16 +155,20 @@ class ResourcesLayerRenderer(LayerRenderer):
                     draw.ellipse(
                         [img_x - size, img_y - size, img_x + size, img_y + size],
                         fill=adjusted_color,
-                        outline=(0, 0, 0)
+                        outline=(0, 0, 0),
                     )
 
                     # Draw radiation symbol inside
                     inner_radius = size * 0.5
                     draw.ellipse(
-                        [img_x - inner_radius, img_y - inner_radius,
-                         img_x + inner_radius, img_y + inner_radius],
+                        [
+                            img_x - inner_radius,
+                            img_y - inner_radius,
+                            img_x + inner_radius,
+                            img_y + inner_radius,
+                        ],
                         fill=(0, 0, 0),
-                        outline=None
+                        outline=None,
                     )
 
                     # Radiation "blades"
@@ -153,7 +182,7 @@ class ResourcesLayerRenderer(LayerRenderer):
                         draw.polygon(
                             [(img_x, img_y), (mid_x, mid_y), (end_x, end_y)],
                             fill=adjusted_color,
-                            outline=None
+                            outline=None,
                         )
                 else:
                     # Default shape (hexagon)
@@ -164,8 +193,4 @@ class ResourcesLayerRenderer(LayerRenderer):
                         py = img_y + size * math.sin(angle)
                         points.append((px, py))
 
-                    draw.polygon(
-                        points,
-                        fill=adjusted_color,
-                        outline=(0, 0, 0)
-                    )
+                    draw.polygon(points, fill=adjusted_color, outline=(0, 0, 0))

@@ -74,3 +74,12 @@ environment/src/skills/ground_truth_skills/*
 /factorio_learning_environment.egg-info/
 /dist/
 /build/
+
+# uv lock file
+uv.lock
+
+# Docker compose generated files  
+cluster/local/docker-compose.yml
+
+# Database files
+*.db

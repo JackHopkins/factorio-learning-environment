@@ -6,11 +6,12 @@ from env.src.tools.tool import Tool
 
 
 class SetEntityRecipe(Tool):
-
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
-    def __call__(self, entity: Entity, prototype: Union[Prototype, RecipeName]) -> Entity:
+    def __call__(
+        self, entity: Entity, prototype: Union[Prototype, RecipeName]
+    ) -> Entity:
         """
         Sets the recipe of an given entity.
         :param entity: Entity to set recipe
@@ -30,19 +31,23 @@ class SetEntityRecipe(Tool):
         response, elapsed = self.execute(self.player_index, name, x, y)
 
         if not isinstance(response, dict):
-            raise Exception(f"Could not set recipe to {name}"+str(response).split(":")[-1].strip())
+            raise Exception(
+                f"Could not set recipe to {name}" + str(response).split(":")[-1].strip()
+            )
 
         cleaned_response = self.clean_response(response)
 
         # Find the matching Prototype
         matching_prototype = None
         for prototype in Prototype:
-            if prototype.value[0] == cleaned_response['name'].replace('_', '-'):
+            if prototype.value[0] == cleaned_response["name"].replace("_", "-"):
                 matching_prototype = prototype
                 break
 
         if matching_prototype is None:
-            print(f"Warning: No matching Prototype found for {cleaned_response['name']}")
+            print(
+                f"Warning: No matching Prototype found for {cleaned_response['name']}"
+            )
             raise Exception(f"Could not set recipe to {name}", response)
 
         metaclass = matching_prototype.value[1]
@@ -50,7 +55,7 @@ class SetEntityRecipe(Tool):
         entity = metaclass(**cleaned_response, prototype=matching_prototype)
 
         # Handle filter inserters differently
-        if 'filter' in entity.name:
+        if "filter" in entity.name:
             entity.filter = name  # Store the filter item
         else:
             entity.recipe = name  # Store the recipe for assembling machines

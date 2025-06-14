@@ -14,6 +14,7 @@ from instance import FactorioInstance
 
 load_dotenv()
 
+
 class BlueprintsToPrograms:
     """Samples scenarios from existing Factorio blueprint implementations in the `skills` table."""
 
@@ -29,7 +30,9 @@ class BlueprintsToPrograms:
         self.system_prompt = system_prompt
         self.conn = psycopg2.connect(**db_config)
 
-    def _get_blueprint_scenarios(self, limit: int = 100, version: str = 'v1.4') -> List[Dict]:
+    def _get_blueprint_scenarios(
+        self, limit: int = 100, version: str = "v1.4"
+    ) -> List[Dict]:
         """Get blueprint scenarios from skills database"""
         query = """
             SELECT description, implementation, score, complexity, dependencies
@@ -42,15 +45,18 @@ class BlueprintsToPrograms:
         """
 
         with self.conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute(query, (version, limit, ))
+            cur.execute(
+                query,
+                (
+                    version,
+                    limit,
+                ),
+            )
             return [dict(row) for row in cur.fetchall()]
 
-
-
-    def sample_scenarios(self,
-                               n_samples: int = 10,
-                               version: int = 17,
-                               skill_version: str = 'v1.4') -> List[Program]:
+    def sample_scenarios(
+        self, n_samples: int = 10, version: int = 17, skill_version: str = "v1.4"
+    ) -> List[Program]:
         """
         Sample scenarios and create seed programs
 
@@ -62,41 +68,45 @@ class BlueprintsToPrograms:
             List of Program objects ready for seeding
         """
         # Get blueprint scenarios
-        blueprints = self._get_blueprint_scenarios(limit=n_samples, version=skill_version)
+        blueprints = self._get_blueprint_scenarios(
+            limit=n_samples, version=skill_version
+        )
 
         programs = []
 
         for blueprint in blueprints:
             # Parse depenencies into inventory object
-            dependencies = blueprint['dependencies']
+            dependencies = blueprint["dependencies"]
             inventory = {}
             for dependency in dependencies:
-                item, count = dependency.strip().split(':')
-                inventory[item.strip("\'")] = int(count)
+                item, count = dependency.strip().split(":")
+                inventory[item.strip("'")] = int(count)
 
-            implementation = blueprint['implementation']
-            objective = blueprint['description']
+            implementation = blueprint["implementation"]
+            objective = blueprint["description"]
             if not objective.startswith('"""'):
                 objective = f'"""\n{objective}\n"""'
 
             # Create conversation context
-            conversation = Conversation(messages=[
-                Message(role="system", content=self.system_prompt),
-                Message(role="user", content=f"Starting Inventory: {inventory}"),
-                Message(role="assistant", content=objective),
-                Message(role="user", content=f"Execution result: \n"),
-                Message(role="assistant", content=implementation.strip())
-            ])
+            conversation = Conversation(
+                messages=[
+                    Message(role="system", content=self.system_prompt),
+                    Message(role="user", content=f"Starting Inventory: {inventory}"),
+                    Message(role="assistant", content=objective),
+                    Message(role="user", content="Execution result: \n"),
+                    Message(role="assistant", content=implementation.strip()),
+                ]
+            )
 
             # Create seed program
             program = Program(
                 id=hash((objective, str(conversation.messages))),
                 code=implementation.strip(),
                 conversation=conversation,
-                value=float(blueprint['score']),  # Use skill score as initial value
+                value=float(blueprint["score"]),  # Use skill score as initial value
                 state=None,
                 version=version,  # Set appropriate version
-                version_description="Blueprint-based scenario seed"
+                version_description="Blueprint-based scenario seed",
             )
 
             programs.append(program)
@@ -105,38 +115,47 @@ class BlueprintsToPrograms:
 
     def __del__(self):
         """Clean up database connection"""
-        if hasattr(self, 'conn'):
+        if hasattr(self, "conn"):
             self.conn.close()
 
-async def save():
-    instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=27000,
-                                cache_scripts=False,
-                                inventory={})
 
-    blueprints_to_programs = BlueprintsToPrograms(db_config={
-        'host': os.getenv("SKILLS_DB_HOST"),
-        'port': os.getenv("SKILLS_DB_PORT"),
-        'dbname': os.getenv("SKILLS_DB_NAME"),
-        'user': os.getenv("SKILLS_DB_USER"),
-        'password': os.getenv("SKILLS_DB_PASSWORD")
-    }, system_prompt=instance.get_system_prompt())
+async def save():
+    instance = FactorioInstance(
+        address="localhost",
+        bounding_box=200,
+        tcp_port=27000,
+        cache_scripts=False,
+        inventory={},
+    )
+
+    blueprints_to_programs = BlueprintsToPrograms(
+        db_config={
+            "host": os.getenv("SKILLS_DB_HOST"),
+            "port": os.getenv("SKILLS_DB_PORT"),
+            "dbname": os.getenv("SKILLS_DB_NAME"),
+            "user": os.getenv("SKILLS_DB_USER"),
+            "password": os.getenv("SKILLS_DB_PASSWORD"),
+        },
+        system_prompt=instance.get_system_prompt(),
+    )
 
     scenarios = blueprints_to_programs.sample_scenarios(n_samples=1000)
 
-    db_client = DBClient(**{
-        'host': os.getenv("SKILLS_DB_HOST"),
-        'port': os.getenv("SKILLS_DB_PORT"),
-        'dbname': os.getenv("SKILLS_DB_NAME"),
-        'user': os.getenv("SKILLS_DB_USER"),
-        'password': os.getenv("SKILLS_DB_PASSWORD")
-    })
+    db_client = DBClient(
+        **{
+            "host": os.getenv("SKILLS_DB_HOST"),
+            "port": os.getenv("SKILLS_DB_PORT"),
+            "dbname": os.getenv("SKILLS_DB_NAME"),
+            "user": os.getenv("SKILLS_DB_USER"),
+            "password": os.getenv("SKILLS_DB_PASSWORD"),
+        }
+    )
 
     for scenario in scenarios:
         scenario.version = 19
         scenario.version_description = "Layout"
         await db_client.create_program(scenario)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     asyncio.run(save())

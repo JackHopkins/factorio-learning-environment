@@ -1,7 +1,9 @@
 import unittest
 from unittest.mock import Mock
 
-from eval.open.mcts.samplers.dynamic_reward_weighted_sampler import DynamicRewardWeightedSampler
+from eval.open.mcts.samplers.dynamic_reward_weighted_sampler import (
+    DynamicRewardWeightedSampler,
+)
 
 
 class TestWeightedRewardSampler(unittest.TestCase):
@@ -14,7 +16,6 @@ class TestWeightedRewardSampler(unittest.TestCase):
         )
 
     async def test_sample_parent_with_lookback(self):
-
         depths = []
         # Test sampling with single result
         for _ in range(100):
@@ -30,5 +31,5 @@ class TestWeightedRewardSampler(unittest.TestCase):
         self.assertEqual(min_depth, 24)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

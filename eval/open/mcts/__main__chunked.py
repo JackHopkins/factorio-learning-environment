@@ -16,27 +16,31 @@ from models.conversation import Conversation
 from models.message import Message
 from eval.open.mcts.parallel_mcts import ParallelMCTS
 from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
-from agents.utils.formatters.conversation_formatter_abc import StructurePreservingFormatter, PLANNING_ADDITION_PROMPT
+from agents.utils.formatters.conversation_formatter_abc import (
+    StructurePreservingFormatter,
+    PLANNING_ADDITION_PROMPT,
+)
 from eval.open.db_client import DBClient
 from models.game_state import GameState
 from models.program import Program
-from eval.open.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
+from eval.open.mcts.samplers.kld_achievement_sampler import (
+    KLDiversityAchievementSampler,
+)
 from instance import FactorioInstance
 from agents.utils.llm_factory import LLMFactory
 from cluster.local.cluster_ips import get_local_container_ips
 
 # Configure environment
-os.environ.update({
-    "FORCE_COLOR": "1",
-    "TERM": "xterm-256color"
-})
+os.environ.update({"FORCE_COLOR": "1", "TERM": "xterm-256color"})
 
 load_dotenv()
-#MODEL = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-unmasked:AYH6LsSe"
+# MODEL = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-unmasked:AYH6LsSe"
 MODEL = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:mcts-pruned-masked:AYIViDdb"
+
 
 def create_factorio_instances() -> List[FactorioInstance]:
     """Create Factorio instances in parallel from local servers"""
+
     def init_instance(params: Tuple[str, int, int]) -> FactorioInstance:
         ip, udp_port, tcp_port = params
         return FactorioInstance(
@@ -45,12 +49,13 @@ def create_factorio_instances() -> List[FactorioInstance]:
             bounding_box=200,
             fast=True,
             cache_scripts=False,
-            inventory={}
+            inventory={},
         )
 
     ips, udp_ports, tcp_ports = get_local_container_ips()
     with concurrent.futures.ThreadPoolExecutor() as executor:
         return list(executor.map(init_instance, zip(ips, udp_ports, tcp_ports)))
+
 
 async def create_seed_programs(
     mcts: ChunkedMCTS,
@@ -85,17 +90,26 @@ async def create_seed_programs(
         objective = f'"""\n{objective.strip()}\n"""'
 
         # Create conversation context
-        conversation = Conversation(messages=[
-            Message(role="system", content=mcts.system_prompt),
-            Message(role="user", content=f"Starting Inventory: {game_state.inventories[0].dict()}"),
-            Message(role="assistant", content=objective)
-        ])
+        conversation = Conversation(
+            messages=[
+                Message(role="system", content=mcts.system_prompt),
+                Message(
+                    role="user",
+                    content=f"Starting Inventory: {game_state.inventories[0].dict()}",
+                ),
+                Message(role="assistant", content=objective),
+            ]
+        )
 
         # Extract token usage
         try:
-            token_usage = getattr(response.usage, 'total_tokens', None)
-            completion_tokens = getattr(response.usage, 'completion_tokens', response.usage.output_tokens)
-            prompt_tokens = getattr(response.usage, 'prompt_tokens', response.usage.input_tokens)
+            token_usage = getattr(response.usage, "total_tokens", None)
+            completion_tokens = getattr(
+                response.usage, "completion_tokens", response.usage.output_tokens
+            )
+            prompt_tokens = getattr(
+                response.usage, "prompt_tokens", response.usage.input_tokens
+            )
         except AttributeError:
             completion_tokens = response.usage.completion_tokens
             prompt_tokens = response.usage.prompt_tokens
@@ -113,7 +127,7 @@ async def create_seed_programs(
             token_usage=token_usage,
             completion_token_usage=completion_tokens,
             prompt_token_usage=prompt_tokens,
-            model=MODEL
+            model=MODEL,
         )
         seeded_programs.append(program)
 
@@ -121,20 +135,27 @@ async def create_seed_programs(
 
 
 async def get_seed_programs(
-        mcts: ChunkedMCTS,
-        plan_sampler: 'PlanSampler',
-        n_seeds: int = 100,
+    mcts: ChunkedMCTS,
+    plan_sampler: "PlanSampler",
+    n_seeds: int = 100,
 ) -> List[Program]:
     existing_rewards = await mcts.db.get_all_program_rewards(version=mcts.version)
     # filter out rewards < 0
     existing_rewards = list(filter(lambda x: x >= 0, existing_rewards))
-    default_reward = (max(existing_rewards)-min(existing_rewards))/2 if existing_rewards else 10.0
+    default_reward = (
+        (max(existing_rewards) - min(existing_rewards)) / 2
+        if existing_rewards
+        else 10.0
+    )
     seeded_programs: List[Program] = []
     instance = mcts.evaluator.instances[0]
 
     # Get all available scenarios
-    scenarios = [f for f in os.listdir(plan_sampler.starting_scenarios_folder)
-                 if os.path.isdir(os.path.join(plan_sampler.starting_scenarios_folder, f))]
+    scenarios = [
+        f
+        for f in os.listdir(plan_sampler.starting_scenarios_folder)
+        if os.path.isdir(os.path.join(plan_sampler.starting_scenarios_folder, f))
+    ]
 
     seeds_per_scenario = n_seeds // len(scenarios)
     remaining_seeds = n_seeds % len(scenarios)
@@ -153,15 +174,19 @@ async def get_seed_programs(
             if len(objective) < 100:
                 continue
 
-            conversation = Conversation(messages=[
-                Message(role="system", content=mcts.system_prompt),
-                Message(role="user",
-                        content=f"Inventory: {json.dumps(game_state.inventories[0].__dict__)}\n\n{PLANNING_ADDITION_PROMPT}"),
-                Message(role="assistant", content=objective)
-            ])
-            messages = conversation.model_dump()['messages']
+            conversation = Conversation(
+                messages=[
+                    Message(role="system", content=mcts.system_prompt),
+                    Message(
+                        role="user",
+                        content=f"Inventory: {json.dumps(game_state.inventories[0].__dict__)}\n\n{PLANNING_ADDITION_PROMPT}",
+                    ),
+                    Message(role="assistant", content=objective),
+                ]
+            )
+            messages = conversation.model_dump()["messages"]
             if not objective.strip().startswith('"""'):
-                objective = '"""\n'+objective
+                objective = '"""\n' + objective
 
             program = Program(
                 id=hash((objective, json.dumps(messages))),
@@ -171,10 +196,16 @@ async def get_seed_programs(
                 state=game_state,
                 version=mcts.version,
                 version_description=mcts.version_description,
-                token_usage=response.usage.total_tokens if hasattr(response, 'usage') else None,
-                completion_token_usage=response.usage.completion_tokens if hasattr(response, 'usage') else None,
-                prompt_token_usage=response.usage.prompt_tokens if hasattr(response, 'usage') else None,
-                model=MODEL
+                token_usage=response.usage.total_tokens
+                if hasattr(response, "usage")
+                else None,
+                completion_token_usage=response.usage.completion_tokens
+                if hasattr(response, "usage")
+                else None,
+                prompt_token_usage=response.usage.prompt_tokens
+                if hasattr(response, "usage")
+                else None,
+                model=MODEL,
             )
             seeded_programs.append(program)
 
@@ -182,18 +213,14 @@ async def get_seed_programs(
 
 
 async def create_blueprint_seeds(
-        mcts: ChunkedMCTS,
-        db_config: Dict[str, str],
-        n_seeds: int = 10
+    mcts: ChunkedMCTS, db_config: Dict[str, str], n_seeds: int = 10
 ) -> List[Program]:
     """Generate seed programs from blueprint scenarios"""
     sampler = BlueprintScenarioSampler(
-        db_config=db_config,
-        system_prompt=mcts.system_prompt
+        db_config=db_config, system_prompt=mcts.system_prompt
     )
     return await sampler.sample_scenarios(
-        instance=mcts.evaluator.instances[0],
-        n_samples=n_seeds
+        instance=mcts.evaluator.instances[0], n_samples=n_seeds
     )
 
 
@@ -202,29 +229,28 @@ async def main():
     CONFIG = {
         #'model': "ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91",
         "model": MODEL,
-        'prompt_path': "../../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_refined.md",
-        'version': 42,
-        'version_desc': "Chunked / KLD Diversity Sampling / Tick based sleep / Step-wise evaluation",
-        'max_conv_len': 30,
-        'logit_bias': { # We add these logit biases to prevent sampling the truncated code of previous messages.
+        "prompt_path": "../../prompts/bottoms_up_prompts/finetuning_prompts/system_message_policy_refined.md",
+        "version": 42,
+        "version_desc": "Chunked / KLD Diversity Sampling / Tick based sleep / Step-wise evaluation",
+        "max_conv_len": 30,
+        "logit_bias": {  # We add these logit biases to prevent sampling the truncated code of previous messages.
             "15714": -100,  # 'LINE'
-            "145968": -100, # ' CUT'
-            "27": -100,     # '<'
-            "20225": -100,   # '/>'
-            "7032": -100 # while (we don't like while loops)
-        }
+            "145968": -100,  # ' CUT'
+            "27": -100,  # '<'
+            "20225": -100,  # '/>'
+            "7032": -100,  # while (we don't like while loops)
+        },
     }
 
-
     # Initialize components
-    llm = LLMFactory(CONFIG['model'])
+    llm = LLMFactory(CONFIG["model"])
     db_client = DBClient(
-        max_conversation_length=CONFIG['max_conv_len'],
+        max_conversation_length=CONFIG["max_conv_len"],
         host=os.getenv("SKILLS_DB_HOST"),
         port=os.getenv("SKILLS_DB_PORT"),
         dbname=os.getenv("SKILLS_DB_NAME"),
         user=os.getenv("SKILLS_DB_USER"),
-        password=os.getenv("SKILLS_DB_PASSWORD")
+        password=os.getenv("SKILLS_DB_PASSWORD"),
     )
 
     # Sampler
@@ -238,7 +264,7 @@ async def main():
     initial_state = GameState.from_instance(instances[0])
 
     # Load system prompt
-    #with open(CONFIG['prompt_path']) as f:
+    # with open(CONFIG['prompt_path']) as f:
     #    system_prompt = f.read().format(schema=instances[0].get_system_prompt())
     system_prompt = instances[0].get_system_prompt()
 
@@ -251,18 +277,15 @@ async def main():
         mcts_class=ChunkedMCTS,
         sampler=sampler,
         mcts_kwargs={
-            'logit_bias': CONFIG['logit_bias'],
-            'version': CONFIG['version'],
-            'version_description': CONFIG['version_desc'],
-            'formatter': StructurePreservingFormatter(planning=True)
-        }
+            "logit_bias": CONFIG["logit_bias"],
+            "version": CONFIG["version"],
+            "version_description": CONFIG["version_desc"],
+            "formatter": StructurePreservingFormatter(planning=True),
+        },
     )
 
     parallel_mcts = ParallelMCTS(
-        instances=instances,
-        db_client=db_client,
-        llm_factory=llm,
-        config=mcts_config
+        instances=instances, db_client=db_client, llm_factory=llm, config=mcts_config
     )
 
     # Generate and save seed programs from the finetuned model.
@@ -293,5 +316,6 @@ async def main():
     print("Starting MCTS search...")
     await parallel_mcts.search(n_iterations=1000, skip_failures=False)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     asyncio.run(main())

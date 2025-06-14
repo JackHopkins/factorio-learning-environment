@@ -1,5 +1,4 @@
 from time import sleep
-from typing import Tuple
 
 from env.src.entities import Position, Entity
 
@@ -9,7 +8,6 @@ from env.src.tools.tool import Tool
 
 
 class GetEntity(Tool):
-
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
         self.get_entities = GetEntities(connection, game_state)
@@ -24,13 +22,27 @@ class GetEntity(Tool):
         assert isinstance(entity, Prototype)
         assert isinstance(position, Position)
         if entity == Prototype.BeltGroup:
-            entities = self.get_entities({Prototype.TransportBelt, Prototype.FastTransportBelt, Prototype.ExpressTransportBelt}, position=position)
+            entities = self.get_entities(
+                {
+                    Prototype.TransportBelt,
+                    Prototype.FastTransportBelt,
+                    Prototype.ExpressTransportBelt,
+                },
+                position=position,
+            )
             return entities[0] if len(entities) > 0 else None
         elif entity == Prototype.PipeGroup:
             entities = self.get_entities({Prototype.Pipe}, position=position)
             return entities[0] if len(entities) > 0 else None
         elif entity == Prototype.ElectricityGroup:
-            entities = self.get_entities({Prototype.SmallElectricPole, Prototype.MediumElectricPole, Prototype.BigElectricPole}, position=position)
+            entities = self.get_entities(
+                {
+                    Prototype.SmallElectricPole,
+                    Prototype.MediumElectricPole,
+                    Prototype.BigElectricPole,
+                },
+                position=position,
+            )
             return entities[0] if len(entities) > 0 else None
         else:
             try:
@@ -43,16 +55,18 @@ class GetEntity(Tool):
                 response, elapsed = self.execute(self.player_index, name, x, y)
 
                 if response is None or response == {} or isinstance(response, str):
-                    msg = response.split(':')[-1]
+                    msg = response.split(":")[-1]
                     raise Exception(msg)
 
                 cleaned_response = self.clean_response(response)
                 try:
                     object = metaclass(prototype=entity.name, **cleaned_response)
                 except Exception as e:
-                    raise Exception(f"Could not create {name} object from response (get entity): {cleaned_response}", e)
+                    raise Exception(
+                        f"Could not create {name} object from response (get entity): {cleaned_response}",
+                        e,
+                    )
 
                 return object
             except Exception as e:
                 raise Exception(f"Could not get {entity} at position {position}", e)
-

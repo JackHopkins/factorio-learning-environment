@@ -10,28 +10,26 @@ from models.message import Message
 temp_dir = tempfile.mkdtemp()
 mock_llm = Mock(spec=LLMFactory)
 formatter = RecursiveFormatter(
-            chunk_size=16,  # Smaller chunk size for testing
-            llm_factory=mock_llm,
-            cache_dir=temp_dir
+    chunk_size=16,  # Smaller chunk size for testing
+    llm_factory=mock_llm,
+    cache_dir=temp_dir,
 )
 
 
 def create_test_conversation(length: int) -> Conversation:
     """Helper to create a test conversation of specified length."""
-    messages = [
-        Message(
-            role="system",
-            content="You are a helpful assistant."
-        )
-    ]
+    messages = [Message(role="system", content="You are a helpful assistant.")]
 
     for i in range(length):
-        messages.extend([
-            Message(role="user", content=f"Message {i}"),
-            Message(role="assistant", content=f"Response {i}")
-        ])
+        messages.extend(
+            [
+                Message(role="user", content=f"Message {i}"),
+                Message(role="assistant", content=f"Response {i}"),
+            ]
+        )
 
     return Conversation(messages=messages)
+
 
 async def main():
     mock_response = Mock()
@@ -45,6 +43,6 @@ async def main():
     pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.get_event_loop().set_debug(True)
     asyncio.run(main())

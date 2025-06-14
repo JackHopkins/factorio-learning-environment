@@ -1,6 +1,6 @@
 import pytest
 
-from entities import Position, Direction, Recipe, EntityStatus
+from entities import Position, Direction, EntityStatus
 from game_types import Prototype, Resource, RecipeName
 
 
@@ -8,17 +8,17 @@ from game_types import Prototype, Resource, RecipeName
 def game(instance):
     instance.initial_inventory = {
         **instance.initial_inventory,
-        'nuclear-reactor': 1,
-        'uranium-fuel-cell': 10,
-        'heat-exchanger': 5,
-        'heat-pipe': 100,
-        'pipe': 100,
-        'offshore-pump': 1,
-        'steam-engine': 5,
-        'centrifuge': 1,
-        'uranium-ore': 100,
-        'inserter': 5,
-        'iron-chest': 5
+        "nuclear-reactor": 1,
+        "uranium-fuel-cell": 10,
+        "heat-exchanger": 5,
+        "heat-pipe": 100,
+        "pipe": 100,
+        "offshore-pump": 1,
+        "steam-engine": 5,
+        "centrifuge": 1,
+        "uranium-ore": 100,
+        "inserter": 5,
+        "iron-chest": 5,
     }
     instance.speed(10)
     instance.reset()
@@ -36,8 +36,12 @@ def test_centrifuge(game):
 
     # Place and connect basic power setup
     pump = game.place_entity(Prototype.OffshorePump, position=water_pos)
-    boiler = game.place_entity_next_to(Prototype.Boiler, pump.position, Direction.RIGHT, spacing=5)
-    engine = game.place_entity_next_to(Prototype.SteamEngine, boiler.position, Direction.DOWN, spacing=5)
+    boiler = game.place_entity_next_to(
+        Prototype.Boiler, pump.position, Direction.RIGHT, spacing=5
+    )
+    engine = game.place_entity_next_to(
+        Prototype.SteamEngine, boiler.position, Direction.DOWN, spacing=5
+    )
 
     # Connect water system
     game.connect_entities(pump, boiler, Prototype.Pipe)
@@ -47,9 +51,15 @@ def test_centrifuge(game):
     game.insert_item(Prototype.Coal, boiler, quantity=5)
 
     # Place centrifuge with some spacing from power generation
-    centrifuge = game.place_entity_next_to(Prototype.Centrifuge, engine.position, Direction.RIGHT, spacing=2)
-    inserter = game.place_entity_next_to(Prototype.BurnerInserter, centrifuge.position, Direction.DOWN)
-    chest = game.place_entity_next_to(Prototype.IronChest, inserter.position, Direction.DOWN)
+    centrifuge = game.place_entity_next_to(
+        Prototype.Centrifuge, engine.position, Direction.RIGHT, spacing=2
+    )
+    inserter = game.place_entity_next_to(
+        Prototype.BurnerInserter, centrifuge.position, Direction.DOWN
+    )
+    chest = game.place_entity_next_to(
+        Prototype.IronChest, inserter.position, Direction.DOWN
+    )
     # Connect power to centrifuge
     game.connect_entities(engine, centrifuge, Prototype.SmallElectricPole)
 
@@ -77,7 +87,11 @@ def test_centrifuge(game):
 
     # Verify output exists (should have both U-235 and U-238)
     inventory = game.inspect_inventory(chest)
-    assert (inventory.get(Prototype.Uranium235, 0) > 0 or inventory.get(Prototype.Uranium238, 0) > 0)
+    assert (
+        inventory.get(Prototype.Uranium235, 0) > 0
+        or inventory.get(Prototype.Uranium238, 0) > 0
+    )
+
 
 def test_nuclear_reactor(game):
     # Initialize starting position at origin coordinates
@@ -89,7 +103,9 @@ def test_nuclear_reactor(game):
     game.insert_item(Prototype.UraniumFuelCell, reactor, quantity=10)
 
     # Place heat exchanger below the reactor to transfer heat to water
-    heat_exchanger = game.place_entity_next_to(Prototype.HeatExchanger, reactor.position, Direction.DOWN)
+    heat_exchanger = game.place_entity_next_to(
+        Prototype.HeatExchanger, reactor.position, Direction.DOWN
+    )
 
     # Find nearest water source and move to it
     water_pos = game.nearest(Resource.Water)
@@ -102,10 +118,14 @@ def test_nuclear_reactor(game):
     game.connect_entities(heat_exchanger, pump, Prototype.Pipe)
 
     # Place steam engine 3 units below heat exchanger to generate electricity from steam
-    engine = game.place_entity_next_to(Prototype.SteamEngine, heat_exchanger.position, Direction.DOWN, spacing=3)
+    engine = game.place_entity_next_to(
+        Prototype.SteamEngine, heat_exchanger.position, Direction.DOWN, spacing=3
+    )
 
     # Place assembling machine 2 units to the right of steam engine as power consumer
-    assembler = game.place_entity_next_to(Prototype.AssemblingMachine1, engine.position, Direction.RIGHT, spacing=2)
+    assembler = game.place_entity_next_to(
+        Prototype.AssemblingMachine1, engine.position, Direction.RIGHT, spacing=2
+    )
 
     # Connect steam engine to heat exchanger with pipes for steam transfer
     game.connect_entities(engine, heat_exchanger, Prototype.Pipe)

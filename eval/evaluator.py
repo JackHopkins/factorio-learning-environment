@@ -13,18 +13,21 @@ from utils.profits import get_achievements
 
 
 class Evaluator:
-    def __init__(self,
-                 db_client: DBClient,
-                 instances: List[FactorioInstance],
-                 value_accrual_time=10,
-                 error_penalty=10,
-                 logger=None):
+    def __init__(
+        self,
+        db_client: DBClient,
+        instances: List[FactorioInstance],
+        value_accrual_time=10,
+        error_penalty=10,
+        logger=None,
+    ):
         self.db = db_client
         self.instances = instances  # Main instances
-        #self.holdout = instances[-1]  # Holdout instance
-        self.value_accrual_time = value_accrual_time  # Time to accrue value before evaluating
+        # self.holdout = instances[-1]  # Holdout instance
+        self.value_accrual_time = (
+            value_accrual_time  # Time to accrue value before evaluating
+        )
         self.error_penalty = error_penalty  # Penalty for errors during evaluation
-
 
         # Initialize logger if not provided
         if not logger:
@@ -35,16 +38,14 @@ class Evaluator:
 
         # Create instance ID to TCP port mapping
         self.instance_to_port = {
-            i: instance.tcp_port
-            for i, instance in enumerate(self.instances)
+            i: instance.tcp_port for i, instance in enumerate(self.instances)
         }
-        #self.instance_to_port[len(self.instances)] = self.holdout.tcp_port  # Add holdout mapping
-
+        # self.instance_to_port[len(self.instances)] = self.holdout.tcp_port  # Add holdout mapping
 
         if logger:
             self.port_to_group = logger.port_to_group
             # Find the group ID for the holdout instance
-            #self.holdout_group_id = self.port_to_group[self.holdout.tcp_port]
+            # self.holdout_group_id = self.port_to_group[self.holdout.tcp_port]
 
     def set_status(self, status):
         for instance in self.instances:
@@ -56,34 +57,42 @@ class Evaluator:
             for instance in self.instances:
                 self.logger.update_instance(instance.tcp_port, status="sampling")
             # Also update holdout status
-            #self.logger.update_instance(self.holdout.tcp_port, status="sampling")
+            # self.logger.update_instance(self.holdout.tcp_port, status="sampling")
 
     def set_iteration(self, iteration, n_iterations):
         """Update iteration number for all instances in this evaluator's group"""
         if self.logger:
             for instance in self.instances:
-                self.logger.update_instance(instance.tcp_port, iteration=iteration, n_iterations=n_iterations)
+                self.logger.update_instance(
+                    instance.tcp_port, iteration=iteration, n_iterations=n_iterations
+                )
             # Also update holdout status
             # self.logger.update_instance(self.holdout.tcp_port, iteration=iteration, n_iterations=n_iterations)
 
-    async def evaluate_batch(self, programs: List[Program], start_state: GameState) -> List[Program]:
+    async def evaluate_batch(
+        self, programs: List[Program], start_state: GameState
+    ) -> List[Program]:
         try:
             # Evaluate programs in parallel
             eval_futures = []
             for i, (prog, inst) in enumerate(zip(programs, self.instances)):
                 inst.reset(start_state)
                 if self.logger:
-                    self.logger.update_instance(inst.tcp_port, program_id=prog.id, status="resetting")
+                    self.logger.update_instance(
+                        inst.tcp_port, program_id=prog.id, status="resetting"
+                    )
                 eval_futures.append(self._evaluate_single(inst.tcp_port, prog, inst))
 
             # Wait for all evaluations and holdout
             eval_results = await asyncio.gather(*eval_futures)
-            #holdout_value = await holdout_future
-
+            # holdout_value = await holdout_future
 
             # Update program results
-            for i, (program, (raw_reward, state, response, entities, achievements, ticks)) in enumerate(zip(programs, eval_results)):
-                relative_reward = raw_reward# - holdout_value
+            for i, (
+                program,
+                (raw_reward, state, response, entities, achievements, ticks),
+            ) in enumerate(zip(programs, eval_results)):
+                relative_reward = raw_reward  # - holdout_value
 
                 if self.logger:
                     self.logger.update_instance(
@@ -93,21 +102,30 @@ class Evaluator:
                         holdout_value=raw_reward,
                         relative_reward=relative_reward,
                         total_programs=self.logger.groups[
-                                           self.port_to_group[self.instances[i].tcp_port]
-                                       ].instances[self.instances[i].tcp_port].total_programs + 1
+                            self.port_to_group[self.instances[i].tcp_port]
+                        ]
+                        .instances[self.instances[i].tcp_port]
+                        .total_programs
+                        + 1,
                     )
 
                 program.value = relative_reward
                 program.state = state
                 program.raw_reward = raw_reward
                 program.ticks = ticks
-                #program.holdout_value = holdout_value
+                # program.holdout_value = holdout_value
                 conversation = copy.deepcopy(program.conversation)
 
-                conversation.add_result(program.code, response, score=raw_reward, advantage=relative_reward,
-                                        objectives=program.meta[
-                                            'objectives'] if 'objectives' in program.meta else [])  #
-                #conversation.add_result(assistant_message_str, response, score=raw_reward, advantage=relative_reward, objectives=program.meta['objectives'] if 'objectives' in program.meta else [])
+                conversation.add_result(
+                    program.code,
+                    response,
+                    score=raw_reward,
+                    advantage=relative_reward,
+                    objectives=program.meta["objectives"]
+                    if "objectives" in program.meta
+                    else [],
+                )  #
+                # conversation.add_result(assistant_message_str, response, score=raw_reward, advantage=relative_reward, objectives=program.meta['objectives'] if 'objectives' in program.meta else [])
                 program.conversation = conversation
                 program.response = response
                 program.achievements = achievements
@@ -121,24 +139,44 @@ class Evaluator:
                         instance.tcp_port,
                         status="error",
                         error_count=self.logger.groups[
-                                        self.port_to_group[instance.tcp_port]
-                                    ].instances[instance.tcp_port].error_count + 1
+                            self.port_to_group[instance.tcp_port]
+                        ]
+                        .instances[instance.tcp_port]
+                        .error_count
+                        + 1,
                     )
             raise e
 
-    def _evaluate_for_achievements(self, code: str, instance: FactorioInstance) \
-            -> Tuple[float, GameState, str, List[Union[Entity, EntityGroup]], Dict[str, Dict[str, int]]]:
+    def _evaluate_for_achievements(
+        self, code: str, instance: FactorioInstance
+    ) -> Tuple[
+        float,
+        GameState,
+        str,
+        List[Union[Entity, EntityGroup]],
+        Dict[str, Dict[str, int]],
+    ]:
         # Get initial state information
         start_production_flows = instance.namespace._get_production_stats()
         # Executing code
         reward, time, result = instance.eval(code, timeout=120)
         post_production_flows = instance.namespace._get_production_stats()
-        achievements = get_achievements(start_production_flows, copy.deepcopy(post_production_flows))
+        achievements = get_achievements(
+            start_production_flows, copy.deepcopy(post_production_flows)
+        )
 
         return result, achievements, post_production_flows
-    
-    async def _evaluate_single(self, instance_id: int, program: Program, instance: FactorioInstance) \
-            -> Tuple[float, GameState, str, List[Union[Entity, EntityGroup]], Dict[str, Dict[str, int]], int]:
+
+    async def _evaluate_single(
+        self, instance_id: int, program: Program, instance: FactorioInstance
+    ) -> Tuple[
+        float,
+        GameState,
+        str,
+        List[Union[Entity, EntityGroup]],
+        Dict[str, Dict[str, int]],
+        int,
+    ]:
         try:
             # Convert instance_id to TCP port
             tcp_port = self.instance_to_port[instance_id]
@@ -164,7 +202,9 @@ class Evaluator:
             # Get the namespace variables in a human readable format for debugging purposes
             vars = pickle.loads(state.namespaces[0])
 
-            self.logger.update_instance(tcp_port, status=f"accruing value ({self.value_accrual_time}s)")
+            self.logger.update_instance(
+                tcp_port, status=f"accruing value ({self.value_accrual_time}s)"
+            )
             await asyncio.sleep(self.value_accrual_time)
 
             entities = instance.namespace.get_entities()
@@ -173,34 +213,49 @@ class Evaluator:
             # Check to see if the inventories are different
             # If so, we manually put a hint in the generated code and result from the game
             get_inventory_code = 'print(f"Current inventory {inspect_inventory()}")'
-            if (start_inventory.__dict__ != final_inventory.__dict__
-                    and 'error' not in result.lower()
-                    and get_inventory_code not in program.code
-                    and 'inspect_inventory()' not in program.code):
-                program.code += f'\n{get_inventory_code}'
-                result += f'\n'+str(len(program.code.split('\n')))+f': (\'Current inventory {final_inventory}\',)'
+            if (
+                start_inventory.__dict__ != final_inventory.__dict__
+                and "error" not in result.lower()
+                and get_inventory_code not in program.code
+                and "inspect_inventory()" not in program.code
+            ):
+                program.code += f"\n{get_inventory_code}"
+                result += (
+                    "\n"
+                    + str(len(program.code.split("\n")))
+                    + f": ('Current inventory {final_inventory}',)"
+                )
 
             # Check to see if the entities are different
             # If so, we put a hint in the code and result
             get_entities_code = 'print(f"Entities on the map: {get_entities()}")'
-            if (start_entities != entities and 'error' not in result.lower()
-                    and get_entities_code not in program.code
-                    and 'get_entities()' not in program.code):
-                program.code += f'\n{get_entities_code}\n'
-                result += "\n"+str(len(program.code.split('\n')))+f': (\'Entities on the map: {entities}\',)'
+            if (
+                start_entities != entities
+                and "error" not in result.lower()
+                and get_entities_code not in program.code
+                and "get_entities()" not in program.code
+            ):
+                program.code += f"\n{get_entities_code}\n"
+                result += (
+                    "\n"
+                    + str(len(program.code.split("\n")))
+                    + f": ('Entities on the map: {entities}',)"
+                )
 
-            result = result.rstrip()+"\n"
+            result = result.rstrip() + "\n"
 
             if "error" in result.lower():
-                result += f'(\'Current inventory: {final_inventory}\',)\n'
-                result += f'(\'Entities on the map after the current step: {entities}\',)'
+                result += f"('Current inventory: {final_inventory}',)\n"
+                result += f"('Entities on the map after the current step: {entities}',)"
 
             score, _ = instance.namespace.score()
             final_reward = score - initial_value
             ticks = instance.get_elapsed_ticks()
 
             post_production_flows = instance.namespace._get_production_stats()
-            achievements = get_achievements(start_production_flows, post_production_flows)
+            achievements = get_achievements(
+                start_production_flows, post_production_flows
+            )
 
             group_id = self.port_to_group[tcp_port]
             group = self.logger.groups[group_id]
@@ -214,8 +269,12 @@ class Evaluator:
                 final_entities=len(entities),
                 start_entities=len(start_entities),
                 total_programs=instance_metrics.total_programs + 1,
-                start_inventory_count=sum([v for k, v in start_inventory.__dict__.items() if v > 0]),
-                final_inventory_count=sum([v for k, v in final_inventory.__dict__.items() if v > 0])
+                start_inventory_count=sum(
+                    [v for k, v in start_inventory.__dict__.items() if v > 0]
+                ),
+                final_inventory_count=sum(
+                    [v for k, v in final_inventory.__dict__.items() if v > 0]
+                ),
             )
 
             if "error" in result.lower() and self.logger:
@@ -225,17 +284,18 @@ class Evaluator:
                 self.logger.update_instance(
                     tcp_port,
                     status="error",
-                    error_count=instance_metrics.error_count + 1
+                    error_count=instance_metrics.error_count + 1,
                 )
 
             return final_reward, state, result, entities, achievements, ticks, flows
 
         except Exception as e:
-            print(f"Error in _evaluate_single:")
+            print("Error in _evaluate_single:")
             print(f"Instance ID: {instance_id}")
             print(f"TCP Port: {self.instance_to_port.get(instance_id, 'Unknown')}")
             print(f"Error: {str(e)}")
             import traceback
+
             traceback.print_exc()
 
             if self.logger:
@@ -246,10 +306,9 @@ class Evaluator:
                 self.logger.update_instance(
                     tcp_port,
                     status="error",
-                    error_count=instance_metrics.error_count + 1
+                    error_count=instance_metrics.error_count + 1,
                 )
             raise e
-
 
     def __del__(self):
         """Clean up logger on deletion"""

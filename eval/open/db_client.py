@@ -21,8 +21,15 @@ import sqlite3
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class DBClient(ABC):
-    def __init__(self, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20, **db_config):
+    def __init__(
+        self,
+        max_conversation_length: int = 20,
+        min_connections: int = 5,
+        max_connections: int = 20,
+        **db_config,
+    ):
         self.max_conversation_length = max_conversation_length
         # Don't store connection as instance variable
         # Instead create connection pool
@@ -33,7 +40,6 @@ class DBClient(ABC):
         self.max_connections = max_connections
         self._lock = threading.Lock()
         self.db_config = db_config
-
 
     async def initialize(self):
         """Initialize the connection pool"""
@@ -86,7 +92,8 @@ class DBClient(ABC):
             with self.get_connection() as conn:
                 with conn.cursor(cursor_factory=DictCursor) as cur:
                     # Use a CTE to get diverse set of programs
-                    cur.execute("""
+                    cur.execute(
+                        """
                         WITH ProgramsByDepth AS (
                             SELECT DISTINCT ON (depth) *
                             FROM programs
@@ -111,7 +118,9 @@ class DBClient(ABC):
                         ) as value_focused
                         ORDER BY value DESC
                         LIMIT %s
-                    """, (version, beam_width, version, beam_width * 2, beam_width))
+                    """,
+                        (version, beam_width, version, beam_width * 2, beam_width),
+                    )
 
                     results = cur.fetchall()
                     if not results:
@@ -120,7 +129,9 @@ class DBClient(ABC):
 
                     programs = [Program.from_row(dict(row)) for row in results]
                     depths = [p.depth for p in programs]
-                    logger.info(f"Found {len(programs)} beam heads for version {version} - {depths}")
+                    logger.info(
+                        f"Found {len(programs)} beam heads for version {version} - {depths}"
+                    )
                     return programs
         except Exception as e:
             logger.error(f"Error fetching beam heads: {e}", exc_info=True)
@@ -131,11 +142,14 @@ class DBClient(ABC):
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("""
+                    cur.execute(
+                        """
                         SELECT EXISTS(
                             SELECT 1 FROM programs WHERE version = %s
                         )
-                    """, (version,))
+                    """,
+                        (version,),
+                    )
                     return cur.fetchone()[0]
         except Exception as e:
             print(f"Error checking version existence: {e}")
@@ -146,12 +160,15 @@ class DBClient(ABC):
         try:
             with self.get_connection() as conn:
                 with conn.cursor(cursor_factory=DictCursor) as cur:
-                    cur.execute("""
+                    cur.execute(
+                        """
                         SELECT DISTINCT version_description, model
                         FROM programs 
                         WHERE version = %s
                         LIMIT 1
-                    """, (version,))
+                    """,
+                        (version,),
+                    )
                     result = cur.fetchone()
                     return dict(result) if result else {}
         except Exception as e:
@@ -159,39 +176,49 @@ class DBClient(ABC):
             return {}
 
     @tenacity.retry(
-        retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.DatabaseError)),
-        wait=wait_random_exponential(multiplier=1, min=4, max=10))
+        retry=retry_if_exception_type(
+            (psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.DatabaseError)
+        ),
+        wait=wait_random_exponential(multiplier=1, min=4, max=10),
+    )
     async def create_program(self, program: Program) -> Program:
         """Create a new program, now with connection management"""
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("""
+                    cur.execute(
+                        """
                         INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, 
                                            completion_token_usage, prompt_token_usage, token_usage, response, 
                                            holdout_value, raw_reward, version, version_description, model, meta, 
                                            achievements_json, instance, depth, advantage, ticks)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id, created_at
-                    """, (program.code, program.value, 0, program.parent_id,
-                          program.state.to_raw() if program.state else None,
-                          json.dumps(program.conversation.dict()),
-                          program.completion_token_usage,
-                          program.prompt_token_usage,
-                          program.token_usage,
-                          program.response,
-                          program.holdout_value,
-                          program.raw_reward,
-                          program.version,
-                          program.version_description,
-                          program.model,
-                          json.dumps(program.meta),
-                          json.dumps(program.achievements),
-                          program.instance,
-                          program.depth/2,
-                          program.advantage,
-                          program.ticks
-                          ))
+                    """,
+                        (
+                            program.code,
+                            program.value,
+                            0,
+                            program.parent_id,
+                            program.state.to_raw() if program.state else None,
+                            json.dumps(program.conversation.dict()),
+                            program.completion_token_usage,
+                            program.prompt_token_usage,
+                            program.token_usage,
+                            program.response,
+                            program.holdout_value,
+                            program.raw_reward,
+                            program.version,
+                            program.version_description,
+                            program.model,
+                            json.dumps(program.meta),
+                            json.dumps(program.achievements),
+                            program.instance,
+                            program.depth / 2,
+                            program.advantage,
+                            program.ticks,
+                        ),
+                    )
 
                     id, created_at = cur.fetchone()
                     conn.commit()
@@ -215,8 +242,12 @@ class DBClient(ABC):
                     finally:
                         self._pool = None
 
-    @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
-                    wait=wait_exponential(multiplier=1, min=4, max=10))
+    @tenacity.retry(
+        retry=retry_if_exception_type(
+            (psycopg2.OperationalError, psycopg2.InterfaceError)
+        ),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+    )
     async def get_all_program_rewards(self, version: int = None) -> List[float]:
         """Get all program rewards with proper connection management"""
         query = """
@@ -239,10 +270,12 @@ class DBClient(ABC):
             print(f"Error fetching program rewards: {e}")
             return []
 
-
-
-    @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
-                    wait=wait_exponential(multiplier=1, min=4, max=10))
+    @tenacity.retry(
+        retry=retry_if_exception_type(
+            (psycopg2.OperationalError, psycopg2.InterfaceError)
+        ),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+    )
     async def get_largest_version(self) -> int:
         query = """
             SELECT MAX(version)
@@ -274,11 +307,18 @@ class DBClient(ABC):
         except Exception as e:
             print(f"Error fetching largest version: {e}")
 
-
-    @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
-                    wait=wait_random_exponential(multiplier=1, min=4, max=10))
-    async def sample_parent(self, version=1, compression_strength: Optional[float] = None,
-                            adaptive_period: int = 100) -> Optional[Program]:
+    @tenacity.retry(
+        retry=retry_if_exception_type(
+            (psycopg2.OperationalError, psycopg2.InterfaceError)
+        ),
+        wait=wait_random_exponential(multiplier=1, min=4, max=10),
+    )
+    async def sample_parent(
+        self,
+        version=1,
+        compression_strength: Optional[float] = None,
+        adaptive_period: int = 100,
+    ) -> Optional[Program]:
         """
         Sample parent with proper connection management and adjusted reward scaling.
 
@@ -296,13 +336,18 @@ class DBClient(ABC):
                 with conn.cursor(cursor_factory=DictCursor) as cur:
                     # First get the current step count for adaptive compression
                     if compression_strength is None:
-                        cur.execute(f"SELECT COUNT(*) as step_count FROM programs WHERE version = {version}")
-                        step_count = cur.fetchone()['step_count']
+                        cur.execute(
+                            f"SELECT COUNT(*) as step_count FROM programs WHERE version = {version}"
+                        )
+                        step_count = cur.fetchone()["step_count"]
                         # Calculate adaptive compression using sine wave
                         # sin goes from -1 to 1, so we transform to 0 to 1
-                        compression_strength = (math.sin(2 * math.pi * step_count / adaptive_period) + 1) / 2
+                        compression_strength = (
+                            math.sin(2 * math.pi * step_count / adaptive_period) + 1
+                        ) / 2
 
-                    cur.execute("""
+                    cur.execute(
+                        """
                         WITH recent AS (
                             SELECT id, value, conversation_json
                             FROM programs
@@ -314,21 +359,25 @@ class DBClient(ABC):
                         )
                         SELECT id, advantage 
                         FROM recent
-                        """, (version)) #, max_assistant_length))
+                        """,
+                        (version),
+                    )  # , max_assistant_length))
 
                     results = cur.fetchall()
                     if not results:
                         return None
 
                     # Get statistics of the value distribution
-                    values = [row['advantage'] for row in results]
+                    values = [row["advantage"] for row in results]
                     mean_value = statistics.mean(values)
                     std_value = statistics.stdev(values) if len(values) > 1 else 1.0
 
                     # Apply reward transformation to handle power-law distribution
                     def transform_reward(value):
                         # Z-score normalization
-                        z_score = (value - mean_value) / std_value if std_value > 0 else 0
+                        z_score = (
+                            (value - mean_value) / std_value if std_value > 0 else 0
+                        )
 
                         # Compress extreme values using tanh with current compression strength
                         compressed = math.tanh(z_score * compression_strength)
@@ -337,12 +386,14 @@ class DBClient(ABC):
                         return (compressed + 1.0) / 2.0 + 1e-6
 
                     # Log current compression state
-                    print(f"Using compression strength: {compression_strength:.3f} "
-                          f"({'adaptive' if compression_strength is None else 'fixed'})")
+                    print(
+                        f"Using compression strength: {compression_strength:.3f} "
+                        f"({'adaptive' if compression_strength is None else 'fixed'})"
+                    )
 
                     # Calculate transformed weights
                     weights = [
-                        (row['id'], transform_reward(row['advantage']))
+                        (row["id"], transform_reward(row["advantage"]))
                         for row in results
                     ]
 
@@ -351,24 +402,28 @@ class DBClient(ABC):
                     if total_weight == 0:
                         sampled_id = random.choice([w[0] for w in weights])
                     else:
-                        normalized_weights = [(id, w / total_weight) for id, w in weights]
+                        normalized_weights = [
+                            (id, w / total_weight) for id, w in weights
+                        ]
                         sampled_id = random.choices(
                             [id for id, _ in normalized_weights],
                             weights=[w for _, w in normalized_weights],
-                            k=1
+                            k=1,
                         )[0]
 
                     # Fetch the selected program
-                    cur.execute("""
+                    cur.execute(
+                        """
                         SELECT * FROM programs WHERE id = %s
-                        """, (sampled_id,))
+                        """,
+                        (sampled_id,),
+                    )
 
                     row = cur.fetchone()
                     return Program.from_row(dict(row)) if row else None
         except Exception as e:
             print(f"Error sampling parent: {e}")
             raise e
-
 
     async def update_program(self, program_id: int, updates: Dict[str, Any]) -> Program:
         """Update program with proper connection management"""
@@ -378,21 +433,30 @@ class DBClient(ABC):
                     set_clauses = [f"{k} = %s" for k in updates.keys()]
                     values = list(updates.values())
 
-                    cur.execute(f"""
+                    cur.execute(
+                        f"""
                         UPDATE programs
-                        SET {', '.join(set_clauses)}
+                        SET {", ".join(set_clauses)}
                         WHERE id = %s
                         RETURNING *
-                    """, values + [program_id])
+                    """,
+                        values + [program_id],
+                    )
 
                     conn.commit()
                     row = cur.fetchone()
-                    return Program.from_row(dict(zip([desc[0] for desc in cur.description], row)))
+                    return Program.from_row(
+                        dict(zip([desc[0] for desc in cur.description], row))
+                    )
         except Exception as e:
             print(f"Error updating program: {e}")
             raise e
-        
-    async def get_resume_state(self, resume_version, process_id, agent_idx=-1) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
+
+    async def get_resume_state(
+        self, resume_version, process_id, agent_idx=-1
+    ) -> tuple[
+        Optional[GameState], Optional[Conversation], Optional[int], Optional[int]
+    ]:
         """Get the state to resume from"""
         try:
             # Get most recent successful program to resume from
@@ -416,7 +480,9 @@ class DBClient(ABC):
                 return None, None, None, None
 
             # Choose a program to resume from
-            program = Program.from_row(dict(zip([desc[0] for desc in cur.description], results[0])))
+            program = Program.from_row(
+                dict(zip([desc[0] for desc in cur.description], results[0]))
+            )
             return program.state, program.conversation, program.id, program.depth
 
         except Exception as e:
@@ -425,18 +491,24 @@ class DBClient(ABC):
 
 
 class PostgresDBClient(DBClient):
-    def __init__(self, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20, **db_config):
-        super().__init__(max_conversation_length, min_connections, max_connections, **db_config)
-        
+    def __init__(
+        self,
+        max_conversation_length: int = 20,
+        min_connections: int = 5,
+        max_connections: int = 20,
+        **db_config,
+    ):
+        super().__init__(
+            max_conversation_length, min_connections, max_connections, **db_config
+        )
+
     async def initialize(self):
         """Initialize the connection pool"""
         if self._pool is None:
             async with self._lock:
                 if self._pool is None:  # Double check pattern
                     self._pool = ThreadedConnectionPool(
-                        self.min_connections,
-                        self.max_connections,
-                        **self.db_config
+                        self.min_connections, self.max_connections, **self.db_config
                     )
 
     def _ensure_pool(self):
@@ -445,9 +517,7 @@ class PostgresDBClient(DBClient):
             with self._lock:
                 if self._pool is None:
                     self._pool = ThreadedConnectionPool(
-                        self.min_connections,
-                        self.max_connections,
-                        **self.db_config
+                        self.min_connections, self.max_connections, **self.db_config
                     )
 
     @contextmanager
@@ -468,12 +538,20 @@ class PostgresDBClient(DBClient):
                         self._pool.putconn(conn, close=True)
                     except:
                         pass
-    
+
 
 class SQLliteDBClient(DBClient):
-    def __init__(self, max_conversation_length: int = 20, min_connections: int = 5, max_connections: int = 20, **db_config):
-        super().__init__(max_conversation_length, min_connections, max_connections, **db_config)
-        self.database_file = self.db_config.get('database_file')
+    def __init__(
+        self,
+        max_conversation_length: int = 20,
+        min_connections: int = 5,
+        max_connections: int = 20,
+        **db_config,
+    ):
+        super().__init__(
+            max_conversation_length, min_connections, max_connections, **db_config
+        )
+        self.database_file = self.db_config.get("database_file")
 
     async def initialize(self):
         """Initialize the connection pool"""
@@ -481,9 +559,7 @@ class SQLliteDBClient(DBClient):
             async with self._lock:
                 if self._pool is None:  # Double check pattern
                     self._pool = ThreadedConnectionPool(
-                        self.min_connections,
-                        self.max_connections,
-                        **self.db_config
+                        self.min_connections, self.max_connections, **self.db_config
                     )
 
     @contextmanager
@@ -497,8 +573,12 @@ class SQLliteDBClient(DBClient):
             if conn:
                 conn.close()
 
-    @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
-                    wait=wait_exponential(multiplier=1, min=4, max=10))
+    @tenacity.retry(
+        retry=retry_if_exception_type(
+            (psycopg2.OperationalError, psycopg2.InterfaceError)
+        ),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+    )
     async def get_largest_version(self) -> int:
         query = """
             SELECT MAX(version)
@@ -514,8 +594,11 @@ class SQLliteDBClient(DBClient):
         except Exception as e:
             print(f"Error fetching largest version: {e}")
 
-
-    async def get_resume_state(self, resume_version, process_id) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
+    async def get_resume_state(
+        self, resume_version, process_id
+    ) -> tuple[
+        Optional[GameState], Optional[Conversation], Optional[int], Optional[int]
+    ]:
         """Get the state to resume from"""
         try:
             # Get most recent successful program to resume from
@@ -537,12 +620,20 @@ class SQLliteDBClient(DBClient):
             if not results:
                 print(f"No valid programs found for version {resume_version}")
                 return None, None, None, None
-            resulting_program_dict = dict(zip([desc[0] for desc in cur.description], results[0]))
-            # make meta, state_json achievements_json and conversation_json table a dict 
-            resulting_program_dict['meta'] = json.loads(resulting_program_dict['meta'])
-            resulting_program_dict['achievements_json'] = json.loads(resulting_program_dict['achievements_json'])
-            resulting_program_dict['conversation_json'] = json.loads(resulting_program_dict['conversation_json'])
-            resulting_program_dict["state_json"] = json.loads(resulting_program_dict["state_json"])
+            resulting_program_dict = dict(
+                zip([desc[0] for desc in cur.description], results[0])
+            )
+            # make meta, state_json achievements_json and conversation_json table a dict
+            resulting_program_dict["meta"] = json.loads(resulting_program_dict["meta"])
+            resulting_program_dict["achievements_json"] = json.loads(
+                resulting_program_dict["achievements_json"]
+            )
+            resulting_program_dict["conversation_json"] = json.loads(
+                resulting_program_dict["conversation_json"]
+            )
+            resulting_program_dict["state_json"] = json.loads(
+                resulting_program_dict["state_json"]
+            )
             # Choose a program to resume from
             program = Program.from_row(resulting_program_dict)
             return program.state, program.conversation, program.id, program.depth
@@ -550,54 +641,60 @@ class SQLliteDBClient(DBClient):
         except Exception as e:
             print(f"Error getting resume state: {e}")
             return None, None, None, None
-        
-    
 
     @tenacity.retry(
-    retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.DatabaseError)),
-    wait=wait_random_exponential(multiplier=1, min=4, max=10))
+        retry=retry_if_exception_type(
+            (psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.DatabaseError)
+        ),
+        wait=wait_random_exponential(multiplier=1, min=4, max=10),
+    )
     async def create_program(self, program: Program) -> Program:
         """Create a new program, now with connection management"""
         try:
             with self.get_connection() as conn:
                 cur = conn.cursor()
-    
+
                 # Insert the program data
-                cur.execute("""
+                cur.execute(
+                    """
                     INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, 
                                           completion_token_usage, prompt_token_usage, token_usage, response, 
                                           holdout_value, raw_reward, version, version_description, model, meta, 
                                           achievements_json, instance, depth, advantage, ticks)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    program.code,
-                    program.value,
-                    0,  # Assuming visits is initially set to 0
-                    program.parent_id,
-                    program.state.to_raw() if program.state else None,
-                    json.dumps(program.conversation.dict()),
-                    program.completion_token_usage,
-                    program.prompt_token_usage,
-                    program.token_usage,
-                    program.response,
-                    program.holdout_value,
-                    program.raw_reward,
-                    program.version,
-                    program.version_description,
-                    program.model,
-                    json.dumps(program.meta),
-                    json.dumps(program.achievements),
-                    program.instance,
-                    program.depth / 2,
-                    program.advantage,
-                    program.ticks
-                ))
+                """,
+                    (
+                        program.code,
+                        program.value,
+                        0,  # Assuming visits is initially set to 0
+                        program.parent_id,
+                        program.state.to_raw() if program.state else None,
+                        json.dumps(program.conversation.dict()),
+                        program.completion_token_usage,
+                        program.prompt_token_usage,
+                        program.token_usage,
+                        program.response,
+                        program.holdout_value,
+                        program.raw_reward,
+                        program.version,
+                        program.version_description,
+                        program.model,
+                        json.dumps(program.meta),
+                        json.dumps(program.achievements),
+                        program.instance,
+                        program.depth / 2,
+                        program.advantage,
+                        program.ticks,
+                    ),
+                )
 
                 # Get the last inserted row ID
                 program.id = cur.lastrowid
 
                 # Retrieve the created_at timestamp
-                cur.execute("SELECT created_at FROM programs WHERE id = ?", (program.id,))
+                cur.execute(
+                    "SELECT created_at FROM programs WHERE id = ?", (program.id,)
+                )
                 program.created_at = cur.fetchone()[0]
                 conn.commit()
                 # Return the updated program object

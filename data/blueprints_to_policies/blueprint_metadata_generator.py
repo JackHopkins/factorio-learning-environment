@@ -18,24 +18,31 @@ class BlueprintMetadataGenerator:
     def __init__(self):
         load_dotenv()
         self.config = Config()
-        self.openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.conn = psycopg2.connect(
             host="factorio.cwqst41cfhhd.us-east-1.rds.amazonaws.com",
             port="5432",
             dbname="factorio",
             user="postgres",
-            password=os.getenv("DB_PASSWORD")
+            password=os.getenv("DB_PASSWORD"),
         )
 
     def get_embedding(self, text: str) -> list:
         """Get embedding for text using OpenAI's API"""
         response = self.openai_client.embeddings.create(
-            input=text,
-            model="text-embedding-3-small"
+            input=text, model="text-embedding-3-small"
         )
         return response.data[0].embedding
 
-    def save_to_db(self, code: str, file_path: str, objective: str, docstring: str, inventory: Dict[str, int], model: str) -> None:
+    def save_to_db(
+        self,
+        code: str,
+        file_path: str,
+        objective: str,
+        docstring: str,
+        inventory: Dict[str, int],
+        model: str,
+    ) -> None:
         """Save the analysis results to the skills table"""
         cursor = self.conn.cursor()
 
@@ -43,28 +50,33 @@ class BlueprintMetadataGenerator:
         name = str(Path(file_path)).split("/")[-2]
 
         # Create signature from name and docstring
-        signature = f"{name}(game) -> None:\n    \"\"\"{docstring}\"\"\""
+        signature = f'{name}(game) -> None:\n    """{docstring}"""'
 
         # Get embedding for the objective
         embedding = self.get_embedding(objective)
 
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO public.skills 
                 (name, implementation, description, embedding, dependencies, version, embedding_model, implementation_model, signature, meta)
                 VALUES (%s, %s, %s, %s::vector, %s, %s, %s, %s, %s, %s)
-            """, (
-                name,
-                code,
-                docstring,
-                embedding,
-                repr(inventory),  # Store inventory as dependencies
-                "v1.4",
-                "text-embedding-3-small",
-                model,
-                signature,
-                json.dumps({"objective": {"plan": docstring, "objective": objective}})
-            ))
+            """,
+                (
+                    name,
+                    code,
+                    docstring,
+                    embedding,
+                    repr(inventory),  # Store inventory as dependencies
+                    "v1.4",
+                    "text-embedding-3-small",
+                    model,
+                    signature,
+                    json.dumps(
+                        {"objective": {"plan": docstring, "objective": objective}}
+                    ),
+                ),
+            )
             self.conn.commit()
         except Exception as e:
             print(f"Error saving to database: {e}")
@@ -77,7 +89,7 @@ class BlueprintMetadataGenerator:
 
         print(f"Analyzing file: {file_path}")
         # Read the file content
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             content = f.read()
 
         # Parent directory
@@ -92,12 +104,12 @@ class BlueprintMetadataGenerator:
         # Get inventory from blueprint JSON
         inventory = {}
         for root, _, files in os.walk(blueprint_dir):
-            if 'decoded' in root:
+            if "decoded" in root:
                 continue
             for file in files:
-                if file.endswith('.json') and file.startswith(blueprint_name):
+                if file.endswith(".json") and file.startswith(blueprint_name):
                     blueprint_path = Path(root) / file
-                    with open(blueprint_path, 'r') as f:
+                    with open(blueprint_path, "r") as f:
                         blueprint_json = f.read()
                         blueprint = json.loads(blueprint_json)
                         try:
@@ -129,7 +141,7 @@ class BlueprintMetadataGenerator:
             "file": str(file_path),
             "objective": objective,
             "docstring": docstring,
-            "inventory": inventory
+            "inventory": inventory,
         }
 
     def _generate_objective(self, content: str, filename: str) -> str:
@@ -148,7 +160,7 @@ e.g `I need to construct a stone mining facility using a single burner mining dr
             model=self.config.model,
             messages=[{"role": "user", "content": prompt}],
             temperature=self.config.temperature,
-            max_tokens=128
+            max_tokens=128,
         )
 
         return response.choices[0].message.content.split("Objective: ")[-1].strip()
@@ -179,7 +191,7 @@ using a helper function for precise positioning.
             model=self.config.model,
             messages=[{"role": "user", "content": prompt}],
             temperature=self.config.temperature,
-            max_tokens=512
+            max_tokens=512,
         )
 
         return response.choices[0].message.content.strip().strip("'")
@@ -196,7 +208,7 @@ def analyze_factorio_builds(builds_dir: str) -> Dict[str, Dict[str, str]]:
     # Walk through directory looking for .py files
     for root, _, files in os.walk(builds_dir):
         for file in files:
-            if file.endswith('.py'):
+            if file.endswith(".py"):
                 file_path = Path(root) / file
                 try:
                     results[str(file_path)] = analyzer.analyze_file(file_path)
@@ -211,7 +223,7 @@ def main():
     # Execution directory
     exec_dir = Path(__file__).parent
     # Directory containing Factorio build files
-    #builds_dir = exec_dir / "refactor"
+    # builds_dir = exec_dir / "refactor"
     builds_dir = exec_dir / "full"
 
     # Analyze all build files

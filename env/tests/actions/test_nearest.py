@@ -3,11 +3,13 @@ import pytest
 from env.src.entities import Position
 from env.src.game_types import Resource
 
+
 @pytest.fixture()
 def game(instance):
     instance.reset()
     yield instance.namespace
     instance.reset()
+
 
 def test_nearest_resource(game):
     """
@@ -19,6 +21,7 @@ def test_nearest_resource(game):
     assert coal.y == -0.5
     assert coal.x == 15.5
 
+
 def test_move_to_nearest(game):
     """
     Test that when the player moves to the nearest water resource, the nearest water resource remains the same.
@@ -28,4 +31,3 @@ def test_move_to_nearest(game):
     water: Position = game.nearest(Resource.Water)
     game.move_to(water)
     assert abs(water.x - game.nearest(Resource.Water).x) <= 1
-

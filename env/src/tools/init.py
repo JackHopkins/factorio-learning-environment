@@ -1,8 +1,14 @@
 from env.src.tools.controller import Controller
 
-class Init(Controller):
 
-    def __init__(self, lua_script_manager: 'FactorioLuaScriptManager', game_state: 'FactorioInstance', *args, **kwargs):
+class Init(Controller):
+    def __init__(
+        self,
+        lua_script_manager: "FactorioLuaScriptManager",
+        game_state: "FactorioInstance",
+        *args,
+        **kwargs,
+    ):
         super().__init__(lua_script_manager, game_state)
         self.load()
 

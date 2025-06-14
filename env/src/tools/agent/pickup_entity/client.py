@@ -1,18 +1,27 @@
-from typing import Tuple, Union, Optional
+from typing import Union, Optional
 
-from env.src.entities import Position, Entity, BeltGroup, PipeGroup, EntityGroup, UndergroundBelt, Direction, ElectricityGroup
+from env.src.entities import (
+    Position,
+    Entity,
+    BeltGroup,
+    PipeGroup,
+    EntityGroup,
+    UndergroundBelt,
+    ElectricityGroup,
+)
 from env.src.game_types import Prototype
 from env.src.tools.tool import Tool
 
 
 class PickupEntity(Tool):
-
     def __init__(self, *args):
         super().__init__(*args)
 
-    def __call__(self,
-                 entity: Union[Entity, Prototype, EntityGroup],
-                 position: Optional[Position] = None) -> bool:
+    def __call__(
+        self,
+        entity: Union[Entity, Prototype, EntityGroup],
+        position: Optional[Position] = None,
+    ) -> bool:
         """
         Pick up an entity if it exists on the world at a given position.
         :param entity: Entity prototype to pickup, e.g Prototype.IronPlate
@@ -22,7 +31,9 @@ class PickupEntity(Tool):
         if not isinstance(entity, (Prototype, Entity, EntityGroup)):
             raise ValueError("The first argument must be an Entity or Prototype object")
         if isinstance(entity, Entity) and isinstance(position, Position):
-            raise ValueError("If the first argument is an Entity object, the second argument must be None")
+            raise ValueError(
+                "If the first argument is an Entity object, the second argument must be None"
+            )
         if position is not None and not isinstance(position, Position):
             raise ValueError("The second argument must be a Position object")
 
@@ -34,20 +45,23 @@ class PickupEntity(Tool):
                 belts = entity.belts
                 for belt in belts:
                     resp = self.__call__(belt)
-                    if not resp: return False
+                    if not resp:
+                        return False
                 return True
             elif isinstance(entity, PipeGroup):
                 pipes = entity.pipes
                 for pipe in pipes:
                     resp = self.__call__(pipe)
-                    if not resp: return False
+                    if not resp:
+                        return False
                 return True
-            
+
             elif isinstance(entity, ElectricityGroup):
                 poles = entity.poles
                 for pole in poles:
                     resp = self.__call__(pole)
-                    if not resp: return False
+                    if not resp:
+                        return False
                 return True
 
         if position:

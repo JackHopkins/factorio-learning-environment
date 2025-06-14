@@ -7,28 +7,34 @@ from typing import Dict, Set
 @dataclass
 class ProcessingState:
     """Tracks the current state of blueprint processing"""
+
     completed_blueprints: Dict[str, Set[str]]
     completed_attempts: Dict[str, Dict[str, int]]  # blueprint -> model -> attempts
 
     @classmethod
-    def load(cls, state_file: str) -> 'ProcessingState':
+    def load(cls, state_file: str) -> "ProcessingState":
         """Load processing state from file"""
         if os.path.exists(state_file):
-            with open(state_file, 'r') as f:
+            with open(state_file, "r") as f:
                 data = json.load(f)
                 return cls(
-                    completed_blueprints=set(data['completed_blueprints']) if 'completed_blueprints' in data else set(),
-                    completed_attempts=data['completed_attempts']
+                    completed_blueprints=set(data["completed_blueprints"])
+                    if "completed_blueprints" in data
+                    else set(),
+                    completed_attempts=data["completed_attempts"],
                 )
         return cls(set(), {})
 
     def save(self, state_file: str):
         """Save current processing state to file"""
-        with open(state_file, 'w') as f:
-            json.dump({
-                'completed_blueprints': list(self.completed_blueprints),
-                'completed_attempts': self.completed_attempts
-            }, f)
+        with open(state_file, "w") as f:
+            json.dump(
+                {
+                    "completed_blueprints": list(self.completed_blueprints),
+                    "completed_attempts": self.completed_attempts,
+                },
+                f,
+            )
 
     def add_attempt(self, blueprint_name: str, model: str):
         """Record an attempt for a blueprint/model combination"""

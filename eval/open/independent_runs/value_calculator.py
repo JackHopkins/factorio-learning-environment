@@ -8,6 +8,7 @@ from collections import defaultdict
 @dataclass
 class Recipe:
     """Represents a recipe with ingredients and their amounts"""
+
     name: str
     ingredients: Dict[str, float]  # ingredient_name -> amount
     energy: float = 1.0  # Default energy cost
@@ -19,11 +20,11 @@ class ValueCalculator:
     def __init__(self, recipes_file: str, beta: float = 1.025):
         self.beta = beta
         self.raw_prices = {
-            'iron-ore': 3.1,
-            'copper-ore': 3.6,
-            'coal': 3.0,
-            'stone': 2.4,
-            'uranium-ore': 8.2
+            "iron-ore": 3.1,
+            "copper-ore": 3.6,
+            "coal": 3.0,
+            "stone": 2.4,
+            "uranium-ore": 8.2,
         }
         self.recipes = self._load_recipes(recipes_file)
         self.cached_values = {}
@@ -33,12 +34,12 @@ class ValueCalculator:
         """Load and parse recipes from JSONL file"""
         recipes = defaultdict(list)
 
-        with open(recipes_file, 'r') as f:
+        with open(recipes_file, "r") as f:
             for line in f:
                 recipe_data = json.loads(line)
                 recipe = self._parse_recipe(recipe_data)
                 if recipe:
-                    recipes[recipe_data['name']].append(recipe)
+                    recipes[recipe_data["name"]].append(recipe)
 
         return recipes
 
@@ -47,24 +48,23 @@ class ValueCalculator:
         ingredients = {}
 
         def process_ingredient(ing_data):
-            name = ing_data['name']
-            amount = float(ing_data.get('amount', 1))
+            name = ing_data["name"]
+            amount = float(ing_data.get("amount", 1))
 
-            if ing_data.get('ingredients'):
-                for sub_ing in ing_data['ingredients']:
-                    sub_name = sub_ing['name']
-                    sub_amount = float(sub_ing.get('amount', 1))
-                    ingredients[sub_name] = ingredients.get(sub_name, 0) + sub_amount * amount
+            if ing_data.get("ingredients"):
+                for sub_ing in ing_data["ingredients"]:
+                    sub_name = sub_ing["name"]
+                    sub_amount = float(sub_ing.get("amount", 1))
+                    ingredients[sub_name] = (
+                        ingredients.get(sub_name, 0) + sub_amount * amount
+                    )
             else:
                 ingredients[name] = ingredients.get(name, 0) + amount
 
-        for ing in recipe_data.get('ingredients', []):
+        for ing in recipe_data.get("ingredients", []):
             process_ingredient(ing)
 
-        return Recipe(
-            name=recipe_data['name'],
-            ingredients=ingredients
-        )
+        return Recipe(name=recipe_data["name"], ingredients=ingredients)
 
     def _complexity_multiplier(self, num_ingredients: int) -> float:
         """Calculate complexity multiplier α(n)"""
@@ -92,7 +92,7 @@ class ValueCalculator:
 
         # Detect cycles
         if item in visited:
-            return float('inf')
+            return float("inf")
 
         visited.add(item)
 
@@ -101,7 +101,7 @@ class ValueCalculator:
             self.cached_values[item] = 0.1  # Default value for unknown items
             return 0.1
 
-        min_value = float('inf')
+        min_value = float("inf")
 
         # Calculate value using each available recipe
         for recipe in self.recipes[item]:

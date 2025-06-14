@@ -1,14 +1,11 @@
-import os
 import cv2
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Tuple, Optional
+from typing import Tuple, Optional
 import psutil
 import pyautogui
 import time
 import subprocess
 from pathlib import Path
-from PIL import Image
 from dataclasses import dataclass
 
 from cluster.local.cluster_ips import get_local_container_ips
@@ -23,9 +20,10 @@ class UIElement:
     confidence: float = 0.7
     timeout: int = 10
 
+
 def launch_factorio():
     # Check to see if Factorio is open
-    if not any(process.name() == 'factorio' for process in psutil.process_iter()):
+    if not any(process.name() == "factorio" for process in psutil.process_iter()):
         # Launch Factorio if it's not running
         print("Launching Factorio...")
         # Adjust the path to your Factorio executable
@@ -35,9 +33,9 @@ def launch_factorio():
 
 def focus_factorio():
     # Use AppleScript to focus Factorio
-    applescript = '''
+    applescript = """
     tell application "Factorio" to activate
-    '''
+    """
     subprocess.run(["osascript", "-e", applescript])
     time.sleep(1)  # Wait a moment for the window to come into focus
 
@@ -53,7 +51,7 @@ class FactorioAutomation:
             max(0, self.monitor.x),  # Ensure x is not negative
             max(0, self.monitor.y),  # Ensure y is not negative
             self.monitor.width,
-            self.monitor.height
+            self.monitor.height,
         )
 
         # Store offset for click adjustment
@@ -63,10 +61,12 @@ class FactorioAutomation:
         # Define UI elements
         self.ui_elements = {
             "multiplayer": UIElement("Multiplayer", "multiplayer_button.png", 0.9),
-            "connect_address": UIElement("Connect to Address", "connect_to_address_button.png", 0.9),
+            "connect_address": UIElement(
+                "Connect to Address", "connect_to_address_button.png", 0.9
+            ),
             "ip_field": UIElement("IP Field", "ip_field.png", 0.85),
             "connect": UIElement("Connect", "connect_button.png", 0.9),
-            "quit": UIElement("Quit", "quit_button.png", 0.9)
+            "quit": UIElement("Quit", "quit_button.png", 0.9),
         }
 
     def verify_assets(self) -> bool:
@@ -112,11 +112,11 @@ class FactorioAutomation:
         start_time = time.time()
         while time.time() - start_time < element.timeout:
             try:
-                location = pyautogui.locateOnWindow(#).locateCenterOnScreen(
+                location = pyautogui.locateOnWindow(  # ).locateCenterOnScreen(
                     str(self.assets_dir / element.image_path),
                     "Factorio 1.1.110",
                     confidence=element.confidence,
-                    region=self.monitor_region
+                    region=self.monitor_region,
                 )
                 if location:
                     # Adjust click coordinates for monitor offset
@@ -141,7 +141,7 @@ class FactorioAutomation:
 
         # Reset to main menu
         for _ in range(3):
-            pyautogui.press('esc')
+            pyautogui.press("esc")
             time.sleep(0.5)
 
         # Click through menu sequence
@@ -150,8 +150,8 @@ class FactorioAutomation:
                 raise Exception(f"Could not find element - {element}")
 
         # Enter IP address
-        pyautogui.hotkey('command', 'a')
-        pyautogui.press('delete')
+        pyautogui.hotkey("command", "a")
+        pyautogui.press("delete")
         pyautogui.write(f"{ip_address}:{udp}")
 
         # Connect and wait
@@ -161,12 +161,11 @@ class FactorioAutomation:
         time.sleep(5)
 
         # Exit sequence
-        pyautogui.press('esc')
+        pyautogui.press("esc")
         return self.locate_and_click(self.ui_elements["quit"])
 
 
 def main():
-
     # Display available monitors
 
     ips, udp_ports, tcp_ports = get_local_container_ips()
@@ -188,7 +187,9 @@ def main():
 
         for ip, udp in zip(ip_addresses, udp_ports):
             success = automation.connect_to_server(ip, udp)
-            print(f"{'Successfully connected to' if success else 'Failed to connect to'} {ip}")
+            print(
+                f"{'Successfully connected to' if success else 'Failed to connect to'} {ip}"
+            )
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
-from typing import List, Dict, Tuple, Any, Callable
-from PIL import Image, ImageDraw
+from typing import List, Dict, Tuple, Callable
+from PIL import ImageDraw
 import math
 import random
 
@@ -14,8 +14,13 @@ class NaturalRenderer:
         # Set a fixed seed for random to ensure consistent rendering of natural elements
         random.seed(42)
 
-    def draw_trees(self, draw: ImageDraw.ImageDraw, trees: List[Dict],
-                   game_to_img_func: Callable, boundaries: Dict[str, float]) -> None:
+    def draw_trees(
+        self,
+        draw: ImageDraw.ImageDraw,
+        trees: List[Dict],
+        game_to_img_func: Callable,
+        boundaries: Dict[str, float],
+    ) -> None:
         """
         Draw trees on the map with natural variations
 
@@ -34,15 +39,20 @@ class NaturalRenderer:
 
         for tree in trees:
             # Get tree position
-            x, y = tree.get('position', {}).get('x', 0), tree.get('position', {}).get('y', 0)
+            x, y = (
+                tree.get("position", {}).get("x", 0),
+                tree.get("position", {}).get("y", 0),
+            )
 
             # Skip trees outside the grid boundaries
             if x < min_x or x > max_x or y < min_y or y > max_y:
                 continue
 
             # Get tree name and size if available
-            tree_name = tree.get('name', '')
-            tree_size = tree.get('size', hash(tree_name) % 5)  # Use hash of name if size not provided
+            tree_name = tree.get("name", "")
+            tree_size = tree.get(
+                "size", hash(tree_name) % 5
+            )  # Use hash of name if size not provided
 
             # Convert to image coordinates
             img_x, img_y = game_to_img_func(x, y)
@@ -51,13 +61,20 @@ class NaturalRenderer:
             tree_color = self.config.get_tree_color(tree_size)
 
             # Draw tree based on type
-            if 'dead' in tree_name.lower():
+            if "dead" in tree_name.lower():
                 self._draw_dead_tree(draw, img_x, img_y, cell_size, tree_color)
             else:
                 self._draw_tree(draw, img_x, img_y, cell_size, tree_color, tree_name)
 
-    def _draw_tree(self, draw: ImageDraw.ImageDraw, x: float, y: float,
-                   cell_size: float, color: Tuple[int, int, int], tree_name: str) -> None:
+    def _draw_tree(
+        self,
+        draw: ImageDraw.ImageDraw,
+        x: float,
+        y: float,
+        cell_size: float,
+        color: Tuple[int, int, int],
+        tree_name: str,
+    ) -> None:
         """Draw a living tree with foliage"""
         # Use hash of tree name to get consistent random variations for each tree
         seed = hash(tree_name)
@@ -72,10 +89,14 @@ class NaturalRenderer:
         offset_x = random.uniform(-cell_size / 10, cell_size / 10)
 
         draw.rectangle(
-            [x - trunk_width / 2 + offset_x, y - trunk_height / 2 + trunk_height / 2,
-             x + trunk_width / 2 + offset_x, y + trunk_height / 2 + trunk_height / 2],
+            [
+                x - trunk_width / 2 + offset_x,
+                y - trunk_height / 2 + trunk_height / 2,
+                x + trunk_width / 2 + offset_x,
+                y + trunk_height / 2 + trunk_height / 2,
+            ],
             fill=trunk_color,
-            outline=None
+            outline=None,
         )
 
         # Foliage (multi-layered to give depth)
@@ -98,17 +119,27 @@ class NaturalRenderer:
             layer_radius = foliage_radius * (1.0 - i * 0.2)
 
             draw.ellipse(
-                [x - layer_radius + fx_offset, y - layer_radius - trunk_height / 2 + fy_offset,
-                 x + layer_radius + fx_offset, y + layer_radius - trunk_height / 2 + fy_offset],
+                [
+                    x - layer_radius + fx_offset,
+                    y - layer_radius - trunk_height / 2 + fy_offset,
+                    x + layer_radius + fx_offset,
+                    y + layer_radius - trunk_height / 2 + fy_offset,
+                ],
                 fill=foliage_color,
-                outline=None
+                outline=None,
             )
 
         # Reset random seed
         random.seed(42)
 
-    def _draw_dead_tree(self, draw: ImageDraw.ImageDraw, x: float, y: float,
-                        cell_size: float, color: Tuple[int, int, int]) -> None:
+    def _draw_dead_tree(
+        self,
+        draw: ImageDraw.ImageDraw,
+        x: float,
+        y: float,
+        cell_size: float,
+        color: Tuple[int, int, int],
+    ) -> None:
         """Draw a dead tree (just trunk and branches)"""
         # Trunk
         trunk_width = cell_size / 6
@@ -116,10 +147,14 @@ class NaturalRenderer:
         trunk_color = (120, 100, 80)  # Grayish brown
 
         draw.rectangle(
-            [x - trunk_width / 2, y - trunk_height / 2,
-             x + trunk_width / 2, y + trunk_height / 2],
+            [
+                x - trunk_width / 2,
+                y - trunk_height / 2,
+                x + trunk_width / 2,
+                y + trunk_height / 2,
+            ],
             fill=trunk_color,
-            outline=None
+            outline=None,
         )
 
         # Branches (simple lines)
@@ -131,17 +166,32 @@ class NaturalRenderer:
         end_x = x + math.cos(branch_angle) * branch_length
         end_y = y - math.sin(branch_angle) * branch_length
 
-        draw.line([(x, y - trunk_height / 4), (end_x, end_y)], fill=branch_color, width=int(trunk_width / 2))
+        draw.line(
+            [(x, y - trunk_height / 4), (end_x, end_y)],
+            fill=branch_color,
+            width=int(trunk_width / 2),
+        )
 
         # Left branch
-        branch_angle = random.uniform(2 * math.pi / 3, 5 * math.pi / 6)  # 120-150 degrees
+        branch_angle = random.uniform(
+            2 * math.pi / 3, 5 * math.pi / 6
+        )  # 120-150 degrees
         end_x = x + math.cos(branch_angle) * branch_length
         end_y = y - math.sin(branch_angle) * branch_length
 
-        draw.line([(x, y - trunk_height / 4), (end_x, end_y)], fill=branch_color, width=int(trunk_width / 2))
+        draw.line(
+            [(x, y - trunk_height / 4), (end_x, end_y)],
+            fill=branch_color,
+            width=int(trunk_width / 2),
+        )
 
-    def draw_rocks(self, draw: ImageDraw.ImageDraw, rocks: List[Dict],
-                   game_to_img_func: Callable, boundaries: Dict[str, float]) -> None:
+    def draw_rocks(
+        self,
+        draw: ImageDraw.ImageDraw,
+        rocks: List[Dict],
+        game_to_img_func: Callable,
+        boundaries: Dict[str, float],
+    ) -> None:
         """
         Draw rocks on the map with natural variations
 
@@ -160,14 +210,17 @@ class NaturalRenderer:
 
         for rock in rocks:
             # Get rock position
-            x, y = rock.get('position', {}).get('x', 0), rock.get('position', {}).get('y', 0)
+            x, y = (
+                rock.get("position", {}).get("x", 0),
+                rock.get("position", {}).get("y", 0),
+            )
 
             # Skip rocks outside the grid boundaries
             if x < min_x or x > max_x or y < min_y or y > max_y:
                 continue
 
             # Get rock name
-            rock_name = rock.get('name', '')
+            rock_name = rock.get("name", "")
 
             # Convert to image coordinates
             img_x, img_y = game_to_img_func(x, y)
@@ -178,19 +231,26 @@ class NaturalRenderer:
             # Draw the rock
             self._draw_rock(draw, img_x, img_y, cell_size, rock_color, rock_name)
 
-    def _draw_rock(self, draw: ImageDraw.ImageDraw, x: float, y: float,
-                   cell_size: float, color: Tuple[int, int, int], rock_name: str) -> None:
+    def _draw_rock(
+        self,
+        draw: ImageDraw.ImageDraw,
+        x: float,
+        y: float,
+        cell_size: float,
+        color: Tuple[int, int, int],
+        rock_name: str,
+    ) -> None:
         """Draw a rock with natural variations"""
         # Use hash of rock name to get consistent random variations for each rock
         seed = hash(rock_name)
         random.seed(seed)
 
         # Determine rock size based on name
-        if 'huge' in rock_name.lower():
+        if "huge" in rock_name.lower():
             size_factor = 0.7
-        elif 'big' in rock_name.lower():
+        elif "big" in rock_name.lower():
             size_factor = 0.6
-        elif 'small' in rock_name.lower():
+        elif "small" in rock_name.lower():
             size_factor = 0.4
         else:
             size_factor = 0.5
@@ -210,8 +270,15 @@ class NaturalRenderer:
             points.append((px, py))
 
         # Draw the rock
-        draw.polygon(points, fill=color,
-                     outline=(min(color[0] - 30, 255), min(color[1] - 30, 255), min(color[2] - 30, 255)))
+        draw.polygon(
+            points,
+            fill=color,
+            outline=(
+                min(color[0] - 30, 255),
+                min(color[1] - 30, 255),
+                min(color[2] - 30, 255),
+            ),
+        )
 
         # Add some texture with small lines or dots
         for _ in range(3):
@@ -221,7 +288,11 @@ class NaturalRenderer:
             ty2 = ty + random.uniform(-rock_radius / 4, rock_radius / 4)
 
             # Slightly darker color for texture
-            texture_color = (max(0, color[0] - 20), max(0, color[1] - 20), max(0, color[2] - 20))
+            texture_color = (
+                max(0, color[0] - 20),
+                max(0, color[1] - 20),
+                max(0, color[2] - 20),
+            )
 
             draw.line([(tx, ty), (tx2, ty2)], fill=texture_color, width=1)
 

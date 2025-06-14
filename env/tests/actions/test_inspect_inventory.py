@@ -6,15 +6,16 @@ from env.src.game_types import Prototype
 
 @pytest.fixture()
 def game(instance):
-    instance.initial_inventory ={
+    instance.initial_inventory = {
         **instance.initial_inventory,
-        'coal': 50,
-        'iron-chest': 1,
-        'iron-plate': 5,
+        "coal": 50,
+        "iron-chest": 1,
+        "iron-plate": 5,
     }
     instance.reset()
     yield instance.namespace
     instance.reset()
+
 
 def test_inspect_inventory(game):
     assert game.inspect_inventory().get(Prototype.Coal, 0) == 50
@@ -30,7 +31,9 @@ def test_inspect_inventory(game):
 
 
 def test_inspect_assembling_machine_inventory(game):
-    machine = game.place_entity(Prototype.AssemblingMachine1, position=Position(x=0, y=0))
+    machine = game.place_entity(
+        Prototype.AssemblingMachine1, position=Position(x=0, y=0)
+    )
     game.set_entity_recipe(machine, Prototype.IronGearWheel)
     game.insert_item(Prototype.IronPlate, machine, quantity=5)
     chest_inventory = game.inspect_inventory(entity=machine)

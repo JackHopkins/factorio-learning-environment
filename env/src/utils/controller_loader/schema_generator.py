@@ -18,25 +18,33 @@ class SchemaGenerator:
         schema_entries = []
 
         for name, obj in inspect.getmembers(module, inspect.isclass):
-            if name in ["ObserveAll", "ClearEntities"] or obj.__module__ != module.__name__:
+            if (
+                name in ["ObserveAll", "ClearEntities"]
+                or obj.__module__ != module.__name__
+            ):
                 continue
 
-            if tool_name.startswith('_'):
+            if tool_name.startswith("_"):
                 continue
 
             call_info = CodeAnalyzer.extract_call_info(obj)
-            if not all([call_info.input_types, call_info.output_type, call_info.docstring]):
+            if not all(
+                [call_info.input_types, call_info.output_type, call_info.docstring]
+            ):
                 continue
 
             # Clean up signature
-            localized_signature = call_info.signature \
-                .replace("self, ", "") \
-                .replace("entities.", "") \
-                .replace("instance.", "") \
+            localized_signature = (
+                call_info.signature.replace("self, ", "")
+                .replace("entities.", "")
+                .replace("instance.", "")
                 .replace("game_types.", "")
+            )
 
-            docstring_element = f'"""\n{call_info.docstring}\n"""\n\n' if with_docstring else ""
-            schema_entry = f'{tool_name}{localized_signature}\n{docstring_element}'
+            docstring_element = (
+                f'"""\n{call_info.docstring}\n"""\n\n' if with_docstring else ""
+            )
+            schema_entry = f"{tool_name}{localized_signature}\n{docstring_element}"
             schema_entries.append(schema_entry)
 
         return "".join(schema_entries)

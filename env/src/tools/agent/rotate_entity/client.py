@@ -1,12 +1,14 @@
-from env.src.entities import Entity, Direction as DirectionA, \
-    AssemblingMachine  # We have 2 Direction objects to avoid circular deps
+from env.src.entities import (
+    Entity,
+    Direction as DirectionA,
+    AssemblingMachine,
+)  # We have 2 Direction objects to avoid circular deps
 from env.src.instance import Direction
 from env.src.game_types import prototype_by_name
 from env.src.tools.tool import Tool
 
 
 class RotateEntity(Tool):
-
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
@@ -22,7 +24,9 @@ class RotateEntity(Tool):
             raise ValueError("The first argument must be an Entity object")
         if entity is None:
             raise ValueError("The entity argument must not be None")
-        if not isinstance(direction, (Direction, DirectionA)) and not (hasattr(direction, "name") and hasattr(direction, "value")):
+        if not isinstance(direction, (Direction, DirectionA)) and not (
+            hasattr(direction, "name") and hasattr(direction, "value")
+        ):
             raise ValueError("The second argument must be a Direction")
 
         try:
@@ -33,7 +37,9 @@ class RotateEntity(Tool):
 
             factorio_direction = Direction.to_factorio_direction(direction)
 
-            response, elapsed = self.execute(self.player_index, x, y, factorio_direction, entity.name)
+            response, elapsed = self.execute(
+                self.player_index, x, y, factorio_direction, entity.name
+            )
 
             if not response:
                 raise Exception(f"Could not rotate: {response}")
@@ -43,33 +49,36 @@ class RotateEntity(Tool):
 
         cleaned_response = self.clean_response(response)
 
-        if 'prototype' not in cleaned_response.keys():
-
+        if "prototype" not in cleaned_response.keys():
             if isinstance(entity.prototype, str):
                 prototype = prototype_by_name[entity.name]
             else:
                 prototype = entity.prototype
-            cleaned_response['prototype'] = prototype
+            cleaned_response["prototype"] = prototype
 
         # Ensure the position is properly aligned to the grid
-        if 'position' in cleaned_response:
-            cleaned_response['position'] = {
-                'x': round(cleaned_response['position']['x'] * 2) / 2,
-                'y': round(cleaned_response['position']['y'] * 2) / 2
+        if "position" in cleaned_response:
+            cleaned_response["position"] = {
+                "x": round(cleaned_response["position"]["x"] * 2) / 2,
+                "y": round(cleaned_response["position"]["y"] * 2) / 2,
             }
 
-        if 'direction' in cleaned_response.keys():
-            cleaned_response['direction'] = cleaned_response['direction']
+        if "direction" in cleaned_response.keys():
+            cleaned_response["direction"] = cleaned_response["direction"]
 
         try:
             object = metaclass(**cleaned_response)
         except Exception as e:
-            raise Exception(f"Could not create {entity.name} object from response (rotate entity): {response}", e)
+            raise Exception(
+                f"Could not create {entity.name} object from response (rotate entity): {response}",
+                e,
+            )
 
         if object.direction.value != direction.value:
             if isinstance(entity, AssemblingMachine):
-                raise Exception(f"Could not rotate {entity.name}. Set the recipe first.")
+                raise Exception(
+                    f"Could not rotate {entity.name}. Set the recipe first."
+                )
             raise Exception(f"Could not rotate {entity.name}.")
 
         return object
-

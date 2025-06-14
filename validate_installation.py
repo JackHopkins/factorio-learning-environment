@@ -8,6 +8,7 @@ This script:
 4. Tests importing key classes and functions
 5. Reports detailed module structure
 """
+
 import os
 import sys
 import subprocess
@@ -15,6 +16,7 @@ import tempfile
 import venv
 import shutil
 import glob
+
 
 def main():
     # Create a temporary directory
@@ -38,7 +40,7 @@ def main():
         if not wheel_files:
             print("No wheel files found in dist/ directory")
             return 1
-        
+
         wheel_path = max(wheel_files, key=os.path.getctime)
         print(f"Installing wheel: {wheel_path}")
         subprocess.check_call([pip_exe, "install", wheel_path])
@@ -109,28 +111,27 @@ except Exception as e:
     print(f"ERROR: {e}")
     sys.exit(1)
 """
-        
+
         result = subprocess.run(
-            [python_exe, "-c", validation_script],
-            capture_output=True,
-            text=True
+            [python_exe, "-c", validation_script], capture_output=True, text=True
         )
-        
+
         print("\nVALIDATION OUTPUT:")
         print(result.stdout)
-        
+
         if result.stderr:
             print("\nERRORS:")
             print(result.stderr)
             return 1
-        
+
         print("\nInstallation validation completed successfully!")
         return 0
-    
+
     finally:
         # Clean up
         print(f"Cleaning up {temp_dir}...")
         shutil.rmtree(temp_dir)
+
 
 if __name__ == "__main__":
     sys.exit(main())

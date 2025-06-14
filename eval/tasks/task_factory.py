@@ -1,6 +1,3 @@
-from typing import Any, Dict, List
-from env.src.entities import Inventory, Entity
-from env.src.instance import FactorioInstance
 from eval.tasks.throughput_task import ThroughputTask
 from eval.tasks.default_task import DefaultTask
 from eval.tasks.task_abc import TaskABC
@@ -11,6 +8,7 @@ import os
 TASK_FOLDER = Path(os.path.dirname(__file__), "task_definitions")
 import json
 
+
 class TaskFactory:
     def __init__(self):
         pass
@@ -18,13 +16,13 @@ class TaskFactory:
     @staticmethod
     def create_task(task_path) -> TaskABC:
         task_path = Path(TASK_FOLDER, task_path)
-        with open(task_path, 'r') as f:
+        with open(task_path, "r") as f:
             input_json = json.load(f)
 
         task_type_mapping = {
             "throughput": ThroughputTask,
             "default": DefaultTask,
-            "unbounded_throughput": UnboundedThroughputTask
+            "unbounded_throughput": UnboundedThroughputTask,
         }
         task_type = input_json["task_type"]
         task_config = input_json["config"]

@@ -5,7 +5,9 @@ from typing import Dict
 from mcp.server.fastmcp import Image
 from env.src.entities import Position
 from env.src.models.game_state import GameState
-from env.src.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
+from env.src.utils.controller_loader.system_prompt_generator import (
+    SystemPromptGenerator,
+)
 from server import mcp
 from server.init import state, initialize_session
 
@@ -30,8 +32,11 @@ async def render(center_x: float = 0, center_y: float = 0) -> Image:
     img = instance.namespace._render(position=Position(center_x, center_y))
     return Image(data=img._repr_png_(), format="png")
 
+
 @mcp.tool()
-async def entities(center_x: float = 0, center_y: float = 0, radius: float = 500) -> str:
+async def entities(
+    center_x: float = 0, center_y: float = 0, radius: float = 500
+) -> str:
     """
     Prints out all entities objects on the map. Use this to get positions, status and other information about the existing factory.
 
@@ -45,8 +50,11 @@ async def entities(center_x: float = 0, center_y: float = 0, radius: float = 500
 
     instance = state.active_server
 
-    entities = instance.namespace.get_entities(position=Position(center_x, center_y), radius=radius)
+    entities = instance.namespace.get_entities(
+        position=Position(center_x, center_y), radius=radius
+    )
     return str(entities)
+
 
 @mcp.tool()
 async def inventory() -> str:
@@ -60,6 +68,7 @@ async def inventory() -> str:
 
     inventory = instance.namespace.inspect_inventory()
     return str(inventory)
+
 
 @mcp.tool()
 async def execute(code: str) -> str:
@@ -99,8 +108,7 @@ async def status() -> str:
     Check the status of the Factorio server connection
     """
     if not state.active_server:
-       return await initialize_session(None)
-
+        return await initialize_session(None)
 
     server_id = state.active_server.tcp_port
     if server_id in state.available_servers:
@@ -108,8 +116,10 @@ async def status() -> str:
         vcs = state.get_vcs()
         commits = len(vcs.undo_stack) if vcs else 0
 
-        return (f"Connected to Factorio server: {server.name} ({server.address}:{server.tcp_port})\n"
-                f"Commit history: {commits} commits")
+        return (
+            f"Connected to Factorio server: {server.name} ({server.address}:{server.tcp_port})\n"
+            f"Commit history: {commits} commits"
+        )
     else:
         return "Connected to Factorio server"
 
@@ -136,16 +146,20 @@ async def get_entity_names():
 
     return result
 
+
 @mcp.tool()
 async def position() -> str:
     """
     Get your position in the Factorio world.
     """
     if not state.active_server:
-        raise Exception("No active Factorio server connection. Use connect_to_factorio_server first.")
+        raise Exception(
+            "No active Factorio server connection. Use connect_to_factorio_server first."
+        )
 
     position = state.active_server.namespace.player_location
     return position
+
 
 @mcp.tool()
 async def get_recipe(name: str) -> Dict:
@@ -162,7 +176,7 @@ async def get_recipe(name: str) -> Dict:
         "name": recipe.name,
         "ingredients": recipe.ingredients,
         "results": recipe.results,
-        "energy_required": recipe.energy_required
+        "energy_required": recipe.energy_required,
     }
 
     return recipe_data
@@ -173,7 +187,11 @@ async def schema() -> str:
     """
     Get the full API object model for writing code so that you can interact with Factorio.
     """
-    execution_path = Path(os.path.dirname(os.path.realpath(__file__))).parent / Path('env') / Path('src')
+    execution_path = (
+        Path(os.path.dirname(os.path.realpath(__file__))).parent
+        / Path("env")
+        / Path("src")
+    )
     # Generate the documentation
     generator = SystemPromptGenerator(str(execution_path))
     return f"\n\n{generator.types()}\n\n{generator.entities()}"
@@ -183,27 +201,32 @@ async def schema() -> str:
 async def manual(name: str) -> str:
     """
     Get API documentation for a specific method
-    
+
     Args:
         name: Name of the method to get documentation for (must be a valid API method)
     """
     # Get the list of available agent tools by checking directories in the agent directory
-    execution_path = Path(os.path.dirname(os.path.realpath(__file__))).parent / Path('env') / Path('src')
-    agent_tools_path = execution_path / 'tools' / 'agent'
-    
+    execution_path = (
+        Path(os.path.dirname(os.path.realpath(__file__))).parent
+        / Path("env")
+        / Path("src")
+    )
+    agent_tools_path = execution_path / "tools" / "agent"
+
     # Verify the agent_tools_path exists
     if not agent_tools_path.exists() or not agent_tools_path.is_dir():
         return f"Error: Agent tools directory not found at {agent_tools_path}"
-    
+
     # Get all subdirectories (each one should be a tool)
     available_tools = [d.name for d in agent_tools_path.iterdir() if d.is_dir()]
-    
+
     # Check if the requested method is valid
     if name not in available_tools:
-        return (f"Error: '{name}' is not a valid agent tool. Available tools: " 
-                f"{', '.join(sorted(available_tools))}")
-    
+        return (
+            f"Error: '{name}' is not a valid agent tool. Available tools: "
+            f"{', '.join(sorted(available_tools))}"
+        )
+
     # Generate the documentation
     generator = SystemPromptGenerator(str(execution_path))
     return generator.manual(name)
-

@@ -2,16 +2,22 @@ from typing import Dict, Any
 import numpy as np
 from gym import spaces
 
-def validate_observation(observation: Dict[str, Any], observation_space: spaces.Space, method: str = "unknown", path: str = "") -> None:
+
+def validate_observation(
+    observation: Dict[str, Any],
+    observation_space: spaces.Space,
+    method: str = "unknown",
+    path: str = "",
+) -> None:
     """
     Validate an observation against the environment's observation space.
-    
+
     Args:
         observation: The observation to validate.
         observation_space: The space to validate against.
         method (str): The method that generated the observation (e.g., 'reset', 'step').
         path (str): The current path in the observation tree for error reporting.
-    
+
     Raises:
         AssertionError: If the observation does not conform to the observation space.
     """
@@ -24,8 +30,7 @@ def validate_observation(observation: Dict[str, Any], observation_space: spaces.
     # Validate top-level Dict space
     if not isinstance(observation_space, spaces.Dict):
         raise AssertionError(
-            f"Observation space at {path} is not a Dict space: "
-            f"got {observation_space}"
+            f"Observation space at {path} is not a Dict space: got {observation_space}"
         )
 
     # Check for unexpected keys
@@ -109,8 +114,14 @@ def validate_observation(observation: Dict[str, Any], observation_space: spaces.
                             f"got {value_array.dtype}, expected {space.feature_space.dtype} for {space.feature_space}"
                         )
                     # Check bounds (skip if infinite)
-                    if not (np.all(np.isinf(space.feature_space.low)) and np.all(np.isinf(space.feature_space.high))):
-                        if not np.all((value_array >= space.feature_space.low) & (value_array <= space.feature_space.high)):
+                    if not (
+                        np.all(np.isinf(space.feature_space.low))
+                        and np.all(np.isinf(space.feature_space.high))
+                    ):
+                        if not np.all(
+                            (value_array >= space.feature_space.low)
+                            & (value_array <= space.feature_space.high)
+                        ):
                             raise AssertionError(
                                 f"Observation from {method} at {item_path} out of bounds: "
                                 f"got {value_array}, expected values in "
@@ -172,18 +183,19 @@ def validate_observation(observation: Dict[str, Any], observation_space: spaces.
             if value < 0 or value >= space.n:
                 raise AssertionError(
                     f"Observation from {method} at {new_path} out of range: "
-                    f"got {value}, expected [0, {space.n-1}] for {space}"
+                    f"got {value}, expected [0, {space.n - 1}] for {space}"
                 )
 
         else:
-            raise AssertionError(
-                f"Unsupported space type at {new_path}: {space}"
-            )
+            raise AssertionError(f"Unsupported space type at {new_path}: {space}")
 
-def validate_dict(observation: Dict[str, Any], space: spaces.Dict, method: str, path: str) -> None:
+
+def validate_dict(
+    observation: Dict[str, Any], space: spaces.Dict, method: str, path: str
+) -> None:
     """
     Validate a dictionary observation against a Dict space.
-    
+
     Args:
         observation: The dictionary to validate.
         space: The Dict space to validate against.
@@ -207,7 +219,7 @@ def validate_dict(observation: Dict[str, Any], space: spaces.Dict, method: str, 
                 f"Observation from {method} at {new_path} is missing required key: {key}"
             )
         value = observation[key]
-        
+
         # Handle nested spaces
         if isinstance(subspace, spaces.Text):
             if not isinstance(value, str):
@@ -242,7 +254,9 @@ def validate_dict(observation: Dict[str, Any], space: spaces.Dict, method: str, 
                     f"got {value_array.dtype}, expected {subspace.dtype} for {subspace}"
                 )
             if not (np.all(np.isinf(subspace.low)) and np.all(np.isinf(subspace.high))):
-                if not np.all((value_array >= subspace.low) & (value_array <= subspace.high)):
+                if not np.all(
+                    (value_array >= subspace.low) & (value_array <= subspace.high)
+                ):
                     raise AssertionError(
                         f"Observation from {method} at {new_path} out of bounds: "
                         f"got {value_array}, expected values in "
@@ -257,7 +271,7 @@ def validate_dict(observation: Dict[str, Any], space: spaces.Dict, method: str, 
             if value < 0 or value >= subspace.n:
                 raise AssertionError(
                     f"Observation from {method} at {new_path} out of range: "
-                    f"got {value}, expected [0, {subspace.n-1}] for {subspace}"
+                    f"got {value}, expected [0, {subspace.n - 1}] for {subspace}"
                 )
         elif isinstance(subspace, spaces.Dict):
             validate_dict(value, subspace, method, new_path)
@@ -310,8 +324,14 @@ def validate_dict(observation: Dict[str, Any], space: spaces.Dict, method: str, 
                             f"got {value_array.dtype}, expected {subspace.feature_space.dtype} for {subspace.feature_space}"
                         )
                     # Check bounds (skip if infinite)
-                    if not (np.all(np.isinf(subspace.feature_space.low)) and np.all(np.isinf(subspace.feature_space.high))):
-                        if not np.all((value_array >= subspace.feature_space.low) & (value_array <= subspace.feature_space.high)):
+                    if not (
+                        np.all(np.isinf(subspace.feature_space.low))
+                        and np.all(np.isinf(subspace.feature_space.high))
+                    ):
+                        if not np.all(
+                            (value_array >= subspace.feature_space.low)
+                            & (value_array <= subspace.feature_space.high)
+                        ):
                             raise AssertionError(
                                 f"Observation from {method} at {item_path} out of bounds: "
                                 f"got {value_array}, expected values in "
@@ -322,6 +342,4 @@ def validate_dict(observation: Dict[str, Any], space: spaces.Dict, method: str, 
                         f"Unsupported sequence subspace at {item_path}: {subspace.feature_space}"
                     )
         else:
-            raise AssertionError(
-                f"Unsupported subspace type at {new_path}: {subspace}"
-            ) 
+            raise AssertionError(f"Unsupported subspace type at {new_path}: {subspace}")

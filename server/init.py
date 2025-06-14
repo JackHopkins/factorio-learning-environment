@@ -1,6 +1,7 @@
 """
 Initialization module for the Factorio MCP server with automatic connection
 """
+
 import asyncio
 import sys
 from server.state import FactorioMCPState
@@ -10,10 +11,12 @@ state = FactorioMCPState()
 _initialization_lock = asyncio.Lock()
 _initialized = False
 
+
 # Safe logging function that never writes to stdout
 def log_info(message):
     """Log a message to stderr to avoid MCP protocol corruption"""
     print(message, file=sys.stderr)
+
 
 # async def initialize_servers_if_needed():
 #     """Make sure we've initialized servers at least once"""
@@ -24,8 +27,9 @@ def log_info(message):
 #             _initialized = True
 #
 
+
 # Handle initialization at session start
-async def initialize_session(ctx = None):
+async def initialize_session(ctx=None):
     """Automatically initializes the Factorio server when a session begins"""
     log_info("Initializing Factorio session...")
 
@@ -44,6 +48,7 @@ async def initialize_session(ctx = None):
     else:
         return "No active Factorio servers available for connection"
 
+
 async def shutdown_session():
     """Clean up when session ends"""
     # Close any active connections
@@ -51,7 +56,6 @@ async def shutdown_session():
         log_info("Disconnecting from Factorio server...")
         state.active_server.reset()
         state.active_server = None
-
 
     # Clear any temporary state
     state.vcs_repos.clear()

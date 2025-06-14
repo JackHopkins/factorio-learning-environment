@@ -7,33 +7,39 @@ import numpy as np
 from PIL import Image as Img
 from skimage.util.shape import view_as_windows as viewW
 
+
 def print_timing(func):
-    '''
+    """
     create a timing decorator function
     use
     @print_timing
     just above the function you want to time
-    '''
+    """
+
     @wraps(func)  # improves debugging
     def wrapper(*arg):
         start = time.perf_counter()  # needs python3.3 or higher
         result = func(*arg)
         end = time.perf_counter()
-        fs = '{} took {:.3f} microseconds'
-        print(fs.format(func.__name__, (end - start)*1000000))
+        fs = "{} took {:.3f} microseconds"
+        print(fs.format(func.__name__, (end - start) * 1000000))
         return result
+
     return wrapper
 
-def render_images(factorio):
 
+def render_images(factorio):
     for key, val in factorio.minimaps.items():
         data = np.uint8(np.clip(val, 0, 255))
-        img = Img.fromarray(data, 'L')
+        img = Img.fromarray(data, "L")
         # img = Image.fromarray(factorio.minimaps['all'], 'RGB')
-        img.save(f'logs/{key}.png')
-        #img.show()
+        img.save(f"logs/{key}.png")
+        # img.show()
 
-def stitch(rolled_grid: np.array, added_row: np.array, movement_vector: Tuple[int, int]):
+
+def stitch(
+    rolled_grid: np.array, added_row: np.array, movement_vector: Tuple[int, int]
+):
     if movement_vector[0] == 0:
         if movement_vector[1] > 0:
             concatenated = numpy.concatenate([rolled_grid, added_row], axis=0)
@@ -53,6 +59,7 @@ def stitch(rolled_grid: np.array, added_row: np.array, movement_vector: Tuple[in
 
     return snipped
 
+
 def roll(grid: np.array, movement_vector: Tuple[int, int]):
     # If no X axis movement is happening
     if movement_vector[0] == 0:
@@ -65,6 +72,7 @@ def roll(grid: np.array, movement_vector: Tuple[int, int]):
     else:
         roll_X = np.roll(grid, movement_vector[0], 1)
         return np.roll(roll_X, movement_vector[1], 0)
+
 
 def strided_indexing_roll(a, r):
     # Concatenate with sliced to cover all rolls
@@ -89,8 +97,8 @@ def indep_roll(arr, shifts, axis=1):
     axis : int
         Axis along which elements are shifted.
     """
-    arr = np.swapaxes(arr,axis,-1)
-    all_idcs = np.ogrid[[slice(0,n) for n in arr.shape]]
+    arr = np.swapaxes(arr, axis, -1)
+    all_idcs = np.ogrid[[slice(0, n) for n in arr.shape]]
 
     # Convert to a positive shift
     shifts[shifts < 0] += arr.shape[-1]

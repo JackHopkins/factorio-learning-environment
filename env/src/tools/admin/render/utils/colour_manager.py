@@ -1,5 +1,5 @@
 import colorsys
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 from collections import defaultdict
 
 from env.src.entities import Entity, EntityStatus
@@ -34,7 +34,9 @@ class ColourManager:
 
         return colors
 
-    def assign_entity_colors(self, entities: List[Entity]) -> Dict[str, Tuple[int, int, int]]:
+    def assign_entity_colors(
+        self, entities: List[Entity]
+    ) -> Dict[str, Tuple[int, int, int]]:
         """Dynamically assign colors to entity types based on their categories"""
         # Reset state
         self.entity_colors = {}
@@ -45,7 +47,9 @@ class ColourManager:
         for entity in entities:
             # Count occurrences of each entity type
             entity_name = entity.name
-            self.entity_type_counts[entity_name] = self.entity_type_counts.get(entity_name, 0) + 1
+            self.entity_type_counts[entity_name] = (
+                self.entity_type_counts.get(entity_name, 0) + 1
+            )
 
             # Get category for this entity
             if entity_name not in entity_categories:
@@ -62,7 +66,9 @@ class ColourManager:
                 self.entity_colors[entity_name] = self.config.CATEGORY_COLORS[category]
 
         # Generate colors for any unknown categories
-        unknown_categories = [c for c in categories if c not in self.config.CATEGORY_COLORS]
+        unknown_categories = [
+            c for c in categories if c not in self.config.CATEGORY_COLORS
+        ]
         if unknown_categories:
             category_colors = {}
             colors = self.generate_high_contrast_colors(len(unknown_categories))
@@ -77,7 +83,7 @@ class ColourManager:
         # Sort entity types by count for legend display
         self.sorted_entity_types = sorted(
             self.entity_type_counts.keys(),
-            key=lambda x: (-(self.entity_type_counts.get(x, 0)), x)
+            key=lambda x: (-(self.entity_type_counts.get(x, 0)), x),
         )
 
         return self.entity_colors
@@ -101,13 +107,15 @@ class ColourManager:
             EntityStatus.NO_POWER,
             EntityStatus.LOW_POWER,
             EntityStatus.NO_FUEL,
-            EntityStatus.EMPTY
+            EntityStatus.EMPTY,
         ]:
             return tuple(max(c - 50, 0) for c in base_color)
 
         return base_color
 
-    def get_entities_by_category(self) -> Tuple[Dict[str, List[Tuple[str, int]]], Dict[str, str]]:
+    def get_entities_by_category(
+        self,
+    ) -> Tuple[Dict[str, List[Tuple[str, int]]], Dict[str, str]]:
         """
         Group entity types by their categories with counts and provide shape information
 
@@ -122,13 +130,22 @@ class ColourManager:
         # Find the category for each entity type and group them
         for entity_name in self.entity_type_counts.keys():
             # Determine appropriate category
-            if entity_name in ["iron-ore", "copper-ore", "coal", "stone", "uranium-ore", "crude-oil"]:
+            if entity_name in [
+                "iron-ore",
+                "copper-ore",
+                "coal",
+                "stone",
+                "uranium-ore",
+                "crude-oil",
+            ]:
                 category = entity_name
             elif entity_name == "water":
                 category = "water"
             else:
                 # For regular entities, get the actual category
-                category = self.categorizer.get_entity_category(prototype_by_name[entity_name])
+                category = self.categorizer.get_entity_category(
+                    prototype_by_name[entity_name]
+                )
 
             # Get shape based on category
             shape_type = self.config.get_category_shape(category)
@@ -142,7 +159,7 @@ class ColourManager:
         for category in entities_by_category:
             entities_by_category[category] = sorted(
                 entities_by_category[category],
-                key=lambda x: (-x[1], x[0])  # Sort by count (descending), then name
+                key=lambda x: (-x[1], x[0]),  # Sort by count (descending), then name
             )
 
         return dict(entities_by_category), entity_shapes

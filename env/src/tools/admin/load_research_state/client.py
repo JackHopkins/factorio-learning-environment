@@ -27,19 +27,19 @@ class LoadResearchState(Tool):
                     "name": tech.name,
                     "researched": tech.researched,
                     "enabled": tech.enabled,
-                    #"visible": tech.visible,
+                    # "visible": tech.visible,
                     "level": tech.level,
                     "research_unit_count": tech.research_unit_count,
                     "research_unit_energy": tech.research_unit_energy,
                     "prerequisites": tech.prerequisites,
-                    "ingredients": tech.ingredients
+                    "ingredients": tech.ingredients,
                 }
                 for name, tech in state.technologies.items()
             },
             "current_research": state.current_research,
             "research_progress": state.research_progress,
             "research_queue": state.research_queue,
-            "progress": state.progress
+            "progress": state.progress,
         }
 
         return self.execute(self.player_index, raw_state)

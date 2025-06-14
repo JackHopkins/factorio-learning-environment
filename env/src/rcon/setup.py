@@ -1,4 +1,5 @@
 """Setup information"""
+
 import setuptools
 
 with open("README.md", "r") as fh:
@@ -19,6 +20,6 @@ setuptools.setup(
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
         "Development Status :: 4 - Beta",
-        "Natural Language :: English"
+        "Natural Language :: English",
     ],
 )

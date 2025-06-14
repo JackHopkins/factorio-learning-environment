@@ -1,5 +1,4 @@
-classifier_prompt = \
-"""
+classifier_prompt = """
 Analyze if the following text contains specific Factorio game instructions or tutorials about actions that a player can take in the game.
 Content about actions, commands, or steps related to building, mining, crafting, or automating = 'true'
 Content about setting up the game, logging in, downloading, installing the game, or general information not related to gameplay mechanics = 'false'
@@ -10,8 +9,7 @@ Content referring to space, Gleba, Vulcanus, Factorio Space Age, Factorio V2.+ =
 Respond with only 'true' or 'false'.
 """
 
-extract_steps = \
-"""
+extract_steps = """
 Convert the Factorio guide into structured, nested, actionable steps that an AI program could execute. Format:
 1. Main task
 1.1. Sub task
@@ -27,5 +25,4 @@ Any steps relating to blueprints should be excluded.
 Each step must be directly actionable in-game by an AI agent.
 """
 
-finetune_system_prompt = \
-"""You are a helpful assistant that decides on the most appropriate Factorio game objective"""
+finetune_system_prompt = """You are a helpful assistant that decides on the most appropriate Factorio game objective"""

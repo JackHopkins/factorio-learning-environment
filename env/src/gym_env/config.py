@@ -10,6 +10,7 @@ from a2a.types import AgentCard
 @dataclass
 class GymRunConfig:
     """Configuration for a single gym environment evaluation run"""
+
     task: str
     model: str
     version: Optional[int] = None
@@ -21,6 +22,7 @@ class GymRunConfig:
 @dataclass
 class GymEvalConfig:
     """Configuration for gym evaluation"""
+
     agents: List[GymAgent]
     version: int
     version_description: str
@@ -29,5 +31,5 @@ class GymEvalConfig:
     agent_cards: Optional[List[AgentCard]] = None
 
     def __post_init__(self):
-        if self.task is None and hasattr(self.agents[0], 'task'):
+        if self.task is None and hasattr(self.agents[0], "task"):
             self.task = self.agents[0].task

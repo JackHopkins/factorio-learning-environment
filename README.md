@@ -82,8 +82,8 @@ For development, see [BUILD.md](BUILD.md) for detailed build instructions.
 git clone https://github.com/JackHopkins/factorio-learning-environment.git
 cd factorio-learning-environment
 
-# Using uv (recommended)
-uv pip install -e .
+# Using uv
+uv sync
 
 # Using pip
 pip install -e .

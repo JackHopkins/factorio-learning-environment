@@ -1,5 +1,4 @@
 [
     {"task": "open_play.json",
-    "model": "gpt-4o", 
-"version": 13}
+    "model": "gpt-4o"}
     ]

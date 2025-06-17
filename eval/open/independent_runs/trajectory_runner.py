@@ -22,6 +22,7 @@ from env.src.models.program import Program
 from env.src.instance import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
 from agents.utils.python_parser import PythonParser
+from agents.utils.metrics import timing_tracker, log_metrics
 #from models.response import EnvironmentResponse
 from env.src.namespace import FactorioNamespace
 from env.src.protocols.a2a.handler import A2AMessage
@@ -104,6 +105,7 @@ class TrajectoryRunner:
                 meta={"model": self.agents[agent_idx].model, "process_id": self.process_id},
                 depth=len(messages) - 2
             )
+            program.timing_metrics = timing_tracker.get_metrics()
 
             if meta:
                 program.meta.update(meta)
@@ -257,6 +259,9 @@ class TrajectoryRunner:
                           f"Model: {self.config.agents[agent_idx].model} - "
                           f"Iteration {agent_step_counter[agent_idx]}/{self.config.task.trajectory_length} - "
                           f"Agent #{agent_idx}")
+
+                    # Print performance metrics
+                    log_metrics()
 
                     if not evaluated_program:
                         print(f"Evaluation failed for agent {agent_idx} at iteration {agent_step_counter[agent_idx]}")

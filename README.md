@@ -99,7 +99,7 @@ pip install psycopg2 lupa
 ```
 
 3. **Set up Factorio client**:
-- Purchase Factorio from the [official website](https://www.factorio.com/) or on Steam.
+- Purchase Factorio from the [official website](https://www.factorio.com/) (recommended) or on Steam.
 - Downgrade to version 1.1.110:
     - Steam: Right-click Factorio → Properties → Betas → Select 1.1.110
     - **Important**: Make sure to uncheck the Space Age DLC if you have it, as it forces the 2.x branch
@@ -144,77 +144,19 @@ cd ../local
 **Note**: On Windows, you may need to configure Windows Defender Firewall to allow these ports.
 
 7. **Activate server**:
-- Open Factorio client
-- Navigate to _Multiplayer_
-- Connect to `localhost:34197` (default) or your configured address in Docker. 
-  - Once connected, you can safely disconnect. This step confirms your Factorio license with the server.
+  - Open Factorio client
+  - Navigate to _Multiplayer_
+  - Connect to `localhost:34197` (default) or your configured address in Docker. 
+    - Once connected, you can safely disconnect. This step confirms your Factorio license with the server.
 
-8. **Configure DB**: Create an `.env` file in the root directory, modelled on `.example.env`
-
-First create the .env file. Note that API keys are only required for the respective model providers that will be used to run eval on
-
-```
-# model providers
-OPENAI_API_KEY=<KEY>
-ANTHROPIC_API_KEY=<KEY>
-TOGETHER_API_KEY=<KEY>
-OPEN_ROUTER_API_KEY=<KEY>
-
-# If using Postgres DB, NOT REQUIRED (See section on Database)
-SKILLS_DB_PORT=""
-SKILLS_DB_NAME=""
-SKILLS_DB_USER=""
-SKILLS_DB_PASSWORD=""
-
-# If using SQLite for DB (See section on Database)
-SQLITE_DB_FILE = ""
-
-# AWS credentials if wanting to use Cloudformation, NOT REQUIRED
-AWS_SECRET_ACCESS_KEY=<KEY>
-AWS_ACCESS_KEY_ID=""
-AWS_DEFAULT_REGION=""
-CLUSTER_NAME=""
-```
-
-If you are not using a Postgres DB, you should create an SQLite database file:
+8. **Configure DB**: Copy the example environment file:
 ```bash
-sqlite3 mydatabase.db
+cp .example.env .env
 ```
-
-Create the required tables:
-```
-CREATE TABLE programs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT NOT NULL,
-    value REAL DEFAULT 0.0,
-    visits INTEGER DEFAULT 0,
-    parent_id INTEGER,
-    state_json TEXT,
-    conversation_json TEXT NOT NULL,
-    completion_token_usage INTEGER,
-    prompt_token_usage INTEGER,
-    token_usage INTEGER,
-    response TEXT,
-    holdout_value REAL,
-    raw_reward REAL,
-    version INTEGER DEFAULT 1,
-    version_description TEXT DEFAULT '',
-    model TEXT DEFAULT 'gpt-4o',
-    meta TEXT,
-    achievements_json TEXT,
-    instance INTEGER DEFAULT -1,
-    depth REAL DEFAULT 0.0,
-    advantage REAL DEFAULT 0.0,
-    ticks INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-And replace the `PostgresDBClient` object at `create_db_client` function in `eval\open\independent_runs\trajectory_runner.py` with the SQLliteDBClient object (see [Database](#database) section).
 
 9. **Run Eval**: Running open and lab play with example run configs:
-   1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
-   2. Tasks (one parallel run of iron-ore task): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_lab_play.json`
+     1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
+     2. Tasks (one parallel run of iron-ore task): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_lab_play.json`
 
 ## Troubleshooting
 - **"No valid programs found for version X"**: This is normal during initialization. The system will start generating programs shortly.

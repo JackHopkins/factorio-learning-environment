@@ -170,8 +170,8 @@ class DBClient(ABC):
                         INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, 
                                            completion_token_usage, prompt_token_usage, token_usage, response, 
                                            holdout_value, raw_reward, version, version_description, model, meta, 
-                                           achievements_json, instance, depth, advantage, ticks)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                           achievements_json, instance, depth, advantage, ticks, timing_metrics_json)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id, created_at
                     """, (program.code, program.value, 0, program.parent_id,
                           program.state.to_raw() if program.state else None,
@@ -190,7 +190,8 @@ class DBClient(ABC):
                           program.instance,
                           program.depth/2,
                           program.advantage,
-                          program.ticks
+                          program.ticks,
+                          json.dumps(program.timing_metrics) if program.timing_metrics else None
                           ))
 
                     id, created_at = cur.fetchone()
@@ -378,7 +379,7 @@ class DBClient(ABC):
                     # Handle timing_metrics separately since it needs to be JSON serialized
                     timing_metrics = updates.pop('timing_metrics', None)
                     if timing_metrics is not None:
-                        updates['timing_metrics_json'] = json.dumps([m.dict() for m in timing_metrics])
+                        updates['timing_metrics_json'] = json.dumps(timing_metrics)
 
                     set_clauses = [f"{k} = %s" for k in updates.keys()]
                     values = list(updates.values())
@@ -572,8 +573,8 @@ class SQLliteDBClient(DBClient):
                     INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, 
                                           completion_token_usage, prompt_token_usage, token_usage, response, 
                                           holdout_value, raw_reward, version, version_description, model, meta, 
-                                          achievements_json, instance, depth, advantage, ticks)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                          achievements_json, instance, depth, advantage, ticks, timing_metrics_json)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     program.code,
                     program.value,
@@ -595,7 +596,8 @@ class SQLliteDBClient(DBClient):
                     program.instance,
                     program.depth / 2,
                     program.advantage,
-                    program.ticks
+                    program.ticks,
+                    json.dumps(program.timing_metrics) if program.timing_metrics else None
                 ))
 
                 # Get the last inserted row ID

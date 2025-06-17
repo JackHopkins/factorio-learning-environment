@@ -106,9 +106,7 @@ def track_timing_async(operation_name: Optional[str] = None):
         async def wrapper(*args, **kwargs):
             name = operation_name or func.__name__
             async with timing_tracker.track_async(name,
-                                              function=func.__name__,
-                                              args=args,
-                                              kwargs=kwargs):
+                                              function=func.__name__):
                 return await func(*args, **kwargs)
         return wrapper
     
@@ -139,6 +137,8 @@ def print_metrics(metrics: List[Dict[str, Any]], indent: int = 0):
                     meta_parts.append(f"reasoning={value}")
                 elif key == 'llm':
                     meta_parts.append(f"llm={value}")
+                elif key == 'model':
+                    meta_parts.append(f"model={value}")
             if meta_parts:
                 meta_str = f" ({', '.join(meta_parts)})"
         

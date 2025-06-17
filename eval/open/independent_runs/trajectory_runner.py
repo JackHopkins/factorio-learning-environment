@@ -105,6 +105,7 @@ class TrajectoryRunner:
                 meta={"model": self.agents[agent_idx].model, "process_id": self.process_id},
                 depth=len(messages) - 2
             )
+            program.timing_metrics = timing_tracker.get_metrics()
 
             if meta:
                 program.meta.update(meta)

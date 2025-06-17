@@ -52,11 +52,14 @@ automation (e.g electronic-circuit manufacturing).
 
 ### Package Installation
 
-You can install the factorio-learning-environment package directly using uv:
+You can install the factorio-learning-environment package using either uv or pip:
 
 ```bash
-# Install from PyPI
+# Install from PyPI using uv
 uv add factorio-learning-environment
+
+# Install from PyPI using pip
+pip install factorio-learning-environment
 ```
 
 ### Usage
@@ -78,7 +81,12 @@ For development, see [BUILD.md](BUILD.md) for detailed build instructions.
 ```bash
 git clone https://github.com/JackHopkins/factorio-learning-environment.git
 cd factorio-learning-environment
-uv sync
+
+# Using uv (recommended)
+uv pip install -e .
+
+# Using pip
+pip install -e .
 ```
 
 2. **Set up Factorio client**:

@@ -104,7 +104,6 @@ newgrp docker
 
 4. **Launch FLE Docker server**:
 ```bash
-
 # For macOS and Windows (Open Docker Desktop application):
 
 # For Linux (Start Docker daemon):

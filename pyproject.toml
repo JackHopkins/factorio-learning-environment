@@ -27,7 +27,6 @@ dependencies = [
     "dotenv>=0.9.9",
     "pydantic>=2.10.6",
     "lupa>=2.4",
-    "psycopg2>=2.9.10",
     "slpp>=1.2.3",
     "factorio-rcon-py==1.2.1",
     "construct>=2.10.70",
@@ -56,6 +55,7 @@ cluster = [
 eval = [
     "numpy>=2.2.3",
     "scikit-image>=0.25.2",
+    "psycopg2>=2.9.10",
 ]
 all = [
     "anthropic>=0.49.0",

@@ -52,27 +52,15 @@ automation (e.g electronic-circuit manufacturing).
 
 ### Package Installation
 
-You can install the factorio-learning-environment package directly using pip:
+You can install the factorio-learning-environment package using either uv or pip:
 
 ```bash
-# Install from PyPI
+# Install from PyPI using uv
+uv add factorio-learning-environment
+
+# Install from PyPI using pip
 pip install factorio-learning-environment
 ```
-
-### Development Installation
-
-For development, install the package in editable mode:
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/factorio-learning-environment.git
-cd factorio-learning-environment
-
-# Install in development mode
-python prepare_build.py && pip install -e
-```
-
-See [BUILD.md](BUILD.md) for detailed build instructions.
 
 ### Usage
 
@@ -82,38 +70,43 @@ After installation, you can import the package in your Python code:
 import factorio_learning_environment as fle
 ```
 
+### Development Installation
+
+For development, see [BUILD.md](BUILD.md) for detailed build instructions.
+
 ### Quickstart
 
 1. **Clone the repository**:
 
-```
+```bash
 git clone https://github.com/JackHopkins/factorio-learning-environment.git
 cd factorio-learning-environment
+
+# Using uv
+uv sync
+
+# Using pip
 pip install -e .
 ```
 
-2. **Install dependencies**:
-```
-pip install psycopg2 lupa
-# Install other dependencies if prompted by pip during runtime
-```
-
-3. **Set up Factorio client**:
+2. **Set up Factorio client**:
 - Purchase Factorio from the [official website](https://www.factorio.com/) or on Steam.
 - Downgrade to version 1.1.110:
     - Steam: Right-click Factorio → Properties → Betas → Select 1.1.110
     - **Important**: Make sure to uncheck the Space Age DLC if you have it, as it forces the 2.x branch
 
-4. **Configure Docker permissions** (for Linux users):
+3. **Configure Docker permissions** (for Linux users):
 If you typically run Docker with sudo, add your user to the docker group:
 ```bash
 sudo usermod -aG docker $USER
 newgrp docker
 ```
 
-5. **Launch FLE Docker server**:
+4. **Launch FLE Docker server**:
 ```bash
-# Start Docker daemon
+# For macOS and Windows (Open Docker Desktop application):
+
+# For Linux (Start Docker daemon):
 sudo systemctl start docker
 
 # Build Docker image
@@ -131,20 +124,20 @@ cd ../local
 ```
 **Note**: The script automatically detects your platform (arm64/amd64) and configures Docker appropriately.
 
-6. **Configure firewall** (if running server on a different machine):
-
-    Open the following ports:
+5. **Configure firewall** (if running server on a different machine):
+Open the following ports:
 - UDP 34197 (Game connection)
 - TCP 27015 (RCON)
 
+**Note**: On Windows, you may need to configure Windows Defender Firewall to allow these ports.
 
-7. **Activate server**:
+6. **Activate server**:
 - Open Factorio client
 - Navigate to _Multiplayer_
 - Connect to `localhost:34197` (default) or your configured address in Docker. 
   - Once connected, you can safely disconnect. This step confirms your Factorio license with the server.
 
-8. **Configure DB**: Create an `.env` file in the root directory, modelled on `.example.env`
+7. **Configure DB**: Create an `.env` file in the root directory, modelled on `.example.env`
 
 First create the .env file. Note that API keys are only required for the respective model providers that will be used to run eval on
 
@@ -208,7 +201,7 @@ CREATE TABLE programs (
 );
 ```
 
-9. **Run Eval**: Running open and lab play with example run configs:
+8. **Run Eval**: Running open and lab play with example run configs:
    1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
    2. Tasks (one parallel run of iron-ore task): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_lab_play.json`
 

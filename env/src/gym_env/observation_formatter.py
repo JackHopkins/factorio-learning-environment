@@ -3,7 +3,7 @@ import pickle
 import re
 
 from entities import EntityStatus, Direction
-from gym_env.observation import Achievement, Observation
+from gym_env.observation import Observation
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 
@@ -37,13 +37,6 @@ class FormattedObservation:
     #### Outputs
     - iron-ore: 0.75/s
     Shows both input consumption and output production rates per second."""
-
-    achievements_str: str
-    """Formatted string showing achievement progress.
-    Example:
-    ### Achievement Progress
-    - Automated Mining: 75.0%
-    Empty string if no achievements are being tracked."""
 
     task_str: str
     """Formatted string showing task verification status and criteria.
@@ -136,7 +129,6 @@ class BasicObservationFormatter:
                  include_inventory: bool = True,
                  include_entities: bool = True,
                  include_flows: bool = True,
-                 include_achievements: bool = True,
                  include_task: bool = True,
                  include_messages: bool = True,
                  include_functions: bool = True,
@@ -147,7 +139,6 @@ class BasicObservationFormatter:
         self.include_inventory = include_inventory
         self.include_entities = include_entities
         self.include_flows = include_flows
-        self.include_achievements = include_achievements
         self.include_task = include_task
         self.include_messages = include_messages
         self.include_functions = include_functions
@@ -422,31 +413,6 @@ class BasicObservationFormatter:
         return research_str
 
     @staticmethod
-    def format_achievements(achievements: List[Union[Achievement, Dict[str, Any]]]) -> str:
-        """Format achievement information"""
-        if not achievements or not any(achievements):
-            return "### Achievement Progress\nNone"
-
-        achievement_strs = ["### Achievement Progress"]
-
-        for achievement in achievements:
-            # Handle both dictionary and Achievement object formats
-            static = achievement.get('static', {}) if isinstance(achievement, dict) else achievement.static
-            dynamic = achievement.get('dynamic', {}) if isinstance(achievement, dict) else achievement.dynamic
-
-            if static:
-                achievement_strs.append("\n#### Static Achievements")
-                for item, value in static.items():
-                    achievement_strs.append(f"- {item}: {value:.1f}")
-
-            if dynamic:
-                achievement_strs.append("\n#### Dynamic Achievements")
-                for item, value in dynamic.items():
-                    achievement_strs.append(f"- {item}: {value:.1f}/s")
-
-        return "\n".join(achievement_strs)
-
-    @staticmethod
     def format_task(task: Optional[Dict[str, Any]]) -> str:
         """Format task verification information"""
         if not task:
@@ -547,11 +513,6 @@ class BasicObservationFormatter:
             formatted_parts.append(research_str)
 
         # Add optional components if they exist and are enabled
-        if self.include_achievements:
-            achievements_str = self.format_achievements(obs_dict.get('achievements', []))
-            if achievements_str:
-                formatted_parts.append(achievements_str)
-
         if self.include_task:
             task_str = self.format_task(obs_dict.get('task_verification'))
             if task_str:
@@ -576,7 +537,6 @@ class BasicObservationFormatter:
             inventory_str=self.format_inventory(obs_dict.get('inventory', [])) if self.include_inventory else "",
             entities_str=self.format_entities(obs_dict.get('entities', [])) if self.include_entities else "",
             flows_str=self.format_flows(obs_dict.get('flows', {})) if self.include_flows else "",
-            achievements_str=self.format_achievements(obs_dict.get('achievements', [])) if self.include_achievements else "",
             task_str=self.format_task(obs_dict.get('task_verification')) if self.include_task else "",
             messages_str=self.format_messages(obs_dict.get('messages', []), last_message_timestamp) if self.include_messages else "",
             functions_str=self.format_functions(obs_dict.get('serialized_functions', [])) if self.include_functions else "",

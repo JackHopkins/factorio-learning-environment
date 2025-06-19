@@ -6,6 +6,7 @@ from gym import spaces
 from typing import Dict, List, Optional, Tuple, Union, Any
 import pickle
 import datetime
+import string
 
 from env.src.instance import FactorioInstance
 from env.src.models.game_state import GameState
@@ -16,10 +17,19 @@ from agents import Response, TaskResponse
 from env.src.gym_env.observation import (
     Observation, 
     GameInfo, 
-    Achievement, 
     AgentMessage,
 )
 from eval.tasks.task_abc import TaskABC
+
+# need to do this since gym doesn't work with numpy>=2.0 otherwise.
+np.bool8 = np.dtype(np.bool)
+
+
+class AllCharText(gym.spaces.Text):
+    def __init__(self, max_length: int):
+        # Use all printable characters except whitespace (or include whitespace if needed)
+        charset = string.ascii_letters + string.digits + string.punctuation + ' \n\t'
+        super().__init__(max_length=max_length, min_length=0, charset=charset)
 
 
 class FactorioGymEnv(gym.Env):
@@ -40,43 +50,44 @@ class FactorioGymEnv(gym.Env):
         # Define action space - a dictionary containing agent index and code
         self.action_space = spaces.Dict({
             'agent_idx': spaces.Discrete(instance.num_agents),  # Index of the agent taking the action
-            'code': spaces.Text(max_length=10000)  # The Python code to execute
+            'game_state': AllCharText(max_length=1000000),  # The game state to reset to before running code (GameState.to_raw() str)
+            'code': AllCharText(max_length=10000)  # The Python code to execute
         })
         
         # Define observation space with expanded fields
         self.observation_space = spaces.Dict({
             # Raw text output from the last action
-            'raw_text': spaces.Text(max_length=10000),
+            'raw_text': AllCharText(max_length=10000),
             
             # Entities on the map - now as text representations
-            'entities': spaces.Sequence(spaces.Text(max_length=1000)),  # Each entity's repr string
+            'entities': spaces.Sequence(AllCharText(max_length=1000)),  # Each entity's repr string
             
             # Current inventory state
             'inventory': spaces.Sequence(spaces.Dict({
-                'type': spaces.Text(max_length=200),
+                'type': AllCharText(max_length=200),
                 'quantity': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
             })),
             
             # Research state
             'research': spaces.Dict({
                 'technologies': spaces.Sequence(spaces.Dict({
-                    'name': spaces.Text(max_length=200),
+                    'name': AllCharText(max_length=200),
                     'researched': spaces.Discrete(2),  # 0 or 1
                     'enabled': spaces.Discrete(2),  # 0 or 1
                     'level': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
                     'research_unit_count': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
                     'research_unit_energy': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                    'prerequisites': spaces.Sequence(spaces.Text(max_length=200)),
+                    'prerequisites': spaces.Sequence(AllCharText(max_length=200)),
                     'ingredients': spaces.Sequence(spaces.Dict({
-                        'item': spaces.Text(max_length=200),
+                        'item': AllCharText(max_length=200),
                         'amount': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
                     })),
                 })),
-                'current_research': spaces.Text(max_length=200),
+                'current_research': AllCharText(max_length=200),
                 'research_progress': spaces.Box(low=0, high=1, shape=(), dtype=np.float32),
-                'research_queue': spaces.Sequence(spaces.Text(max_length=200)),
+                'research_queue': spaces.Sequence(AllCharText(max_length=200)),
                 'progress': spaces.Sequence(spaces.Dict({
-                    'name': spaces.Text(max_length=200),
+                    'name': AllCharText(max_length=200),
                     'value': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
                 })),
             }),
@@ -91,49 +102,37 @@ class FactorioGymEnv(gym.Env):
             # Current score
             'score': spaces.Box(low=-np.inf, high=np.inf, shape=(), dtype=np.float32),
             
-            # Achievements
-            'achievements': spaces.Sequence(spaces.Dict({
-                'static': spaces.Dict({
-                    'type': spaces.Text(max_length=200),
-                    'value': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                }),
-                'dynamic': spaces.Dict({
-                    'type': spaces.Text(max_length=200),
-                    'value': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                }),
-            })),
-            
             # Production flows
             'flows': spaces.Dict({
                 'input': spaces.Sequence(spaces.Dict({
-                    'type': spaces.Text(max_length=200),
+                    'type': AllCharText(max_length=200),
                     'rate': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
                 })),
                 'output': spaces.Sequence(spaces.Dict({
-                    'type': spaces.Text(max_length=200),
+                    'type': AllCharText(max_length=200),
                     'rate': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
                 })),
                 'crafted': spaces.Sequence(spaces.Dict({
                     'crafted_count': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
                     'inputs': spaces.Dict({
-                        'type': spaces.Text(max_length=200),
+                        'type': AllCharText(max_length=200),
                         'amount': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
                     }),
                     'outputs': spaces.Dict({
-                        'type': spaces.Text(max_length=200),
+                        'type': AllCharText(max_length=200),
                         'amount': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
                     }),
                 })),
                 'harvested': spaces.Sequence(spaces.Dict({
-                    'type': spaces.Text(max_length=200),
+                    'type': AllCharText(max_length=200),
                     'amount': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
                 })),
                 'price_list': spaces.Sequence(spaces.Dict({
-                    'type': spaces.Text(max_length=200),
+                    'type': AllCharText(max_length=200),
                     'price': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
                 })),
                 'static_items': spaces.Sequence(spaces.Dict({
-                    'type': spaces.Text(max_length=200),
+                    'type': AllCharText(max_length=200),
                     'value': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
                 })),
             }),
@@ -142,22 +141,22 @@ class FactorioGymEnv(gym.Env):
             'task_verification': spaces.Dict({
                 'success': spaces.Discrete(2),  # 0 or 1
                 'meta': spaces.Sequence(spaces.Dict({
-                    'key': spaces.Text(max_length=200),
-                    'value': spaces.Text(max_length=1000),
+                    'key': AllCharText(max_length=200),
+                    'value': AllCharText(max_length=1000),
                 })),
             }),
             
             # Messages from other agents
             'messages': spaces.Sequence(spaces.Dict({
-                'sender': spaces.Text(max_length=200),
-                'content': spaces.Text(max_length=1000),
+                'sender': AllCharText(max_length=200),
+                'content': AllCharText(max_length=1000),
                 'timestamp': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
             })),
             
             # Serialized functions
             'serialized_functions': spaces.Sequence(spaces.Dict({
-                'name': spaces.Text(max_length=200),
-                'pickled_function': spaces.Text(max_length=10000),  # Pickled function as hex string
+                'name': AllCharText(max_length=200),
+                'pickled_function': AllCharText(max_length=10000),  # Pickled function as hex string
             })),
         })
         
@@ -217,11 +216,6 @@ class FactorioGymEnv(gym.Env):
                 meta=response.task.meta if hasattr(response.task, 'meta') else {}
             )
         
-        # Get achievements if available
-        achievements = []
-        if response and hasattr(response, 'achievements'):
-            achievements.append(Achievement.from_dict(response.achievements))
-        
         # Get serialized functions
         serialized_functions = []
         for func in namespace.get_functions():
@@ -237,7 +231,6 @@ class FactorioGymEnv(gym.Env):
             research=research_obs,
             game_info=game_info,
             score=response.score if response else 0.0,
-            achievements=achievements,
             flows=flows_obs,
             task_verification=task_verification,
             messages=messages_obs,
@@ -255,8 +248,9 @@ class FactorioGymEnv(gym.Env):
         
         Args:
             action: Dictionary containing:
-                - agent_idx: Index of the agent taking the action
-                - code: Python code string to execute
+                - agent_idx: int - Index of the agent taking the action
+                - game_state: GameState - GameState to reset to before executing the action
+                - code: str - Python code string to execute
             
         Returns:
             observation: The new observation as a dictionary matching the observation space
@@ -265,8 +259,10 @@ class FactorioGymEnv(gym.Env):
             info: Additional information
         """
         agent_idx = action['agent_idx']
+        game_state = GameState.parse_raw(action['game_state'])
         code = action['code']
         
+        self.reset_instance(game_state)
         # Get initial state information
         namespace = self.instance.namespaces[agent_idx]
         start_production_flows = ProductionFlows.from_dict(namespace._get_production_stats())
@@ -288,13 +284,13 @@ class FactorioGymEnv(gym.Env):
         
         # Get task verification if task exists
         task_response = task_success = None
-        done = False
+        terminated = truncated = False
         if self.task:
             # First get the raw verification
             task_success = self.task.verify(reward, self.instance, step_statistics={})
             # Then enhance the response with task output
             task_response = self.task.enhance_response_with_task_output(result, task_success)
-            done = task_success.success
+            terminated = task_success.success
 
         # Get post-execution flows and calculate achievements
         current_flows = ProductionFlows.from_dict(namespace._get_production_stats())
@@ -326,11 +322,10 @@ class FactorioGymEnv(gym.Env):
             'flows': response.flows,
             'agent_idx': agent_idx,
             'last_message_timestamp': self.last_message_timestamps[agent_idx],
-            'task_verification': task_response,
-            'achievements': achievements  # Add achievements to info
+            'task_verification': task_response
         }
         
-        return observation.to_dict(), reward, done, info
+        return observation.to_dict(), reward, terminated, truncated, info
 
     def reset_instance(self, state: Optional[GameState] = None) -> None:
         """Reset the Factorio instance to a given state or initial state.
@@ -340,9 +335,10 @@ class FactorioGymEnv(gym.Env):
         """
         self.instance.reset(state)
 
-    def reset(self, state: Optional[GameState] = None) -> Dict[str, Any]:
+    def reset(self, options: Dict[str, Any], seed: Optional[int] = None) -> Dict[str, Any]:
         """Reset the environment to initial state"""
-        self.reset_instance(state)
+        game_state = options.get('state', None)
+        self.reset_instance(game_state)
         self.initial_score, _ = self.instance.namespaces[0].score()
         self.last_observation = None  # Reset last observation
         # Reset message timestamps

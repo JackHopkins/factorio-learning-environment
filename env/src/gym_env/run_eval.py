@@ -5,16 +5,42 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 import json
+import gym
 
 from agents.gym_agent import GymAgent
 from gym_env.trajectory_runner import GymTrajectoryRunner
 from gym_env.config import GymRunConfig, GymEvalConfig
 from gym_env.observation_formatter import BasicObservationFormatter
-from eval.tasks.task_factory import TaskFactory
+from gym_env.registry import list_available_environments, get_environment_info
 from cluster.local.cluster_ips import get_local_container_ips
-from eval.open.independent_runs.trajectory_runner import get_next_version, create_factorio_instance, create_db_client
+from eval.open.independent_runs.trajectory_runner import get_next_version, create_db_client
 
 load_dotenv()
+
+def get_validated_run_configs(run_config_location: str) -> list[GymRunConfig]:
+    """Read and validate run configurations from file"""
+    # Read run config
+    with open(run_config_location, 'r') as f:
+        run_configs_raw = json.load(f)
+        run_configs = [GymRunConfig(**config) for config in run_configs_raw]
+
+    # Validate config
+    num_agents_in_configs = [run_config.num_agents for run_config in run_configs]
+    if any(num_agents == 1 for num_agents in num_agents_in_configs) and any(num_agents > 1 for num_agents in num_agents_in_configs):
+        raise ValueError("Cannot mix single agent and multi agent runs in the same run config file. Please split into separate files.")
+
+    # Validate that all environment IDs exist in the registry
+    available_envs = list_available_environments()
+    for run_config in run_configs:
+        if run_config.env_id not in available_envs:
+            raise ValueError(f"Environment ID '{run_config.env_id}' not found in registry. Available environments: {available_envs}")
+
+    # Check if we have enough containers
+    ips, udp_ports, tcp_ports = get_local_container_ips()
+    if len(tcp_ports) < len(run_configs):
+        raise ValueError(f"Not enough containers for {len(run_configs)} runs. Only {len(ips)} containers available.")
+    
+    return run_configs
 
 def run_process(run_idx: int, config: GymEvalConfig):
     """Run a single gym evaluation process"""
@@ -24,12 +50,14 @@ def run_process(run_idx: int, config: GymEvalConfig):
 async def run_trajectory(run_idx: int, config: GymEvalConfig):
     """Run a single gym evaluation process"""
     db_client = await create_db_client()
-    instance = await create_factorio_instance(run_idx, len(config.agents))
-    config.task.setup(instance)
+    
+    # Create gym environment using gym.make()
+    gym_env = gym.make(config.env_id)
+    
     log_dir = os.path.join("trajectory_logs", f"v{config.version}")
     runner = GymTrajectoryRunner(
         config=config,
-        instance=instance,
+        gym_env=gym_env,
         db_client=db_client,
         log_dir=log_dir,
         process_id=run_idx
@@ -44,30 +72,8 @@ async def main():
                        default=Path("eval", "open", "independent_runs", "gym_run_config.json"))
     args = parser.parse_args()
 
-    # Read run config
-    run_config_location = args.run_config
-    with open(run_config_location, 'r') as f:
-        run_configs_raw = json.load(f)
-        run_configs = [GymRunConfig(**config) for config in run_configs_raw]
-
-    # Validate config
-    num_agents_in_configs = [run_config.num_agents for run_config in run_configs]
-    if any(num_agents == 1 for num_agents in num_agents_in_configs) and any(num_agents > 1 for num_agents in num_agents_in_configs):
-        raise ValueError("Cannot mix single agent and multi agent runs in the same run config file. Please split into separate files.")
-
-    try:
-        # TODO: the server currently has only default agent cards. 
-        # But we aren't doing anything with them yet anyway.
-        num_agents = run_configs[0].num_agents
-        instance = await create_factorio_instance(0, num_agents)
-        system_prompt = instance.get_system_prompt()
-    except Exception as e:
-        raise Exception(f"Error creating factorio instance: {e}")
-
-    # Check if we have enough containers
-    ips, udp_ports, tcp_ports = get_local_container_ips()
-    if len(tcp_ports) < len(run_configs):
-        raise ValueError(f"Not enough containers for {len(run_configs)} runs. Only {len(ips)} containers available.")
+    # Read and validate run configurations
+    run_configs = get_validated_run_configs(args.run_config)
 
     # Get starting version number for new runs
     base_version = await get_next_version()
@@ -76,9 +82,16 @@ async def main():
     # Create and start processes
     processes = []
     for run_idx, run_config in enumerate(run_configs):
-        # Create task
-        task = TaskFactory.create_task(run_config.task)
-
+        # Get environment info from registry
+        env_info = get_environment_info(run_config.env_id)
+        if env_info is None:
+            raise ValueError(f"Could not get environment info for {run_config.env_id}")
+        
+        # Create gym environment to get task and instance
+        gym_env = gym.make(run_config.env_id)
+        task = gym_env.unwrapped.task
+        instance = gym_env.unwrapped.instance
+        
         # Create agents and their agent cards
         agents = []
         agent_cards = []
@@ -108,7 +121,8 @@ async def main():
             version_description=f"model:{run_config.model}\ntype:{task.task_key}\nnum_agents:{run_config.num_agents}",
             exit_on_task_success=run_config.exit_on_task_success,
             task=task,
-            agent_cards=agent_cards
+            agent_cards=agent_cards,
+            env_id=run_config.env_id
         )
         
         # Ensure agent cards are properly set for a2a functionality

@@ -1,49 +1,32 @@
-import asyncio
 from itertools import product
 import time
-import os
-import json
-import multiprocessing
 from typing import List, Optional, Dict, Any, Tuple
-from dataclasses import dataclass
 
-from agents.agent_abc import AgentABC
 from agents.gym_agent import GymAgent
 from agents import Policy, CompletionResult, CompletionReason
 from env.src.models.program import Program
 from env.src.models.game_state import GameState
 from env.src.models.conversation import Conversation
-from env.src.models.message import Message
-from env.src.instance import FactorioInstance
 from env.src.gym_env.environment import FactorioGymEnv
 from env.src.gym_env.observation import Observation
-from gym_env.trajectory_logger import TrajectoryLogger
-from gym_env.config import GymEvalConfig
-from eval.tasks.task_abc import TaskABC
+from env.src.gym_env.trajectory_logger import TrajectoryLogger
+from env.src.gym_env.config import GymEvalConfig
 from eval.open.db_client import PostgresDBClient
-from a2a.types import AgentCard
 
 class GymTrajectoryRunner:
     """Handles program generation and evaluation for a single trajectory in the gym environment"""
 
     def __init__(self,
                  config: GymEvalConfig,
-                 instance: FactorioInstance,
+                 gym_env: FactorioGymEnv,
                  process_id: int,
                  db_client: Optional[PostgresDBClient],
-                 log_dir: Optional[str] = None,
-                 value_accrual_time: float = 1.0,
-                 error_penalty: float = 0.0):
+                 log_dir: Optional[str] = None):
         self.config = config
         self.agents = config.agents
-        self.instance = instance
+        self.gym_env = gym_env
+        self.instance = gym_env.unwrapped.instance  # Get instance from gym environment
         self.db_client = db_client
-        self.gym_env = FactorioGymEnv(
-            instance,
-            task=config.task,
-            value_accrual_time=value_accrual_time,
-            error_penalty=error_penalty
-        )
         self.process_id = process_id
         self.start_time = time.time()
         
@@ -140,12 +123,12 @@ class GymTrajectoryRunner:
         
         if not current_state:
             current_state = self.config.task.starting_game_state
-            self.gym_env.reset(current_state)
+            self.gym_env.reset(options={'state': current_state})
             
             # Initialize agent conversations
             for agent_idx, agent in enumerate(self.agents):
                 conversation = Conversation()
-                initial_obs = self.gym_env.get_observation(agent_idx)
+                initial_obs = self.gym_env.unwrapped.get_observation(agent_idx)
                 formatted_obs = agent.observation_formatter.format(initial_obs).raw_str
                 conversation.add_user_message(formatted_obs)
                 agent.reset(conversation)
@@ -164,61 +147,61 @@ class GymTrajectoryRunner:
             agent = self.agents[agent_idx]
             iteration_start = time.time()
             agent_completed = False
-            try:
-                # Loop while the agent is not completed yet
-                while not agent_completed and agent_steps[agent_idx] < max_steps:
-                    # Generate policy using agent's method
-                    policy = await agent.generate_policy()
-                    agent_steps[agent_idx] += 1
-                    if not policy:
-                        print(f"Policy generation failed for agent {agent_idx} at iteration {agent_steps[agent_idx]}")
-                        break
+            #try:
+            # Loop while the agent is not completed yet
+            while not agent_completed and agent_steps[agent_idx] < max_steps:
+                # Generate policy using agent's method
+                policy = await agent.generate_policy()
+                agent_steps[agent_idx] += 1
+                if not policy:
+                    print(f"Policy generation failed for agent {agent_idx} at iteration {agent_steps[agent_idx]}")
+                    break
 
-                    # Execute step in the environment
-                    self.gym_env.reset_instance(current_state)
-                    observation_dict, reward, done, info = self.gym_env.step({
-                        'agent_idx': agent_idx,
-                        'code': policy.code
-                    })
+                # Execute step in the environment
+                observation_dict, reward, terminated, truncated, info = self.gym_env.step({
+                    'agent_idx': agent_idx,
+                    'game_state': current_state.to_raw(),
+                    'code': policy.code,
+                })
 
-                    # Create program from policy with environment results
-                    program = await self.create_program_from_policy(
-                        policy=policy,
-                        agent_idx=agent_idx,
-                        reward=reward,
-                        response=observation_dict['raw_text'],
-                        error_occurred=info.get('error_occurred', False)
+                # Create program from policy with environment results
+                program = await self.create_program_from_policy(
+                    policy=policy,
+                    agent_idx=agent_idx,
+                    reward=reward,
+                    response=observation_dict['raw_text'],
+                    error_occurred=info.get('error_occurred', False)
+                )
+
+                # Update agent's conversation with the program and its results
+                observation = Observation.from_dict(observation_dict)
+                await agent.update_conversation(observation, previous_program=program)
+                
+                # Consolidate all trajectory logging operations
+                self._log_trajectory_state(
+                    iteration_start, 
+                    agent,
+                    agent_idx,
+                    agent_steps[agent_idx],
+                    program,
+                    observation
+                )
+
+                # Get the agent_completed flag from the agent
+                agent_completed, update_state = agent.check_step_completion(observation)
+                if update_state:
+                    current_state = program.state
+
+                # Check if done and exit if configured
+                if terminated and self.config.exit_on_task_success:
+                    completion_result = CompletionResult(
+                        step=agent_steps[agent_idx], 
+                        reason=CompletionReason.SUCCESS
                     )
-
-                    # Update agent's conversation with the program and its results
-                    observation = Observation.from_dict(observation_dict)
-                    await agent.update_conversation(observation, previous_program=program)
-                    
-                    # Consolidate all trajectory logging operations
-                    self._log_trajectory_state(
-                        iteration_start, 
-                        agent,
-                        agent_idx,
-                        agent_steps[agent_idx],
-                        program,
-                        observation
-                    )
-
-                    # Get the agent_completed flag from the agent
-                    agent_completed, update_state = agent.check_step_completion(observation)
-                    if update_state:
-                        current_state = program.state
-
-                    # Check if done and exit if configured
-                    if done and self.config.exit_on_task_success:
-                        completion_result = CompletionResult(
-                            step=agent_steps[agent_idx], 
-                            reason=CompletionReason.SUCCESS
-                        )
-                        for agent in self.agents:
-                            await agent.end(completion_result)
-                        return
+                    for agent in self.agents:
+                        await agent.end(completion_result)
+                    return
                         
-            except Exception as e:
-                print(f"Error in trajectory runner iteration {agent_steps[agent_idx]}: {e}")
-                continue
+            #except Exception as e:
+            #    print(f"Error in trajectory runner iteration {agent_steps[agent_idx]}: {e}")
+            #    continue

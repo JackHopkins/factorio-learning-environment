@@ -8,15 +8,12 @@ from agents.utils.formatters.recursive_report_formatter import RecursiveReportFo
 from agents.utils.llm_factory import LLMFactory
 from agents.utils.parse_response import parse_response
 from env.src.models.conversation import Conversation
-from env.src.models.message import Message
 from env.src.models.generation_parameters import GenerationParameters
 from env.src.models.program import Program
-from env.src.gym_env.observation import AgentMessage, Observation
-from env.src.namespace import FactorioNamespace
+from env.src.gym_env.observation import Observation
 from eval.tasks.task_abc import TaskABC
-from tenacity import wait_exponential, retry_if_exception_type
 
-GENERAL_INSTRUCTIONS = \
+GYM_AGENT_INSTRUCTIONS = \
 """
 # Factorio Gym Agent Instructions
 
@@ -106,9 +103,14 @@ your_code_here
 - Your inventory has space for ~2000 items. If it fills up, insert the items into a chest
 - Ensure that your factory is arranged in a grid
 - Prefer manual fueling for boilers
-"""
+{system_prompt}
 
-FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON AND REMEMBER MAXIMUM 30 LINES OF CODE PER POLICY. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON."
+ALWAYS WRITE VALID PYTHON AND REMEMBER MAXIMUM 30 LINES OF CODE PER POLICY. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON.
+
+{goal_description}
+
+{agent_instructions}"""
+
 
 class GymAgent(AgentABC):
     def __init__(self, model: str, system_prompt: str, task: Any, agent_idx: Optional[int] = None, observation_formatter: Optional[BasicObservationFormatter] = None, *args, **kwargs):
@@ -130,11 +132,15 @@ class GymAgent(AgentABC):
         )
 
     def _get_instructions(self, system_prompt: str, task: TaskABC, agent_idx: Optional[int] = None):
-        instructions = GENERAL_INSTRUCTIONS + system_prompt + FINAL_INSTRUCTION
-        instructions += f"\n\n### Goal\n{task.goal_description}\n\n"
+        agent_instructions = ""
         if agent_idx is not None and task.get_agent_instructions(agent_idx) is not None:
             player_idx = agent_idx + 1
-            instructions += f"### Specific Instructions for Agent {player_idx}\n{task.get_agent_instructions(agent_idx)}\n\n"
+            agent_instructions = f"### Specific Instructions for Agent {player_idx}\n{task.get_agent_instructions(agent_idx)}\n\n"
+        instructions = GYM_AGENT_INSTRUCTIONS.format(
+            system_prompt=system_prompt, 
+            goal_description=task.goal_description,
+            agent_instructions=agent_instructions
+        )
         return instructions
 
     def reset(self, conversation: Conversation):

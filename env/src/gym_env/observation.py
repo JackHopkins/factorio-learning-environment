@@ -1,7 +1,7 @@
 from typing import Dict, Any, List, Optional, Union, Tuple
 from dataclasses import dataclass
 import numpy as np
-
+import json
 from env.src.models.technology_state import TechnologyState
 from env.src.models.research_state import ResearchState
 from env.src.models.achievements import ProductionFlows
@@ -14,28 +14,6 @@ class GameInfo:
     tick: int
     time: float
     speed: float
-
-
-@dataclass
-class Achievement:
-    """Represents achievement progress"""
-    static: Dict[str, float]  # Static achievements (crafted/harvested items)
-    dynamic: Dict[str, float]  # Dynamic achievements (ongoing production)
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Dict[str, float]]) -> 'Achievement':
-        """Create an Achievement from a dictionary"""
-        return cls(
-            static=data.get('static', {}),
-            dynamic=data.get('dynamic', {})
-        )
-
-    def to_dict(self) -> Dict[str, Dict[str, float]]:
-        """Convert Achievement to dictionary"""
-        return {
-            'static': self.static,
-            'dynamic': self.dynamic
-        }
 
 
 @dataclass
@@ -55,7 +33,6 @@ class Observation:
     research: ResearchState
     game_info: GameInfo
     score: float
-    achievements: List[Achievement]
     flows: ProductionFlows
     task_verification: Optional[TaskResponse]
     messages: List[AgentMessage]
@@ -77,8 +54,8 @@ class Observation:
             technologies={
                 tech['name']: TechnologyState(
                     name=tech['name'],
-                    researched=tech['researched'],
-                    enabled=tech['enabled'],
+                    researched=bool(tech['researched']),
+                    enabled=bool(tech['enabled']),
                     level=tech['level'],
                     research_unit_count=tech['research_unit_count'],
                     research_unit_energy=tech['research_unit_energy'],
@@ -100,15 +77,6 @@ class Observation:
             speed=obs_dict.get('game_info', {}).get('speed', 0.0)
         )
 
-        # Convert achievements if present
-        achievements = []
-        if obs_dict.get('achievements'):
-            for achievement in obs_dict['achievements']:
-                achievements.append(Achievement(
-                    static=achievement['static'],
-                    dynamic=achievement['dynamic']
-                ))
-
         # Convert flows
         flows_dict = obs_dict.get('flows', {})
         # Transform from observation space format back to ProductionFlows format
@@ -127,7 +95,7 @@ class Observation:
         if obs_dict.get('task_verification'):
             task_verification = TaskResponse(
                 success=bool(obs_dict['task_verification']['success']),
-                meta={item['key']: item['value'] for item in obs_dict['task_verification'].get('meta', [])}
+                meta={item['key']: json.loads(item['value']) for item in obs_dict['task_verification'].get('meta', [])}
             )
 
         # Convert messages
@@ -143,7 +111,6 @@ class Observation:
         # Get serialized functions
         serialized_functions = obs_dict.get('serialized_functions', [])
 
-        print('from_dict inventory', inventory)
         return cls(
             raw_text=obs_dict.get('raw_text', ''),
             entities=entities,  # Now just passing the list of strings
@@ -151,7 +118,6 @@ class Observation:
             research=research,
             game_info=game_info,
             score=obs_dict.get('score', 0.0),
-            achievements=achievements,
             flows=flows,
             task_verification=task_verification,
             messages=messages,
@@ -175,13 +141,13 @@ class Observation:
         return {
             'raw_text': self.raw_text,
             'entities': self.entities,  # Use string representation of entities
-            'inventory': [{'type': k, 'quantity': v} for k, v in self.inventory.items() if v > 0],
+            'inventory': [{'quantity': np.int32(v), 'type': k} for k, v in self.inventory.items() if v > 0],
             'research': {
                 'technologies': [
                     {
                         'name': tech.name,
-                        'researched': tech.researched,
-                        'enabled': tech.enabled,
+                        'researched': int(tech.researched),
+                        'enabled': int(tech.enabled),
                         'level': tech.level,
                         'research_unit_count': tech.research_unit_count,
                         'research_unit_energy': tech.research_unit_energy,
@@ -201,18 +167,11 @@ class Observation:
                 'speed': self.game_info.speed
             },
             'score': self.score,
-            'achievements': [
-                {
-                    'static': achievement.static,
-                    'dynamic': achievement.dynamic
-                }
-                for achievement in self.achievements
-            ],
             'flows': transformed_flows,
             'task_verification': {
                 'success': int(self.task_verification.success),
                 'meta': [
-                    {'key': k, 'value': v}
+                    {'key': k, 'value': json.dumps(v)}
                     for k, v in self.task_verification.meta.items()
                 ]
             } if self.task_verification else {

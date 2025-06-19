@@ -949,8 +949,8 @@ You can install the factorio-learning-environment package using either uv or pip
 # Install from PyPI using uv
 uv add factorio-learning-environment
 
-# Or, using pip
-pip install -e .[env,eval]
+# Install from PyPI using pip
+pip install factorio-learning-environment
 ```
 
 ### Usage

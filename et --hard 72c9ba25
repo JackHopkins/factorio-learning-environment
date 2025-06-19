@@ -1,0 +1,148 @@
+[33m72c9ba25[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mquickstart[m[33m, [m[1;31morigin/quickstart[m[33m)[m HEAD@{0}: reset: moving to origin/quickstart
+[33m72c9ba25[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mquickstart[m[33m, [m[1;31morigin/quickstart[m[33m)[m HEAD@{1}: checkout: moving from instructions to quickstart
+[33m098c99fb[m HEAD@{2}: checkout: moving from quickstart to instructions
+[33m72c9ba25[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mquickstart[m[33m, [m[1;31morigin/quickstart[m[33m)[m HEAD@{3}: checkout: moving from instructions to quickstart
+[33m098c99fb[m HEAD@{4}: pull (finish): returning to refs/heads/instructions
+[33m098c99fb[m HEAD@{5}: pull (start): checkout 098c99fb850dfbc7e0067b2eb5e9baee25a87b37
+[33m62ec0cc7[m HEAD@{6}: filter-branch: rewrite
+[33m098c99fb[m HEAD@{7}: checkout: moving from main to instructions
+[33m28a5c0df[m[33m ([m[1;32mmain[m[33m)[m HEAD@{8}: checkout: moving from 044b23e3fdec5bfd6e2c7acc854838c5d7d06f83 to main
+[33m044b23e3[m[33m ([m[1;31mupstream/main[m[33m)[m HEAD@{9}: reset: moving to HEAD~1
+[33m28a5c0df[m[33m ([m[1;32mmain[m[33m)[m HEAD@{10}: reset: moving to main
+[33m8a765bcc[m HEAD@{11}: rebase (pick): fixed asyncio error when running with python ./run.py
+[33m317f1fb1[m HEAD@{12}: rebase (pick): shouldn't have pushed the skills.db
+[33me74e82ef[m HEAD@{13}: rebase (pick): undoing another change made by claude
+[33m217b798e[m HEAD@{14}: rebase (pick): fix issues w/ previous commit as claude removed sqlite table, move anything redundant to .example.env
+[33m9c2bb68b[m HEAD@{15}: rebase (pick): Simplify DB configuration instructions to use cp command
+[33mdfc3967b[m HEAD@{16}: rebase (pick): fix: correct broken quick links in Quick Links section
+[33m62ef1f3c[m HEAD@{17}: rebase (pick): Standardized setup instructions number 194.
+[33mf2d4b1f7[m HEAD@{18}: rebase (pick): Fixed image link (#183)
+[33m4ad502b1[m HEAD@{19}: rebase (start): checkout 4ad502b185911a0d15e2da70ff7923bc7d89b47b
+[33m28a5c0df[m[33m ([m[1;32mmain[m[33m)[m HEAD@{20}: filter-branch: rewrite
+[33mb2b6292a[m HEAD@{21}: commit: test: dummy commit for author check
+[33m044b23e3[m[33m ([m[1;31mupstream/main[m[33m)[m HEAD@{22}: filter-branch: rewrite
+[33m59134b74[m HEAD@{23}: pull upstream main: Fast-forward
+[33m5d9f7ef3[m HEAD@{24}: checkout: moving from instructions to main
+[33m098c99fb[m HEAD@{25}: commit: undo
+[33m6495dc2d[m HEAD@{26}: commit: \n
+[33mb4bd8fad[m HEAD@{27}: commit: \n
+[33m12c1649a[m HEAD@{28}: pull: Fast-forward
+[33m0f5c4f03[m HEAD@{29}: checkout: moving from quickstart to instructions
+[33m72d8560e[m HEAD@{30}: checkout: moving from quickstart to quickstart
+[33m72d8560e[m HEAD@{31}: commit: fix prob
+[33me71d881a[m HEAD@{32}: commit: remove uv.lock
+[33m0b3f27b6[m HEAD@{33}: commit: remove erroneuos package
+[33mbed2e73b[m HEAD@{34}: rebase (finish): returning to refs/heads/quickstart
+[33mbed2e73b[m HEAD@{35}: commit: fix readme
+[33m20041b6e[m HEAD@{36}: commit: fix readme
+[33m8b9ca367[m HEAD@{37}: rebase (continue): remove the async since Harshit already added it
+[33mf506ccaa[m HEAD@{38}: rebase (continue): Update install instructions: use pip install -e .[env,eval] or uv add --optional env --optional eval . for dev setup
+[33m1c50f102[m HEAD@{39}: rebase (pick): fix dependencies
+[33mc20588fb[m HEAD@{40}: rebase (pick): slpp already in regular dependencies
+[33mdb6cce4a[m HEAD@{41}: rebase (pick): undo change
+[33mf79b58f8[m HEAD@{42}: rebase (pick): Deleted requirements.txt and moved it to pyproject.toml and also moved psycopg2 into main dependencies because it and lupa were previously required to be added in the installation anyways.
+[33m2798e3b7[m HEAD@{43}: rebase (pick): fix a run.py error, i faced an asyncio not being used correctly, which was fixed via importing it and using asyncio.run(main())
+[33m5d9f7ef3[m HEAD@{44}: rebase (start): checkout upstream/main
+[33m04c500a0[m HEAD@{45}: checkout: moving from main to quickstart
+[33m5d9f7ef3[m HEAD@{46}: checkout: moving from quickstart to main
+[33m04c500a0[m HEAD@{47}: rebase (finish): returning to refs/heads/quickstart
+[33m04c500a0[m HEAD@{48}: rebase (continue): add extra packages
+[33m55bc4a22[m HEAD@{49}: rebase (continue): Update install instructions: use pip install -e .[env,eval] or uv add --optional env --optional eval . for dev setup
+[33m2dd16afe[m HEAD@{50}: commit: Drop README.md changes, sync with main
+[33mca471c11[m HEAD@{51}: pull (pick): Timing metrics and tracker (#207)
+[33m65460cac[m HEAD@{52}: pull (start): checkout 65460caca3167f41510c1cb35d97301e20550d60
+[33m9fd66f97[m HEAD@{53}: rebase (finish): returning to refs/heads/quickstart
+[33m9fd66f97[m HEAD@{54}: rebase (pick): remove the async since Harshit already added it
+[33m4052a150[m HEAD@{55}: rebase (pick): add extra packages
+[33m9f911d4e[m HEAD@{56}: rebase (continue): Update install instructions: use pip install -e .[env,eval] or uv add --optional env --optional eval . for dev setup
+[33m520bab61[m HEAD@{57}: rebase (pick): fix dependencies
+[33m10d2b98c[m HEAD@{58}: rebase (pick): slpp already in regular dependencies
+[33mf45d125d[m HEAD@{59}: rebase (pick): undo change
+[33mafed40f9[m HEAD@{60}: rebase (pick): Deleted requirements.txt and moved it to pyproject.toml and also moved psycopg2 into main dependencies because it and lupa were previously required to be added in the installation anyways.
+[33ma0885b15[m HEAD@{61}: rebase (pick): fix a run.py error, i faced an asyncio not being used correctly, which was fixed via importing it and using asyncio.run(main())
+[33m5d9f7ef3[m HEAD@{62}: rebase (start): checkout upstream/main
+[33m65460cac[m HEAD@{63}: commit: remove the async since Harshit already added it
+[33mf852a1f1[m HEAD@{64}: commit: add extra packages
+[33m8eeeb94a[m HEAD@{65}: commit: Update install instructions: use pip install -e .[env,eval] or uv add --optional env --optional eval . for dev setup
+[33m1c1b47ea[m HEAD@{66}: commit: fix dependencies
+[33ma2c3d808[m HEAD@{67}: commit: slpp already in regular dependencies
+[33m42cc665a[m HEAD@{68}: commit: undo change
+[33meebd552c[m HEAD@{69}: commit: Deleted requirements.txt and moved it to pyproject.toml and also moved psycopg2 into main dependencies because it and lupa were previously required to be added in the installation anyways.
+[33m911e963f[m HEAD@{70}: checkout: moving from main to quickstart
+[33m5d9f7ef3[m HEAD@{71}: pull upstream main: Fast-forward
+[33m4ad502b1[m HEAD@{72}: checkout: moving from time-constraint-events to main
+[33mda9439e7[m[33m ([m[1;31morigin/time-constraint-events[m[33m)[m HEAD@{73}: commit: cleanup: remove temp files
+[33m77820373[m HEAD@{74}: commit: Add BoundedThroughputTask with time constraints for 5-minute iron plate production
+[33m631375ef[m HEAD@{75}: commit: v3
+[33ma83b6c73[m HEAD@{76}: commit: v2
+[33mdb0de7d1[m HEAD@{77}: commit: v1
+[33m4ad502b1[m HEAD@{78}: checkout: moving from main to time-constraint-events
+[33m4ad502b1[m HEAD@{79}: checkout: moving from instructions to main
+[33m0f5c4f03[m HEAD@{80}: commit: shouldn't have pushed the skills.db
+[33ma9c053c9[m HEAD@{81}: commit: undoing another change made by claude
+[33md486f6de[m HEAD@{82}: commit: fix issues w/ previous commit as claude removed sqlite table, move anything redundant to .example.env
+[33m54fb92a8[m HEAD@{83}: commit: Simplify DB configuration instructions to use cp command
+[33mc37a18c8[m HEAD@{84}: checkout: moving from UV to instructions
+[33mbbaf52de[m HEAD@{85}: commit: revert back to uv sync
+[33mde2650b4[m HEAD@{86}: commit: Add pip installation instructions alongside uv
+[33m274d9f5c[m HEAD@{87}: checkout: moving from main to UV
+[33m4ad502b1[m HEAD@{88}: reset: moving to HEAD~1
+[33m920c0397[m HEAD@{89}: rebase (finish): returning to refs/heads/main
+[33m920c0397[m HEAD@{90}: rebase (pick): fix a run.py error, i faced an asyncio not being used correctly, which was fixed via importing it and using asyncio.run(main())
+[33m4ad502b1[m HEAD@{91}: rebase (start): checkout upstream/main
+[33m3aed54e8[m HEAD@{92}: checkout: moving from main to main
+[33m3aed54e8[m HEAD@{93}: pull (finish): returning to refs/heads/main
+[33m3aed54e8[m HEAD@{94}: pull (pick): Timing metrics and tracker (#207)
+[33m911e963f[m HEAD@{95}: pull (start): checkout 911e963f732ff30ecbee4256f0296726d867aacc
+[33m848b7c1f[m HEAD@{96}: checkout: moving from UV to main
+[33m274d9f5c[m HEAD@{97}: checkout: moving from main to UV
+[33m848b7c1f[m HEAD@{98}: pull remote main (finish): returning to refs/heads/main
+[33m848b7c1f[m HEAD@{99}: pull remote main (pick): fix a run.py error, i faced an asyncio not being used correctly, which was fixed via importing it and using asyncio.run(main())
+[33m4ad502b1[m HEAD@{100}: pull remote main (start): checkout 4ad502b185911a0d15e2da70ff7923bc7d89b47b
+[33m911e963f[m HEAD@{101}: checkout: moving from UV to main
+[33m274d9f5c[m HEAD@{102}: rebase (finish): returning to refs/heads/UV
+[33m274d9f5c[m HEAD@{103}: rebase (pick): undo
+[33m53b5d5c2[m HEAD@{104}: rebase (pick): Restore uv.lock from Release/0.2.0
+[33m500d7dad[m HEAD@{105}: rebase (pick): undoi
+[33m5abc17f6[m HEAD@{106}: rebase (pick): Fix the gitignore.
+[33m3b616d5b[m HEAD@{107}: rebase (pick): Remove unnecessary files from commit.
+[33me3c71d82[m HEAD@{108}: rebase (pick): Add uv.lock, docker-compose.yml, and *.db to gitignore
+[33m1dfaf389[m HEAD@{109}: rebase (pick): Initial commit
+[33m4691b7e2[m HEAD@{110}: rebase (pick): Standardized setup instructions number 194.
+[33m4ad502b1[m HEAD@{111}: rebase (start): checkout remote/main
+[33medb2e8b6[m HEAD@{112}: rebase (abort): returning to refs/heads/UV
+[33m461868bf[m HEAD@{113}: rebase (pick): Standardized setup instructions number 194.
+[33m4ad502b1[m HEAD@{114}: rebase (start): checkout remote/main
+[33medb2e8b6[m HEAD@{115}: reset: moving to edb2e8b6d108cce0362935c82de35f9c4eb2f5ec
+[33mb52cfdf9[m HEAD@{116}: pull: Fast-forward
+[33medb2e8b6[m HEAD@{117}: reset: moving to edb2e8b6d108cce0362935c82de35f9c4eb2f5ec
+[33mb52cfdf9[m HEAD@{118}: checkout: moving from quickstart to UV
+[33m911e963f[m HEAD@{119}: checkout: moving from main to quickstart
+[33m911e963f[m HEAD@{120}: checkout: moving from quickstart to main
+[33m911e963f[m HEAD@{121}: checkout: moving from main to quickstart
+[33m911e963f[m HEAD@{122}: checkout: moving from UV to main
+[33mb52cfdf9[m HEAD@{123}: checkout: moving from instructions to UV
+[33mc37a18c8[m HEAD@{124}: checkout: moving from main to instructions
+[33m911e963f[m HEAD@{125}: checkout: moving from contribute to main
+[33m7ffcc0f1[m HEAD@{126}: checkout: moving from main to contribute
+[33m911e963f[m HEAD@{127}: checkout: moving from fix/remove-duplicate-installation-docs-new to main
+[33m3ac9616b[m HEAD@{128}: checkout: moving from main to fix/remove-duplicate-installation-docs-new
+[33m911e963f[m HEAD@{129}: checkout: moving from installation to main
+[33me890f131[m HEAD@{130}: checkout: moving from UV to installation
+[33mb52cfdf9[m HEAD@{131}: checkout: moving from installation to UV
+[33me890f131[m HEAD@{132}: checkout: moving from UV to installation
+[33mb52cfdf9[m HEAD@{133}: commit: new pyporject.toml
+[33medb2e8b6[m HEAD@{134}: commit: undo
+[33m8b53c211[m HEAD@{135}: commit: Restore uv.lock from Release/0.2.0
+[33m66d4eedc[m HEAD@{136}: commit: undoi
+[33mdd960f1f[m HEAD@{137}: pull: Fast-forward
+[33me8c65248[m HEAD@{138}: reset: moving to HEAD
+[33me8c65248[m HEAD@{139}: reset: moving to HEAD~1
+[33mdd960f1f[m HEAD@{140}: commit: Fix the gitignore.
+[33me8c65248[m HEAD@{141}: commit: Remove unnecessary files from commit.
+[33m88519287[m HEAD@{142}: commit: Add uv.lock, docker-compose.yml, and *.db to gitignore
+[33m9848023a[m HEAD@{143}: checkout: moving from main to UV
+[33m911e963f[m HEAD@{144}: pull: Fast-forward
+[33m7023dbdb[m HEAD@{145}: reset: moving to HEAD
+[33m7023dbdb[m HEAD@{146}: reset: moving to HEAD
+[33m7023dbdb[m HEAD@{147}: clone: from github.com:kiankyars/factorio-learning-environment.git

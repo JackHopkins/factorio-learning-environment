@@ -147,61 +147,61 @@ class GymTrajectoryRunner:
             agent = self.agents[agent_idx]
             iteration_start = time.time()
             agent_completed = False
-            #try:
-            # Loop while the agent is not completed yet
-            while not agent_completed and agent_steps[agent_idx] < max_steps:
-                # Generate policy using agent's method
-                policy = await agent.generate_policy()
-                agent_steps[agent_idx] += 1
-                if not policy:
-                    print(f"Policy generation failed for agent {agent_idx} at iteration {agent_steps[agent_idx]}")
-                    break
+            try:
+                # Loop while the agent is not completed yet
+                while not agent_completed and agent_steps[agent_idx] < max_steps:
+                    # Generate policy using agent's method
+                    policy = await agent.generate_policy()
+                    agent_steps[agent_idx] += 1
+                    if not policy:
+                        print(f"Policy generation failed for agent {agent_idx} at iteration {agent_steps[agent_idx]}")
+                        break
 
-                # Execute step in the environment
-                observation_dict, reward, done, info = self.gym_env.step({
-                    'agent_idx': agent_idx,
-                    'game_state': current_state.to_raw(),
-                    'code': policy.code,
-                })
+                    # Execute step in the environment
+                    observation_dict, reward, done, info = self.gym_env.step({
+                        'agent_idx': agent_idx,
+                        'game_state': current_state.to_raw(),
+                        'code': policy.code,
+                    })
 
-                # Create program from policy with environment results
-                program = await self.create_program_from_policy(
-                    policy=policy,
-                    agent_idx=agent_idx,
-                    reward=reward,
-                    response=observation_dict['raw_text'],
-                    error_occurred=info.get('error_occurred', False)
-                )
-
-                # Update agent's conversation with the program and its results
-                observation = Observation.from_dict(observation_dict)
-                await agent.update_conversation(observation, previous_program=program)
-                
-                # Consolidate all trajectory logging operations
-                self._log_trajectory_state(
-                    iteration_start, 
-                    agent,
-                    agent_idx,
-                    agent_steps[agent_idx],
-                    program,
-                    observation
-                )
-
-                # Get the agent_completed flag from the agent
-                agent_completed, update_state = agent.check_step_completion(observation)
-                if update_state:
-                    current_state = program.state
-
-                # Check if done and exit if configured
-                if done and self.config.exit_on_task_success:
-                    completion_result = CompletionResult(
-                        step=agent_steps[agent_idx], 
-                        reason=CompletionReason.SUCCESS
+                    # Create program from policy with environment results
+                    program = await self.create_program_from_policy(
+                        policy=policy,
+                        agent_idx=agent_idx,
+                        reward=reward,
+                        response=observation_dict['raw_text'],
+                        error_occurred=info.get('error_occurred', False)
                     )
-                    for agent in self.agents:
-                        await agent.end(completion_result)
-                    return
-                        
-            #except Exception as e:
-            #    print(f"Error in trajectory runner iteration {agent_steps[agent_idx]}: {e}")
-            #    continue
+
+                    # Update agent's conversation with the program and its results
+                    observation = Observation.from_dict(observation_dict)
+                    await agent.update_conversation(observation, previous_program=program)
+                    
+                    # Consolidate all trajectory logging operations
+                    self._log_trajectory_state(
+                        iteration_start, 
+                        agent,
+                        agent_idx,
+                        agent_steps[agent_idx],
+                        program,
+                        observation
+                    )
+
+                    # Get the agent_completed flag from the agent
+                    agent_completed, update_state = agent.check_step_completion(observation)
+                    if update_state:
+                        current_state = program.state
+
+                    # Check if done and exit if configured
+                    if done and self.config.exit_on_task_success:
+                        completion_result = CompletionResult(
+                            step=agent_steps[agent_idx], 
+                            reason=CompletionReason.SUCCESS
+                        )
+                        for agent in self.agents:
+                            await agent.end(completion_result)
+                        return
+                            
+            except Exception as e:
+                print(f"Error in trajectory runner iteration {agent_steps[agent_idx]}: {e}")
+                continue

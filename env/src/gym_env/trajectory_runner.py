@@ -9,6 +9,7 @@ from env.src.models.game_state import GameState
 from env.src.models.conversation import Conversation
 from env.src.gym_env.environment import FactorioGymEnv
 from env.src.gym_env.observation import Observation
+from env.src.gym_env.action import Action
 from env.src.gym_env.trajectory_logger import TrajectoryLogger
 from env.src.gym_env.config import GymEvalConfig
 from eval.open.db_client import PostgresDBClient
@@ -158,11 +159,12 @@ class GymTrajectoryRunner:
                         break
 
                     # Execute step in the environment
-                    observation_dict, reward, done, info = self.gym_env.step({
-                        'agent_idx': agent_idx,
-                        'game_state': current_state.to_raw(),
-                        'code': policy.code,
-                    })
+                    action = Action(
+                        agent_idx=agent_idx,
+                        code=policy.code,
+                        game_state=current_state
+                    )
+                    observation_dict, reward, done, info = self.gym_env.step(action.to_dict())
 
                     # Create program from policy with environment results
                     program = await self.create_program_from_policy(

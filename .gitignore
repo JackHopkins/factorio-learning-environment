@@ -82,3 +82,4 @@ cluster/local/docker-compose.yml
 
 # Database files
 .fle/
+*.db

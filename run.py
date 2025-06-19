@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import sys
+import asyncio
 # Add the necessary paths to sys.path
 root_dir = os.path.dirname(os.path.abspath(__file__))
 env_src_dir = os.path.join(root_dir, 'env', 'src')
@@ -12,4 +13,4 @@ if env_src_dir not in sys.path:
 # Now import and run the actual script
 from eval.open.independent_runs.run import main
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

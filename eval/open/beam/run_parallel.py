@@ -12,7 +12,7 @@ from agents.utils.llm_factory import LLMFactory
 from eval.open.beam.beam_search import ParallelBeamSearch, ParallelBeamConfig
 from cluster.local.cluster_ips import get_local_container_ips
 from eval.open.beam.run import OBSERVATION_SPACE, MANUAL, SYSTEM_PROMPT
-from eval.open.db_client import DBClient
+from eval.open.db_client import DBClient, create_db_client
 from instance import FactorioInstance
 from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
 from models.game_state import GameState
@@ -66,30 +66,15 @@ def create_factorio_instances(start_index: int, count: int) -> List[FactorioInst
 
 async def get_version_to_use(resume_version: int = None) -> int:
     """Initialize DB client and get the version to use."""
-    db_client = await create_db_client()
-    if resume_version is not None:
-        return resume_version
-    return await db_client.get_largest_version() + 1
-
-
-async def create_db_client() -> DBClient:
-    """Create and return a new database client."""
     try:
-        max_connections = 5  # Per process
-        min_connections = 2
-        return DBClient(
-            max_conversation_length=40,
-            min_connections=min_connections,
-            max_connections=max_connections,
-            host=os.getenv("SKILLS_DB_HOST"),
-            port=os.getenv("SKILLS_DB_PORT"),
-            dbname=os.getenv("SKILLS_DB_NAME"),
-            user=os.getenv("SKILLS_DB_USER"),
-            password=os.getenv("SKILLS_DB_PASSWORD")
-        )
+        db_client = await create_db_client()
     except Exception as e:
         print(f"\033[91mError connecting to the database: {e}\033[91m")
         raise
+
+    if resume_version is not None:
+        return resume_version
+    return await db_client.get_largest_version() + 1
 
 
 async def run_model_search(model: str, instance_start: int, version: int, resume_version: int = None):

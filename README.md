@@ -148,6 +148,9 @@ ANTHROPIC_API_KEY=<KEY>
 TOGETHER_API_KEY=<KEY>
 OPEN_ROUTER_API_KEY=<KEY>
 
+# two db options are available "sqlite" (default) and "postgres"
+FLE_DB_TYPE="sqlite"
+
 # If using Postgres DB, NOT REQUIRED (See section on Database)
 SKILLS_DB_PORT=""
 SKILLS_DB_NAME=""
@@ -155,7 +158,7 @@ SKILLS_DB_USER=""
 SKILLS_DB_PASSWORD=""
 
 # If using SQLite for DB (See section on Database)
-SQLITE_DB_FILE = ""
+SQLITE_DB_FILE = ".fle/data.db"
 
 # AWS credentials if wanting to use Cloudformation, NOT REQUIRED
 AWS_SECRET_ACCESS_KEY=<KEY>
@@ -169,7 +172,7 @@ If you are not using a Postgres DB, you should create an SQLite database file:
 sqlite3 mydatabase.db
 ```
 
-Create the required tables:
+The programs table is created automatically for either db:
 ```
 CREATE TABLE programs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -197,8 +200,6 @@ CREATE TABLE programs (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
-
-And replace the `PostgresDBClient` object at `create_db_client` function in `eval\open\independent_runs\trajectory_runner.py` with the SQLliteDBClient object (see [Database](#database) section).
 
 8. **Run Eval**: Running open and lab play with example run configs:
    1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
@@ -703,54 +704,31 @@ factorio-learning-environment/
 ```
 
 ## Database
-To run long trajectories in FLE, we support checkpointing at every agent step using a SQL database. The `db_client` implements the interface for saving and loading agent outputs, environment feedbacks, game states and histories of the current trajectory. We support out of the box Postgres and SQLite databases. The easiest way how to set up a FLE-compatible databse is to use SQLite and setup the programs table:
+To run long trajectories in FLE, we support checkpointing at every agent step using a SQL database. The `db_client` implements the interface for saving and loading agent outputs, environment feedbacks, game states and histories of the current trajectory. We support out of the box SQLite (default) and Postgres databases. The easiest way to set up a FLE-compatible database is to use the default SQLite, the env variable `FLE_DB_TYPE="sqlite"` lets you select the DB.
+
+We recommend changing and setting up the `SQLITE_DB_FILE` variable in the `.env` file. It defaults to `.fle/data.db` in your working directory.
+
+### Postgres
+
+You then need to make sure all the correct variables are put in the `.env` file. With the `FLE_DB_TYPE="postgres"`.
+
+To utilize postgres database you need to setup an instance of the db server yourself. The easiest way is to run it via Docker:
+
+`docker run --name fle-postgres -e POSTGRES_PASSWORD=fle123 -e POSTGRES_USER=fle_user -e POSTGRES_DB=fle_database -p 5432:5432 -d postgres:15`
+
+This launches a postgres:15 server with the defined settings, it can be used via the corresponding `.env` variables:
+
 
 ```
-# create the db file
-sqlite3 mydatabase.db
+# Database Configuration - Set to postgres to use PostgreSQL
+FLE_DB_TYPE="postgres"
 
-# create the programs table
-CREATE TABLE programs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT NOT NULL,
-    value REAL DEFAULT 0.0,
-    visits INTEGER DEFAULT 0,
-    parent_id INTEGER,
-    state_json TEXT,
-    conversation_json TEXT NOT NULL,
-    completion_token_usage INTEGER,
-    prompt_token_usage INTEGER,
-    token_usage INTEGER,
-    response TEXT,
-    holdout_value REAL,
-    raw_reward REAL,
-    version INTEGER DEFAULT 1,
-    version_description TEXT DEFAULT '',
-    model TEXT DEFAULT 'gpt-4o',
-    meta TEXT,
-    achievements_json TEXT,
-    instance INTEGER DEFAULT -1,
-    depth REAL DEFAULT 0.0,
-    advantage REAL DEFAULT 0.0,
-    ticks INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-The SQLite database can then be instantiated to be used for tasks in the `create_db_client` function at `eval\open\independent_runs\trajectory_runner.py`. 
-We recommend setting up the database_file variable in the .env file
-
-```
-from eval.open.db_client import SQLliteDBClient
-async def create_db_client() -> SQLliteDBClient:
-    """Create database client with connection pool"""
-    return SQLliteDBClient(
-        max_conversation_length=40,
-        min_connections=2,
-        max_connections=5,
-        # Provide the SQLite database file path
-        database_file=os.getenv("SQLITE_DB_FILE") #"mydatabase.db"
-    )
+# PostgreSQL Configuration
+SKILLS_DB_HOST=localhost
+SKILLS_DB_PORT=5432
+SKILLS_DB_NAME=fle_database
+SKILLS_DB_USER=fle_user
+SKILLS_DB_PASSWORD=fle123
 ```
 
 ## Benchmarks

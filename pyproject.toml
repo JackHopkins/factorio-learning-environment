@@ -56,7 +56,6 @@ eval = [
     "numpy>=2.2.3",
     "scikit-image>=0.25.2",
     "psycopg2>=2.9.10",
-    "factorio-learning-environment",
 ]
 all = [
     "anthropic>=0.49.0",

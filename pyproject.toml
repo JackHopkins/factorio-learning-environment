@@ -99,8 +99,6 @@ env = [
     "aiohttp>=3.8.0",
     "pydantic>=1.8.0",
     "a2a-sdk",
-    # For slpp, use the git version since it's likely more up to date:
-    "git+https://github.com/SirAnthony/slpp"
 ]
 
 [project.scripts]

@@ -771,6 +771,8 @@ async def create_db_client(max_conversation_length: int = 40,
                 max_connections=max_connections,
                 **db_config
             )
+    else:
+        raise Exception(f"Invalid database type: {db_type}")
     
     # Default to SQLite
     sqlite_file = os.getenv("SQLITE_DB_FILE", ".fle/data.db") 

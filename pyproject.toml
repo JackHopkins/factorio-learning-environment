@@ -72,6 +72,36 @@ mcp = [
     "mcp[cli]",
     "dulwich"
 ]
+env = [
+    "factorio-rcon-py==1.2.1",
+    "python-dotenv==1.0.1",
+    "imageio",
+    "anyio",
+    "pygame",
+    "neptune",
+    "pyopenssl==24.0.0",
+    "rich",
+    "construct",
+    "pydantic",
+    "openai",
+    "anthropic",
+    "scipy",
+    "scikit-image",
+    "pyautogui",
+    "lupa",
+    "numpy",
+    "pillow",
+    "backoff",
+    "tenacity",
+    "pytest-asyncio",
+    "fastapi>=0.68.0",
+    "uvicorn>=0.15.0",
+    "aiohttp>=3.8.0",
+    "pydantic>=1.8.0",
+    "a2a-sdk",
+    "factorio-learning-environment",
+    "gym",
+]
 
 [project.scripts]
 fle = "factorio_learning_environment.run:main"
@@ -131,3 +161,6 @@ dependencies = [
 [tool.hatch.envs.docs.scripts]
 build = "mkdocs build"
 serve = "mkdocs serve"
+
+[tool.uv.sources]
+factorio-learning-environment = { workspace = true }

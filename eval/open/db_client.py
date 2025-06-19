@@ -16,6 +16,8 @@ from env.src.models.program import Program
 from env.src.models.conversation import Conversation
 from env.src.models.game_state import GameState
 import sqlite3
+import os
+from pathlib import Path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -170,8 +172,8 @@ class DBClient(ABC):
                         INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, 
                                            completion_token_usage, prompt_token_usage, token_usage, response, 
                                            holdout_value, raw_reward, version, version_description, model, meta, 
-                                           achievements_json, instance, depth, advantage, ticks)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                           achievements_json, instance, depth, advantage, ticks, timing_metrics_json)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id, created_at
                     """, (program.code, program.value, 0, program.parent_id,
                           program.state.to_raw() if program.state else None,
@@ -190,7 +192,8 @@ class DBClient(ABC):
                           program.instance,
                           program.depth/2,
                           program.advantage,
-                          program.ticks
+                          program.ticks,
+                          json.dumps(program.timing_metrics) if program.timing_metrics else None
                           ))
 
                     id, created_at = cur.fetchone()
@@ -254,9 +257,10 @@ class DBClient(ABC):
                 with conn.cursor() as cur:
                     cur.execute(query)
                     result = cur.fetchone()
-                    return result[0] if result else 0
+                    return result[0] if result and result[0] is not None else 0
         except Exception as e:
             print(f"Error fetching largest version: {e}")
+            return 0
 
     async def get_largest_depth_in_version(self, version):
         query = f"""
@@ -270,9 +274,10 @@ class DBClient(ABC):
                 with conn.cursor() as cur:
                     cur.execute(query)
                     result = cur.fetchone()
-                    return result[0] if result else 0
+                    return result[0] if result and result[0] is not None else 0
         except Exception as e:
-            print(f"Error fetching largest version: {e}")
+            print(f"Error fetching largest depth: {e}")
+            return 0
 
 
     @tenacity.retry(retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
@@ -375,6 +380,11 @@ class DBClient(ABC):
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
+                    # Handle timing_metrics separately since it needs to be JSON serialized
+                    timing_metrics = updates.pop('timing_metrics', None)
+                    if timing_metrics is not None:
+                        updates['timing_metrics_json'] = json.dumps(timing_metrics)
+
                     set_clauses = [f"{k} = %s" for k in updates.keys()]
                     values = list(updates.values())
 
@@ -510,12 +520,13 @@ class SQLliteDBClient(DBClient):
                 cur = conn.cursor()
                 cur.execute(query)
                 result = cur.fetchone()
-                return result[0] if result[0] else 0
+                return result[0] if result and result[0] is not None else 0
         except Exception as e:
             print(f"Error fetching largest version: {e}")
+            return 0
 
 
-    async def get_resume_state(self, resume_version, process_id) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
+    async def get_resume_state(self, resume_version, process_id, agent_idx=-1) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
         """Get the state to resume from"""
         try:
             # Get most recent successful program to resume from
@@ -525,13 +536,14 @@ class SQLliteDBClient(DBClient):
             AND state_json IS NOT NULL
             AND value IS NOT NULL
             AND json_extract(meta, '$.process_id') = ?
+            AND instance = ?
             ORDER BY created_at DESC
             LIMIT 1
             """
 
             with self.get_connection() as conn:
                 cur = conn.cursor()
-                cur.execute(query, (resume_version, process_id))
+                cur.execute(query, (resume_version, process_id, agent_idx))
                 results = cur.fetchall()
 
             if not results:
@@ -567,8 +579,8 @@ class SQLliteDBClient(DBClient):
                     INSERT INTO programs (code, value, visits, parent_id, state_json, conversation_json, 
                                           completion_token_usage, prompt_token_usage, token_usage, response, 
                                           holdout_value, raw_reward, version, version_description, model, meta, 
-                                          achievements_json, instance, depth, advantage, ticks)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                          achievements_json, instance, depth, advantage, ticks, timing_metrics_json)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     program.code,
                     program.value,
@@ -590,7 +602,8 @@ class SQLliteDBClient(DBClient):
                     program.instance,
                     program.depth / 2,
                     program.advantage,
-                    program.ticks
+                    program.ticks,
+                    json.dumps(program.timing_metrics) if program.timing_metrics else None
                 ))
 
                 # Get the last inserted row ID
@@ -606,3 +619,169 @@ class SQLliteDBClient(DBClient):
             conn.rollback()
             print(f"Error creating program: {e}")
             raise e
+
+def create_default_sqlite_db(db_file: str) -> None:
+    """Create SQLite database with required schema if it doesn't exist"""
+    db_path = Path(db_file)
+    
+    # Create directory if it doesn't exist
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Create database and table if they don't exist
+    conn = sqlite3.connect(db_file)
+    try:
+        cursor = conn.cursor()
+        
+        # Check if programs table exists
+        cursor.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='programs'
+        """)
+        
+        if not cursor.fetchone():
+            print(f"Creating SQLite database schema in {db_file}")
+            cursor.execute("""
+                CREATE TABLE programs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    code TEXT NOT NULL,
+                    value REAL DEFAULT 0.0,
+                    visits INTEGER DEFAULT 0,
+                    parent_id INTEGER,
+                    state_json TEXT,
+                    conversation_json TEXT NOT NULL,
+                    completion_token_usage INTEGER,
+                    prompt_token_usage INTEGER,
+                    token_usage INTEGER,
+                    response TEXT,
+                    holdout_value REAL,
+                    raw_reward REAL,
+                    version INTEGER DEFAULT 1,
+                    version_description TEXT DEFAULT '',
+                    model TEXT DEFAULT 'gpt-4o',
+                    meta TEXT,
+                    achievements_json TEXT,
+                    instance INTEGER DEFAULT -1,
+                    depth REAL DEFAULT 0.0,
+                    advantage REAL DEFAULT 0.0,
+                    ticks INTEGER DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+            print("SQLite database schema created successfully!")
+        
+    finally:
+        conn.close()
+
+
+def create_default_postgres_db(**db_config) -> None:
+    """Create PostgreSQL database with required schema if it doesn't exist"""
+    conn = None
+    try:
+        conn = psycopg2.connect(**db_config)
+        cursor = conn.cursor()
+        
+        # Check if programs table exists
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'programs'
+            )
+        """)
+        
+        table_exists = cursor.fetchone()[0]
+        
+        if not table_exists:
+            print(f"Creating PostgreSQL database schema")
+            cursor.execute("""
+                CREATE TABLE programs (
+                    id SERIAL PRIMARY KEY,
+                    code TEXT NOT NULL,
+                    value REAL DEFAULT 0.0,
+                    visits INTEGER DEFAULT 0,
+                    parent_id INTEGER,
+                    state_json TEXT,
+                    conversation_json TEXT NOT NULL,
+                    completion_token_usage INTEGER,
+                    prompt_token_usage INTEGER,
+                    token_usage INTEGER,
+                    response TEXT,
+                    holdout_value REAL,
+                    raw_reward REAL,
+                    version INTEGER DEFAULT 1,
+                    version_description TEXT DEFAULT '',
+                    model TEXT DEFAULT 'gpt-4o',
+                    meta TEXT,
+                    achievements_json TEXT,
+                    instance INTEGER DEFAULT -1,
+                    depth REAL DEFAULT 0.0,
+                    advantage REAL DEFAULT 0.0,
+                    ticks INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+            print("PostgreSQL database schema created successfully!")
+        
+    except Exception as e:
+        print(f"Error creating PostgreSQL schema: {e}")
+        if conn:
+            conn.rollback()
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+
+async def create_db_client(max_conversation_length: int = 40, 
+                          min_connections: int = 2, 
+                          max_connections: int = 5) -> DBClient:
+    """
+    Create database client based on environment configuration.
+    Defaults to SQLite with automatic setup.
+    """
+    # Check for database type preference
+    db_type = os.getenv("FLE_DB_TYPE", "sqlite").lower()
+    
+    if db_type == "postgres":
+        # Use PostgreSQL if explicitly requested and configured
+        required_vars = ["SKILLS_DB_HOST", "SKILLS_DB_PORT", "SKILLS_DB_NAME", "SKILLS_DB_USER", "SKILLS_DB_PASSWORD"]
+        missing_vars = [var for var in required_vars if not os.getenv(var)]
+        
+        if missing_vars:
+            print(f"Warning: PostgreSQL requested but missing environment variables: {missing_vars}")
+            print("Falling back to SQLite...")
+            raise Exception(f"Missing environment variables: {missing_vars}")
+        db_config = {
+            "host": os.getenv("SKILLS_DB_HOST"),
+            "port": os.getenv("SKILLS_DB_PORT"),
+            "dbname": os.getenv("SKILLS_DB_NAME"),
+            "user": os.getenv("SKILLS_DB_USER"),
+            "password": os.getenv("SKILLS_DB_PASSWORD")
+        }
+        create_default_postgres_db(**db_config)
+        
+        return PostgresDBClient(
+            max_conversation_length=max_conversation_length,
+            min_connections=min_connections,
+            max_connections=max_connections,
+            **db_config
+        )
+    elif db_type == "sqlite":
+        # Default to SQLite
+        sqlite_file = os.getenv("SQLITE_DB_FILE", ".fle/data.db") 
+        print(f"Using SQLite database file: {sqlite_file}")
+        
+        # Auto-create SQLite database if it doesn't exist
+        create_default_sqlite_db(sqlite_file)
+        
+        return SQLliteDBClient(
+            max_conversation_length=max_conversation_length,
+            min_connections=min_connections,
+            max_connections=max_connections,
+            database_file=sqlite_file
+        )
+    else:
+        raise Exception(f"Invalid database type: {db_type}")
+    

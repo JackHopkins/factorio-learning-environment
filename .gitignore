@@ -1,10 +1,12 @@
 /venv/
+.venv/
 cortex
 /dev/
 .idea
 /.idea/
 .DS_Store
 .env
+.fle/
 ~/PycharmProjects/PaperclipMaximiser/dev/
 /client/log/
 /client/unscored_log/
@@ -74,3 +76,9 @@ environment/src/skills/ground_truth_skills/*
 /factorio_learning_environment.egg-info/
 /dist/
 /build/
+
+# Docker compose generated files  
+cluster/local/docker-compose.yml
+
+# Database files
+*.db

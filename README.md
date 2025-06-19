@@ -33,9 +33,9 @@ automation (e.g electronic-circuit manufacturing).
 
 ## Quick Links
 - [Installation](#installation)
-- [Environment](#environment-documentation)
-- [Agents](#agent-documentation)
-- [Tasks](#task-documentation)
+- [Environment](#environment)
+- [Agents](#agents)
+- [Tasks](#tasks)
 - [Multiagent Experiments](#multiagent-experiments)
 - [Tools](#tool-documentation)
 - [Project Structure](#project-structure)
@@ -90,7 +90,7 @@ pip install -e .
 ```
 
 2. **Set up Factorio client**:
-- Purchase Factorio from the [official website](https://www.factorio.com/) or on Steam.
+- Purchase Factorio from the [official website](https://www.factorio.com/) (recommended) or on Steam.
 - Downgrade to version 1.1.110:
     - Steam: Right-click Factorio → Properties → Betas → Select 1.1.110
     - **Important**: Make sure to uncheck the Space Age DLC if you have it, as it forces the 2.x branch
@@ -137,34 +137,10 @@ Open the following ports:
 - Connect to `localhost:34197` (default) or your configured address in Docker. 
   - Once connected, you can safely disconnect. This step confirms your Factorio license with the server.
 
-7. **Configure DB**: Create an `.env` file in the root directory, modelled on `.example.env`
-
-First create the .env file. Note that API keys are only required for the respective model providers that will be used to run eval on
-
-```
-# model providers
-OPENAI_API_KEY=<KEY>
-ANTHROPIC_API_KEY=<KEY>
-TOGETHER_API_KEY=<KEY>
-OPEN_ROUTER_API_KEY=<KEY>
-
-# two db options are available "sqlite" (default) and "postgres"
-FLE_DB_TYPE="sqlite"
-
-# If using Postgres DB, NOT REQUIRED (See section on Database)
-SKILLS_DB_PORT=""
-SKILLS_DB_NAME=""
-SKILLS_DB_USER=""
-SKILLS_DB_PASSWORD=""
-
-# If using SQLite for DB (See section on Database)
-SQLITE_DB_FILE = ".fle/data.db"
-
-# AWS credentials if wanting to use Cloudformation, NOT REQUIRED
-AWS_SECRET_ACCESS_KEY=<KEY>
-AWS_ACCESS_KEY_ID=""
-AWS_DEFAULT_REGION=""
-CLUSTER_NAME=""
+7. **Configure DB**: Copy the example environment file:
+- Note that API keys are only required for the respective model providers that will be evaluated
+```bash
+cp .example.env .env
 ```
 
 If you are not using a Postgres DB, you should create an SQLite database file:

@@ -147,8 +147,8 @@ def run_interactive_examples():
     print()
     print("   # Use the environment")
     print("   obs, info = env.reset(options={})")
-    print("   action = {'agent_idx': 0, 'game_state': '', 'code': 'your_python_code_here'}")
-    print("   obs, reward, terminated, truncated, info = env.step(action)")
+    print("   action = {'agent_idx': 0, 'game_state': '', 'code': 'print(\"Hello Factorio!\")'}")
+    print("   obs, reward, done, info = env.step(action)")
     print("   env.close()")
 
 
@@ -229,8 +229,8 @@ Examples:
         print("import gym")
         print(f"env = gym.make('{example_env}')")
         print("obs, info = env.reset(options={})")
-        print("action = {'agent_idx': 0, 'game_state': '{\"entities\": \"\", \"inventories\": [{}], \"timestamp\": 0, \"namespaces\": [\"\"], \"agent_messages\": []}', 'code': 'print(\"Hello Factorio!\")'}")
-        print("obs, reward, terminated, truncated, info = env.step(action)")
+        print("action = {'agent_idx': 0, 'game_state': '', 'code': 'print(\"Hello Factorio!\")'}")
+        print("obs, reward, done, info = env.step(action)")
         print("env.close()")
         print("```")
 

@@ -56,6 +56,7 @@ eval = [
     "numpy>=2.2.3",
     "scikit-image>=0.25.2",
     "psycopg2>=2.9.10",
+    "factorio-learning-environment",
 ]
 all = [
     "anthropic>=0.49.0",
@@ -99,6 +100,7 @@ env = [
     "aiohttp>=3.8.0",
     "pydantic>=1.8.0",
     "a2a-sdk",
+    "factorio-learning-environment",
 ]
 
 [project.scripts]
@@ -159,3 +161,6 @@ dependencies = [
 [tool.hatch.envs.docs.scripts]
 build = "mkdocs build"
 serve = "mkdocs serve"
+
+[tool.uv.sources]
+factorio-learning-environment = { workspace = true }

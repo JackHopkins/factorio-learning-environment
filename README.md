@@ -132,10 +132,10 @@ Open the following ports:
 **Note**: On Windows, you may need to configure Windows Defender Firewall to allow these ports.
 
 6. **Activate server**:
-  - Open Factorio client
-  - Navigate to _Multiplayer_
-  - Connect to `localhost:34197` (default) or your configured address in Docker. 
-    - Once connected, you can safely disconnect. This step confirms your Factorio license with the server.
+- Open Factorio client
+- Navigate to _Multiplayer_
+- Connect to `localhost:34197` (default) or your configured address in Docker. 
+  - Once connected, you can safely disconnect. This step confirms your Factorio license with the server.
 
 7. **Configure DB**: Copy the example environment file:
 - Note that API keys are only required for the respective model providers that will be evaluated

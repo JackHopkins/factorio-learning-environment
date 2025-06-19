@@ -143,11 +143,6 @@ Open the following ports:
 cp .example.env .env
 ```
 
-If you are not using a Postgres DB, you should create an SQLite database file:
-```bash
-sqlite3 mydatabase.db
-```
-
 The programs table is created automatically for either db:
 ```
 CREATE TABLE programs (

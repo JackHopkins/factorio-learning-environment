@@ -81,4 +81,4 @@ environment/src/skills/ground_truth_skills/*
 cluster/local/docker-compose.yml
 
 # Database files
-*.db
+.fle/

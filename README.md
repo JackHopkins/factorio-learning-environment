@@ -83,10 +83,10 @@ git clone https://github.com/JackHopkins/factorio-learning-environment.git
 cd factorio-learning-environment
 
 # Using uv
-uv sync
+uv sync --extra env --extra eval
 
 # Using pip
-pip install -e .
+pip install -e .[env,eval]
 ```
 
 2. **Set up Factorio client**:

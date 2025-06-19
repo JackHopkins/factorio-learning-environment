@@ -744,7 +744,7 @@ async def create_db_client(max_conversation_length: int = 40,
     # Check for database type preference
     db_type = os.getenv("FLE_DB_TYPE", "sqlite").lower()
     
-    if db_type == "postgres" or db_type == "postgresql":
+    if db_type == "postgres":
         # Use PostgreSQL if explicitly requested and configured
         required_vars = ["SKILLS_DB_HOST", "SKILLS_DB_PORT", "SKILLS_DB_NAME", "SKILLS_DB_USER", "SKILLS_DB_PASSWORD"]
         missing_vars = [var for var in required_vars if not os.getenv(var)]
@@ -752,38 +752,36 @@ async def create_db_client(max_conversation_length: int = 40,
         if missing_vars:
             print(f"Warning: PostgreSQL requested but missing environment variables: {missing_vars}")
             print("Falling back to SQLite...")
-            db_type = "sqlite"
             raise Exception(f"Missing environment variables: {missing_vars}")
-        else:
-            # Auto-create PostgreSQL database schema if it doesn't exist
-            db_config = {
-                "host": os.getenv("SKILLS_DB_HOST"),
-                "port": os.getenv("SKILLS_DB_PORT"),
-                "dbname": os.getenv("SKILLS_DB_NAME"),
-                "user": os.getenv("SKILLS_DB_USER"),
-                "password": os.getenv("SKILLS_DB_PASSWORD")
-            }
-            create_default_postgres_db(**db_config)
-            
-            return PostgresDBClient(
-                max_conversation_length=max_conversation_length,
-                min_connections=min_connections,
-                max_connections=max_connections,
-                **db_config
-            )
+        db_config = {
+            "host": os.getenv("SKILLS_DB_HOST"),
+            "port": os.getenv("SKILLS_DB_PORT"),
+            "dbname": os.getenv("SKILLS_DB_NAME"),
+            "user": os.getenv("SKILLS_DB_USER"),
+            "password": os.getenv("SKILLS_DB_PASSWORD")
+        }
+        create_default_postgres_db(**db_config)
+        
+        return PostgresDBClient(
+            max_conversation_length=max_conversation_length,
+            min_connections=min_connections,
+            max_connections=max_connections,
+            **db_config
+        )
+    elif db_type == "sqlite":
+        # Default to SQLite
+        sqlite_file = os.getenv("SQLITE_DB_FILE", ".fle/data.db") 
+        print(f"Using SQLite database file: {sqlite_file}")
+        
+        # Auto-create SQLite database if it doesn't exist
+        create_default_sqlite_db(sqlite_file)
+        
+        return SQLliteDBClient(
+            max_conversation_length=max_conversation_length,
+            min_connections=min_connections,
+            max_connections=max_connections,
+            database_file=sqlite_file
+        )
     else:
         raise Exception(f"Invalid database type: {db_type}")
     
-    # Default to SQLite
-    sqlite_file = os.getenv("SQLITE_DB_FILE", ".fle/data.db") 
-    print(f"Using SQLite database file: {sqlite_file}")
-    
-    # Auto-create SQLite database if it doesn't exist
-    create_default_sqlite_db(sqlite_file)
-    
-    return SQLliteDBClient(
-        max_conversation_length=max_conversation_length,
-        min_connections=min_connections,
-        max_connections=max_connections,
-        database_file=sqlite_file
-    )

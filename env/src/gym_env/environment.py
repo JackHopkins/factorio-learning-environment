@@ -259,8 +259,13 @@ class FactorioGymEnv(gym.Env):
             info: Additional information
         """
         agent_idx = action['agent_idx']
-        game_state = GameState.parse_raw(action['game_state'])
         code = action['code']
+        game_state_raw = action['game_state']
+        if game_state_raw == '':
+            # Use the current game state from the instance if empty string is provided
+            game_state = GameState.from_instance(self.instance)
+        else:
+            game_state = GameState.parse_raw(game_state_raw)
         
         self.reset_instance(game_state)
         # Get initial state information
@@ -284,13 +289,13 @@ class FactorioGymEnv(gym.Env):
         
         # Get task verification if task exists
         task_response = task_success = None
-        terminated = truncated = False
+        done = False
         if self.task:
             # First get the raw verification
             task_success = self.task.verify(reward, self.instance, step_statistics={})
             # Then enhance the response with task output
             task_response = self.task.enhance_response_with_task_output(result, task_success)
-            terminated = task_success.success
+            done = task_success.success
 
         # Get post-execution flows and calculate achievements
         current_flows = ProductionFlows.from_dict(namespace._get_production_stats())
@@ -325,7 +330,7 @@ class FactorioGymEnv(gym.Env):
             'task_verification': task_response
         }
         
-        return observation.to_dict(), reward, terminated, truncated, info
+        return observation.to_dict(), reward, done, info
 
     def reset_instance(self, state: Optional[GameState] = None) -> None:
         """Reset the Factorio instance to a given state or initial state.

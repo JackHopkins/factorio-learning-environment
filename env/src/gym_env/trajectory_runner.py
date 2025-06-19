@@ -158,7 +158,7 @@ class GymTrajectoryRunner:
                     break
 
                 # Execute step in the environment
-                observation_dict, reward, terminated, truncated, info = self.gym_env.step({
+                observation_dict, reward, done, info = self.gym_env.step({
                     'agent_idx': agent_idx,
                     'game_state': current_state.to_raw(),
                     'code': policy.code,
@@ -193,7 +193,7 @@ class GymTrajectoryRunner:
                     current_state = program.state
 
                 # Check if done and exit if configured
-                if terminated and self.config.exit_on_task_success:
+                if done and self.config.exit_on_task_success:
                     completion_result = CompletionResult(
                         step=agent_steps[agent_idx], 
                         reason=CompletionReason.SUCCESS

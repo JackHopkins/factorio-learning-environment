@@ -27,6 +27,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "pydantic>=2.10.6",
     "lupa>=2.4",
+    "psycopg2>=2.9.10",
     "slpp>=1.2.3",
     "factorio-rcon-py==1.2.1",
     "construct>=2.10.70",
@@ -55,7 +56,6 @@ cluster = [
 eval = [
     "numpy>=2.2.3",
     "scikit-image>=0.25.2",
-    "psycopg2>=2.9.10",
 ]
 all = [
     "anthropic>=0.49.0",
@@ -71,6 +71,36 @@ all = [
 mcp = [
     "mcp[cli]",
     "dulwich"
+]
+env = [
+    "factorio-rcon-py==1.2.1",
+    "python-dotenv==1.0.1",
+    "imageio",
+    "anyio",
+    "pygame",
+    "neptune",
+    "pyopenssl==24.0.0",
+    "rich",
+    "construct",
+    "pydantic",
+    "openai",
+    "anthropic",
+    "scipy",
+    "scikit-image",
+    "pyautogui",
+    "lupa",
+    "numpy",
+    "pillow",
+    "backoff",
+    "tenacity",
+    "pytest-asyncio",
+    "fastapi>=0.68.0",
+    "uvicorn>=0.15.0",
+    "aiohttp>=3.8.0",
+    "pydantic>=1.8.0",
+    "a2a-sdk",
+    # For slpp, use the git version since it's likely more up to date:
+    "git+https://github.com/SirAnthony/slpp"
 ]
 
 [project.scripts]

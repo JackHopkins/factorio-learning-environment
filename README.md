@@ -83,10 +83,10 @@ git clone https://github.com/JackHopkins/factorio-learning-environment.git
 cd factorio-learning-environment
 
 # Using uv
-uv sync
+uv sync --extra env --extra eval
 
 # Using pip
-pip install -e .
+pip install -e .[env,eval]
 ```
 
 2. **Set up Factorio client**:
@@ -141,11 +141,6 @@ Open the following ports:
 - Note that API keys are only required for the respective model providers that will be evaluated
 ```bash
 cp .example.env .env
-```
-
-If you are not using a Postgres DB, you should create an SQLite database file:
-```bash
-sqlite3 mydatabase.db
 ```
 
 The programs table is created automatically for either db:

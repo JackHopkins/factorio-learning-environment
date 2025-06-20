@@ -13,9 +13,11 @@ class AgentABC:
     model: str
     system_prompt: str
     conversation: Conversation
+
     def __init__(self, model, system_prompt, *args, **kwargs):
        self.model = model
        self.system_prompt = system_prompt
+       self.conversation = None
     
     def get_agent_card(self) -> AgentCard:
         """Get the agent card for this agent"""
@@ -48,7 +50,7 @@ class AgentABC:
         """
         pass
     
-    def check_completion(self, response: Response) -> tuple[bool, bool]:
+    def check_step_completion(self, response: Response) -> tuple[bool, bool]:
         """
         Check if the agent should complete its turn and if the state should be updated
         returns:

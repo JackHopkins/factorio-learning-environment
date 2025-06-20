@@ -20,8 +20,18 @@ class TaskABC:
         else:
             return self.agent_instructions[agent_idx]
     
-    def verify(self, score: float, step: int, instance: FactorioInstance, step_statistics: Dict) -> bool:
-        """ Return true is the task is completed"""
+    def verify(self, score: float, step: int, instance: FactorioInstance, step_statistics: Dict) -> TaskResponse:
+        """Verify if the task is completed based on the current state.
+
+        Args:
+            score (float): The current score/reward value
+            step (int): The current step number
+            instance (FactorioInstance): The Factorio game instance
+            step_statistics (Dict): Dictionary containing statistics about the current step
+
+        Returns:
+            TaskResponse: Response object indicating task completion status and metadata
+        """
         pass
     
     def setup_instance(self, instance):

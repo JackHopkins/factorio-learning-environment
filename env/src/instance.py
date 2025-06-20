@@ -258,7 +258,10 @@ class FactorioInstance:
             rcon_client.connect()
             player_count = rcon_client.send_command('/sc rcon.print(#game.players)')
             if int(player_count) == 0:
-                print("WARNING: LuaPlayer hasn't been initialised into the game. Entity placement behavior can be incorrect for boilers and pumps.")
+                if os.environ.get("RUN_WITHOUT_FACTORIO_CLIENT", "false") == "true":
+                    print("WARNING: LuaPlayer hasn't been initialised into the game. Entity placement behavior can be incorrect for boilers and pumps.")
+                else:
+                    raise Exception("Player hasn't been initialised into the game. Please log in once to make this node operational.")
             #rcon_client.send_command('/sc global = {}')
             #rcon_client.send_command('/sc global.actions = {}')
 

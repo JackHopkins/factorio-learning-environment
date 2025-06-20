@@ -33,6 +33,137 @@ class AllCharText(gym.spaces.Text):
         super().__init__(max_length=max_length, min_length=0, charset=charset)
 
 
+# Common space objects to reduce code duplication
+class ObsSpaces:
+    """Common space objects used throughout the observation space"""
+    
+    # Text spaces with common lengths
+    SHORT_TEXT = AllCharText(max_length=200)
+    LONG_TEXT = AllCharText(max_length=10000)
+    VERY_LONG_TEXT = AllCharText(max_length=1000000)
+    
+    # Numeric spaces
+    POSITIVE_INT = spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32)
+    POSITIVE_FLOAT = spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32)
+    SCORE_FLOAT = spaces.Box(low=-np.inf, high=np.inf, shape=(), dtype=np.float32)
+    PROGRESS_FLOAT = spaces.Box(low=0, high=1, shape=(), dtype=np.float32)
+    
+    # Boolean space
+    BOOLEAN = spaces.Discrete(2)  # 0 or 1
+    
+    # Common item structure with type and quantity
+    ITEM_WITH_QUANTITY = spaces.Dict({
+        'type': SHORT_TEXT,
+        'quantity': POSITIVE_INT,
+    })
+    
+    # Common item structure with type and amount (float)
+    ITEM_WITH_AMOUNT = spaces.Dict({
+        'type': SHORT_TEXT,
+        'amount': POSITIVE_FLOAT,
+    })
+    
+    # Common item structure with type and rate
+    ITEM_WITH_RATE = spaces.Dict({
+        'type': SHORT_TEXT,
+        'rate': POSITIVE_FLOAT,
+    })
+    
+    # Common item structure with type and value
+    ITEM_WITH_VALUE = spaces.Dict({
+        'type': SHORT_TEXT,
+        'value': POSITIVE_FLOAT,
+    })
+    
+    # Common item structure with type and price
+    ITEM_WITH_PRICE = spaces.Dict({
+        'type': SHORT_TEXT,
+        'price': POSITIVE_FLOAT,
+    })
+    
+    # Common key-value pair structure
+    KEY_VALUE_PAIR = spaces.Dict({
+        'key': SHORT_TEXT,
+        'value': LONG_TEXT,
+    })
+    
+    # Common name-value pair structure
+    NAME_VALUE_PAIR = spaces.Dict({
+        'name': SHORT_TEXT,
+        'value': POSITIVE_FLOAT,
+    })
+    
+    # Technology ingredients structure
+    TECHNOLOGY_INGREDIENT = spaces.Dict({
+        'item': SHORT_TEXT,
+        'amount': POSITIVE_INT,
+    })
+    
+    # Crafted item structure
+    CRAFTED_ITEM = spaces.Dict({
+        'crafted_count': POSITIVE_INT,
+        'inputs': ITEM_WITH_AMOUNT,
+        'outputs': ITEM_WITH_AMOUNT,
+    })
+    
+    # Message structure
+    MESSAGE = spaces.Dict({
+        'sender': SHORT_TEXT,
+        'content': LONG_TEXT,
+        'timestamp': POSITIVE_FLOAT,
+    })
+    
+    # Serialized function structure
+    SERIALIZED_FUNCTION = spaces.Dict({
+        'name': SHORT_TEXT,
+        'pickled_function': LONG_TEXT,
+    })
+    
+    # Technology structure
+    TECHNOLOGY = spaces.Dict({
+        'name': SHORT_TEXT,
+        'researched': BOOLEAN,
+        'enabled': BOOLEAN,
+        'level': POSITIVE_INT,
+        'research_unit_count': POSITIVE_INT,
+        'research_unit_energy': POSITIVE_FLOAT,
+        'prerequisites': spaces.Sequence(SHORT_TEXT),
+        'ingredients': spaces.Sequence(TECHNOLOGY_INGREDIENT),
+    })
+    
+    # Research structure
+    RESEARCH = spaces.Dict({
+        'technologies': spaces.Sequence(TECHNOLOGY),
+        'current_research': SHORT_TEXT,
+        'research_progress': PROGRESS_FLOAT,
+        'research_queue': spaces.Sequence(SHORT_TEXT),
+        'progress': spaces.Sequence(NAME_VALUE_PAIR),
+    })
+    
+    # Game info structure
+    GAME_INFO = spaces.Dict({
+        'tick': POSITIVE_INT,
+        'time': POSITIVE_FLOAT,
+        'speed': POSITIVE_FLOAT,
+    })
+    
+    # Flows structure
+    FLOWS = spaces.Dict({
+        'input': spaces.Sequence(ITEM_WITH_RATE),
+        'output': spaces.Sequence(ITEM_WITH_RATE),
+        'crafted': spaces.Sequence(CRAFTED_ITEM),
+        'harvested': spaces.Sequence(ITEM_WITH_AMOUNT),
+        'price_list': spaces.Sequence(ITEM_WITH_PRICE),
+        'static_items': spaces.Sequence(ITEM_WITH_VALUE),
+    })
+    
+    # Task verification structure
+    TASK_VERIFICATION = spaces.Dict({
+        'success': BOOLEAN,
+        'meta': spaces.Sequence(KEY_VALUE_PAIR),
+    })
+
+
 class FactorioGymEnv(gym.Env):
     """OpenAI Gym environment for Factorio"""
     
@@ -51,114 +182,41 @@ class FactorioGymEnv(gym.Env):
         # Define action space - a dictionary containing agent index and code
         self.action_space = spaces.Dict({
             'agent_idx': spaces.Discrete(instance.num_agents),  # Index of the agent taking the action
-            'game_state': AllCharText(max_length=1000000),  # The game state to reset to before running code (GameState.to_raw() str)
-            'code': AllCharText(max_length=10000)  # The Python code to execute
+            'game_state': ObsSpaces.VERY_LONG_TEXT,  # The game state to reset to before running code (GameState.to_raw() str)
+            'code': ObsSpaces.LONG_TEXT  # The Python code to execute
         })
         
         # Define observation space with expanded fields
         self.observation_space = spaces.Dict({
             # Raw text output from the last action
-            'raw_text': AllCharText(max_length=10000),
+            'raw_text': ObsSpaces.LONG_TEXT,
             
             # Entities on the map - now as text representations
-            'entities': spaces.Sequence(AllCharText(max_length=1000)),  # Each entity's repr string
+            'entities': spaces.Sequence(ObsSpaces.LONG_TEXT),  # Each entity's repr string
             
             # Current inventory state
-            'inventory': spaces.Sequence(spaces.Dict({
-                'type': AllCharText(max_length=200),
-                'quantity': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
-            })),
+            'inventory': spaces.Sequence(ObsSpaces.ITEM_WITH_QUANTITY),
             
             # Research state
-            'research': spaces.Dict({
-                'technologies': spaces.Sequence(spaces.Dict({
-                    'name': AllCharText(max_length=200),
-                    'researched': spaces.Discrete(2),  # 0 or 1
-                    'enabled': spaces.Discrete(2),  # 0 or 1
-                    'level': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
-                    'research_unit_count': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
-                    'research_unit_energy': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                    'prerequisites': spaces.Sequence(AllCharText(max_length=200)),
-                    'ingredients': spaces.Sequence(spaces.Dict({
-                        'item': AllCharText(max_length=200),
-                        'amount': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
-                    })),
-                })),
-                'current_research': AllCharText(max_length=200),
-                'research_progress': spaces.Box(low=0, high=1, shape=(), dtype=np.float32),
-                'research_queue': spaces.Sequence(AllCharText(max_length=200)),
-                'progress': spaces.Sequence(spaces.Dict({
-                    'name': AllCharText(max_length=200),
-                    'value': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                })),
-            }),
+            'research': ObsSpaces.RESEARCH,
             
             # Game information
-            'game_info': spaces.Dict({
-                'tick': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
-                'time': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                'speed': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-            }),
+            'game_info': ObsSpaces.GAME_INFO,
             
             # Current score
-            'score': spaces.Box(low=-np.inf, high=np.inf, shape=(), dtype=np.float32),
+            'score': ObsSpaces.SCORE_FLOAT,
             
             # Production flows
-            'flows': spaces.Dict({
-                'input': spaces.Sequence(spaces.Dict({
-                    'type': AllCharText(max_length=200),
-                    'rate': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                })),
-                'output': spaces.Sequence(spaces.Dict({
-                    'type': AllCharText(max_length=200),
-                    'rate': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                })),
-                'crafted': spaces.Sequence(spaces.Dict({
-                    'crafted_count': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
-                    'inputs': spaces.Dict({
-                        'type': AllCharText(max_length=200),
-                        'amount': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                    }),
-                    'outputs': spaces.Dict({
-                        'type': AllCharText(max_length=200),
-                        'amount': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                    }),
-                })),
-                'harvested': spaces.Sequence(spaces.Dict({
-                    'type': AllCharText(max_length=200),
-                    'amount': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                })),
-                'price_list': spaces.Sequence(spaces.Dict({
-                    'type': AllCharText(max_length=200),
-                    'price': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                })),
-                'static_items': spaces.Sequence(spaces.Dict({
-                    'type': AllCharText(max_length=200),
-                    'value': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-                })),
-            }),
+            'flows': ObsSpaces.FLOWS,
             
             # Task verification status
-            'task_verification': spaces.Dict({
-                'success': spaces.Discrete(2),  # 0 or 1
-                'meta': spaces.Sequence(spaces.Dict({
-                    'key': AllCharText(max_length=200),
-                    'value': AllCharText(max_length=1000),
-                })),
-            }),
+            'task_verification': ObsSpaces.TASK_VERIFICATION,
             
             # Messages from other agents
-            'messages': spaces.Sequence(spaces.Dict({
-                'sender': AllCharText(max_length=200),
-                'content': AllCharText(max_length=1000),
-                'timestamp': spaces.Box(low=0, high=np.inf, shape=(), dtype=np.float32),
-            })),
+            'messages': spaces.Sequence(ObsSpaces.MESSAGE),
             
             # Serialized functions
-            'serialized_functions': spaces.Sequence(spaces.Dict({
-                'name': AllCharText(max_length=200),
-                'pickled_function': AllCharText(max_length=10000),  # Pickled function as hex string
-            })),
+            'serialized_functions': spaces.Sequence(ObsSpaces.SERIALIZED_FUNCTION),
         })
         
         self.current_state = None

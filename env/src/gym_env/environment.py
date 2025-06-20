@@ -10,6 +10,7 @@ import string
 
 from env.src.instance import FactorioInstance
 from env.src.models.game_state import GameState
+from env.src.gym_env.action import Action
 from env.src.models.achievements import ProductionFlows
 from env.src.entities import EntityStatus
 from env.src.utils.profits import get_achievements
@@ -242,33 +243,27 @@ class FactorioGymEnv(gym.Env):
         
         return observation
         
-    def step(self, action: Dict[str, Any]) -> Tuple[Dict[str, Any], float, bool, Dict[str, Any]]:
+    def step(self, action: Action) -> Tuple[Dict[str, Any], float, bool, bool, Dict[str, Any]]:
         """
         Execute one step in the environment
         
         Args:
-            action: Dictionary containing:
-                - agent_idx: int - Index of the agent taking the action
-                - game_state: GameState - GameState to reset to before executing the action
-                - code: str - Python code string to execute
+            action: Action object
             
         Returns:
             observation: The new observation as a dictionary matching the observation space
             reward: The reward for this step
-            done: Whether the episode is done
+            terminated: Whether the episode is done
+            truncated: Whether the episode is truncated
             info: Additional information
         """
+        action = action.to_dict()
         agent_idx = action['agent_idx']
         code = action['code']
         game_state_raw = action['game_state']
-        if game_state_raw == '':
-            # Use the current game state from the instance if empty string is provided
-            game_state = GameState.from_instance(self.instance)
-        else:
-            game_state = GameState.parse_raw(game_state_raw)
-        
-        self.reset_instance(game_state)
-        # Get initial state information
+        if game_state_raw:
+            self.reset_instance(GameState.parse_raw(game_state_raw))
+            
         namespace = self.instance.namespaces[agent_idx]
         start_production_flows = ProductionFlows.from_dict(namespace._get_production_stats())
         initial_score, _ = namespace.score()
@@ -289,13 +284,14 @@ class FactorioGymEnv(gym.Env):
         
         # Get task verification if task exists
         task_response = task_success = None
-        done = False
+        terminated = truncated = False
+        output_game_state = GameState.from_instance(self.instance)
         if self.task:
             # First get the raw verification
             task_success = self.task.verify(reward, self.instance, step_statistics={})
             # Then enhance the response with task output
             task_response = self.task.enhance_response_with_task_output(result, task_success)
-            done = task_success.success
+            terminated = task_success.success
 
         # Get post-execution flows and calculate achievements
         current_flows = ProductionFlows.from_dict(namespace._get_production_stats())
@@ -327,23 +323,30 @@ class FactorioGymEnv(gym.Env):
             'flows': response.flows,
             'agent_idx': agent_idx,
             'last_message_timestamp': self.last_message_timestamps[agent_idx],
-            'task_verification': task_response
+            'task_verification': task_response,
+            'output_game_state': output_game_state
         }
         
-        return observation.to_dict(), reward, done, info
+        return observation.to_dict(), reward, terminated, truncated, info
 
     def reset_instance(self, state: Optional[GameState] = None) -> None:
         """Reset the Factorio instance to a given state or initial state.
         
         Args:
-            state: Optional GameState to reset to. If None, resets to initial state.
+            state: Optional[GameState] to reset to. If None, resets to initial state.
         """
         self.instance.reset(state)
 
     def reset(self, options: Dict[str, Any], seed: Optional[int] = None) -> Dict[str, Any]:
-        """Reset the environment to initial state"""
-        game_state = options.get('state', None)
+        """Reset the environment to initial state
+        
+        Args:
+            options: dict containing 'game_state' key with Optional[GameState] value to reset to
+            seed: Not used
+        """
+        game_state = options['game_state']
         self.reset_instance(game_state)
+
         self.initial_score, _ = self.instance.namespaces[0].score()
         self.last_observation = None  # Reset last observation
         # Reset message timestamps

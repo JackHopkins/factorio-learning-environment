@@ -45,16 +45,17 @@ env = gym.make("Factorio-iron_ore_throughput_16-v0")
 
 ```python
 # Reset the environment
-obs = env.reset()
+obs = env.reset(options={'game_state': None})
 
 # Take an action
-action = {
-    'agent_idx': 0,  # Which agent takes the action
-    'code': 'print("Hello Factorio!")'  # Python code to execute
-}
+action = Action(
+    agent_idx=0,  # Which agent takes the action
+    code='print("Hello Factorio!")',  # Python code to execute
+    game_state=None,  # game state to reset to before running code
+)
 
 # Execute the action
-obs, reward, done, info = env.step(action)
+obs, reward, terminated, truncated, info = env.step(action)
 
 # Clean up
 env.close()
@@ -128,8 +129,9 @@ All environments follow the standard gym interface:
 ### Action Space
 ```python
 {
-    'agent_idx': Discrete(num_agents),  # Which agent takes the action
-    'code': Text(max_length=10000)      # Python code to execute
+    'agent_idx': Discrete(instance.num_agents),  # Index of the agent taking the action
+    'game_state': Text(max_length=1000000),  # The game state to reset to before running code (GameState.to_raw() str)
+    'code': Text(max_length=10000)  # The Python code to execute
 }
 ```
 
@@ -141,7 +143,6 @@ The observation space includes:
 - `research`: Research progress and technologies
 - `game_info`: Game state (tick, time, speed)
 - `score`: Current score
-- `achievements`: Achievement progress
 - `flows`: Production statistics
 - `task_verification`: Task completion status
 - `messages`: Inter-agent messages
@@ -149,8 +150,8 @@ The observation space includes:
 
 ### Methods
 
-- `reset(state: Optional[GameState] = None) -> Dict[str, Any]`
-- `step(action: Dict[str, Any]) -> Tuple[Dict[str, Any], float, bool, Dict[str, Any]]`
+- `reset(options: Dict[str, Any], seed: Optional[int] = None) -> Dict[str, Any]`
+- `step(action: Dict[str, Any]) -> Tuple[Dict[str, Any], float, bool, bool, Dict[str, Any]]`
 - `close() -> None`
 
 ## Task Definitions
@@ -185,6 +186,7 @@ Here's a complete example that demonstrates the full workflow:
 ```python
 import gym
 from gym_env.registry import list_available_environments, get_environment_info
+from gym_env.action import Action
 
 # 1. List available environments
 env_ids = list_available_environments()
@@ -198,16 +200,20 @@ print(f"Description: {info['description']}")
 env = gym.make("Factorio-iron_ore_throughput_16-v0")
 
 # 4. Use the environment
-obs = env.reset()
+obs = env.reset(options={'game_state': None})
 print(f"Initial observation keys: {list(obs.keys())}")
 
 # 5. Take actions
+current_state = None
 for step in range(5):
-    action = {
-        'agent_idx': 0,
-        'code': f'print("Step {step}: Hello Factorio!")'
-    }
-    obs, reward, done, info = env.step(action)
+    action = Action(
+        agent_idx=0,
+        game_state=current_state,
+        code=f'print("Step {step}: Hello Factorio!")'
+    )
+    obs, reward, terminated, truncated, info = env.step(action)
+    done = terminated or truncated
+    current_state = info['output_game_state']
     print(f"Step {step}: Reward={reward}, Done={done}")
     
     if done:
@@ -283,8 +289,8 @@ The registry supports multi-agent environments. When creating a multi-agent envi
 env = gym.make("Factorio-MultiAgentTask-v0")
 
 # Actions for different agents
-action1 = {'agent_idx': 0, 'code': 'print("Agent 0 action")'}
-action2 = {'agent_idx': 1, 'code': 'print("Agent 1 action")'}
+action1 = Action(agent_idx=0, code='print("Agent 0 action")', game_state=None)
+action2 = Action(agent_idx=1, code='print("Agent 1 action")', game_state=None)
 ```
 
 ## Testing

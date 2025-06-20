@@ -26,6 +26,7 @@ from typing import List, Optional
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from env.src.gym_env.registry import list_available_environments, get_environment_info
+from env.src.gym_env.action import Action
 from env.src.models.game_state import GameState
 
 
@@ -107,7 +108,7 @@ def run_interactive_examples():
             
             # Reset the environment with required options parameter
             print("   Resetting environment...")
-            obs, info = env.reset(options={})
+            obs, info = env.reset(options={'game_state': None})
             print(f"   Initial observation keys: {list(obs.keys())}")
             
             # Take a simple action
@@ -115,17 +116,16 @@ def run_interactive_examples():
             
             # Get the current game state from the environment
             current_game_state = GameState.from_instance(env.instance)
-            game_state_json = current_game_state.to_raw()
+            action = Action(
+                agent_idx=0,
+                game_state=current_game_state,
+                code='print("Hello from Factorio Gym!")'
+            )
             
-            action = {
-                'agent_idx': 0,
-                'game_state': game_state_json,  # Use current game state
-                'code': 'print("Hello from Factorio Gym!")'
-            }
-            
-            obs, reward, done, info = env.step(action)
+            obs, reward, terminated, truncated, info = env.step(action)
             print(f"   Reward: {reward}")
-            print(f"   Done: {done}")
+            print(f"   Terminated: {terminated}")
+            print(f"   Truncated: {truncated}")
             print(f"   Info keys: {list(info.keys())}")
             
             # Close the environment
@@ -146,9 +146,9 @@ def run_interactive_examples():
     print("   env = gym.make('Factorio-iron_ore_throughput_16-v0')")
     print()
     print("   # Use the environment")
-    print("   obs, info = env.reset(options={})")
-    print("   action = {'agent_idx': 0, 'game_state': '', 'code': 'print(\"Hello Factorio!\")'}")
-    print("   obs, reward, done, info = env.step(action)")
+    print("   obs, info = env.reset(options={'game_state': None})")
+    print("   action = Action(agent_idx=0, game_state='', code='print(\"Hello Factorio!\")')")
+    print("   obs, reward, terminated, truncated, info = env.step(action)")
     print("   env.close()")
 
 
@@ -228,9 +228,9 @@ Examples:
         print("```python")
         print("import gym")
         print(f"env = gym.make('{example_env}')")
-        print("obs, info = env.reset(options={})")
-        print("action = {'agent_idx': 0, 'game_state': '', 'code': 'print(\"Hello Factorio!\")'}")
-        print("obs, reward, done, info = env.step(action)")
+        print("obs, info = env.reset(options={'game_state': None})")
+        print("action = Action(agent_idx=0, game_state='', code='print(\"Hello Factorio!\")')")
+        print("obs, reward, terminated, truncated, info = env.step(action)")
         print("env.close()")
         print("```")
 

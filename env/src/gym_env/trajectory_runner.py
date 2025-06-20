@@ -60,7 +60,7 @@ class GymTrajectoryRunner:
         # Log observation and program
         self.logger.log_observation_and_program(agent, agent_idx, agent_step, observation, program)
 
-    async def create_program_from_policy(self, policy, agent_idx: int, reward: float, response: str, error_occurred: bool) -> Program:
+    async def create_program_from_policy(self, policy, agent_idx: int, reward: float, response: str, error_occurred: bool, game_state: GameState) -> Program:
         """Create a Program object from a Policy and environment results
         
         Args:
@@ -75,7 +75,6 @@ class GymTrajectoryRunner:
         """
         messages = policy.input_conversation.model_dump()['messages']
         depth = len(messages) - 2
-        game_state = GameState.from_instance(self.instance)
         
         # Create program from policy with environment results
         program = Program(
@@ -121,18 +120,18 @@ class GymTrajectoryRunner:
                 if current_state:
                     agent_steps[agent_idx] = depth
                     self.agents[agent_idx].reset(agent_conversation)
-        
+
         if not current_state:
             current_state = self.config.task.starting_game_state
-            self.gym_env.reset(options={'state': current_state})
-            
-            # Initialize agent conversations
-            for agent_idx, agent in enumerate(self.agents):
-                conversation = Conversation()
-                initial_obs = self.gym_env.unwrapped.get_observation(agent_idx)
-                formatted_obs = agent.observation_formatter.format(initial_obs).raw_str
-                conversation.add_user_message(formatted_obs)
-                agent.reset(conversation)
+
+        self.gym_env.reset(options={'game_state': current_state})        
+        # Initialize agent conversations
+        for agent_idx, agent in enumerate(self.agents):
+            conversation = Conversation()
+            initial_obs = self.gym_env.unwrapped.get_observation(agent_idx)
+            formatted_obs = agent.observation_formatter.format(initial_obs).raw_str
+            conversation.add_user_message(formatted_obs)
+            agent.reset(conversation)
         
         return current_state, agent_steps
 
@@ -164,19 +163,22 @@ class GymTrajectoryRunner:
                         code=policy.code,
                         game_state=current_state
                     )
-                    observation_dict, reward, done, info = self.gym_env.step(action.to_dict())
+                    obs_dict, reward, terminated, truncated, info = self.gym_env.step(action)
+                    observation = Observation.from_dict(obs_dict)
+                    output_game_state = info['output_game_state']
+                    done = terminated or truncated
 
                     # Create program from policy with environment results
                     program = await self.create_program_from_policy(
                         policy=policy,
                         agent_idx=agent_idx,
                         reward=reward,
-                        response=observation_dict['raw_text'],
-                        error_occurred=info.get('error_occurred', False)
+                        response=obs_dict['raw_text'],
+                        error_occurred=info['error_occurred'],
+                        game_state=output_game_state
                     )
 
                     # Update agent's conversation with the program and its results
-                    observation = Observation.from_dict(observation_dict)
                     await agent.update_conversation(observation, previous_program=program)
                     
                     # Consolidate all trajectory logging operations
@@ -192,7 +194,7 @@ class GymTrajectoryRunner:
                     # Get the agent_completed flag from the agent
                     agent_completed, update_state = agent.check_step_completion(observation)
                     if update_state:
-                        current_state = program.state
+                        current_state = output_game_state
 
                     # Check if done and exit if configured
                     if done and self.config.exit_on_task_success:

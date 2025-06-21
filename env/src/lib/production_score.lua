@@ -335,5 +335,5 @@ local scores = production_score.get_production_scores()
 if scores then
     global.initial_score = scores
 else
-    global.initial_score = {["players"] = 0}
+    global.initial_score = {["player"] = 0}
 end

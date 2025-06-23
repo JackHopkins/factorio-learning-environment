@@ -32,7 +32,6 @@ dependencies = [
     "construct>=2.10.70",
     "pillow>=11.1.0",
     "tomli",
-    "mcp[cli]",
     "numpy>=2.2.3"
 ]
 
@@ -65,7 +64,8 @@ all = [
     "psycopg2>=2.9.10",
 ]
 mcp = [
-    "dulwich"
+    "mcp[cli]",
+    "dulwich",
 ]
 env = [
     "anyio",

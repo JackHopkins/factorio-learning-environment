@@ -143,36 +143,6 @@ Open the following ports:
 cp .example.env .env
 ```
 
-The programs table is created automatically for either db:
-```
-CREATE TABLE programs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT NOT NULL,
-    value REAL DEFAULT 0.0,
-    visits INTEGER DEFAULT 0,
-    parent_id INTEGER,
-    state_json TEXT,
-    conversation_json TEXT NOT NULL,
-    completion_token_usage INTEGER,
-    prompt_token_usage INTEGER,
-    token_usage INTEGER,
-    response TEXT,
-    holdout_value REAL,
-    raw_reward REAL,
-    version INTEGER DEFAULT 1,
-    version_description TEXT DEFAULT '',
-    model TEXT DEFAULT 'gpt-4o',
-    meta TEXT,
-    achievements_json TEXT,
-    instance INTEGER DEFAULT -1,
-    depth REAL DEFAULT 0.0,
-    advantage REAL DEFAULT 0.0,
-    ticks INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    timing_metrics_json TEXT
-);
-```
-
 8. **Run Eval**: Running open and lab play with example run configs:
    1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
    2. Tasks (one parallel run of iron-ore task): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_lab_play.json`

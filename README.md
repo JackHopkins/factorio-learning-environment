@@ -168,7 +168,8 @@ CREATE TABLE programs (
     depth REAL DEFAULT 0.0,
     advantage REAL DEFAULT 0.0,
     ticks INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    timing_metrics_json TEXT
 );
 ```
 

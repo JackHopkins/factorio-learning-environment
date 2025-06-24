@@ -664,7 +664,8 @@ def create_default_sqlite_db(db_file: str) -> None:
                     depth REAL DEFAULT 0.0,
                     advantage REAL DEFAULT 0.0,
                     ticks INTEGER DEFAULT 0,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    timing_metrics_json TEXT
                 )
             """)
             conn.commit()
@@ -718,7 +719,8 @@ def create_default_postgres_db(**db_config) -> None:
                     depth REAL DEFAULT 0.0,
                     advantage REAL DEFAULT 0.0,
                     ticks INTEGER DEFAULT 0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    timing_metrics_json TEXT
                 )
             """)
             conn.commit()

@@ -200,9 +200,9 @@ class FactorioInstance:
 
     def set_inventory(self, inventory: Dict[str, Any], agent_idx: int = 0):
         self.begin_transaction()
-        self.add_command('clear_inventory', agent_idx)
-        self.execute_transaction()
-
+        self.add_command('clear_inventory', agent_idx + 1)
+        result = self.execute_transaction()
+        # print("RCON output:", result)
         self.begin_transaction()
         # kwargs dict to json
         inventory_items = {k: v for k, v in inventory.items()}

@@ -27,11 +27,11 @@ def test_pickup_item_full_inventory(game):
     game.move_to(placement_position)
     chest = game.place_entity(Prototype.WoodenChest, position=placement_position)
     game.instance.set_inventory({'coal': 10000})
-        
     try:
         result = game.pickup_entity(chest)
         assert False, f"Expected pickup to fail due to full inventory, but got result: {result}"
     except Exception as e:
+        print(e)
         assert True
 
 def test_pickup_ground_item(game):

@@ -32,7 +32,10 @@ def test_pickup_item_full_inventory(game):
     game.move_to(iron)
     drill = game.place_entity(Prototype.Boiler, position=iron)
 
+    before = game.inspect_inventory().get(Prototype.IronOre, 0)
     game.harvest_resource(iron, 50)
+    after = game.inspect_inventory().get(Prototype.IronOre, 0)
+    assert after - before == 50, f"Expected to harvest 50 iron, but got {after - before}"
 
     game.sleep(1)
     try:

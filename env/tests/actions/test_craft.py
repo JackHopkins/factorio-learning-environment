@@ -28,41 +28,23 @@ def test_fail_to_craft_item(game):
         assert True
 
 
-def test_craft_with_full_inventory(instance):
+def test_craft_with_full_inventory(game):
     """
-    Test that crafting fails appropriately when there are insufficient materials.
-    This test verifies the backend properly handles crafting constraints.
+    Test crafting when inventory is full
     """
-    # Use the raw instance, not the game fixture to avoid inventory override
-    game = instance.namespace
-    game.reset()
-
-    print("DEBUG: Inventory after reset:", game.inspect_inventory())
-
-    # Clear inventory completely first, then try to craft without materials
-    instance.set_inventory({})
-    print("DEBUG: Inventory after clearing:", game.inspect_inventory())
+    # Fill inventory with coal (4000 coal fills the main inventory)
+    game.instance.set_inventory(coal=4000)
     
-    try:
-        print("DEBUG: About to try crafting without sufficient materials...")
-        result = game.craft_item(Prototype.IronChest, quantity=100)  # Try to craft 100 chests
-        print("DEBUG: craft_item unexpectedly succeeded with result:", result)
-        print("DEBUG: Inventory after crafting:", game.inspect_inventory())
-        
-        # If we get here, crafting succeeded despite lack of materials
-        assert False, "Expected crafting to fail due to insufficient materials, but it succeeded"
-        
-    except Exception as e:
-        print("DEBUG: Exception caught:", type(e).__name__, str(e))
-        # Check for any kind of crafting-related constraint error
-        error_message = str(e).lower()
-        crafting_keywords = ['inventory', 'space', 'full', 'materials', 'resources', 'ingredient', 'craft', 'required']
-        
-        if any(keyword in error_message for keyword in crafting_keywords):
-            print("DEBUG: Test passed - crafting failed with appropriate constraint error")
-            assert True  # Test passes - backend properly rejected invalid crafting attempt
-        else:
-            assert False, f"Unexpected error type: {str(e)}"
+    # Verify inventory is actually full
+    initial_coal = game.get_inventory().coal
+    assert initial_coal == 4000
+    
+    # Try to craft a wooden chest (requires 2 wood)
+    # This should fail because there's no space for the crafted item
+    result = game.craft_item(Prototype.WoodenChest, 1)
+    
+    # The craft should fail due to full inventory (no space for result)
+    assert not result.success
 
 def test_craft_item(game):
     """

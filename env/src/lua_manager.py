@@ -96,7 +96,7 @@ class LuaScriptManager:
             correct, error = self.check_lua_syntax(script)
             if not correct:
                 raise Exception(f"Syntax error in: {script_name}: {error}")
-            print(f"{self.rcon_client.port}: Loading action {script_name} into game")
+            # print(f"{self.rcon_client.port}: Loading action {script_name} into game")
 
             result = self.rcon_client.send_command(f'/sc ' + script)
             pass

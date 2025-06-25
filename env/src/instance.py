@@ -648,7 +648,7 @@ class FactorioInstance:
             color_logic = 'if i==1 then char.color={r=0,g=1,b=0,a=1} elseif i==2 then char.color={r=0,g=0,b=1,a=1} end;'
         
         self.add_command(f'/sc global.agent_characters = {{}}; for _,c in pairs(game.surfaces[1].find_entities_filtered{{type="character"}}) do if c then c.destroy() end end; for i=1,{self.num_agents} do local char = game.surfaces[1].create_entity{{name="character",position={{x=0,y=(i-1)*2}},force=game.forces.player}}; {color_logic} global.agent_characters[i]=char end', raw=True)
-        self.execute_transaction()\
+        self.execute_transaction()
 
     def get_warnings(self, seconds=10):
         """

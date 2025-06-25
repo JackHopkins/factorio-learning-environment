@@ -14,6 +14,13 @@ def game(instance):
     yield instance.namespace
     instance.reset()
 
+@pytest.fixture()
+def empty_game(instance):
+    instance.reset()
+    # Don't set any inventory - start truly empty
+    yield instance.namespace
+    instance.reset()
+
 def test_fail_to_craft_item(game):
     """
     Attempt to craft an iron chest with insufficient resources and assert that no items are crafted.
@@ -32,132 +39,29 @@ def test_craft_with_full_inventory(game):
     """
     Test crafting when inventory is full
     """
-    print("=== DEBUGGING INVENTORY FULLNESS ===")
-    
     # Clear inventory completely first
     game.instance.set_inventory({})
-    print("DEBUG: After clearing inventory:", game.inspect_inventory())
     
-    # Fill inventory with coal to make it full
+    # Fill inventory with coal to make it nearly full
     game.instance.set_inventory({'coal': 4500})
     
-    inventory_after_coal = game.inspect_inventory()
-    print("DEBUG: After setting 4500 coal:", inventory_after_coal)
+    # Add some iron plates for crafting materials, making inventory truly full
+    current_inv = game.inspect_inventory()
+    game.instance.set_inventory({**current_inv, 'iron-plate': 10})
     
-    # Let's check what happens with different amounts
-    test_amounts = [4000, 4500, 5000]
-    for amount in test_amounts:
-        game.instance.set_inventory({})  # Clear first
-        game.instance.set_inventory({'coal': amount})
-        actual = game.inspect_inventory()[Prototype.Coal]
-        print(f"DEBUG: Requested {amount} coal -> Got {actual} coal")
-    
-    # Now let's try to fill inventory completely with mixed items
-    # to understand the actual inventory mechanics
-    game.instance.set_inventory({})
-    
-    # Try to determine actual inventory capacity by using lua script
+    # Try to craft iron gear wheel (requires 2 iron plates, produces 1 gear wheel)
+    # This should fail because inventory is full with no space for the crafted item
     try:
-        # Get inventory details directly from Factorio
-        result = game.instance.rcon_client.send_command("""
-        /sc 
-        local player = game.players[1]
-        local inventory = player.get_main_inventory()
-        local coal_prototype = game.item_prototypes['coal']
+        result = game.craft_item(Prototype.IronGearWheel, 1)
+        # If we get here, crafting unexpectedly succeeded
+        assert False, f"Expected crafting to fail due to full inventory, but got result: {result}"
         
-        rcon.print('INVENTORY_SIZE:' .. #inventory)
-        rcon.print('COAL_STACK_SIZE:' .. coal_prototype.stack_size)
-        rcon.print('MAX_COAL_CAPACITY:' .. (#inventory * coal_prototype.stack_size))
-        """)
-        print("DEBUG: Lua inventory info:", result)
     except Exception as e:
-        print("DEBUG: Error getting inventory info:", e)
-    
-    # Fill inventory to absolute maximum using smaller items
-    # Coal has stack size 50, so let's try to fill all slots
-    
-    # First, let's try filling with individual stacks of different items
-    game.instance.set_inventory({})
-    
-    # Fill with multiple different items to use up slots
-    mixed_inventory = {}
-    slot_fillers = [
-        ('coal', 50),         # 1 slot
-        ('iron-plate', 100),  # 1 slot  
-        ('copper-plate', 100), # 1 slot
-        ('stone', 100),       # 1 slot
-        ('wood', 100),        # 1 slot
-    ]
-    
-    # Fill many slots with single items to make inventory truly full
-    for i in range(30):  # Try to fill 30 slots
-        mixed_inventory[f'coal'] = 50 * (i + 1)  # This will just update coal amount
-    
-    # Actually, let's use a different approach - fill with max coal
-    game.instance.set_inventory({'coal': 4500})
-    print("DEBUG: Max coal inventory:", game.inspect_inventory())
-    
-    # Now try adding iron plates on top to see if there's space
-    try:
-        # Check if we can add more items
-        current_inv = game.inspect_inventory()
-        game.instance.set_inventory({**current_inv, 'iron-plate': 10})
-        after_adding_iron = game.inspect_inventory()
-        print("DEBUG: After trying to add iron plates:", after_adding_iron)
-        
-        iron_count = after_adding_iron.get(Prototype.IronPlate, 0)
-        if iron_count == 10:
-            print("DEBUG: Successfully added iron plates - inventory NOT full")
-        else:
-            print(f"DEBUG: Only added {iron_count} iron plates - inventory might be full")
-            
-    except Exception as e:
-        print("DEBUG: Error adding iron plates:", e)
-    
-    # Now test crafting with this inventory state
-    final_inventory = game.inspect_inventory()
-    print("DEBUG: Final inventory before crafting:", final_inventory)
-    
-    # Count total items and estimate fullness
-    total_items = sum(final_inventory.values())
-    print(f"DEBUG: Total items in inventory: {total_items}")
-    
-    # Try to craft iron gear wheels (requires 2 iron plates each)
-    iron_available = final_inventory.get(Prototype.IronPlate, 0)
-    print(f"DEBUG: Iron plates available for crafting: {iron_available}")
-    
-    if iron_available >= 2:
-        print("DEBUG: Attempting to craft iron gear wheel...")
-        try:
-            result = game.craft_item(Prototype.IronGearWheel, 1)
-            print(f"DEBUG: Craft result: {result}")
-            
-            # Check inventory after crafting
-            inventory_after_craft = game.inspect_inventory()
-            print("DEBUG: Inventory after craft attempt:", inventory_after_craft)
-            
-            # If result > 0, crafting succeeded despite potentially full inventory
-            if result and result > 0:
-                print("WARNING: Crafting succeeded - inventory may not be full enough")
-                # Test still needs to determine if this is expected behavior
-                pass
-            else:
-                print("SUCCESS: Crafting failed as expected with full inventory")
-                
-        except Exception as e:
-            print(f"DEBUG: Crafting failed with exception: {e}")
-            # Check if the exception is due to inventory being full
-            if "inventory" in str(e).lower() or "full" in str(e).lower() or "space" in str(e).lower():
-                print("SUCCESS: Crafting failed due to inventory constraints")
-            else:
-                print(f"UNEXPECTED: Crafting failed for other reason: {e}")
-                
-    else:
-        print("DEBUG: Not enough iron plates to test crafting")
-    
-    # For now, let's make the test pass since we're debugging
-    print("=== END DEBUGGING ===")
-    assert True  # Temporarily pass while we debug
+        # Exception is expected when inventory is full
+        error_message = str(e).lower()
+        assert ("inventory" in error_message and "full" in error_message) or \
+               ("slots" in error_message and "available" in error_message), \
+               f"Expected inventory full error, but got: {e}"
 
 def test_craft_item(game):
     """

@@ -236,12 +236,11 @@ class FactorioInstance:
             player_idx = agent_idx + 1
             multiagent_str = (
                 f"## MULTIAGENT INSTRUCTIONS\n"
-                f"You are Agent {player_idx} out of {self.num_agents} agent(s) in the game excluding Leader. "
-                f"Leader gives instructions to other agents. So follow Leader's instructions and cooperate since you share the same task "
-                f"and operate in the same world. Use the send_message() tool regularly to communicate with other agents "
-                f"about your current activities and any challenges you encounter. "
+                f"You are Agent {player_idx} out of {self.num_agents} agent(s) in the game. "
+                f"Follow your specific instructions given to you by the task."
+                f"Use the send_message() tool regularly to communicate with other agents about your current activities and any challenges you encounter. "
                 f"Start each program with a send_message() call to explain what you are doing. "
-                f"End each program with a send_message() call to confirm your actions. If your program errored out this message will not be sent. "
+                f"End each program with a send_message() call to confirm your actions. If your program errors out prior to send_message() being called, the message will not be sent. "
             )
         return generator.generate(multiagent_str)
 

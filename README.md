@@ -384,23 +384,317 @@ class OpenPlayTask(TaskABC):
 ```
 
 ### Running tasks
-The entrypoint to run tasks is `eval\open\independent_runs\run.py` which reads in a run config json file, runs the tasks specified in parallel and saves each generated program with the environment output and task verification result into the database. The location of the run config json is sent in through the `--run_config` inline argument. If no argument is sent, the default run config `eval\open\independent_runs\run_config.json` is used. 
+The entrypoint to run tasks is `env/src/gym_env/run_eval.py` which reads in a run config json file, runs the tasks specified in parallel and saves each generated program with the environment output and task verification result into the database. The location of the run config json is sent in through the `--run_config` inline argument. If no argument is sent, the default run config `eval/open/independent_runs/gym_run_config.json` is used. 
 
-The run config json is a list of dictionaries specifying the task_json location, model and version (optional). One example to run 3 tasks in parallel
+The run config json is a list of dictionaries specifying the gym environment ID, model and version (optional). One example to run 2s tasks in parallel:
 
-```
+```json
 [
-{"task": "iron_gear_wheel_throughput_16.json",
-"model": "gpt-4o-mini-2024-07-18",
-"version": 768},
-{"task": "plastic_bar_throughput_16.json",
-"model": "anthropic/claude-3.5-sonnet-open-router"},
-{"task": "open_play.json",
-"model": "gpt-4o-mini-2024-07-18"}
+    {
+        "env_id": "Factorio-iron_ore_throughput_16-v0",
+        "model": "claude-3-5-sonnet-latest",
+    },
+    {
+        "env_id": "Factorio-open_play-v0",
+        "model": "claude-3-5-sonnet-latest"
+    }
 ]
+```
+
+Each task is run until either `verify` returns True or the maximum number of steps (`trajectory_length`) is reached.
+
+### Gym Environment Registry
+
+The Factorio Learning Environment uses a gym environment registry to automatically discover and register all available tasks. This allows you to use `gym.make()` to create environments and reference them by their environment IDs.
+
+#### Overview
+
+The registry system automatically discovers all task definitions in `eval/tasks/task_definitions/` and registers them as gym environments. This means you can create any Factorio environment using the familiar `gym.make()` pattern.
+
+#### Features
+
+- **Automatic Discovery**: Automatically discovers all task definitions in `eval/tasks/task_definitions/`
+- **Gym Integration**: All environments are registered with `gym` and can be created using `gym.make()`
+- **Task Metadata**: Provides access to task descriptions, configurations, and metadata
+- **Multi-agent Support**: Supports both single-agent and multi-agent environments
+- **Command-line Tools**: Built-in tools for exploring and testing environments
+
+#### Quick Start
+
+**1. List Available Environments**
+
+```python
+from gym_env.registry import list_available_environments
+
+# Get all available environment IDs
+env_ids = list_available_environments()
+print(f"Available environments: {env_ids}")
+```
+
+Or use the command-line tool:
+
+```bash
+python env/src/gym_env/example_usage.py --list
+```
+
+**2. Create an Environment**
+
+```python
+import gym
+
+# Create any available environment
+env = gym.make("Factorio-iron_ore_throughput_16-v0")
+```
+
+**3. Use the Environment**
+
+```python
+# Reset the environment
+obs = env.reset()
+
+# Take an action
+action = {
+    'agent_idx': 0,  # Which agent takes the action
+    'code': 'print("Hello Factorio!")'  # Python code to execute
+}
+
+# Execute the action
+obs, reward, done, info = env.step(action)
+
+# Clean up
+env.close()
+```
+
+#### Available Environments
+
+The registry automatically discovers all JSON task definition files and creates corresponding gym environments. Environment IDs follow the pattern:
 
 ```
-Each task is run until either `verify` returns True or the maximum number of steps (`trajectory_length`) is reached
+Factorio-{task_key}-v0
+```
+
+**Example Environment IDs**
+
+- `Factorio-iron_ore_throughput_16-v0` - Iron ore production task
+- `Factorio-iron_plate_throughput_16-v0` - Iron plate production task
+- `Factorio-crude_oil_throughput_16-v0` - Crude oil production task
+- `Factorio-open_play-v0` - Open-ended factory building
+- `Factorio-automation_science_pack_throughput_16-v0` - Science pack production
+
+#### Command-Line Tools
+
+The `example_usage.py` script provides both interactive examples and command-line tools:
+
+```bash
+# Run interactive examples
+python env/src/gym_env/example_usage.py
+
+# List all environments
+python env/src/gym_env/example_usage.py --list
+
+# Show detailed information
+python env/src/gym_env/example_usage.py --detail
+
+# Search for specific environments
+python env/src/gym_env/example_usage.py --search iron
+
+# Output in gym.make() format
+python env/src/gym_env/example_usage.py --gym-format
+```
+
+#### Environment Interface
+
+All environments follow the standard gym interface:
+
+**Action Space**
+```python
+{
+    'agent_idx': Discrete(num_agents),  # Which agent takes the action
+    'code': Text(max_length=10000)      # Python code to execute
+}
+```
+
+**Observation Space**
+The observation space includes:
+- `raw_text`: Output from the last action
+- `entities`: List of entities on the map
+- `inventory`: Current inventory state
+- `research`: Research progress and technologies
+- `game_info`: Game state (tick, time, speed)
+- `score`: Current score
+- `achievements`: Achievement progress
+- `flows`: Production statistics
+- `task_verification`: Task completion status
+- `messages`: Inter-agent messages
+- `serialized_functions`: Available functions
+
+**Methods**
+- `reset(state: Optional[GameState] = None) -> Dict[str, Any]`
+- `step(action: Dict[str, Any]) -> Tuple[Dict[str, Any], float, bool, Dict[str, Any]]`
+- `close() -> None`
+
+#### API Reference
+
+**Registry Functions**
+
+- `list_available_environments() -> List[str]` - Returns a list of all registered environment IDs
+- `get_environment_info(env_id: str) -> Optional[Dict[str, Any]]` - Returns detailed information about a specific environment
+- `register_all_environments() -> None` - Manually trigger environment discovery and registration
+
+**Environment Creation**
+
+- `gym.make(env_id: str, **kwargs) -> FactorioGymEnv` - Creates a Factorio gym environment
+
+#### Complete Example
+
+Here's a complete example that demonstrates the full workflow:
+
+```python
+import gym
+from gym_env.registry import list_available_environments, get_environment_info
+
+# 1. List available environments
+env_ids = list_available_environments()
+print(f"Found {len(env_ids)} environments")
+
+# 2. Get information about a specific environment
+info = get_environment_info("Factorio-iron_ore_throughput_16-v0")
+print(f"Description: {info['description']}")
+
+# 3. Create the environment
+env = gym.make("Factorio-iron_ore_throughput_16-v0")
+
+# 4. Use the environment
+obs = env.reset()
+print(f"Initial observation keys: {list(obs.keys())}")
+
+# 5. Take actions
+for step in range(5):
+    action = {
+        'agent_idx': 0,
+        'code': f'print("Step {step}: Hello Factorio!")'
+    }
+    obs, reward, done, info = env.step(action)
+    print(f"Step {step}: Reward={reward}, Done={done}")
+    
+    if done:
+        break
+
+# 6. Clean up
+env.close()
+```
+
+#### Adding New Tasks
+
+To add a new task:
+
+1. Create a JSON file in `eval/tasks/task_definitions/`
+2. Define the task configuration following the existing format
+3. The registry will automatically discover and register the new environment
+
+**Task Definition Format**
+```json
+{
+    "task_type": "throughput",
+    "config": {
+        "goal_description": "Create an automatic iron ore factory...",
+        "throughput_entity": "iron-ore",
+        "quota": 16,
+        "trajectory_length": 128,
+        "task_key": "iron_ore_throughput_16"
+    }
+}
+```
+
+#### Advanced Usage
+
+**Custom Environment Registration**
+
+You can also register custom environments programmatically:
+
+```python
+from gym_env.registry import _registry
+
+_registry.register_environment(
+    env_id="Factorio-CustomTask-v0",
+    task_key="custom_task",
+    task_config_path="/path/to/custom_task.json",
+    description="My custom task",
+    num_agents=2
+)
+```
+
+**Multi-Agent Environments**
+
+The registry supports multi-agent environments. When creating a multi-agent environment, specify the number of agents:
+
+```python
+# Create a multi-agent environment
+env = gym.make("Factorio-MultiAgentTask-v0")
+
+# Actions for different agents
+action1 = {'agent_idx': 0, 'code': 'print("Agent 0 action")'}
+action2 = {'agent_idx': 1, 'code': 'print("Agent 1 action")'}
+```
+
+#### Error Handling
+
+The registry includes error handling for:
+- Missing task definition files
+- Invalid JSON configurations
+- Missing Factorio containers
+- Environment creation failures
+
+If an environment fails to load, a warning will be printed but the registry will continue to load other environments.
+
+#### Troubleshooting
+
+**Environment Creation Fails**
+
+If `gym.make()` fails with connection errors:
+1. Ensure Factorio containers are running
+2. Check that the cluster setup is working
+3. Verify network connectivity
+
+**No Environments Found**
+
+If no environments are listed:
+1. Check that the task definitions directory exists
+2. Verify JSON files are valid
+3. Check file permissions
+
+**Import Errors**
+
+If you get import errors:
+1. Ensure you're running from the correct directory
+2. Check that all dependencies are installed
+3. Verify the Python path includes the project root
+
+#### Testing
+
+Run the test suite to verify the registry is working correctly:
+
+```bash
+python env/tests/gym_env/test_registry.py
+```
+
+This registry system provides a clean, standardized interface for working with Factorio gym environments, making it easy to experiment with different tasks and integrate with existing gym-based frameworks.
+
+### Legacy Task-Based Configuration
+
+For backward compatibility, you can still use the legacy task-based configuration with `eval/open/independent_runs/run.py`:
+
+```json
+[
+    {"task": "iron_gear_wheel_throughput_16.json",
+    "model": "gpt-4o-mini-2024-07-18",
+    "version": 768},
+    {"task": "plastic_bar_throughput_16.json",
+    "model": "anthropic/claude-3.5-sonnet-open-router"},
+    {"task": "open_play.json",
+    "model": "gpt-4o-mini-2024-07-18"}
+]
+```
 
 ## Multiagent Experiments
 

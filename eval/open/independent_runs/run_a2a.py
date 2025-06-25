@@ -39,6 +39,8 @@ async def main():
     if any(run_config.num_agents != num_agents for run_config in run_configs):
         raise ValueError("Cannot mix single agent and multi agent runs in the same run config file. Please split into separate files.")
     try:
+        # TODO: the server currently has only default agent cards. 
+        # But we aren't doing anything with them yet anyway.
         instance = await create_factorio_instance(0, num_agents)
     except Exception as e:
         raise Exception(f"Error creating initial Factorio instance: {e}")

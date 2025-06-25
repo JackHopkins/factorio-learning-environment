@@ -5,8 +5,8 @@ from gym.envs.registration import register
 import numpy as np
 from gym import spaces
 
-from gym import FactorioInstance
-from gym import Vocabulary
+from legacy_gym_env import FactorioInstance
+from legacy_gym_env import Vocabulary
 
 #PLAYER = 1
 # NONE = 'nil'

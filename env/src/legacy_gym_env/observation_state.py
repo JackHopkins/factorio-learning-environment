@@ -3,7 +3,7 @@ from typing import Tuple
 import numpy as np
 from pydantic import BaseModel, Field
 
-from gym.vocabulary import Vocabulary
+from legacy_gym_env.vocabulary import Vocabulary
 
 FIELDS = ['all', 'enemy', 'pollution', 'factory', 'water', 'iron-ore', 'uranium-ore', 'coal', 'stone',
           'copper-ore', 'crude-oil', 'trees']

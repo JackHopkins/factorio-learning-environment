@@ -9,13 +9,12 @@ def parse_response(response) -> Optional[Policy]:
         choice = response.choices[0]
         input_tokens = response.usage.prompt_tokens if hasattr(response, 'usage') else 0
         output_tokens = response.usage.completion_tokens if hasattr(response, 'usage') else 0
-        total_tokens = input_tokens + output_tokens
     else:
         choice = response.content[0]
         input_tokens = response.usage.input_tokens if hasattr(response, 'usage') else 0
         output_tokens = response.usage.output_tokens if hasattr(response, 'usage') else 0
-        total_tokens = input_tokens + output_tokens
 
+    total_tokens = input_tokens + output_tokens
     try:
         code, text_response = PythonParser.extract_code(choice)
     except Exception as e:

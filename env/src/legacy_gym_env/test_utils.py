@@ -4,7 +4,7 @@ from typing import Tuple
 import numpy as np
 from numpy import ndarray, zeros
 
-from gym.utils import stitch, roll
+from legacy_gym_env.utils import stitch, roll
 
 
 

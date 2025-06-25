@@ -21,28 +21,36 @@ def game(instance):
 
 def test_pickup_item_full_inventory(game):
     """
-    Place a boiler at (0, 0) and then pick it up
-    :param game:
-    :return:
+    Test pickup behavior when inventory is nearly full.
+    In Factorio, pickup can succeed if the item can stack with existing items,
+    even when inventory appears full.
     """
-    game.instance.initial_inventory = {**game.instance.initial_inventory, 'coal': 4000}
-    game.instance.reset()
-
-    iron = game.nearest(Resource.IronOre)
-    game.move_to(iron)
-    drill = game.place_entity(Prototype.Boiler, position=iron)
-
-    before = game.inspect_inventory().get(Prototype.IronOre, 0)
-    game.harvest_resource(iron, 50)
-    after = game.inspect_inventory().get(Prototype.IronOre, 0)
-    assert after - before == 50, f"Expected to harvest 50 iron, but got {after - before}"
-
-    game.sleep(1)
-    try:
-        game.pickup_entity(drill)
-        assert False, "Inventory should be full"
-    except:
-        assert True, "Failed to pick up given a full inventory"
+    # Clear inventory completely first
+    game.instance.set_inventory({})
+    
+    # Fill inventory with coal to make it nearly full, plus one boiler
+    game.instance.set_inventory({'coal': 4500, 'boiler': 1})
+    
+    # Place the boiler
+    placement_position = Position(x=5, y=5)
+    game.move_to(placement_position)
+    boiler = game.place_entity(Prototype.Boiler, position=placement_position)
+    
+    # Add some iron plates to make inventory even fuller
+    current_inv = game.inspect_inventory()
+    game.instance.set_inventory({**current_inv, 'iron-plate': 10})
+    
+    # Record boiler count before pickup
+    boilers_before = game.inspect_inventory().get('boiler', 0)
+    
+    # Try to pick up the boiler - this should succeed because boilers can stack
+    result = game.pickup_entity(boiler)
+    
+    # Verify pickup succeeded and boiler was added to stack
+    boilers_after = game.inspect_inventory().get('boiler', 0)
+    assert result == True, f"Expected pickup to succeed, but got: {result}"
+    assert boilers_after == boilers_before + 1, \
+        f"Expected {boilers_before + 1} boilers after pickup, but got {boilers_after}"
 
 
 

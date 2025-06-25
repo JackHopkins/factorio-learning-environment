@@ -2,7 +2,7 @@ import math
 from typing import Tuple, Any, Union, Dict, Set, Literal
 from typing import List, Optional
 from enum import Enum, Flag, auto, IntFlag
-from pydantic import BaseModel, PrivateAttr, root_validator
+from pydantic import BaseModel, PrivateAttr, model_validator
 
 
 class Layer(IntFlag):
@@ -189,7 +189,8 @@ class Position(BaseModel):
 
         super().__init__(**kwargs)
 
-    @root_validator(pre=True)
+    @model_validator(mode='before')
+    @classmethod
     def parse_args(cls, values):
         if isinstance(values, tuple):
             if len(values) != 2:

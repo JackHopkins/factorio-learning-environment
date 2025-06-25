@@ -89,7 +89,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
     end
 
     local function place(place_position, direction)
-        if surface.can_place_entity{name=trailing_entity, position=place_position, direction=direction, force='player', build_check_type=defines.build_check_type.manual} then
+        if global.utils.can_place_entity(player, trailing_entity, place_position, direction) then
             if player.get_item_count(trailing_entity) > 0 then
                 local created = surface.create_entity{name=trailing_entity, position=place_position, direction=direction, force='player', player=player, build_check_type=defines.build_check_type.manual, fast_replace=true}
                 if created then

@@ -526,12 +526,7 @@ local function place_at_position(player, connection_type, current_position, dir,
         }
         -- We can just teleport away here to avoid collision as we dont adhere by distance rules in connect_entities
         player.teleport({placement_position.x+2, placement_position.y+2})
-        local can_place = game.surfaces[1].can_place_entity{
-            name = connection_type,
-            position = placement_position,
-            direction = dir,
-            force = player.force
-        }
+        local can_place = global.utils.can_place_entity(player, connection_type, placement_position, dir)
 
         --local can_place = global.utils.avoid_entity(1, connection_type, placement_position, dir)
         --if not can_build then
@@ -542,7 +537,10 @@ local function place_at_position(player, connection_type, current_position, dir,
         --local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)
         --player.teleport(player_position)
 
-        if dry_run and not can_place then
+        --local can_place = global.utils.avoid_entity(1, connection_type, placement_position, dir)
+        rendering.draw_circle{only_in_alt_mode=true, width = 0.25, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.5, filled = false, target = placement_position, time_to_live = 12000}
+
+        if dry_run and can_place == false then
             -- Define the area where the entity will be placed
             local target_area = {
                 {x = placement_position.x - 1 / 2, y = placement_position.y - 1 / 2},
@@ -558,7 +556,11 @@ local function place_at_position(player, connection_type, current_position, dir,
             error("Cannot connect due to placement blockage 1.")
         end
 
+
+        -- Place entity
         if can_place and not dry_run then
+            --global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
+
             local placed_entity = game.surfaces[1].create_entity(entity_variant)
             if placed_entity then
                 player.remove_item({name = connection_type, count = 1})
@@ -566,9 +568,41 @@ local function place_at_position(player, connection_type, current_position, dir,
                 table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
                 return placed_entity
             end
+        
         elseif can_place and dry_run then
             counter_state.place_counter = counter_state.place_counter + 1
             return nil
+
+        else
+            -- game.print("Avoiding entity at " .. placement_position.x.. ", " .. placement_position.y)
+            -- global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
+
+            -- error("Cannot place entity")
+            --local entities = player.surface.find_entities_filtered{position=placement_position, radius=0.5, type = {"beam", "resource", "player"}, invert=true}
+            --local can_place = #entities == 0
+            --if can_place then
+            --    local tile = player.surface.get_tile(placement_position.x, placement_position.y)
+            --    if is_water_tile(tile.name) then
+            --        can_place = false
+            --    end
+            --end
+            --
+            --if can_place then
+            --    local placed_entity = player.surface.create_entity({
+            --        name = connection_type,
+            --        position = placement_position,
+            --        direction = dir,
+            --        force = player.force
+            --    })
+            --
+            --    if placed_entity then
+            --        player.remove_item({name = connection_type, count = 1})
+            --        counter_state.place_counter = counter_state.place_counter + 1
+            --        table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
+            --        return placed_entity
+            --    end
+            --
+            --end
         end
     end
 
@@ -589,12 +623,7 @@ local function place_at_position(player, connection_type, current_position, dir,
 
     -- We can just teleport away here to avoid collision as we dont adhere by distance rules in connect_entities
     player.teleport({placement_position.x+2, placement_position.y+2})
-    local can_place = game.surfaces[1].can_place_entity{
-        name = connection_type,
-        position = placement_position,
-        direction = dir,
-        force = player.force
-    }
+    local can_place = global.utils.can_place_entity(player, connection_type, placement_position, dir)
     --local player_position = player.position
     --player.teleport({placement_position.x, placement_position.y})
     --local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)

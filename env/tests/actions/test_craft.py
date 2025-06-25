@@ -14,13 +14,6 @@ def game(instance):
     yield instance.namespace
     instance.reset()
 
-@pytest.fixture()
-def empty_game(instance):
-    instance.reset()
-    # Don't set any inventory - start truly empty
-    yield instance.namespace
-    instance.reset()
-
 def test_fail_to_craft_item(game):
     """
     Attempt to craft an iron chest with insufficient resources and assert that no items are crafted.
@@ -35,24 +28,24 @@ def test_fail_to_craft_item(game):
         assert True
 
 
-def test_craft_with_full_inventory(empty_game):
+def test_craft_with_full_inventory(game):
     """
     Test crafting when inventory is full
     """
     # Clear inventory completely first
-    empty_game.instance.set_inventory({})
+    game.instance.set_inventory({})
     
-    # Fill inventory with coal to make it nearly full
-    empty_game.instance.set_inventory({'coal': 4500})
+    # Fill inventory with coal to make it full
+    game.instance.set_inventory({'coal': 4500})
     
     # Add some iron plates for crafting materials, making inventory truly full
-    current_inv = empty_game.inspect_inventory()
-    empty_game.instance.set_inventory({**current_inv, 'iron-plate': 10})
+    current_inv = game.inspect_inventory()
+    game.instance.set_inventory({**current_inv, 'iron-plate': 10})
     
     # Try to craft iron gear wheel (requires 2 iron plates, produces 1 gear wheel)
     # This should fail because inventory is full with no space for the crafted item
     try:
-        result = empty_game.craft_item(Prototype.IronGearWheel, 1)
+        result = game.craft_item(Prototype.IronGearWheel, 1)
         # If we get here, crafting unexpectedly succeeded
         assert False, f"Expected crafting to fail due to full inventory, but got result: {result}"
         

@@ -22,37 +22,17 @@ def test_pickup_item_full_inventory(game):
     Uses existing inventory items but maximizes stacks to test true full inventory.
     """
     # Clear inventory completely first  
-    game.instance.set_inventory({})
-    
-    # Fill inventory to maximum capacity using existing items
-    game.instance.set_inventory({
-        'coal': 4500,  # Coal stacks to 50, this uses 90 slots
-        'wooden-chest': 50,  # Maximum stack size for wooden chests
-    })
-    
-    # Place a wooden chest
-    placement_position = Position(x=5, y=5)
+    game.instance.set_inventory({'wooden-chest': 1})
+    placement_position = Position(x=0, y=0)
     game.move_to(placement_position)
     chest = game.place_entity(Prototype.WoodenChest, position=placement_position)
-    
-    # Add more items to completely fill the inventory
-    current_inv = game.inspect_inventory()
-    max_inventory = {
-        **current_inv,
-        'iron-plate': 200, 'copper-plate': 200, 'transport-belt': 200, 'pipe': 200,
-        'burner-inserter': 200, 'stone-furnace': 100, 'burner-mining-drill': 200,
-        'offshore-pump': 100, 'boiler': 100, 'steam-engine': 100, 'stone-wall': 200,
-        'splitter': 100, 'iron-gear-wheel': 200, 'electronic-circuit': 200,
-        'copper-cable': 200, 'iron-chest': 100
-    }
-    game.instance.set_inventory(max_inventory)
-    
+    game.instance.set_inventory({'coal': 10000})
+        
     try:
         result = game.pickup_entity(chest)
         assert False, f"Expected pickup to fail due to full inventory, but got result: {result}"
     except Exception as e:
         assert True
-
 
 def test_pickup_ground_item(game):
     """

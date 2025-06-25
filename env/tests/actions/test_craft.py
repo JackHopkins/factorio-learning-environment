@@ -36,11 +36,7 @@ def test_craft_with_full_inventory(game):
     game.instance.set_inventory({})
     
     # Fill inventory with coal to make it full
-    game.instance.set_inventory({'coal': 4500})
-    
-    # Add some iron plates for crafting materials, making inventory truly full
-    current_inv = game.inspect_inventory()
-    game.instance.set_inventory({**current_inv, 'iron-plate': 10})
+    game.instance.set_inventory({'iron-plate': 100, 'coal': 10000}) 
     
     # Try to craft iron gear wheel (requires 2 iron plates, produces 1 gear wheel)
     # This should fail because inventory is full with no space for the crafted item

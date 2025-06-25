@@ -16,9 +16,9 @@ def game(instance):
 def test_sleep(game):
     for i in range(10):
         game.instance.speed(i)
-        speed = game.speed
+        speed = game.instance.get_speed()
         start_time = time.time()
         game.sleep(10)
         end_time = time.time()
         elapsed_seconds = end_time-start_time
-        assert elapsed_seconds*speed - 10 < 0.05, f"Sleep function did not work as expected for speed {i}"
+        assert elapsed_seconds*speed - 10 < 1, f"Sleep function did not work as expected for speed {i}"

@@ -3,7 +3,8 @@ global.actions.initialise_inventory = function(player_index, item_names_and_coun
     local item_names_and_counts = game.json_to_table(item_names_and_counts_json)
 
     -- Loop through the entity names and insert them into the player's inventory
+    -- Use player.insert directly instead of get_main_inventory().insert for better compatibility
     for item, count in pairs(item_names_and_counts) do
-        player.get_main_inventory().insert{name=item, count=count}
+        player.insert{name=item, count=count}
     end
 end

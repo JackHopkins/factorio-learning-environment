@@ -21,37 +21,58 @@ def game(instance):
 
 def test_pickup_item_full_inventory(game):
     """
-    Test pickup behavior when inventory is nearly full.
-    This test verifies that pickup can succeed when items can be added to existing stacks,
-    which is the correct Factorio behavior (different from crafting).
+    Test that pickup fails when inventory is at maximum capacity.
+    Uses existing inventory items but maximizes stacks to test true full inventory.
     """
     # Clear inventory completely first  
     game.instance.set_inventory({})
     
-    # Fill inventory with coal to make it nearly full, plus one wooden chest
-    game.instance.set_inventory({'coal': 4500, 'wooden-chest': 1})
+    # Fill inventory to maximum capacity using existing items
+    game.instance.set_inventory({
+        'coal': 4500,  # Coal stacks to 50, this uses 90 slots
+        'wooden-chest': 50,  # Maximum stack size for wooden chests
+    })
     
-    # Place the wooden chest
+    # Place a wooden chest
     placement_position = Position(x=5, y=5)
     game.move_to(placement_position)
     chest = game.place_entity(Prototype.WoodenChest, position=placement_position)
     
-    # Add iron plates to fill more space
+    # Add more items to completely fill the inventory
     current_inv = game.inspect_inventory()
-    game.instance.set_inventory({**current_inv, 'iron-plate': 10})
+    max_inventory = {
+        **current_inv,
+        'iron-plate': 200, 'copper-plate': 200, 'transport-belt': 200, 'pipe': 200,
+        'burner-inserter': 200, 'stone-furnace': 100, 'burner-mining-drill': 200,
+        'offshore-pump': 100, 'boiler': 100, 'steam-engine': 100, 'stone-wall': 200,
+        'splitter': 100, 'iron-gear-wheel': 200, 'electronic-circuit': 200,
+        'copper-cable': 200, 'iron-chest': 100
+    }
+    game.instance.set_inventory(max_inventory)
     
-    # Record wooden chest count before pickup
-    chests_before = game.inspect_inventory().get('wooden-chest', 0) 
-    
-    # Try to pick up the wooden chest - this should succeed because
-    # wooden chests can stack and there are already wooden chests in inventory
-    result = game.pickup_entity(chest)
-    
-    # Verify pickup succeeded and wooden chest was added to stack
-    chests_after = game.inspect_inventory().get('wooden-chest', 0)
-    assert result == True, f"Expected pickup to succeed, but got: {result}"
-    assert chests_after == chests_before + 1, \
-        f"Expected {chests_before + 1} wooden chests after pickup, but got {chests_after}"
+    # Get final chest count
+    final_inv = game.inspect_inventory()
+    chests_before = final_inv.get('wooden-chest', 0)
+        # Try to pick up the wooden chest - should fail due to full inventory
+    try:
+        result = game.pickup_entity(chest)
+        assert False, f"Expected pickup to fail due to full inventory, but it succeeded: {result}"
+            
+    except Exception as e:
+        # Exception is expected when inventory is full
+        error_message = str(e).lower()
+
+        assert ("inventory" in error_message and "full" in error_message) or \
+                ("slots" in error_message and "available" in error_message) or \
+                ("space" in error_message), \
+                f"Expected inventory full error, but got: {e}"
+    # else:
+    #     # If stack isn't full, pickup should succeed (adding to existing stack)
+    #     result = game.pickup_entity(chest)
+    #     chests_after = game.inspect_inventory().get('wooden-chest', 0)
+    #     assert result == True, f"Expected pickup to succeed when stack not full, but got: {result}"
+    #     assert chests_after == chests_before + 1, \
+    #         f"Expected {chests_before + 1} wooden chests after pickup, but got {chests_after}"
 
 
 

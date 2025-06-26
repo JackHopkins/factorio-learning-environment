@@ -1,7 +1,7 @@
 import pytest
 
-from entities import Position, Direction, Entity
-from game_types import Prototype, RecipeName, prototype_by_name, Resource
+from env.src.entities import Position, Direction, Entity
+from env.src.game_types import Prototype, RecipeName, prototype_by_name, Resource
 from env.src.instance import FactorioInstance
 
 
@@ -92,7 +92,7 @@ def setup_processing_building(game, recipe_name: RecipeName, position: Position,
     """Places and configures the appropriate processing building for a recipe"""
     requirements = game.get_prototype_recipe(recipe_name)
 
-    building = game.place_entity(prototype, direction, position)
+    building = game.place_entity(prototype, position=position, direction=direction)
 
     # Set the recipe
     building = game.set_entity_recipe(building, recipe_name)
@@ -448,8 +448,8 @@ def recipe_setup(game, recipes_to_test, prototype, direction=Direction.DOWN):
                 game.move_to(Position(x=building_position.x + current_x, y=building_position.y + 16))
                 tank = game.place_entity(
                     Prototype.StorageTank,
-                    Direction.UP,
-                    Position(x=building_position.x + current_x, y=building_position.y + 16)
+                    position=Position(x=building_position.x + current_x, y=building_position.y + 16),
+                    direction=Direction.UP
                 )
                 output_tanks[product.name] = tank.position
                 current_x += 8

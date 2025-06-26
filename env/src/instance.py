@@ -925,5 +925,3 @@ class FactorioInstance:
                     thread.join(timeout=5)  # Wait up to 5 seconds for each thread
                 except Exception as e:
                     print(f"Error joining thread {thread.name}: {e}")
-
-        sys.exit(0)

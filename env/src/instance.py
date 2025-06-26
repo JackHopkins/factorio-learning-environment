@@ -1,6 +1,7 @@
 import atexit
 import enum
 import functools
+import gc
 import importlib
 import inspect
 import json
@@ -73,6 +74,7 @@ class Direction(Enum):
 class FactorioInstance:
 
     namespace_class = FactorioNamespace
+    _cleanup_registered = False  # Only register cleanup once per process
 
     def __init__(self,
                  address=None,
@@ -125,8 +127,10 @@ class FactorioInstance:
             self.initialise(fast)
 
         self.initial_score, goal = self.first_namespace.score()
-        # Register the cleanup method to be called on exit
-        atexit.register(self.cleanup)
+        # Register the cleanup method to be called on exit (only once per process)
+        if not FactorioInstance._cleanup_registered:
+            atexit.register(self.cleanup)
+            FactorioInstance._cleanup_registered = True
     
     @property
     def namespace(self):
@@ -911,7 +915,7 @@ class FactorioInstance:
 
 
     def cleanup(self):
-        # Close the RCON connection
+        # Only close the RCON connection if we're the last instance
         if hasattr(self, 'rcon_client') and self.rcon_client:
             self.rcon_client.close()
 

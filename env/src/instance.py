@@ -216,6 +216,9 @@ class FactorioInstance:
         response = self.rcon_client.send_command(f'/sc game.speed = {speed}')
         self._speed = speed
 
+    def get_speed(self):
+        return self._speed
+
     def get_elapsed_ticks(self):
         response = self.rcon_client.send_command(f'/sc rcon.print(global.elapsed_ticks or 0)')
         if not response: return 0
@@ -646,10 +649,6 @@ class FactorioInstance:
         
         self.add_command(f'/sc global.agent_characters = {{}}; for _,c in pairs(game.surfaces[1].find_entities_filtered{{type="character"}}) do if c then c.destroy() end end; for i=1,{self.num_agents} do local char = game.surfaces[1].create_entity{{name="character",position={{x=0,y=(i-1)*2}},force=game.forces.player}}; {color_logic} global.agent_characters[i]=char end', raw=True)
         self.execute_transaction()
-
-    def speed(self, speed): 
-        response = self.rcon_client.send_command(f'/sc game.speed = {speed}')
-        self._speed = speed
 
     def get_warnings(self, seconds=10):
         """

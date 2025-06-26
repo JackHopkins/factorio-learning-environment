@@ -248,28 +248,37 @@ class FactorioInstance:
         return generator.generate(multiagent_str)
 
     def connect_to_server(self, address, tcp_port):
-        try:
-            rcon_client = RCONClient(address, tcp_port, 'factorio') #'quai2eeha3Lae7v')
-            address = address
-        except ConnectionError as e:
-            print(e)
-            rcon_client = RCONClient('localhost', tcp_port, 'factorio')
-            address = 'localhost'
+        max_retries = 3
+        retry_delay = 2  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                rcon_client = RCONClient(address, tcp_port, 'factorio') #'quai2eeha3Lae7v')
+                current_address = address
+            except ConnectionError as e:
+                print(e)
+                rcon_client = RCONClient('localhost', tcp_port, 'factorio')
+                current_address = 'localhost'
 
-        try:
-            rcon_client.connect()
-            player_count = rcon_client.send_command('/sc rcon.print(#game.players)')
-            if int(player_count) <= 0:
-                raise Exception(
-                    "Player hasn't been initialised into the game. Please log in once to make this node operational.")
-            #rcon_client.send_command('/sc global = {}')
-            #rcon_client.send_command('/sc global.actions = {}')
+            try:
+                rcon_client.connect()
+                player_count = rcon_client.send_command('/sc rcon.print(#game.players)')
+                if int(player_count) <= 0:
+                    raise Exception(
+                        "Player hasn't been initialised into the game. Please log in once to make this node operational.")
+                #rcon_client.send_command('/sc global = {}')
+                #rcon_client.send_command('/sc global.actions = {}')
 
-        except Exception as e:
-            raise ConnectionError(f"Could not connect to {address} at tcp/{tcp_port}: \n{e.args[0]}")
+                print(f"Connected to {current_address} client at tcp/{tcp_port}.")
+                return rcon_client, current_address
 
-        print(f"Connected to {address} client at tcp/{tcp_port}.")
-        return rcon_client, address
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    print(f"Connection attempt {attempt + 1} failed, retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    raise ConnectionError(f"Could not connect to {current_address} at tcp/{tcp_port} after {max_retries} attempts: \n{e.args[0]}")
 
     def setup_tools(self, lua_script_manager):
         """

@@ -73,6 +73,7 @@ class Direction(Enum):
 class FactorioInstance:
 
     namespace_class = FactorioNamespace
+    _cleanup_registered = False  # Only register cleanup once per process
 
     def __init__(self,
                  address=None,
@@ -125,8 +126,10 @@ class FactorioInstance:
             self.initialise(fast)
 
         self.initial_score, goal = self.first_namespace.score()
-        # Register the cleanup method to be called on exit
-        atexit.register(self.cleanup)
+        # Register the cleanup method to be called on exit (only once per process)
+        if not FactorioInstance._cleanup_registered:
+            atexit.register(self.cleanup)
+            FactorioInstance._cleanup_registered = True
     
     @property
     def namespace(self):
@@ -200,9 +203,9 @@ class FactorioInstance:
 
     def set_inventory(self, inventory: Dict[str, Any], agent_idx: int = 0):
         self.begin_transaction()
-        self.add_command('clear_inventory', agent_idx)
-        self.execute_transaction()
-
+        self.add_command('clear_inventory', agent_idx + 1)
+        result = self.execute_transaction()
+        # print("RCON output:", result)
         self.begin_transaction()
         # kwargs dict to json
         inventory_items = {k: v for k, v in inventory.items()}
@@ -215,6 +218,9 @@ class FactorioInstance:
     def speed(self, speed):
         response = self.rcon_client.send_command(f'/sc game.speed = {speed}')
         self._speed = speed
+
+    def get_speed(self):
+        return self._speed
 
     def get_elapsed_ticks(self):
         response = self.rcon_client.send_command(f'/sc rcon.print(global.elapsed_ticks or 0)')
@@ -236,12 +242,11 @@ class FactorioInstance:
             player_idx = agent_idx + 1
             multiagent_str = (
                 f"## MULTIAGENT INSTRUCTIONS\n"
-                f"You are Agent {player_idx} out of {self.num_agents} agent(s) in the game excluding Leader. "
-                f"Leader gives instructions to other agents. So follow Leader's instructions and cooperate since you share the same task "
-                f"and operate in the same world. Use the send_message() tool regularly to communicate with other agents "
-                f"about your current activities and any challenges you encounter. "
+                f"You are Agent {player_idx} out of {self.num_agents} agent(s) in the game. "
+                f"Follow your specific instructions given to you by the task."
+                f"Use the send_message() tool regularly to communicate with other agents about your current activities and any challenges you encounter. "
                 f"Start each program with a send_message() call to explain what you are doing. "
-                f"End each program with a send_message() call to confirm your actions. If your program errored out this message will not be sent. "
+                f"End each program with a send_message() call to confirm your actions. If your program errors out prior to send_message() being called, the message will not be sent. "
             )
         return generator.generate(multiagent_str)
 
@@ -650,10 +655,6 @@ class FactorioInstance:
         self.add_command('/sc player = global.agent_characters[1]', raw=True)
         self.execute_transaction()
 
-    def speed(self, speed): 
-        response = self.rcon_client.send_command(f'/sc game.speed = {speed}')
-        self._speed = speed
-
     def get_warnings(self, seconds=10):
         """
         Get all alerts that have been raised before the last n seconds
@@ -929,5 +930,3 @@ class FactorioInstance:
                     thread.join(timeout=5)  # Wait up to 5 seconds for each thread
                 except Exception as e:
                     print(f"Error joining thread {thread.name}: {e}")
-
-        # sys.exit(0)

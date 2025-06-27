@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from agents import CompletionResult, CompletionReason
 from agents.agent_abc import AgentABC
 from agents.basic_agent import BasicAgent
-from eval.open.db_client import PostgresDBClient, SQLliteDBClient
+from eval.open.db_client import DBClient, create_db_client
 from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
 from env.src.models.conversation import Conversation
 from env.src.models.message import Message
@@ -22,6 +22,7 @@ from env.src.models.program import Program
 from env.src.instance import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
 from agents.utils.python_parser import PythonParser
+from agents.utils.metrics import timing_tracker, log_metrics
 #from models.response import EnvironmentResponse
 from env.src.namespace import FactorioNamespace
 from env.src.protocols.a2a.handler import A2AMessage
@@ -55,7 +56,7 @@ class TrajectoryRunner:
     def __init__(self,
                  #llm_factory: LLMFactory,
                  agents: list[AgentABC],
-                 db_client: PostgresDBClient,
+                 db_client: DBClient,
                  evaluator: SimpleFactorioEvaluator,
                  config: EvalConfig,
                  process_id: int):
@@ -104,6 +105,7 @@ class TrajectoryRunner:
                 meta={"model": self.agents[agent_idx].model, "process_id": self.process_id},
                 depth=len(messages) - 2
             )
+            program.timing_metrics = timing_tracker.get_metrics()
 
             if meta:
                 program.meta.update(meta)
@@ -258,6 +260,9 @@ class TrajectoryRunner:
                           f"Iteration {agent_step_counter[agent_idx]}/{self.config.task.trajectory_length} - "
                           f"Agent #{agent_idx}")
 
+                    # Print performance metrics
+                    log_metrics()
+
                     if not evaluated_program:
                         print(f"Evaluation failed for agent {agent_idx} at iteration {agent_step_counter[agent_idx]}")
                         break
@@ -296,7 +301,7 @@ class TrajectoryRunner:
                     )
 
                     # get the agent_completed flag from the agent
-                    agent_completed, update_state = self.agents[agent_idx].check_completion(last_responses[agent_idx])
+                    agent_completed, update_state = self.agents[agent_idx].check_step_completion(last_responses[agent_idx])
                     if update_state:
                         current_state = program.state
                     else:
@@ -348,31 +353,16 @@ async def create_factorio_instance(instance_id: int, num_agents: int = 1, agent_
         "num_agents": num_agents
     }
 
-    if agent_cards is not None:
+    if num_agents > 1:
         instance = await A2AFactorioInstance.create(
             **common_kwargs,
             agent_cards=agent_cards
         )
     else:
-        assert num_agents == 1, "Multiagent runs are not supported without agent cards"
         instance = FactorioInstance(**common_kwargs)
 
     instance.speed(10)
     return instance
-
-
-async def create_db_client() -> PostgresDBClient:
-    """Create database client with connection pool"""
-    return PostgresDBClient(
-        max_conversation_length=40,
-        min_connections=2,
-        max_connections=5,
-        host=os.getenv("SKILLS_DB_HOST"),
-        port=os.getenv("SKILLS_DB_PORT"),
-        dbname=os.getenv("SKILLS_DB_NAME"),
-        user=os.getenv("SKILLS_DB_USER"),
-        password=os.getenv("SKILLS_DB_PASSWORD")
-    )
 
 
 async def run_trajectory(process_id: int, config: EvalConfig):

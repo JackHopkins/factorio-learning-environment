@@ -16,32 +16,23 @@ def game(instance):
     yield instance.namespace
     instance.reset()
 
-#    game.instance.initial_inventory = {**game.instance.initial_inventory, 'coal': 4000}
-#    game.instance.reset()
-
 def test_pickup_item_full_inventory(game):
     """
-    Place a boiler at (0, 0) and then pick it up
-    :param game:
-    :return:
+    Test that pickup fails when inventory is at maximum capacity.
+    Uses existing inventory items but maximizes stacks to test true full inventory.
     """
-    game.instance.initial_inventory = {**game.instance.initial_inventory, 'coal': 4000}
-    game.instance.reset()
-
-    iron = game.nearest(Resource.IronOre)
-    game.move_to(iron)
-    drill = game.place_entity(Prototype.Boiler, position=iron)
-
-    game.harvest_resource(iron, 50)
-
-    game.sleep(1)
+    # Clear inventory completely first  
+    game.instance.set_inventory({'wooden-chest': 1})
+    placement_position = Position(x=0, y=0)
+    game.move_to(placement_position)
+    chest = game.place_entity(Prototype.WoodenChest, position=placement_position)
+    game.instance.set_inventory({'coal': 10000})
     try:
-        game.pickup_entity(drill)
-        assert False, "Inventory should be full"
-    except:
-        assert True, "Failed to pick up given a full inventory"
-
-
+        result = game.pickup_entity(chest)
+        assert False, f"Expected pickup to fail due to full inventory, but got result: {result}"
+    except Exception as e:
+        print(e)
+        assert True
 
 def test_pickup_ground_item(game):
     """

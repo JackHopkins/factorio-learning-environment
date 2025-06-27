@@ -33,9 +33,9 @@ automation (e.g electronic-circuit manufacturing).
 
 ## Quick Links
 - [Installation](#installation)
-- [Environment](#environment-documentation)
-- [Agents](#agent-documentation)
-- [Tasks](#task-documentation)
+- [Environment](#environment)
+- [Agents](#agents)
+- [Tasks](#tasks)
 - [Multiagent Experiments](#multiagent-experiments)
 - [Tools](#tool-documentation)
 - [Project Structure](#project-structure)
@@ -52,27 +52,15 @@ automation (e.g electronic-circuit manufacturing).
 
 ### Package Installation
 
-You can install the factorio-learning-environment package directly using pip:
+You can install the factorio-learning-environment package using either uv or pip:
 
 ```bash
-# Install from PyPI
+# Install from PyPI using uv
+uv add factorio-learning-environment
+
+# Install from PyPI using pip
 pip install factorio-learning-environment
 ```
-
-### Development Installation
-
-For development, install the package in editable mode:
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/factorio-learning-environment.git
-cd factorio-learning-environment
-
-# Install in development mode
-python prepare_build.py && pip install -e
-```
-
-See [BUILD.md](BUILD.md) for detailed build instructions.
 
 ### Usage
 
@@ -82,38 +70,43 @@ After installation, you can import the package in your Python code:
 import factorio_learning_environment as fle
 ```
 
+### Development Installation
+
+For development, see [BUILD.md](BUILD.md) for detailed build instructions.
+
 ### Quickstart
 
 1. **Clone the repository**:
 
-```
+```bash
 git clone https://github.com/JackHopkins/factorio-learning-environment.git
 cd factorio-learning-environment
-pip install -e .
+
+# Using uv
+uv sync --extra env --extra eval
+
+# Using pip
+pip install -e .[env,eval]
 ```
 
-2. **Install dependencies**:
-```
-pip install psycopg2 lupa
-# Install other dependencies if prompted by pip during runtime
-```
-
-3. **Set up Factorio client**:
-- Purchase Factorio from the [official website](https://www.factorio.com/) or on Steam.
+2. **Set up Factorio client**:
+- Purchase Factorio from the [official website](https://www.factorio.com/) (recommended) or on Steam.
 - Downgrade to version 1.1.110:
     - Steam: Right-click Factorio → Properties → Betas → Select 1.1.110
     - **Important**: Make sure to uncheck the Space Age DLC if you have it, as it forces the 2.x branch
 
-4. **Configure Docker permissions** (for Linux users):
+3. **Configure Docker permissions** (for Linux users):
 If you typically run Docker with sudo, add your user to the docker group:
 ```bash
 sudo usermod -aG docker $USER
 newgrp docker
 ```
 
-5. **Launch FLE Docker server**:
+4. **Launch FLE Docker server**:
 ```bash
-# Start Docker daemon
+# For macOS and Windows (Open Docker Desktop application):
+
+# For Linux (Start Docker daemon):
 sudo systemctl start docker
 
 # Build Docker image
@@ -131,83 +124,26 @@ cd ../local
 ```
 **Note**: The script automatically detects your platform (arm64/amd64) and configures Docker appropriately.
 
-6. **Configure firewall** (if running server on a different machine):
-
-    Open the following ports:
+5. **Configure firewall** (if running server on a different machine):
+Open the following ports:
 - UDP 34197 (Game connection)
 - TCP 27015 (RCON)
 
+**Note**: On Windows, you may need to configure Windows Defender Firewall to allow these ports.
 
-7. **Activate server**:
+6. **Activate server**:
 - Open Factorio client
 - Navigate to _Multiplayer_
 - Connect to `localhost:34197` (default) or your configured address in Docker. 
   - Once connected, you can safely disconnect. This step confirms your Factorio license with the server.
 
-8. **Configure DB**: Create an `.env` file in the root directory, modelled on `.example.env`
-
-First create the .env file. Note that API keys are only required for the respective model providers that will be used to run eval on
-
-```
-# model providers
-OPENAI_API_KEY=<KEY>
-ANTHROPIC_API_KEY=<KEY>
-TOGETHER_API_KEY=<KEY>
-OPEN_ROUTER_API_KEY=<KEY>
-
-# If using Postgres DB, NOT REQUIRED (See section on Database)
-SKILLS_DB_PORT=""
-SKILLS_DB_NAME=""
-SKILLS_DB_USER=""
-SKILLS_DB_PASSWORD=""
-
-# If using SQLite for DB (See section on Database)
-SQLITE_DB_FILE = ""
-
-# AWS credentials if wanting to use Cloudformation, NOT REQUIRED
-AWS_SECRET_ACCESS_KEY=<KEY>
-AWS_ACCESS_KEY_ID=""
-AWS_DEFAULT_REGION=""
-CLUSTER_NAME=""
-```
-
-If you are not using a Postgres DB, you should create an SQLite database file:
+7. **Configure DB**: Copy the example environment file:
+- Note that API keys are only required for the respective model providers that will be evaluated
 ```bash
-sqlite3 mydatabase.db
+cp .example.env .env
 ```
 
-Create the required tables:
-```
-CREATE TABLE programs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT NOT NULL,
-    value REAL DEFAULT 0.0,
-    visits INTEGER DEFAULT 0,
-    parent_id INTEGER,
-    state_json TEXT,
-    conversation_json TEXT NOT NULL,
-    completion_token_usage INTEGER,
-    prompt_token_usage INTEGER,
-    token_usage INTEGER,
-    response TEXT,
-    holdout_value REAL,
-    raw_reward REAL,
-    version INTEGER DEFAULT 1,
-    version_description TEXT DEFAULT '',
-    model TEXT DEFAULT 'gpt-4o',
-    meta TEXT,
-    achievements_json TEXT,
-    instance INTEGER DEFAULT -1,
-    depth REAL DEFAULT 0.0,
-    advantage REAL DEFAULT 0.0,
-    ticks INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-And replace the `PostgresDBClient` object at `create_db_client` function in `eval\open\independent_runs\trajectory_runner.py` with the SQLliteDBClient object (see [Database](#database) section).
-
-9. **Run Eval**: Running open and lab play with example run configs:
+8. **Run Eval**: Running open and lab play with example run configs:
    1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
    2. Tasks (one parallel run of iron-ore task): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_lab_play.json`
 
@@ -448,23 +384,317 @@ class OpenPlayTask(TaskABC):
 ```
 
 ### Running tasks
-The entrypoint to run tasks is `eval\open\independent_runs\run.py` which reads in a run config json file, runs the tasks specified in parallel and saves each generated program with the environment output and task verification result into the database. The location of the run config json is sent in through the `--run_config` inline argument. If no argument is sent, the default run config `eval\open\independent_runs\run_config.json` is used. 
+The entrypoint to run tasks is `env/src/gym_env/run_eval.py` which reads in a run config json file, runs the tasks specified in parallel and saves each generated program with the environment output and task verification result into the database. The location of the run config json is sent in through the `--run_config` inline argument. If no argument is sent, the default run config `eval/open/independent_runs/gym_run_config.json` is used. 
 
-The run config json is a list of dictionaries specifying the task_json location, model and version (optional). One example to run 3 tasks in parallel
+The run config json is a list of dictionaries specifying the gym environment ID, model and version (optional). One example to run 2s tasks in parallel:
 
-```
+```json
 [
-{"task": "iron_gear_wheel_throughput_16.json",
-"model": "gpt-4o-mini-2024-07-18",
-"version": 768},
-{"task": "plastic_bar_throughput_16.json",
-"model": "anthropic/claude-3.5-sonnet-open-router"},
-{"task": "open_play.json",
-"model": "gpt-4o-mini-2024-07-18"}
+    {
+        "env_id": "Factorio-iron_ore_throughput_16-v0",
+        "model": "claude-3-5-sonnet-latest",
+    },
+    {
+        "env_id": "Factorio-open_play-v0",
+        "model": "claude-3-5-sonnet-latest"
+    }
 ]
+```
+
+Each task is run until either `verify` returns True or the maximum number of steps (`trajectory_length`) is reached.
+
+### Gym Environment Registry
+
+The Factorio Learning Environment uses a gym environment registry to automatically discover and register all available tasks. This allows you to use `gym.make()` to create environments and reference them by their environment IDs.
+
+#### Overview
+
+The registry system automatically discovers all task definitions in `eval/tasks/task_definitions/` and registers them as gym environments. This means you can create any Factorio environment using the familiar `gym.make()` pattern.
+
+#### Features
+
+- **Automatic Discovery**: Automatically discovers all task definitions in `eval/tasks/task_definitions/`
+- **Gym Integration**: All environments are registered with `gym` and can be created using `gym.make()`
+- **Task Metadata**: Provides access to task descriptions, configurations, and metadata
+- **Multi-agent Support**: Supports both single-agent and multi-agent environments
+- **Command-line Tools**: Built-in tools for exploring and testing environments
+
+#### Quick Start
+
+**1. List Available Environments**
+
+```python
+from gym_env.registry import list_available_environments
+
+# Get all available environment IDs
+env_ids = list_available_environments()
+print(f"Available environments: {env_ids}")
+```
+
+Or use the command-line tool:
+
+```bash
+python env/src/gym_env/example_usage.py --list
+```
+
+**2. Create an Environment**
+
+```python
+import gym
+
+# Create any available environment
+env = gym.make("Factorio-iron_ore_throughput_16-v0")
+```
+
+**3. Use the Environment**
+
+```python
+# Reset the environment
+obs = env.reset()
+
+# Take an action
+action = {
+    'agent_idx': 0,  # Which agent takes the action
+    'code': 'print("Hello Factorio!")'  # Python code to execute
+}
+
+# Execute the action
+obs, reward, done, info = env.step(action)
+
+# Clean up
+env.close()
+```
+
+#### Available Environments
+
+The registry automatically discovers all JSON task definition files and creates corresponding gym environments. Environment IDs follow the pattern:
 
 ```
-Each task is run until either `verify` returns True or the maximum number of steps (`trajectory_length`) is reached
+Factorio-{task_key}-v0
+```
+
+**Example Environment IDs**
+
+- `Factorio-iron_ore_throughput_16-v0` - Iron ore production task
+- `Factorio-iron_plate_throughput_16-v0` - Iron plate production task
+- `Factorio-crude_oil_throughput_16-v0` - Crude oil production task
+- `Factorio-open_play-v0` - Open-ended factory building
+- `Factorio-automation_science_pack_throughput_16-v0` - Science pack production
+
+#### Command-Line Tools
+
+The `example_usage.py` script provides both interactive examples and command-line tools:
+
+```bash
+# Run interactive examples
+python env/src/gym_env/example_usage.py
+
+# List all environments
+python env/src/gym_env/example_usage.py --list
+
+# Show detailed information
+python env/src/gym_env/example_usage.py --detail
+
+# Search for specific environments
+python env/src/gym_env/example_usage.py --search iron
+
+# Output in gym.make() format
+python env/src/gym_env/example_usage.py --gym-format
+```
+
+#### Environment Interface
+
+All environments follow the standard gym interface:
+
+**Action Space**
+```python
+{
+    'agent_idx': Discrete(num_agents),  # Which agent takes the action
+    'code': Text(max_length=10000)      # Python code to execute
+}
+```
+
+**Observation Space**
+The observation space includes:
+- `raw_text`: Output from the last action
+- `entities`: List of entities on the map
+- `inventory`: Current inventory state
+- `research`: Research progress and technologies
+- `game_info`: Game state (tick, time, speed)
+- `score`: Current score
+- `achievements`: Achievement progress
+- `flows`: Production statistics
+- `task_verification`: Task completion status
+- `messages`: Inter-agent messages
+- `serialized_functions`: Available functions
+
+**Methods**
+- `reset(state: Optional[GameState] = None) -> Dict[str, Any]`
+- `step(action: Dict[str, Any]) -> Tuple[Dict[str, Any], float, bool, Dict[str, Any]]`
+- `close() -> None`
+
+#### API Reference
+
+**Registry Functions**
+
+- `list_available_environments() -> List[str]` - Returns a list of all registered environment IDs
+- `get_environment_info(env_id: str) -> Optional[Dict[str, Any]]` - Returns detailed information about a specific environment
+- `register_all_environments() -> None` - Manually trigger environment discovery and registration
+
+**Environment Creation**
+
+- `gym.make(env_id: str, **kwargs) -> FactorioGymEnv` - Creates a Factorio gym environment
+
+#### Complete Example
+
+Here's a complete example that demonstrates the full workflow:
+
+```python
+import gym
+from gym_env.registry import list_available_environments, get_environment_info
+
+# 1. List available environments
+env_ids = list_available_environments()
+print(f"Found {len(env_ids)} environments")
+
+# 2. Get information about a specific environment
+info = get_environment_info("Factorio-iron_ore_throughput_16-v0")
+print(f"Description: {info['description']}")
+
+# 3. Create the environment
+env = gym.make("Factorio-iron_ore_throughput_16-v0")
+
+# 4. Use the environment
+obs = env.reset()
+print(f"Initial observation keys: {list(obs.keys())}")
+
+# 5. Take actions
+for step in range(5):
+    action = {
+        'agent_idx': 0,
+        'code': f'print("Step {step}: Hello Factorio!")'
+    }
+    obs, reward, done, info = env.step(action)
+    print(f"Step {step}: Reward={reward}, Done={done}")
+    
+    if done:
+        break
+
+# 6. Clean up
+env.close()
+```
+
+#### Adding New Tasks
+
+To add a new task:
+
+1. Create a JSON file in `eval/tasks/task_definitions/`
+2. Define the task configuration following the existing format
+3. The registry will automatically discover and register the new environment
+
+**Task Definition Format**
+```json
+{
+    "task_type": "throughput",
+    "config": {
+        "goal_description": "Create an automatic iron ore factory...",
+        "throughput_entity": "iron-ore",
+        "quota": 16,
+        "trajectory_length": 128,
+        "task_key": "iron_ore_throughput_16"
+    }
+}
+```
+
+#### Advanced Usage
+
+**Custom Environment Registration**
+
+You can also register custom environments programmatically:
+
+```python
+from gym_env.registry import _registry
+
+_registry.register_environment(
+    env_id="Factorio-CustomTask-v0",
+    task_key="custom_task",
+    task_config_path="/path/to/custom_task.json",
+    description="My custom task",
+    num_agents=2
+)
+```
+
+**Multi-Agent Environments**
+
+The registry supports multi-agent environments. When creating a multi-agent environment, specify the number of agents:
+
+```python
+# Create a multi-agent environment
+env = gym.make("Factorio-MultiAgentTask-v0")
+
+# Actions for different agents
+action1 = {'agent_idx': 0, 'code': 'print("Agent 0 action")'}
+action2 = {'agent_idx': 1, 'code': 'print("Agent 1 action")'}
+```
+
+#### Error Handling
+
+The registry includes error handling for:
+- Missing task definition files
+- Invalid JSON configurations
+- Missing Factorio containers
+- Environment creation failures
+
+If an environment fails to load, a warning will be printed but the registry will continue to load other environments.
+
+#### Troubleshooting
+
+**Environment Creation Fails**
+
+If `gym.make()` fails with connection errors:
+1. Ensure Factorio containers are running
+2. Check that the cluster setup is working
+3. Verify network connectivity
+
+**No Environments Found**
+
+If no environments are listed:
+1. Check that the task definitions directory exists
+2. Verify JSON files are valid
+3. Check file permissions
+
+**Import Errors**
+
+If you get import errors:
+1. Ensure you're running from the correct directory
+2. Check that all dependencies are installed
+3. Verify the Python path includes the project root
+
+#### Testing
+
+Run the test suite to verify the registry is working correctly:
+
+```bash
+python env/tests/gym_env/test_registry.py
+```
+
+This registry system provides a clean, standardized interface for working with Factorio gym environments, making it easy to experiment with different tasks and integrate with existing gym-based frameworks.
+
+### Legacy Task-Based Configuration
+
+For backward compatibility, you can still use the legacy task-based configuration with `eval/open/independent_runs/run.py`:
+
+```json
+[
+    {"task": "iron_gear_wheel_throughput_16.json",
+    "model": "gpt-4o-mini-2024-07-18",
+    "version": 768},
+    {"task": "plastic_bar_throughput_16.json",
+    "model": "anthropic/claude-3.5-sonnet-open-router"},
+    {"task": "open_play.json",
+    "model": "gpt-4o-mini-2024-07-18"}
+]
+```
 
 ## Multiagent Experiments
 
@@ -710,54 +940,31 @@ factorio-learning-environment/
 ```
 
 ## Database
-To run long trajectories in FLE, we support checkpointing at every agent step using a SQL database. The `db_client` implements the interface for saving and loading agent outputs, environment feedbacks, game states and histories of the current trajectory. We support out of the box Postgres and SQLite databases. The easiest way how to set up a FLE-compatible databse is to use SQLite and setup the programs table:
+To run long trajectories in FLE, we support checkpointing at every agent step using a SQL database. The `db_client` implements the interface for saving and loading agent outputs, environment feedbacks, game states and histories of the current trajectory. We support out of the box SQLite (default) and Postgres databases. The easiest way to set up a FLE-compatible database is to use the default SQLite, the env variable `FLE_DB_TYPE="sqlite"` lets you select the DB.
+
+We recommend changing and setting up the `SQLITE_DB_FILE` variable in the `.env` file. It defaults to `.fle/data.db` in your working directory.
+
+### Postgres
+
+You then need to make sure all the correct variables are put in the `.env` file. With the `FLE_DB_TYPE="postgres"`.
+
+To utilize postgres database you need to setup an instance of the db server yourself. The easiest way is to run it via Docker:
+
+`docker run --name fle-postgres -e POSTGRES_PASSWORD=fle123 -e POSTGRES_USER=fle_user -e POSTGRES_DB=fle_database -p 5432:5432 -d postgres:15`
+
+This launches a postgres:15 server with the defined settings, it can be used via the corresponding `.env` variables:
+
 
 ```
-# create the db file
-sqlite3 mydatabase.db
+# Database Configuration - Set to postgres to use PostgreSQL
+FLE_DB_TYPE="postgres"
 
-# create the programs table
-CREATE TABLE programs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT NOT NULL,
-    value REAL DEFAULT 0.0,
-    visits INTEGER DEFAULT 0,
-    parent_id INTEGER,
-    state_json TEXT,
-    conversation_json TEXT NOT NULL,
-    completion_token_usage INTEGER,
-    prompt_token_usage INTEGER,
-    token_usage INTEGER,
-    response TEXT,
-    holdout_value REAL,
-    raw_reward REAL,
-    version INTEGER DEFAULT 1,
-    version_description TEXT DEFAULT '',
-    model TEXT DEFAULT 'gpt-4o',
-    meta TEXT,
-    achievements_json TEXT,
-    instance INTEGER DEFAULT -1,
-    depth REAL DEFAULT 0.0,
-    advantage REAL DEFAULT 0.0,
-    ticks INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-The SQLite database can then be instantiated to be used for tasks in the `create_db_client` function at `eval\open\independent_runs\trajectory_runner.py`. 
-We recommend setting up the database_file variable in the .env file
-
-```
-from eval.open.db_client import SQLliteDBClient
-async def create_db_client() -> SQLliteDBClient:
-    """Create database client with connection pool"""
-    return SQLliteDBClient(
-        max_conversation_length=40,
-        min_connections=2,
-        max_connections=5,
-        # Provide the SQLite database file path
-        database_file=os.getenv("SQLITE_DB_FILE") #"mydatabase.db"
-    )
+# PostgreSQL Configuration
+SKILLS_DB_HOST=localhost
+SKILLS_DB_PORT=5432
+SKILLS_DB_NAME=fle_database
+SKILLS_DB_USER=fle_user
+SKILLS_DB_PASSWORD=fle123
 ```
 
 ## Benchmarks
@@ -854,6 +1061,7 @@ Executing tools as part of a Python policy string, without a game client.
 
 Join our team and contribute to one of the AI research community's most challenging problems - building open-ended / unsaturateable evals for post-AGI frontier models. If you want to contribute, please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/JackHopkins/factorio-learning-environment)
 
 [//]: # (## Data)
 

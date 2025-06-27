@@ -44,7 +44,7 @@ class BacktrackingSystem(AgentABC):
             step_output = await self.generator_agent.step(self.successful_conv, response, namespace) 
             return step_output[0], {"revision_of": None, "last_successful_program_id": self.last_successful_program_id}
     
-    def check_completion(self, response: Response) -> tuple[bool, bool]:
+    def check_step_completion(self, response: Response) -> tuple[bool, bool]:
         """
         Check if the agent should complete its turn and if the state should be updated
         returns:

@@ -50,4 +50,8 @@ def instance():
         yield instance
     except Exception as e:
         raise e
+    finally:
+        # Cleanup RCON connections to prevent connection leaks
+        if 'instance' in locals():
+            instance.cleanup()
 

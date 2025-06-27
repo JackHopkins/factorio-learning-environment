@@ -1,4 +1,3 @@
-
 -- Helper to convert surface direction to entity direction
 local function surface_to_entity_direction(surface_dir)
     -- In Factorio, offshore pumps face opposite to placement direction
@@ -209,13 +208,8 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             end
         end
         global.utils.avoid_entity(player_index, entity, position, direction)
-        -- need to use game.players[1] since player.can_place_entity behaves differently for offshore pumps
-        local can_build = game.players[1].can_place_entity{
-            name = entity,
-            force = player.force,
-            position = position,
-            direction = entity_direction
-        }
+        -- Use surface based validation equivalent to LuaPlayer.can_place_entity
+        local can_build = global.utils.can_place_entity(player, entity, position, entity_direction)
 
         if not can_build then
             if not exact then
@@ -239,12 +233,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                                 if dx == -radius or dx == radius or dy == -radius or dy == radius then
                                     new_position = {x = position.x + dx, y = position.y + dy}
                                     global.utils.avoid_entity(player_index, entity, position, direction)
-                                    can_build = player.surface.can_place_entity{
-                                        name = entity,
-                                        force = player.force,
-                                        position = new_position,
-                                        direction = entity_direction
-                                    }
+                                    can_build = global.utils.can_place_entity(player, entity, new_position, entity_direction)
                                     if can_build then
                                         found_position = true
                                         break
@@ -287,12 +276,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
             global.utils.avoid_entity(player_index, entity, position, direction)
 
-            can_build = player.surface.can_place_entity{
-                name = entity,
-                force = player.force,
-                position = position,
-                direction = entity_direction
-            }
+            can_build = global.utils.can_place_entity(player, entity, position, entity_direction)
 
             if not can_build then
                 local entity_prototype = game.entity_prototypes[entity]

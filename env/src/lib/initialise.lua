@@ -160,6 +160,19 @@ global.utils.calculate_movement_ticks = function(player, from_pos, to_pos)
     return math.ceil(distance / walking_speed)
 end
 
+-- Wrapper around LuaSurface.can_place_entity that replicates all checks LuaPlayer.can_place_entity performs.
+-- This allows our code to validate placement without relying on an actual LuaPlayer instance.
+-- extra_params can be provided by callers to pass additional flags (e.g. fast_replace) if needed.
+global.utils.can_place_entity = function(player, entity_name, position, direction, extra_params)
+    local params = extra_params or {}
+    params.name = entity_name
+    params.position = position
+    params.direction = direction
+    params.force = player.force
+    -- Use the manual build-check path so the engine applies the same rules as when a human player builds.
+    params.build_check_type = defines.build_check_type.manual
+    return player.surface.can_place_entity(params)
+end
 
 global.actions.can_reach = function(player, x, y)
     local dx = player.position.x - x

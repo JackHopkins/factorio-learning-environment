@@ -1,12 +1,10 @@
 from abc import abstractmethod
-from typing import List, Optional
-import uuid
-import os
 
-from agents import Response, Python, CompletionResult, Policy
+from a2a.types import AgentCard, AgentCapabilities, AgentSkill, AgentProvider
+
+from agents import Response, CompletionResult, Policy
 from env.src.models.conversation import Conversation
 from env.src.namespace import FactorioNamespace
-from a2a.types import AgentCard, AgentCapabilities, AgentSkill, AgentProvider
 
 
 class AgentABC:

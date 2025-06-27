@@ -331,10 +331,14 @@ end
 
 global.goal = nil
 global.actions.score = function()
-    --player = game.players[1]
     local production_score = production_score.get_production_scores()
     production_score["player"] = production_score["player"] - global.initial_score["player"]
-    local goal_description = game.players[1].get_goal_description()
+    
+    -- Try to get goal description from first player if available, otherwise skip
+    local goal_description = nil
+    if #game.players > 0 and game.players[1] and game.players[1].valid then
+        goal_description = game.players[1].get_goal_description()
+    end
 
     if global.goal ~= goal_description then
       global.goal = goal_description

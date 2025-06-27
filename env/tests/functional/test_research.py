@@ -2,8 +2,8 @@ import pytest
 
 from cluster.local.cluster_ips import get_local_container_ips
 from instance import Direction, FactorioInstance
-from env.src.game_types import Resource, Prototype, Technology
-from env.src.models.game_state import GameState
+from game_types import Resource, Prototype, Technology
+from models.game_state import GameState
 
 
 @pytest.fixture()
@@ -26,8 +26,13 @@ def game(instance):
         'lab': 1,
         'automation-science-pack': 10,
     }
-    instance.initial_inventory = initial_inventory
-    instance.all_technologies_researched = False
+    ips, udp_ports, tcp_ports = get_local_container_ips()
+    instance = FactorioInstance(address='localhost',
+                                         bounding_box=200,
+                                         tcp_port=tcp_ports[-1],
+                                         fast=True,
+                                         all_technologies_researched=False,
+                                         inventory=initial_inventory)
     instance.reset()
     yield instance.namespace
 

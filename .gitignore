@@ -1,4 +1,4 @@
-/venv/
+s/venv/
 .venv/
 cortex
 /dev/
@@ -83,3 +83,4 @@ cluster/local/docker-compose.yml
 # Database files
 .fle/
 *.db
+uv.lock

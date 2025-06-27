@@ -73,6 +73,7 @@ class Direction(Enum):
 class FactorioInstance:
 
     namespace_class = FactorioNamespace
+    _cleanup_registered = False  # Only register cleanup once per process
 
     def __init__(self,
                  address=None,
@@ -125,8 +126,10 @@ class FactorioInstance:
             self.initialise(fast)
 
         self.initial_score, goal = self.first_namespace.score()
-        # Register the cleanup method to be called on exit
-        atexit.register(self.cleanup)
+        # Register the cleanup method to be called on exit (only once per process)
+        if not FactorioInstance._cleanup_registered:
+            atexit.register(self.cleanup)
+            FactorioInstance._cleanup_registered = True
     
     @property
     def namespace(self):
@@ -925,5 +928,3 @@ class FactorioInstance:
                     thread.join(timeout=5)  # Wait up to 5 seconds for each thread
                 except Exception as e:
                     print(f"Error joining thread {thread.name}: {e}")
-
-        sys.exit(0)

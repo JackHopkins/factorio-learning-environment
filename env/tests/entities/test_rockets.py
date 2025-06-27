@@ -18,9 +18,9 @@ def game(instance):
         'centrifuge': 1,
         'inserter': 5,
         'iron-chest': 5,
-        'rocket-control-unit': 100,
-        'rocket-fuel': 100,
-        'low-density-structure': 100
+        'rocket-control-unit': 200,
+        'rocket-fuel': 200,
+        'low-density-structure': 200
     }
     instance.speed(10)
     instance.reset()
@@ -50,35 +50,47 @@ def test_rocket_launch(game):
     lds_inserter = game.place_entity_next_to(Prototype.FastInserter, lds_chest.position, Direction.RIGHT)
     game.move_to(lds_chest.position)
 
+    lds_chest2 = game.place_entity_next_to(Prototype.SteelChest, lds_chest.position, Direction.UP, spacing=0)
+    lds_inserter2 = game.place_entity_next_to(Prototype.FastInserter, lds_chest2.position, Direction.RIGHT)
+
+    lds_chest3 = game.place_entity_next_to(Prototype.SteelChest, lds_chest2.position, Direction.UP, spacing=0)
+    lds_inserter3 = game.place_entity_next_to(Prototype.FastInserter, lds_chest3.position, Direction.RIGHT)
+
 
     # RocketFuel setup
-    fuel_chest = game.place_entity_next_to(Prototype.SteelChest, lds_chest.position, Direction.DOWN, spacing=2)
+    fuel_chest = game.place_entity_next_to(Prototype.SteelChest, lds_chest3.position, Direction.UP, spacing=0)
     fuel_inserter = game.place_entity_next_to(Prototype.FastInserter, fuel_chest.position, Direction.RIGHT)
 
+    fuel_chest2 = game.place_entity_next_to(Prototype.SteelChest, fuel_chest.position, Direction.UP, spacing=0)
+    fuel_inserter2 = game.place_entity_next_to(Prototype.FastInserter, fuel_chest2.position, Direction.RIGHT)
+
+    fuel_chest3 = game.place_entity_next_to(Prototype.SteelChest, lds_chest.position, Direction.DOWN, spacing=0)
+    fuel_inserter3 = game.place_entity_next_to(Prototype.FastInserter, fuel_chest3.position, Direction.RIGHT)
 
     # RocketControlUnit setup
-    rcu_chest = game.place_entity_next_to(Prototype.SteelChest, lds_chest.position, Direction.UP, spacing=2)
+    rcu_chest = game.place_entity_next_to(Prototype.SteelChest, fuel_chest3.position, Direction.DOWN, spacing=0)
     rcu_inserter = game.place_entity_next_to(Prototype.FastInserter, rcu_chest.position, Direction.RIGHT)
 
-    game.connect_entities(engine, silo, Prototype.SmallElectricPole)
+    rcu_chest2 = game.place_entity_next_to(Prototype.SteelChest, rcu_chest.position, Direction.DOWN, spacing=0)
+    rcu_inserter2 = game.place_entity_next_to(Prototype.FastInserter, rcu_chest2.position, Direction.RIGHT)
 
-    # Connect power to all inserters
-    inserters = [lds_inserter, fuel_inserter, rcu_inserter]
-    for inserter in inserters:
-        game.connect_entities(engine, inserter, Prototype.SmallElectricPole)
+    rcu_chest3 = game.place_entity_next_to(Prototype.SteelChest, rcu_chest2.position, Direction.DOWN, spacing=0)
+    rcu_inserter3 = game.place_entity_next_to(Prototype.FastInserter, rcu_chest3.position, Direction.RIGHT)
 
-    for i in range(13):
-        game.insert_item(Prototype.RocketFuel, fuel_chest, quantity=100)
-        game.insert_item(Prototype.RocketControlUnit, rcu_chest, quantity=100)
-        game.insert_item(Prototype.LowDensityStructure, lds_chest, quantity=100)
+    game.place_entity(Prototype.SmallElectricPole, position=Position(x=-0.5, y=10.5))
+    game.place_entity(Prototype.SmallElectricPole, position=Position(x=1.5, y=13.5))
+    game.place_entity(Prototype.SmallElectricPole, position=Position(x=1.5, y=8.5))
+    game.place_entity(Prototype.SmallElectricPole, position=Position(x=5.5, y=5.5))
 
-        inventory_items = {'rocket-control-unit': 100, 'rocket-fuel': 100, 'low-density-structure': 100}
+    for chest in [lds_chest, lds_chest2, lds_chest3, fuel_chest, fuel_chest2, fuel_chest3, rcu_chest, rcu_chest2, rcu_chest3]:
+        game.insert_item(Prototype.RocketFuel, chest, quantity=112)
+        game.insert_item(Prototype.RocketControlUnit, chest, quantity=112)
+        game.insert_item(Prototype.LowDensityStructure, chest, quantity=112)
+
+        inventory_items = {'rocket-control-unit': 112, 'rocket-fuel': 112, 'low-density-structure': 112}
         inventory_items_json = json.dumps(inventory_items)
         game.instance.add_command(f"/c global.actions.initialise_inventory({1}, '{inventory_items_json}')", raw=True)
         game.instance.execute_transaction()
-        game.sleep(15)
-
-
 
     # Verify initial state
     # assert silo.status == EntityStatus.NORMAL
@@ -86,7 +98,7 @@ def test_rocket_launch(game):
     assert silo.launch_count == 0
 
     # Wait for rocket parts to be inserted and assembled
-    game.sleep(100)
+    game.sleep(300)
 
     # Get fresh reference to silo
     silo = game.get_entities({Prototype.RocketSilo})[0]
@@ -95,7 +107,7 @@ def test_rocket_launch(game):
     assert silo.status == EntityStatus.PREPARING_ROCKET_FOR_LAUNCH
 
     # Wait for rocket construction to complete
-    game.sleep(180)
+    game.sleep(120)
     silo = game.get_entities({Prototype.RocketSilo})[0]
 
     # Verify rocket is ready
@@ -108,7 +120,7 @@ def test_rocket_launch(game):
     assert silo.status == EntityStatus.LAUNCHING_ROCKET
 
     # Wait for launch to complete
-    game.sleep(20)
+    game.sleep(60)
     silo = game.get_entities({Prototype.RocketSilo})[0]
 
     # Verify successful launch

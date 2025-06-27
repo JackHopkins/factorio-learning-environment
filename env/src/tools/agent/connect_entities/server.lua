@@ -526,7 +526,18 @@ local function place_at_position(player, connection_type, current_position, dir,
         }
         -- We can just teleport away here to avoid collision as we dont adhere by distance rules in connect_entities
         player.teleport({placement_position.x+2, placement_position.y+2})
-        local can_place = global.utils.can_place_entity(player, connection_type, placement_position, dir)
+        local can_place
+        if connection_type == 'pipe' or connection_type == 'pipe-to-ground' or connection_type == 'underground-pipe' then
+            -- Use permissive surface check for pipe placement to allow tight spaces
+            can_place = game.surfaces[1].can_place_entity({
+                name = connection_type,
+                position = placement_position,
+                direction = dir,
+                force = player.force
+            })
+        else
+            can_place = global.utils.can_place_entity(player, connection_type, placement_position, dir)
+        end
 
         --local can_place = global.utils.avoid_entity(1, connection_type, placement_position, dir)
         --if not can_build then
@@ -623,7 +634,18 @@ local function place_at_position(player, connection_type, current_position, dir,
 
     -- We can just teleport away here to avoid collision as we dont adhere by distance rules in connect_entities
     player.teleport({placement_position.x+2, placement_position.y+2})
-    local can_place = global.utils.can_place_entity(player, connection_type, placement_position, dir)
+    local can_place
+    if connection_type == 'pipe' or connection_type == 'pipe-to-ground' or connection_type == 'underground-pipe' then
+        -- Use permissive surface check for pipe placement to allow tight spaces
+        can_place = game.surfaces[1].can_place_entity({
+            name = connection_type,
+            position = placement_position,
+            direction = dir,
+            force = player.force
+        })
+    else
+        can_place = global.utils.can_place_entity(player, connection_type, placement_position, dir)
+    end
     --local player_position = player.position
     --player.teleport({placement_position.x, placement_position.y})
     --local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)

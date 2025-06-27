@@ -5,6 +5,7 @@ from env.src.game_types import Technology
 @pytest.fixture()
 def game(instance):
     instance.all_technologies_researched = False
+    instance.set_inventory({})
     instance.reset()
     yield instance.namespace
     instance.reset()

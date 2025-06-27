@@ -30,7 +30,6 @@ def game(instance):
     instance.all_technologies_researched = False
     instance.reset()
     yield instance.namespace
-    instance.reset()
 
 
 def test_craft_automation_packs_and_research(game):

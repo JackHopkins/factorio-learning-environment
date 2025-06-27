@@ -1,7 +1,6 @@
 import atexit
 import enum
 import functools
-import gc
 import importlib
 import inspect
 import json
@@ -915,7 +914,7 @@ class FactorioInstance:
 
 
     def cleanup(self):
-        # Only close the RCON connection if we're the last instance
+        # Close the RCON connection
         if hasattr(self, 'rcon_client') and self.rcon_client:
             self.rcon_client.close()
 

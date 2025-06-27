@@ -17,8 +17,31 @@ from env.src.instance import FactorioInstance
 #     yield instance.namespace
 
 @pytest.fixture()
-def game(instance):
-    instance.cache_scripts = False
+def game():
+    ips, udp_ports, tcp_ports = get_local_container_ips()
+
+    instance = FactorioInstance(address='localhost',
+                                bounding_box=200,
+                                tcp_port=tcp_ports[-1],
+                                cache_scripts=False,
+                                fast=True,
+                                inventory={
+                                    'coal': 50,
+                                    'copper-plate': 50,
+                                    'iron-plate': 50,
+                                    'iron-chest': 2,
+                                    'burner-mining-drill': 3,
+                                    'electric-mining-drill': 1,
+                                    'assembling-machine-1': 1,
+                                    'stone-furnace': 9,
+                                    'transport-belt': 50,
+                                    'boiler': 1,
+                                    'burner-inserter': 32,
+                                    'pipe': 15,
+                                    'steam-engine': 1,
+                                    'small-electric-pole': 10,
+                                    "pumpjack": 1,
+                                })
     instance.reset()
     instance.set_inventory({
         'wooden-chest': 100,
@@ -28,7 +51,6 @@ def game(instance):
         "pumpjack": 1,
     })
     yield instance.namespace
-    instance.reset()
 
 
 def test_nearest_buildable_simple(game):

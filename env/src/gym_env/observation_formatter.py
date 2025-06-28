@@ -404,7 +404,9 @@ class BasicObservationFormatter:
                 if tech['ingredients']:
                     # Handle both list of dicts and dict formats
                     if isinstance(tech['ingredients'], list):
-                        research_str += f"  Ingredients: {', '.join(f'{ing.get('name', '')} x{ing.get('amount', 0)}' for ing in tech['ingredients'])}\n"
+                        ingredients = ', '.join(
+                            f"{ing.get('name', '')} x{ing.get('amount', 0)}" for ing in tech['ingredients'])
+                        research_str += f"  Ingredients: {ingredients}\n"
                     else:
                         research_str += f"  Ingredients: {', '.join(f'{item} x{amount}' for item, amount in tech['ingredients'].items())}\n"
                 if tech['research_unit_count'] > 0:

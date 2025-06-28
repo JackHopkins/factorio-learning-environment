@@ -32,7 +32,8 @@ dependencies = [
     "construct>=2.10.70",
     "pillow>=11.1.0",
     "tomli",
-    "numpy>=2.2.3"
+    "numpy>=2.2.3",
+    "a2a-sdk>=0.2.9"
 ]
 
 [project.optional-dependencies]

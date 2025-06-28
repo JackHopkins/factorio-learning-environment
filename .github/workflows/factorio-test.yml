@@ -1,0 +1,80 @@
+name: Factorio Server Tests
+on:
+  #push:
+  #pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-factorio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install the package with dev dependencies for testing
+          pip install -e ".[dev,agents,cluster,eval,all,mcp,env]"
+
+      - name: Build Factorio Docker image
+        run: |
+          cd cluster/docker
+          docker build -t factorio . --platform linux/amd64
+
+      - name: Verify scenario exists
+        run: |
+          # Check that the scenario directory exists
+          if [ ! -d "./cluster/scenarios/default_lab_scenario" ]; then
+            echo "❌ Scenario directory not found at ./cluster/scenarios/default_lab_scenario"
+            exit 1
+          fi
+          echo "✓ Found scenario directory"
+          ls -la ./cluster/scenarios/default_lab_scenario
+
+      - name: Update docker-compose to use local image
+        run: |
+          # Update docker-compose.yml to use the locally built image
+          cd cluster
+          sed -i "s|image: 'factoriotools/factorio:1.1.110'|image: 'factorio:latest'|g" docker-compose-linux.yml
+
+      - name: Start Factorio server
+        run: |
+          cd cluster
+          docker compose up -d
+
+      - name: Wait for server to start
+        run: |
+          echo "Waiting for Factorio server to initialize..."
+          sleep 10
+
+      - name: Check server status
+        run: |
+          cd cluster
+          docker compose ps
+          docker compose logs factorio_1
+
+      - name: Run Python tests
+        run: |
+          # Run all tests in the project
+          python -m pytest -v
+        env:
+          # Add any environment variables your tests might need
+          FACTORIO_HOST: localhost
+          FACTORIO_PORT: 27016
+
+      - name: Show test logs on failure
+        if: failure()
+        run: |
+          cd cluster
+          docker compose logs factorio_1
+
+      - name: Stop server
+        if: always()
+        run: |
+          cd cluster
+          docker compose down

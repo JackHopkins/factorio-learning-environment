@@ -1,8 +1,8 @@
 from fle.env import Entity, Direction as DirectionA, \
     AssemblingMachine  # We have 2 Direction objects to avoid circular deps
-from env.instance import Direction
-from env.game_types import prototype_by_name
-from env.tools.tool import Tool
+from env.instance import DirectionInternal
+from fle.env.game_types import prototype_by_name
+from fle.env.tools import Tool
 
 
 class RotateEntity(Tool):
@@ -10,7 +10,7 @@ class RotateEntity(Tool):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
-    def __call__(self, entity: Entity, direction: Direction = Direction.UP) -> Entity:
+    def __call__(self, entity: Entity, direction: DirectionInternal = DirectionInternal.UP) -> Entity:
         """
         Rotate an entity to a specified direction
         :param entity: Entity to rotate
@@ -22,7 +22,7 @@ class RotateEntity(Tool):
             raise ValueError("The first argument must be an Entity object")
         if entity is None:
             raise ValueError("The entity argument must not be None")
-        if not isinstance(direction, (Direction, DirectionA)) and not (hasattr(direction, "name") and hasattr(direction, "value")):
+        if not isinstance(direction, (DirectionInternal, DirectionA)) and not (hasattr(direction, "name") and hasattr(direction, "value")):
             raise ValueError("The second argument must be a Direction")
 
         try:
@@ -31,7 +31,7 @@ class RotateEntity(Tool):
             # get metaclass from pydantic model
             metaclass = entity.__class__
 
-            factorio_direction = Direction.to_factorio_direction(direction)
+            factorio_direction = DirectionInternal.to_factorio_direction(direction)
 
             response, elapsed = self.execute(self.player_index, x, y, factorio_direction, entity.name)
 

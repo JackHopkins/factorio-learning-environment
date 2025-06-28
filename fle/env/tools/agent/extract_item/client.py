@@ -1,8 +1,8 @@
 from typing import Union
 
 from fle.env import Position, Entity
-from env.game_types import Prototype
-from env.tools.tool import Tool
+from fle.env.game_types import Prototype
+from fle.env.tools import Tool
 
 
 class ExtractItem(Tool):

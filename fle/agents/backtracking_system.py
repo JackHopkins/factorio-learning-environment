@@ -7,9 +7,9 @@ from agents.backtracking_agent import BacktrackingAgent
 from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
 from agents.utils.llm_factory import LLMFactory
 from agents.utils.parse_response import parse_response
-from env.models.conversation import Conversation
-from env.models.message import Message
-from env.models.generation_parameters import GenerationParameters
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.message import Message
+from fle.commons.models.generation_parameters import GenerationParameters
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
 from collections import deque
 from env.namespace import FactorioNamespace

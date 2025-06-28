@@ -3,7 +3,7 @@ import time
 from typing import List
 
 from fle.env import Position
-from env.tools.tool import Tool
+from fle.env.tools import Tool
 
 
 class GetPath(Tool):

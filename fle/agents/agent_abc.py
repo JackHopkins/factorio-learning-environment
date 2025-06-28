@@ -3,8 +3,8 @@ from abc import abstractmethod
 from a2a.types import AgentCard, AgentCapabilities, AgentSkill, AgentProvider
 
 from agents import Response, CompletionResult, Policy
-from env.models.conversation import Conversation
-from env.namespace import FactorioNamespace
+from fle.commons.models.conversation import Conversation
+from fle.env.namespace import FactorioNamespace
 
 
 class AgentABC:

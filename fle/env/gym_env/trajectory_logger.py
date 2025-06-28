@@ -4,7 +4,7 @@ import multiprocessing
 from typing import List, Optional
 
 from agents.gym_agent import GymAgent
-from env.models.program import Program
+from fle.commons.models.program import Program
 from env.gym_env.observation import Observation
 
 

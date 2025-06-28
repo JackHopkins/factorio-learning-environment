@@ -1,9 +1,9 @@
 from typing import Union, cast
 
 from fle.env import Position, RocketSilo
-from env.game_types import Prototype
+from fle.env.game_types import Prototype
 from env.tools.agent.get_entity.client import GetEntity
-from env.tools.tool import Tool
+from fle.env.tools import Tool
 
 
 class LaunchRocket(Tool):

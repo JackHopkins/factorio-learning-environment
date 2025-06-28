@@ -4,7 +4,7 @@ from typing_extensions import deprecated, cast
 
 from fle.env import TransportBelt, BeltGroup, Position, Entity, EntityGroup, PipeGroup, Inventory, \
     EntityStatus, Pipe, ElectricityGroup, UndergroundBelt, Direction, WallGroup
-from env.game_types import Prototype
+from fle.env.game_types import Prototype
 
 
 def _deduplicate_entities(entities: List[Entity]) -> List[Entity]:

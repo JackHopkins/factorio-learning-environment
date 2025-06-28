@@ -1,7 +1,17 @@
 """Environment and game interaction"""
-from .instance import FactorioInstance
-from .entities import Entity, Position, Inventory, EntityGroup
-from .models.game_state import GameState
-from .models.conversation import Conversation
 
-__all__ = ['FactorioInstance', 'Entity', 'Position', 'Inventory', 'EntityGroup', 'GameState', 'Conversation']
+from .entities import Direction, Entity, EntityGroup, Inventory, Position
+from .game_types import Prototype, Resource
+from .instance import DirectionInternal, FactorioInstance
+
+__all__ = [
+    "FactorioInstance",
+    "DirectionInternal",
+    "Direction",
+    "Entity",
+    "Position",
+    "Inventory",
+    "EntityGroup",
+    "Prototype",
+    "Resource",
+]

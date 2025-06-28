@@ -1,7 +1,7 @@
 from typing import Optional, List
 from fle.env import Ingredient
-from env.game_types import Technology, Prototype
-from env.tools.tool import Tool
+from fle.env.game_types import Technology, Prototype
+from fle.env.tools import Tool
 
 
 class GetResearchProgress(Tool):

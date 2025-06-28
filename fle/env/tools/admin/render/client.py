@@ -6,7 +6,7 @@ from fle.env import BoundingBox, Position, BeltGroup, PipeGroup, \
 from env.tools.admin.render.rendered_image import RenderedImage
 from env.tools.admin.render.renderer import Renderer
 from env.tools.agent.get_entities.client import GetEntities
-from env.tools.tool import Tool
+from fle.env.tools import Tool
 
 MAX_TILES = 20 # Don't parameterise this, as the agent could break if it chooses a huge grid.
 

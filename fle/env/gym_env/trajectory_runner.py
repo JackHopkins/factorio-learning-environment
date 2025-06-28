@@ -4,9 +4,9 @@ from typing import List, Optional, Dict, Any, Tuple
 
 from agents.gym_agent import GymAgent
 from agents import Policy, CompletionResult, CompletionReason
-from env.models.program import Program
-from env.models.game_state import GameState
-from env.models.conversation import Conversation
+from fle.commons.models.program import Program
+from fle.commons.models.game_state import GameState
+from fle.commons.models.conversation import Conversation
 from env.gym_env.environment import FactorioGymEnv
 from env.gym_env.observation import Observation
 from env.gym_env.action import Action

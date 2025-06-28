@@ -1,12 +1,12 @@
 from time import sleep
 
 from fle.env import Position, Entity
-from env.instance import Direction
+from env.instance import DirectionInternal
 from fle.env import Direction as DirectionEntities
-from env.game_types import Prototype
+from fle.env.game_types import Prototype
 from env.tools.agent.get_entity.client import GetEntity
 from env.tools.agent.pickup_entity.client import PickupEntity
-from env.tools.tool import Tool
+from fle.env.tools import Tool
 
 
 class PlaceObject(Tool):
@@ -44,7 +44,7 @@ class PlaceObject(Tool):
         if not isinstance(position, Position):
             raise ValueError("The first argument must be a Prototype object")
 
-        if not isinstance(direction, (Direction, DirectionEntities)):
+        if not isinstance(direction, (DirectionInternal, DirectionEntities)):
             raise ValueError("The second argument must be a Direction object")
 
         x, y = self.get_position(position)
@@ -55,7 +55,7 @@ class PlaceObject(Tool):
         except Exception as e:
             raise Exception(f"Passed in {entity} argument is not a valid Prototype", e)
 
-        factorio_direction = Direction.to_factorio_direction(direction)
+        factorio_direction = DirectionInternal.to_factorio_direction(direction)
 
         try:
             # If we are in `fast` mode, this is synchronous

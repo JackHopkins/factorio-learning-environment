@@ -1,8 +1,8 @@
 from typing import Union
 
 from fle.env import Recipe, Ingredient, Product
-from env.game_types import Prototype, RecipeName
-from env.tools.tool import Tool
+from fle.env.game_types import Prototype, RecipeName
+from fle.env.tools import Tool
 
 
 class GetPrototypeRecipe(Tool):

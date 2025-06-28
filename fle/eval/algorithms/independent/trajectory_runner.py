@@ -16,9 +16,9 @@ from agents.agent_abc import AgentABC
 from agents.basic_agent import BasicAgent
 from fle.eval.open.db_client import DBClient, create_db_client
 from fle.eval.algorithms.independent.simple_evaluator import SimpleFactorioEvaluator
-from env.models.conversation import Conversation
-from env.models.message import Message
-from env.models.program import Program
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.message import Message
+from fle.commons.models.program import Program
 from fle.env import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
 from agents.utils.python_parser import PythonParser

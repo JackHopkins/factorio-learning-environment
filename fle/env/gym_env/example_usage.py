@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from env.gym_env.registry import list_available_environments, get_environment_info
 from env.gym_env.action import Action
-from env.models.game_state import GameState
+from fle.commons.models.game_state import GameState
 
 
 def print_environment_list(env_ids: List[str], detailed: bool = False):

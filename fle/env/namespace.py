@@ -1,23 +1,25 @@
 import ast
 import builtins
 import inspect
+import logging
 import math
 import pickle
 import sys
 import traceback
 import types
-from difflib import get_close_matches
-from typing import Optional, Union, List, Dict, Tuple, Set, Any
-from pydantic import BaseModel
 import uuid
-import logging
+from difflib import get_close_matches
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
-from env.exceptions.hinting_name_error import get_value_type_str
-from fle.env import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe, BuildingBox, PipeGroup, \
-    ElectricityGroup, Pipe, Entity
+from pydantic import BaseModel
 
-from env.game_types import Prototype, Resource, Technology, prototype_by_name, RecipeName
-from env.models.serializable_function import SerializableFunction
+from fle.commons.models.serializable_function import SerializableFunction
+from fle.env import entities as ent
+
+from .entities import Entity
+from .exceptions.hinting_name_error import get_value_type_str
+from .game_types import (Prototype, RecipeName, Resource, Technology,
+                         prototype_by_name)
 
 
 class LoopContext:
@@ -60,7 +62,7 @@ class FactorioNamespace:
         self.max_sequential_exception_count = 1
         self._sequential_exception_count = 0
         self.log_counter = 0
-        self.player_location = Position(x=0, y=0)
+        self.player_location = ent.Position(x=0, y=0)
         self.agent_index = agent_index
         self.agent_id = str(agent_index)
         self.loop_context = LoopContext()
@@ -123,18 +125,18 @@ class FactorioNamespace:
         # Available objects that the agent can interact with
         self.Prototype = Prototype
         self.Resource = Resource
-        self.Direction = Direction
-        self.Position = Position
-        self.EntityStatus = EntityStatus
-        self.BoundingBox = BoundingBox
-        self.BuildingBox = BuildingBox
-        self.BeltGroup = BeltGroup
+        self.Direction = ent.Direction
+        self.Position = ent.Position
+        self.EntityStatus = ent.EntityStatus
+        self.BoundingBox = ent.BoundingBox
+        self.BuildingBox = ent.BuildingBox
+        self.BeltGroup = ent.BeltGroup
         self.Technology = Technology
-        self.Recipe = Recipe
-        self.PipeGroup = PipeGroup
-        self.ElectricityGroup = ElectricityGroup
-        self.BeltGroup = BeltGroup
-        self.Pipe = Pipe
+        self.Recipe = ent.Recipe
+        self.PipeGroup = ent.PipeGroup
+        self.ElectricityGroup = ent.ElectricityGroup
+        self.BeltGroup = ent.BeltGroup
+        self.Pipe = ent.Pipe
         self.RecipeName = RecipeName
 
         # TODO - We need to add all entity objects to the namespace, e.g 'Chest'
@@ -145,10 +147,10 @@ class FactorioNamespace:
                 setattr(self, value.name, value.entity_class)
 
         # Statically named directions
-        self.UP, self.ABOVE, self.TOP = [Direction.UP] * 3
-        self.RIGHT, self.EAST = [Direction.RIGHT] * 2
-        self.LEFT, self.WEST = [Direction.LEFT] * 2
-        self.DOWN, self.BELOW, self.BOTTOM = [Direction.DOWN] * 3
+        self.UP, self.ABOVE, self.TOP = [ent.Direction.UP] * 3
+        self.RIGHT, self.EAST = [ent.Direction.RIGHT] * 2
+        self.LEFT, self.WEST = [ent.Direction.LEFT] * 2
+        self.DOWN, self.BELOW, self.BOTTOM = [ent.Direction.DOWN] * 3
 
         # Math tools
         self.sqrt = math.sqrt

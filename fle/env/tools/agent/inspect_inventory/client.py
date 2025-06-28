@@ -1,7 +1,7 @@
 from typing import Tuple, List, Union
 
 from fle.env import Inventory, Entity, Position
-from env.tools.tool import Tool
+from fle.env.tools import Tool
 
 
 class InspectInventory(Tool):

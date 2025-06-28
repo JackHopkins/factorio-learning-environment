@@ -1,7 +1,7 @@
 from typing import Tuple
 
 from fle.env import Position
-from env.tools.tool import Tool
+from fle.env.tools import Tool
 
 
 class SaveBlueprint(Tool):

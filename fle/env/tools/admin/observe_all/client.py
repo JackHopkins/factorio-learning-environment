@@ -7,7 +7,7 @@ from numpy import ndarray, zeros
 from env.instance import CHUNK_SIZE, MAX_SAMPLES
 #from gym.utils import stitch
 #from gym.observation_state import FIELDS, ObservationState
-from env.tools.tool import Tool
+from fle.env.tools import Tool
 
 
 class ObserveAll(Tool):

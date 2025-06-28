@@ -1,9 +1,9 @@
 import math
 
 from fle.env import Position, Entity
-from env.instance import Direction
-from env.game_types import Prototype
-from env.tools.tool import Tool
+from env.instance import DirectionInternal  
+from fle.env.game_types import Prototype
+from fle.env.tools import Tool
 
 
 class PlaceEntityNextTo(Tool):
@@ -15,7 +15,7 @@ class PlaceEntityNextTo(Tool):
     def __call__(self,
                  entity: Prototype,
                  reference_position: Position = Position(x=0, y=0),
-                 direction: Direction = Direction.RIGHT,
+                 direction: DirectionInternal = DirectionInternal.RIGHT,
                  spacing: int = 0,
                  ) -> Entity:
         """
@@ -38,7 +38,7 @@ class PlaceEntityNextTo(Tool):
 
             x, y = reference_position.x, reference_position.y
 
-            factorio_direction = Direction.to_factorio_direction(direction)
+            factorio_direction = DirectionInternal.to_factorio_direction(direction)
 
             response, elapsed = self.execute(self.player_index, name, x, y, factorio_direction, spacing)
 

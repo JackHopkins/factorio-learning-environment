@@ -2,9 +2,9 @@ from typing import Dict, Any, List, Optional, Union, Tuple
 from dataclasses import dataclass
 import numpy as np
 import json
-from env.models.technology_state import TechnologyState
-from env.models.research_state import ResearchState
-from env.models.achievements import ProductionFlows
+from fle.commons.models.technology_state import TechnologyState
+from fle.commons.models.research_state import ResearchState
+from fle.commons.models.achievements import ProductionFlows
 from agents import TaskResponse
 from fle.env import Entity, Direction, Position, EntityStatus, TileDimensions, Dimensions, Inventory, EntityGroup
 

@@ -6,7 +6,7 @@ from jinja2 import Template
 
 from fle.env import Position, BoundingBox, EntityGroup
 from fle.env import FactorioInstance, Direction
-from env.game_types import Resource, prototype_by_name
+from fle.env.game_types import Resource, prototype_by_name
 
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple, NamedTuple

@@ -5,13 +5,13 @@ import pickle
 import re
 from typing import Tuple, Optional, Union
 
-from fle.env import Entity, EntityGroup
-from eval.open.mcts.mcts import MCTS
-from models.conversation import Conversation
-from models.message import Message
-from models.generation_parameters import GenerationParameters
-from models.game_state import GameState
-from models.program import Program
+from fle.env.entities import Entity, EntityGroup
+from eval.algorithms.mcts import MCTS
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.message import Message
+from fle.commons.models.generation_parameters import GenerationParameters
+from fle.commons.models.game_state import GameState
+from fle.commons.models.program import Program
 
 
 class ChunkedMCTS(MCTS):

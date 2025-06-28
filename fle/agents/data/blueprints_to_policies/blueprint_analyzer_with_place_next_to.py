@@ -7,7 +7,7 @@ from typing import Union
 
 from fle.env import EntityGroup
 from fle.env import FactorioInstance, Direction
-from env.game_types import prototype_by_name, Resource
+from fle.env.game_types import prototype_by_name, Resource
 
 
 @dataclass

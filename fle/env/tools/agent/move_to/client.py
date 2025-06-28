@@ -3,10 +3,10 @@ from time import sleep
 
 from fle.env import Position
 from env.instance import NONE
-from env.game_types import Prototype
+from fle.env.game_types import Prototype
 from env.tools.admin.get_path.client import GetPath
 from env.tools.admin.request_path.client import RequestPath
-from env.tools.tool import Tool
+from fle.env.tools import Tool
 from env.lua_manager import LuaScriptManager
 
 

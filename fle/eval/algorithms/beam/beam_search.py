@@ -16,10 +16,10 @@ from eval.evaluator import Evaluator
 from eval.algorithms.mcts import GroupedFactorioLogger, MCTS
 from eval.algorithms.mcts import InstanceGroup
 from fle.env import Conversation
-from fle.env.models.message import Message
-from fle.env.models.generation_parameters import GenerationParameters
-from fle.env.models.game_state import GameState
-from fle.env.models.program import Program
+from fle.commons.models.message import Message
+from fle.commons.models.generation_parameters import GenerationParameters
+from fle.commons.models.game_state import GameState
+from fle.commons.models.program import Program
 from fle.agents.utils.formatters.conversation_formatter_abc import ConversationFormatter, DefaultFormatter
 from fle.env import FactorioInstance
 

@@ -8,7 +8,7 @@ Provides functionality for managing game state versions, including:
 - Viewing commit history
 """
 from mcp.server.fastmcp import Context
-from env.models.game_state import GameState
+from fle.commons.models.game_state import GameState
 from . import mcp
 from .init import state
 

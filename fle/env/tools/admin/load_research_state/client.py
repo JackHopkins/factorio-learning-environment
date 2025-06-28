@@ -1,5 +1,5 @@
-from env.models.research_state import ResearchState
-from env.tools.tool import Tool
+from fle.commons.models.research_state import ResearchState
+from fle.env.tools import Tool
 
 
 class LoadResearchState(Tool):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import enum
 from difflib import get_close_matches
-from fle.env import *
+from fle.env import entities as ent
 
 
 class ResourceName(enum.Enum):
@@ -67,65 +67,65 @@ class RecipeName(enum.Enum):
 
 class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
 
-    AssemblingMachine1 = "assembling-machine-1", AssemblingMachine
-    AssemblingMachine2 = "assembling-machine-2", AdvancedAssemblingMachine
-    AssemblingMachine3 = "assembling-machine-3", AdvancedAssemblingMachine
-    Centrifuge = "centrifuge", AssemblingMachine
+    AssemblingMachine1 = "assembling-machine-1", ent.AssemblingMachine
+    AssemblingMachine2 = "assembling-machine-2", ent.AdvancedAssemblingMachine
+    AssemblingMachine3 = "assembling-machine-3", ent.AdvancedAssemblingMachine
+    Centrifuge = "centrifuge", ent.AssemblingMachine
 
-    BurnerInserter = "burner-inserter", BurnerInserter
-    FastInserter = "fast-inserter", Inserter
-    ExpressInserter = "express-inserter", Inserter
+    BurnerInserter = "burner-inserter", ent.BurnerInserter
+    FastInserter = "fast-inserter", ent.Inserter
+    ExpressInserter = "express-inserter", ent.Inserter
 
-    LongHandedInserter = "long-handed-inserter", Inserter
-    StackInserter = "stack-inserter", Inserter
-    StackFilterInserter = "stack-filter-inserter", FilterInserter
-    FilterInserter = "filter-inserter", FilterInserter
+    LongHandedInserter = "long-handed-inserter", ent.Inserter
+    StackInserter = "stack-inserter", ent.Inserter
+    StackFilterInserter = "stack-filter-inserter", ent.FilterInserter
+    FilterInserter = "filter-inserter", ent.FilterInserter
 
-    Inserter = "inserter", Inserter
+    Inserter = "inserter", ent.Inserter
 
 
-    BurnerMiningDrill = "burner-mining-drill", BurnerMiningDrill
-    ElectricMiningDrill = "electric-mining-drill", ElectricMiningDrill
+    BurnerMiningDrill = "burner-mining-drill", ent.BurnerMiningDrill
+    ElectricMiningDrill = "electric-mining-drill", ent.ElectricMiningDrill
 
-    StoneFurnace = "stone-furnace", Furnace
-    SteelFurnace = "steel-furnace", Furnace
-    ElectricFurnace = "electric-furnace", ElectricFurnace
+    StoneFurnace = "stone-furnace", ent.Furnace
+    SteelFurnace = "steel-furnace", ent.Furnace
+    ElectricFurnace = "electric-furnace", ent.ElectricFurnace
 
-    Splitter = "splitter", Splitter
-    FastSplitter = "fast-splitter", Splitter
-    ExpressSplitter = "express-splitter", Splitter
+    Splitter = "splitter", ent.Splitter
+    FastSplitter = "fast-splitter", ent.Splitter
+    ExpressSplitter = "express-splitter", ent.Splitter
 
-    Rail = "rail", Rail
+    Rail = "rail", ent.Rail
 
-    TransportBelt = "transport-belt", TransportBelt
-    FastTransportBelt = "fast-transport-belt", TransportBelt
-    ExpressTransportBelt = "express-transport-belt", TransportBelt
-    ExpressUndergroundBelt = "express-underground-belt", UndergroundBelt
-    FastUndergroundBelt = "fast-underground-belt", UndergroundBelt
-    UndergroundBelt = "underground-belt", UndergroundBelt
-    OffshorePump = "offshore-pump", OffshorePump
-    PumpJack = "pumpjack", PumpJack
-    Pump = "pump", Pump
-    Boiler = "boiler", Boiler
-    OilRefinery = "oil-refinery", OilRefinery
-    ChemicalPlant = "chemical-plant", ChemicalPlant
+    TransportBelt = "transport-belt", ent.TransportBelt
+    FastTransportBelt = "fast-transport-belt", ent.TransportBelt
+    ExpressTransportBelt = "express-transport-belt", ent.TransportBelt
+    ExpressUndergroundBelt = "express-underground-belt", ent.UndergroundBelt
+    FastUndergroundBelt = "fast-underground-belt", ent.UndergroundBelt
+    UndergroundBelt = "underground-belt", ent.UndergroundBelt
+    OffshorePump = "offshore-pump", ent.OffshorePump
+    PumpJack = "pumpjack", ent.PumpJack
+    Pump = "pump", ent.Pump
+    Boiler = "boiler", ent.Boiler
+    OilRefinery = "oil-refinery", ent.OilRefinery
+    ChemicalPlant = "chemical-plant", ent.ChemicalPlant
 
-    SteamEngine = "steam-engine", Generator
-    SolarPanel = "solar-panel", SolarPanel
+    SteamEngine = "steam-engine", ent.Generator
+    SolarPanel = "solar-panel", ent.SolarPanel
 
-    UndergroundPipe = "pipe-to-ground", Pipe
-    HeatPipe = 'heat-pipe', Pipe
-    Pipe = "pipe", Pipe
+    UndergroundPipe = "pipe-to-ground", ent.Pipe
+    HeatPipe = 'heat-pipe', ent.Pipe
+    Pipe = "pipe", ent.Pipe
 
-    SteelChest = "steel-chest", Chest
-    IronChest = "iron-chest", Chest
-    WoodenChest = "wooden-chest", Chest
-    IronGearWheel = "iron-gear-wheel", Entity
-    StorageTank = "storage-tank", StorageTank
+    SteelChest = "steel-chest", ent.Chest
+    IronChest = "iron-chest", ent.Chest
+    WoodenChest = "wooden-chest", ent.Chest
+    IronGearWheel = "iron-gear-wheel", ent.Entity
+    StorageTank = "storage-tank", ent.StorageTank
 
-    SmallElectricPole = "small-electric-pole", ElectricityPole
-    MediumElectricPole = "medium-electric-pole", ElectricityPole
-    BigElectricPole = "big-electric-pole", ElectricityPole
+    SmallElectricPole = "small-electric-pole", ent.ElectricityPole
+    MediumElectricPole = "medium-electric-pole", ent.ElectricityPole
+    BigElectricPole = "big-electric-pole", ent.ElectricityPole
 
     Coal = "coal", None
     Wood = "wood", None
@@ -163,22 +163,22 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     EngineUnit = "engine-unit", None
     ElectricEngineUnit = "electric-engine-unit", None
 
-    Lab = "lab", Lab
-    Accumulator = "accumulator", Accumulator
-    GunTurret = "gun-turret", GunTurret
+    Lab = "lab", ent.Lab
+    Accumulator = "accumulator", ent.Accumulator
+    GunTurret = "gun-turret", ent.GunTurret
 
-    PiercingRoundsMagazine = "piercing-rounds-magazine", Ammo
-    FirearmMagazine = "firearm-magazine", Ammo
+    PiercingRoundsMagazine = "piercing-rounds-magazine", ent.Ammo
+    FirearmMagazine = "firearm-magazine", ent.Ammo
     Grenade = "grenade", None
 
-    Radar = "radar", Entity
-    StoneWall = "stone-wall", Entity
-    Gate = "gate", Entity
-    SmallLamp = "small-lamp", Entity
+    Radar = "radar", ent.Entity
+    StoneWall = "stone-wall", ent.Entity
+    Gate = "gate", ent.Entity
+    SmallLamp = "small-lamp", ent.Entity
 
-    NuclearReactor = "nuclear-reactor", Reactor
+    NuclearReactor = "nuclear-reactor", ent.Reactor
     UraniumFuelCell = "uranium-fuel-cell", None
-    HeatExchanger = 'heat-exchanger', HeatExchanger
+    HeatExchanger = 'heat-exchanger', ent.HeatExchanger
 
     AutomationSciencePack = "automation-science-pack", None
     MilitarySciencePack = "military-science-pack", None
@@ -193,8 +193,8 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
 
     FlyingRobotFrame = "flying-robot-frame", None
 
-    RocketSilo = "rocket-silo", RocketSilo
-    Rocket = "rocket", Rocket
+    RocketSilo = "rocket-silo", ent.RocketSilo
+    Rocket = "rocket", ent.Rocket
     Satellite = "satellite", None
     RocketPart = "rocket-part", None
     RocketControlUnit = "rocket-control-unit", None
@@ -202,9 +202,9 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     RocketFuel = "rocket-fuel", None
     SpaceSciencePack = "space-science-pack", None
 
-    BeltGroup = "belt-group", BeltGroup
-    PipeGroup = "pipe-group", PipeGroup
-    ElectricityGroup = "electricity-group", ElectricityGroup
+    BeltGroup = "belt-group", ent.BeltGroup
+    PipeGroup = "pipe-group", ent.PipeGroup
+    ElectricityGroup = "electricity-group", ent.ElectricityGroup
 
     def __init__(self, prototype_name, entity_class_name):
         self.prototype_name = prototype_name
@@ -360,11 +360,11 @@ class Technology(enum.Enum):
 technology_by_name = {tech.value: tech for tech in Technology}
 
 class Resource:
-    Coal = "coal", ResourcePatch
-    IronOre = "iron-ore", ResourcePatch
-    CopperOre = "copper-ore", ResourcePatch
-    Stone = "stone", ResourcePatch
-    Water = "water", ResourcePatch
-    CrudeOil = "crude-oil", ResourcePatch
-    UraniumOre = "uranium-ore", ResourcePatch
-    Wood = "wood", ResourcePatch
+    Coal = "coal", ent.ResourcePatch
+    IronOre = "iron-ore", ent.ResourcePatch
+    CopperOre = "copper-ore", ent.ResourcePatch
+    Stone = "stone", ent.ResourcePatch
+    Water = "water", ent.ResourcePatch
+    CrudeOil = "crude-oil", ent.ResourcePatch
+    UraniumOre = "uranium-ore", ent.ResourcePatch
+    Wood = "wood", ent.ResourcePatch

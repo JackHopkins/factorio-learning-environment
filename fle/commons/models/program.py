@@ -5,9 +5,9 @@ from typing import Optional, Union
 import numpy as np
 from pydantic import BaseModel, Field
 
-from env.models.achievements import ProductionFlows
-from env.models.conversation import Conversation
-from env.models.game_state import GameState
+from fle.commons.models.achievements import ProductionFlows
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.game_state import GameState
 from agents import TimingMetrics
 
 class Program(BaseModel):

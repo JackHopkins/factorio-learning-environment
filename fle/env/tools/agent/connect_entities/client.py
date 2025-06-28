@@ -6,7 +6,7 @@ import numpy
 from fle.env import EntityGroup, Entity, Position, BeltGroup, PipeGroup, ElectricityGroup, TransportBelt, \
     Pipe, FluidHandler, MiningDrill, Inserter, ChemicalPlant, OilRefinery, MultiFluidHandler
 from env.instance import Direction
-from env.game_types import Prototype, prototype_by_name
+from fle.env.game_types import Prototype, prototype_by_name
 from env.tools.admin.clear_collision_boxes.client import ClearCollisionBoxes
 from env.tools.admin.extend_collision_boxes.client import ExtendCollisionBoxes
 from env.tools.admin.get_path.client import GetPath
@@ -22,7 +22,7 @@ from env.tools.agent.get_entity.client import GetEntity
 from env.tools.agent.inspect_inventory.client import InspectInventory
 from env.tools.agent.pickup_entity.client import PickupEntity
 from env.tools.agent.rotate_entity.client import RotateEntity
-from env.tools.tool import Tool
+from fle.env.tools import Tool
 from collections.abc import Set as AbstractSet
 
 

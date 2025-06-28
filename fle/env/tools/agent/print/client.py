@@ -1,7 +1,7 @@
 from typing import Any, List
 
 from fle.env import Entity, Inventory, Position
-from env.tools.tool import Tool
+from fle.env.tools import Tool
 
 
 class Print(Tool):

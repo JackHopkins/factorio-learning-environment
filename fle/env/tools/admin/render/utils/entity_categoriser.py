@@ -1,4 +1,4 @@
-from env.game_types import Prototype
+from fle.env.game_types import Prototype
 
 
 class EntityCategoriser:

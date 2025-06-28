@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import List, Tuple, Union, Dict, Optional
 
 from fle.commons.db_client import DBClient
-from env.models.achievements import ProductionFlows
-from env.models.game_state import GameState
-from env.models.program import Program
+from fle.commons.models.achievements import ProductionFlows
+from fle.commons.models.game_state import GameState
+from fle.commons.models.program import Program
 from fle.env import Entity, EntityGroup
 from fle.env import FactorioInstance
 from env.utils.profits import get_achievements

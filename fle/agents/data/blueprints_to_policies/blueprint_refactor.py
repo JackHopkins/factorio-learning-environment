@@ -19,7 +19,7 @@ from data.blueprints_to_policies.processing_state import ProcessingState
 from fle.env import Position
 from fle.env import FactorioInstance
 from blueprint_analyzer import BlueprintAnalyzer
-from env.game_types import Resource
+from fle.env.game_types import Resource
 
 load_dotenv()
 

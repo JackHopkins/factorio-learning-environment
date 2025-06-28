@@ -9,9 +9,9 @@ import datetime
 import string
 
 from fle.env import FactorioInstance
-from env.models.game_state import GameState
+from fle.commons.models.game_state import GameState
 from env.gym_env.action import Action
-from env.models.achievements import ProductionFlows
+from fle.commons.models.achievements import ProductionFlows
 from fle.env import EntityStatus
 from env.utils.profits import get_achievements
 from agents import Response, TaskResponse

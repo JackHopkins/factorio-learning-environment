@@ -2,9 +2,9 @@ from time import sleep
 from typing import Union
 
 from fle.env import Entity, EntityGroup, Position, BeltGroup, PipeGroup
-from env.game_types import Prototype
+from fle.env.game_types import Prototype
 from env.tools.agent.get_entities.client import GetEntities
-from env.tools.tool import Tool
+from fle.env.tools import Tool
 
 
 class InsertItem(Tool):

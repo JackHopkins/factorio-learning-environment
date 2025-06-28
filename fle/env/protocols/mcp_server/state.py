@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Any
 from fle.env import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
 
-from .models import FactorioServer, Recipe, ResourcePatch
+from fle.commons.models import FactorioServer, Recipe, ResourcePatch
 from .repository import FactorioMCPRepository
 
 

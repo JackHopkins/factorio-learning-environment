@@ -3,7 +3,7 @@ import json
 import zlib
 from typing import Union, List, Dict
 
-from env.tools.tool import Tool
+from fle.env.tools import Tool
 
 
 class LoadEntityState(Tool):

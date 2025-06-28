@@ -2,9 +2,9 @@
 from typing import Tuple, List, Union
 
 from fle.env import Entity, Position, EntityGroup
-from env.game_types import Prototype
+from fle.env.game_types import Prototype
 from env.tools.agent.connect_entities.client import ConnectEntities
-from env.tools.tool import Tool
+from fle.env.tools import Tool
 
 
 class GetConnectionAmount(Tool):

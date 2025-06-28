@@ -23,16 +23,16 @@ import uuid
 from dotenv import load_dotenv
 from slpp import slpp as lua
 
-from .entities import BoundingBox
+from .entities import BoundingBox, Direction
 
 from .lua_manager import LuaScriptManager
-from .models.camera import Camera
+from fle.commons.models.camera import Camera
 from .namespace import FactorioNamespace
 from .utils.rcon import _lua2python, _get_dir
 from .transaction import FactorioTransaction
-from .models.research_state import ResearchState
+from fle.commons.models.research_state import ResearchState
 from .rcon.factorio_rcon import RCONClient
-from .models.game_state import GameState
+from fle.commons.models.game_state import GameState
 from .utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 
 CHUNK_SIZE = 32
@@ -45,11 +45,7 @@ NONE = 'nil'
 global var
 var = {}
 
-class Direction(Enum):
-    UP = NORTH = 0
-    RIGHT = EAST = 2
-    DOWN = SOUTH = 4
-    LEFT = WEST = 6
+class DirectionInternal(Direction):
 
     @classmethod
     def opposite(cls, direction):

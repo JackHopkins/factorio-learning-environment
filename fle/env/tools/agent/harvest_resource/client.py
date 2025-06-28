@@ -1,11 +1,11 @@
 from time import sleep
 
 from fle.env import Position
-from env.game_types import Resource
+from fle.env.game_types import Resource
 from env.tools.agent.get_entity.client import GetEntity
 from env.tools.agent.move_to.client import MoveTo
 from env.tools.agent.nearest.client import Nearest
-from env.tools.tool import Tool
+from fle.env.tools import Tool
 
 
 class HarvestResource(Tool):

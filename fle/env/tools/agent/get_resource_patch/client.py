@@ -1,8 +1,8 @@
 from typing import Optional
 
 from fle.env import Position, ResourcePatch, BoundingBox
-from env.game_types import Resource
-from env.tools.tool import Tool
+from fle.env.game_types import Resource
+from fle.env.tools import Tool
 
 
 class GetResourcePatch(Tool):

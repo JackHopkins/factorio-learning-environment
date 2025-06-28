@@ -1,6 +1,6 @@
 from fle.env import BoundingBox, Position
-from env.models.camera import Camera
-from env.tools.tool import Tool
+from fle.commons.models.camera import Camera
+from fle.env.tools import Tool
 
 
 class GetFactoryCentroid(Tool):

@@ -4,7 +4,7 @@ from typing import Dict
 
 from mcp.server.fastmcp import Image
 from fle.env import Position
-from env.models.game_state import GameState
+from fle.commons.models.game_state import GameState
 from env.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 from . import mcp
 from .init import state, initialize_session

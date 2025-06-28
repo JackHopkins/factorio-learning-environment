@@ -1,9 +1,9 @@
 import math
 from typing import Optional
 
-from fle.env import Position, BuildingBox, BoundingBox
-from env.game_types import Prototype
-from env.tools.tool import Tool
+from fle.env import entities as ent
+from fle.env.game_types import Prototype
+from fle.env.tools import Tool
 
 
 class NearestBuildable(Tool):
@@ -15,10 +15,10 @@ class NearestBuildable(Tool):
 
     def __call__(self,
                  entity: Prototype,
-                 building_box: BuildingBox,
-                 center_position: Position,
+                 building_box: ent.BuildingBox,
+                 center_position: ent.Position,
                  **kwargs
-                 ) -> BoundingBox:
+                 ) -> ent.BoundingBox:
         """
         Find the nearest buildable area for an entity.
 
@@ -50,10 +50,10 @@ class NearestBuildable(Tool):
 
         response_x = response['position']['x']
         response_y = response['position']['y']
-        right_bottom = Position(x=response['right_bottom']['x'], y=response['right_bottom']['y'])
-        left_top = Position(x=response['left_top']['x'], y=response['left_top']['y'])
-        left_bottom = Position(x=response['left_top']['x'], y=response['right_bottom']['y'])
-        right_top = Position(x=response['right_bottom']['x'], y=response['left_top']['y'])
+        right_bottom = ent.Position(x=response['right_bottom']['x'], y=response['right_bottom']['y'])
+        left_top = ent.Position(x=response['left_top']['x'], y=response['left_top']['y'])
+        left_bottom = ent.Position(x=response['left_top']['x'], y=response['right_bottom']['y'])
+        right_top = ent.Position(x=response['right_bottom']['x'], y=response['left_top']['y'])
         # return {"left_top": Position(x=response_x, y=response_y),
         #         "right_bottom": Position(x=response_x+dx-1,
         #                                   y=response_y+dy-1),
@@ -61,7 +61,7 @@ class NearestBuildable(Tool):
         #         "right_top": Position(x=response_x + dx-1, y=response_y)}
         #
         #XOFFSET, YOFFSET = -0.5, -0.5
-        return BoundingBox(
+        return ent.BoundingBox(
             left_top=left_top,
             right_bottom=right_bottom,
             left_bottom=left_bottom,

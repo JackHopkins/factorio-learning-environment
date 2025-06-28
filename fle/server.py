@@ -1,10 +1,10 @@
 # Factorio MCP Server
-from server import mcp
-import server.tools
-import server.resources
-import server.prompts
-import server.unix_tools
-import server.version_control
+from env.protocols.mcp_server import mcp
+import env.protocols.mcp_server.tools
+import env.protocols.mcp_server.resources
+import env.protocols.mcp_server.prompts
+import env.protocols.mcp_server.unix_tools
+import env.protocols.mcp_server.version_control
 
 # Command-line interface for the MCP server
 if __name__ == "__main__":

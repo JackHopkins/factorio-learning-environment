@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 from env.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
-from server import mcp
+from . import mcp
 
 
 def _get_tools_base_path() -> Path:

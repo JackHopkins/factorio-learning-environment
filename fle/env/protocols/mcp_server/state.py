@@ -6,8 +6,8 @@ from typing import Dict, List, Optional, Any
 from env.instance import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
 
-from server.models import FactorioServer, Recipe, ResourcePatch
-from server.repository import FactorioMCPRepository
+from .models import FactorioServer, Recipe, ResourcePatch
+from .repository import FactorioMCPRepository
 
 
 class FactorioMCPState:

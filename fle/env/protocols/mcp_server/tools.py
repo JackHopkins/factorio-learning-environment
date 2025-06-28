@@ -6,8 +6,8 @@ from mcp.server.fastmcp import Image
 from env.entities import Position
 from env.models.game_state import GameState
 from env.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
-from server import mcp
-from server.init import state, initialize_session
+from . import mcp
+from .init import state, initialize_session
 
 
 @mcp.tool()

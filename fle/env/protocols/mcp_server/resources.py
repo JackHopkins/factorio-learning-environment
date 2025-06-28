@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Dict
 
 from env.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
-from server import mcp
-from server.init import state
+from . import mcp
+from .init import state
 
 HOST="fle"
 

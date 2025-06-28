@@ -8,8 +8,8 @@ import sys
 import os
 from contextlib import contextmanager
 
-from server import mcp
-from server.init import state
+from . import mcp
+from .init import state
 
 # Context manager to suppress stdout
 @contextmanager

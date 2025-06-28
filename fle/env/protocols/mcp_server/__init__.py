@@ -5,8 +5,8 @@ from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
 
-from server.init import initialize_session, shutdown_session
-from server.state import FactorioMCPState
+from .init import initialize_session, shutdown_session
+from .state import FactorioMCPState
 from mcp import types
 @dataclass
 class FactorioContext:
@@ -27,7 +27,7 @@ async def fle_lifespan(server: FastMCP) -> AsyncIterator[FactorioContext]:
     
     #try:
     connection_message = await initialize_session()
-    from server.init import state
+    from .init import state
     # finally:
     #     # Restore stdout
     #     sys.stdout.close()

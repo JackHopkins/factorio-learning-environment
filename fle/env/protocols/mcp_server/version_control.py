@@ -9,8 +9,8 @@ Provides functionality for managing game state versions, including:
 """
 from mcp.server.fastmcp import Context
 from env.models.game_state import GameState
-from server import mcp
-from server.init import state
+from . import mcp
+from .init import state
 
 
 @mcp.tool()

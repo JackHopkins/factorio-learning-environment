@@ -1,4 +1,3 @@
-s/venv/
 .venv/
 cortex
 /dev/
@@ -70,6 +69,8 @@ environment/src/skills/ground_truth_skills/*
 !/docs/assets/videos/*.mp4
 /leaderboard/node_modules/
 /server/CLAUDE.md
+uv.lock
+trajectory_logs/
 
 **/.claude/settings.local.json
 /factorio_learning_environment/
@@ -83,4 +84,3 @@ cluster/local/docker-compose.yml
 # Database files
 .fle/
 *.db
-uv.lock

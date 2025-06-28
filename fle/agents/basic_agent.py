@@ -2,10 +2,10 @@ import tenacity
 
 from agents import Response, CompletionResult, Policy
 from agents.agent_abc import AgentABC
-from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
-from agents.utils.llm_factory import LLMFactory
-from agents.utils.parse_response import parse_response
-from agents.utils.metrics import track_timing_async, track_timing, timing_tracker
+from agents.formatters.recursive_report_formatter import RecursiveReportFormatter
+from agents.llm.api_factory import APIFactory
+from agents.llm.parse_response import parse_response
+from agents.llm.metrics import track_timing_async, track_timing, timing_tracker
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
@@ -185,8 +185,8 @@ class BasicAgent(AgentABC):
             player_idx = agent_idx + 1
             instructions += f"### Specific Instructions for Agent {player_idx}\n{task.get_agent_instructions(agent_idx)}\n\n"
         super().__init__( model, instructions, *args, **kwargs)
-        self.llm_factory = LLMFactory(model)
-        self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.llm_factory.acall,cache_dir='summary_cache')
+        self.api_factory = APIFactory(model)
+        self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.api_factory.acall,cache_dir='summary_cache')
         self.generation_params = GenerationParameters(n=1, max_tokens=4096, model=model)
 
    @track_timing_async("agent_step")
@@ -206,7 +206,7 @@ class BasicAgent(AgentABC):
    async def _get_policy(self, conversation: Conversation):
         async with timing_tracker.track_async("llm_call"):
             messages = self.formatter.to_llm_messages(conversation)
-            response = await self.llm_factory.acall(
+            response = await self.api_factory.acall(
                 messages=messages,
                 n_samples=1,  # We only need one program per iteration
                 temperature=self.generation_params.temperature,

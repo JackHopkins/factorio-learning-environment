@@ -3,10 +3,10 @@ from typing import Any, Optional
 
 from agents import CompletionResult, Policy, Response
 from agents.agent_abc import AgentABC
-from agents.utils.formatters.recursive_report_formatter import \
+from agents.formatters.recursive_report_formatter import \
     RecursiveReportFormatter
-from agents.utils.llm_factory import LLMFactory
-from agents.utils.parse_response import parse_response
+from agents.llm.api_factory import APIFactory
+from agents.llm.parse_response import parse_response
 from env.gym_env.observation import Observation
 
 from fle.commons.models.conversation import Conversation
@@ -119,12 +119,12 @@ class GymAgent(AgentABC):
         instructions = self._get_instructions(system_prompt, task, agent_idx)
         super().__init__(model, instructions, *args, **kwargs)
         self.task = task
-        self.llm_factory = LLMFactory(model)
+        self.api_factory = APIFactory(model)
         self.observation_formatter = observation_formatter or BasicObservationFormatter()
         self.conversation = Conversation()
         self.formatter = RecursiveReportFormatter(
             chunk_size=16,
-            llm_call=self.llm_factory.acall,
+            llm_call=self.api_factory.acall,
             cache_dir='summary_cache'
         )
         self.generation_params = GenerationParameters(
@@ -168,7 +168,7 @@ class GymAgent(AgentABC):
         if observation:
             await self.update_conversation(observation, previous_program)
         try:
-            model_response = await self.llm_factory.acall(
+            model_response = await self.api_factory.acall(
                 messages=self.formatter.to_llm_messages(self.conversation),
                 n_samples=1,
                 temperature=self.generation_params.temperature,

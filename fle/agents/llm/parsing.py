@@ -1,6 +1,44 @@
+import ast
 import re
 from typing import Optional, Tuple
-import ast
+
+from pydantic import BaseModel
+
+from fle.commons.models.conversation import Conversation
+
+
+class Python(str):
+    """A custom type that only accepts syntactically valid Python code."""
+    
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value, values=None, config=None, field=None) -> str:
+        if not isinstance(value, str):
+            raise TypeError('string required')
+
+        try:
+            # Try to parse the string as Python code
+            ast.parse(value)
+        except SyntaxError as e:
+            raise ValueError(f'Invalid Python syntax: {str(e)}')
+        except Exception as e:
+            raise ValueError(f'Error parsing Python code: {str(e)}')
+
+        return value
+
+class PolicyMeta(BaseModel):
+    output_tokens: int
+    input_tokens: int
+    total_tokens: int
+    text_response: str
+
+class Policy(BaseModel):
+    code: Python
+    input_conversation: Conversation = None
+    meta: PolicyMeta
 
 
 class PythonParser:
@@ -212,3 +250,27 @@ class PythonParser:
         #         raise Exception("Not valid python code")
 
         return None, None
+
+def parse_response(response) -> Optional[Policy]:
+    if hasattr(response, 'choices'):
+        choice = response.choices[0]
+        input_tokens = response.usage.prompt_tokens if hasattr(response, 'usage') else 0
+        output_tokens = response.usage.completion_tokens if hasattr(response, 'usage') else 0
+    else:
+        choice = response.content[0]
+        input_tokens = response.usage.input_tokens if hasattr(response, 'usage') else 0
+        output_tokens = response.usage.output_tokens if hasattr(response, 'usage') else 0
+
+    total_tokens = input_tokens + output_tokens
+    try:
+        code, text_response = PythonParser.extract_code(choice)
+    except Exception as e:
+        print(f"Failed to extract code from choice: {str(e)}")
+        return None
+
+    if not code:
+        return None
+
+    policy = Policy(code=code,
+                    meta=PolicyMeta(output_tokens=output_tokens, input_tokens=input_tokens,total_tokens=total_tokens, text_response=text_response))
+    return policy

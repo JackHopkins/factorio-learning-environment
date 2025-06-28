@@ -1,13 +1,14 @@
-import os
-import json
 import hashlib
+import json
+import os
 import re
 from typing import List, Optional
 
-from agents.utils.llm_factory import LLMFactory
-from agents.utils.formatters.conversation_formatter_abc import ConversationFormatter
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
+
+from ..llm.api_factory import APIFactory
+from .conversation_formatter_abc import ConversationFormatter
 
 DEFAULT_INSTRUCTIONS = \
     "Summarize the following conversation chunk maintaining key information and context. Focus on decisions made, actions taken, and important outcomes."
@@ -21,7 +22,7 @@ class RecursiveFormatter(ConversationFormatter):
 
     def __init__(self,
                  chunk_size: int = 16,
-                 llm_factory: Optional[LLMFactory] = None,
+                 api_factory: Optional[APIFactory] = None,
                  cache_dir: str = ".conversation_cache",
                  summary_instructions: str = DEFAULT_INSTRUCTIONS,
                  truncate_entity_data: bool = True,
@@ -29,13 +30,13 @@ class RecursiveFormatter(ConversationFormatter):
         """
 
         @param chunk_size:
-        @param llm_factory:
+        @param api_factory:
         @param cache_dir:
         @param summary_instructions:
         @param truncate_entity_data: Whether we should truncate historical (stale) entity observations when summarizing.
         """
         self.chunk_size = chunk_size
-        self.llm_factory = llm_factory
+        self.api_factory = api_factory
         self.cache_dir = cache_dir
         self.summary_instructions = summary_instructions
         self.truncate_entity_data = truncate_entity_data
@@ -109,7 +110,7 @@ class RecursiveFormatter(ConversationFormatter):
     async def _generate_summary(self, messages: List[Message], start_idx: int, end_idx: int,
                                 system_message: Message) -> Message:
         """Generate a summary of messages using the LLM."""
-        if not self.llm_factory:
+        if not self.api_factory:
             raise ValueError("LLM factory required for summary generation")
 
         summary_prompt = [
@@ -125,7 +126,7 @@ class RecursiveFormatter(ConversationFormatter):
                 "content": msg.content
             })
 
-        response = await self.llm_factory.acall(
+        response = await self.api_factory.acall(
             messages=summary_prompt,
             max_tokens=1024,
             temperature=0.3

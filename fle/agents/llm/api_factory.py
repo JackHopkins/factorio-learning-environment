@@ -5,9 +5,10 @@ import anthropic
 from openai import AsyncOpenAI, OpenAI
 from tenacity import retry, wait_exponential
 
-from agents.utils.llm_utils import remove_whitespace_blocks, merge_contiguous_messages, format_messages_for_openai, \
-    format_messages_for_anthropic, has_image_content
-from agents.utils.metrics import track_timing_async, track_timing, timing_tracker
+from .metrics import timing_tracker, track_timing, track_timing_async
+from .utils import (format_messages_for_anthropic, format_messages_for_openai,
+                    has_image_content, merge_contiguous_messages,
+                    remove_whitespace_blocks)
 
 
 class NoRetryAsyncOpenAI(AsyncOpenAI):
@@ -17,7 +18,7 @@ class NoRetryAsyncOpenAI(AsyncOpenAI):
         super().__init__(**kwargs)
 
 
-class LLMFactory:
+class APIFactory:
     # Models that support image input
     MODELS_WITH_IMAGE_SUPPORT = [
         # Claude models with vision

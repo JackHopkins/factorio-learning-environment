@@ -4,9 +4,9 @@ from agents import Response, CompletionResult, Policy
 from agents.agent_abc import AgentABC
 from agents.basic_agent import BasicAgent
 from agents.backtracking_agent import BacktrackingAgent
-from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
-from agents.utils.llm_factory import LLMFactory
-from agents.utils.parse_response import parse_response
+from agents.formatters.recursive_report_formatter import RecursiveReportFormatter
+from agents.llm.api_factory import APIFactory
+from agents.llm.parse_response import parse_response
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
 from fle.commons.models.generation_parameters import GenerationParameters

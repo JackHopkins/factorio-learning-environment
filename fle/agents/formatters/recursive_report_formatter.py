@@ -1,16 +1,17 @@
-import os
-import json
+import copy
 import hashlib
+import json
+import os
 import re
-from typing import List, Optional, Callable, TypedDict, Union, Dict, Any, Awaitable
+from typing import (Any, Awaitable, Callable, Dict, List, Optional, TypedDict,
+                    Union)
 
-from agents.utils.llm_factory import LLMFactory
-from agents.utils.formatters.conversation_formatter_abc import ConversationFormatter
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
-import copy
+from fle.env.namespace import FactorioNamespace
 
-from env.namespace import FactorioNamespace
+from ..llm.api_factory import APIFactory
+from .conversation_formatter_abc import ConversationFormatter
 
 DEFAULT_INSTRUCTIONS = \
     """
@@ -88,7 +89,7 @@ class RecursiveReportFormatter(ConversationFormatter):
                  max_chars: int = 200000):
         """
         @param chunk_size:
-        @param llm_factory:
+        @param api_factory:
         @param cache_dir:
         @param summary_instructions:
         @param truncate_entity_data: Whether we should truncate historical (stale) entity observations when summarizing.

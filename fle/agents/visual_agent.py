@@ -6,9 +6,9 @@ from typing import Optional, List, Dict, Any
 from agents import Response, CompletionResult, Policy
 from agents.agent_abc import AgentABC
 from agents.basic_agent import GENERAL_INSTRUCTIONS, FINAL_INSTRUCTION
-from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
-from agents.utils.llm_factory import LLMFactory
-from agents.utils.parse_response import parse_response
+from agents.formatters.recursive_report_formatter import RecursiveReportFormatter
+from agents.llm.api_factory import APIFactory
+from agents.llm.parse_response import parse_response
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters
 from tenacity import wait_exponential, retry_if_exception_type
@@ -61,10 +61,10 @@ class VisualAgent(AgentABC):
         super().__init__(model, instructions, *args, **kwargs)
 
         self.render_radius = render_radius
-        self.llm_factory = LLMFactory(model)
+        self.api_factory = APIFactory(model)
         self.formatter = RecursiveReportFormatter(
             chunk_size=16,
-            llm_call=self.llm_factory.acall,
+            llm_call=self.api_factory.acall,
             cache_dir='summary_cache'
         )
         self.generation_params = GenerationParameters(n=1, max_tokens=2048, model=model)
@@ -178,7 +178,7 @@ class VisualAgent(AgentABC):
         Returns:
             Policy: Next actions to execute
         """
-        response = await self.llm_factory.acall(
+        response = await self.api_factory.acall(
             messages=self.formatter.to_llm_messages(conversation),
             n_samples=1,
             temperature=self.generation_params.temperature,

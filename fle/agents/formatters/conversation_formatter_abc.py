@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
 
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
-from env.namespace import FactorioNamespace
+from fle.env.namespace import FactorioNamespace
 
 PLANNING_ADDITION_PROMPT = \
 """

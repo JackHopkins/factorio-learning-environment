@@ -6,10 +6,10 @@ import tenacity
 from . import CompletionResult, Policy, Response
 from .agent_abc import AgentABC
 from .basic_agent import GENERAL_INSTRUCTIONS
-from agents.utils.formatters.recursive_report_formatter import \
+from agents.formatters.recursive_report_formatter import \
     RecursiveReportFormatter
-from agents.utils.llm_factory import LLMFactory
-from agents.utils.parse_response import parse_response
+from agents.llm.api_factory import APIFactory
+from agents.llm.parse_response import parse_response
 from env.namespace import FactorioNamespace
 from tenacity import (retry_if_exception_type, wait_exponential,
                       wait_random_exponential)
@@ -180,8 +180,8 @@ class BacktrackingAgent(AgentABC):
         backtrack_instructions += f"\n\n### General Goal\n{task.goal_description}\n\n"
         self.instructions = backtrack_instructions
         super().__init__( model, backtrack_instructions, *args, **kwargs)
-        self.llm_factory = LLMFactory(model)
-        self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.llm_factory.acall,cache_dir='summary_cache')
+        self.api_factory = APIFactory(model)
+        self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.api_factory.acall,cache_dir='summary_cache')
         self.generation_params = GenerationParameters(n=1, max_tokens=2048, model=model)
         self.current_step_memory = deque([])
         self.max_nr_of_steps = 8 # original + fixing attempts
@@ -230,7 +230,7 @@ class BacktrackingAgent(AgentABC):
         wait=wait_exponential(multiplier=1, min=4, max=10)
     )
     async def _get_policy(self, conversation: Conversation):
-        response = await self.llm_factory.acall(
+        response = await self.api_factory.acall(
             messages=self.formatter.to_llm_messages(conversation),
             n_samples=1,  # We only need one program per iteration
             temperature=self.generation_params.temperature,

@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Dict
 
 from mcp.server.fastmcp import Image
-from env.entities import Position
+from fle.env import Position
 from env.models.game_state import GameState
 from env.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 from . import mcp

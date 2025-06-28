@@ -1,4 +1,4 @@
-from env.entities import Position, BoundingBox
+from fle.env import Position, BoundingBox
 from pydantic import BaseModel, Field
 
 class Camera(BaseModel):

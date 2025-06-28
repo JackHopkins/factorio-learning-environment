@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 
 from eval.open.db_client import DBClient
-from env.instance import FactorioInstance
+from fle.env import FactorioInstance
 
 # Load environment variables
 load_dotenv()

@@ -2,7 +2,7 @@ import math
 from typing import Tuple, Callable, List
 
 from PIL import ImageDraw
-from env.entities import UndergroundBelt, Pipe
+from fle.env import UndergroundBelt, Pipe
 from env.tools.admin.render.utils.colour_manager import ColourManager
 
 

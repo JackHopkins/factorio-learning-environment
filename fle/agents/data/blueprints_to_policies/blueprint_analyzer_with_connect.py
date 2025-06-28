@@ -4,8 +4,8 @@ from collections import defaultdict
 from typing import List, Dict
 from typing import Union
 
-from env.entities import EntityGroup
-from env.instance import FactorioInstance
+from fle.env import EntityGroup
+from fle.env import FactorioInstance
 from env.game_types import prototype_by_name
 from data.blueprints_to_policies.models.blueprint_entity import BlueprintEntity
 

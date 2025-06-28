@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Union, List, Optional, Protocol, Tuple
 
-from env.entities import Position, Entity
+from fle.env import Position, Entity
 
 
 @dataclass

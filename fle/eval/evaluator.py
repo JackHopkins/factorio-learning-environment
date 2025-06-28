@@ -7,8 +7,8 @@ from eval.open.db_client import DBClient
 from env.models.game_state import GameState
 from eval.open.mcts.logger import FactorioLogger
 from env.models.program import Program
-from env.entities import Entity, EntityGroup
-from env.instance import FactorioInstance
+from fle.env import Entity, EntityGroup
+from fle.env import FactorioInstance
 from env.utils.profits import get_achievements
 
 

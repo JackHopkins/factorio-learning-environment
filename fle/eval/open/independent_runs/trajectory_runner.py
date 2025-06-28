@@ -19,7 +19,7 @@ from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
 from env.models.conversation import Conversation
 from env.models.message import Message
 from env.models.program import Program
-from env.instance import FactorioInstance
+from fle.env import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
 from agents.utils.python_parser import PythonParser
 from agents.utils.metrics import timing_tracker, log_metrics

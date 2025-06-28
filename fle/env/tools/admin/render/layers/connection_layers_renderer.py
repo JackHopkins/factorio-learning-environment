@@ -1,7 +1,7 @@
 from typing import Dict, Callable, List
 from PIL import ImageDraw
 
-from env.entities import Entity, UndergroundBelt, Pipe
+from fle.env import Entity, UndergroundBelt, Pipe
 from env.tools.admin.render.layers.layer_renderer import LayerRenderer
 
 

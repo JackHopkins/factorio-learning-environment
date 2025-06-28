@@ -1,6 +1,6 @@
 
 
-from env.entities import Position, Entity, Direction as DirectionA
+from fle.env import Position, Entity, Direction as DirectionA
 from env.instance import Direction
 from env.game_types import Prototype
 from env.tools.tool import Tool

@@ -2,7 +2,7 @@ from statistics import mean
 from typing import List, Union
 from typing_extensions import deprecated, cast
 
-from env.entities import TransportBelt, BeltGroup, Position, Entity, EntityGroup, PipeGroup, Inventory, \
+from fle.env import TransportBelt, BeltGroup, Position, Entity, EntityGroup, PipeGroup, Inventory, \
     EntityStatus, Pipe, ElectricityGroup, UndergroundBelt, Direction, WallGroup
 from env.game_types import Prototype
 

@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 from agents.utils.llm_factory import LLMFactory
 from cluster.local.cluster_ips import get_local_container_ips
-from env.instance import FactorioInstance
+from fle.env import FactorioInstance
 from eval.open.beam.beam_search_milestones import MilestonesBeamSearchExecutor
 from eval.open.db_client import DBClient
 from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter

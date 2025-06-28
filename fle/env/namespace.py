@@ -13,7 +13,7 @@ import uuid
 import logging
 
 from env.exceptions.hinting_name_error import get_value_type_str
-from env.entities import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe, BuildingBox, PipeGroup, \
+from fle.env import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe, BuildingBox, PipeGroup, \
     ElectricityGroup, Pipe, Entity
 
 from env.game_types import Prototype, Resource, Technology, prototype_by_name, RecipeName

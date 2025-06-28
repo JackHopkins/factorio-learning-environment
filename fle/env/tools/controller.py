@@ -4,7 +4,7 @@ from typing import List, Tuple, Dict, Any
 
 from slpp import slpp as lua, ParseError
 
-from env.entities import EntityStatus, Direction
+from fle.env import EntityStatus, Direction
 from env.lua_manager import LuaScriptManager
 from env.namespace import FactorioNamespace
 from env.utils.rcon import _lua2python

@@ -3,7 +3,7 @@ from typing import Union, Optional, List, Dict, cast, Set
 
 import numpy
 
-from env.entities import EntityGroup, Entity, Position, BeltGroup, PipeGroup, ElectricityGroup, TransportBelt, \
+from fle.env import EntityGroup, Entity, Position, BeltGroup, PipeGroup, ElectricityGroup, TransportBelt, \
     Pipe, FluidHandler, MiningDrill, Inserter, ChemicalPlant, OilRefinery, MultiFluidHandler
 from env.instance import Direction
 from env.game_types import Prototype, prototype_by_name

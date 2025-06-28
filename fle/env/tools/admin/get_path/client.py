@@ -2,7 +2,7 @@ import json
 import time
 from typing import List
 
-from env.entities import Position
+from fle.env import Position
 from env.tools.tool import Tool
 
 

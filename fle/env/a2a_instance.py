@@ -2,7 +2,7 @@ import logging
 import asyncio
 from typing import Optional, List
 from threading import Lock
-from env.instance import FactorioInstance
+from fle.env import FactorioInstance
 from env.a2a_namespace import A2AFactorioNamespace
 from env.protocols.a2a.server import ServerManager
 from a2a.types import AgentCard

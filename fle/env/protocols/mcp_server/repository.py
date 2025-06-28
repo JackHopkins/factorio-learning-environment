@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from dulwich.objects import Blob, Tree, Commit
 from dulwich.repo import Repo, MemoryRepo
 
-from env.instance import FactorioInstance
+from fle.env import FactorioInstance
 from env.models.game_state import GameState
 
 

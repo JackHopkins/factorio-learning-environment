@@ -1,6 +1,6 @@
 from time import sleep
 
-from env.entities import Position
+from fle.env import Position
 from env.game_types import Resource
 from env.tools.agent.get_entity.client import GetEntity
 from env.tools.agent.move_to.client import MoveTo

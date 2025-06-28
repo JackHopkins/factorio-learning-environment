@@ -16,7 +16,7 @@ class EntityCategoriser:
         Returns:
             String representing the entity category
         """
-        from env.entities import (
+        from fle.env import (
             TransportBelt, Splitter, UndergroundBelt, BeltGroup,  # Belt category
             Inserter, FilterInserter, BurnerInserter,  # Inserter category
             ElectricalProducer, ElectricityPole, Accumulator, Generator, ElectricityGroup,  # Power category

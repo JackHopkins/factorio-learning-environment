@@ -1,6 +1,6 @@
 from time import sleep
 from typing import List, Set, Union
-from env.entities import Position, Entity, EntityGroup
+from fle.env import Position, Entity, EntityGroup
 from env.game_types import Prototype
 from env.tools.agent.connect_entities.groupable_entities import agglomerate_groupable_entities
 from env.tools.tool import Tool

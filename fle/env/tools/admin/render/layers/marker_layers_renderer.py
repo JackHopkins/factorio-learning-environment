@@ -1,7 +1,7 @@
 from typing import Dict, Callable, Any
 from PIL import ImageDraw, ImageFont
 
-from env.entities import Position, Layer
+from fle.env import Position, Layer
 from env.tools.admin.render.layers.layer_renderer import LayerRenderer
 
 

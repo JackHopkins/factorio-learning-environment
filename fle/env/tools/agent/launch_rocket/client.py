@@ -1,6 +1,6 @@
 from typing import Union, cast
 
-from env.entities import Position, RocketSilo
+from fle.env import Position, RocketSilo
 from env.game_types import Prototype
 from env.tools.agent.get_entity.client import GetEntity
 from env.tools.tool import Tool

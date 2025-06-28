@@ -23,7 +23,7 @@ import uuid
 from dotenv import load_dotenv
 from slpp import slpp as lua
 
-from env.entities import *
+from fle.env import *
 from env.lua_manager import LuaScriptManager
 from env.models.camera import Camera
 from env.namespace import FactorioNamespace

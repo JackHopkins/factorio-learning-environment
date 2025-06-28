@@ -1,4 +1,4 @@
-from env.entities import Entity, Direction as DirectionA, \
+from fle.env import Entity, Direction as DirectionA, \
     AssemblingMachine  # We have 2 Direction objects to avoid circular deps
 from env.instance import Direction
 from env.game_types import prototype_by_name

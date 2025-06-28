@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from gym_env.environment import FactorioGymEnv
 from gym_env.config import GymRunConfig
 from eval.tasks.task_factory import TaskFactory
-from env.instance import FactorioInstance
+from fle.env import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
 
 

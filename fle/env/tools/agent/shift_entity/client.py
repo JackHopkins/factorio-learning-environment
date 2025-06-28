@@ -1,7 +1,7 @@
 
 from typing import Union
 
-from env.entities import Entity, Direction
+from fle.env import Entity, Direction
 from env.game_types import prototype_by_name, prototype_by_title, Prototype
 from env.instance import Direction as DirectionA
 from env.tools.agent.can_place_entity.client import CanPlaceEntity

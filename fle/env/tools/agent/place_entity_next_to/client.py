@@ -1,6 +1,6 @@
 import math
 
-from env.entities import Position, Entity
+from fle.env import Position, Entity
 from env.instance import Direction
 from env.game_types import Prototype
 from env.tools.tool import Tool

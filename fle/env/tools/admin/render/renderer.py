@@ -2,7 +2,7 @@ from PIL import Image, ImageDraw, ImageFont
 import math
 from typing import List, Dict, Optional, Tuple, Any, Set
 
-from env.entities import Entity, Position, BoundingBox, Layer, EntityStatus
+from fle.env import Entity, Position, BoundingBox, Layer, EntityStatus
 from env.tools.admin.render.layers.connection_layers_renderer import ConnectionsLayerRenderer
 from env.tools.admin.render.layers.marker_layers_renderer import MarkersLayerRenderer
 from env.tools.admin.render.layers.resource_layer_renderer import ResourcesLayerRenderer

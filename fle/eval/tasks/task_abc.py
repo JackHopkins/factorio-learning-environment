@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
-from env.entities import Inventory, Entity
-from env.instance import FactorioInstance
+from fle.env import Inventory, Entity
+from fle.env import FactorioInstance
 from agents import TaskResponse
 from env.models.game_state import GameState
 class TaskABC:

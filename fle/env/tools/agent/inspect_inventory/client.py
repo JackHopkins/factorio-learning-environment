@@ -1,6 +1,6 @@
 from typing import Tuple, List, Union
 
-from env.entities import Inventory, Entity, Position
+from fle.env import Inventory, Entity, Position
 from env.tools.tool import Tool
 
 

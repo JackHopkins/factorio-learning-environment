@@ -5,7 +5,7 @@ import psycopg2
 from dotenv import load_dotenv
 
 from data.screenshots_to_mp4 import png_to_mp4
-from env.instance import FactorioInstance
+from fle.env import FactorioInstance
 from env.models.program import Program
 from cluster.local.cluster_ips import get_local_container_ips
 

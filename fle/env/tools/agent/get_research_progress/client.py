@@ -1,5 +1,5 @@
 from typing import Optional, List
-from env.entities import Ingredient
+from fle.env import Ingredient
 from env.game_types import Technology, Prototype
 from env.tools.tool import Tool
 

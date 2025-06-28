@@ -1,7 +1,7 @@
 from typing import Optional, Dict
 import math
 
-from env.entities import BoundingBox, Position, BeltGroup, PipeGroup, \
+from fle.env import BoundingBox, Position, BeltGroup, PipeGroup, \
     ElectricityGroup, Layer
 from env.tools.admin.render.rendered_image import RenderedImage
 from env.tools.admin.render.renderer import Renderer

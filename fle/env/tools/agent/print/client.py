@@ -1,6 +1,6 @@
 from typing import Any, List
 
-from env.entities import Entity, Inventory, Position
+from fle.env import Entity, Inventory, Position
 from env.tools.tool import Tool
 
 

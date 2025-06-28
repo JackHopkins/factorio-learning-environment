@@ -1,7 +1,7 @@
 import math
 from typing import Union
 
-from env.entities import Position, ResourcePatch
+from fle.env import Position, ResourcePatch
 from env.game_types import Prototype, Resource
 from env.tools.tool import Tool
 

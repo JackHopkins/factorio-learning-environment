@@ -1,4 +1,4 @@
-from env.entities import BoundingBox, Position
+from fle.env import BoundingBox, Position
 from env.models.camera import Camera
 from env.tools.tool import Tool
 

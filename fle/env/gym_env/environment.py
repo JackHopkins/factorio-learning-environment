@@ -8,11 +8,11 @@ import pickle
 import datetime
 import string
 
-from env.instance import FactorioInstance
+from fle.env import FactorioInstance
 from env.models.game_state import GameState
 from env.gym_env.action import Action
 from env.models.achievements import ProductionFlows
-from env.entities import EntityStatus
+from fle.env import EntityStatus
 from env.utils.profits import get_achievements
 from agents import Response, TaskResponse
 from env.gym_env.observation import (

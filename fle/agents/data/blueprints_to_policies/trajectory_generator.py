@@ -4,8 +4,8 @@ import textwrap
 
 from jinja2 import Template
 
-from env.entities import Position, BoundingBox, EntityGroup
-from env.instance import FactorioInstance, Direction
+from fle.env import Position, BoundingBox, EntityGroup
+from fle.env import FactorioInstance, Direction
 from env.game_types import Resource, prototype_by_name
 
 from enum import Enum

@@ -1,7 +1,7 @@
 
 from typing import Tuple, List, Union
 
-from env.entities import Entity, Position, EntityGroup
+from fle.env import Entity, Position, EntityGroup
 from env.game_types import Prototype
 from env.tools.agent.connect_entities.client import ConnectEntities
 from env.tools.tool import Tool

@@ -1,6 +1,6 @@
 from typing import List, Tuple, Optional, Dict, Callable
 
-from env.entities import Entity, Position, BoundingBox, Direction
+from fle.env import Entity, Position, BoundingBox, Direction
 from env.tools.admin.render.utils.render_config import RenderConfig
 
 

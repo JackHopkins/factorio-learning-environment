@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Union, Optional
-from env.instance import FactorioInstance
+from fle.env import FactorioInstance
 from eval.tasks.task_abc import TaskABC
 from agents import TaskResponse
 

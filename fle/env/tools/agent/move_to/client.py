@@ -1,7 +1,7 @@
 import math
 from time import sleep
 
-from env.entities import Position
+from fle.env import Position
 from env.instance import NONE
 from env.game_types import Prototype
 from env.tools.admin.get_path.client import GetPath

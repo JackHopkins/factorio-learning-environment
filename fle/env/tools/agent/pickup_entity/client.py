@@ -1,6 +1,6 @@
 from typing import Tuple, Union, Optional
 
-from env.entities import Position, Entity, BeltGroup, PipeGroup, EntityGroup, UndergroundBelt, Direction, ElectricityGroup
+from fle.env import Position, Entity, BeltGroup, PipeGroup, EntityGroup, UndergroundBelt, Direction, ElectricityGroup
 from env.game_types import Prototype
 from env.tools.tool import Tool
 

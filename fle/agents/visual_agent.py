@@ -12,7 +12,7 @@ from agents.utils.parse_response import parse_response
 from models.conversation import Conversation
 from models.generation_parameters import GenerationParameters
 from tenacity import wait_exponential, retry_if_exception_type
-from env.entities import Layer, Position, BoundingBox
+from fle.env import Layer, Position, BoundingBox
 from namespace import FactorioNamespace
 
 from env.tools.admin.render.client import Render

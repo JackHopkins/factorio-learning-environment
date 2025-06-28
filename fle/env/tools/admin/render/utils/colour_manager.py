@@ -2,7 +2,7 @@ import colorsys
 from typing import Dict, List, Tuple, Optional
 from collections import defaultdict
 
-from env.entities import Entity, EntityStatus
+from fle.env import Entity, EntityStatus
 from env.game_types import prototype_by_name
 from env.tools.admin.render.utils.render_config import RenderConfig
 from env.tools.admin.render.utils.entity_categoriser import EntityCategoriser

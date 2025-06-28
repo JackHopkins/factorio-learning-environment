@@ -1,7 +1,7 @@
 from functools import wraps
 from typing import Tuple, Union
 
-from env.entities import Position, Entity
+from fle.env import Position, Entity
 from env.namespace import FactorioNamespace
 from env.tools.controller import Controller
 

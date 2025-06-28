@@ -1,5 +1,5 @@
 from typing import Union, Tuple, List, Set
-from env.entities import Position, Entity, ElectricityGroup
+from fle.env import Position, Entity, ElectricityGroup
 from env.tools.agent.connect_entities.resolver import Resolver
 
 

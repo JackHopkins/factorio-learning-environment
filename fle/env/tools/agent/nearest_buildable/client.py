@@ -1,7 +1,7 @@
 import math
 from typing import Optional
 
-from env.entities import Position, BuildingBox, BoundingBox
+from fle.env import Position, BuildingBox, BoundingBox
 from env.game_types import Prototype
 from env.tools.tool import Tool
 

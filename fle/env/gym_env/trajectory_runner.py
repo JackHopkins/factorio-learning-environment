@@ -12,7 +12,7 @@ from env.gym_env.observation import Observation
 from env.gym_env.action import Action
 from env.gym_env.trajectory_logger import TrajectoryLogger
 from env.gym_env.config import GymEvalConfig
-from eval.open.db_client import PostgresDBClient
+from fle.commons.db_client import PostgresDBClient
 
 class GymTrajectoryRunner:
     """Handles program generation and evaluation for a single trajectory in the gym environment"""

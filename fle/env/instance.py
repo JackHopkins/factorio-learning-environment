@@ -17,22 +17,23 @@ from concurrent.futures import TimeoutError
 from pathlib import Path
 import logging
 from timeit import default_timer as timer
-from typing_extensions import deprecated
+from typing_extensions import deprecated, Optional, List, Dict, Any, Enum
 import uuid
 
 from dotenv import load_dotenv
 from slpp import slpp as lua
 
-from fle.env import *
-from env.lua_manager import LuaScriptManager
-from env.models.camera import Camera
-from env.namespace import FactorioNamespace
-from env.utils.rcon import _lua2python, _get_dir
-from env.transaction import FactorioTransaction
-from env.models.research_state import ResearchState
-from env.rcon.factorio_rcon import RCONClient
-from env.models.game_state import GameState
-from env.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
+from .entities import BoundingBox
+
+from .lua_manager import LuaScriptManager
+from .models.camera import Camera
+from .namespace import FactorioNamespace
+from .utils.rcon import _lua2python, _get_dir
+from .transaction import FactorioTransaction
+from .models.research_state import ResearchState
+from .rcon.factorio_rcon import RCONClient
+from .models.game_state import GameState
+from .utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000

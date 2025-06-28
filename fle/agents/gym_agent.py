@@ -7,10 +7,10 @@ from agents.agent_abc import AgentABC
 from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
 from agents.utils.llm_factory import LLMFactory
 from agents.utils.parse_response import parse_response
-from env.src.models.conversation import Conversation
-from env.src.models.generation_parameters import GenerationParameters
-from env.src.models.program import Program
-from env.src.gym_env.observation import Observation
+from env.models.conversation import Conversation
+from env.models.generation_parameters import GenerationParameters
+from env.models.program import Program
+from env.gym_env.observation import Observation
 from eval.tasks.task_abc import TaskABC
 
 GYM_AGENT_INSTRUCTIONS = \

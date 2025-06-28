@@ -2,8 +2,8 @@ import json
 import time
 from typing import List
 
-from env.src.entities import Position
-from env.src.tools.tool import Tool
+from env.entities import Position
+from env.tools.tool import Tool
 
 
 class GetPath(Tool):

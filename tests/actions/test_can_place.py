@@ -1,8 +1,8 @@
 import pytest
 from scipy.optimize import direct
 
-from env.src.entities import Position, Direction
-from env.src.game_types import Prototype, Resource
+from env.entities import Position, Direction
+from env.game_types import Prototype, Resource
 
 
 @pytest.fixture()

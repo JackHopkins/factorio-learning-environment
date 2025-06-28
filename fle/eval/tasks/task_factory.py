@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
-from env.src.entities import Inventory, Entity
-from env.src.instance import FactorioInstance
+from env.entities import Inventory, Entity
+from env.instance import FactorioInstance
 from eval.tasks.throughput_task import ThroughputTask
 from eval.tasks.default_task import DefaultTask
 from eval.tasks.task_abc import TaskABC

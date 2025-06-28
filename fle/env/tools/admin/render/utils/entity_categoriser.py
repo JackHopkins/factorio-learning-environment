@@ -1,4 +1,4 @@
-from env.src.game_types import Prototype
+from env.game_types import Prototype
 
 
 class EntityCategoriser:
@@ -16,7 +16,7 @@ class EntityCategoriser:
         Returns:
             String representing the entity category
         """
-        from env.src.entities import (
+        from env.entities import (
             TransportBelt, Splitter, UndergroundBelt, BeltGroup,  # Belt category
             Inserter, FilterInserter, BurnerInserter,  # Inserter category
             ElectricalProducer, ElectricityPole, Accumulator, Generator, ElectricityGroup,  # Power category

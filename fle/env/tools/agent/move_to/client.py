@@ -1,13 +1,13 @@
 import math
 from time import sleep
 
-from env.src.entities import Position
-from env.src.instance import NONE
-from env.src.game_types import Prototype
-from env.src.tools.admin.get_path.client import GetPath
-from env.src.tools.admin.request_path.client import RequestPath
-from env.src.tools.tool import Tool
-from env.src.lua_manager import LuaScriptManager
+from env.entities import Position
+from env.instance import NONE
+from env.game_types import Prototype
+from env.tools.admin.get_path.client import GetPath
+from env.tools.admin.request_path.client import RequestPath
+from env.tools.tool import Tool
+from env.lua_manager import LuaScriptManager
 
 
 class MoveTo(Tool):

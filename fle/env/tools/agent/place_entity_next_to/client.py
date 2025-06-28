@@ -1,9 +1,9 @@
 import math
 
-from env.src.entities import Position, Entity
-from env.src.instance import Direction
-from env.src.game_types import Prototype
-from env.src.tools.tool import Tool
+from env.entities import Position, Entity
+from env.instance import Direction
+from env.game_types import Prototype
+from env.tools.tool import Tool
 
 
 class PlaceEntityNextTo(Tool):

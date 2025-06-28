@@ -1,9 +1,9 @@
 from typing import Union, cast
 
-from env.src.entities import Position, RocketSilo
-from env.src.game_types import Prototype
-from env.src.tools.agent.get_entity.client import GetEntity
-from env.src.tools.tool import Tool
+from env.entities import Position, RocketSilo
+from env.game_types import Prototype
+from env.tools.agent.get_entity.client import GetEntity
+from env.tools.tool import Tool
 
 
 class LaunchRocket(Tool):

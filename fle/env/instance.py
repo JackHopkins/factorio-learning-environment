@@ -23,16 +23,16 @@ import uuid
 from dotenv import load_dotenv
 from slpp import slpp as lua
 
-from env.src.entities import *
-from env.src.lua_manager import LuaScriptManager
-from env.src.models.camera import Camera
-from env.src.namespace import FactorioNamespace
-from env.src.utils.rcon import _lua2python, _get_dir
-from env.src.transaction import FactorioTransaction
-from env.src.models.research_state import ResearchState
-from env.src.rcon.factorio_rcon import RCONClient
-from env.src.models.game_state import GameState
-from env.src.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
+from env.entities import *
+from env.lua_manager import LuaScriptManager
+from env.models.camera import Camera
+from env.namespace import FactorioNamespace
+from env.utils.rcon import _lua2python, _get_dir
+from env.transaction import FactorioTransaction
+from env.models.research_state import ResearchState
+from env.rcon.factorio_rcon import RCONClient
+from env.models.game_state import GameState
+from env.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000

@@ -7,8 +7,8 @@ import time
 from dataclasses import dataclass
 from typing import Optional, Dict, List
 import multiprocessing
-from env.src.a2a_instance import A2AFactorioInstance
-from env.src.a2a_namespace import A2AFactorioNamespace
+from env.a2a_instance import A2AFactorioInstance
+from env.a2a_namespace import A2AFactorioNamespace
 from dotenv import load_dotenv
 
 from agents import CompletionResult, CompletionReason
@@ -16,16 +16,16 @@ from agents.agent_abc import AgentABC
 from agents.basic_agent import BasicAgent
 from eval.open.db_client import DBClient, create_db_client
 from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
-from env.src.models.conversation import Conversation
-from env.src.models.message import Message
-from env.src.models.program import Program
-from env.src.instance import FactorioInstance
+from env.models.conversation import Conversation
+from env.models.message import Message
+from env.models.program import Program
+from env.instance import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
 from agents.utils.python_parser import PythonParser
 from agents.utils.metrics import timing_tracker, log_metrics
 #from models.response import EnvironmentResponse
-from env.src.namespace import FactorioNamespace
-from env.src.protocols.a2a.handler import A2AMessage
+from env.namespace import FactorioNamespace
+from env.protocols.a2a.handler import A2AMessage
 from a2a.types import AgentCard
 
 from agents import Response

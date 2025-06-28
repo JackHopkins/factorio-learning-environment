@@ -1,11 +1,11 @@
 from time import sleep
 
-from env.src.entities import Position
-from env.src.game_types import Resource
-from env.src.tools.agent.get_entity.client import GetEntity
-from env.src.tools.agent.move_to.client import MoveTo
-from env.src.tools.agent.nearest.client import Nearest
-from env.src.tools.tool import Tool
+from env.entities import Position
+from env.game_types import Resource
+from env.tools.agent.get_entity.client import GetEntity
+from env.tools.agent.move_to.client import MoveTo
+from env.tools.agent.nearest.client import Nearest
+from env.tools.tool import Tool
 
 
 class HarvestResource(Tool):

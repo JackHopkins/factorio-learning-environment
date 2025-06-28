@@ -1,7 +1,7 @@
 import pytest
 
-from env.src.entities import BuildingBox, Position, Direction
-from env.src.game_types import Resource, Prototype
+from env.entities import BuildingBox, Position, Direction
+from env.game_types import Resource, Prototype
 
 
 @pytest.fixture()

@@ -1,8 +1,8 @@
 import pytest
 from time import sleep
-from env.src.entities import Position, ResourcePatch
-from env.src.instance import Direction
-from env.src.game_types import Prototype, Resource
+from env.entities import Position, ResourcePatch
+from env.instance import Direction
+from env.game_types import Prototype, Resource
 
 
 @pytest.fixture()

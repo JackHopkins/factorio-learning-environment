@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
 
-from env.src.models.game_state import GameState
+from env.models.game_state import GameState
 
 
 @dataclass

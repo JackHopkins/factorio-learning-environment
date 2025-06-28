@@ -1,7 +1,7 @@
 import pytest
 
-from env.src.entities import Position, UndergroundBelt
-from env.src.game_types import Prototype
+from env.entities import Position, UndergroundBelt
+from env.game_types import Prototype
 
 
 @pytest.fixture()

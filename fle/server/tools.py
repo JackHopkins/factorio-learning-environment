@@ -3,9 +3,9 @@ from pathlib import Path
 from typing import Dict
 
 from mcp.server.fastmcp import Image
-from env.src.entities import Position
-from env.src.models.game_state import GameState
-from env.src.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
+from env.entities import Position
+from env.models.game_state import GameState
+from env.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 from server import mcp
 from server.init import state, initialize_session
 

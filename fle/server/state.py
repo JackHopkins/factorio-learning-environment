@@ -3,7 +3,7 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
-from env.src.instance import FactorioInstance
+from env.instance import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
 
 from server.models import FactorioServer, Recipe, ResourcePatch

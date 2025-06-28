@@ -1,9 +1,9 @@
 from typing import Union, Tuple, cast, List, Optional
 
-from env.src.entities import FluidHandler, Position, Entity, Generator, Boiler, OffshorePump, Pipe, OilRefinery, \
+from env.entities import FluidHandler, Position, Entity, Generator, Boiler, OffshorePump, Pipe, OilRefinery, \
     ChemicalPlant, IndexedPosition, MultiFluidHandler, PipeGroup, PumpJack, AdvancedAssemblingMachine
-from env.src.game_types import Prototype, prototype_by_name
-from env.src.tools.agent.connect_entities.resolver import Resolver
+from env.game_types import Prototype, prototype_by_name
+from env.tools.agent.connect_entities.resolver import Resolver
 
 
 class FluidConnectionResolver(Resolver):

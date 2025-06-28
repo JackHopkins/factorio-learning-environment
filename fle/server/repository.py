@@ -6,8 +6,8 @@ from typing import Dict, List, Optional, Tuple, Any
 from dulwich.objects import Blob, Tree, Commit
 from dulwich.repo import Repo, MemoryRepo
 
-from env.src.instance import FactorioInstance
-from env.src.models.game_state import GameState
+from env.instance import FactorioInstance
+from env.models.game_state import GameState
 
 
 class FactorioMCPRepository:

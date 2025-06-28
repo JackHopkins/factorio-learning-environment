@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from env.src.utils.controller_loader.code_analyzer import CodeAnalyzer
-from env.src.utils.controller_loader.manual_generator import ManualGenerator
-from env.src.utils.controller_loader.schema_generator import SchemaGenerator
-from env.src.utils.controller_loader.type_definition_processor import TypeDefinitionProcessor
+from env.utils.controller_loader.code_analyzer import CodeAnalyzer
+from env.utils.controller_loader.manual_generator import ManualGenerator
+from env.utils.controller_loader.schema_generator import SchemaGenerator
+from env.utils.controller_loader.type_definition_processor import TypeDefinitionProcessor
 
 class SystemPromptGenerator:
     """Generates system prompts for the Factorio environment."""

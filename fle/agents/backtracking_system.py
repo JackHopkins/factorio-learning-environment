@@ -7,12 +7,12 @@ from agents.backtracking_agent import BacktrackingAgent
 from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
 from agents.utils.llm_factory import LLMFactory
 from agents.utils.parse_response import parse_response
-from env.src.models.conversation import Conversation
-from env.src.models.message import Message
-from env.src.models.generation_parameters import GenerationParameters
+from env.models.conversation import Conversation
+from env.models.message import Message
+from env.models.generation_parameters import GenerationParameters
 from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
 from collections import deque
-from env.src.namespace import FactorioNamespace
+from env.namespace import FactorioNamespace
 from typing import Optional
 import copy
 

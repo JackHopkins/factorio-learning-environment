@@ -4,8 +4,8 @@ import uuid
 from a2a.types import Message, Part, TextPart, AgentCard
 
 from agents.agent_abc import create_default_agent_card
-from env.src.namespace import FactorioNamespace
-from env.src.protocols.a2a.handler import A2AProtocolHandler
+from env.namespace import FactorioNamespace
+from env.protocols.a2a.handler import A2AProtocolHandler
 
 class A2AFactorioNamespace(FactorioNamespace):
     """A FactorioNamespace with A2A (Agent-to-Agent) communication support."""

@@ -18,7 +18,7 @@ from eval.open.mcts.parallel_supervised_config import SupervisedExecutorConfig
 from eval.open.mcts.planning_models import PlanOutput, TaskOutput, Step, LanguageOutput, InitialPlanOutput
 from models.game_state import GameState
 from models.program import Program
-from env.src.instance import FactorioInstance
+from env.instance import FactorioInstance
 from eval.tasks.task_abc import TaskABC
 logger = logging.basicConfig(level=logging.INFO)
 from abc import ABC, abstractmethod

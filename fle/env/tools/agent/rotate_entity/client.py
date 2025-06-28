@@ -1,8 +1,8 @@
-from env.src.entities import Entity, Direction as DirectionA, \
+from env.entities import Entity, Direction as DirectionA, \
     AssemblingMachine  # We have 2 Direction objects to avoid circular deps
-from env.src.instance import Direction
-from env.src.game_types import prototype_by_name
-from env.src.tools.tool import Tool
+from env.instance import Direction
+from env.game_types import prototype_by_name
+from env.tools.tool import Tool
 
 
 class RotateEntity(Tool):

@@ -2,11 +2,11 @@ from typing import Dict, Any, List, Optional, Union, Tuple
 from dataclasses import dataclass
 import numpy as np
 import json
-from env.src.models.technology_state import TechnologyState
-from env.src.models.research_state import ResearchState
-from env.src.models.achievements import ProductionFlows
+from env.models.technology_state import TechnologyState
+from env.models.research_state import ResearchState
+from env.models.achievements import ProductionFlows
 from agents import TaskResponse
-from env.src.entities import Entity, Direction, Position, EntityStatus, TileDimensions, Dimensions, Inventory, EntityGroup
+from env.entities import Entity, Direction, Position, EntityStatus, TileDimensions, Dimensions, Inventory, EntityGroup
 
 @dataclass
 class GameInfo:

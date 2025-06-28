@@ -1,7 +1,7 @@
 import pytest
 
-from env.src.entities import Position, Direction, BeltGroup, PipeGroup, BuildingBox
-from env.src.game_types import Prototype, Resource
+from env.entities import Position, Direction, BeltGroup, PipeGroup, BuildingBox
+from env.game_types import Prototype, Resource
 
 @pytest.fixture()
 def game(instance):

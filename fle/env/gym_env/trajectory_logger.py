@@ -4,8 +4,8 @@ import multiprocessing
 from typing import List, Optional
 
 from agents.gym_agent import GymAgent
-from env.src.models.program import Program
-from env.src.gym_env.observation import Observation
+from env.models.program import Program
+from env.gym_env.observation import Observation
 
 
 class TrajectoryLogger:

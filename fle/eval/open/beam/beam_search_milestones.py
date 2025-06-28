@@ -6,7 +6,7 @@ from eval.open.mcts.supervised_task_executor_abc import SupervisedTaskExecutorAB
 from eval.open.mcts.planning_models import PlanOutput, TaskOutput, Step, InitialPlanOutput
 from models.game_state import GameState
 from models.program import Program
-from env.src.instance import FactorioInstance
+from env.instance import FactorioInstance
 from eval.open.mcts.parallel_supervised_config import SupervisedExecutorConfig
 from models.conversation import Conversation
 from models.message import Message

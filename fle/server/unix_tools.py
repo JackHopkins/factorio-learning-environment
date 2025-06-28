@@ -6,7 +6,7 @@ import os
 import re
 from pathlib import Path
 
-from env.src.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
+from env.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 from server import mcp
 
 

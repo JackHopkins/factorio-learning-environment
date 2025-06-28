@@ -1,8 +1,8 @@
 import pytest
 
-from env.src.entities import Position, Direction, Entity
-from env.src.game_types import Prototype, RecipeName, prototype_by_name, Resource
-from env.src.instance import FactorioInstance
+from env.entities import Position, Direction, Entity
+from env.game_types import Prototype, RecipeName, prototype_by_name, Resource
+from env.instance import FactorioInstance
 
 
 @pytest.fixture()

@@ -1,5 +1,5 @@
 from typing import Dict, Optional, Tuple, Any
-from env.src.entities import EntityStatus
+from env.entities import EntityStatus
 
 
 class RenderConfig:

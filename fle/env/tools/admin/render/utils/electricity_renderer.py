@@ -3,8 +3,8 @@ import colorsys
 from typing import Dict, Callable, List
 from PIL import ImageDraw, ImageColor
 
-from env.src.entities import Layer
-from env.src.tools.admin.render.layers.layer_renderer import LayerRenderer
+from env.entities import Layer
+from env.tools.admin.render.layers.layer_renderer import LayerRenderer
 
 
 class ElectricityLayerRenderer(LayerRenderer):

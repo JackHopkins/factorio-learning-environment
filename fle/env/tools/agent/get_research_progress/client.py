@@ -1,7 +1,7 @@
 from typing import Optional, List
-from env.src.entities import Ingredient
-from env.src.game_types import Technology, Prototype
-from env.src.tools.tool import Tool
+from env.entities import Ingredient
+from env.game_types import Technology, Prototype
+from env.tools.tool import Tool
 
 
 class GetResearchProgress(Tool):

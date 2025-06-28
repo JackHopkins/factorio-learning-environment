@@ -4,10 +4,10 @@ from typing import List, Tuple, Dict, Any
 
 from slpp import slpp as lua, ParseError
 
-from env.src.entities import EntityStatus, Direction
-from env.src.lua_manager import LuaScriptManager
-from env.src.namespace import FactorioNamespace
-from env.src.utils.rcon import _lua2python
+from env.entities import EntityStatus, Direction
+from env.lua_manager import LuaScriptManager
+from env.namespace import FactorioNamespace
+from env.utils.rcon import _lua2python
 
 COMMAND = "/silent-command"
 

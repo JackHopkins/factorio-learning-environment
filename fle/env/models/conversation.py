@@ -2,7 +2,7 @@ from typing import Dict, List, Any
 
 from pydantic import BaseModel, Field
 
-from env.src.models.message import Message
+from env.models.message import Message
 
 
 class Conversation(BaseModel):

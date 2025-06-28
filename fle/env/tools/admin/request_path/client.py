@@ -1,7 +1,7 @@
 import time
 
-from env.src.entities import Position
-from env.src.tools.tool import Tool
+from env.entities import Position
+from env.tools.tool import Tool
 
 
 class RequestPath(Tool):

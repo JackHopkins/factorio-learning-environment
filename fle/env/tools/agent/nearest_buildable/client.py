@@ -1,9 +1,9 @@
 import math
 from typing import Optional
 
-from env.src.entities import Position, BuildingBox, BoundingBox
-from env.src.game_types import Prototype
-from env.src.tools.tool import Tool
+from env.entities import Position, BuildingBox, BoundingBox
+from env.game_types import Prototype
+from env.tools.tool import Tool
 
 
 class NearestBuildable(Tool):

@@ -1,4 +1,4 @@
-from env.src.tools.controller import Controller
+from env.tools.controller import Controller
 
 class Init(Controller):
 

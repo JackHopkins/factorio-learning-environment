@@ -4,10 +4,10 @@ from timeit import default_timer as timer
 import numpy as np
 from numpy import ndarray, zeros
 
-from env.src.instance import CHUNK_SIZE, MAX_SAMPLES
+from env.instance import CHUNK_SIZE, MAX_SAMPLES
 #from gym.utils import stitch
 #from gym.observation_state import FIELDS, ObservationState
-from env.src.tools.tool import Tool
+from env.tools.tool import Tool
 
 
 class ObserveAll(Tool):

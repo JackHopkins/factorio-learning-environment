@@ -1,8 +1,8 @@
 from typing import Any, Dict, List, Union, Optional
-from env.src.entities import Inventory, Entity
-from env.src.instance import FactorioInstance
+from env.entities import Inventory, Entity
+from env.instance import FactorioInstance
 from eval.tasks.task_abc import TaskABC
-from env.src.utils.achievements import eval_program_with_achievements
+from env.utils.achievements import eval_program_with_achievements
 from agents import TaskResponse
 
 LAB_PLAY_POPULATED_STARTING_INVENTORY = {"coal": 500, "burner-mining-drill": 50, "wooden-chest": 10, "burner-inserter": 50,"inserter": 50, "transport-belt": 500,

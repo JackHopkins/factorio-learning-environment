@@ -1,8 +1,8 @@
 import unittest
 
-from env.src.instance import FactorioInstance
-from env.src.utils.rcon import _lua2python
-from env.src.game_types import Resource
+from env.instance import FactorioInstance
+from env.utils.rcon import _lua2python
+from env.game_types import Resource
 
 class TestProductionStats(unittest.TestCase):
     def test_production_stats(self):

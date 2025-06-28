@@ -4,11 +4,11 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 from tools.agent.send_message.client import SendMessage
-from env.src.a2a_instance import A2AFactorioInstance
+from env.a2a_instance import A2AFactorioInstance
 from eval.open.independent_runs.trajectory_runner import TrajectoryRunner
-from env.src.models.conversation import Conversation
-from env.src.models.message import Message
-from env.src.models.game_state import GameState
+from env.models.conversation import Conversation
+from env.models.message import Message
+from env.models.game_state import GameState
 from agents.agent_abc import AgentABC
 from agents.basic_agent import BasicAgent
 from eval.open.db_client import PostgresDBClient

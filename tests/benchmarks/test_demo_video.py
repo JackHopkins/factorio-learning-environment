@@ -3,9 +3,9 @@ import time
 
 import pytest
 
-from env.src.entities import Position
-from env.src.instance import FactorioInstance
-from env.src.game_types import Prototype
+from env.entities import Position
+from env.instance import FactorioInstance
+from env.game_types import Prototype
 
 @pytest.fixture()
 def game():

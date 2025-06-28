@@ -1,6 +1,6 @@
 import math
 
-from env.src.tools.init import Init
+from env.tools.init import Init
 
 
 class ClearEntities(Init):

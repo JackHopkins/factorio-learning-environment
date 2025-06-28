@@ -4,9 +4,9 @@ from typing import List
 
 import pytest
 
-from env.src.entities import Entity, Position, ResourcePatch, BeltGroup
-from env.src.instance import Direction
-from env.src.game_types import Prototype, Resource
+from env.entities import Entity, Position, ResourcePatch, BeltGroup
+from env.instance import Direction
+from env.game_types import Prototype, Resource
 
 
 @pytest.fixture()

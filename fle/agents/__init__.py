@@ -2,9 +2,9 @@ import ast
 import enum
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field
-from env.src.models.achievements import ProductionFlows
+from env.models.achievements import ProductionFlows
 import datetime
-from env.src.models.conversation import Conversation
+from env.models.conversation import Conversation
 import time
 
 class TimingMetrics(BaseModel):

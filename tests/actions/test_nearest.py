@@ -1,7 +1,7 @@
 import pytest
 
-from env.src.entities import Position
-from env.src.game_types import Resource
+from env.entities import Position
+from env.game_types import Resource
 
 @pytest.fixture()
 def game(instance):

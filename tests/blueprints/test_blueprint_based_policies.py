@@ -1,8 +1,8 @@
 import pytest
 
-from env.src.entities import Position, BoundingBox
-from env.src.instance import Direction
-from env.src.game_types import Prototype, Resource
+from env.entities import Position, BoundingBox
+from env.instance import Direction
+from env.game_types import Prototype, Resource
 
 @pytest.fixture()
 def game(instance):

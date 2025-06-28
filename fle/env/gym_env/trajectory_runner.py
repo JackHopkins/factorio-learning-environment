@@ -4,14 +4,14 @@ from typing import List, Optional, Dict, Any, Tuple
 
 from agents.gym_agent import GymAgent
 from agents import Policy, CompletionResult, CompletionReason
-from env.src.models.program import Program
-from env.src.models.game_state import GameState
-from env.src.models.conversation import Conversation
-from env.src.gym_env.environment import FactorioGymEnv
-from env.src.gym_env.observation import Observation
-from env.src.gym_env.action import Action
-from env.src.gym_env.trajectory_logger import TrajectoryLogger
-from env.src.gym_env.config import GymEvalConfig
+from env.models.program import Program
+from env.models.game_state import GameState
+from env.models.conversation import Conversation
+from env.gym_env.environment import FactorioGymEnv
+from env.gym_env.observation import Observation
+from env.gym_env.action import Action
+from env.gym_env.trajectory_logger import TrajectoryLogger
+from env.gym_env.config import GymEvalConfig
 from eval.open.db_client import PostgresDBClient
 
 class GymTrajectoryRunner:

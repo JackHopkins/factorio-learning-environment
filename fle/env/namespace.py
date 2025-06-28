@@ -12,12 +12,12 @@ from pydantic import BaseModel
 import uuid
 import logging
 
-from env.src.exceptions.hinting_name_error import get_value_type_str
-from env.src.entities import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe, BuildingBox, PipeGroup, \
+from env.exceptions.hinting_name_error import get_value_type_str
+from env.entities import Position, Direction, EntityStatus, BoundingBox, BeltGroup, Recipe, BuildingBox, PipeGroup, \
     ElectricityGroup, Pipe, Entity
 
-from env.src.game_types import Prototype, Resource, Technology, prototype_by_name, RecipeName
-from env.src.models.serializable_function import SerializableFunction
+from env.game_types import Prototype, Resource, Technology, prototype_by_name, RecipeName
+from env.models.serializable_function import SerializableFunction
 
 
 class LoopContext:

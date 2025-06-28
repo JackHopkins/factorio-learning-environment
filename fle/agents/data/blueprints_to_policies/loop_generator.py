@@ -4,7 +4,7 @@ import numpy as np
 from dataclasses import dataclass
 from typing import List, Dict, Tuple, Set
 import json
-from env.src.game_types import prototype_by_name
+from env.game_types import prototype_by_name
 
 
 @dataclass

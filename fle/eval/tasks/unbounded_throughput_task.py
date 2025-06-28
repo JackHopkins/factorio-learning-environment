@@ -1,9 +1,9 @@
 from typing import Any, Dict, List, Union, Optional
-from env.src.entities import Inventory, Entity
-from env.src.instance import FactorioInstance
+from env.entities import Inventory, Entity
+from env.instance import FactorioInstance
 from eval.tasks.task_abc import TaskABC
 from eval.tasks.throughput_task import LAB_PLAY_POPULATED_STARTING_INVENTORY, CRAFTING_STATISTICS
-from env.src.utils.achievements import eval_program_with_achievements
+from env.utils.achievements import eval_program_with_achievements
 from agents import TaskResponse
 
 

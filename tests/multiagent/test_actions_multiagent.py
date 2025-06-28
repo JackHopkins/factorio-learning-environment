@@ -4,10 +4,10 @@ from unittest.mock import MagicMock, patch
 from pathlib import Path
 
 from eval.open.independent_runs.trajectory_runner import TrajectoryRunner
-from env.src.models.program import Program
-from env.src.models.game_state import GameState
-from env.src.models.conversation import Conversation
-from env.src.models.message import Message
+from env.models.program import Program
+from env.models.game_state import GameState
+from env.models.conversation import Conversation
+from env.models.message import Message
 from agents.basic_agent import BasicAgent
 from eval.open.db_client import PostgresDBClient
 from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator

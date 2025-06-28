@@ -1,8 +1,8 @@
 import pytest
 
-from env.src.entities import Position, EntityStatus
-from env.src.instance import Direction
-from env.src.game_types import Prototype, Resource
+from env.entities import Position, EntityStatus
+from env.instance import Direction
+from env.game_types import Prototype, Resource
 
 
 @pytest.fixture()

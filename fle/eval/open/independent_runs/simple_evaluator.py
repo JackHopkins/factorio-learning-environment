@@ -4,12 +4,12 @@ from pathlib import Path
 from typing import List, Tuple, Union, Dict, Optional
 
 from eval.open.db_client import DBClient
-from env.src.models.achievements import ProductionFlows
-from env.src.models.game_state import GameState
-from env.src.models.program import Program
-from env.src.entities import Entity, EntityGroup
-from env.src.instance import FactorioInstance
-from env.src.utils.profits import get_achievements
+from env.models.achievements import ProductionFlows
+from env.models.game_state import GameState
+from env.models.program import Program
+from env.entities import Entity, EntityGroup
+from env.instance import FactorioInstance
+from env.utils.profits import get_achievements
 
 
 class SimpleFactorioEvaluator:

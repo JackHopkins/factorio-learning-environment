@@ -1,9 +1,9 @@
 import unittest
 
 from cluster.local.cluster_ips import get_local_container_ips
-from env.src.game_types import Prototype, Resource
-from env.src.instance import FactorioInstance, Direction
-from env.src.models.game_state import GameState
+from env.game_types import Prototype, Resource
+from env.instance import FactorioInstance, Direction
+from env.models.game_state import GameState
 
 
 def test_drop_box_chest():

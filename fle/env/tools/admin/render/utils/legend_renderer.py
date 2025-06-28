@@ -3,11 +3,11 @@ from typing import Dict, List, Tuple, Any, Set, Optional
 from PIL import ImageDraw, ImageFont, Image
 import math
 
-from env.src.entities import EntityStatus
-from env.src.tools.admin.render.utils.render_config import RenderConfig
-from env.src.tools.admin.render.utils.colour_manager import ColourManager
-from env.src.tools.admin.render.utils.entity_categoriser import EntityCategoriser
-from env.src.tools.admin.render.utils.shape_renderer import ShapeRenderer
+from env.entities import EntityStatus
+from env.tools.admin.render.utils.render_config import RenderConfig
+from env.tools.admin.render.utils.colour_manager import ColourManager
+from env.tools.admin.render.utils.entity_categoriser import EntityCategoriser
+from env.tools.admin.render.utils.shape_renderer import ShapeRenderer
 
 
 class LegendRenderer:

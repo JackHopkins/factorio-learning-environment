@@ -1,30 +1,28 @@
+import asyncio
+import concurrent.futures
 import json
 import os
 import random
-import asyncio
-import concurrent.futures
-from typing import List, Tuple, Dict
 from pathlib import Path
+from typing import Dict, List, Tuple
 
-from dotenv import load_dotenv
-from rich import print
-
-from eval.open.auto_curriculum.plan_sampler import PlanSampler
-from eval.open.mcts.blueprint_scenario_sampler import BlueprintScenarioSampler
-from eval.open.mcts.chunked_mcts import ChunkedMCTS
-from models.conversation import Conversation
-from models.message import Message
-from eval.open.mcts.objective_mcts import ObjectiveMCTS
-from eval.open.mcts.parallel_mcts import ParallelMCTS
-from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
-from agents.utils.formatters.conversation_formatter_abc import StructurePreservingFormatter, PLANNING_ADDITION_PROMPT
-from fle.commons.db_client import DBClient
-from models.game_state import GameState
-from models.program import Program
-from eval.open.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
-from instance import FactorioInstance
+from agents.utils.formatters.conversation_formatter_abc import (
+    PLANNING_ADDITION_PROMPT, StructurePreservingFormatter)
 from agents.utils.llm_factory import LLMFactory
 from cluster.local.cluster_ips import get_local_container_ips
+from dotenv import load_dotenv
+from eval.algorithms.mcts import (BlueprintScenarioSampler, ChunkedMCTS,
+                                  KLDiversityAchievementSampler, ObjectiveMCTS,
+                                  ParallelMCTS, ParallelMCTSConfig)
+from eval.open.auto_curriculum.plan_sampler import PlanSampler
+from rich import print
+
+from fle.commons.db_client import DBClient
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.game_state import GameState
+from fle.commons.models.message import Message
+from fle.commons.models.program import Program
+from fle.env import FactorioInstance
 
 # Configure environment
 os.environ.update({

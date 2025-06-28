@@ -1,7 +1,6 @@
 
 
-from fle.env import Position, Entity, Direction as DirectionA
-from env.instance import Direction
+from fle.env import entities as ent
 from fle.env.game_types import Prototype
 from fle.env.tools import Tool
 
@@ -13,8 +12,8 @@ class CanPlaceEntity(Tool):
 
     def __call__(self,
                  entity: Prototype,
-                 direction: Direction = Direction.UP,
-                 position: Position = Position(x=0, y=0),
+                 direction: ent.Direction = ent.Direction.UP,
+                 position: ent.Position = ent.Position(x=0, y=0),
                  ) -> bool:
         """
         Tests to see if an entity can be placed at a given position
@@ -25,13 +24,13 @@ class CanPlaceEntity(Tool):
         """
 
         assert isinstance(entity, Prototype)
-        assert isinstance(direction, (Direction, DirectionA))
+        assert isinstance(direction, ent.Direction)
 
         # If position is a tuple, cast it to a Position object:
         if isinstance(position, tuple):
-            position = Position(x=position[0], y=position[1])
+            position = ent.Position(x=position[0], y=position[1])
 
-        assert isinstance(position, Position)
+        assert isinstance(position, ent.Position)
 
         x, y = self.get_position(position)
         name, metaclass = entity.value

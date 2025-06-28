@@ -1,10 +1,10 @@
 from typing import Any, Dict, List
 from fle.env import Inventory, Entity
 from fle.env import FactorioInstance
-from eval.tasks.throughput_task import ThroughputTask
-from eval.tasks.default_task import DefaultTask
-from eval.tasks.task_abc import TaskABC
-from eval.tasks.unbounded_throughput_task import UnboundedThroughputTask
+from fle.eval.tasks import ThroughputTask
+from fle.eval.tasks import DefaultTask
+from fle.eval.tasks import TaskABC
+from fle.eval.tasks import UnboundedThroughputTask
 from pathlib import Path
 import os
 

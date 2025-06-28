@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from models.game_state import GameState
+from fle.commons.models.game_state import GameState
 
 
 class SupervisedExecutorConfig:

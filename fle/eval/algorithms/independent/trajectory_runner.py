@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from agents import CompletionResult, CompletionReason
 from agents.agent_abc import AgentABC
 from agents.basic_agent import BasicAgent
-from fle.eval.open.db_client import DBClient, create_db_client
+from fle.commons.db_client import DBClient, create_db_client
 from fle.eval.algorithms.independent.simple_evaluator import SimpleFactorioEvaluator
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
@@ -23,14 +23,14 @@ from fle.env import FactorioInstance
 from cluster.local.cluster_ips import get_local_container_ips
 from agents.utils.python_parser import PythonParser
 from agents.utils.metrics import timing_tracker, log_metrics
-#from models.response import EnvironmentResponse
+#from fle.commons.models.response import EnvironmentResponse
 from env.namespace import FactorioNamespace
 from env.protocols.a2a.handler import A2AMessage
 from a2a.types import AgentCard
 
 from agents import Response
 import json
-from eval.tasks.task_abc import TaskABC
+from fle.eval.tasks import TaskABC
 load_dotenv()
 
 COURTESY_SLEEP = 5

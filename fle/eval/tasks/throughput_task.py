@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Union, Optional
 from fle.env import Inventory, Entity
 from fle.env import FactorioInstance
-from eval.tasks.task_abc import TaskABC
+from fle.eval.tasks import TaskABC
 from env.utils.achievements import eval_program_with_achievements
 from agents import TaskResponse
 

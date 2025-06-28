@@ -3,25 +3,26 @@ import copy
 import json
 import logging
 import time
+from dataclasses import dataclass
 from enum import Enum
 from math import floor
-from typing import List, Dict, Any, Optional
-from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
 from rich.console import Console
 
+from fle.agents.utils.formatters.conversation_formatter_abc import (
+    ConversationFormatter, DefaultFormatter)
 from fle.commons.db_client import DBClient
-from eval.evaluator import Evaluator
-from eval.algorithms.mcts import GroupedFactorioLogger, MCTS
-from eval.algorithms.mcts import InstanceGroup
-from fle.env import Conversation
-from fle.commons.models.message import Message
-from fle.commons.models.generation_parameters import GenerationParameters
+from fle.commons.models.conversation import Conversation
 from fle.commons.models.game_state import GameState
+from fle.commons.models.generation_parameters import GenerationParameters
+from fle.commons.models.message import Message
 from fle.commons.models.program import Program
-from fle.agents.utils.formatters.conversation_formatter_abc import ConversationFormatter, DefaultFormatter
 from fle.env import FactorioInstance
+from fle.eval.evaluator import Evaluator
+
+from ..mcts import MCTS, GroupedFactorioLogger, InstanceGroup
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

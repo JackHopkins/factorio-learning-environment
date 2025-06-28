@@ -6,17 +6,18 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from dotenv import load_dotenv
-
 from agents.utils.llm_factory import LLMFactory
 from cluster.local.cluster_ips import get_local_container_ips
-from fle.env import FactorioInstance
+from dotenv import load_dotenv
+
+from fle.agents.utils.formatters.recursive_report_formatter import \
+    RecursiveReportFormatter
+from fle.commons.db_client import DBClient
+from fle.env import FactorioInstance, GameState
 from fle.eval.algorithms.beam import MilestonesBeamSearchExecutor
-from fle.eval.open.db_client import DBClient
-from fle.agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
 from fle.eval.algorithms.mcts import SupervisedExecutorConfig
-from fle.env import GameState
-from fle.eval.tasks.throughput_task import ThroughputTask, LAB_PLAY_POPULATED_STARTING_INVENTORY
+from fle.eval.tasks.throughput_task import (
+    LAB_PLAY_POPULATED_STARTING_INVENTORY, ThroughputTask)
 
 os.environ.update({"FORCE_COLOR": "1", "TERM": "xterm-256color"})
 load_dotenv()

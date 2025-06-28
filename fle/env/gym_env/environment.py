@@ -20,7 +20,7 @@ from env.gym_env.observation import (
     GameInfo, 
     AgentMessage,
 )
-from eval.tasks.task_abc import TaskABC
+from fle.eval.tasks import TaskABC
 
 # need to do this since gym doesn't work with numpy>=2.0 otherwise.
 np.bool8 = np.dtype(np.bool)

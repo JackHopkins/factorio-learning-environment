@@ -6,11 +6,11 @@ import psycopg2
 from dotenv import load_dotenv
 from psycopg2.extras import DictCursor
 
-from models.conversation import Conversation
-from models.message import Message
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.message import Message
 from fle.commons.db_client import DBClient
-from models.program import Program
-from instance import FactorioInstance
+from fle.commons.models.program import Program
+from fle.env import FactorioInstance
 
 load_dotenv()
 

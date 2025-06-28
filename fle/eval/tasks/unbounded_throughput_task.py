@@ -1,8 +1,8 @@
 from typing import Any, Dict, List, Union, Optional
 from fle.env import Inventory, Entity
 from fle.env import FactorioInstance
-from eval.tasks.task_abc import TaskABC
-from eval.tasks.throughput_task import LAB_PLAY_POPULATED_STARTING_INVENTORY, CRAFTING_STATISTICS
+from fle.eval.tasks import TaskABC
+from fle.eval.tasks import LAB_PLAY_POPULATED_STARTING_INVENTORY, CRAFTING_STATISTICS
 from env.utils.achievements import eval_program_with_achievements
 from agents import TaskResponse
 

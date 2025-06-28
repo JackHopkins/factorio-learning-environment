@@ -3,11 +3,11 @@ from typing import List, Optional, Tuple, Dict
 import psycopg2
 from psycopg2.extras import DictCursor
 
-from models.conversation import Conversation
-from models.message import Message
-from models.game_state import GameState
-from models.program import Program
-from instance import FactorioInstance
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.message import Message
+from fle.commons.models.game_state import GameState
+from fle.commons.models.program import Program
+from fle.env import FactorioInstance
 
 
 class BlueprintScenarioSampler:

@@ -1,16 +1,18 @@
 import ast
 import asyncio
 import json
-from typing import List, Tuple, Optional
 import os
-from models.conversation import Conversation
-from models.message import Message
-from models.generation_parameters import GenerationParameters
-from models.game_state import GameState
-from eval.open.mcts.mcts import MCTS
-from models.program import Program
-from eval.open.mcts.planning_models import LanguageOutput, TaskOutput, InitialPlanOutput, PlanOutput, Step
-from tenacity import wait_exponential, retry
+from typing import List, Optional, Tuple
+
+from eval.algorithms.mcts import (MCTS, InitialPlanOutput, LanguageOutput,
+                                  PlanOutput, Step, TaskOutput)
+from tenacity import retry, wait_exponential
+
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.game_state import GameState
+from fle.commons.models.generation_parameters import GenerationParameters
+from fle.commons.models.message import Message
+from fle.commons.models.program import Program
 
 
 def get_mining_setup(instance):

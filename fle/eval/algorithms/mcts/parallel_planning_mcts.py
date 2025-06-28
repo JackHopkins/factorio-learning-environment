@@ -1,26 +1,28 @@
-import json
-import os
-from typing import List, Dict, Optional, Any, Tuple
 import asyncio
-from math import floor
+import json
 import logging
+import os
 from dataclasses import dataclass
+from math import floor
+from typing import Any, Dict, List, Optional, Tuple
+
+from agents.utils.formatters.conversation_formatter_abc import (
+    ConversationFormatter, StructurePreservingFormatter)
+from eval.algorithms.mcts import (GroupedFactorioLogger, InitialPlanOutput,
+                                  LanguageOutput, ParallelMCTSConfig,
+                                  PlanOutput, Step, TaskOutput,
+                                  get_mining_setup)
+from eval.evaluator import Evaluator
 from rich.console import Console
 from tenacity import retry, wait_exponential
 
-from models.conversation import Conversation
-from models.message import Message
-from models.generation_parameters import GenerationParameters
-from agents.utils.formatters.conversation_formatter_abc import ConversationFormatter, StructurePreservingFormatter
 from fle.commons.db_client import DBClient
-from eval.evaluator import Evaluator
-from eval.open.mcts.grouped_logger import GroupedFactorioLogger
-from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
-from eval.open.mcts.planning_mcts import get_mining_setup
-from eval.open.mcts.planning_models import PlanOutput, TaskOutput, Step, LanguageOutput, InitialPlanOutput
-from models.game_state import GameState
-from models.program import Program
-from instance import FactorioInstance
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.game_state import GameState
+from fle.commons.models.generation_parameters import GenerationParameters
+from fle.commons.models.message import Message
+from fle.commons.models.program import Program
+from fle.env import FactorioInstance
 
 logger = logging.basicConfig(level=logging.INFO)
 

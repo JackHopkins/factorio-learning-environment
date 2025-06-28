@@ -1,16 +1,15 @@
 import asyncio
 import logging
 from math import floor
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
+from eval.algorithms.mcts import (GroupedFactorioLogger, InstanceGroup,
+                                  ParallelMCTSConfig)
+from eval.evaluator import Evaluator
 from rich.console import Console
 
 from fle.commons.db_client import DBClient
-from eval.evaluator import Evaluator
-from eval.open.mcts.grouped_logger import GroupedFactorioLogger
-from eval.open.mcts.instance_group import InstanceGroup
-from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
-from instance import FactorioInstance
+from fle.env import FactorioInstance
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

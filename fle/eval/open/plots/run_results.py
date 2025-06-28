@@ -2,10 +2,10 @@ import json
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Dict, List, Tuple, Set
+from typing import Dict, List, Optional, Set, Tuple
 
-import networkx as nx
 import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 
 from fle.commons.db_client import DBClient

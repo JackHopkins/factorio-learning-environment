@@ -8,18 +8,18 @@ from dataclasses import dataclass
 from rich.console import Console
 from tenacity import retry, wait_exponential
 import copy
-from models.conversation import Conversation
-from models.generation_parameters import GenerationParameters
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.generation_parameters import GenerationParameters
 from agents.utils.formatters.conversation_formatter_abc import DefaultFormatter
 from fle.commons.db_client import DBClient
 from eval.evaluator import Evaluator
-from eval.open.mcts.grouped_logger import GroupedFactorioLogger
-from eval.open.mcts.parallel_supervised_config import SupervisedExecutorConfig
-from eval.open.mcts.planning_models import PlanOutput, TaskOutput, Step, LanguageOutput, InitialPlanOutput
-from models.game_state import GameState
-from models.program import Program
+from eval.algorithms.mcts import GroupedFactorioLogger
+from eval.algorithms.mcts import SupervisedExecutorConfig
+from eval.algorithms.mcts import PlanOutput, TaskOutput, Step, LanguageOutput, InitialPlanOutput
+from fle.commons.models.game_state import GameState
+from fle.commons.models.program import Program
 from fle.env import FactorioInstance
-from eval.tasks.task_abc import TaskABC
+from fle.eval.tasks import TaskABC
 logger = logging.basicConfig(level=logging.INFO)
 from abc import ABC, abstractmethod
 

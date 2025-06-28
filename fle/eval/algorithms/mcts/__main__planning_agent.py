@@ -1,30 +1,32 @@
 import json
 import os
 
+from eval.algorithms.mcts import (KLDiversityAchievementSampler,
+                                  ParallelMCTSConfig, ParallelPlanningMCTS,
+                                  PlanningMCTS)
 from eval.open.auto_curriculum.plan_sampler import PlanSampler
-from models.conversation import Conversation
-from models.message import Message
-from eval.open.mcts.parallel_mcts_config import ParallelMCTSConfig
-from eval.open.mcts.parallel_planning_mcts import ParallelPlanningMCTS
-from eval.open.mcts.planning_mcts import PlanningMCTS
-from models.program import Program
-from eval.open.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
+
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.message import Message
+from fle.commons.models.program import Program
 
 os.environ["FORCE_COLOR"] = "1"
 os.environ["TERM"] = "xterm-256color"
 
 import concurrent
 import os
-from typing import Tuple, List
+from typing import List, Tuple
 
+from agents.utils.formatters.conversation_formatter_abc import \
+    PLANNING_ADDITION_PROMPT
+from agents.utils.llm_factory import LLMFactory
+from fle.cluster.local.cluster_ips import get_local_container_ips
 from dotenv import load_dotenv
 from rich import print
-from cluster.local.cluster_ips import get_local_container_ips
-from agents.utils.formatters.conversation_formatter_abc import PLANNING_ADDITION_PROMPT
+
 from fle.commons.db_client import DBClient
-from models.game_state import GameState
-from instance import FactorioInstance
-from agents.utils.llm_factory import LLMFactory
+from fle.commons.models.game_state import GameState
+from fle.env import FactorioInstance
 
 load_dotenv()
 

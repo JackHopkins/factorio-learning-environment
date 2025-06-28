@@ -4,7 +4,7 @@ from typing import Optional
 from psycopg2.extras import DictCursor
 
 from fle.commons.db_client import DBClient
-from models.program import Program
+from fle.commons.models.program import Program
 
 
 class DBSampler(ABC):

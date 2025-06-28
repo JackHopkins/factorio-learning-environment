@@ -1,7 +1,7 @@
 from time import sleep
 
 from fle.env import Position, Entity
-from env.instance import DirectionInternal
+from fle.env import DirectionInternalInternal
 from fle.env import Direction as DirectionEntities
 from fle.env.game_types import Prototype
 from env.tools.agent.get_entity.client import GetEntity

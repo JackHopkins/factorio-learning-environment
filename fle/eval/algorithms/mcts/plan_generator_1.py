@@ -1,7 +1,7 @@
 import asyncio
-from typing import List, Dict
+from typing import Dict, List
 
-from agents.utils.llm_factory import LLMFactory
+from fle.agents.utils.llm_factory import LLMFactory
 
 
 class PlanGenerator:

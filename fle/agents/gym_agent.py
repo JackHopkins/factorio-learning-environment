@@ -1,17 +1,19 @@
 import copy
-from gym_env.observation_formatter import BasicObservationFormatter
-from typing import Dict, Any, Optional, Tuple
+from typing import Any, Optional
 
-from agents import Response, CompletionResult, Policy
+from agents import CompletionResult, Policy, Response
 from agents.agent_abc import AgentABC
-from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
+from agents.utils.formatters.recursive_report_formatter import \
+    RecursiveReportFormatter
 from agents.utils.llm_factory import LLMFactory
 from agents.utils.parse_response import parse_response
+from env.gym_env.observation import Observation
+
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters
 from fle.commons.models.program import Program
-from env.gym_env.observation import Observation
-from eval.tasks.task_abc import TaskABC
+from fle.env.gym_env.observation_formatter import BasicObservationFormatter
+from fle.eval.tasks import TaskABC
 
 GYM_AGENT_INSTRUCTIONS = \
 """

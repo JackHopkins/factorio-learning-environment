@@ -1,14 +1,14 @@
 from datetime import datetime
-from typing import Dict, List
-from typing import Optional, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
+from agents import TimingMetrics
 from pydantic import BaseModel, Field
 
-from fle.commons.models.achievements import ProductionFlows
-from fle.commons.models.conversation import Conversation
-from fle.commons.models.game_state import GameState
-from agents import TimingMetrics
+from .achievements import ProductionFlows
+from .conversation import Conversation
+from .game_state import GameState
+
 
 class Program(BaseModel):
     id: Optional[int] = None

@@ -13,8 +13,8 @@ Base Classes:
 """
 
 from .controller import Controller
-from .tool import Tool
 from .init import Init
+from .tool import Tool
 
 # Version info
 __version__ = "1.0.0"

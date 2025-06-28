@@ -10,15 +10,15 @@ import tenacity
 from tenacity import wait_exponential, retry, retry_if_exception_type
 
 from agents.utils.python_parser import PythonParser
-from models.conversation import Conversation
-from models.message import Message
-from models.generation_parameters import GenerationParameters
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.message import Message
+from fle.commons.models.generation_parameters import GenerationParameters
 from agents.utils.formatters.conversation_formatter_abc import ConversationFormatter, DefaultFormatter
 from fle.commons.db_client import DBClient
 from eval.evaluator import Evaluator
-from models.game_state import GameState
-from models.program import Program
-from eval.open.mcts.samplers.db_sampler import DBSampler
+from fle.commons.models.game_state import GameState
+from fle.commons.models.program import Program
+from eval.algorithms.mcts import DBSampler
 
 
 class MCTS:

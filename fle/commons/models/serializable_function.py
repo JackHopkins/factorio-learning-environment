@@ -1,7 +1,7 @@
-import marshal
-import types
 import builtins
 import inspect
+import marshal
+import types
 from typing import get_type_hints
 
 

@@ -1,19 +1,22 @@
-import tenacity
+import copy
+from collections import deque
+from typing import Optional
 
-from agents import Response, CompletionResult, Policy
-from agents.agent_abc import AgentABC
-from agents.basic_agent import GENERAL_INSTRUCTIONS
-from agents.utils.formatters.recursive_report_formatter import RecursiveReportFormatter
+import tenacity
+from . import CompletionResult, Policy, Response
+from .agent_abc import AgentABC
+from .basic_agent import GENERAL_INSTRUCTIONS
+from agents.utils.formatters.recursive_report_formatter import \
+    RecursiveReportFormatter
 from agents.utils.llm_factory import LLMFactory
 from agents.utils.parse_response import parse_response
-from fle.commons.models.conversation import Conversation
-from fle.commons.models.message import Message
-from fle.commons.models.generation_parameters import GenerationParameters
-from tenacity import wait_exponential, retry_if_exception_type, wait_random_exponential
-from collections import deque
 from env.namespace import FactorioNamespace
-from typing import Optional
-import copy
+from tenacity import (retry_if_exception_type, wait_exponential,
+                      wait_random_exponential)
+
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.generation_parameters import GenerationParameters
+from fle.commons.models.message import Message
 
 GENERAL_INSTRUCTIONS_BACKTRACKING = \
 """

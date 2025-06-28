@@ -12,5 +12,6 @@ if env_src_dir not in sys.path:
     sys.path.insert(0, env_src_dir)
 # Now import and run the actual script
 from eval.open.independent_runs.run import main
+from env.src.gym_env.run_eval import main as run_eval
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(run_eval())

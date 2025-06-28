@@ -11,7 +11,7 @@ from PIL import Image
 from dotenv import load_dotenv
 from matplotlib.ticker import LogLocator
 
-from eval.open.db_client import DBClient, PostgresDBClient
+from fle.commons.db_client import DBClient, PostgresDBClient
 from eval.open.independent_runs.value_calculator import ValueCalculator
 
 load_dotenv()

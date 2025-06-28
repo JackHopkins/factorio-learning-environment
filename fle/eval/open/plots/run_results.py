@@ -8,7 +8,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 
-from eval.open.db_client import DBClient
+from fle.commons.db_client import DBClient
 
 
 @dataclass

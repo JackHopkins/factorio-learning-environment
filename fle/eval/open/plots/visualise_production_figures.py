@@ -10,7 +10,7 @@ import numpy as np
 from dotenv import load_dotenv
 from matplotlib import image as mpimg
 
-from eval.open.db_client import DBClient
+from fle.commons.db_client import DBClient
 from eval.open.independent_runs.value_calculator import ValueCalculator
 
 load_dotenv()

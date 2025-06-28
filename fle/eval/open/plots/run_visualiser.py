@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 from PIL import Image
 
-from eval.open.db_client import DBClient
+from fle.commons.db_client import DBClient
 from eval.open.plots.run_results import RunResults
 
 load_dotenv()

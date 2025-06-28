@@ -8,7 +8,7 @@ import pickle
 import os
 
 from dotenv import load_dotenv
-from eval.open.db_client import DBClient
+from fle.commons.db_client import DBClient
 from eval.open.plots.simple_run_visualiser import Node
 
 load_dotenv()

@@ -3,7 +3,7 @@ import copy
 import pickle
 from typing import List, Tuple, Union, Dict
 
-from eval.open.db_client import DBClient
+from fle.commons.db_client import DBClient
 from env.models.game_state import GameState
 from eval.open.mcts.logger import FactorioLogger
 from env.models.program import Program

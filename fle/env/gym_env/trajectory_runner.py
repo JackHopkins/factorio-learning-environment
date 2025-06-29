@@ -1,18 +1,20 @@
-from itertools import product
 import time
-from typing import List, Optional, Dict, Any, Tuple
+from itertools import product
+from typing import Any, Dict, List, Optional, Tuple
 
-from agents.gym_agent import GymAgent
-from agents import Policy, CompletionResult, CompletionReason
-from fle.commons.models.program import Program
-from fle.commons.models.game_state import GameState
-from fle.commons.models.conversation import Conversation
-from env.gym_env.environment import FactorioGymEnv
-from env.gym_env.observation import Observation
-from env.gym_env.action import Action
-from env.gym_env.trajectory_logger import TrajectoryLogger
-from env.gym_env.config import GymEvalConfig
+from fle.agents import CompletionReason, CompletionResult, Policy
+from fle.agents.gym_agent import GymAgent
 from fle.commons.db_client import PostgresDBClient
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.game_state import GameState
+from fle.commons.models.program import Program
+
+from .action import Action
+from .config import GymEvalConfig
+from .environment import FactorioGymEnv
+from .observation import Observation
+from .trajectory_logger import TrajectoryLogger
+
 
 class GymTrajectoryRunner:
     """Handles program generation and evaluation for a single trajectory in the gym environment"""

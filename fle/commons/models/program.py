@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Union
 
 import numpy as np
-from agents import TimingMetrics
+from fle.agents import TimingMetrics
 from pydantic import BaseModel, Field
 
 from .achievements import ProductionFlows

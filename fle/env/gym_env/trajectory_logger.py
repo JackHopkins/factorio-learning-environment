@@ -1,11 +1,12 @@
-import time
-import os
 import multiprocessing
+import os
+import time
 from typing import List, Optional
 
-from agents.gym_agent import GymAgent
+from fle.agents.gym_agent import GymAgent
 from fle.commons.models.program import Program
-from env.gym_env.observation import Observation
+
+from .observation import Observation
 
 
 class TrajectoryLogger:

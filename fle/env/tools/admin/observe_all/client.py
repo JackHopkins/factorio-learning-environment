@@ -4,7 +4,7 @@ from timeit import default_timer as timer
 import numpy as np
 from numpy import ndarray, zeros
 
-from env.instance import CHUNK_SIZE, MAX_SAMPLES
+from fle.env.instance import CHUNK_SIZE, MAX_SAMPLES
 #from gym.utils import stitch
 #from gym.observation_state import FIELDS, ObservationState
 from fle.env.tools import Tool

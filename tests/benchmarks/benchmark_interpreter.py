@@ -1,6 +1,6 @@
 import time
 
-from instance import FactorioInstance
+from fle.env import FactorioInstance
 
 
 def run_string_benchmark(game: FactorioInstance, num_iterations: int = 100):

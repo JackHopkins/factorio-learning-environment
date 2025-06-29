@@ -1,6 +1,6 @@
 import time
 
-from fle.env import Position
+from fle.env.entities import Position
 from fle.env.tools import Tool
 
 

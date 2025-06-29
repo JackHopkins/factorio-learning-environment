@@ -23,7 +23,7 @@ class ParallelMCTS:
     def __init__(self,
                  instances: List['FactorioInstance'],
                  db_client: DBClient,
-                 llm_factory: 'LLMFactory',
+                 api_factory: 'APIFactory',
                  config: ParallelMCTSConfig,
                  version: int,
                  version_description: str):
@@ -33,13 +33,13 @@ class ParallelMCTS:
         Args:
             instances: List of Factorio instances to distribute across groups
             db_client: Database client for persistence
-            llm_factory: Factory for creating language models
+            api_factory: Factory for creating language models
             config: Configuration parameters
         """
         self.console = Console()
         self.config = config
         self.db_client = db_client
-        self.llm_factory = llm_factory
+        self.api_factory = api_factory
         self.version = version
         self.version_description = version_description
 
@@ -100,7 +100,7 @@ class ParallelMCTS:
 
             # Create MCTS instance
             mcts = self.config.mcts_class(
-                llm_factory=self.llm_factory,
+                api_factory=self.api_factory,
                 db_client=self.db_client,
                 evaluator=evaluator,
                 sampler=self.config.sampler,

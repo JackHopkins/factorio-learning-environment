@@ -1,13 +1,13 @@
 import math
 from time import sleep
 
-from fle.env import Position
-from env.instance import NONE
+from fle.env.entities import Position
+from fle.env.instance import NONE
 from fle.env.game_types import Prototype
-from env.tools.admin.get_path.client import GetPath
-from env.tools.admin.request_path.client import RequestPath
+from fle.env.tools.admin.get_path.client import GetPath
+from fle.env.tools.admin.request_path.client import RequestPath
 from fle.env.tools import Tool
-from env.lua_manager import LuaScriptManager
+from fle.env.lua_manager import LuaScriptManager
 
 
 class MoveTo(Tool):

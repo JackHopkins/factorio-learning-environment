@@ -143,7 +143,7 @@ class BeamSearch(MCTS):
     """Beam Search implementation that works as part of parallel beam search"""
 
     def __init__(self,
-                 llm_factory: 'LLMFactory',
+                 api_factory: 'APIFactory',
                  db_client: DBClient,
                  evaluator: Evaluator,
                  system_prompt: str,
@@ -157,7 +157,7 @@ class BeamSearch(MCTS):
                  logit_bias={}
                  ):
 
-        self.llm = llm_factory
+        self.llm = api_factory
         self.db = db_client
         self.evaluator = evaluator
         self.system_prompt = system_prompt
@@ -171,7 +171,7 @@ class BeamSearch(MCTS):
         self.logit_bias = logit_bias
 
         self._monitor_task = asyncio.create_task(self._monitor_tasks())
-        super().__init__(llm_factory, db_client, evaluator, None, system_prompt, initial_state, formatter, version, version_description)
+        super().__init__(api_factory, db_client, evaluator, None, system_prompt, initial_state, formatter, version, version_description)
 
     async def _monitor_tasks(self):
         """Monitor and log task states for debugging"""
@@ -244,7 +244,7 @@ class ParallelBeamSearch:
     def __init__(self,
                  instances: List['FactorioInstance'],
                  db_client: DBClient,
-                 llm_factory: 'LLMFactory',
+                 api_factory: 'APIFactory',
                  config: ParallelBeamConfig,
                  version: int,
                  version_description: str,
@@ -259,7 +259,7 @@ class ParallelBeamSearch:
         self.console = Console()
         self.config = config
         self.db_client = db_client
-        self.llm_factory = llm_factory
+        self.api_factory = api_factory
         self.version = version
         self.version_description = version_description
         self.current_depth = current_depth
@@ -317,9 +317,9 @@ class ParallelBeamSearch:
             raise ValueError(f"No metadata found for version {self.version}")
 
         # Check model compatibility
-        if self.llm_factory.model+'\n' not in metadata.get('version_description'):
+        if self.api_factory.model+'\n' not in metadata.get('version_description'):
             raise ValueError(f"Model mismatch: Version uses {metadata.get('model')}, "
-                             f"but current config uses {self.llm_factory.model}")
+                             f"but current config uses {self.api_factory.model}")
 
         # Check other relevant configuration parameters
         if 'beam' not in metadata.get('version_description', '').lower():
@@ -357,7 +357,7 @@ class ParallelBeamSearch:
 
             # Create beam search instance
             beam = BeamSearch(
-                llm_factory=self.llm_factory,
+                api_factory=self.api_factory,
                 db_client=self.db_client,
                 evaluator=evaluator,
                 formatter=self.formatter,

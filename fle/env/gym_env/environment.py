@@ -10,12 +10,12 @@ import string
 
 from fle.env import FactorioInstance
 from fle.commons.models.game_state import GameState
-from env.gym_env.action import Action
+from fle.env.gym_env.action import Action
 from fle.commons.models.achievements import ProductionFlows
-from fle.env import EntityStatus
-from env.utils.profits import get_achievements
-from agents import Response, TaskResponse
-from env.gym_env.observation import (
+from fle.env.entities import EntityStatus
+from fle.env.utils.profits import get_achievements
+from fle.agents import Response, TaskResponse
+from fle.env.gym_env.observation import (
     Observation, 
     GameInfo, 
     AgentMessage,

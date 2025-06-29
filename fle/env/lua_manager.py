@@ -3,13 +3,11 @@ import json
 import os
 from pathlib import Path
 
-
-from env.utils.rcon import _load_lib, _load_script, \
-    _get_lib_names, _get_tool_names, _get_dir, _get_lib_dir
-
 from lupa.lua54 import LuaRuntime
 
-from env.rcon.factorio_rcon import RCONClient
+from .rcon.factorio_rcon import RCONClient
+from .utils.rcon import (_get_dir, _get_lib_dir, _get_lib_names,
+                         _get_tool_names, _load_lib, _load_script)
 
 
 class LuaScriptManager:

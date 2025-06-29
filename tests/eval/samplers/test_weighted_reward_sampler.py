@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock
 
-from eval.open.mcts.samplers.dynamic_reward_weighted_sampler import DynamicRewardWeightedSampler
+from eval.algorithms.mcts import DynamicRewardWeightedSampler
 
 
 class TestWeightedRewardSampler(unittest.TestCase):

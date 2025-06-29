@@ -17,10 +17,10 @@ import concurrent
 import os
 from typing import List, Tuple
 
-from agents.utils.formatters.conversation_formatter_abc import \
+from fle.agents.formatters.conversation_formatter_abc import \
     PLANNING_ADDITION_PROMPT
-from agents.utils.llm_factory import LLMFactory
-from fle.cluster.local.cluster_ips import get_local_container_ips
+from fle.agents.llm.api_factory import APIFactory
+from fle.cluster import get_local_container_ips
 from dotenv import load_dotenv
 from rich import print
 
@@ -143,7 +143,7 @@ async def main():
 
 
     # Initialize components
-    llm = LLMFactory(step_executor_model_path)
+    llm = APIFactory(step_executor_model_path)
     db_client = DBClient(host=os.getenv("SKILLS_DB_HOST"),
                          port=os.getenv("SKILLS_DB_PORT"),
                          dbname=os.getenv("SKILLS_DB_NAME"),

@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Dict
 
-from env.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
+from fle.env.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 from . import mcp
 from .init import state
 

@@ -1,9 +1,9 @@
 from gym.utils.env_checker import check_env
-from env.gym_env.environment import FactorioGymEnv
-from env.instance import FactorioInstance
-# from env.gym_env.validation import validate_observation
-from env.entities import Position, Direction
-from env.game_types import Prototype
+from fle.env.gym_env.environment import FactorioGymEnv
+from fle.env import FactorioInstance
+# from fle.env.gym_env.validation import validate_observation
+from fle.env.entities import Position, Direction
+from fle.env.game_types import Prototype
 
 def test_reset_observation(instance):
     env = FactorioGymEnv(instance)

@@ -1,6 +1,6 @@
 from typing import Union
 
-from fle.env import Entity
+from fle.env.entities import Entity
 from fle.env.game_types import Prototype, RecipeName
 from fle.env.tools import Tool
 

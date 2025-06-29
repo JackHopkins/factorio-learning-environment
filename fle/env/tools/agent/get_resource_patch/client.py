@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fle.env import Position, ResourcePatch, BoundingBox
+from fle.env.entities import Position, ResourcePatch, BoundingBox
 from fle.env.game_types import Resource
 from fle.env.tools import Tool
 

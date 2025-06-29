@@ -1,12 +1,12 @@
 import asyncio
 from typing import Dict, List
 
-from fle.agents.utils.llm_factory import LLMFactory
+from fle.agents.utils.api_factory import APIFactory
 
 
 class PlanGenerator:
-    def __init__(self, llm_factory: 'LLMFactory'):
-        self.llm = llm_factory
+    def __init__(self, api_factory: 'APIFactory'):
+        self.llm = api_factory
 
     def _get_example_prompt(self) -> List[Dict[str, str]]:
         return [
@@ -70,6 +70,6 @@ Planning: We need to print out the recipe for transport belts and then craft the
         return plans
 
 if __name__ == "__main__":
-    llm = LLMFactory("ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91")
-    plan_generator = PlanGenerator(llm_factory=llm)
+    llm = APIFactory("ft:gpt-4o-2024-08-06:paperplane-ai:fact-self-gen-planning:AQzcPI91")
+    plan_generator = PlanGenerator(api_factory=llm)
     asyncio.run(plan_generator.generate_plans(n=3))

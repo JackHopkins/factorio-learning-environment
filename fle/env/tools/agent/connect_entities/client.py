@@ -7,21 +7,21 @@ from fle.env import EntityGroup, Entity, Position, BeltGroup, PipeGroup, Electri
     Pipe, FluidHandler, MiningDrill, Inserter, ChemicalPlant, OilRefinery, MultiFluidHandler
 from fle.env import DirectionInternal
 from fle.env.game_types import Prototype, prototype_by_name
-from env.tools.admin.clear_collision_boxes.client import ClearCollisionBoxes
-from env.tools.admin.extend_collision_boxes.client import ExtendCollisionBoxes
-from env.tools.admin.get_path.client import GetPath
-from env.tools.admin.request_path.client import RequestPath
-from env.tools.agent.connect_entities.path_result import PathResult
-from env.tools.agent.connect_entities.resolver import ConnectionType, Resolver
-from env.tools.agent.connect_entities.resolvers.fluid_connection_resolver import FluidConnectionResolver
-from env.tools.agent.connect_entities.resolvers.power_connection_resolver import PowerConnectionResolver
-from env.tools.agent.connect_entities.resolvers.transport_connection_resolver import TransportConnectionResolver
-from env.tools.agent.connect_entities.groupable_entities import _deduplicate_entities, agglomerate_groupable_entities
-from env.tools.agent.get_entities.client import GetEntities
-from env.tools.agent.get_entity.client import GetEntity
-from env.tools.agent.inspect_inventory.client import InspectInventory
-from env.tools.agent.pickup_entity.client import PickupEntity
-from env.tools.agent.rotate_entity.client import RotateEntity
+from fle.env.tools.admin.clear_collision_boxes.client import ClearCollisionBoxes
+from fle.env.tools.admin.extend_collision_boxes.client import ExtendCollisionBoxes
+from fle.env.tools.admin.get_path.client import GetPath
+from fle.env.tools.admin.request_path.client import RequestPath
+from fle.env.tools.agent.connect_entities.path_result import PathResult
+from fle.env.tools.agent.connect_entities.resolver import ConnectionType, Resolver
+from fle.env.tools.agent.connect_entities.resolvers.fluid_connection_resolver import FluidConnectionResolver
+from fle.env.tools.agent.connect_entities.resolvers.power_connection_resolver import PowerConnectionResolver
+from fle.env.tools.agent.connect_entities.resolvers.transport_connection_resolver import TransportConnectionResolver
+from fle.env.tools.agent.connect_entities.groupable_entities import _deduplicate_entities, agglomerate_groupable_entities
+from fle.env.tools.agent.get_entities.client import GetEntities
+from fle.env.tools.agent.get_entity.client import GetEntity
+from fle.env.tools.agent.inspect_inventory.client import InspectInventory
+from fle.env.tools.agent.pickup_entity.client import PickupEntity
+from fle.env.tools.agent.rotate_entity.client import RotateEntity
 from fle.env.tools import Tool
 from collections.abc import Set as AbstractSet
 

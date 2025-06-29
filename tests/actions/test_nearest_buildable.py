@@ -1,9 +1,9 @@
 import pytest
 
-from cluster.local.cluster_ips import get_local_container_ips
-from env.game_types import Prototype, Resource
-from env.entities import Position, BoundingBox, BuildingBox, Direction
-from env.instance import FactorioInstance
+from fle.cluster import get_local_container_ips
+from fle.env.game_types import Prototype, Resource
+from fle.env.entities import Position, BoundingBox, BuildingBox, Direction
+from fle.env import FactorioInstance
 
 # @pytest.fixture()
 # def game(instance):

@@ -10,7 +10,8 @@ from tenacity import retry_if_exception_type, wait_exponential
 
 from fle.commons.db_client import DBClient
 from fle.commons.models.program import Program
-from eval.algorithms.mcts import DBSampler
+
+from .db_sampler import DBSampler
 
 
 class KLDiversityAchievementSampler(DBSampler):

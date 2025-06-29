@@ -3,7 +3,7 @@ from typing import Tuple, Callable, List
 
 from PIL import ImageDraw
 from fle.env import UndergroundBelt, Pipe
-from env.tools.admin.render.utils.colour_manager import ColourManager
+from fle.env.tools.admin.render.utils.colour_manager import ColourManager
 
 
 class ConnectionRenderer:

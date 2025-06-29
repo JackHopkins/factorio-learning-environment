@@ -1,11 +1,11 @@
 import os
 import asyncio
 from dotenv import load_dotenv
-from cluster.local.cluster_ips import get_local_container_ips
+from fle.cluster import get_local_container_ips
 from fle.commons.db_client import DBClient
 from eval.algorithms.mcts import MCTSFactory
 from eval.open.plots.run_results import RunResults
-from instance import FactorioInstance
+from fle.env import FactorioInstance
 import concurrent.futures
 from typing import List, Tuple
 
@@ -95,7 +95,7 @@ async def main():
     mcts_config.system_prompt = prompt
 
     # Initialize factory singleton
-    factory.initialize(instances, db_client, mcts_config, sampler_config) #llm_factory, config)
+    factory.initialize(instances, db_client, mcts_config, sampler_config) #api_factory, config)
 
     # Create MCTS instance
     mcts = factory.create_mcts(mcts_config)

@@ -1,10 +1,10 @@
 from time import sleep
 from typing import Tuple
 
-from fle.env import Position, Entity
+from fle.env.entities import Position, Entity
 
 from fle.env.game_types import Prototype
-from env.tools.agent.get_entities.client import GetEntities
+from fle.env.tools.agent.get_entities.client import GetEntities
 from fle.env.tools import Tool
 
 

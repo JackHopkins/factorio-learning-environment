@@ -2,8 +2,8 @@ from typing import Any, Dict, List, Union, Optional
 from fle.env import Inventory, Entity
 from fle.env import FactorioInstance
 from fle.eval.tasks import TaskABC
-from env.utils.achievements import eval_program_with_achievements
-from agents import TaskResponse
+from fle.env.utils.achievements import eval_program_with_achievements
+from fle.agents import TaskResponse
 
 LAB_PLAY_POPULATED_STARTING_INVENTORY = {"coal": 500, "burner-mining-drill": 50, "wooden-chest": 10, "burner-inserter": 50,"inserter": 50, "transport-belt": 500,
                                 "stone-furnace": 10, "boiler": 2, "offshore-pump": 2, "steam-engine": 2,

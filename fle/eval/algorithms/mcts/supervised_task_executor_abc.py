@@ -10,7 +10,7 @@ from tenacity import retry, wait_exponential
 import copy
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters
-from agents.utils.formatters.conversation_formatter_abc import DefaultFormatter
+from fle.agents.formatters.conversation_formatter_abc import DefaultFormatter
 from fle.commons.db_client import DBClient
 from eval.evaluator import Evaluator
 from eval.algorithms.mcts import GroupedFactorioLogger
@@ -36,7 +36,7 @@ class SupervisedTaskExecutorABC(ABC):
     def __init__(self,
                  instances: List[FactorioInstance],
                  db_client: DBClient,
-                 llm_factory: Any,
+                 api_factory: Any,
                  config: SupervisedExecutorConfig,
                  version=None,
                  version_description="",
@@ -47,13 +47,13 @@ class SupervisedTaskExecutorABC(ABC):
         Args:
             instances: List of Factorio instances to distribute
             db_client: Database client
-            llm_factory: Factory for creating language models
+            api_factory: Factory for creating language models
             config: Configuration parameters including model paths and prompts
         """
         self.console = Console()
         self.config = config
         self.db_client = db_client
-        self.llm = llm_factory
+        self.llm = api_factory
         self.version = version
         self.version_description = version_description
         self.model_to_evaluate = config.model_to_evaluate

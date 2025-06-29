@@ -1,8 +1,8 @@
 import pytest
 
-from env.entities import Position, Furnace
-from env.instance import Direction, FactorioInstance
-from env.game_types import Prototype, Resource
+from fle.env import entities as ent
+from fle.env import DirectionInternal, FactorioInstance
+from fle.env.game_types import Prototype, Resource
 
 
 
@@ -39,14 +39,14 @@ def test_get_stone_furnace(game):
     position = game.nearest(Resource.Stone)
     # 1. Place a stone furnace
     game.move_to(position)
-    stone_furnace = game.place_entity(Prototype.StoneFurnace, Direction.UP, position)
+    stone_furnace = game.place_entity(Prototype.StoneFurnace, ent.Direction.UP, position)
     assert stone_furnace is not None, "Failed to place stone furnace"
     assert stone_furnace.warnings == ['out of fuel', 'no ingredients to smelt'], "Failed to place stone furnace"
 
     game.insert_item(Prototype.Coal, stone_furnace, 5)
     game.insert_item(Prototype.IronOre, stone_furnace, 5)
     game.sleep(5)
-    retrieved_furnace: Furnace = game.get_entities({Prototype.StoneFurnace}, stone_furnace.position)[0]
+    retrieved_furnace: ent.Furnace = game.get_entities({Prototype.StoneFurnace}, stone_furnace.position)[0]
 
     assert retrieved_furnace is not None, "Failed to retrieve stone furnace"
     assert retrieved_furnace.furnace_result.get(Prototype.IronPlate, 0) > 0, "Failed to smelt iron plate"
@@ -78,7 +78,7 @@ def test_get_entities_bug(game):
     game.craft_item(Prototype.StoneFurnace, 3)
 
     # 1. Place a stone furnace
-    stone_furnace = game.place_entity(Prototype.StoneFurnace, Direction.UP, iron_position)
+    stone_furnace = game.place_entity(Prototype.StoneFurnace, ent.Direction.UP, iron_position)
     assert stone_furnace is not None, "Failed to place stone furnace"
 
     game.insert_item(Prototype.Coal, stone_furnace, 5)
@@ -105,12 +105,12 @@ def test_get_contiguous_transport_belts(game):
     assert len(transport_belts) == 1, "Failed to retrieve transport belts"
 def test_get_filtered_entities(game):
     # put down a chest at origin
-    chest = game.place_entity(Prototype.IronChest, position=Position(x=1, y=0))
+    chest = game.place_entity(Prototype.IronChest, position=ent.Position(x=1, y=0))
     # put 100 coal into the chest
     chest = game.insert_item(Prototype.Coal, chest, 5)
 
     # place a stone furnace
-    furnace = game.place_entity(Prototype.StoneFurnace, position=Position(x=3, y=0))
+    furnace = game.place_entity(Prototype.StoneFurnace, position=ent.Position(x=3, y=0))
 
     furnace = game.insert_item(Prototype.Coal, furnace, 5)
 
@@ -120,18 +120,18 @@ def test_get_filtered_entities(game):
 
 
 def test_get_entities_hanging_bug(game):
-    game.move_to(Position(x=1, y=1))
+    game.move_to(ent.Position(x=1, y=1))
 
     # Place offshore pump near water
     water_position = game.nearest(Resource.Water)
     assert water_position, "No water source found nearby"
     game.move_to(water_position)
-    offshore_pump = game.place_entity(Prototype.OffshorePump, Direction.DOWN, water_position)
+    offshore_pump = game.place_entity(Prototype.OffshorePump, ent.Direction.DOWN, water_position)
     assert offshore_pump, "Failed to place offshore pump"
 
     # Place boiler next to offshore pump
     # Important: The boiler needs to be placed with a spacing of 2 to allow for pipe connections
-    boiler = game.place_entity_next_to(Prototype.Boiler, offshore_pump.position, Direction.RIGHT, spacing=2)
+    boiler = game.place_entity_next_to(Prototype.Boiler, offshore_pump.position, ent.Direction.RIGHT, spacing=2)
     assert boiler, "Failed to place boiler"
 
     # add coal to the boiler
@@ -144,7 +144,7 @@ def test_get_entities_hanging_bug(game):
 
     # Place steam engine next to boiler
     # Important: The steam engine needs to be placed with a spacing of 2 to allow for pipe connections
-    steam_engine = game.place_entity_next_to(Prototype.SteamEngine, boiler.position, Direction.RIGHT, spacing=2)
+    steam_engine = game.place_entity_next_to(Prototype.SteamEngine, boiler.position, ent.Direction.RIGHT, spacing=2)
     assert steam_engine, "Failed to place steam engine"
 
     # Connect boiler to steam engine with pipes
@@ -165,7 +165,7 @@ def test_get_assembling_machine_1(game):
     assembling_machine_count = inventory.get(Prototype.AssemblingMachine1, 0)
     assert assembling_machine_count != 0, "Failed to get assembling machine count"
 
-    assembling_machine = game.place_entity(Prototype.AssemblingMachine1, position=Position(x=0, y=0))
+    assembling_machine = game.place_entity(Prototype.AssemblingMachine1, position=ent.Position(x=0, y=0))
     game.set_entity_recipe(assembling_machine, Prototype.IronGearWheel)
     game.insert_item(Prototype.IronPlate, assembling_machine, quantity=5)
 

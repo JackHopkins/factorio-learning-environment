@@ -1,8 +1,8 @@
 import pytest
 
-from env.entities import ResourcePatch
-from env.instance import FactorioInstance
-from env.game_types import Resource
+from fle.env import ResourcePatch
+from fle.env import FactorioInstance
+from fle.env.game_types import Resource
 
 @pytest.fixture()
 def game(instance):

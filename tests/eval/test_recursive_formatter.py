@@ -3,20 +3,20 @@ import tempfile
 import shutil
 from unittest.mock import Mock, patch
 
-from agents.utils.formatters.recursive_formatter import RecursiveFormatter
-from models.conversation import Conversation
-from models.message import Message
-from agents.utils.llm_factory import LLMFactory
+from fle.agents.formatters.recursive_formatter import RecursiveFormatter
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.message import Message
+from fle.agents.llm.api_factory import APIFactory
 
 
 class TestRecursiveFormatter(unittest.TestCase):
     def setUp(self):
         # Create a temporary directory for cache
         self.temp_dir = tempfile.mkdtemp()
-        self.mock_llm = Mock(spec=LLMFactory)
+        self.mock_llm = Mock(spec=APIFactory)
         self.formatter = RecursiveFormatter(
             chunk_size=4,  # Smaller chunk size for testing
-            llm_factory=self.mock_llm,
+            api_factory=self.mock_llm,
             cache_dir=self.temp_dir
         )
 

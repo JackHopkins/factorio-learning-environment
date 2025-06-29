@@ -11,7 +11,7 @@ from dataclasses import asdict
 
 from eval.algorithms.mcts import BeamSampler
 from fle.commons.models.game_state import GameState
-from agents.utils.llm_factory import LLMFactory
+from fle.agents.llm.api_factory import APIFactory
 
 
 class ModelFamily(Enum):
@@ -186,7 +186,7 @@ class MCTSFactory:
     def __init__(self):
         if not MCTSFactory._initialized:
             self.db_client = None
-            self.llm_factory = None
+            self.api_factory = None
             self.instances = None
             self.sampler = None
             MCTSFactory._initialized = True
@@ -196,11 +196,11 @@ class MCTSFactory:
         self.instances = instances
         self.db_client = db_client
         self.config = config
-        self.llm_factory = LLMFactory(model=config.model)
+        self.api_factory = APIFactory(model=config.model)
         self.sampler = _get_sampler(config.sampler_type, db_client, **sampler_config.__dict__)
 
     def create_mcts(self, config: Union[BaseConfig, PlanningConfig, ChunkedConfig, ObjectiveConfig]):
-        if not all([self.instances, self.db_client, self.llm_factory, self.sampler]):
+        if not all([self.instances, self.db_client, self.api_factory, self.sampler]):
             raise ValueError("Factory not initialized. Call initialize() first.")
 
         if config.mcts_type == MCTSType.CHUNKED:
@@ -234,7 +234,7 @@ class MCTSFactory:
         return ParallelMCTS(
             instances=self.instances,
             db_client=self.db_client,
-            llm_factory=self.llm_factory,
+            api_factory=self.api_factory,
             config=mcts_config,
             version=config.version,
             version_description=config.version_description
@@ -244,7 +244,7 @@ class MCTSFactory:
         from eval.algorithms.mcts import ChunkedMCTS
         from eval.algorithms.mcts import ParallelMCTS
         from eval.algorithms.mcts import ParallelMCTSConfig
-        from agents.utils.formatters.conversation_formatter_abc import StructurePreservingFormatter
+        from fle.agents.formatters.conversation_formatter_abc import StructurePreservingFormatter
 
         mcts_config = ParallelMCTSConfig(
             n_parallel=config.n_parallel,
@@ -266,7 +266,7 @@ class MCTSFactory:
         return ParallelMCTS(
             instances=self.instances,
             db_client=self.db_client,
-            llm_factory=self.llm_factory,
+            api_factory=self.api_factory,
             config=mcts_config,
             version=config.version,
             version_description=config.version_description
@@ -276,7 +276,7 @@ class MCTSFactory:
         from eval.algorithms.mcts import ObjectiveMCTS
         from eval.algorithms.mcts import ParallelMCTS
         from eval.algorithms.mcts import ParallelMCTSConfig
-        from agents.utils.formatters.conversation_formatter_abc import StructurePreservingFormatter
+        from fle.agents.formatters.conversation_formatter_abc import StructurePreservingFormatter
 
         mcts_config = ParallelMCTSConfig(
             n_parallel=config.n_parallel,
@@ -299,7 +299,7 @@ class MCTSFactory:
         return ParallelMCTS(
             instances=self.instances,
             db_client=self.db_client,
-            llm_factory=self.llm_factory,
+            api_factory=self.api_factory,
             config=mcts_config,
             version=config.version,
             version_description=config.version_description
@@ -336,7 +336,7 @@ class MCTSFactory:
         return ParallelPlanningMCTS(
             instances=self.instances,
             db_client=self.db_client,
-            llm_factory=self.llm_factory,
+            api_factory=self.api_factory,
             config=mcts_config,
             version=config.version,
             version_description=config.version_description

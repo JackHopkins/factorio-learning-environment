@@ -5,8 +5,8 @@ import json
 from fle.commons.models.technology_state import TechnologyState
 from fle.commons.models.research_state import ResearchState
 from fle.commons.models.achievements import ProductionFlows
-from agents import TaskResponse
-from fle.env import Entity, Direction, Position, EntityStatus, TileDimensions, Dimensions, Inventory, EntityGroup
+from fle.agents import TaskResponse
+from fle.env.entities import Entity, Direction, Position, EntityStatus, TileDimensions, Dimensions, Inventory, EntityGroup
 
 @dataclass
 class GameInfo:

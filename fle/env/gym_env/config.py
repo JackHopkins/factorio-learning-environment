@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
-from agents.gym_agent import GymAgent
+from fle.agents.gym_agent import GymAgent
 from gym_env.observation_formatter import BasicObservationFormatter
 from fle.eval.tasks import TaskABC
 from a2a.types import AgentCard

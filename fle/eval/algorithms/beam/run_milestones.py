@@ -6,8 +6,8 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from agents.utils.llm_factory import LLMFactory
-from cluster.local.cluster_ips import get_local_container_ips
+from fle.agents.llm.api_factory import APIFactory
+from fle.cluster import get_local_container_ips
 from dotenv import load_dotenv
 
 from fle.agents.utils.formatters.recursive_report_formatter import \
@@ -100,13 +100,13 @@ def plot_throughput_timeseries(data, file_path, task):
         # save the plot to the file path
         plt.savefig(file_path)
 
-def initiate_executor(config, instances, version, db_client, version_description, llm_factory, formatter):
+def initiate_executor(config, instances, version, db_client, version_description, api_factory, formatter):
     executor = config["executor"](
         instances=instances,
         version=version,
         db_client=db_client,
         version_description=version_description,
-        llm_factory=llm_factory,
+        api_factory=api_factory,
         config = config["config"],
         formatter=formatter
     )
@@ -244,7 +244,7 @@ async def main():
     #model_to_evaluate = "o1-mini-2024-09-12"
     #model_to_evaluate = 'deepseek-chat'
     version = 332 # 120 and 121 was the last version before this change
-    llm_factory = LLMFactory(model=model_to_evaluate)
+    api_factory = APIFactory(model=model_to_evaluate)
     version_description = "eval_agentic_supervised"
 
     task_folder = Path(__file__).parent.parent.parent / "tasks" / "task_definitions"
@@ -256,7 +256,7 @@ async def main():
 
     formatter = RecursiveReportFormatter(
         chunk_size=128,
-        llm_call=llm_factory.acall,
+        llm_call=api_factory.acall,
         cache_dir='./summary_cache',
     )
     configs = {"beam_supervised": {"config": SupervisedExecutorConfig(
@@ -275,7 +275,7 @@ async def main():
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
-    executor = initiate_executor(configs[search_type], instances, version, db_client, version_description, llm_factory, formatter)
+    executor = initiate_executor(configs[search_type], instances, version, db_client, version_description, api_factory, formatter)
     
     for task_key in tasks:
         # read in the input task

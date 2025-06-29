@@ -3,9 +3,9 @@ from typing import List, Union
 
 import pytest
 
-from env.entities import Entity, Position, ResourcePatch, Recipe, BurnerMiningDrill, EntityGroup
-from env.instance import Direction
-from env.game_types import Prototype, Resource
+from fle.env.entities import Entity, Position, ResourcePatch, Recipe, BurnerMiningDrill, EntityGroup
+from fle.env import DirectionInternal
+from fle.env.game_types import Prototype, Resource
 
 
 @pytest.fixture()

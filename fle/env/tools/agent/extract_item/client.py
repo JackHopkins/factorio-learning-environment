@@ -1,6 +1,6 @@
 from typing import Union
 
-from fle.env import Position, Entity
+from fle.env.entities import Position, Entity
 from fle.env.game_types import Prototype
 from fle.env.tools import Tool
 

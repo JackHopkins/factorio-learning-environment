@@ -5,8 +5,8 @@ from collections import Counter
 import numpy as np
 from psycopg2.extras import DictRow
 
-from models.program import Program
-from eval.open.mcts.samplers.kld_achievement_sampler import KLDiversityAchievementSampler
+from fle.commons.models.program import Program
+from eval.algorithms.mcts import KLDiversityAchievementSampler
 
 
 class TestKLDiversityAchievementSampler(unittest.TestCase):

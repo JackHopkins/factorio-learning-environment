@@ -3,7 +3,7 @@ from typing import Union, Tuple, cast, List, Optional
 from fle.env import FluidHandler, Position, Entity, Generator, Boiler, OffshorePump, Pipe, OilRefinery, \
     ChemicalPlant, IndexedPosition, MultiFluidHandler, PipeGroup, PumpJack, AdvancedAssemblingMachine
 from fle.env.game_types import Prototype, prototype_by_name
-from env.tools.agent.connect_entities.resolver import Resolver
+from fle.env.tools.agent.connect_entities.resolver import Resolver
 
 
 class FluidConnectionResolver(Resolver):

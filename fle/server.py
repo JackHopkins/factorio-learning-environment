@@ -1,5 +1,5 @@
 # Factorio MCP Server
-from env.protocols.mcp_server import mcp
+from fle.env.protocols.mcp_server import mcp
 import env.protocols.mcp_server.tools
 import env.protocols.mcp_server.resources
 import env.protocols.mcp_server.prompts

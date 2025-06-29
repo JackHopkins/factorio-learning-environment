@@ -1,20 +1,21 @@
 import asyncio
 import time
-import pytest
 from unittest.mock import MagicMock, patch
 
-from tools.agent.send_message.client import SendMessage
-from env.a2a_instance import A2AFactorioInstance
-from eval.open.independent_runs.trajectory_runner import TrajectoryRunner
-from env.models.conversation import Conversation
-from env.models.message import Message
-from env.models.game_state import GameState
-from agents.agent_abc import AgentABC
-from agents.basic_agent import BasicAgent
-from eval.open.db_client import PostgresDBClient
-from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
-from eval.tasks.task_abc import TaskABC
-from eval.tasks.default_task import DefaultTask
+import pytest
+
+from fle.agents.agent_abc import AgentABC
+from fle.agents.basic_agent import BasicAgent
+from fle.commons.db_client import PostgresDBClient
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.game_state import GameState
+from fle.commons.models.message import Message
+from fle.env.a2a_instance import A2AFactorioInstance
+from fle.env.tools.agent.send_message.client import SendMessage
+from fle.eval.algorithms.independent import (SimpleFactorioEvaluator,
+                                             TrajectoryRunner)
+from fle.eval.tasks.default_task import DefaultTask
+from fle.eval.tasks.task_abc import TaskABC
 
 
 @pytest.fixture

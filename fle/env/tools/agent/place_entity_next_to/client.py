@@ -1,7 +1,7 @@
 import math
 
-from fle.env import Position, Entity
-from fle.env import DirectionInternalInternal  
+from fle.env.entities import Position, Entity
+from fle.env import DirectionInternal  
 from fle.env.game_types import Prototype
 from fle.env.tools import Tool
 

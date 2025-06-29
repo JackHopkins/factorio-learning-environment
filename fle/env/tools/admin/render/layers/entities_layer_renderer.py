@@ -1,8 +1,8 @@
 from typing import Dict, Callable, List
 from PIL import ImageDraw
 
-from fle.env import Entity, Direction, EntityStatus
-from env.tools.admin.render.layers.layer_renderer import LayerRenderer
+from fle.env.entities import Entity, Direction, EntityStatus
+from fle.env.tools.admin.render.layers.layer_renderer import LayerRenderer
 
 
 class EntitiesLayerRenderer(LayerRenderer):

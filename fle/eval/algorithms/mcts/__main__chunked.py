@@ -6,7 +6,7 @@ import random
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from agents.utils.formatters.conversation_formatter_abc import (
+from fle.agents.formatters.conversation_formatter_abc import (
     PLANNING_ADDITION_PROMPT, StructurePreservingFormatter)
 from dotenv import load_dotenv
 from eval.algorithms.mcts import (BlueprintScenarioSampler, ChunkedMCTS,
@@ -15,8 +15,8 @@ from eval.algorithms.mcts import (BlueprintScenarioSampler, ChunkedMCTS,
 from eval.open.auto_curriculum.plan_sampler import PlanSampler
 from rich import print
 
-from fle.agents.utils.llm_factory import LLMFactory
-from fle.cluster.local.cluster_ips import get_local_container_ips
+from fle.agents.utils.api_factory import APIFactory
+from fle.cluster import get_local_container_ips
 from fle.commons.db_client import DBClient
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.game_state import GameState
@@ -216,7 +216,7 @@ async def main():
 
 
     # Initialize components
-    llm = LLMFactory(CONFIG['model'])
+    llm = APIFactory(CONFIG['model'])
     db_client = DBClient(
         max_conversation_length=CONFIG['max_conv_len'],
         host=os.getenv("SKILLS_DB_HOST"),
@@ -260,7 +260,7 @@ async def main():
     parallel_mcts = ParallelMCTS(
         instances=instances,
         db_client=db_client,
-        llm_factory=llm,
+        api_factory=llm,
         config=mcts_config
     )
 

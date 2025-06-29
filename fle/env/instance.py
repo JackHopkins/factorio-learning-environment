@@ -17,7 +17,7 @@ from concurrent.futures import TimeoutError
 from pathlib import Path
 import logging
 from timeit import default_timer as timer
-from typing_extensions import deprecated, Optional, List, Dict, Any, Enum
+from typing_extensions import deprecated, Optional, List, Dict, Any
 import uuid
 
 from dotenv import load_dotenv
@@ -45,7 +45,11 @@ NONE = 'nil'
 global var
 var = {}
 
-class DirectionInternal(Direction):
+class DirectionInternal(enum.Enum):
+    UP = NORTH = 0
+    RIGHT = EAST = 2
+    DOWN = SOUTH = 4
+    LEFT = WEST = 6
 
     @classmethod
     def opposite(cls, direction):

@@ -1,7 +1,7 @@
 import pytest
 
-from env.entities import Direction, EntityStatus, Position
-from env.game_types import Prototype, Resource, RecipeName
+from fle.env import Direction, EntityStatus, Position
+from fle.env.game_types import Prototype, Resource, RecipeName
 
 
 @pytest.fixture()

@@ -2,16 +2,16 @@ import asyncio
 import tempfile
 from unittest.mock import Mock
 
-from agents.utils.llm_factory import LLMFactory
-from agents.utils.formatters.recursive_formatter import RecursiveFormatter
-from models.conversation import Conversation
-from models.message import Message
+from fle.agents.llm.api_factory import APIFactory
+from fle.agents.formatters.recursive_formatter import RecursiveFormatter
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.message import Message
 
 temp_dir = tempfile.mkdtemp()
-mock_llm = Mock(spec=LLMFactory)
+mock_llm = Mock(spec=APIFactory)
 formatter = RecursiveFormatter(
             chunk_size=16,  # Smaller chunk size for testing
-            llm_factory=mock_llm,
+            api_factory=mock_llm,
             cache_dir=temp_dir
 )
 

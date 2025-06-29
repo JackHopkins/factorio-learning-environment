@@ -1,6 +1,6 @@
 import json
-from env.entities import Position, Direction, EntityStatus
-from env.game_types import Resource, Prototype
+from fle.env.entities import Position, Direction, EntityStatus
+from fle.env.game_types import Resource, Prototype
 import pytest
 
 @pytest.fixture()

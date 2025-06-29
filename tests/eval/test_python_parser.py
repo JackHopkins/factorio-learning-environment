@@ -1,6 +1,6 @@
 import pytest
 from typing import NamedTuple
-from agents.utils.python_parser import PythonParser
+from fle.agents.llm.parsing import PythonParser
 
 class MockMessage(NamedTuple):
     content: str

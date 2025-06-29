@@ -3,20 +3,20 @@ from collections import deque
 from typing import Optional
 
 import tenacity
-from . import CompletionResult, Policy, Response
-from .agent_abc import AgentABC
-from .basic_agent import GENERAL_INSTRUCTIONS
-from agents.formatters.recursive_report_formatter import \
-    RecursiveReportFormatter
-from agents.llm.api_factory import APIFactory
-from agents.llm.parse_response import parse_response
-from env.namespace import FactorioNamespace
 from tenacity import (retry_if_exception_type, wait_exponential,
                       wait_random_exponential)
 
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters
 from fle.commons.models.message import Message
+from fle.env.namespace import FactorioNamespace
+
+from . import CompletionResult, Policy, Response
+from .agent_abc import AgentABC
+from .basic_agent import GENERAL_INSTRUCTIONS
+from .formatters.recursive_report_formatter import RecursiveReportFormatter
+from .llm.api_factory import APIFactory
+from .llm.parsing import parse_response
 
 GENERAL_INSTRUCTIONS_BACKTRACKING = \
 """

@@ -1,6 +1,6 @@
 import pytest
 
-from env.game_types import Prototype, Resource
+from fle.env.game_types import Prototype, Resource
 
 
 @pytest.fixture()

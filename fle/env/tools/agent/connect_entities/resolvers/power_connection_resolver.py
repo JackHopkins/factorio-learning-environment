@@ -1,6 +1,6 @@
 from typing import Union, Tuple, List, Set
-from fle.env import Position, Entity, ElectricityGroup
-from env.tools.agent.connect_entities.resolver import Resolver
+from fle.env.entities import Position, Entity, ElectricityGroup
+from fle.env.tools.agent.connect_entities.resolver import Resolver
 
 
 class PowerConnectionResolver(Resolver):

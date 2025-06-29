@@ -1,10 +1,10 @@
 from time import sleep
 
-from fle.env import Position
+from fle.env.entities import Position
 from fle.env.game_types import Resource
-from env.tools.agent.get_entity.client import GetEntity
-from env.tools.agent.move_to.client import MoveTo
-from env.tools.agent.nearest.client import Nearest
+from fle.env.tools.agent.get_entity.client import GetEntity
+from fle.env.tools.agent.move_to.client import MoveTo
+from fle.env.tools.agent.nearest.client import Nearest
 from fle.env.tools import Tool
 
 

@@ -1,5 +1,5 @@
 from typing import Dict, Optional, Tuple, Any
-from fle.env import EntityStatus
+from fle.env.entities import EntityStatus
 
 
 class RenderConfig:

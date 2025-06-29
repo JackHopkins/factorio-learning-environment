@@ -1,7 +1,7 @@
 import pytest
 
-from env.entities import Position, Layer
-from env.game_types import Prototype, Resource
+from fle.env.entities import Position, Layer
+from fle.env.game_types import Prototype, Resource
 
 
 @pytest.fixture()

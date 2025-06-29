@@ -7,23 +7,25 @@ from typing import List
 
 import psycopg2
 import tenacity
-from tenacity import wait_exponential, retry, retry_if_exception_type
+from fle.agents.formatters.conversation_formatter_abc import (
+    ConversationFormatter, DefaultFormatter)
+from fle.agents.llm.parsing import PythonParser
+from tenacity import retry, retry_if_exception_type, wait_exponential
 
-from agents.utils.python_parser import PythonParser
-from fle.commons.models.conversation import Conversation
-from fle.commons.models.message import Message
-from fle.commons.models.generation_parameters import GenerationParameters
-from agents.utils.formatters.conversation_formatter_abc import ConversationFormatter, DefaultFormatter
 from fle.commons.db_client import DBClient
-from eval.evaluator import Evaluator
+from fle.commons.models.conversation import Conversation
 from fle.commons.models.game_state import GameState
+from fle.commons.models.generation_parameters import GenerationParameters
+from fle.commons.models.message import Message
 from fle.commons.models.program import Program
-from eval.algorithms.mcts import DBSampler
+
+from ...evaluator import Evaluator
+from .samplers.db_sampler import DBSampler
 
 
 class MCTS:
     def __init__(self,
-                 llm_factory: 'LLMFactory',
+                 api_factory: 'APIFactory',
                  db_client: DBClient,
                  evaluator: Evaluator,
                  sampler: DBSampler,
@@ -38,7 +40,7 @@ class MCTS:
                  maximum_lookback=20
                  ):
 
-        self.llm = llm_factory
+        self.llm = api_factory
         self.db = db_client
         self.evaluator = evaluator
         self.system_prompt = system_prompt

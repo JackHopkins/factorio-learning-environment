@@ -2,12 +2,12 @@ import asyncio
 from typing import List, Dict, Any
 import re
 
-from agents.utils.llm_factory import LLMFactory
+from fle.agents.llm.api_factory import APIFactory
 
 
 class ObjectiveTreeSampler:
-    def __init__(self, llm_factory):
-        self.llm = llm_factory
+    def __init__(self, api_factory):
+        self.llm = api_factory
         self.indent_pattern = re.compile(r'^(\s*)')
 
     def _get_indent_level(self, line: str) -> int:
@@ -115,8 +115,8 @@ class ObjectiveTreeSampler:
 
 
 async def main():
-    llm_factory = LLMFactory(model="ft:gpt-4o-mini-2024-07-18:paperplane-ai:plans-tree:AcZ8gHSo")
-    sampler = ObjectiveTreeSampler(llm_factory)
+    api_factory = APIFactory(model="ft:gpt-4o-mini-2024-07-18:paperplane-ai:plans-tree:AcZ8gHSo")
+    sampler = ObjectiveTreeSampler(api_factory)
     objectives = await sampler.sample_tree(['1. Set up a basic smelting operation', '2. Optimize furnace layout'], number=1)
 
     for objective in objectives:

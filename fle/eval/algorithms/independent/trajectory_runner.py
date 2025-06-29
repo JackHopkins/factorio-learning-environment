@@ -7,28 +7,28 @@ import time
 from dataclasses import dataclass
 from typing import Optional, Dict, List
 import multiprocessing
-from env.a2a_instance import A2AFactorioInstance
-from env.a2a_namespace import A2AFactorioNamespace
+from fle.env.a2a_instance import A2AFactorioInstance
+from fle.env.a2a_namespace import A2AFactorioNamespace
 from dotenv import load_dotenv
 
-from agents import CompletionResult, CompletionReason
-from agents.agent_abc import AgentABC
-from agents.basic_agent import BasicAgent
+from fle.agents import CompletionResult, CompletionReason
+from fle.agents.agent_abc import AgentABC
+from fle.agents.basic_agent import BasicAgent
 from fle.commons.db_client import DBClient, create_db_client
 from fle.eval.algorithms.independent.simple_evaluator import SimpleFactorioEvaluator
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
 from fle.commons.models.program import Program
 from fle.env import FactorioInstance
-from cluster.local.cluster_ips import get_local_container_ips
-from agents.utils.python_parser import PythonParser
-from agents.utils.metrics import timing_tracker, log_metrics
+from fle.cluster import get_local_container_ips
+from fle.agents.llm.parsing import PythonParser
+from fle.agents.llm.metrics import timing_tracker, log_metrics
 #from fle.commons.models.response import EnvironmentResponse
-from env.namespace import FactorioNamespace
-from env.protocols.a2a.handler import A2AMessage
+from fle.env.namespace import FactorioNamespace
+from fle.env.protocols.a2a.handler import A2AMessage
 from a2a.types import AgentCard
 
-from agents import Response
+from fle.agents import Response
 import json
 from fle.eval.tasks import TaskABC
 load_dotenv()
@@ -54,7 +54,7 @@ class TrajectoryRunner:
     """Handles program generation and evaluation for a single trajectory"""
 
     def __init__(self,
-                 #llm_factory: LLMFactory,
+                 #api_factory: APIFactory,
                  agents: list[AgentABC],
                  db_client: DBClient,
                  evaluator: SimpleFactorioEvaluator,

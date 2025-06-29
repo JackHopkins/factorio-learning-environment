@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional
 from fle.env import Inventory, Entity
 from fle.env import FactorioInstance
-from agents import TaskResponse
+from fle.agents import TaskResponse
 from fle.commons.models.game_state import GameState
 class TaskABC:
     def __init__(self, trajectory_length, starting_inventory: Inventory, goal_description: str, task_key: str, all_technology_reserached: bool = False, agent_instructions: Optional[List[str]] = None):

@@ -1,13 +1,13 @@
 
 from typing import Union
 
-from fle.env import Entity, Direction
+from fle.env.entities import Entity, Direction
 from fle.env.game_types import prototype_by_name, prototype_by_title, Prototype
 from fle.env import DirectionInternal as DirectionA
-from env.tools.agent.can_place_entity.client import CanPlaceEntity
-from env.tools.agent.connect_entities.client import ConnectEntities
-from env.tools.agent.pickup_entity.client import PickupEntity
-from env.tools.agent.place_entity.client import PlaceObject as PlaceEntity
+from fle.env.tools.agent.can_place_entity.client import CanPlaceEntity
+from fle.env.tools.agent.connect_entities.client import ConnectEntities
+from fle.env.tools.agent.pickup_entity.client import PickupEntity
+from fle.env.tools.agent.place_entity.client import PlaceObject as PlaceEntity
 from fle.env.tools import Tool
 
 

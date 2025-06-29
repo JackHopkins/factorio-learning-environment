@@ -7,12 +7,12 @@ import signal
 import sys
 from typing import List
 
-from cluster.local.cluster_ips import get_local_container_ips
+from fle.cluster import get_local_container_ips
 from dotenv import load_dotenv
 
 from fle.agents.utils.formatters.recursive_report_formatter import \
     RecursiveReportFormatter
-from fle.agents.utils.llm_factory import LLMFactory
+from fle.agents.utils.api_factory import APIFactory
 from fle.commons.db_client import DBClient, create_db_client
 from fle.commons.models.game_state import GameState
 from fle.env import FactorioInstance
@@ -126,25 +126,25 @@ async def run_model_search(model: str, instance_start: int, version: int, resume
         beam_kwargs={'error_penalty': 0}
     )
 
-    llm_factory = LLMFactory(model=model)
+    api_factory = APIFactory(model=model)
 
     # formatter = RecursiveFormatter(
     #     chunk_size=32,
-    #     llm_factory=llm_factory,
+    #     api_factory=api_factory,
     #     cache_dir='./summary_cache',
     #     summary_instructions=API_SCHEMA + HISTORY_SUMMARIZATION_INSTRUCTIONS,
     #     summarize_history=False
     # )
     formatter = RecursiveReportFormatter(
         chunk_size=32,
-        llm_call=llm_factory.acall,
+        llm_call=api_factory.acall,
         cache_dir='summary_cache',
     )
 
     parallel_beam = ParallelBeamSearch(
         instances=instances,
         db_client=db_client,
-        llm_factory=llm_factory,
+        api_factory=api_factory,
         config=config,
         version=version,
         version_description=f"model:{model}\ntype:beam",

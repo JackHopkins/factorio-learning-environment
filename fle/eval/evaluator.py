@@ -3,12 +3,12 @@ import copy
 import pickle
 from typing import Dict, List, Tuple, Union
 
-from env.utils.profits import get_achievements
+from fle.env.utils.profits import get_achievements
 
 from fle.commons.db_client import DBClient
 from fle.commons.models.game_state import GameState
 from fle.commons.models.program import Program
-from fle.env import Entity, EntityGroup, FactorioInstance
+from fle.env.entities import Entity, EntityGroup, FactorioInstance
 
 from .algorithms.mcts import FactorioLogger
 

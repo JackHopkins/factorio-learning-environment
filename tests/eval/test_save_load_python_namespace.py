@@ -1,10 +1,10 @@
 import pickle
 import unittest
 
-from env.eval.open.mcts.chunked_mcts import ChunkedMCTS
-from env.models.game_state import GameState
-from env.game_types import Prototype
-from env.instance import FactorioInstance
+from fle.env.eval.open.mcts.chunked_mcts import ChunkedMCTS
+from fle.commons.models.game_state import GameState
+from fle.env.game_types import Prototype
+from fle.env import FactorioInstance
 
 FULL_PROGRAM = \
 '''

@@ -1,8 +1,8 @@
 import unittest
-from models.conversation import Conversation
-from models.message import Message
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.message import Message
 
-from agents.utils.formatters.conversation_formatter_abc import StructurePreservingFormatter, CodeProcessor
+from fle.agents.utils.formatters.conversation_formatter_abc import StructurePreservingFormatter, CodeProcessor
 
 
 class TestStructurePreservingFormatter(unittest.TestCase):

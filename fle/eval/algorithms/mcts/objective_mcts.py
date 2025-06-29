@@ -4,9 +4,9 @@ from typing import List
 
 import psycopg2
 import tenacity
-from agents.utils.formatters.conversation_formatter_abc import (
+from fle.agents.formatters.conversation_formatter_abc import (
     ConversationFormatter, DefaultFormatter)
-from agents.utils.llm_factory import LLMFactory
+from fle.agents.llm.api_factory import APIFactory
 from tenacity import retry, retry_if_exception_type, wait_exponential
 
 from fle.commons.db_client import DBClient
@@ -32,7 +32,7 @@ If the environment indicates that your have successfully completed all the steps
 
 class ObjectiveMCTS(MCTS):
     def __init__(self,
-                 llm_factory: 'LLMFactory',
+                 api_factory: 'APIFactory',
                  db_client: DBClient,
                  evaluator: Evaluator,
                  sampler: DBSampler,
@@ -47,8 +47,8 @@ class ObjectiveMCTS(MCTS):
                  objective_model: str = "ft:gpt-4o-mini-2024-07-18:paperplane-ai:plans-tree:AcZ8gHSo"
                  ):
         self.logit_bias = logit_bias
-        self.objective_tree_sampler = ObjectiveTreeSampler(LLMFactory(model=objective_model))
-        super().__init__(llm_factory,
+        self.objective_tree_sampler = ObjectiveTreeSampler(APIFactory(model=objective_model))
+        super().__init__(api_factory,
                          db_client,
                          evaluator,
                          sampler,

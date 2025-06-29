@@ -4,11 +4,11 @@ import concurrent.futures
 import os
 from typing import List, Tuple
 
-from cluster.local.cluster_ips import get_local_container_ips
+from fle.cluster import get_local_container_ips
 from dotenv import load_dotenv
 
 from fle.agents.utils.formatters.recursive_formatter import RecursiveFormatter
-from fle.agents.utils.llm_factory import LLMFactory
+from fle.agents.utils.api_factory import APIFactory
 from fle.commons.db_client import DBClient
 from fle.commons.models import GameState
 from fle.env import FactorioInstance
@@ -198,11 +198,11 @@ async def main():
         #model = 'gpt-4o'
         #current_depth = 0#await db_client.get_largest_depth_in_version(largest_version_to_date)
 
-        llm_factory = LLMFactory(model=model)
+        api_factory = APIFactory(model=model)
 
         formatter = RecursiveFormatter(
             chunk_size=32,
-            llm_factory=llm_factory,
+            api_factory=api_factory,
             cache_dir='summary_cache',
             summary_instructions=API_SCHEMA + HISTORY_SUMMARIZATION_INSTRUCTIONS,
             summarize_history=False # Summarizing history seems to make it worse. We clip instead.
@@ -211,7 +211,7 @@ async def main():
         parallel_beam = ParallelBeamSearch(
             instances=instances,
             db_client=db_client,
-            llm_factory=llm_factory,
+            api_factory=api_factory,
             config=config,
             version=version_to_use,
             version_description=f"model:{model}\ntype:beam",

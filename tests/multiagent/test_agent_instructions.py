@@ -1,8 +1,8 @@
 import pytest
-from agents.basic_agent import BasicAgent
-from eval.tasks.task_abc import TaskABC
-from eval.tasks.unbounded_throughput_task import UnboundedThroughputTask
-from env.entities import Entity
+from fle.agents.basic_agent import BasicAgent
+from fle.eval.tasks import TaskABC
+from fle.eval.tasks import UnboundedThroughputTask
+from fle.env.entities import Entity
 
 def test_basic_agent_instructions():
     """Test that agent instructions are properly incorporated into BasicAgent system prompts"""

@@ -2,7 +2,7 @@ from typing import List, Dict, Tuple, Any, Callable
 from PIL import Image, ImageDraw
 import math
 
-from env.tools.admin.render.utils.render_config import RenderConfig
+from fle.env.tools.admin.render.utils.render_config import RenderConfig
 
 
 class TileRenderer:

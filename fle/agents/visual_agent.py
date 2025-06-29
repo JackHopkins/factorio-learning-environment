@@ -1,21 +1,21 @@
 import base64
 import io
-import tenacity
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
-from agents import Response, CompletionResult, Policy
-from agents.agent_abc import AgentABC
-from agents.basic_agent import GENERAL_INSTRUCTIONS, FINAL_INSTRUCTION
-from agents.formatters.recursive_report_formatter import RecursiveReportFormatter
-from agents.llm.api_factory import APIFactory
-from agents.llm.parse_response import parse_response
+import tenacity
+from tenacity import retry_if_exception_type, wait_exponential
+
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters
-from tenacity import wait_exponential, retry_if_exception_type
-from fle.env import Layer, Position, BoundingBox
-from fle.env import FactorioNamespace
-
+from fle.env import BoundingBox, FactorioNamespace, Layer, Position
 from fle.env.tools.admin.render.client import Render
+
+from . import CompletionResult, Policy, Response
+from .agent_abc import AgentABC
+from .basic_agent import FINAL_INSTRUCTION, GENERAL_INSTRUCTIONS
+from .formatters.recursive_report_formatter import RecursiveReportFormatter
+from .llm.api_factory import APIFactory
+from .llm.parsing import parse_response
 
 VISUAL_INSTRUCTIONS = \
 """

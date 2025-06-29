@@ -1,6 +1,6 @@
 """Environment and game interaction"""
 
-from .entities import Direction, Entity, EntityGroup, Inventory, Position
+from .entities import *
 from .game_types import Prototype, Resource
 from .instance import DirectionInternal, FactorioInstance
 

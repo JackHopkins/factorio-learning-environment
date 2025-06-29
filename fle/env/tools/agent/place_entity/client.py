@@ -1,11 +1,10 @@
 from time import sleep
 
-from fle.env import Position, Entity
-from fle.env import DirectionInternalInternal
-from fle.env import Direction as DirectionEntities
+from fle.env.entities import Position, Entity
+from fle.env import DirectionInternal, Direction
 from fle.env.game_types import Prototype
-from env.tools.agent.get_entity.client import GetEntity
-from env.tools.agent.pickup_entity.client import PickupEntity
+from fle.env.tools.agent.get_entity.client import GetEntity
+from fle.env.tools.agent.pickup_entity.client import PickupEntity
 from fle.env.tools import Tool
 
 
@@ -44,7 +43,7 @@ class PlaceObject(Tool):
         if not isinstance(position, Position):
             raise ValueError("The first argument must be a Prototype object")
 
-        if not isinstance(direction, (DirectionInternal, DirectionEntities)):
+        if not isinstance(direction, (DirectionInternal, Direction)):
             raise ValueError("The second argument must be a Direction object")
 
         x, y = self.get_position(position)

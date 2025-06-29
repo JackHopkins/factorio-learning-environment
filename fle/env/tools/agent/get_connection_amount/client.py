@@ -1,9 +1,9 @@
 
 from typing import Tuple, List, Union
 
-from fle.env import Entity, Position, EntityGroup
+from fle.env.entities import Entity, Position, EntityGroup
 from fle.env.game_types import Prototype
-from env.tools.agent.connect_entities.client import ConnectEntities
+from fle.env.tools.agent.connect_entities.client import ConnectEntities
 from fle.env.tools import Tool
 
 

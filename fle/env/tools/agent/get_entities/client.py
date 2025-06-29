@@ -1,8 +1,8 @@
 from time import sleep
 from typing import List, Set, Union
-from fle.env import Position, Entity, EntityGroup
+from fle.env.entities import Position, Entity, EntityGroup
 from fle.env.game_types import Prototype
-from env.tools.agent.connect_entities.groupable_entities import agglomerate_groupable_entities
+from fle.env.tools.agent.connect_entities.groupable_entities import agglomerate_groupable_entities
 from fle.env.tools import Tool
 
 

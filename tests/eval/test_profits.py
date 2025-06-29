@@ -1,5 +1,5 @@
 import math
-from instance import FactorioInstance
+from fle.env import FactorioInstance
 from utils.profits import eval_program_with_profits
 
 def test_profits():

@@ -1,19 +1,21 @@
-import asyncio
 import argparse
+import asyncio
+import json
 import multiprocessing
 import os
-from dotenv import load_dotenv
 from pathlib import Path
-import json
-import gym
 
-from agents.gym_agent import GymAgent
-from gym_env.trajectory_runner import GymTrajectoryRunner
-from gym_env.config import GymRunConfig, GymEvalConfig
+import gym
+from dotenv import load_dotenv
+from gym_env.config import GymEvalConfig, GymRunConfig
 from gym_env.observation_formatter import BasicObservationFormatter
-from gym_env.registry import list_available_environments, get_environment_info
-from cluster.local.cluster_ips import get_local_container_ips
-from eval.open.independent_runs.trajectory_runner import get_next_version, create_db_client
+from gym_env.registry import get_environment_info, list_available_environments
+from gym_env.trajectory_runner import GymTrajectoryRunner
+
+from fle.agents.gym_agent import GymAgent
+from fle.cluster import get_local_container_ips
+from fle.commons.db_client import create_db_client
+from fle.eval.algorithms.independent import get_next_version
 
 load_dotenv()
 

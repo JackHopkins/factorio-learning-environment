@@ -1,11 +1,15 @@
-import logging
 import asyncio
-from typing import Optional, List
+import logging
 from threading import Lock
-from fle.env import FactorioInstance
-from env.a2a_namespace import A2AFactorioNamespace
-from env.protocols.a2a.server import ServerManager
+from typing import List, Optional
+
 from a2a.types import AgentCard
+
+from fle.env import FactorioInstance
+
+from .a2a_namespace import A2AFactorioNamespace
+from .protocols.a2a.server import ServerManager
+
 
 class A2AFactorioInstance(FactorioInstance):
     """A FactorioInstance with A2A (Agent-to-Agent) communication support."""

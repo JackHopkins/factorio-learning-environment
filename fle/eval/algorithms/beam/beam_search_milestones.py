@@ -28,7 +28,7 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
                  instances: List[FactorioInstance],
                  db_client: DBClient,
                  formatter: Any,
-                 llm_factory: Any,
+                 api_factory: Any,
                  config: SupervisedExecutorConfig,
                  version=None,
                  version_description=""
@@ -39,11 +39,11 @@ class MilestonesBeamSearchExecutor(SupervisedTaskExecutorABC):
         Args:
             instances: List of Factorio instances to distribute
             db_client: Database client
-            llm_factory: Factory for creating language models
+            api_factory: Factory for creating language models
             config: Configuration parameters including model paths and prompts
         """
 
-        super().__init__(instances, db_client, llm_factory, config, version, version_description)
+        super().__init__(instances, db_client, api_factory, config, version, version_description)
 
         self.model_to_evaluate = config.model_to_evaluate
         self.system_prompt = config.supervised_kwargs["system_prompt"]

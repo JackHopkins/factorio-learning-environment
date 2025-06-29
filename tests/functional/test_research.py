@@ -1,9 +1,9 @@
 import pytest
 
-from cluster.local.cluster_ips import get_local_container_ips
+from fle.cluster import get_local_container_ips
 from instance import Direction, FactorioInstance
 from game_types import Resource, Prototype, Technology
-from models.game_state import GameState
+from fle.commons.models.game_state import GameState
 
 
 @pytest.fixture()

@@ -2,14 +2,15 @@ import unittest
 from dataclasses import dataclass
 from typing import Optional
 
-from eval.open.mcts.chunked_mcts import ChunkedMCTS
+from fle.eval.algorithms.mcts import ChunkedMCTS
+from fle.commons.models.game_state import GameState
 
 
 @dataclass
 class ProgramChunk:
     docstring: str
     code: str
-    state: Optional['GameState'] = None
+    state: Optional[GameState] = None
     reward: float = 0.0
 
 FULL_PROGRAM = \

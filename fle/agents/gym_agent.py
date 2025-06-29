@@ -1,12 +1,6 @@
 import copy
 from typing import Any, Optional
 
-from agents import CompletionResult, Policy, Response
-from agents.agent_abc import AgentABC
-from agents.formatters.recursive_report_formatter import \
-    RecursiveReportFormatter
-from agents.llm.api_factory import APIFactory
-from agents.llm.parse_response import parse_response
 from env.gym_env.observation import Observation
 
 from fle.commons.models.conversation import Conversation
@@ -14,6 +8,12 @@ from fle.commons.models.generation_parameters import GenerationParameters
 from fle.commons.models.program import Program
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
 from fle.eval.tasks import TaskABC
+
+from . import CompletionResult, Policy, Response
+from .agent_abc import AgentABC
+from .formatters.recursive_report_formatter import RecursiveReportFormatter
+from .llm.api_factory import APIFactory
+from .llm.parsing import parse_response
 
 GYM_AGENT_INSTRUCTIONS = \
 """

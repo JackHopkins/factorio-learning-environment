@@ -1,8 +1,8 @@
 import pytest
 
-from env.entities import Position, Furnace
-from env.instance import Direction
-from env.game_types import Prototype, Resource
+from fle.env import DirectionInternal
+from fle.env.entities import Furnace, Position
+from fle.env.game_types import Prototype, Resource
 
 
 @pytest.fixture()
@@ -36,10 +36,10 @@ def test_get_offshore_pump(game):
     # Check initial inventory
     position = game.nearest(Resource.Water)
     game.move_to(position)
-    offshore_pump = game.place_entity(Prototype.OffshorePump, Direction.RIGHT, position)
+    offshore_pump = game.place_entity(Prototype.OffshorePump, DirectionInternal.RIGHT, position)
     assert offshore_pump is not None, "Failed to place offshore pump"
 
-    boiler = game.place_entity_next_to(Prototype.Boiler, offshore_pump.position, Direction.RIGHT, spacing=2)
+    boiler = game.place_entity_next_to(Prototype.Boiler, offshore_pump.position, DirectionInternal.RIGHT, spacing=2)
     assert boiler
 
     pipes = game.connect_entities(boiler, offshore_pump, Prototype.Pipe)
@@ -65,7 +65,7 @@ def test_get_stone_furnace(game):
     position = game.nearest(Resource.Stone)
     game.move_to(position)
     # 1. Place a stone furnace
-    stone_furnace = game.place_entity(Prototype.StoneFurnace, Direction.UP, position)
+    stone_furnace = game.place_entity(Prototype.StoneFurnace, DirectionInternal.UP, position)
     assert stone_furnace is not None, "Failed to place stone furnace"
     assert stone_furnace.warnings == ['out of fuel', 'no ingredients to smelt'], "Failed to place stone furnace"
 
@@ -88,7 +88,7 @@ def test_get_mining_drill(game):
     # Check initial inventory
     position = game.nearest(Resource.IronOre)
     game.move_to(position)
-    mining_drill = game.place_entity(Prototype.BurnerMiningDrill, Direction.UP, position)
+    mining_drill = game.place_entity(Prototype.BurnerMiningDrill, DirectionInternal.UP, position)
     game.insert_item(Prototype.Coal, mining_drill, 5)
     assert mining_drill is not None, "Failed to place mining drill"
 

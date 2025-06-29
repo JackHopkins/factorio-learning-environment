@@ -3,14 +3,14 @@ import asyncio
 import argparse
 import multiprocessing
 from dotenv import load_dotenv
-from agents.basic_agent import BasicAgent
+from fle.agents.basic_agent import BasicAgent
 from eval.open.independent_runs.trajectory_runner import run_process, get_next_version, create_factorio_instance, EvalConfig
 from fle.eval.tasks import TaskFactory
 from pathlib import Path
 import json
 from dataclasses import dataclass
 load_dotenv()
-from cluster.local.cluster_ips import get_local_container_ips
+from fle.cluster import get_local_container_ips
 
 
 @dataclass  

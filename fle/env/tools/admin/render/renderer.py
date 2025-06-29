@@ -2,25 +2,25 @@ from PIL import Image, ImageDraw, ImageFont
 import math
 from typing import List, Dict, Optional, Tuple, Any, Set
 
-from fle.env import Entity, Position, BoundingBox, Layer, EntityStatus
-from env.tools.admin.render.layers.connection_layers_renderer import ConnectionsLayerRenderer
-from env.tools.admin.render.layers.marker_layers_renderer import MarkersLayerRenderer
-from env.tools.admin.render.layers.resource_layer_renderer import ResourcesLayerRenderer
-from env.tools.admin.render.utils.electricity_renderer import ElectricityLayerRenderer
-from env.tools.admin.render.utils.render_config import RenderConfig
-from env.tools.admin.render.utils.entity_categoriser import EntityCategoriser
-from env.tools.admin.render.utils.colour_manager import ColourManager
-from env.tools.admin.render.utils.shape_renderer import ShapeRenderer
-from env.tools.admin.render.utils.legend_renderer import LegendRenderer
-from env.tools.admin.render.utils.connection_renderer import ConnectionRenderer
-from env.tools.admin.render.utils.image_calculator import ImageCalculator
+from fle.env.entities import Entity, Position, BoundingBox, Layer, EntityStatus
+from fle.env.tools.admin.render.layers.connection_layers_renderer import ConnectionsLayerRenderer
+from fle.env.tools.admin.render.layers.marker_layers_renderer import MarkersLayerRenderer
+from fle.env.tools.admin.render.layers.resource_layer_renderer import ResourcesLayerRenderer
+from fle.env.tools.admin.render.utils.electricity_renderer import ElectricityLayerRenderer
+from fle.env.tools.admin.render.utils.render_config import RenderConfig
+from fle.env.tools.admin.render.utils.entity_categoriser import EntityCategoriser
+from fle.env.tools.admin.render.utils.colour_manager import ColourManager
+from fle.env.tools.admin.render.utils.shape_renderer import ShapeRenderer
+from fle.env.tools.admin.render.utils.legend_renderer import LegendRenderer
+from fle.env.tools.admin.render.utils.connection_renderer import ConnectionRenderer
+from fle.env.tools.admin.render.utils.image_calculator import ImageCalculator
 
 
 # Import layer renderers
-from env.tools.admin.render.layers.grid_layer_renderer import GridLayerRenderer
-from env.tools.admin.render.layers.water_layer_renderer import WaterLayerRenderer
-from env.tools.admin.render.layers.natural_layer_renderer import NaturalLayerRenderer
-from env.tools.admin.render.layers.entities_layer_renderer import EntitiesLayerRenderer
+from fle.env.tools.admin.render.layers.grid_layer_renderer import GridLayerRenderer
+from fle.env.tools.admin.render.layers.water_layer_renderer import WaterLayerRenderer
+from fle.env.tools.admin.render.layers.natural_layer_renderer import NaturalLayerRenderer
+from fle.env.tools.admin.render.layers.entities_layer_renderer import EntitiesLayerRenderer
 
 
 

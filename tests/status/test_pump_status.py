@@ -2,8 +2,8 @@ import math
 
 import pytest
 
-from env.entities import Direction, Position, EntityStatus
-from env.game_types import Resource, Prototype
+from fle.env import Direction, Position, EntityStatus
+from fle.env.game_types import Resource, Prototype
 
 
 @pytest.fixture()

@@ -1,6 +1,6 @@
 import unittest
 
-from agents.utils.python_parser import PythonParser
+from fle.agents.llm.parsing import PythonParser
 
 
 class TestChunkBasedPythonParser(unittest.TestCase):

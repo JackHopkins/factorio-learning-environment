@@ -2,7 +2,7 @@ import ast
 import inspect
 from typing import Any
 
-from env.utils.controller_loader.call_info import CallInfo
+from fle.env.utils.controller_loader.call_info import CallInfo
 
 
 class CodeAnalyzer:

@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from cluster.local.cluster_ips import get_local_container_ips
-from instance import FactorioInstance
+from fle.cluster import get_local_container_ips
+from fle.env import FactorioInstance
 
 # Add the src directory to the Python path
 src_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

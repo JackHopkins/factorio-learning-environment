@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from math import floor
 from typing import Any, Dict, List, Optional, Tuple
 
-from agents.utils.formatters.conversation_formatter_abc import (
+from fle.agents.formatters.conversation_formatter_abc import (
     ConversationFormatter, StructurePreservingFormatter)
 from eval.algorithms.mcts import (GroupedFactorioLogger, InitialPlanOutput,
                                   LanguageOutput, ParallelMCTSConfig,
@@ -41,7 +41,7 @@ class ParallelPlanningMCTS:
     def __init__(self,
                  instances: List[FactorioInstance],
                  db_client: DBClient,
-                 llm_factory: Any,
+                 api_factory: Any,
                  config: ParallelMCTSConfig,
                  version=26,
                  version_description="",
@@ -53,14 +53,14 @@ class ParallelPlanningMCTS:
         Args:
             instances: List of Factorio instances to distribute
             db_client: Database client
-            llm_factory: Factory for creating language models
+            api_factory: Factory for creating language models
             config: Configuration parameters including model paths and prompts
         """
         self.console = Console()
         self.config = config
         self.sampler = config.sampler
         self.db_client = db_client
-        self.llm = llm_factory
+        self.llm = api_factory
         self.version = version
         self.version_description = version_description
         self.formatter = formatter
@@ -139,7 +139,7 @@ class ParallelPlanningMCTS:
 
             # Create MCTS instance
             mcts = self.config.mcts_class(
-                llm_factory=self.llm,
+                api_factory=self.llm,
                 db_client=self.db_client,
                 sampler=self.sampler,
                 evaluator=evaluator,

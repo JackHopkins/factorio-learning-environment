@@ -1,8 +1,6 @@
 import pytest
 
-from env.entities import Position
-from env.instance import Direction
-from env.game_types import Prototype, Resource
+from fle.env.entities import Position, DirectionInternal, Direction, Prototype, Resource
 
 @pytest.fixture()
 def game(instance):
@@ -65,4 +63,4 @@ def test_place_boiler_next_to_offshore_pump_rotate_and_connect(game):
                                        spacing=2)
 
     # rotate the boiler to face the offshore pump
-    boiler = game.rotate_entity(boiler, Direction.next_clockwise(direction))
+    boiler = game.rotate_entity(boiler, DirectionInternal.next_clockwise(direction))

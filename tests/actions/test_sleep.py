@@ -2,9 +2,9 @@ import time
 
 import pytest
 
-from env.entities import Position
-from env.instance import Direction
-from env.game_types import Prototype, Resource
+from fle.env.entities import Position
+from fle.env import DirectionInternal
+from fle.env.game_types import Prototype, Resource
 
 
 @pytest.fixture()

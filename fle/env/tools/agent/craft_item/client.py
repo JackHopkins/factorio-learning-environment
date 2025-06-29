@@ -1,7 +1,7 @@
 from time import sleep
 
 from fle.env.game_types import Prototype
-from env.tools.agent.inspect_inventory.client import InspectInventory
+from fle.env.tools.agent.inspect_inventory.client import InspectInventory
 from fle.env.tools import Tool
 
 

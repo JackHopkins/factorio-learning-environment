@@ -23,10 +23,9 @@ import uuid
 from dotenv import load_dotenv
 from slpp import slpp as lua
 
-from fle.env.entities import BoundingBox, Direction
+from fle.env.entities import BoundingBox, Camera
 
 from fle.env.lua_manager import LuaScriptManager
-from fle.commons.models.camera import Camera
 from fle.env.namespace import FactorioNamespace
 from fle.env.utils.rcon import _lua2python, _get_dir
 from fle.commons.models.research_state import ResearchState

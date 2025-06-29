@@ -1,5 +1,4 @@
-from fle.env.entities import BoundingBox, Position
-from fle.commons.models.camera import Camera
+from fle.env.entities import BoundingBox, Position, Camera
 from fle.env.tools import Tool
 
 

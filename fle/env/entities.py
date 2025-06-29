@@ -249,6 +249,7 @@ class Position(BaseModel):
         if not isinstance(other, Position):
             return NotImplemented
         return self.is_close(other, tolerance=1)
+    
 
 class IndexedPosition(Position):
     type: str
@@ -351,6 +352,14 @@ class BuildingBox(BaseModel):
     height: int
     width: int
 
+
+class Camera(BaseModel):
+    centroid: Position
+    raw_centroid: Position
+    entity_count: int
+    bounds: BoundingBox
+    zoom: float
+    position: Position
 
 class ResourcePatch(BaseModel):
     name: str
@@ -831,3 +840,4 @@ class ElectricityGroup(EntityGroup):
     
     def __str__(self):
         return self.__repr__()
+    

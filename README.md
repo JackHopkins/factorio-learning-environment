@@ -890,53 +890,27 @@ Next time you run an eval, the tool will automatically be available to the agent
 Below is an overview of how the project is structured. Some directories also contain more detailed readmes. 
 ```
 factorio-learning-environment/
-├── agents/                            # Factorio Learning Environment
-│     ├── utils/                          # Some utilities for building an agent
-│     ├── agent_abc.py                    # Abstract class to extend
-│     └── basic_agent.py                  # Agent implementation we used for our experiments
-├── env/                            # Factorio Learning Environment
-│     ├── src/                          # Main implementation
-│     │     ├── exceptions/                 # Custom exceptions (WIP)
-│     │     ├── gym/                        # Gym environment wrapper (deprecated but possibly useful)
-│     │     ├── lib/                        # General purpose Lua utilities (e.g serialization etc)
-│     │     ├── models/                     # Core objects used during eval
-│     │     ├── rcon/                       # RCON wrapper for communicating with the game
-│     │     ├── tools/                      # Agent and admin tools
-│     │     │    ├── admin/                     # ~17 Tools for managing state, persistence, scoring etc 
-│     │     │    └── agent/                     # ~27 Tools that the agent can use
-│     │     ├── utils/                      # Python utilities
-│     │     ├── entities.py                 # Python object model of the game entities
-│     │     ├── game_types.py               # Technologies, Recipes, Resources
-│     │     ├── instance.py                 # Environment state manager
-│     │     └── namespace.py                # Namespace the agent can read/write variables to. 
-│     └── tests/                        # ~350 test cases
-├── cluster/                        # Everything needed to launch Factorio servers
-│     ├── docker/                       # Docker container definition of the Factorio server
-│     │     ├── config/                     # Factorio server configuration files
-│     │     └── mods/                       # Mods (deprecated)
-│     ├── local/                        # Tools for dynamically creating Docker Compose files for clusters
-│     ├── remote/                       # Tools for deploying Factorio clusters onto AWS 
-│     └── scenarios/                    # Factorio scenarios for Lab-play and Open-play
-│         ├── default_lab_scenario/
-│         └── open_world/
-├── data/                           # Miscellaneous data
-│     ├── blueprints_to_policies/       # Code to scrape Factorio blueprint sites and create Python policies
-│     ├── icons/                        # Icons for Factorio entities and items
-│     ├── prompts/                      # Prompts (deprecated)
-│     ├── recipes/                      # Factorio recipes in JSONL format
-│     └── scripts/                      # Misc Lua scripts (deprecated)
-├── docs/                           # Website
-│     └── assets/                       # Videos / Images
-└── eval/
-      ├── open/                     # Implementations for running agents in the open game
-      │     ├── beam/                   # Implementation for Beam sampling
-      │     ├── independent_runs/       # Implementation for independent eval runs
-      │     ├── mcts/                   # Implementation for MCTS sampling
-      │     └── plots/                  # Run results and plots
-      └── tasks                     # Implementations for running agents against lab-play tasks
-            ├── task_definitions/       # JSON definition of task
-            ├── task_abc.py             # Abstract task definition
-            └── throughput_task.py      # A basic task checking for a production throughput quota
+├── .github/                        # GitHub workflows and scripts
+├── docs/                           # Website and documentation
+├── fle/                            # Main Factorio Learning Environment codebase
+├── leaderboard/                    # Leaderboard system
+├── tests/                          # Test suite
+├── .example.env                    # Example environment variables
+├── .gitignore                      # Git ignore file
+├── BUILD.md                        # Build instructions
+├── CONTRIBUTING.md                 # Contribution guidelines
+├── LICENSE                         # License file
+├── MANIFEST.in                     # Manifest for packaging
+├── PUBLISHING.md                   # Publishing instructions
+├── README.md                       # Project readme
+├── clean.sh                        # Clean script
+├── prepare_build.py                # Build preparation script
+├── pyproject.toml                  # Python project config
+├── pytest.ini                      # Pytest config
+├── pyvenv.cfg                      # Python venv config
+├── setup.cfg                       # Setup config
+├── setup.py                        # Setup script
+└── validate_installation.py        # Installation validation script
 ```
 
 ## Database

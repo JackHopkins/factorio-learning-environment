@@ -28,22 +28,22 @@ client/__pycache__/
 /environment/src/.neptune/async/
 /environment/src/skills/bottom_up/skill_generation_logs/
 *.jsonl
-/data/blueprints_to_policies/blueprints/decoded/
-/data/blueprints_to_policies/blueprints/mining/
-/data/blueprints_to_policies/blueprints/electricity/
-/data/blueprints_to_policies/blueprints/manufacturing/
-/data/blueprints_to_policies/blueprints/misc/
-/data/blueprints_to_policies/blueprints/
-/data/encoded/
-/data/full/
-/data/place_next_to_connect/
-/data/refactor/
-/data/refactor2/
+/fle/agents/data/blueprints_to_policies/blueprints/decoded/
+/fle/agents/data/blueprints_to_policies/blueprints/mining/
+/fle/agents/data/blueprints_to_policies/blueprints/electricity/
+/fle/agents/data/blueprints_to_policies/blueprints/manufacturing/
+/fle/agents/data/blueprints_to_policies/blueprints/misc/
+/fle/agents/data/blueprints_to_policies/blueprints/
+/fle/agents/data/encoded/
+/fle/agents/data/full/
+/fle/agents/data/place_next_to_connect/
+/fle/agents/data/refactor/
+/fle/agents/data/refactor2/
 environment/src/skills/expanded_skills/*
 environment/src/skills/ground_truth_skills/*
-/data/plans/factorio_guides/processed/
-/data/plans/factorio_guides/raw/
-/data/plans/factorio_guides/visited/
+/fle/agents/data/plans/factorio_guides/processed/
+/fle/agents/data/plans/factorio_guides/raw/
+/fle/agents/data/plans/factorio_guides/visited/
 /environment/src/datasetgen/mcts/plots/
 /environment/src/search/mcts/runs/
 /data/icons/
@@ -53,18 +53,18 @@ environment/src/skills/ground_truth_skills/*
 /src/search/plots/*.png
 /src/search/plots/*/*.png
 /src/search/plots/*.pkl
-/eval/open/.neptune/
-/eval/open/.neptune/
-/eval/open/plots/icons/
-/eval/open/plots/production_volumes/
-/eval/open/plots/icons/
-/eval/open/plots/viz_cache.pkl
-/eval/open/plots/viz_cache2.pkl
-/eval/open/mcts/runs/
-/eval/open/independent_runs/summary_cache/
-/eval/open/beam/summary_cache/
+/fle/eval/open/.neptune/
+/fle/eval/open/.neptune/
+/fle/eval/open/plots/icons/
+/fle/eval/open/plots/production_volumes/
+/fle/eval/open/plots/icons/
+/fle/eval/open/plots/viz_cache.pkl
+/fle/eval/open/plots/viz_cache2.pkl
+/fle/eval/algorithms/mcts/runs/
+/fle/eval/algorithms/mcts/independent_runs/summary_cache/
+/fle/eval/algorithms/beam/summary_cache/
 /venv_py311/
-/eval/open/plots/
+/fle/eval/open/plots/
 *.mp4
 !/docs/assets/videos/*.mp4
 /leaderboard/node_modules/
@@ -79,7 +79,8 @@ trajectory_logs/
 /build/
 
 # Docker compose generated files  
-cluster/local/docker-compose.yml
+/fle/cluster/local/docker-compose.yml
+
 
 # Database files
 .fle/

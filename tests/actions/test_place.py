@@ -1,7 +1,6 @@
 import pytest
 
-from fle.env.entities import Position
-from fle.env import DirectionInternal
+from fle.env.entities import Position, Direction
 from fle.env.game_types import Prototype, Resource
 
 

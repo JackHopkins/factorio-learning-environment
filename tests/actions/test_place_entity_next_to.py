@@ -1,6 +1,6 @@
 import pytest
 
-from fle.env.entities import Position
+from fle.env.entities import Position, Direction
 from fle.env import DirectionInternal
 from fle.env.game_types import Prototype, Resource
 
@@ -100,7 +100,7 @@ def test_place_entities_of_different_sizes(game):
                     f"Expected: {expected_position}, Got: {placed_entity.position}"
 
                 if placed_proto == Prototype.SteamEngine:
-                    dir = placed_entity.direction.value in [direction.value, Direction.opposite(direction).value]
+                    dir = placed_entity.direction.value in [direction.value, DirectionInternal.opposite(direction).value]
                     assert dir, f"Expected direction {direction}, got {placed_entity.direction}"
                 # Check direction unless we are dealing with a pipe, which has no direction
                 elif placed_proto != Prototype.Pipe:

@@ -22,11 +22,11 @@ from .serializable_function import SerializableFunction
 # Achievement and production models
 from .achievements import ProfitConfig, ProductionFlows
 
-# Camera and rendering models
-from .camera import Camera
-
 # Generation and configuration models
 from .generation_parameters import GenerationParameters
+
+# Timing and metrics models
+from .timing_metrics import TimingMetrics
 
 __all__ = [
     # Game state and research
@@ -47,9 +47,9 @@ __all__ = [
     "ProfitConfig",
     "ProductionFlows",
     
-    # Camera and rendering  
-    "Camera",
-    
     # Generation and configuration
     "GenerationParameters",
+    
+    # Timing and metrics
+    "TimingMetrics",
 ]

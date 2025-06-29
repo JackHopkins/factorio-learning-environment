@@ -2,7 +2,7 @@ from typing import Dict, List, Any
 
 from pydantic import BaseModel, Field
 
-from .message import Message
+from fle.commons.models.message import Message
 
 
 class Conversation(BaseModel):

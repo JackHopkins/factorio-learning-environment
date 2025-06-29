@@ -6,6 +6,7 @@ cortex
 .DS_Store
 .env
 .fle/
+.vscode/
 ~/PycharmProjects/PaperclipMaximiser/dev/
 /client/log/
 /client/unscored_log/
@@ -46,10 +47,10 @@ environment/src/skills/ground_truth_skills/*
 /fle/agents/data/plans/factorio_guides/visited/
 /environment/src/datasetgen/mcts/plots/
 /environment/src/search/mcts/runs/
-/data/icons/
+/fle/agents/data/icons/
 /environment/src/search/beam/summary_cache/
 /environment/src/search/independent_runs/summary_cache/
-/data/screenshots
+/fle/agents/data/screenshots
 /src/search/plots/*.png
 /src/search/plots/*/*.png
 /src/search/plots/*.pkl

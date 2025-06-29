@@ -8,7 +8,8 @@ from tenacity import (retry_if_exception_type, wait_exponential,
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters
 
-from fle.agents import CompletionResult, Policy, Response
+from fle.agents.models import CompletionResult, Response
+from fle.agents.llm.parsing import Policy
 from fle.agents.agent_abc import AgentABC
 from fle.agents.formatters.recursive_report_formatter import RecursiveReportFormatter
 from fle.agents.llm.api_factory import APIFactory
@@ -188,7 +189,7 @@ class BasicAgent(AgentABC):
             instructions += f"### Specific Instructions for Agent {player_idx}\n{task.get_agent_instructions(agent_idx)}\n\n"
         super().__init__( model, instructions, *args, **kwargs)
         self.api_factory = APIFactory(model)
-        self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.api_factory.acall,cache_dir='summary_cache')
+        self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.api_factory.acall,cache_dir='.fle/summary_cache')
         self.generation_params = GenerationParameters(n=1, max_tokens=4096, model=model)
 
    @track_timing_async("agent_step")

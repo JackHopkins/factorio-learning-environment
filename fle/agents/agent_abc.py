@@ -5,7 +5,8 @@ from a2a.types import AgentCapabilities, AgentCard, AgentProvider, AgentSkill
 from fle.commons.models.conversation import Conversation
 from fle.env.namespace import FactorioNamespace
 
-from . import CompletionResult, Policy, Response
+from fle.agents.models import CompletionResult, Response
+from fle.agents.llm.parsing import Policy
 
 
 class AgentABC:

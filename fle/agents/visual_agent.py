@@ -5,15 +5,16 @@ from typing import Any, Dict, List, Optional
 import tenacity
 from tenacity import retry_if_exception_type, wait_exponential
 
+from fle.agents.llm.parsing import Policy
+from fle.agents.agent_abc import AgentABC
+from fle.agents.basic_agent import FINAL_INSTRUCTION, GENERAL_INSTRUCTIONS
+from fle.agents.formatters import RecursiveReportFormatter
+from fle.agents.models import CompletionResult, Response
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters
-from fle.env import BoundingBox, FactorioNamespace, Layer, Position
-from fle.env.tools.admin.render.client import Render
+from fle.env import Layer, Position
+from fle.env.namespace import FactorioNamespace
 
-from . import CompletionResult, Policy, Response
-from .agent_abc import AgentABC
-from .basic_agent import FINAL_INSTRUCTION, GENERAL_INSTRUCTIONS
-from .formatters.recursive_report_formatter import RecursiveReportFormatter
 from .llm.api_factory import APIFactory
 from .llm.parsing import parse_response
 
@@ -65,7 +66,7 @@ class VisualAgent(AgentABC):
         self.formatter = RecursiveReportFormatter(
             chunk_size=16,
             llm_call=self.api_factory.acall,
-            cache_dir='summary_cache'
+            cache_dir='.fle/summary_cache'
         )
         self.generation_params = GenerationParameters(n=1, max_tokens=2048, model=model)
         self.last_image_base64 = None

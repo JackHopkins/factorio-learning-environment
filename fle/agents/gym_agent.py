@@ -9,11 +9,12 @@ from fle.commons.models.program import Program
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
 from fle.eval.tasks import TaskABC
 
-from . import CompletionResult, Policy, Response
-from .agent_abc import AgentABC
-from .formatters.recursive_report_formatter import RecursiveReportFormatter
-from .llm.api_factory import APIFactory
-from .llm.parsing import parse_response
+from fle.agents.models import CompletionResult
+from fle.agents.llm.parsing import Policy
+from fle.agents.agent_abc import AgentABC
+from fle.agents.formatters import RecursiveReportFormatter
+from fle.agents.llm.api_factory import APIFactory
+from fle.agents.llm.parsing import parse_response
 
 GYM_AGENT_INSTRUCTIONS = \
 """
@@ -125,7 +126,7 @@ class GymAgent(AgentABC):
         self.formatter = RecursiveReportFormatter(
             chunk_size=16,
             llm_call=self.api_factory.acall,
-            cache_dir='summary_cache'
+            cache_dir='.fle/summary_cache'
         )
         self.generation_params = GenerationParameters(
             n=1,

@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
-from fle.agents import TimingMetrics
+from fle.commons.models.timing_metrics import TimingMetrics
 
 logger = logging.getLogger(__name__)
 

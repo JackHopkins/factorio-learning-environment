@@ -31,7 +31,7 @@ from .namespace import FactorioNamespace
 from .utils.rcon import _lua2python, _get_dir
 from .transaction import FactorioTransaction
 from fle.commons.models.research_state import ResearchState
-from .rcon.factorio_rcon import RCONClient
+from factorio_rcon import RCONClient
 from fle.commons.models.game_state import GameState
 from .utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 

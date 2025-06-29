@@ -53,7 +53,7 @@ def test_place_boiler_next_to_offshore_pump_rotate_and_connect(game):
     direction = Direction(offshore_pump.direction.value)
 
     # Get orthogonal direction
-    opposite_direction = Direction.opposite(direction)
+    opposite_direction = DirectionInternal.opposite(direction)
 
     # pump connection point
     pump_connection_point = offshore_pump.connection_points[0]

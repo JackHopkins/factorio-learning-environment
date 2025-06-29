@@ -7,10 +7,10 @@ from pathlib import Path
 
 import gym
 from dotenv import load_dotenv
-from gym_env.config import GymEvalConfig, GymRunConfig
-from gym_env.observation_formatter import BasicObservationFormatter
-from gym_env.registry import get_environment_info, list_available_environments
-from gym_env.trajectory_runner import GymTrajectoryRunner
+from fle.env.gym_env.config import GymEvalConfig, GymRunConfig
+from fle.env.gym_env.observation_formatter import BasicObservationFormatter
+from fle.env.gym_env.registry import get_environment_info, list_available_environments
+from fle.env.gym_env.trajectory_runner import GymTrajectoryRunner
 
 from fle.agents.gym_agent import GymAgent
 from fle.cluster import get_local_container_ips

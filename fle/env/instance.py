@@ -17,19 +17,18 @@ from concurrent.futures import TimeoutError
 from pathlib import Path
 import logging
 from timeit import default_timer as timer
-from typing_extensions import deprecated, Optional, List, Dict, Any
+from typing_extensions import deprecated, Optional, List, Dict, Any, Tuple
 import uuid
 
 from dotenv import load_dotenv
 from slpp import slpp as lua
 
-from .entities import BoundingBox, Direction
+from fle.env.entities import BoundingBox, Direction
 
-from .lua_manager import LuaScriptManager
+from fle.env.lua_manager import LuaScriptManager
 from fle.commons.models.camera import Camera
-from .namespace import FactorioNamespace
-from .utils.rcon import _lua2python, _get_dir
-from .transaction import FactorioTransaction
+from fle.env.namespace import FactorioNamespace
+from fle.env.utils.rcon import _lua2python, _get_dir
 from fle.commons.models.research_state import ResearchState
 from factorio_rcon import RCONClient
 from fle.commons.models.game_state import GameState
@@ -70,6 +69,21 @@ class DirectionInternal(enum.Enum):
     @classmethod
     def from_factorio_direction(cls, direction):
         return direction.value * 2
+    
+
+class FactorioTransaction:
+    def __init__(self):
+        self.commands: List[Tuple[str, List[Any], bool]] = []  # (command, parameters, is_raw)
+
+    def add_command(self, command: str, *parameters, raw=False):
+        self.commands.append((command, list(parameters), raw))
+
+    def clear(self):
+        self.commands.clear()
+
+    def get_commands(self):
+        return self.commands
+    
 
 class FactorioInstance:
 

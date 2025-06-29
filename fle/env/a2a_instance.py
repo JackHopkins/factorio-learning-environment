@@ -7,8 +7,8 @@ from a2a.types import AgentCard
 
 from fle.env import FactorioInstance
 
-from .a2a_namespace import A2AFactorioNamespace
-from .protocols.a2a.server import ServerManager
+from fle.env.a2a_namespace import A2AFactorioNamespace
+from fle.env.protocols.a2a.server import ServerManager
 
 
 class A2AFactorioInstance(FactorioInstance):

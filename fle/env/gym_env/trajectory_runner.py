@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from fle.agents import CompletionReason, CompletionResult, Policy
 from fle.agents.gym_agent import GymAgent
-from fle.commons.db_client import PostgresDBClient
+from fle.commons.db_client import DBClient
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.game_state import GameState
 from fle.commons.models.program import Program
@@ -23,7 +23,7 @@ class GymTrajectoryRunner:
                  config: GymEvalConfig,
                  gym_env: FactorioGymEnv,
                  process_id: int,
-                 db_client: Optional[PostgresDBClient],
+                 db_client: Optional[DBClient],
                  log_dir: Optional[str] = None):
         self.config = config
         self.agents = config.agents

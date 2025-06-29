@@ -2,8 +2,8 @@ from dataclasses import dataclass
 import pickle
 import re
 
-from entities import EntityStatus, Direction
-from gym_env.observation import Observation
+from fle.env.entities import EntityStatus, Direction
+from fle.env.gym_env.observation import Observation
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 

@@ -6,7 +6,7 @@ from pathlib import Path
 from lupa.lua54 import LuaRuntime
 
 from factorio_rcon import RCONClient
-from .utils.rcon import (_get_dir, _get_lib_dir, _get_lib_names,
+from fle.env.utils.rcon import (_get_dir, _get_lib_dir, _get_lib_names,
                          _get_tool_names, _load_lib, _load_script)
 
 

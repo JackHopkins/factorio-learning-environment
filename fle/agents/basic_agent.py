@@ -1,19 +1,19 @@
 from typing import Optional
 
 import tenacity
-from env.namespace import FactorioNamespace
+from fle.env.namespace import FactorioNamespace
 from tenacity import (retry_if_exception_type, wait_exponential,
                       wait_random_exponential)
 
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters
 
-from . import CompletionResult, Policy, Response
-from .agent_abc import AgentABC
-from .formatters.recursive_report_formatter import RecursiveReportFormatter
-from .llm.api_factory import APIFactory
-from .llm.metrics import timing_tracker, track_timing, track_timing_async
-from .llm.parsing import parse_response
+from fle.agents import CompletionResult, Policy, Response
+from fle.agents.agent_abc import AgentABC
+from fle.agents.formatters.recursive_report_formatter import RecursiveReportFormatter
+from fle.agents.llm.api_factory import APIFactory
+from fle.agents.llm.metrics import timing_tracker, track_timing, track_timing_async
+from fle.agents.llm.parsing import parse_response
 
 GENERAL_INSTRUCTIONS = \
 """

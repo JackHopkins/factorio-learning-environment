@@ -1,7 +1,7 @@
 import copy
 from typing import Any, Optional
 
-from env.gym_env.observation import Observation
+from fle.env.gym_env.observation import Observation
 
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters

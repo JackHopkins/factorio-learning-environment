@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
-from gym_env.environment import FactorioGymEnv
-from gym_env.config import GymRunConfig
+from fle.env.gym_env.environment import FactorioGymEnv
+from fle.env.gym_env.config import GymRunConfig
 from fle.eval.tasks import TaskFactory
 from fle.env import FactorioInstance
 from fle.cluster import get_local_container_ips
@@ -30,8 +30,9 @@ class FactorioGymRegistry:
     
     def __init__(self):
         self._environments: Dict[str, GymEnvironmentSpec] = {}
-        # Use absolute path to the task definitions directory
-        self._task_definitions_path = Path(__file__).parent.parent.parent.parent / "eval" / "tasks" / "task_definitions"
+        # Use the same path construction as TaskFactory for consistency
+        from fle.eval.tasks.task_factory import TASK_FOLDER
+        self._task_definitions_path = TASK_FOLDER
         self._discovered = False
     
     def discover_tasks(self) -> None:
@@ -97,7 +98,7 @@ class FactorioGymRegistry:
         # Register with gym
         gym.register(
             id=env_id,
-            entry_point='gym_env.registry:make_factorio_env',
+            entry_point='fle.env.gym_env.registry:make_factorio_env',
             kwargs={'env_spec': spec}
         )
     

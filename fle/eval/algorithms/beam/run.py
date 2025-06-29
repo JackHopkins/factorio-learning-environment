@@ -203,7 +203,7 @@ async def main():
         formatter = RecursiveFormatter(
             chunk_size=32,
             api_factory=api_factory,
-            cache_dir='summary_cache',
+            cache_dir='.fle/summary_cache',
             summary_instructions=API_SCHEMA + HISTORY_SUMMARIZATION_INSTRUCTIONS,
             summarize_history=False # Summarizing history seems to make it worse. We clip instead.
         )

@@ -10,9 +10,8 @@ from typing import List
 from fle.cluster import get_local_container_ips
 from dotenv import load_dotenv
 
-from fle.agents.utils.formatters.recursive_report_formatter import \
-    RecursiveReportFormatter
-from fle.agents.utils.api_factory import APIFactory
+from fle.agents.formatters import RecursiveReportFormatter
+from fle.agents.llm.api_factory import APIFactory
 from fle.commons.db_client import DBClient, create_db_client
 from fle.commons.models.game_state import GameState
 from fle.env import FactorioInstance
@@ -138,7 +137,7 @@ async def run_model_search(model: str, instance_start: int, version: int, resume
     formatter = RecursiveReportFormatter(
         chunk_size=32,
         llm_call=api_factory.acall,
-        cache_dir='summary_cache',
+        cache_dir='.fle/summary_cache',
     )
 
     parallel_beam = ParallelBeamSearch(

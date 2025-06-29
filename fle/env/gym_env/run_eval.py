@@ -56,7 +56,7 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     # Create gym environment using gym.make()
     gym_env = gym.make(config.env_id)
     
-    log_dir = os.path.join("trajectory_logs", f"v{config.version}")
+    log_dir = os.path.join(".fle", "trajectory_logs", f"v{config.version}")
     runner = GymTrajectoryRunner(
         config=config,
         gym_env=gym_env,

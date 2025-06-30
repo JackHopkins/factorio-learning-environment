@@ -4,8 +4,11 @@ import json
 import os
 from typing import List, Optional, Tuple
 
-from eval.algorithms.mcts import (MCTS, InitialPlanOutput, LanguageOutput,
-                                  PlanOutput, Step, TaskOutput)
+from fle.eval.algorithms.mcts.mcts import MCTS
+from fle.eval.algorithms.mcts.planning_models import (InitialPlanOutput,
+                                                      LanguageOutput,
+                                                      PlanOutput, Step,
+                                                      TaskOutput)
 from tenacity import retry, wait_exponential
 
 from fle.commons.models.conversation import Conversation

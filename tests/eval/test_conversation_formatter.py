@@ -2,7 +2,7 @@ import unittest
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
 
-from fle.agents.utils.formatters.conversation_formatter_abc import StructurePreservingFormatter, CodeProcessor
+from fle.agents.formatters import StructurePreservingFormatter, CodeProcessor
 
 
 class TestStructurePreservingFormatter(unittest.TestCase):

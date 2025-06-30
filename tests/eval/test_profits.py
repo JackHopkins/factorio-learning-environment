@@ -1,6 +1,6 @@
 import math
 from fle.env import FactorioInstance
-from utils.profits import eval_program_with_profits
+from fle.env.utils.profits import eval_program_with_profits
 
 def test_profits():
         instance = FactorioInstance(address='localhost',

@@ -6,7 +6,7 @@ import numpy as np
 from psycopg2.extras import DictRow
 
 from fle.commons.models.program import Program
-from eval.algorithms.mcts import KLDiversityAchievementSampler
+from fle.eval.algorithms.mcts import KLDiversityAchievementSampler
 
 
 class TestKLDiversityAchievementSampler(unittest.TestCase):

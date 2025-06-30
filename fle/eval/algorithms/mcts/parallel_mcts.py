@@ -3,9 +3,10 @@ import logging
 from math import floor
 from typing import Any, Dict, List
 
-from eval.algorithms.mcts import (GroupedFactorioLogger, InstanceGroup,
-                                  ParallelMCTSConfig)
-from eval.evaluator import Evaluator
+from fle.eval.algorithms.mcts.grouped_logger import GroupedFactorioLogger
+from fle.eval.algorithms.mcts.instance_group import InstanceGroup
+from fle.eval.algorithms.mcts.parallel_mcts_config import ParallelMCTSConfig
+from fle.eval.evaluator import Evaluator
 from rich.console import Console
 
 from fle.commons.db_client import DBClient

@@ -7,7 +7,7 @@ from psycopg2.extras import DictCursor
 from tenacity import retry_if_exception_type, wait_exponential
 
 from fle.commons.db_client import DBClient
-from eval.algorithms.mcts import DBSampler
+from fle.eval.algorithms.mcts.samplers.db_sampler import DBSampler
 from fle.commons.models.program import Program
 
 

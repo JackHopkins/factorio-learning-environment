@@ -1,7 +1,7 @@
 import unittest
 
 from fle.env import FactorioInstance
-from utils.achievements import eval_program_with_achievements
+from fle.env.utils.achievements import eval_program_with_achievements
 
 class TestAchievements(unittest.TestCase):
     def test_achievements(self):

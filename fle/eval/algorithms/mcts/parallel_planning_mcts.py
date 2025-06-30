@@ -6,16 +6,11 @@ from dataclasses import dataclass
 from math import floor
 from typing import Any, Dict, List, Optional, Tuple
 
-from fle.agents.formatters.conversation_formatter_abc import (
-    ConversationFormatter, StructurePreservingFormatter)
-from eval.algorithms.mcts import (GroupedFactorioLogger, InitialPlanOutput,
-                                  LanguageOutput, ParallelMCTSConfig,
-                                  PlanOutput, Step, TaskOutput,
-                                  get_mining_setup)
-from eval.evaluator import Evaluator
 from rich.console import Console
 from tenacity import retry, wait_exponential
 
+from fle.agents.formatters.conversation_formatter_abc import (
+    ConversationFormatter, StructurePreservingFormatter)
 from fle.commons.db_client import DBClient
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.game_state import GameState
@@ -23,6 +18,14 @@ from fle.commons.models.generation_parameters import GenerationParameters
 from fle.commons.models.message import Message
 from fle.commons.models.program import Program
 from fle.env import FactorioInstance
+from fle.eval.algorithms.mcts.grouped_logger import GroupedFactorioLogger
+from fle.eval.algorithms.mcts.parallel_mcts_config import ParallelMCTSConfig
+from fle.eval.algorithms.mcts.planning_models import (InitialPlanOutput,
+                                                      LanguageOutput,
+                                                      PlanOutput, Step,
+                                                      TaskOutput)
+from fle.eval.algorithms.mcts.planning_mcts import get_mining_setup
+from fle.eval.evaluator import Evaluator
 
 logger = logging.basicConfig(level=logging.INFO)
 

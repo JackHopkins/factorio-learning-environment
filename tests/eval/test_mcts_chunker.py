@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from fle.eval.algorithms.mcts import ChunkedMCTS
-from fle.commons.models.game_state import GameState
+from fle.commons.models import GameState
 
 
 @dataclass

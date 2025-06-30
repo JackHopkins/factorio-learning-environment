@@ -9,7 +9,7 @@ from pathlib import Path
 import questionary
 from dataclasses import asdict
 
-from eval.algorithms.mcts import BeamSampler
+from fle.eval.algorithms.mcts.samplers.beam_sampler import BeamSampler
 from fle.commons.models.game_state import GameState
 from fle.agents.llm.api_factory import APIFactory
 

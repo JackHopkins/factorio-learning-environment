@@ -353,14 +353,6 @@ class BuildingBox(BaseModel):
     width: int
 
 
-class Camera(BaseModel):
-    centroid: Position
-    raw_centroid: Position
-    entity_count: int
-    bounds: BoundingBox
-    zoom: float
-    position: Position
-
 class ResourcePatch(BaseModel):
     name: str
     size: int

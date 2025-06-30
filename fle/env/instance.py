@@ -23,7 +23,8 @@ import uuid
 from dotenv import load_dotenv
 from slpp import slpp as lua
 
-from fle.env.entities import BoundingBox, Camera
+from fle.env.entities import BoundingBox
+from fle.env.utils.camera import Camera
 
 from fle.env.lua_manager import LuaScriptManager
 from fle.env.namespace import FactorioNamespace

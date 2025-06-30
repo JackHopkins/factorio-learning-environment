@@ -114,7 +114,7 @@ def test_nearest_buildable_mining_drill(game):
     # Find nearest buildable position for mining drill
     boundingbox_coords = game.nearest_buildable(
         Prototype.BurnerMiningDrill,
-        building_box=drill_box,
+        drill_box,
         center_position=game.nearest(Resource.CopperOre)
         #center_position=Position(5, 5)
     )
@@ -129,7 +129,7 @@ def test_nearest_buildable_mining_drill(game):
 
     boundingbox_coords = game.nearest_buildable(
         Prototype.BurnerMiningDrill,
-        building_box=drill_box,
+        drill_box,
         center_position=Position(5, 5)
     )
     game.move_to(boundingbox_coords.center)
@@ -153,7 +153,7 @@ def test_nearest_buildable_invalid_position(game):
     with pytest.raises(Exception) as exc_info:
         boundingbox_coords = game.nearest_buildable(
         Prototype.BurnerMiningDrill,
-        building_box=drill_box,
+        drill_box,
         center_position=game.nearest(Resource.CopperOre)
         )
         assert "Could not find a buildable position" in str(exc_info.value)
@@ -168,7 +168,7 @@ def test_nearest_buildable_multiple_entities(game):
     game.move_to(game.nearest(Resource.IronOre))
     coordinates = game.nearest_buildable(
         Prototype.ElectricMiningDrill,
-        building_box=drill_box,
+        drill_box,
         center_position=game.nearest(Resource.IronOre)
     )
 

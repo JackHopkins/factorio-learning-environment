@@ -3,17 +3,17 @@ import pytest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 
-from eval.open.independent_runs.trajectory_runner import TrajectoryRunner
+from fle.eval.algorithms.independent import TrajectoryRunner
 from fle.commons.models.program import Program
 from fle.commons.models.game_state import GameState
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
 from fle.agents.basic_agent import BasicAgent
 from fle.commons.db_client import PostgresDBClient
-from eval.open.independent_runs.simple_evaluator import SimpleFactorioEvaluator
+from fle.eval.algorithms.independent.simple_evaluator import SimpleFactorioEvaluator
 from fle.eval.tasks import DefaultTask
 
-from fle.env.tests.multiagent.test_messages import multi_instance, mock_db_client, mock_config, trajectory_runner
+from tests.multiagent.test_messages import multi_instance, mock_db_client, mock_config, trajectory_runner
 
 
 @pytest.fixture

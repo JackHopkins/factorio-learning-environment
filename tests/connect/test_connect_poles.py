@@ -1,6 +1,6 @@
 import pytest
 
-from fle.env.entities import Entity, Position, EntityStatus, BuildingBox
+from fle.env.entities import Entity, Position, EntityStatus, BuildingBox, Direction
 from fle.env import DirectionInternal
 from fle.env.game_types import Prototype, Resource
 

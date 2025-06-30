@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock
 
-from fle.eval.algorithms.mcts.samplers.dynamic_reward_weighted_sampler import DynamicRewardWeightedSampler
+from fle.eval.algorithms.mcts.samplers import DynamicRewardWeightedSampler
 
 
 class TestWeightedRewardSampler(unittest.TestCase):

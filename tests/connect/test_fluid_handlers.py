@@ -4,7 +4,7 @@ from typing import List
 import pytest
 
 from fle.env.entities import Entity, Position, PipeGroup, EntityStatus, ResourcePatch, BuildingBox
-from fle.env import DirectionInternal
+from fle.env import DirectionInternal as Direction
 from fle.env.game_types import Prototype, Resource
 
 

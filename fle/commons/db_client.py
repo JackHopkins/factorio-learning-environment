@@ -49,42 +49,6 @@ class DBClient(ABC):
         """Regular context manager for database connections"""
         pass
 
-    # @contextmanager
-    # def get_connection2(self):
-    #     """Context manager to handle database connections"""
-    #     conn = None
-    #     try:
-    #         # Try to get connection from pool
-    #         if self.pool:
-    #             conn = self.pool.pop()
-    #             try:
-    #                 # Test if connection is still alive
-    #                 conn.cursor().execute('SELECT 1')
-    #             except (psycopg2.OperationalError, psycopg2.InterfaceError):
-    #                 # If connection is dead, close it and create new one
-    #                 conn.close()
-    #                 conn = None
-    #
-    #         # If no connection from pool, create new one
-    #         if conn is None:
-    #             conn = psycopg2.connect(**self.db_config)
-    #
-    #         yield conn
-    #
-    #         # If connection still good, return to pool
-    #         try:
-    #             conn.cursor().execute('SELECT 1')
-    #             if len(self.pool) < self.max_pool_size:
-    #                 self.pool.append(conn)
-    #             else:
-    #                 conn.close()
-    #         except:
-    #             conn.close()
-    #
-    #     except Exception as e:
-    #         if conn:
-    #             conn.close()
-    #         raise e
     async def get_beam_heads(self, version: int, beam_width: int) -> List[Program]:
         """Get the highest value programs across all depths for a given version."""
         try:

@@ -1,7 +1,7 @@
 import pytest
 
-from fle.env.entities import Position, BoundingBox
-from fle.env import DirectionInternal
+from fle.env.entities import Position, BoundingBox#, Direction
+from fle.env import DirectionInternal as Direction
 from fle.env.game_types import Prototype, Resource
 
 @pytest.fixture()
@@ -34,17 +34,22 @@ def test_mining_blueprint_1(game):
         x=2,
         y=9
     )
-    center = Position(
-        x=(left_top.x + right_bottom.x) / 2,
-        y=(left_top.y + right_bottom.y) / 2
+    left_bottom = Position(
+        x=left_top.x,
+        y=right_bottom.y
+    )
+    right_top = Position(
+        x=right_bottom.x,
+        y=left_top.y
     )
     miner_box = BoundingBox(
         left_top=left_top,
         right_bottom=right_bottom,
-        center=center
+        left_bottom=left_bottom,
+        right_top=right_top
     )
     # Find valid position using nearest_buildable
-    origin = game.nearest_buildable(Prototype.BurnerMiningDrill, bounding_box=miner_box)
+    origin = game.nearest_buildable(Prototype.BurnerMiningDrill, bounding_box=miner_box, center_position=Position(x=0, y=0))
     assert origin, 'Could not find valid position'
     origin = origin + left_top + Position(x=0.5, y=0.5)
     game.move_to(origin)
@@ -91,17 +96,22 @@ def test_mining_blueprint_2(game):
         x=29.0,
         y=4.0
     )
-    center = Position(
-        x=(left_top.x + right_bottom.x) / 2,
-        y=(left_top.y + right_bottom.y) / 2
+    left_bottom = Position(
+        x=left_top.x,
+        y=right_bottom.y
+    )
+    right_top = Position(
+        x=right_bottom.x,
+        y=left_top.y
     )
     miner_box = BoundingBox(
         left_top=left_top,
         right_bottom=right_bottom,
-        center=center
+        left_bottom=left_bottom,
+        right_top=right_top
     )
     # Find valid position using nearest_buildable
-    origin = game.nearest_buildable(Prototype.ElectricMiningDrill, bounding_box=miner_box)
+    origin = game.nearest_buildable(Prototype.ElectricMiningDrill, bounding_box=miner_box, center_position=Position(x=0, y=0))
     assert origin, 'Could not find valid position'
     origin = origin + left_top + Position(x=0.5, y=0.5)
     game.move_to(origin)
@@ -186,21 +196,27 @@ def test_mining_blueprint_3(game):
         x=23.0,
         y=4.0
     )
-    center = Position(
-        x=(left_top.x + right_bottom.x) / 2,
-        y=(left_top.y + right_bottom.y) / 2
+    left_bottom = Position(
+        x=left_top.x,
+        y=right_bottom.y
+    )
+    right_top = Position(
+        x=right_bottom.x,
+        y=left_top.y
     )
 
     miner_box = BoundingBox(
         left_top=left_top,
         right_bottom=right_bottom,
-        center=center
+        left_bottom=left_bottom,
+        right_top=right_top
     )
 
     # Find valid position for miners using nearest_buildable
     origin = game.nearest_buildable(
         Prototype.ElectricMiningDrill,
-        bounding_box=miner_box
+        bounding_box=miner_box,
+        center_position=Position(x=0, y=0)
     )
 
     assert origin, 'Could not find valid position for miners'
@@ -284,19 +300,24 @@ def test_minig_blueprint_4(game):
         x=5,
         y=5.5
     )
-    center = Position(
-        x=(left_top.x + right_bottom.x) / 2,
-        y=(left_top.y + right_bottom.y) / 2
+    left_bottom = Position(
+        x=left_top.x,
+        y=right_bottom.y
+    )
+    right_top = Position(
+        x=right_bottom.x,
+        y=left_top.y
     )
 
     miner_box = BoundingBox(
         left_top=left_top,
         right_bottom=right_bottom,
-        center=center
+        left_bottom=left_bottom,
+        right_top=right_top
     )
 
     # Find valid position using nearest_buildable
-    origin = game.nearest_buildable(Prototype.BurnerMiningDrill, bounding_box=miner_box)
+    origin = game.nearest_buildable(Prototype.BurnerMiningDrill, bounding_box=miner_box, center_position=Position(x=0, y=0))
 
     assert origin, 'Could not find valid position'
     origin = origin + left_top + Position(x=0.5, y=0.5)

@@ -6,9 +6,10 @@ from copy import deepcopy
 
 import pytest
 
-from entities import Position
-from instance import Direction
-from game_types import Prototype
+from fle.env.entities import Position, Direction
+from fle.env.instance import DirectionInternal
+from fle.env.game_types import Prototype
+from fle.env.namespace import FactorioNamespace
 
 @pytest.fixture()
 def game(instance):
@@ -61,7 +62,7 @@ def decode_blueprint(encoded_data):
         return None
 
 def test_fail_on_incorrect_blueprint(game):
-    assert not game._load_blueprint("BLHA")
+    assert not game._load_blueprint("BLHA", Position(x=0, y=0))
 
 
 def test_belt_inserter_chain(game):
@@ -74,7 +75,7 @@ def test_belt_inserter_chain(game):
     game.insert_item(Prototype.IronOre, belt1, quantity=5)
     game.insert_item(Prototype.Coal, chest, quantity=5)
 
-    entities = game._save_entity_state(distance=30, only_player_entities=True)
+    entities = game._save_entity_state(distance=30, player_entities=True)
     game.reset()
     assert game._load_entity_state(entities)
     pass
@@ -85,13 +86,13 @@ def test_save_load1(game):
     game.insert_item(Prototype.Coal, furnace, quantity=5)
     game.insert_item(Prototype.IronOre, furnace, quantity=5)
     game.move_to(Position(x=20, y=20))
-    game.speed(1)
+    game.instance.speed(1)
     entities = game._save_entity_state(distance=30, player_entities=True)
     copied_entities = deepcopy(entities)
-    game.reset()
+    game.instance.reset()
     assert game._load_entity_state(entities)
     entities = game._save_entity_state(distance=30, player_entities=True)
-    game.speed(1)
+    game.instance.speed(1)
     assert copied_entities[0]['burner']['inventory']['coal'] == entities[0]['burner']['inventory']['coal']
 
 def test_benchmark(game):
@@ -103,7 +104,8 @@ def test_benchmark(game):
     save_times = []
     load_times = []
     lengths = []
-    for i in range(100):
+    # TODO: This test gets stuck for macbook m4 for 100 iterations
+    for i in range(10):
         save_start = time.time()
         entities = game._save_entity_state(distance=100, encode=True, compress=True)
         lengths.append(len(entities))

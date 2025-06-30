@@ -25,7 +25,7 @@ def test_crafting_accumulate_ticks(game):
     """
 
     game.craft_item(Prototype.IronChest, quantity=50)
-    ticks = game.get_elapsed_ticks()
+    ticks = game.instance.get_elapsed_ticks()
     assert ticks == 1500
 
 def test_crafting_composite_accumulate_ticks(game):
@@ -34,25 +34,27 @@ def test_crafting_composite_accumulate_ticks(game):
     :param game:
     :return:
     """
+    _ = game.instance.get_elapsed_ticks()
     game.craft_item(Prototype.ElectronicCircuit, quantity=10)
-    ticks = game.get_elapsed_ticks()
 
-    game.reset()
+    ticks = game.instance.get_elapsed_ticks()
+
+    game.instance.reset()
 
     game.craft_item(Prototype.CopperCable, quantity=10)
     game.craft_item(Prototype.ElectronicCircuit, quantity=10)
-    nticks = game.get_elapsed_ticks() - ticks
+    nticks = game.instance.get_elapsed_ticks() - ticks
 
     assert nticks == ticks, "The tick count should be invariant to whether the prerequisites are intentionally crafted or not."
 
 def test_harvesting_wood_accumulate_ticks(game):
     game.move_to(game.nearest(Resource.Wood))
-    game._reset_elapsed_ticks()
+    game.instance._reset_elapsed_ticks()
 
     game.harvest_resource(game.nearest(Resource.Wood), quantity=10)
-    ticks = game.get_elapsed_ticks()
+    ticks = game.instance.get_elapsed_ticks()
     game.harvest_resource(game.nearest(Resource.Wood), quantity=10)
-    nticks = game.get_elapsed_ticks()
+    nticks = game.instance.get_elapsed_ticks()
 
     assert ticks > 50
     assert nticks - ticks == ticks, "The tick count should be proportional to the amount of wood harvested."
@@ -60,40 +62,40 @@ def test_harvesting_wood_accumulate_ticks(game):
 
 def test_harvesting_coal_accumulate_ticks(game):
     game.move_to(game.nearest(Resource.Coal))
-    game._reset_elapsed_ticks()
+    game.instance._reset_elapsed_ticks()
 
     game.harvest_resource(game.nearest(Resource.Coal), quantity=10)
-    ticks = game.get_elapsed_ticks()
+    ticks = game.instance.get_elapsed_ticks()
     game.harvest_resource(game.nearest(Resource.Coal), quantity=10)
-    nticks = game.get_elapsed_ticks()
+    nticks = game.instance.get_elapsed_ticks()
 
     assert ticks == 600
     assert nticks - ticks == ticks, "The tick count should be proportional to the amount of wood harvested."
 
 def test_moving_accumulate_ticks(game):
     #game.move_to(game.nearest(Resource.Coal))
-    ticks = game.get_elapsed_ticks()
+    ticks = game.instance.get_elapsed_ticks()
     #assert ticks > 150, "The tick count should be proportional to the distance moved."
     ticks_ = []
     for i in range(10):
         game.move_to(Position(x=i, y=0))
-        ticks_.append(game.get_elapsed_ticks())
+        ticks_.append(game.instance.get_elapsed_ticks())
 
 
-    nticks = game.get_elapsed_ticks()
+    nticks = game.instance.get_elapsed_ticks()
     assert nticks > 80, "The tick count should be proportional to the distance moved."
     assert nticks - ticks == ticks, "The tick count should be invariant to the number of moves made."
 
 def test_long_mine(game):
     game.move_to(game.nearest(Resource.Coal))
-    game._reset_elapsed_ticks()
+    game.instance._reset_elapsed_ticks()
 
     for i in range(100):
         game.harvest_resource(game.nearest(Resource.Coal), quantity=10)
 
-    ticks = game.get_elapsed_ticks()
+    ticks = game.instance.get_elapsed_ticks()
     assert ticks == 60000
 
 def test_sleep_ticks(game):
     game.sleep(10) #sleep for 10 seconds ~= 6000 ticks
-    assert game.get_elapsed_ticks() >= 5000, "The tick count should be proportional to the amount of time slept."
+    assert game.instance.get_elapsed_ticks() >= 5000, "The tick count should be proportional to the amount of time slept."

@@ -2,7 +2,7 @@ import pytest
 from time import sleep
 
 from fle.env.entities import Position
-from fle.env import DirectionInternal
+from fle.env import DirectionInternal as Direction
 from fle.env.game_types import Prototype, Resource
 
 

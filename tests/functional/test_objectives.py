@@ -3,8 +3,7 @@ from typing import List, Union
 
 import pytest
 
-from fle.env.entities import Entity, Position, ResourcePatch, Recipe, BurnerMiningDrill, EntityGroup
-from fle.env import DirectionInternal
+from fle.env.entities import Entity, Position, ResourcePatch, Recipe, BurnerMiningDrill, EntityGroup, Direction
 from fle.env.game_types import Prototype, Resource
 
 

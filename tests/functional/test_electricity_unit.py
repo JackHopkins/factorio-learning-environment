@@ -4,7 +4,7 @@ from typing import List
 import pytest
 
 from fle.env.entities import Entity, Position, ResourcePatch, Recipe, BurnerMiningDrill, EntityStatus
-from fle.env import DirectionInternal, FactorioInstance
+from fle.env import DirectionInternal as Direction
 from fle.env.game_types import Prototype, Resource
 
 

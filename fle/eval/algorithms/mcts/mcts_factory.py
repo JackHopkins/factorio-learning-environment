@@ -241,9 +241,9 @@ class MCTSFactory:
         )
 
     def _create_chunked_mcts(self, config: ChunkedConfig):
-        from eval.algorithms.mcts import ChunkedMCTS
-        from eval.algorithms.mcts import ParallelMCTS
-        from eval.algorithms.mcts import ParallelMCTSConfig
+        from .mcts import ChunkedMCTS
+        from .parallel_mcts import ParallelMCTS
+        from .parallel_mcts_config import ParallelMCTSConfig
         from fle.agents.formatters.conversation_formatter_abc import StructurePreservingFormatter
 
         mcts_config = ParallelMCTSConfig(

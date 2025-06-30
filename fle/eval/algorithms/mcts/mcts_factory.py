@@ -9,7 +9,7 @@ from pathlib import Path
 import questionary
 from dataclasses import asdict
 
-from fle.eval.algorithms.mcts.samplers.beam_sampler import BeamSampler
+from .samplers import BeamSampler
 from fle.commons.models.game_state import GameState
 from fle.agents.llm.api_factory import APIFactory
 
@@ -163,8 +163,8 @@ def _get_sampler(sampler_type: SamplerType,
                  beam_width: int = 8,
                  exploration_prob=0.1,
                  maximum_lookback=10):
-    from eval.algorithms.mcts import KLDiversityAchievementSampler
-    from eval.algorithms.mcts import DynamicRewardWeightedSampler
+    from fle.eval.algorithms.mcts.samplers import KLDiversityAchievementSampler
+    from fle.eval.algorithms.mcts.samplers import DynamicRewardWeightedSampler
 
     if sampler_type == SamplerType.KLD:
         return KLDiversityAchievementSampler(db_client, window_size, temperature)

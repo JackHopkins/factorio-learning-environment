@@ -19,10 +19,10 @@ from fle.commons.models.game_state import GameState
 from fle.commons.models.message import Message
 from fle.commons.models.program import Program
 from fle.env import FactorioInstance
-from fle.eval.algorithms.mcts import (BlueprintScenarioSampler, ChunkedMCTS,
-                                      KLDiversityAchievementSampler,
-                                      ObjectiveMCTS, ParallelMCTS,
-                                      ParallelMCTSConfig)
+from fle.eval.algorithms.mcts.samplers import BlueprintScenarioSampler, KLDiversityAchievementSampler
+from fle.eval.algorithms.mcts.chunked_mcts import ChunkedMCTS
+from fle.eval.algorithms.mcts.parallel_mcts import ParallelMCTS, ParallelMCTSConfig
+from fle.eval.algorithms.mcts.objective_mcts import ObjectiveMCTS
 from fle.eval.algorithms.mcts.plan_sampler import PlanSampler
 
 # Configure environment

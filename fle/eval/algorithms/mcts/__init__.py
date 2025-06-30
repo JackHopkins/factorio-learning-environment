@@ -40,13 +40,11 @@ from .samplers.beam_sampler import BeamSampler
 # Samplers (commonly used ones)
 from .samplers.db_sampler import DBSampler
 from .samplers.kld_achievement_sampler import KLDiversityAchievementSampler
-from .blueprint_scenario_sampler import BlueprintScenarioSampler
+from .samplers.blueprint_scenario_sampler import BlueprintScenarioSampler
 from .blueprints_to_programs import BlueprintsToPrograms
 from .supervised_task_executor_abc import (PlanningGroupV2,
                                            SupervisedTaskExecutorABC)
 
-# Version info
-__version__ = "1.0.0"
 
 # Public API
 __all__ = [

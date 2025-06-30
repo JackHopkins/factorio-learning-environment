@@ -19,8 +19,8 @@ from fle.commons.models.generation_parameters import GenerationParameters
 from fle.commons.models.message import Message
 from fle.commons.models.program import Program
 
-from ...evaluator import Evaluator
-from .samplers.db_sampler import DBSampler
+from fle.eval.evaluator import Evaluator
+from fle.eval.algorithms.mcts.samplers import DBSampler
 
 
 class MCTS:

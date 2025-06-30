@@ -9,10 +9,10 @@ from typing import Dict, List, Tuple
 from fle.agents.formatters.conversation_formatter_abc import (
     PLANNING_ADDITION_PROMPT, StructurePreservingFormatter)
 from dotenv import load_dotenv
-from eval.algorithms.mcts import (BlueprintScenarioSampler, ChunkedMCTS,
-                                  KLDiversityAchievementSampler, ParallelMCTS,
-                                  ParallelMCTSConfig)
-from eval.open.auto_curriculum.plan_sampler import PlanSampler
+from fle.eval.algorithms.mcts.samplers import BlueprintScenarioSampler, KLDiversityAchievementSampler
+from fle.eval.algorithms.mcts.chunked_mcts import ChunkedMCTS
+from fle.eval.algorithms.mcts.parallel_mcts import ParallelMCTS, ParallelMCTSConfig
+from fle.eval.algorithms.mcts.samplers import PlanSampler # TODO: implement this
 from rich import print
 
 from fle.agents.llm.api_factory import APIFactory

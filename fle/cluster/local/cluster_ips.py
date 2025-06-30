@@ -3,7 +3,7 @@ import json
 from typing import List
 
 
-def get_local_container_ips() -> List[str]:
+def get_local_container_ips() -> tuple[List[str], List[int], List[int]]:
     """Get IP addresses of running Factorio containers in the local Docker setup."""
     # Get container IDs for factorio containers
     cmd = ['docker', 'ps', '--filter', 'name=factorio_', '--format', '"{{.ID}}"']

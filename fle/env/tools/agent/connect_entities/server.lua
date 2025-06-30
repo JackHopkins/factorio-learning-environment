@@ -585,35 +585,35 @@ local function place_at_position(player, connection_type, current_position, dir,
             return nil
 
         else
-            game.print("Avoiding entity at " .. placement_position.x.. ", " .. placement_position.y)
-            global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
+            -- game.print("Avoiding entity at " .. placement_position.x.. ", " .. placement_position.y)
+            -- global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
 
-            error("Cannot place entity")
-            local entities = player.surface.find_entities_filtered{position=placement_position, radius=0.5, type = {"beam", "resource", "player"}, invert=true}
-            local can_place = #entities == 0
-            if can_place then
-               local tile = player.surface.get_tile(placement_position.x, placement_position.y)
-               if is_water_tile(tile.name) then
-                   can_place = false
-               end
-            end
-            
-            if can_place then
-               local placed_entity = player.surface.create_entity({
-                   name = connection_type,
-                   position = placement_position,
-                   direction = dir,
-                   force = player.force
-               })
-            
-               if placed_entity then
-                   player.remove_item({name = connection_type, count = 1})
-                   counter_state.place_counter = counter_state.place_counter + 1
-                   table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
-                   return placed_entity
-               end
-            
-            end
+            -- error("Cannot place entity")
+            --local entities = player.surface.find_entities_filtered{position=placement_position, radius=0.5, type = {"beam", "resource", "player"}, invert=true}
+            --local can_place = #entities == 0
+            --if can_place then
+            --    local tile = player.surface.get_tile(placement_position.x, placement_position.y)
+            --    if is_water_tile(tile.name) then
+            --        can_place = false
+            --    end
+            --end
+            --
+            --if can_place then
+            --    local placed_entity = player.surface.create_entity({
+            --        name = connection_type,
+            --        position = placement_position,
+            --        direction = dir,
+            --        force = player.force
+            --    })
+            --
+            --    if placed_entity then
+            --        player.remove_item({name = connection_type, count = 1})
+            --        counter_state.place_counter = counter_state.place_counter + 1
+            --        table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
+            --        return placed_entity
+            --    end
+            --
+            --end
         end
     end
 

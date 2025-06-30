@@ -4,12 +4,11 @@
 setup_platform() {
     ARCH=$(uname -m)
     OS=$(uname -s)
-    export DOCKER_PLATFORM="linux/amd64"
-    # if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
-    #     export DOCKER_PLATFORM="linux/arm64"
-    # else
-    #     export DOCKER_PLATFORM="linux/amd64"
-    # fi
+    if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
+        export DOCKER_PLATFORM="linux/arm64"
+    else
+        export DOCKER_PLATFORM="linux/amd64"
+    fi
     # Detect OS for mods path
     if [[ "$OS" == *"MINGW"* ]] || [[ "$OS" == *"MSYS"* ]] || [[ "$OS" == *"CYGWIN"* ]]; then
         # Windows detected
@@ -279,4 +278,4 @@ case "$COMMAND" in
         show_help
         exit 1
         ;;
-esac 
+esac

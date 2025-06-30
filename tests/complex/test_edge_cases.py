@@ -1,6 +1,6 @@
 import pytest
 from time import sleep
-from fle.env.entities import Position, ResourcePatch
+from fle.env.entities import Position, ResourcePatch, Direction
 from fle.env import DirectionInternal
 from fle.env.game_types import Prototype, Resource
 

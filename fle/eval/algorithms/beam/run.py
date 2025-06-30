@@ -7,8 +7,8 @@ from typing import List, Tuple
 from fle.cluster import get_local_container_ips
 from dotenv import load_dotenv
 
-from fle.agents.utils.formatters.recursive_formatter import RecursiveFormatter
-from fle.agents.utils.api_factory import APIFactory
+from fle.agents.formatters import RecursiveFormatter
+from fle.agents.llm.api_factory import APIFactory
 from fle.commons.db_client import DBClient
 from fle.commons.models import GameState
 from fle.env import FactorioInstance

@@ -1,7 +1,7 @@
 import asyncio
 from typing import Dict, List
 
-from fle.agents.utils.api_factory import APIFactory
+from fle.agents.llm.api_factory import APIFactory
 
 
 class PlanGenerator:

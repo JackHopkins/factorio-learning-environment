@@ -11,8 +11,7 @@ from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
 from rich.console import Console
 
-from fle.agents.utils.formatters.conversation_formatter_abc import (
-    ConversationFormatter, DefaultFormatter)
+from fle.agents.formatters import ConversationFormatter, DefaultFormatter
 from fle.commons.db_client import DBClient
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.game_state import GameState

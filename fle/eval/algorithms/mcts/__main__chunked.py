@@ -15,7 +15,7 @@ from eval.algorithms.mcts import (BlueprintScenarioSampler, ChunkedMCTS,
 from eval.open.auto_curriculum.plan_sampler import PlanSampler
 from rich import print
 
-from fle.agents.utils.api_factory import APIFactory
+from fle.agents.llm.api_factory import APIFactory
 from fle.cluster import get_local_container_ips
 from fle.commons.db_client import DBClient
 from fle.commons.models.conversation import Conversation

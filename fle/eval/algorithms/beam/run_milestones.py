@@ -10,8 +10,7 @@ from fle.agents.llm.api_factory import APIFactory
 from fle.cluster import get_local_container_ips
 from dotenv import load_dotenv
 
-from fle.agents.utils.formatters.recursive_report_formatter import \
-    RecursiveReportFormatter
+from fle.agents.formatters import RecursiveReportFormatter
 from fle.commons.db_client import DBClient
 from fle.env import FactorioInstance, GameState
 from fle.eval.algorithms.beam import MilestonesBeamSearchExecutor

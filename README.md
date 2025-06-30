@@ -946,7 +946,7 @@ We recommend changing and setting up the `SQLITE_DB_FILE` variable in the `.env`
 
 ### Postgres
 
-You then need to make sure all the correct variables are put in the `.env` file. With the `FLE_DB_TYPE="postgres"`.
+Make sure all variables are set in the `.env` file with `FLE_DB_TYPE="postgres"`.
 
 To utilize postgres database you need to setup an instance of the db server yourself. The easiest way is to run it via Docker:
 

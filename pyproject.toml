@@ -126,6 +126,6 @@ dev-dependencies = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = fle/env/src
-testpaths = fle/env/src/tests
-python_files = test_*.py
+pythonpath = "fle/env/src"
+testpaths = "fle/env/src/tests"
+python_files = "test_*.py"

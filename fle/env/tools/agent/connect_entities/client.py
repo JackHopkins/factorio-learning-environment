@@ -4,7 +4,7 @@ from typing import Union, Optional, List, Dict, cast, Set
 import numpy
 
 from fle.env import EntityGroup, Entity, Position, BeltGroup, PipeGroup, ElectricityGroup, TransportBelt, \
-    Pipe, FluidHandler, MiningDrill, Inserter, ChemicalPlant, OilRefinery, MultiFluidHandler
+    Pipe, FluidHandler, MiningDrill, Inserter, ChemicalPlant, OilRefinery, MultiFluidHandler, Direction
 from fle.env import DirectionInternal
 from fle.env.game_types import Prototype, prototype_by_name
 from fle.env.tools.admin.clear_collision_boxes.client import ClearCollisionBoxes

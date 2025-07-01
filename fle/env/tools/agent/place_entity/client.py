@@ -1,7 +1,7 @@
 from time import sleep
 
-from fle.env.entities import Position, Entity
-from fle.env import DirectionInternal, Direction
+from fle.env.entities import Position, Entity, Direction
+from fle.env import DirectionInternal
 from fle.env.game_types import Prototype
 from fle.env.tools.agent.get_entity.client import GetEntity
 from fle.env.tools.agent.pickup_entity.client import PickupEntity

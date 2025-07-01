@@ -1,6 +1,6 @@
 import pytest
 
-from fle.cluster import get_local_container_ips
+from fle.commons.cluster_ips import get_local_container_ips
 from fle.env.game_types import Prototype, Resource
 from fle.env.entities import Position, BoundingBox, BuildingBox, Direction
 from fle.env import FactorioInstance

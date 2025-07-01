@@ -1,6 +1,6 @@
 import unittest
 
-from fle.cluster import get_local_container_ips
+from fle.commons.cluster_ips import get_local_container_ips
 from fle.env import FactorioInstance
 
 embedded_function = """

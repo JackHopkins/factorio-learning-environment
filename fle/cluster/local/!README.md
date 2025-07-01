@@ -15,7 +15,6 @@ The system allows you to:
 
 - `run-envs.sh` - Main script for running and managing Factorio instances with options for scenario selection
 - `create_docker_compose_config.py` - Generates Docker Compose configuration for multiple Factorio instances
-- `cluster_ips.py` - Utility for retrieving IP addresses and ports of running Factorio containers
 - `factorio_server_login.py` - Automates the process of connecting to and initializing each server instance
 
 ## Setup and Usage

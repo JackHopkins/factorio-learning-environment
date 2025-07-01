@@ -424,18 +424,6 @@ local function on_configuration_changed()
     init()
 end 
 
--- I must delete this 
-function check_research_hints()
-  if game.players[1] == nil then
-    return
-  end
-  if global.research_hint == nil and game.players[1].force.current_research ~= nil then
-    global.research_hint = true
-  end
-end
-
-
-
 script.on_event(story_events, function(event)
    if #game.players > 0 and game.players[1].character then
      check_for_player_death(event)

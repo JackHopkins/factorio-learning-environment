@@ -58,6 +58,10 @@ agents = [
 cluster = [
     "docker>=6.0.0",
     "boto3>=1.26.0",
+    "opencv-python",
+    "pyautogui>=0.9.54",
+    "pillow>=10.0.0",
+    "psutil>=5.9.0",
 ]
 eval = [
     "scikit-image>=0.25.2",

@@ -16,7 +16,7 @@ from fle.eval.algorithms.mcts.samplers import PlanSampler # TODO: implement this
 from rich import print
 
 from fle.agents.llm.api_factory import APIFactory
-from fle.cluster import get_local_container_ips
+from fle.commons.cluster_ips import get_local_container_ips
 from fle.commons.db_client import DBClient
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.game_state import GameState

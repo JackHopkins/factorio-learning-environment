@@ -13,7 +13,7 @@ from fle.env.gym_env.registry import get_environment_info, list_available_enviro
 from fle.env.gym_env.trajectory_runner import GymTrajectoryRunner
 
 from fle.agents.gym_agent import GymAgent
-from fle.cluster import get_local_container_ips
+from fle.commons.cluster_ips import get_local_container_ips
 from fle.commons.db_client import create_db_client
 from fle.eval.algorithms.independent import get_next_version
 

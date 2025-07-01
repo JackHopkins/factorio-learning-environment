@@ -4,7 +4,7 @@ import concurrent.futures
 import os
 from typing import List, Tuple
 
-from fle.cluster import get_local_container_ips
+from fle.commons.cluster_ips import get_local_container_ips
 from dotenv import load_dotenv
 
 from fle.agents.formatters import RecursiveFormatter

@@ -20,7 +20,7 @@ from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
 from fle.commons.models.program import Program
 from fle.env import FactorioInstance
-from fle.cluster import get_local_container_ips
+from fle.commons.cluster_ips import get_local_container_ips
 from fle.agents.llm.parsing import PythonParser
 from fle.agents.llm.metrics import timing_tracker, log_metrics
 #from fle.commons.models.response import EnvironmentResponse

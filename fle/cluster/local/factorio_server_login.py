@@ -11,7 +11,7 @@ from pathlib import Path
 from PIL import Image
 from dataclasses import dataclass
 
-from fle.cluster import get_local_container_ips
+from fle.commons.cluster_ips import get_local_container_ips
 from cluster.remote.factorio_server_login import get_uninitialised_ips, launch_factorio
 from screeninfo import get_monitors
 

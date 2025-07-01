@@ -9,7 +9,7 @@ from fle.eval.tasks.task_factory import TaskFactory
 from pathlib import Path
 import json
 load_dotenv()
-from fle.cluster import get_local_container_ips
+from fle.commons.cluster_ips import get_local_container_ips
 
 def main():
     parser = argparse.ArgumentParser()

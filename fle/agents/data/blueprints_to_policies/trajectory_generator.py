@@ -121,7 +121,7 @@ def find_valid_origin(entities: List[BlueprintEntity], resource: Resource, game:
     # Use nearest_buildable to find valid position
     return game.nearest_buildable(
         prototype_by_name[miners[0].name],
-        bounding_box=bounding_box
+        bounding_box
     )
 
 def create_origin_finding_code_trace(entities, resource):

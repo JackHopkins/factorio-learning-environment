@@ -305,7 +305,7 @@ class BlueprintAnalyzerWithPlaceNextTo:
             "",
             "# Find valid position using nearest_buildable",
             f"origin = game.nearest_buildable({self._name_to_prototype_string(placement_sequence[0][0].name)}, "
-            f"bounding_box=miner_box)",
+            f"miner_box)",
             "",
             "assert origin, 'Could not find valid position'",
             "origin = origin + left_top + Position(x=0.5, y=0.5)",

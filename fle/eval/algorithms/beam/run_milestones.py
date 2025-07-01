@@ -7,7 +7,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from fle.agents.llm.api_factory import APIFactory
-from fle.cluster import get_local_container_ips
+from fle.commons.cluster_ips import get_local_container_ips
 from dotenv import load_dotenv
 
 from fle.agents.formatters import RecursiveReportFormatter

@@ -10,7 +10,7 @@ from pathlib import Path
 import json
 from dataclasses import dataclass
 load_dotenv()
-from fle.cluster import get_local_container_ips
+from fle.commons.cluster_ips import get_local_container_ips
 
 
 @dataclass  

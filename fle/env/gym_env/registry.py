@@ -9,7 +9,7 @@ from fle.env.gym_env.environment import FactorioGymEnv
 from fle.env.gym_env.config import GymRunConfig
 from fle.eval.tasks import TaskFactory
 from fle.env import FactorioInstance
-from fle.cluster import get_local_container_ips
+from fle.commons.cluster_ips import get_local_container_ips
 
 
 @dataclass

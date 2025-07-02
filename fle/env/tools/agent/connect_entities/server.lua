@@ -574,7 +574,10 @@ local function place_at_position(player, connection_type, current_position, dir,
 
             local placed_entity = game.surfaces[1].create_entity(entity_variant)
             if placed_entity then
-                player.remove_item({name = connection_type, count = 1})
+                local inventory = player.get_inventory(defines.inventory.character_main)
+                if inventory then
+                    inventory.remove({name = connection_type, count = 1})
+                end
                 counter_state.place_counter = counter_state.place_counter + 1
                 table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
                 return placed_entity
@@ -683,7 +686,10 @@ local function place_at_position(player, connection_type, current_position, dir,
         })
 
         if placed_entity then
-            player.remove_item({name = connection_type, count = 1})
+            local inventory = player.get_inventory(defines.inventory.character_main)
+            if inventory then
+                inventory.remove({name = connection_type, count = 1})
+            end
             counter_state.place_counter = counter_state.place_counter + 1
             table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
             return placed_entity

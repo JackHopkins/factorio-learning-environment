@@ -391,26 +391,31 @@ class BasicObservationFormatter:
                 research_str += f"- {tech}\n"
 
         # Format technologies
-        if research.get('technologies'):
+        techs = research.get('technologies')
+        if techs:
+            # Accept both dict and list
+            if isinstance(techs, list):
+                # Convert list to dict using 'name' as key
+                techs = {t['name']: t for t in techs if 'name' in t}
             if research.get('current_research') or research.get('research_queue'):
                 research_str += "\n"
             research_str += "#### Technologies\n"
-            for name, tech in research['technologies'].items():
-                status = "✅" if tech['researched'] else "⏳"
-                enabled = "🔓" if tech['enabled'] else "🔒"
-                research_str += f"- {status} {enabled} {name} (Level {tech['level']})\n"
-                if tech['prerequisites']:
+            for name, tech in techs.items():
+                status = "✅" if tech.get('researched') else "⏳"
+                enabled = "🔓" if tech.get('enabled') else "🔒"
+                research_str += f"- {status} {enabled} {name} (Level {tech.get('level', 0)})\n"
+                if tech.get('prerequisites'):
                     research_str += f"  Prerequisites: {', '.join(tech['prerequisites'])}\n"
-                if tech['ingredients']:
+                if tech.get('ingredients'):
                     # Handle both list of dicts and dict formats
                     if isinstance(tech['ingredients'], list):
                         ingredients = ', '.join(
-                            f"{ing.get('name', '')} x{ing.get('amount', 0)}" for ing in tech['ingredients'])
+                            f"{ing.get('name', ing.get('item', ''))} x{ing.get('amount', ing.get('value', 0))}" for ing in tech['ingredients'])
                         research_str += f"  Ingredients: {ingredients}\n"
                     else:
                         research_str += f"  Ingredients: {', '.join(f'{item} x{amount}' for item, amount in tech['ingredients'].items())}\n"
-                if tech['research_unit_count'] > 0:
-                    research_str += f"  Research Units: {tech['research_unit_count']} (Energy: {tech['research_unit_energy']:.1f})\n"
+                if tech.get('research_unit_count', 0) > 0:
+                    research_str += f"  Research Units: {tech['research_unit_count']} (Energy: {tech.get('research_unit_energy', 0):.1f})\n"
 
         return research_str
 

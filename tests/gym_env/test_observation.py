@@ -1,5 +1,6 @@
 from gym.utils.env_checker import check_env
 from fle.env.gym_env.environment import FactorioGymEnv
+from fle.env.gym_env.action import Action
 from fle.env import FactorioInstance
 # from fle.env.gym_env.validation import validate_observation
 from fle.env.entities import Position, Direction
@@ -34,11 +35,12 @@ def test_inventory_observation(instance):
     chest = instance.namespace.insert_item(Prototype.Coal, chest, quantity=10)
     
     # Get new observation using a no-op action
-    no_op_action = {
-        'agent_idx': 0,
-        'code': 'pass'  # No-op Python code
-    }
-    observation, reward, done, info = env.step(no_op_action)
+    action = Action(
+        agent_idx=0,
+        code='pass',  # No-op Python code
+        game_state=None
+    )
+    observation, reward, terminated, truncated, info = env.step(action)
     
     # Verify chest in observation
     chest_entities = [e for e in observation['entities'] if 'iron-chest' in e]
@@ -71,11 +73,12 @@ def test_entity_placement_observation(instance):
     )
     
     # Get new observation using a no-op action
-    no_op_action = {
-        'agent_idx': 0,
-        'code': 'pass'  # No-op Python code
-    }
-    observation, reward, done, info = env.step(no_op_action)
+    action = Action(
+        agent_idx=0,
+        code='pass',  # No-op Python code
+        game_state=None
+    )
+    observation, reward, terminated, truncated, info = env.step(action)
     
     # Verify furnace in observation
     furnace_entities = [e for e in observation['entities'] if 'stone-furnace' in e]

@@ -18,6 +18,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from fle.env.gym_env.registry import list_available_environments, get_environment_info
+from fle.env.gym_env.action import Action
 
 
 def test_registry_discovery():
@@ -41,10 +42,11 @@ def test_registry_discovery():
     return env_ids
 
 
-def test_environment_creation(env_ids):
+def test_environment_creation():
     """Test creating an environment (without actually running it)"""
     print("=== Testing Environment Creation ===")
-    
+
+    env_ids = list_available_environments()
     if not env_ids:
         print("No environments available to test")
         return
@@ -65,19 +67,21 @@ def test_environment_creation(env_ids):
         
         # Test reset
         print("  Testing reset...")
-        obs = env.reset()
+        obs, info = env.reset()
         print(f"  Reset successful, observation keys: {list(obs.keys())}")
         
         # Test a simple action
         print("  Testing simple action...")
-        action = {
-            'agent_idx': 0,
-            'code': 'print("Hello from Factorio Gym Registry!")'
-        }
-        obs, reward, done, info = env.step(action)
+        action = Action(
+            agent_idx=0,
+            code='print("Hello from Factorio Gym Registry!")',
+            game_state=None
+        )
+        obs, reward, terminated, truncated, info = env.step(action)
         print(f"  Action successful!")
         print(f"    Reward: {reward}")
-        print(f"    Done: {done}")
+        print(f"    Done: {terminated}")
+        print(f"    Truncated: {truncated}")
         print(f"    Info keys: {list(info.keys())}")
         
         # Clean up

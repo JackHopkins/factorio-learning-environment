@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -134,5 +133,7 @@ dev-dependencies = [
 pythonpath = "fle/env/src"
 testpaths = "fle/env/src/tests"
 python_files = "test_*.py"
-=======
->>>>>>> e120f81b (default lab scenario small)
+
+[project.urls]
+homepage = "https://jackhopkins.github.io/factorio-learning-environment/leaderboard/"
+leaderboard = "https://jackhopkins.github.io/factorio-learning-environment/leaderboard/"

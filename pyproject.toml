@@ -50,6 +50,8 @@ dev = [
     "pytest>=7.0.0",
     "black>=23.0.0",
     "isort>=5.12.0",
+    "rich>=14.0.0",
+    "questionary>=2.1.0",
 ]
 agents = [
     "anthropic>=0.49.0",
@@ -110,7 +112,21 @@ exclude = [
     "notebooks",
     "*.ipynb",
     "clean.sh",
-    "**/*.so"
+    "**/*.so",
+    "tests",
+    "docs",
+    "leaderboard",
+    "env",
+    "*.sh",
+    "*.md",
+    "*.toml",
+    "*.ini",
+    "*.cfg",
+    "*.lock",
+    "*.json",
+    "*.yml",
+    "*.yaml",
+    "*.txt",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -130,7 +146,7 @@ testpaths = "tests"
 python_files = "test_*.py"
 
 [project.urls]
-homepage = "https://jackhopkins.github.io/factorio-learning-environment/leaderboard/"
+homepage = "https://jackhopkins.github.io/factorio-learning-environment/"
 leaderboard = "https://jackhopkins.github.io/factorio-learning-environment/leaderboard/"
 
 [[tool.uv.index]]

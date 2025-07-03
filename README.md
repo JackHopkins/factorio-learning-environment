@@ -126,17 +126,17 @@ import fle
 
 ### Client-side running (optional if you want to see visuals)
 
-1. **Activate server**:
-   - Open Factorio client
-   - Navigate to _Multiplayer_
-   - Connect to `localhost:34197` (default) or your configured address in Docker.
-     - Once connected, you can safely disconnect. This step confirms your Factorio license with the server.
-
-2. **Set up Factorio client**:
+1. **Set up Factorio client**:
    - Purchase Factorio from the [official website](https://www.factorio.com/) (recommended) or on Steam.
    - Downgrade to version 1.1.110:
      - Steam: Right-click Factorio → Properties → Betas → Select 1.1.110
      - **Important**: Make sure to uncheck the Space Age DLC if you have it, as it forces the 2.x branch
+
+2. **Activate server**:
+   - Open Factorio client
+   - Navigate to _Multiplayer_
+   - Connect to `localhost:34197` (default) or your configured address in Docker.
+     - Once connected, you can safely disconnect. This step confirms your Factorio license with the server.
 
 ### Troubleshooting
 - **"No valid programs found for version X"**: This is normal during initialization. The system will start generating programs shortly.

@@ -67,87 +67,78 @@ pip install factorio-learning-environment
 After installation, you can import the package in your Python code:
 
 ```python
-import factorio_learning_environment as fle
+import fle
 ```
-
-### Development Installation
-
-For development, see [BUILD.md](BUILD.md) for detailed build instructions.
 
 ### Quickstart
 
-1. **Clone the repository**:
+1. **Configure Docker permissions** (for Linux users):
+   If you typically run Docker with sudo, add your user to the docker group:
+   ```bash
+   sudo usermod -aG docker $USER
+   newgrp docker
+   ```
 
-```bash
-git clone https://github.com/JackHopkins/factorio-learning-environment.git
-cd factorio-learning-environment
+2. **Launch FLE Docker server**:
+   ```bash
+   # For macOS and Windows (Open Docker Desktop application):
 
-# Using uv
-uv sync --extra env --extra eval
+   # For Linux (Start Docker daemon):
+   sudo systemctl start docker
 
-# Using pip
-pip install -e .[env,eval]
-```
+   # Build Docker image
+   cd cluster/docker
+   docker build -t factorio .
+
+   # Run Factorio servers
+   cd ../local
+   ./run-envs.sh  # Starts 1 instance with default lab scenario
+
+   # Alternatively, with more options (see cluster/local/!README.md):
+   ./run-envs.sh -n 3 -s open_world  # Starts 3 instances with open world scenario
+   ./run-envs.sh stop                # Stops all running instances
+   ./run-envs.sh restart             # Restarts with previous configuration
+   ```
+   **Note**: The script automatically detects your platform (arm64/amd64) and configures Docker appropriately.
+
+3. **Configure firewall** (if running server on a different machine):
+   Open the following ports:
+   - UDP 34197 (Game connection)
+   - TCP 27015 (RCON)
+
+   **Note**: On Windows, you may need to configure Windows Defender Firewall to allow these ports.
+
+4. **Configure DB**: Copy the example environment file:
+   - Note that API keys are only required for the respective model providers that will be evaluated
+   ```bash
+   cp .example.env .env
+   ```
+
+5. **Run Eval**: Running open and lab play with example run configs:
+   1. Open Play (one parallel run):
+      ```sh
+      uv run -m fle.run --run_config=eval/algorithms/independent/run_config_example_open_play.json
+      ```
+   2. Tasks (one parallel run of iron-ore task):
+      ```sh
+      uv run -m fle.run --run_config=fle/eval/algorithms/independent/gym_run_config.json
+      ```
+
+### Client-side running (optional if you want to see visuals)
+
+1. **Activate server**:
+   - Open Factorio client
+   - Navigate to _Multiplayer_
+   - Connect to `localhost:34197` (default) or your configured address in Docker.
+     - Once connected, you can safely disconnect. This step confirms your Factorio license with the server.
 
 2. **Set up Factorio client**:
-- Purchase Factorio from the [official website](https://www.factorio.com/) (recommended) or on Steam.
-- Downgrade to version 1.1.110:
-    - Steam: Right-click Factorio → Properties → Betas → Select 1.1.110
-    - **Important**: Make sure to uncheck the Space Age DLC if you have it, as it forces the 2.x branch
+   - Purchase Factorio from the [official website](https://www.factorio.com/) (recommended) or on Steam.
+   - Downgrade to version 1.1.110:
+     - Steam: Right-click Factorio → Properties → Betas → Select 1.1.110
+     - **Important**: Make sure to uncheck the Space Age DLC if you have it, as it forces the 2.x branch
 
-3. **Configure Docker permissions** (for Linux users):
-If you typically run Docker with sudo, add your user to the docker group:
-```bash
-sudo usermod -aG docker $USER
-newgrp docker
-```
-
-4. **Launch FLE Docker server**:
-```bash
-# For macOS and Windows (Open Docker Desktop application):
-
-# For Linux (Start Docker daemon):
-sudo systemctl start docker
-
-# Build Docker image
-cd cluster/docker
-docker build -t factorio .
-
-# Run Factorio servers
-cd ../local
-./run-envs.sh  # Starts 1 instance with default lab scenario
-
-# Alternatively, with more options (see cluster/local/!README.md):
-./run-envs.sh -n 3 -s open_world  # Starts 3 instances with open world scenario
-./run-envs.sh stop                # Stops all running instances
-./run-envs.sh restart             # Restarts with previous configuration
-```
-**Note**: The script automatically detects your platform (arm64/amd64) and configures Docker appropriately.
-
-5. **Configure firewall** (if running server on a different machine):
-Open the following ports:
-- UDP 34197 (Game connection)
-- TCP 27015 (RCON)
-
-**Note**: On Windows, you may need to configure Windows Defender Firewall to allow these ports.
-
-6. **Activate server**:
-- Open Factorio client
-- Navigate to _Multiplayer_
-- Connect to `localhost:34197` (default) or your configured address in Docker. 
-  - Once connected, you can safely disconnect. This step confirms your Factorio license with the server.
-
-7. **Configure DB**: Copy the example environment file:
-- Note that API keys are only required for the respective model providers that will be evaluated
-```bash
-cp .example.env .env
-```
-
-8. **Run Eval**: Running open and lab play with example run configs:
-   1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
-   2. Tasks (one parallel run of iron-ore task): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_lab_play.json`
-
-## Troubleshooting
+### Troubleshooting
 - **"No valid programs found for version X"**: This is normal during initialization. The system will start generating programs shortly.
 - **Python import errors**: Make sure you're using the run.py script provided above to fix path issues.
 - **Database connection errors**: Verify your database configuration in the .env file and ensure the database exists.

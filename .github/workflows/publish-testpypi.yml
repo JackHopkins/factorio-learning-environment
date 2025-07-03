@@ -3,7 +3,7 @@ name: "Publish to TestPyPI"
 on:
   push:
     branches:
-      - restructure  # or 'testpypi' or any branch you want
+      - main
 
 permissions:
   id-token: write

@@ -45,7 +45,8 @@ jobs:
           rm -rf deploy
           cp -r docs deploy
           rm -rf deploy/leaderboard
-          cp -r docs/leaderboard/build deploy/leaderboard
+          mkdir -p deploy/leaderboard
+          cp -r docs/leaderboard/build/* deploy/leaderboard/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

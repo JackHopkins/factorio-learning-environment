@@ -1,7 +1,9 @@
 name: "Publish to TestPyPI"
 
 on:
-  workflow_dispatch:  # Manual trigger
+  push:
+    branches:
+      - restructure  # or 'testpypi' or any branch you want
 
 permissions:
   id-token: write

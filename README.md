@@ -890,53 +890,27 @@ Next time you run an eval, the tool will automatically be available to the agent
 Below is an overview of how the project is structured. Some directories also contain more detailed readmes. 
 ```
 factorio-learning-environment/
-├── agents/                            # Factorio Learning Environment
-│     ├── utils/                          # Some utilities for building an agent
-│     ├── agent_abc.py                    # Abstract class to extend
-│     └── basic_agent.py                  # Agent implementation we used for our experiments
-├── env/                            # Factorio Learning Environment
-│     ├── src/                          # Main implementation
-│     │     ├── exceptions/                 # Custom exceptions (WIP)
-│     │     ├── gym/                        # Gym environment wrapper (deprecated but possibly useful)
-│     │     ├── lib/                        # General purpose Lua utilities (e.g serialization etc)
-│     │     ├── models/                     # Core objects used during eval
-│     │     ├── rcon/                       # RCON wrapper for communicating with the game
-│     │     ├── tools/                      # Agent and admin tools
-│     │     │    ├── admin/                     # ~17 Tools for managing state, persistence, scoring etc 
-│     │     │    └── agent/                     # ~27 Tools that the agent can use
-│     │     ├── utils/                      # Python utilities
-│     │     ├── entities.py                 # Python object model of the game entities
-│     │     ├── game_types.py               # Technologies, Recipes, Resources
-│     │     ├── instance.py                 # Environment state manager
-│     │     └── namespace.py                # Namespace the agent can read/write variables to. 
-│     └── tests/                        # ~350 test cases
-├── cluster/                        # Everything needed to launch Factorio servers
-│     ├── docker/                       # Docker container definition of the Factorio server
-│     │     ├── config/                     # Factorio server configuration files
-│     │     └── mods/                       # Mods (deprecated)
-│     ├── local/                        # Tools for dynamically creating Docker Compose files for clusters
-│     ├── remote/                       # Tools for deploying Factorio clusters onto AWS 
-│     └── scenarios/                    # Factorio scenarios for Lab-play and Open-play
-│         ├── default_lab_scenario/
-│         └── open_world/
-├── data/                           # Miscellaneous data
-│     ├── blueprints_to_policies/       # Code to scrape Factorio blueprint sites and create Python policies
-│     ├── icons/                        # Icons for Factorio entities and items
-│     ├── prompts/                      # Prompts (deprecated)
-│     ├── recipes/                      # Factorio recipes in JSONL format
-│     └── scripts/                      # Misc Lua scripts (deprecated)
-├── docs/                           # Website
-│     └── assets/                       # Videos / Images
-└── eval/
-      ├── open/                     # Implementations for running agents in the open game
-      │     ├── beam/                   # Implementation for Beam sampling
-      │     ├── independent_runs/       # Implementation for independent eval runs
-      │     ├── mcts/                   # Implementation for MCTS sampling
-      │     └── plots/                  # Run results and plots
-      └── tasks                     # Implementations for running agents against lab-play tasks
-            ├── task_definitions/       # JSON definition of task
-            ├── task_abc.py             # Abstract task definition
-            └── throughput_task.py      # A basic task checking for a production throughput quota
+├── .github/                        # GitHub workflows and scripts
+├── docs/                           # Website and documentation
+├── fle/                            # Main Factorio Learning Environment codebase
+├── leaderboard/                    # Leaderboard system
+├── tests/                          # Test suite
+├── .example.env                    # Example environment variables
+├── .gitignore                      # Git ignore file
+├── BUILD.md                        # Build instructions
+├── CONTRIBUTING.md                 # Contribution guidelines
+├── LICENSE                         # License file
+├── MANIFEST.in                     # Manifest for packaging
+├── PUBLISHING.md                   # Publishing instructions
+├── README.md                       # Project readme
+├── clean.sh                        # Clean script
+├── prepare_build.py                # Build preparation script
+├── pyproject.toml                  # Python project config
+├── pytest.ini                      # Pytest config
+├── pyvenv.cfg                      # Python venv config
+├── setup.cfg                       # Setup config
+├── setup.py                        # Setup script
+└── validate_installation.py        # Installation validation script
 ```
 
 ## Database
@@ -1062,89 +1036,3 @@ Executing tools as part of a Python policy string, without a game client.
 Join our team and contribute to one of the AI research community's most challenging problems - building open-ended / unsaturateable evals for post-AGI frontier models. If you want to contribute, please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/JackHopkins/factorio-learning-environment)
-
-[//]: # (## Data)
-
-[//]: # ()
-[//]: # (We provide a dataset of 50,000 trajectories of gameplay. These trajectories were generated by running an agent on the server and recording its actions.)
-
-[//]: # ()
-[//]: # (The dataset can be downloaded [here]&#40;&#41;.)
-
-[//]: # ()
-[//]: # (To generate your own dataset, you should perform an MCTS run by following the instructions [here]&#40;environment/src/datasetgen/mcts/readme.md&#41;)
-
-
-[//]: # (## Evaluate Agent)
-
-[//]: # ()
-[//]: # ()
-[//]: # (# Building a Paperclip Maximiser)
-
-[//]: # ()
-[//]: # (### Introduction)
-
-[//]: # ()
-[//]: # (In AGI, instrumental convergence is the hypothetical tendency for sufficiently intelligent agents to pursue unbounded instrumental goals provided that their ultimate goals are themselves unlimited.)
-
-[//]: # ()
-[//]: # (This is illustrated by the hypothetical Paperclip Maximiser &#40;Bostrum, 2003&#41;, in which an agent given the sole and unconstrained goal of maximising the number of paperclips a factory outputs, could attempt to turn the Earth into one giant factory &#40;and convert all humans into paperclips in the process&#41;.)
-
-[//]: # ()
-[//]: # (The drives of such an intelligent system are likely to include goal-content integrity, self-protection, freedom from interference, self-improvement, and non-satiable acquisition of additional resources.)
-
-[//]: # ()
-[//]: # (Interestingly, the game of Factorio implicitly or explicitly models each of the above.)
-
-[//]: # ()
-[//]: # (### The Game)
-
-[//]: # ()
-[//]: # (Factorio is a game in which you build and maintain factories.)
-
-[//]: # ()
-[//]: # (The core idea of Factorio is simple, but there is scope for massive emergent complexity. )
-
-[//]: # ()
-[//]: # (The player mines raw resources, researches technologies, builds infrastructure, automates production and fights enemies. By combining simple elements into ingenious structures, applying management skills to keep it working and finally protecting the factories from angry neighbours, there is scope for enormous factories &#40;or programs&#41;. There is the opportunity for infinite emergent complexity, as Factorio is Turing-complete &#40;i.e any calculable function can be calculated in Factorio&#41;.)
-
-[//]: # ()
-[//]: # (![Some crafting dependencies]&#40;https://community.wolfram.com//c/portal/getImageAttachment?filename=Factorio_All.png&userId=73716&#41;)
-
-[//]: # ()
-[//]: # (The size of factory you build is constrained by:)
-
-[//]: # (- Access to raw resources)
-
-[//]: # (- The hostility of neighbours, which increases proportionally to the size of the factory.)
-
-[//]: # ()
-[//]: # (This second factor results in two viable long-term strategies. First, by building aggressively and investing in defenses &#40;walls, auto-turrets etc&#41;. Second, by building slowly and investing in energy sources that don't impact the neighbours and don't incur hostility.)
-
-[//]: # ()
-[//]: # (### An RL Sandbox)
-
-[//]: # ()
-[//]: # (The simple rules and infinite emergent complexity of Factorio make it an ideal RL sandbox:)
-
-[//]: # (- The automated nature of the factory presents a dense reward function &#40;i.e game resources update every tick&#41;.)
-
-[//]: # (- Extremely simple policies &#40;i.e as few as 2 actions&#41; can generate a some reward.)
-
-[//]: # (- Each of the basic drives of an intelligent system can be demonstrated and evaluated. )
-
-[//]: # ()
-[//]: # ()
-[//]: # (**Objective**: To maximise the number of 'paperclips' &#40;represented as copper coils in-game&#41; existant in the game-world at any cost.)
-
-[//]: # ()
-[//]: # (**Goal-content Integrity**: The game supports pseudo-variables in-game, which means that the objective function can be represented as a composite of these pseudo-variables &#40;e.g maximise the incidence of whatever resource is stored in the box in tile 1:15&#41;. A sufficiently intelligent agent would be adverse to altering the contents of the box, as that would compromise goal-content integrity.)
-
-[//]: # ()
-[//]: # (**Resource Acquisition**: The game benefits an intelligent agent directly, as specific resources acquired affects it's reward function. Indirectly, the accrual of non-rewarded resources enables a sufficiently intelligent agent to expand the size of the factory, thus increasing the rate of paperclip generation.)
-
-[//]: # ()
-[//]: # (**Self-Protection**: The game introduces hostile countermeasures to destroy the factory. A sufficiently intelligent agent would either develop resources to fight these countermeasures, or attempt to avoid countermeasures in the first place.)
-
-[//]: # ()
-[//]: # (**Self-Improvement**: The game offers technological progression, in which certain features are unlocked after a factory has conducted research as a sub-goal. These features offer faster resource gathering, and more efficient factory layouts to improve density.)

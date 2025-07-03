@@ -23,18 +23,18 @@ jobs:
 
       - name: Build Factorio Docker image
         run: |
-          cd cluster/docker
+          cd fle/cluster/docker
           docker build -t factorio . --platform linux/amd64
 
       - name: Verify scenario exists
         run: |
           # Check that the scenario directory exists
-          if [ ! -d "./cluster/scenarios/default_lab_scenario" ]; then
+          if [ ! -d "./fle/cluster/scenarios/default_lab_scenario" ]; then
             echo "❌ Scenario directory not found at ./cluster/scenarios/default_lab_scenario"
             exit 1
           fi
           echo "✓ Found scenario directory"
-          ls -la ./cluster/scenarios/default_lab_scenario
+          ls -la ./fle/cluster/scenarios/default_lab_scenario
 
       - name: Update docker-compose to use local image
         run: |

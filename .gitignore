@@ -86,3 +86,7 @@ trajectory_logs/
 # Database files
 .fle/
 *.db
+/fle/eval/
+/fle/eval/open/plots/
+/eval/
+/data/

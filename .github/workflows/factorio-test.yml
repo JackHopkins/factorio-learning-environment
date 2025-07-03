@@ -39,7 +39,7 @@ jobs:
       - name: Update docker-compose to use local image
         run: |
           # Update docker-compose.yml to use the locally built image
-          cd cluster
+          cd fle/cluster
           sed -i "s|image: 'factoriotools/factorio:1.1.110'|image: 'factorio:latest'|g" docker-compose-linux.yml
 
       - name: Start Factorio server

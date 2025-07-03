@@ -23,18 +23,18 @@ jobs:
 
       - name: Build Factorio Docker image
         run: |
-          cd cluster/docker
+          cd fle/cluster/docker
           docker build -t factorio . --platform linux/amd64
 
       - name: Verify scenario exists
         run: |
           # Check that the scenario directory exists
-          if [ ! -d "./cluster/scenarios/default_lab_scenario" ]; then
+          if [ ! -d "./fle/cluster/scenarios/default_lab_scenario" ]; then
             echo "❌ Scenario directory not found at ./cluster/scenarios/default_lab_scenario"
             exit 1
           fi
           echo "✓ Found scenario directory"
-          ls -la ./cluster/scenarios/default_lab_scenario
+          ls -la ./fle/cluster/scenarios/default_lab_scenario
 
       - name: Update docker-compose to use local image
         run: |
@@ -50,7 +50,22 @@ jobs:
       - name: Wait for server to start
         run: |
           echo "Waiting for Factorio server to initialize..."
-          sleep 10
+          sleep 15
+          
+          echo "Waiting for RCON port 27016 to be ready..."
+          for i in {1..30}; do
+            if nc -z localhost 27016 2>/dev/null; then
+              echo "✓ RCON port 27016 is open!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+          
+          if ! nc -z localhost 27016 2>/dev/null; then
+            echo "❌ RCON port 27016 never became available"
+            exit 1
+          fi
 
       - name: Check server status
         run: |
@@ -58,20 +73,56 @@ jobs:
           docker compose ps
           docker compose logs factorio_1
 
-      - name: Run Python tests
+      - name: Debug container IPs and ports
         run: |
-          # Run all tests in the project
-          python -m pytest -v
+          echo "=== Docker containers ==="
+          docker ps -a
+          
+          echo -e "\n=== Container port mappings ==="
+          docker ps --format "table {{.Names}}\t{{.Ports}}"
+          
+          echo -e "\n=== Listening ports on host ==="
+          sudo netstat -tlnp | grep -E ':(270|34197)' || echo "No matching ports found"
+        
+
+      - name: Test RCON connectivity
+        run: |
+          echo "=== Testing RCON connectivity ==="
+          # First, let's see what port the container is actually exposing
+          CONTAINER_ID=$(docker ps -q -f name=factorio)
+          if [ -n "$CONTAINER_ID" ]; then
+            echo "Found container ID: $CONTAINER_ID"
+            docker inspect $CONTAINER_ID | grep -A 10 "Ports"
+          fi
+          
+          # Try common RCON ports
+          for port in 27015 27016 27017 27018 27019 27020; do
+            echo -n "Testing port $port: "
+            if nc -z -w 2 localhost $port 2>/dev/null; then
+              echo "✓ Open"
+            else
+              echo "✗ Closed"
+            fi
+          done
+
+      - name: Run Python tests with debugging
+        run: |
+          # Run tests with verbose output and show print statements
+          python -m pytest -v -s --tb=short
         env:
-          # Add any environment variables your tests might need
           FACTORIO_HOST: localhost
-          FACTORIO_PORT: 27016
+          FACTORIO_RCON_PORT: 27016
+          PYTHONUNBUFFERED: 1
 
       - name: Show test logs on failure
         if: failure()
         run: |
           cd cluster
+          echo "=== Factorio container logs ==="
           docker compose logs factorio_1
+          
+          echo -e "\n=== All container logs ==="
+          docker compose logs
 
       - name: Stop server
         if: always()

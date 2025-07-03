@@ -30,4 +30,4 @@ jobs:
         run: uv build
 
       - name: Publish to TestPyPI
-        run: uv publish --trusted-publishing --index testpypi
+        run: uv publish --trusted-publishing always --index testpypi

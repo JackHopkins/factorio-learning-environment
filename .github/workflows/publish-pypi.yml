@@ -29,4 +29,4 @@ jobs:
         run: uv build  # Step 4: Build your package with uv
 
       - name: Publish
-        run: uv publish --trusted-publishing --index pypi  # Step 5: Publish your package to PyPI with uv
+        run: uv publish --trusted-publishing always --index pypi  # Step 5: Publish your package to PyPI with uv

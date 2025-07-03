@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "factorio-learning-environment"
-version = "0.3"
+version = "0.2.1"
 description = "Factorio Learning Environment"
 authors = [
     {name = "Jack Hopkins", email = "noreply@github.com"},

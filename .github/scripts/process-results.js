@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const resultsDir = path.join(__dirname, '../../leaderboard/results');
-const outputDir = path.join(__dirname, '../../leaderboard/processed');
+const resultsDir = path.join(__dirname, '../../docs/leaderboard/results');
+const outputDir = path.join(__dirname, '../../docs/leaderboard/processed');
 const outputFile = path.join(outputDir, 'combined-results.json');
 
 // Create the output directory if it doesn't exist

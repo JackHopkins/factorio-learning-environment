@@ -1,0 +1,32 @@
+name: "Publish to PyPI"  # The name of this workflow as shown in GitHub Actions UI
+
+on:
+  release:
+    types: ["published"]  # Trigger this workflow only when a GitHub Release is published
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  run:  # The job ID (can be any name)
+    name: "Build and publish to PyPI"  # Human-readable job name
+    runs-on: ubuntu-latest  # Use the latest Ubuntu runner
+
+    steps:  # List of steps to run in this job
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true  # Enable caching for dependencies
+          cache-dependency-glob: uv.lock  # Cache based on uv.lock file
+
+      - name: Set up Python
+        run: uv python install 3.12  # Step 3: Install Python 3.12 using uv
+
+      - name: Build
+        run: uv build  # Step 4: Build your package with uv
+
+      - name: Publish
+        run: uv publish --trusted-publishing always --index pypi  # Step 5: Publish your package to PyPI with uv

@@ -3,37 +3,37 @@ name: Process Leaderboard Results
 on:
   pull_request:
     paths:
-      - 'leaderboard/results/**'
+      - 'docs/leaderboard/results/**'
   push:
     branches:
       - main
     paths:
-      - 'leaderboard/results/**'
+      - 'docs/leaderboard/results/**'
 
 jobs:
   process-results:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Fetch all history for all branches
 
       - name: Set up Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: '16'
 
       - name: Process results
         run: |
-          mkdir -p leaderboard/processed
+          mkdir -p docs/leaderboard/processed
           node .github/scripts/process-results.js
 
       - name: Save processed results
         run: |
           # Save the processed results temporarily
           mkdir -p /tmp/processed
-          cp -r leaderboard/processed/* /tmp/processed/ || true
+          cp -r docs/leaderboard/processed/* /tmp/processed/ || true
 
       - name: Fetch and checkout results branch
         run: |
@@ -50,14 +50,14 @@ jobs:
       - name: Copy processed results back
         run: |
           # Copy the processed results back
-          mkdir -p leaderboard/processed
-          cp -r /tmp/processed/* leaderboard/processed/ || true
+          mkdir -p docs/leaderboard/processed
+          cp -r /tmp/processed/* docs/leaderboard/processed/ || true
 
       - name: Commit and push to results branch
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add leaderboard/processed
+          git add docs/leaderboard/processed
           git commit -m "Update processed leaderboard results" || echo "No changes to commit"
           git push -f origin results
 

@@ -1,0 +1,888 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Factorio Learning Environment</title>
+
+        <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet" />
+
+        <link rel="stylesheet" href="./static/css/bulma.min.css" />
+        <link rel="stylesheet" href="./static/css/bulma-carousel.min.css" />
+        <link rel="stylesheet" href="./static/css/bulma-slider.min.css" />
+        <link rel="stylesheet" href="./static/css/fontawesome.all.min.css" />
+        <link rel="stylesheet" href="./static/css/academicons.min.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" />
+        <link rel="stylesheet" href="./static/css/index.css" />
+        <link rel='shortcut icon' type='image/x-icon' href='./favicon.ico' />
+        <style>
+        .math-block {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-left: 3px solid #2196F3;
+        }
+        .definition {
+            margin: 10px 0;
+            padding: 5px;
+        }
+        .note {
+            font-style: italic;
+            color: #666;
+            margin: 10px 0;
+        }
+        .feature-box {
+            border-left: 3px solid #2196F3;
+            padding: 10px 15px;
+            margin: 15px 0;
+            background-color: #f8f9fa;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        </style>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script defer src="./static/js/fontawesome.all.min.js"></script>
+        <script src="./static/js/bulma-carousel.min.js"></script>
+        <script src="./static/js/bulma-slider.min.js"></script>
+        <script src="./static/js/index.js"></script>
+
+        <script type="module">
+          import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+          mermaid.initialize({ startOnLoad: true });
+        </script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">
+            MathJax.Hub.Config({
+                tex2jax: {
+                    inlineMath: [['$', '$']],
+                    displayMath: [['$$', '$$']],
+                    processEscapes: true
+                }
+            });
+        </script>
+    </head>
+    <body>
+        <section class="hero">
+            <div class="hero-body">
+                <div class="container is-max-desktop">
+                    <div class="columns is-centered">
+                        <div class="column has-text-centered">
+                            <h1 class="title is-1 publication-title">Factorio Learning Environment</h1>
+<!--                            <h2 class="title is-2">Paperclip Maximization with Large Language Models</h2>-->
+
+                            <div class="is-size-5 publication-authors">
+                                <span class="author-block">
+                                    <a target="_blank" href="https://www.unicef.org.uk/donate/donate-now-to-protect-children-in-ukraine/">Jack&#160;Hopkins</a><a target="_blank" href="mailto:jack.hopkins@me.com"><i class="fas fa-envelope"></i></a><sup>*1</sup>,
+                                    <a target="_blank" href="https://www.linkedin.com/in/m%C3%A4rt-bakler/">Mart&#160;Bakler</a><sup>*1</sup>
+                                    <a target="_blank" href="https://akbir.dev/">Akbir&#160;Khan</a><sup>2</sup>
+                                </span>
+                            </div>
+
+                            <div class="is-size-5 publication-authors">
+                                <span class="author-block"><sup>1</sup>Independent, </span>
+                                <span class="author-block"><sup>2</sup>Anthropic</span>
+                            </div>
+
+                            <div class="is-size-5 publication-authors">
+                                <span class="author-block"><sup>*</sup>Equal contribution</span>
+                            </div>
+
+                            <div class="column has-text-centered">
+                                <div class="publication-links">
+                                    <span class="link-block">
+                                        <a target="_blank" href="https://arxiv.org/abs/2503.09617" class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon">
+                                                <i class="ai ai-arxiv"></i>
+                                            </span>
+                                            <span>arXiv</span>
+                                        </a>
+                                    </span>
+
+                                    <span class="link-block">
+                                        <a target="_blank" href="assets/documents/paper.pdf" class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </span>
+                                            <span>PDF</span>
+                                        </a>
+                                    </span>
+                                    <!-- Code Link. -->
+                                    <span class="link-block">
+                                        <a target="_blank" href="https://github.com/JackHopkins/factorio-learning-environment" class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon">
+                                                <i class="fab fa-github"></i>
+                                            </span>
+                                            <span>Code</span>
+                                        </a>
+                                    </span>
+                                    <span class="link-block">
+                                        <a target="_blank" href="https://x.com/akbirkhan/status/1899246324777972043" class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon">
+                                                <i class="fab fa-twitter"></i>
+                                            </span>
+                                            <span>Tweet</span>
+                                        </a>
+                                    </span>
+                                    <span class="link-block">
+                                        <a target="_blank" href="./leaderboard" class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path fill="#ffffff" d="M353.8 54.1L330.2 6.3c-3.9-8.3-16.1-8.6-20.4 0L286.2 54.1l-52.3 7.5c-9.3 1.4-13.3 12.9-6.4 19.8l38 37-9 52.1c-1.4 9.3 8.2 16.5 16.8 12.2l46.9-24.8 46.6 24.4c8.6 4.3 18.3-2.9 16.8-12.2l-9-52.1 38-36.6c6.8-6.8 2.9-18.3-6.4-19.8l-52.3-7.5zM256 256c-17.7 0-32 14.3-32 32l0 192c0 17.7 14.3 32 32 32l128 0c17.7 0 32-14.3 32-32l0-192c0-17.7-14.3-32-32-32l-128 0zM32 320c-17.7 0-32 14.3-32 32L0 480c0 17.7 14.3 32 32 32l128 0c17.7 0 32-14.3 32-32l0-128c0-17.7-14.3-32-32-32L32 320zm416 96l0 64c0 17.7 14.3 32 32 32l128 0c17.7 0 32-14.3 32-32l0-64c0-17.7-14.3-32-32-32l-128 0c-17.7 0-32 14.3-32 32z"/></svg>
+                                            </span>
+                                            <span>Leaderboard</span>
+                                        </a>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <style>
+            /* Improve video loading and display */
+            .video-container {
+                position: relative;
+                width: 100%;
+                min-height: 150px; /* Prevents layout shift while loading */
+                /*margin-bottom: 10px;*/
+                background-color: #fff; /* Placeholder color while loading */
+            }
+
+            .video-container video {
+                width: 100%;
+                /*height: auto;*/
+                /*aspect-ratio: 4/3; !* Maintain consistent aspect ratio *!*/
+                object-fit: cover;
+                background-color: #fff;
+            }
+
+            /* Improved video overlay styling */
+            .video-overlay {
+                position: absolute;
+                bottom: 10px;
+                left: 5px;
+                background-color: rgba(0, 0, 0, 0.4); /* Darker background for better readability */
+                color: white;
+                padding: 5px 10px;
+                border-radius: 4px;
+                font-size: 16px;
+                max-width: 90%;
+                z-index: 10;
+                font-weight: 500; /* Slightly bolder text */
+                box-shadow: 0 1px 3px rgba(0,0,0,0.3); /* Subtle shadow for better visibility */
+            }
+            .columns .column.video-column {
+                    padding: 0 3px; /* Tighter spacing on mobile */
+            }
+
+            /* Responsive adjustments */
+            @media (max-width: 767px) {
+                .video-container {
+                    min-height: 120px; /* Smaller minimum height on mobile */
+                }
+
+                .video-overlay {
+                    font-size: 14px; /* Smaller font on mobile */
+                    padding: 4px 8px;
+                }
+
+                /* Optimize columns for mobile */
+                .columns .column.video-column {
+                    padding: 0 3px; /* Tighter spacing on mobile */
+                }
+            }
+
+            /* Fix for Safari video playback */
+            @supports (-webkit-appearance:none) {
+                .video-container video {
+                    will-change: transform; /* Helps with Safari rendering */
+                }
+            }
+        </style>
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div class="columns">
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container">
+                                        <video playsinline muted autoplay loop width="100%">
+                                            <!-- MP4 for desktop devices (loads first on desktop) -->
+                                            <source src="assets/videos/compressed_2213-cropped-h264.mp4" type="video/mp4">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                        <div class="video-overlay"><span>Mine 16 Iron Ore</span></br><span style="font-size: 85%; padding-top: -10px">per minute</span></div>
+                                    </div>
+                                </div>
+
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container">
+                                        <video playsinline muted autoplay loop width="100%">
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_720-cropped-h264.mp4" type="video/mp4">
+                                        </video>
+                                        <div class="video-overlay"><span>Smelt 16 Iron Plates</span></br><span style="font-size: 85%; padding-top: -10px">per minute</span></div>
+                                    </div>
+                                </div>
+
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container">
+                                        <video playsinline muted autoplay loop width="100%">
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_767-cropped-h264.mp4" type="video/mp4">
+                                        </video>
+                                        <div class="video-overlay"><span>Make 16 Iron Gears</span></br><span style="font-size: 85%; padding-top: -10px">per minute</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="columns">
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container">
+                                        <video playsinline muted autoplay loop width="100%">
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_1891-cropped-h264.mp4" type="video/mp4">
+                                        </video>
+                                        <div class="video-overlay"><span>Extract 250 Petroleum Gas</span></br><span style="font-size: 85%; padding-top: -10px">per minute</span></div>
+                                    </div>
+                                </div>
+
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container">
+                                        <video playsinline muted autoplay loop width="100%">
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_761-cropped-h264.mp4" type="video/mp4">
+                                        </video>
+                                        <div class="video-overlay"><span>Refine 16 Sulfur</span></br><span style="font-size: 85%; padding-top: -10px">per minute</span></div>
+                                    </div>
+                                </div>
+
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container">
+                                        <video playsinline muted autoplay loop width="100%">
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_1897-cropped-h264.mp4" type="video/mp4">
+                                        </video>
+                                        <div class="video-overlay"><span>Make 16 Plastic bars</span></br><span style="font-size: 85%; padding-top: -10px">per minute</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="columns">
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container">
+                                        <video playsinline muted autoplay loop width="100%">
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_803-cropped-h264.mp4" type="video/mp4">
+                                        </video>
+                                        <div class="video-overlay">Build the largest possible factory</div>
+                                    </div>
+                                </div>
+
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container">
+                                        <video playsinline muted autoplay loop width="100%">
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_527-cropped-h264.mp4" type="video/mp4">
+                                        </video>
+                                        <div class="video-overlay">Build the largest possible factory</div>
+                                    </div>
+                                </div>
+
+                                <div class="column has-text-left video-column">
+                                    <div class="video-container">
+                                        <video playsinline muted autoplay loop width="100%">
+                                            <!-- MP4 for desktop devices -->
+                                            <source src="assets/videos/compressed_804-cropped-h264.mp4" type="video/mp4">
+                                        </video>
+                                        <div class="video-overlay">Build the largest possible factory</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p style="padding-top: 10px; padding-left: 5px; font-size:110%">Claude Sonnet 3.5 builds factories</p>
+            </div>
+        </section>
+
+        <!-- Add this script to help with video loading -->
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if the browser likely supports WebM
+            function supportsWebM() {
+                const video = document.createElement('video');
+                return video.canPlayType('video/webm; codecs="vp8, vorbis"') !== '';
+            }
+
+            // Check if we're on a mobile device
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+            // Get all videos
+            const videos = document.querySelectorAll('.video-container video');
+
+            videos.forEach(video => {
+                // If WebM is not supported, remove WebM sources
+                if (!supportsWebM()) {
+                    const webmSources = video.querySelectorAll('source[type="video/webm"]');
+                    webmSources.forEach(source => source.remove());
+                }
+
+                // Handle errors by trying alternate sources
+                video.addEventListener('error', function() {
+                    const currentSrc = video.currentSrc;
+
+                    // Try another source if available
+                    const sources = Array.from(video.querySelectorAll('source'));
+                    const otherSources = sources.filter(s => s.src !== currentSrc);
+
+                    if (otherSources.length > 0) {
+                        // Try the next source
+                        video.src = otherSources[0].src;
+                        video.load();
+                    }
+                });
+
+                // Optimize performance by pausing videos when not in viewport
+                window.addEventListener('scroll', function() {
+                    const rect = video.getBoundingClientRect();
+                    const isVisible = (
+                        rect.top < window.innerHeight &&
+                        rect.bottom > 0
+                    );
+
+                    if (!isVisible && !video.paused) {
+                        video.pause();
+                    } else if (isVisible && video.paused && video.getAttribute('autoplay') !== null) {
+                        // Try to play if in viewport and has autoplay attribute
+                        video.play().catch(e => {
+                            // Autoplay might be blocked, don't throw errors
+                        });
+                    }
+                }, { passive: true });
+            });
+        });
+        </script>
+
+        <section class="section">
+            <div class="container is-max-desktop">
+                <!-- Abstract. -->
+                <div class="columns is-centered has-text-centered">
+                    <div class="column">
+                        <h2 class="title is-3">Abstract</h2>
+                        <div class="content has-text-justified">
+                            <p style="font-size: 125%;">
+                                Large Language Models (LLMs) are rapidly saturating existing benchmarks, necessitating new open-ended evaluations.
+                                We introduce the <b>Factorio Learning Environment (FLE)</b>, based on the game of Factorio, that tests agents in long-term planning, program synthesis, and resource optimization.
+                            </p>
+                            <p style="font-size: 125%;">
+                                FLE provides open-ended and exponentially scaling challenges - from basic automation to complex factories processing millions of resource units per second.
+                                We provide two settings:
+                            </p>
+                            <ol style="font-size: 125%;">
+                                <li><b>Lab-play</b> consisting of 24 structured tasks with fixed resources.</li>
+                                <li><b>Open-play</b> with the unbounded task of building the largest factory from scratch on a procedurally generated map.</li>
+                            </ol>
+                            <p style="font-size: 125%;">
+                                We demonstrate across both settings that models still lack strong spatial reasoning.
+                                In lab-play, we find that LLMs exhibit promising short-horizon skills, yet are unable to operate effectively in constrained environments, reflecting limitations in error analysis.
+                                In open-play, while LLMs discover automation strategies that improve growth (e.g electric-powered drilling), they fail to achieve complex automation (e.g electronic-circuit manufacturing).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+          <section class="section">
+            <div class="container is-max-widescreen">
+                <h2 class="title is-3"><span class="dvima">Introduction</span></h2>
+
+                <p style="font-size: 110%;">
+                    Large Language Models (LLMs) have demonstrated remarkable capabilities at solving complex question-answer (QA) problems, saturating benchmarks in factual recollection, reasoning and code generation.
+                    Benchmark saturation presents a critical challenge for the AI research community: how do we meaningfully evaluate and differentiate increasingly capable models?
+                </p>
+                </br>
+                <p style="font-size: 110%;">
+                    We introduce the <b>Factorio Learning Environment (FLE)</b>: a novel framework built upon the game of Factorio that addresses this challenge by enabling <i>unbounded</i> agent evaluation. FLE provides the infrastructure, API, and metrics for assessing frontier LLM agents in code generation, spatial reasoning and long-term planning.
+                    In this environment, agents must navigate rapidly scaling challenges—from basic resource extraction producing ~30 units/minute to sophisticated production chains processing millions of units/second. This dramatic growth in complexity, driven by geometric increases in research costs and the combinatorial expansion of interdependent production chains, creates natural curricula for evaluating increasingly capable agents.
+                </p>
+                </br>
+                <p style="font-size: 110%;">
+                    Within FLE, we define two complementary evaluation protocols: (1) <b>lab-play</b> with structured, goal-oriented tasks that have clear completion criteria, allowing targeted assessment of specific capabilities, and (2) <b>open-play</b> with no predetermined end-state, supporting truly unbounded evaluation of an agent's ability to autonomously set and achieve increasingly complex goals.
+                </p>
+            </div>
+          </section>
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <h2 class="title is-3"><span class="dvima">Environment</span></h2>
+
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div style="text-align: center;">
+                                <img src="assets/images/figure_2.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                                <br />
+                                <span style="font-size: 110%;">
+                                    <b>Agents in FLE aim to optimise factories programmatically.</b> Left: Agents aim to create increasingly efficient factories, advancing through technological tiers to produce more resources per second. Middle: We provide a Python API to Factorio which enables direct interaction with the environment through code. Right: Agents submit programs to the game server and receive rich feedback, enabling them to refine their strategies through an iterative process of exploration and refinement.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin: 30px 0;">
+                        <div class="column">
+                            <div style="text-align: center;">
+                                <img src="assets/images/repl.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                                <br />
+                                <span style="font-size: 110%;">
+                                    <b>Agents develop policies through an interactive feedback loop.</b>
+                                    Using 23 core API tools, agents compose programs that interact with the environment and observe the results through <i>stdout</i> and <i>stderr</i> streams.
+                                    The Python namespace allows agents to store variables and define functions for later use, enabling increasingly sophisticated strategies as experience grows.
+                                    This approach mirrors the way human programmers learn - through iteration, debugging, and refinement based on direct feedback.
+                                    Agent programs yield both a Production Score (PS) representing the economic value of all items produced, and milestones that reflect technological advancements.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </section>
+
+
+        <section class="section">
+
+            <div class="container is-max-widescreen">
+                <h1 class="title is-3"><span class="dvima">Experiments</span></h1>
+                <p style="font-size: 115%;">
+                    To systematically evaluate agent capabilities in the Factorio Learning Environment, we introduce two complementary experimental settings that test different aspects of planning, automation, and resource management; namely <i>open-play</i> and <i>lab-play</i>.
+                </p>
+                </br>
+                <p style="font-size: 115%;">
+                    We evaluate six frontier language models across both settings: Claude 3.5-Sonnet, GPT-4o, GPT-4o-Mini, Deepseek-v3, Gemini-2-Flash, and Llama-3.3-70B-Instruct.
+                    Each model interacts with the environment through a consistent prompting approach, receiving the API schema, a guide describing common patterns, and memory of past actions and observations.
+                </p>
+
+                </br>
+                <h2 class="subtitle is-4"><span class="dvima">Open-Play</span></h2>
+                <p style="font-size: 115%;">
+                    Agents begin in a procedurally generated world with instruction to "build the largest possible factory". This setting tests agents' ability to set appropriate goals, balance short-term production against long-term research, and navigate the complex tech tree and game map without external guidance.
+                </p>
+                <div class="rows" style="margin-top:2em">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div style="text-align: center;">
+                                <img src="assets/images/figure_4.png" width="100%" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                                <br />
+                                <span style="font-size: 110%;">
+                            <b>Agent capabilities are clearly differentiated by their production scores in open-play.</b>
+                                    Left: By plotting Production Score (PS) against steps on a log/log scale, we can observe distinct performance trajectories for each model.
+                                    More capable models not only achieve higher scores but demonstrate steeper growth curves, indicating better long-term planning.
+                                    Milestone annotations show when the median agent first created key entities, revealing how quickly each model progresses through the tech tree.
+                                    Right: Final rewards reveal how weaker models struggle to advance when complex automation and logistics become necessary.
+                        </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container is-max-widescreen">
+                <div class="rows" style="margin-top:2em">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div style="text-align: center;">
+                                <img src="assets/images/figure_6.png" width="100%" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto; margin-top: 3em" />
+                                <br />
+                                <span style="font-size: 110%;">
+                                <b>Production strategies reveal differences in agent planning and capabilities.</b>
+                                    We track how various models produce items with multiple antecedent ingredients in open-play, showing not just what they build but how they approach factory design.
+                                    Claude 3.5-Sonnet demonstrates sophisticated strategy by immediately beginning complex crafting and investing in research and automation, ultimately unlocking <code>electric-mining-drills</code> around step 3k - a decision that boosts <code>iron-plate</code> production by 50% thereafter.
+                                    In contrast, less advanced models like GPT-4o-Mini produce minimal quantities of multi-ingredient items, revealing limitations in planning horizons.
+                                    Interestingly, Deepseek showed stronger capabilities in lab-play than open-play, suggesting that its general capabilities exceed its objective-setting abilities in open-ended environments.
+                            </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <h2 class="subtitle is-4"><span class="dvima">Lab-Play</span></h2>
+                <p style="font-size: 110%;">
+                    Agents are provided with resources and given a time-limit to achieve an objective.
+                    We task agents to build production lines of 24 distinct target entities of increasing complexity, starting from a single resource mine requiring at most 2 machines (making <code>iron-ore</code>) to a late game entity requiring the coordination of close to 100 machines (making <code>utility-science-pack</code>).
+                    The target entities cover items from early to late game, requiring agents to use a wide variety of machines present in Factorio (drills, furnaces, assembling machines, oil refineries, chemical plants). As the task difficulty naturally increases with resource requirements, this provides a measure of the complexity that agents are capable of creating in a limited number of steps.
+                    All tasks provide the agent with sufficient resources to complete the task with all technologies unlocked.
+                </p>
+                <div class="rows" style="margin-top:2em">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div style="text-align: center;">
+                                <img src="assets/images/figure_5.png" width="100%" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                                <br />
+                                 <span style="font-size: 110%;">
+                                    <b>Item production complexity creates a natural difficulty gradient for agent evaluation.</b> Top: We measure task success rates across the first 8 complexity levels, revealing a clear decline as target entity crafting complexity increases. Even the most capable models struggle with coordinating more than six machines when producing items with three or more ingredients. Bottom: Production progress over time shows a pattern of initial rapid advancement followed by stagnation or regression. This reveals a key limitation in current agents' abilities: they often break existing functional structures when attempting to scale production or add new factory sections. The high variance in task progress across runs further demonstrates the challenge of consistent performance in complex automation tasks.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container is-max-widescreen">
+                <div class="rows" style="margin-top:2em">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <div style="text-align: center;">
+<!--                                <img src="assets/images/exploration_performance.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto; width: 80%;" />-->
+                                <img src="assets/images/figure_1.png" width="600px" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto;" />
+                                <br />
+                                <span style="font-size: 110%;">
+                                    <b>Plastic bar manufacturing is the most challenging task successfully completed in lab-play.</b>
+                                    The factory consists of a electricity steam generator (top-left), a coal mine with storage buffer (top), a crude-oil to petroleum gas pipeline (bottom) and a chemical plant  (bottom-right).
+                                    The chemical plant creates plastic bars using the coal and petroleum gas as inputs. By themselves, the cumulative raw resources generate a production score of $224$.
+                                    With this specific layout, the factory creates $40$ plastic bars per $60$ in-game seconds, for a production score of $352$.
+                                    This factory was created by Claude Sonnet 3.5.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row">
+                            <div style="text-align: center;">
+<!--                                <img src="assets/images/exploration_performance.png" class="interpolation-image" alt="" style="display: block; margin-left: auto; margin-right: auto; width: 80%;" />-->
+                                <img src="assets/images/table_1.png" width="600px" class="interpolation-image" alt="" style="margin-top: 50px; display: block; margin-left: auto; margin-right: auto;" />
+                                <br />
+                                <span style="font-size: 110%;">
+                                    Even the strongest model (Claude) only completed 7/24 tasks in lab-play, illustrating substantial room for improvement in this benchmark.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <h2 class="title is-3">Key Insights</h2>
+                <p style="font-size: 115%;">
+                Our experiments revealed several key patterns that highlight both the capabilities and limitations of current AI agents when faced with open-ended industrial challenges:
+                </p>
+                <div class="content has-text-justified" style="margin-top:2em">
+                    <div class="columns">
+                        <div class="column">
+                            <div class="feature-box">
+                                <h4 class="title is-5">1. Coding skill predicts performance</h4>
+                                <p>Models with stronger coding abilities (Claude 3.5-Sonnet, GPT-4o) achieved higher Production Scores and completed more lab tasks. Claude outperformed others with a PS of 293,206 and 28 milestones, progressing beyond early-game resource extraction.</p>
+                            </div>
+                        </div>
+
+                        <div class="column">
+                            <div class="feature-box">
+                                <h4 class="title is-5">2. Technology investment drives growth</h4>
+                                <p>Only Claude consistently invested resources in researching new technologies, despite their importance for long-term progression. After deploying electric mining drills at step 3k, Claude's PS grew by 50% (from 200k to 300k), demonstrating the value of strategic investment.</p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="columns">
+                        <div class="column">
+                            <div class="feature-box">
+                                <h4 class="title is-5">3. Planning is essential in open-play</h4>
+                                <p>In open-play, agents frequently pursue short-sighted objectives — like Gemini-2.0 manually crafting 300+ wooden chests over 100 steps — rather than investing in research or scaling existing production. This reveals a telling discrepancy: while Gemini-2 and Deepseek demonstrate early-game automation capabilities in structured lab-play, they rarely attempt to create cohesive factories during open-ended exploration, resulting in poorer overall performance.</p>
+                            </div>
+                        </div>
+
+                       <div class="column">
+                            <div class="feature-box">
+                                <h4 class="title is-5">4. Spatial reasoning is a major limitation</h4>
+<!--                                <p>Models struggled with spatial planning when building multi-section factories. Common failures included placing entities too close together, not leaving room for connections, or incorrect inserter placement, leading to significant underperformance in complex tasks.</p>-->
+<!--                            -->
+                                <p>All models exhibited limitations in spatial planning when constructing multi-section factories. Common failures included placing entities too close together, not allocating space for connections, or incorrect inserter placement - issues that severely impacted performance in complex tasks requiring coordination of multiple production lines.</p>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="columns">
+                        <div class="column">
+                            <div class="feature-box">
+                                <h4 class="title is-5">5. Error recovery poses a significant challenge</h4>
+                                <p>Models frequently become trapped in repetitive error patterns, attempting the same invalid operations repeatedly rather than exploring alternative solutions. For instance, GPT-4o repeated the same API method incorrectly for 78 consecutive steps despite identical error messages.</p>
+                            </div>
+                        </div>
+                        <div class="column">
+                            <div class="feature-box">
+                                <h4 class="title is-5">6. Programming styles vary significantly</h4>
+                                <p>Models exhibited distinct coding approaches: Claude favored a REPL style with extensive print statements (43.3% of code lines) but few assertions (2.0%), while GPT-4o used a defensive style with more validation checks (12.8% assertions) and fewer prints (10.3%).</p>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!--Conclusion-->
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+                            <h2 class="title is-3"><span class="dvima">Conclusion</span></h2>
+                            <div class="content has-text-justified">
+<!--                                <p style="font-size: 125%;">-->
+<!--                                    In this work, we introduce the Factorio Learning Environment (FLE), a platform for evaluating AI agents in complex, industrial-scale automation scenarios. Through our complementary evaluation protocols - structured lab-play and unbounded open-play - we assess agent capabilities in:-->
+<!--                                </p>-->
+<!--                                <ul style="font-size: 115%;">-->
+<!--                                    <li>Long-term planning across thousands of steps</li>-->
+<!--                                    <li>Spatial reasoning and factory layout optimization</li>-->
+<!--                                    <li>Resource allocation in complex production chains</li>-->
+<!--                                    <li>Error recovery and iterative debugging</li>-->
+<!--                                </ul>-->
+                                <p style="font-size: 115%;">
+                                    Our results show that even state-of-the-art LLMs struggle with the coordination and optimization challenges inherent in automation tasks. The rapidly scaling complexity of Factorio's technology tree creates evaluation scenarios that will remain challenging even as progress in AI research continues, allowing meaningful differentiation between increasingly capable models.
+                                </p>
+
+<!--                                <p style="font-size: 115%;">-->
+<!--                                    Looking forward, FLE provides a platform for investigating critical research questions:-->
+<!--                                </p>-->
+
+<!--                                <ul style="font-size: 115%;">-->
+<!--                                    <li>How can we develop agents that better understand spatial constraints and resource interdependencies?</li>-->
+<!--                                    <li>What agent frameworks enable more effective error recovery and debugging in complex environments?</li>-->
+<!--                                    <li>How might advances in planning and resource optimization in Factorio transfer to real-world industrial systems?</li>-->
+<!--                                </ul>-->
+
+                                <p style="font-size: 115%;">
+                                    We release the Factorio Learning Environment as an open-source platform, along with our evaluation protocols and baseline implementations, to encourage research on agent capabilities in complex, open-ended domains.
+                                </p>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+
+        <!--Team-->
+        <section class="section">
+            <div class="container is-max-widescreen">
+                <div class="rows">
+                    <div class="rows is-centered">
+                        <div class="row is-full-width">
+<!--                            <h2 class="title is-3"><span class="dvima">Team</span></h2>-->
+
+<!--                            <div class="columns" style="max-width: 80%; padding-left: 10%;">-->
+<!--                                <div class="column has-text-centered video-column">-->
+<!--                                    &lt;!&ndash; Modified class &ndash;&gt;-->
+<!--                                    <a href="https://www.unicef.org.uk/donate/donate-now-to-protect-children-in-ukraine/" target="_blank" style="border-bottom: none;">-->
+<!--                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/team/jack.png" alt="" style="width: 90%;" /></span>-->
+<!--                                    </a>-->
+<!--                                    <span style="font-weight: bold; font-size: 125%;">Jack Hopkins *</span>-->
+<!--                                </div>-->
+
+<!--                                <div class="column has-text-centered video-column">-->
+<!--                                    <a href="https://www.linkedin.com/in/m%C3%A4rt-bakler/" target="_blank" style="border-bottom: none;">-->
+<!--                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/team/mart.png" alt="" style="width: 82%;" /></span>-->
+<!--                                    </a>-->
+<!--                                    <span style="font-weight: bold; font-size: 125%;">Mart Bakler *</span>-->
+<!--                                </div>-->
+
+<!--                                <div class="column has-text-centered video-column">-->
+<!--                                    <a href="https://akbir.dev/" target="_blank" style="border-bottom: none;">-->
+<!--                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/team/akbir.png" alt="" style="width: 90%;" /></span>-->
+<!--                                    </a>-->
+<!--                                    <span style="font-weight: bold; font-size: 125%;">Akbir Khan</span>-->
+<!--                                </div>-->
+
+<!--&lt;!&ndash;                                <div class="column has-text-centered video-column">&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <a href="https://yunfanj.com/" target="_blank" style="border-bottom: none;">&ndash;&gt;-->
+<!--&lt;!&ndash;                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/avatars/yunfan.jpg" alt="" style="width: 90%;" /></span>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    </a>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <span style="font-weight: bold; font-size: 125%;">Yunfan Jiang<sup>*</sup></span>&ndash;&gt;-->
+<!--&lt;!&ndash;                                </div>&ndash;&gt;-->
+
+<!--&lt;!&ndash;                                <div class="column has-text-centered video-column">&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <a href="https://ai.stanford.edu/~amandlek/" target="_blank" style="border-bottom: none;">&ndash;&gt;-->
+<!--&lt;!&ndash;                                        <span class="image" style="padding-left: 10%;"><img src="assets/images/avatars/ajay.jpeg" alt="" style="width: 90%;" /></span>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    </a>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <span style="font-weight: bold; font-size: 125%;">Ajay Mandlekar<sup>*</sup></span>&ndash;&gt;-->
+<!--&lt;!&ndash;                                </div>&ndash;&gt;-->
+<!--                            </div>-->
+<!--                            <br />-->
+<!--                            <span style="max-width: 80%; padding-left: 11%;">* Equal Contribution</span>-->
+<!--                            <br />-->
+<!--                            <br />-->
+<!--                            <span>With thanks to Jack Kleeman and Minqi Jiang for their invaluable help with setting up compute resources and advice in development of this project.</span>-->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <section class="section" id="BibTeX">
+            <div class="container is-max-widescreen content">
+                <h2 class="title">BibTeX</h2>
+                <pre><code>@article{hopkins2025factorio,
+  title   = {Factorio Learning Environment},
+  author  = {Jack Hopkins and Mart Bakler and Akbir Khan},
+  year    = {2025},
+  journal = {arXiv preprint arXiv:2503.09617 }
+}</code></pre>
+                <div class="rows">
+                    <div class="rows is-centered">With thanks to Jack Kleeman and Minqi Jiang for their invaluable help with setting up compute resources and advice during the inception of this project. Thanks to Wube and the Factorio team for developing such a stimulating game.
+                    </div>
+            </div>
+            </div>
+
+        </section>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="columns is-centered">
+                    <div class="column">
+                        <div class="content has-text-centered">
+                            <p>
+                                Website template borrowed from <a href="https://github.com/nerfies/nerfies.github.io" target="_blank">NeRFies</a>, <a href="https://github.com/cliport/cliport.github.io" target="_blank">CLIPort</a>, <a href="https://voyager.minedojo.org/" target="_blank">Voyager</a> and
+                                <a href="https://github.com/vimalabs/vimalabs.github.io" target="_blank">VIMA</a>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </body>
+</html>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Detect if user is on mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    // Get all videos
+    const videos = document.querySelectorAll('.video-container video');
+
+    videos.forEach(video => {
+        // Add muted and autoplay attributes for desktop
+        if (!isMobile) {
+            video.muted = true;
+            video.autoplay = true;
+            video.loop = true;
+        }
+
+        // Create a play button overlay (visible only on mobile)
+        const playButton = document.createElement('div');
+        playButton.className = 'play-button';
+        playButton.innerHTML = '<i class="fas fa-play"></i>';
+        playButton.style.position = 'absolute';
+        playButton.style.top = '50%';
+        playButton.style.left = '50%';
+        playButton.style.transform = 'translate(-50%, -50%)';
+        playButton.style.backgroundColor = 'rgba(0,0,0,0.6)';
+        playButton.style.color = 'white';
+        playButton.style.borderRadius = '50%';
+        playButton.style.width = '60px';
+        playButton.style.height = '60px';
+        playButton.style.display = isMobile ? 'flex' : 'none';
+        playButton.style.alignItems = 'center';
+        playButton.style.justifyContent = 'center';
+        playButton.style.cursor = 'pointer';
+        playButton.style.zIndex = '20';
+
+        // Add click handler to play the video
+        playButton.addEventListener('click', function() {
+            video.play()
+                .then(() => {
+                    playButton.style.display = 'none';
+                })
+                .catch(e => {
+                    console.log('Playback failed:', e);
+                });
+        });
+
+        // Add click handler to the video itself
+        video.addEventListener('click', function() {
+            if (video.paused) {
+                video.play()
+                    .then(() => {
+                        playButton.style.display = 'none';
+                    })
+                    .catch(e => {
+                        console.log('Playback failed:', e);
+                    });
+            } else {
+                video.pause();
+                if (isMobile) {
+                    playButton.style.display = 'flex';
+                }
+            }
+        });
+
+        // Add the play button to the video container
+        video.parentNode.appendChild(playButton);
+
+        // Handle video events
+        video.addEventListener('ended', function() {
+            if (isMobile) {
+                playButton.style.display = 'flex';
+            }
+        });
+
+        video.addEventListener('pause', function() {
+            if (isMobile) {
+                playButton.style.display = 'flex';
+            }
+        });
+
+        video.addEventListener('play', function() {
+            playButton.style.display = 'none';
+        });
+
+        // Optimize performance by lazily loading videos and pausing when not in view
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // If on desktop, automatically play when in view
+                    if (!isMobile && video.paused) {
+                        video.play().catch(e => console.log('Auto-play failed:', e));
+                    }
+                } else {
+                    // Pause video when out of view (desktop only)
+                    if (!isMobile && !video.paused) {
+                        video.pause();
+                    }
+                }
+            });
+        }, {
+            threshold: 0.1,
+            rootMargin: '0px 0px 100px 0px' // Start loading a bit before it comes into view
+        });
+
+        observer.observe(video);
+    });
+
+    // Also implement visibility API as a fallback for better mobile performance
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden && !isMobile) {
+            // Pause all videos when the page is not visible
+            videos.forEach(video => {
+                if (!video.paused) video.pause();
+            });
+        }
+    });
+});
+</script>

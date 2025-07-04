@@ -11,9 +11,9 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
         error("The distance to the target position is too far away to place the entity (" ..distance.."). Move closer.")
     end
 
-    --if not global.actions.can_reach_entity(player, x, y) then
+    -- if not global.actions.can_reach_entity(player, x, y) then
     --    error("The target position is too far away to place the entity. The player position is " .. player.position.x .. ", " .. player.position.y .. " and the target position is " .. x .. ", " .. y .. ". Move closer.")
-    --end
+    -- end
 
     -- Check entity prototype exists
     if game.entity_prototypes[entity] == nil then
@@ -62,7 +62,7 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
     end
 
     ---- Check if the entity can be placed
-    ---  force = player.force,
+    ---  if placement fails, it tries 11 different positions (i=0 to 10) by moving the player diagonally
     local can_build = global.utils.avoid_entity(player_index, entity, position, direction)
     if not can_build then
         error("Cannot place the entity at the specified position: x="..position.x..", y="..position.y)

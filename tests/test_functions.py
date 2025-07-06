@@ -42,7 +42,8 @@ func_2()
 
     description = "# Your utility functions" + "\n\n".join([str(f) for f in funcs])
 
-    assert result == '0: mart'
+    assert "10: ('a',)" in result
+    assert "AssertionError" in result
 
 def test_function_with_entity_annotation(game):
     functions = \

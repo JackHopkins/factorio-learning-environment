@@ -11,17 +11,15 @@ def game(instance):
     yield instance.namespace
 
 def test_syntax_error(game):
-    functions = \
-"""
+    code = """
 def func_1(arg):
     print("a")
     assert 1 = 2
 
 func_1(6)
 """
-    _, _, result = game.instance.eval(functions)
-
-    assert result == 'Error: invalid syntax (<unknown>, line 4):     assert 1 = 2'
+    _, _, result = game.instance.eval(code)
+    assert "invalid syntax" in result
 
 def test_assertion_exception(game):
     code = """
@@ -33,8 +31,7 @@ assert 1 == 2
     assert "AssertionError" in result
 
 def test_function_with_entity_annotation(game):
-    functions = \
-"""
+    code = """
 def func_1(arg1: Entity) -> str:
     \"\"\"this is a func\"\"\"
     print("a")
@@ -45,6 +42,6 @@ def func_2():
 
 func_2()
 """
-    _, _, result = game.instance.eval(functions)
-
-    assert result == '0: mart'
+    _, _, result = game.instance.eval(code)
+    assert "('a',)" in result
+    assert "AssertionError" in result

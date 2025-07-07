@@ -10,7 +10,7 @@
     "submittedBy": "JackHopkins",
     "submissionDate": "2025-03-06",
     "url": null,
-    "verified": false
+    "verified": true
   },
   {
     "model": "Gemini-2-Flash",
@@ -23,7 +23,7 @@
     "submittedBy": "JackHopkins",
     "submissionDate": "2025-03-07",
     "url": null,
-    "verified": false
+    "verified": true
   },
   {
     "model": "GPT4o",
@@ -36,7 +36,7 @@
     "submittedBy": "JackHopkins",
     "submissionDate": "2025-03-07",
     "url": null,
-    "verified": false
+    "verified": true
   },
   {
     "model": "Llama-3.3-70b",
@@ -49,7 +49,7 @@
     "submittedBy": "JackHopkins",
     "submissionDate": "2025-03-07",
     "url": null,
-    "verified": false
+    "verified": true
   },
   {
     "model": "Deepseek-v3",
@@ -62,7 +62,7 @@
     "submittedBy": "JackHopkins",
     "submissionDate": "2025-03-07",
     "url": null,
-    "verified": false
+    "verified": true
   },
   {
     "model": "GPT4o-Mini",
@@ -75,6 +75,6 @@
     "submittedBy": "JackHopkins",
     "submissionDate": "2025-03-07",
     "url": null,
-    "verified": false
+    "verified": true
   }
 ]

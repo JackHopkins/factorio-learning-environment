@@ -69,7 +69,7 @@ jobs:
 
       - name: Check server status
         run: |
-          cd cluster
+          cd fle/cluster
           docker compose ps
           docker compose logs factorio_1
 
@@ -127,5 +127,5 @@ jobs:
       - name: Stop server
         if: always()
         run: |
-          cd cluster
+          cd fle/cluster
           docker compose down

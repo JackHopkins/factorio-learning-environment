@@ -15,7 +15,7 @@ We welcome contributions to the Factorio Learning Environment! Here's how you ca
 - Follow PEP 8 style guide for Python code
 - Use type hints for all function parameters and return values
 - Document new functions and classes using docstrings
-- Add unit tests for new functionality in `env/tests/`
+- Add unit tests for new functionality in `tests/`
 - Keep line length to 100 characters or less
 - Use meaningful variable and function names
 
@@ -31,7 +31,7 @@ We welcome contributions to the Factorio Learning Environment! Here's how you ca
 
 When adding new tools to the environment:
 
-1. Follow the structure outlined in the [Tool Documentation](readme.md/##tool-documentation) section
+1. Follow the structure outlined in the [Tool Documentation](README.md#tool-documentation) section
 2. Include comprehensive docstrings and type hints
 3. Add examples in the tool's `agent.md` file
 4. Create appropriate test cases

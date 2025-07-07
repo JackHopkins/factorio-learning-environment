@@ -67,12 +67,8 @@ pip install factorio-learning-environment
 After installation, you can import the package in your Python code:
 
 ```python
-import factorio_learning_environment as fle
+import fle
 ```
-
-### Development Installation
-
-For development, see [BUILD.md](BUILD.md) for detailed build instructions.
 
 ### Quickstart
 
@@ -89,65 +85,79 @@ uv sync --extra env --extra eval
 pip install -e .[env,eval]
 ```
 
-2. **Set up Factorio client**:
-- Purchase Factorio from the [official website](https://www.factorio.com/) (recommended) or on Steam.
-- Downgrade to version 1.1.110:
-    - Steam: Right-click Factorio → Properties → Betas → Select 1.1.110
-    - **Important**: Make sure to uncheck the Space Age DLC if you have it, as it forces the 2.x branch
+2. **Configure Docker permissions** (for Linux users):
+   If you typically run Docker with sudo, add your user to the docker group:
+   ```bash
+   sudo usermod -aG docker $USER
+   newgrp docker
+   ```
 
-3. **Configure Docker permissions** (for Linux users):
-If you typically run Docker with sudo, add your user to the docker group:
-```bash
-sudo usermod -aG docker $USER
-newgrp docker
-```
+3. **Launch FLE Docker server**:
+   ```bash
+   # For macOS and Windows (Open Docker Desktop application):
 
-4. **Launch FLE Docker server**:
-```bash
-# For macOS and Windows (Open Docker Desktop application):
+   # For Linux (Start Docker daemon):
+   sudo systemctl start docker
 
-# For Linux (Start Docker daemon):
-sudo systemctl start docker
+   # Build Docker image
+   cd cluster/docker
+   docker build -t factorio .
 
-# Build Docker image
-cd cluster/docker
-docker build -t factorio .
+   # Run Factorio servers
+   cd ../local
+   ./run-envs.sh  # Starts 1 instance with default lab scenario
 
-# Run Factorio servers
-cd ../local
-./run-envs.sh  # Starts 1 instance with default lab scenario
+   # Alternatively, with more options (see cluster/local/!README.md):
+   ./run-envs.sh -n 3 -s open_world  # Starts 3 instances with open world scenario
+   ./run-envs.sh stop                # Stops all running instances
+   ./run-envs.sh restart             # Restarts with previous configuration
+   ```
+   **Note**: The script automatically detects your platform (arm64/amd64) and configures Docker appropriately.
 
-# Alternatively, with more options (see cluster/local/!README.md):
-./run-envs.sh -n 3 -s open_world  # Starts 3 instances with open world scenario
-./run-envs.sh stop                # Stops all running instances
-./run-envs.sh restart             # Restarts with previous configuration
-```
-**Note**: The script automatically detects your platform (arm64/amd64) and configures Docker appropriately.
+4. **Configure firewall** (if running server on a different machine):
+   Open the following ports:
+   - UDP 34197 (Game connection)
+   - TCP 27015 (RCON)
 
-5. **Configure firewall** (if running server on a different machine):
-Open the following ports:
-- UDP 34197 (Game connection)
-- TCP 27015 (RCON)
+   **Note**: On Windows, you may need to configure Windows Defender Firewall to allow these ports.
 
-**Note**: On Windows, you may need to configure Windows Defender Firewall to allow these ports.
+5. **Configure DB**: Copy the example environment file:
+   - Note that API keys are only required for the respective model providers that will be evaluated
+   ```bash
+   cp .example.env .env
+   ```
 
-6. **Activate server**:
-- Open Factorio client
-- Navigate to _Multiplayer_
-- Connect to `localhost:34197` (default) or your configured address in Docker. 
-  - Once connected, you can safely disconnect. This step confirms your Factorio license with the server.
+6. **Run Eval**: Running open and lab play with example run configs:
+   1. Open Play (one parallel run):
+      ```sh
+      # Using uv
+      uv run -m fle.run --run_config=eval/algorithms/independent/run_config_example_open_play.json
+      # Using python
+      python -m fle.run --run_config=eval/algorithms/independent/run_config_example_open_play.json
+      ```
+   2. Tasks (one parallel run of iron-ore task):
+      ```sh
+      # Using uv
+      uv run -m fle.run --run_config=fle/eval/algorithms/independent/gym_run_config.json
+      # Using python
+      python -m fle.run --run_config=fle/eval/algorithms/independent/gym_run_config.json
+      ```
 
-7. **Configure DB**: Copy the example environment file:
-- Note that API keys are only required for the respective model providers that will be evaluated
-```bash
-cp .example.env .env
-```
+### Client-side running (renders graphics)
 
-8. **Run Eval**: Running open and lab play with example run configs:
-   1. Open Play (one parallel run): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_open_play.json`
-   2. Tasks (one parallel run of iron-ore task): `python eval/open/independent_runs/run.py --run_config=eval/open/independent_runs/run_config_example_lab_play.json`
+1. **Set up Factorio client**:
+   - Purchase Factorio from the [official website](https://www.factorio.com/) (recommended) or on Steam.
+   - Downgrade to version 1.1.110:
+     - Steam: Right-click Factorio → Properties → Betas → Select 1.1.110
+     - **Important**: Make sure to uncheck the Space Age DLC if you have it, as it forces the 2.x branch
 
-## Troubleshooting
+2. **Activate server**:
+   - Open Factorio client
+   - Navigate to _Multiplayer_
+   - Connect to `localhost:34197` (default) or your configured address in Docker.
+     - Once connected, you can safely disconnect. This step confirms your Factorio license with the server.
+
+### Troubleshooting
 - **"No valid programs found for version X"**: This is normal during initialization. The system will start generating programs shortly.
 - **Python import errors**: Make sure you're using the run.py script provided above to fix path issues.
 - **Database connection errors**: Verify your database configuration in the .env file and ensure the database exists.
@@ -893,24 +903,50 @@ factorio-learning-environment/
 ├── .github/                        # GitHub workflows and scripts
 ├── docs/                           # Website and documentation
 ├── fle/                            # Main Factorio Learning Environment codebase
-├── leaderboard/                    # Leaderboard system
+│   ├── agents/                     # Agent implementations
+│   │   ├── formatters/             # Conversation formatting utilities
+│   │   ├── llm/                    # LLM integration utilities
+│   │   ├── agent_abc.py            # Abstract base class for agents
+│   │   ├── basic_agent.py          # Default agent implementation
+│   │   ├── backtracking_agent.py   # Backtracking agent
+│   │   ├── visual_agent.py         # Visual agent implementation
+│   │   └── gym_agent.py            # Gym-compatible agent
+│   ├── cluster/                    # Docker and deployment utilities
+│   │   ├── docker/                 # Docker configurations
+│   │   ├── local/                  # Local deployment scripts
+│   │   ├── remote/                 # Remote deployment utilities
+│   │   └── scenarios/              # Game scenario configurations
+│   ├── commons/                    # Shared utilities and constants
+│   ├── data/                       # Data files and resources
+│   ├── env/                        # Environment implementation
+│   │   ├── gym_env/                # Gym environment interface
+│   │   ├── tools/                  # Agent tools and API
+│   │   ├── protocols/              # Communication protocols (A2A, etc.)
+│   │   ├── utils/                  # Environment utilities
+│   │   ├── lib/                    # Core libraries
+│   │   ├── exceptions/             # Custom exceptions
+│   │   ├── instance.py             # Factorio instance management
+│   │   ├── namespace.py            # Python namespace management
+│   │   ├── entities.py             # Entity definitions
+│   │   └── game_types.py           # Game type definitions
+│   ├── eval/                       # Evaluation framework
+│   │   ├── algorithms/             # Evaluation algorithms
+│   │   ├── tasks/                  # Task definitions and implementations
+│   │   ├── open/                   # Open-play evaluation scripts
+│   │   └── evaluator.py            # Main evaluation logic
+│   ├── run.py                      # Main CLI entry point
+│   ├── server.py                   # Server implementation
+│   └── __init__.py                 # Package initialization
 ├── tests/                          # Test suite
 ├── .example.env                    # Example environment variables
 ├── .gitignore                      # Git ignore file
 ├── BUILD.md                        # Build instructions
 ├── CONTRIBUTING.md                 # Contribution guidelines
 ├── LICENSE                         # License file
-├── MANIFEST.in                     # Manifest for packaging
-├── PUBLISHING.md                   # Publishing instructions
 ├── README.md                       # Project readme
 ├── clean.sh                        # Clean script
-├── prepare_build.py                # Build preparation script
 ├── pyproject.toml                  # Python project config
-├── pytest.ini                      # Pytest config
-├── pyvenv.cfg                      # Python venv config
-├── setup.cfg                       # Setup config
-├── setup.py                        # Setup script
-└── validate_installation.py        # Installation validation script
+└── uv.lock                         # UV lock file
 ```
 
 ## Database

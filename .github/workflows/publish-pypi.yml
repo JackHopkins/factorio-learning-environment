@@ -1,4 +1,4 @@
-name: "Publish"  # The name of this workflow as shown in GitHub Actions UI
+name: "Publish to PyPI"  # The name of this workflow as shown in GitHub Actions UI
 
 on:
   release:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   run:  # The job ID (can be any name)
-    name: "Build and publish release"  # Human-readable job name
+    name: "Build and publish to PyPI"  # Human-readable job name
     runs-on: ubuntu-latest  # Use the latest Ubuntu runner
 
     steps:  # List of steps to run in this job
@@ -29,4 +29,4 @@ jobs:
         run: uv build  # Step 4: Build your package with uv
 
       - name: Publish
-        run: uv publish  # Step 5: Publish your package to PyPI with uv
+        run: uv publish --trusted-publishing always --index pypi  # Step 5: Publish your package to PyPI with uv

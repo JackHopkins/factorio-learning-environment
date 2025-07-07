@@ -1,0 +1,57 @@
+name: Build and Deploy Docs and Leaderboard
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - '!docs/leaderboard/results/**'
+      - '!docs/leaderboard/processed/**'
+  workflow_dispatch:
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch results branch
+        run: |
+          git fetch origin results:results
+
+      - name: Copy processed results from results branch
+        run: |
+          mkdir -p docs/leaderboard/processed
+          git checkout results -- docs/leaderboard/processed || echo "No processed results found"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: ./docs/leaderboard
+        run: npm install
+
+      - name: Build leaderboard
+        working-directory: ./docs/leaderboard
+        run: npm run build
+
+      - name: Prepare deploy directory
+        run: |
+          rm -rf deploy
+          cp -r docs deploy
+          rm -rf deploy/leaderboard
+          mkdir -p deploy/leaderboard
+          cp -r docs/leaderboard/build/* deploy/leaderboard/
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          publish_branch: gh-pages
+          force_orphan: true

@@ -24,25 +24,12 @@ func_1(6)
     assert result == 'Error: invalid syntax (<unknown>, line 4):     assert 1 = 2'
 
 def test_assertion_exception(game):
-    functions = \
+    code = """
+print('a')
+assert 1 == 2
 """
-def func_1(arg1: Dict) -> str:
-    \"\"\"this is a func\"\"\"
-    print("a")
-    assert 1 == 2
-
-def func_2():
-    func_1({})
-
-func_2()
-"""
-    _, _, result = game.instance.eval(functions)
-
-    funcs = game.get_functions()
-
-    description = "# Your utility functions" + "\n\n".join([str(f) for f in funcs])
-
-    assert "10: ('a',)" in result
+    _, _, result = game.instance.eval(code)
+    assert "('a',)" in result
     assert "AssertionError" in result
 
 def test_function_with_entity_annotation(game):

@@ -392,11 +392,8 @@ class FactorioInstance:
             signal.alarm(0)
 
 
-    def eval(self, expr, agent_idx=0, timeout=60, propagate_errors=False):
+    def eval(self, expr, agent_idx=0, timeout=60):
         "Evaluate several lines of input, returning the result of the last line with a timeout"
-        if propagate_errors:
-            return self.eval_with_error(expr, agent_idx, timeout)
-        
         try:
             return self.eval_with_error(expr, agent_idx, timeout)
         except TimeoutError:

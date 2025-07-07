@@ -11,10 +11,13 @@ class GridLayerRenderer(LayerRenderer):
     def layer_name(self) -> str:
         return "grid"
 
-    def render(self, draw: ImageDraw.ImageDraw,
-               game_to_img_func: Callable,
-               boundaries: Dict[str, float],
-               **kwargs) -> None:
+    def render(
+        self,
+        draw: ImageDraw.ImageDraw,
+        game_to_img_func: Callable,
+        boundaries: Dict[str, float],
+        **kwargs,
+    ) -> None:
         """Draw the background grid"""
         if not self.config.style["grid_enabled"]:
             return
@@ -33,11 +36,15 @@ class GridLayerRenderer(LayerRenderer):
         # Draw vertical grid lines
         for x in range(int(min_x), int(max_x) + 1):
             grid_x = margin + (x - min_x) * cell_size
-            draw.line([(grid_x, margin), (grid_x, img_height - margin)],
-                      fill=self.config.style["grid_color"])
+            draw.line(
+                [(grid_x, margin), (grid_x, img_height - margin)],
+                fill=self.config.style["grid_color"],
+            )
 
         # Draw horizontal grid lines
         for y in range(int(min_y), int(max_y) + 1):
             grid_y = margin + (y - min_y) * cell_size
-            draw.line([(margin, grid_y), (img_width - margin, grid_y)],
-                      fill=self.config.style["grid_color"])
+            draw.line(
+                [(margin, grid_y), (img_width - margin, grid_y)],
+                fill=self.config.style["grid_color"],
+            )

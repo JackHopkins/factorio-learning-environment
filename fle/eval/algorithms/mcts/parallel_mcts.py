@@ -16,18 +16,21 @@ from fle.env import FactorioInstance
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class ParallelMCTS:
     """
     Manages multiple parallel MCTS instances for distributed search
     """
 
-    def __init__(self,
-                 instances: List['FactorioInstance'],
-                 db_client: DBClient,
-                 api_factory: 'APIFactory',
-                 config: ParallelMCTSConfig,
-                 version: int,
-                 version_description: str):
+    def __init__(
+        self,
+        instances: List["FactorioInstance"],
+        db_client: DBClient,
+        api_factory: "APIFactory",  # noqa
+        config: ParallelMCTSConfig,
+        version: int,
+        version_description: str,
+    ):
         """
         Initialize parallel MCTS with configuration
 
@@ -50,8 +53,7 @@ class ParallelMCTS:
         # Initialize logger
         instances_per_group = floor(len(instances) / config.n_parallel)
         self.logger = GroupedFactorioLogger(
-            n_groups=config.n_parallel,
-            instances_per_group=instances_per_group
+            n_groups=config.n_parallel, instances_per_group=instances_per_group
         )
         self.logger.start()
 
@@ -75,7 +77,9 @@ class ParallelMCTS:
                 f"instance per group (need {n_parallel * 2}, got {total_instances})"
             )
 
-    def _create_instance_groups(self, instances: List['FactorioInstance']) -> List[InstanceGroup]:
+    def _create_instance_groups(
+        self, instances: List["FactorioInstance"]
+    ) -> List[InstanceGroup]:
         """Create instance groups for parallel execution"""
         instances_per_group = floor(len(instances) / self.config.n_parallel)
         groups = []
@@ -87,8 +91,8 @@ class ParallelMCTS:
             group_instances = instances[start_idx:end_idx]
 
             # Split into active and holdout instances
-            #active_instances = group_instances
-            #holdout_instance = group_instances[-1]
+            # active_instances = group_instances
+            # holdout_instance = group_instances[-1]
 
             # Create evaluator for this group
             evaluator = Evaluator(
@@ -96,7 +100,7 @@ class ParallelMCTS:
                 instances=group_instances,
                 value_accrual_time=3,
                 logger=self.logger,
-                error_penalty=self.config.mcts_kwargs['error_penalty']
+                error_penalty=self.config.mcts_kwargs["error_penalty"],
             )
 
             # Create MCTS instance
@@ -107,16 +111,18 @@ class ParallelMCTS:
                 sampler=self.config.sampler,
                 system_prompt=self.config.system_prompt,
                 initial_state=self.config.initial_state,
-                **self.config.mcts_kwargs
+                **self.config.mcts_kwargs,
             )
 
-            groups.append(InstanceGroup(
-                group_id=group_id,
-                mcts=mcts,
-                evaluator=evaluator,
-                active_instances=group_instances,
-                #holdout_instance=holdout_instance
-            ))
+            groups.append(
+                InstanceGroup(
+                    group_id=group_id,
+                    mcts=mcts,
+                    evaluator=evaluator,
+                    active_instances=group_instances,
+                    # holdout_instance=holdout_instance
+                )
+            )
 
         return groups
 
@@ -141,20 +147,16 @@ class ParallelMCTS:
         finally:
             self.cleanup()
 
-    async def _run_group_search(self,
-                                group: InstanceGroup,
-                                n_iterations: int,
-                                skip_failures: bool):
+    async def _run_group_search(
+        self, group: InstanceGroup, n_iterations: int, skip_failures: bool
+    ):
         """Run search iterations for a single group"""
         try:
             logger.info(f"Starting search for Group {group.group_id}")
 
             for iteration in range(n_iterations):
                 await group.mcts.run_iteration(
-                    len(group.active_instances),
-                    skip_failures,
-                    iteration,
-                    n_iterations
+                    len(group.active_instances), skip_failures, iteration, n_iterations
                 )
                 self.logger.update_progress()
 
@@ -166,7 +168,7 @@ class ParallelMCTS:
         """Clean up resources"""
         self.logger.stop()
         for group in self.instance_groups:
-            if hasattr(group.evaluator, 'logger'):
+            if hasattr(group.evaluator, "logger"):
                 group.evaluator.logger.stop()
 
     def get_group_metrics(self, group_id: int) -> Dict[str, Any]:
@@ -174,14 +176,18 @@ class ParallelMCTS:
         if 0 <= group_id < len(self.instance_groups):
             group = self.instance_groups[group_id]
             return {
-                'active_instances': len(group.active_instances),
-                'total_programs': sum(
+                "active_instances": len(group.active_instances),
+                "total_programs": sum(
                     inst.total_programs
-                    for inst in group.evaluator.logger.groups[group_id].instances.values()
+                    for inst in group.evaluator.logger.groups[
+                        group_id
+                    ].instances.values()
                 ),
-                'error_count': sum(
+                "error_count": sum(
                     inst.error_count
-                    for inst in group.evaluator.logger.groups[group_id].instances.values()
-                )
+                    for inst in group.evaluator.logger.groups[
+                        group_id
+                    ].instances.values()
+                ),
             }
         return {}

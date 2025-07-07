@@ -13,8 +13,8 @@ class ProgramChunk:
     state: Optional[GameState] = None
     reward: float = 0.0
 
-FULL_PROGRAM = \
-'''
+
+FULL_PROGRAM = '''
 from factorio_instance import *
 
 """
@@ -66,8 +66,7 @@ assert automation_science_packs == 8, f"Failed to craft 8 Automation Science Pac
 print("Successfully crafted 8 Automation Science Packs!")
 '''
 
-FULL_PROGRAM2= \
-'''
+FULL_PROGRAM2 = '''
 """
 Step 4: Extract steel plates
 - Extract the steel plates from the second furnace
@@ -95,8 +94,7 @@ print(f"Final steel plate count in inventory: {steel_plates_in_inventory}")
 print("Steel plate extraction and verification completed successfully.")
 '''
 
-FULL_PROGRAM3=\
-'''
+FULL_PROGRAM3 = """
 # Craft 10 burner mining drills
 recipe_drill = get_prototype_recipe(Prototype.BurnerMiningDrill)
 for ingredient in recipe_drill.ingredients:
@@ -136,10 +134,9 @@ craft_item(Prototype.IronChest, quantity=30)
 # Verify inventory
 inventory = inspect_inventory()
 print(f"Inventory: {inventory}")
-'''
+"""
 
-FULL_PROGRAM4 = \
-'''
+FULL_PROGRAM4 = """
 # First, let's gather some basic resources to start building our factory
 # We'll need to find and mine iron ore and coal to get started
 
@@ -221,10 +218,9 @@ iron_plates_in_chest = chest_inventory.get(Prototype.IronPlate, 0)
 # Verify that the system is working
 assert iron_plates_in_chest > 0, "No iron plates were produced in the chest"
 print(f"Successfully produced {iron_plates_in_chest} iron plates and stored them in the chest")
-'''
+"""
 
-FULL_PROGRAM5 = \
-'''
+FULL_PROGRAM5 = '''
 """
 Error: Cannot craft stone, need to harvest it first.
 
@@ -309,6 +305,7 @@ insert_item(Prototype.Coal, coal_drill, 10)
 move_to(Position(x=0,y=0))
 '''
 
+
 class TestProgramChunkSplitter(unittest.TestCase):
     def setUp(self):
         self.splitter = ChunkedMCTS(None, None, None, "", None, initial_state=None)
@@ -322,7 +319,7 @@ y = 2
         chunks = self.splitter._split_into_chunks(code)
         self.assertEqual(len(chunks), 1)
         self.assertTrue("First task" in chunks[0].code)
-        self.assertTrue( "x = 1\ny = 2" in chunks[0].code.strip())
+        self.assertTrue("x = 1\ny = 2" in chunks[0].code.strip())
 
     def test_comment(self):
         code = '''
@@ -350,7 +347,6 @@ x = 1
         self.assertTrue("x = 1" in chunks[0].code.strip())
         self.assertTrue("# This is a comment" in chunks[0].code.strip())
 
-
     def test_multiple_chunks(self):
         code = '''
 """First task"""
@@ -364,7 +360,11 @@ z = 3
 '''
         chunks = self.splitter._split_into_chunks(code)
         self.assertEqual(3, len(chunks))
-        for program, task, value in zip(chunks, ["First task", "Second task", "Third task"], ["x = 1", "y = 2", "z = 3"]):
+        for program, task, value in zip(
+            chunks,
+            ["First task", "Second task", "Third task"],
+            ["x = 1", "y = 2", "z = 3"],
+        ):
             self.assertTrue(task in program.code)
             self.assertTrue(value in program.code)
 
@@ -398,7 +398,9 @@ y = 2
 '''
         chunks = self.splitter._split_into_chunks(code)
         self.assertEqual(2, len(chunks))
-        self.assertTrue("Build initial structure\nWith multiple lines" in chunks[0].code)
+        self.assertTrue(
+            "Build initial structure\nWith multiple lines" in chunks[0].code
+        )
 
     def test_no_docstring(self):
         code = "x = 1\ny = 2"
@@ -463,7 +465,7 @@ string but not a docstring"""
         assert len(chunks) == 17
 
     def test_multiple_chunks_with_one_docstring(self):
-            code = '''
+        code = '''
 """First task
 
 With a gap
@@ -474,9 +476,9 @@ y = 2
 
 z = 3
 '''
-            chunks = self.splitter._split_into_chunks(code)
-            self.assertEqual(len(chunks), 1)
+        chunks = self.splitter._split_into_chunks(code)
+        self.assertEqual(len(chunks), 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

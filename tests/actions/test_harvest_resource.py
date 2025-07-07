@@ -8,7 +8,8 @@ from fle.env.game_types import Resource, Prototype
 def game(instance):
     instance.reset()
     yield instance.namespace
-    #instance.reset()
+    # instance.reset()
+
 
 def test_harvest_resource_with_full_inventory(game):
     """
@@ -16,22 +17,22 @@ def test_harvest_resource_with_full_inventory(game):
     :param game:
     :return:
     """
-    game.instance.initial_inventory = {**game.instance.initial_inventory, 'coal': 4000}
+    game.instance.initial_inventory = {**game.instance.initial_inventory, "coal": 4000}
     game.instance.reset()
 
-    inventory = game.inspect_inventory()
-    # Check initial inventory
-    initial_coal = inventory[Resource.Coal]
     # Find nearest coal resource
     nearest_coal = game.nearest(Resource.Coal)
     # Move to the coal resource
     game.move_to(nearest_coal)
     try:
         # Harvest coal
-        harvested = game.harvest_resource(nearest_coal, quantity=100)  # Assuming there is a coal resource at (10, 10)
+        game.harvest_resource(
+            nearest_coal, quantity=100
+        )  # Assuming there is a coal resource at (10, 10)
         assert False, "Cannot harvest with a full inventory"
-    except Exception as e:
+    except Exception:
         assert True
+
 
 def test_harvest_resource(game):
     """
@@ -40,7 +41,12 @@ def test_harvest_resource(game):
     :return:
     """
     quantity = 50
-    for resource in [Resource.Coal, Resource.IronOre, Resource.Stone, Resource.CopperOre]:
+    for resource in [
+        Resource.Coal,
+        Resource.IronOre,
+        Resource.Stone,
+        Resource.CopperOre,
+    ]:
         inventory = game.inspect_inventory()
         # Check initial inventory
         initial_coal = inventory[resource]
@@ -50,7 +56,9 @@ def test_harvest_resource(game):
         game.move_to(nearest_coal)
         try:
             # Harvest coal
-            game.harvest_resource(nearest_coal, quantity=quantity)  # Assuming there is a coal resource at (10, 10)
+            game.harvest_resource(
+                nearest_coal, quantity=quantity
+            )  # Assuming there is a coal resource at (10, 10)
         except Exception as e:
             print(e)
         # Check the inventory after harvesting
@@ -58,13 +66,15 @@ def test_harvest_resource(game):
         # Assert that the coal has been added to the inventory
         assert quantity <= final_coal - initial_coal
 
-create_stump = \
-"""
+
+create_stump = """
 game.surfaces[1].create_entity({
     name = "dead-grey-trunk",
     position = {x = 1, y = 0}
 })
 """
+
+
 def test_harvest_stump(game):
     instance = game.instance
 
@@ -74,13 +84,15 @@ def test_harvest_stump(game):
 
     assert harvested == 2
 
-create_rock = \
-"""
+
+create_rock = """
 game.surfaces[1].create_entity({
     name = "rock-big",
     position = {x = 1, y = 0}
 })
 """
+
+
 def test_harvest_rock(game):
     instance = game.instance
 
@@ -89,6 +101,7 @@ def test_harvest_rock(game):
     harvested = game.harvest_resource(Position(x=0, y=0), quantity=1)
 
     assert harvested == 20
+
 
 def test_harvest_trees(game):
     """
@@ -105,12 +118,15 @@ def test_harvest_trees(game):
     # Move to the wood resource
     game.move_to(nearest_wood)
     # Harvest coal
-    game.harvest_resource(nearest_wood, quantity=quantity, radius=50)  # Assuming there is a wood resource here
+    game.harvest_resource(
+        nearest_wood, quantity=quantity, radius=50
+    )  # Assuming there is a wood resource here
 
     # Check the inventory after harvesting
     final_wood = game.inspect_inventory()[Resource.Wood]
     # Assert that the coal has been added to the inventory
     assert quantity < final_wood - initial_wood
+
 
 def test_harvest_bug(game):
     # Get stone for furnace
@@ -125,8 +141,8 @@ def test_harvest_bug(game):
     inventory = game.inspect_inventory()
     assert inventory.get(Prototype.StoneFurnace) >= 1, "Failed to craft stone furnace"
 
-def test_harvest_bug_2(game):
 
+def test_harvest_bug_2(game):
     """
     Planning:
     1. Gather stone to craft a furnace
@@ -152,8 +168,9 @@ def test_harvest_bug_2(game):
 
     # Verify that we have enough stone
     inventory = game.inspect_inventory()
-    assert inventory.get(
-        Prototype.Stone) >= stone_needed, f"Failed to mine enough stone. Current inventory: {inventory}"
+    assert inventory.get(Prototype.Stone) >= stone_needed, (
+        f"Failed to mine enough stone. Current inventory: {inventory}"
+    )
 
     """
     Step 2: Craft a stone furnace
@@ -163,7 +180,9 @@ def test_harvest_bug_2(game):
 
     # Verify that we have a stone furnace in our inventory
     inventory = game.inspect_inventory()
-    assert inventory.get(Prototype.StoneFurnace) >= 1, f"Failed to craft stone furnace. Current inventory: {inventory}"
+    assert inventory.get(Prototype.StoneFurnace) >= 1, (
+        f"Failed to craft stone furnace. Current inventory: {inventory}"
+    )
 
     """
     Step 3: Place the furnace
@@ -187,7 +206,9 @@ def test_harvest_bug_2(game):
 
     # Verify that we have enough coal
     inventory = game.inspect_inventory()
-    assert inventory.get(Prototype.Coal) >= coal_needed, f"Failed to mine enough coal. Current inventory: {inventory}"
+    assert inventory.get(Prototype.Coal) >= coal_needed, (
+        f"Failed to mine enough coal. Current inventory: {inventory}"
+    )
 
     # Move back to the furnace and insert coal
     game.move_to(furnace.position)
@@ -208,8 +229,9 @@ def test_harvest_bug_2(game):
 
     # Verify that we have enough iron ore
     inventory = game.inspect_inventory()
-    assert inventory.get(
-        Prototype.IronOre) >= iron_ore_needed, f"Failed to mine enough iron ore. Current inventory: {inventory}"
+    assert inventory.get(Prototype.IronOre) >= iron_ore_needed, (
+        f"Failed to mine enough iron ore. Current inventory: {inventory}"
+    )
 
     """
     Step 6: Smelt iron ore into iron plates
@@ -243,25 +265,26 @@ def test_harvest_bug_2(game):
     inventory = game.inspect_inventory()
     iron_plates = inventory.get(Prototype.IronPlate, 0)
     print(f"Current inventory: {inventory}")
-    assert iron_plates >= 10, f"Failed to produce enough iron plates. Expected 10, got {iron_plates}"
+    assert iron_plates >= 10, (
+        f"Failed to produce enough iron plates. Expected 10, got {iron_plates}"
+    )
 
     print("Successfully produced 10 iron plates!")
+
 
 def test_harvest_provides_score(game):
     # Move to the nearest stone resource
     stone_position = game.nearest(Resource.Stone)
     game.move_to(stone_position)
 
-    stats = game._production_stats()
+    stats = game._production_stats()  # noqa
     reward, _ = game.score()
     # Mine 5 stone (enough for one furnace)
     stone_needed = 5
     stone_mined = game.harvest_resource(stone_position, stone_needed)
     print(f"Mined {stone_mined} stone")
 
-    nstats = game._production_stats()
+    nstats = game._production_stats()  # noqa
     nreward, _ = game.score()
 
     assert nreward > reward
-
-

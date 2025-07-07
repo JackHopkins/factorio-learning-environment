@@ -7,7 +7,6 @@ from fle.env.tools import Tool
 
 
 class LoadEntityState(Tool):
-
     def __init__(self, *args):
         super().__init__(*args)
 

@@ -1,6 +1,6 @@
 from typing import Optional, List
 from fle.env import Ingredient
-from fle.env.game_types import Technology, Prototype
+from fle.env.game_types import Technology
 from fle.env.tools import Tool
 
 
@@ -15,7 +15,7 @@ class GetResearchProgress(Tool):
         :return The remaining ingredients to complete the research
         """
         if technology is not None:
-            if hasattr(technology, 'value'):
+            if hasattr(technology, "value"):
                 name = technology.value
             else:
                 name = technology
@@ -26,19 +26,23 @@ class GetResearchProgress(Tool):
 
         if success != {} and isinstance(success, str):
             if success is None:
-                raise Exception("No research in progress" if name is None else f"Cannot get progress for {name}")
+                raise Exception(
+                    "No research in progress"
+                    if name is None
+                    else f"Cannot get progress for {name}"
+                )
             else:
-                result = ":".join(success.split(':')[2:]).replace('"', '').strip()
+                result = ":".join(success.split(":")[2:]).replace('"', "").strip()
                 if result:
                     raise Exception(result)
                 else:
                     raise Exception(success)
 
         return [
-                Ingredient(
-                    name=ingredient["name"],
-                    count=ingredient["count"],
-                    type=ingredient.get("type")
-                )
-                for ingredient in success
-            ]
+            Ingredient(
+                name=ingredient["name"],
+                count=ingredient["count"],
+                type=ingredient.get("type"),
+            )
+            for ingredient in success
+        ]

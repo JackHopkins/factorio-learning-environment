@@ -10,6 +10,7 @@ from a2a.types import AgentCard
 @dataclass
 class GymRunConfig:
     """Configuration for a single gym environment evaluation run"""
+
     env_id: str  # Gym environment ID from registry (e.g., "Factorio-iron_ore_throughput_16-v0")
     model: str
     version: Optional[int] = None
@@ -21,6 +22,7 @@ class GymRunConfig:
 @dataclass
 class GymEvalConfig:
     """Configuration for gym evaluation"""
+
     agents: List[GymAgent]
     version: int
     version_description: str
@@ -30,5 +32,5 @@ class GymEvalConfig:
     env_id: Optional[str] = None  # Gym environment ID for registry-based creation
 
     def __post_init__(self):
-        if self.task is None and hasattr(self.agents[0], 'task'):
+        if self.task is None and hasattr(self.agents[0], "task"):
             self.task = self.agents[0].task

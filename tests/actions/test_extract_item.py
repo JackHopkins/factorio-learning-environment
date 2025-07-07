@@ -3,12 +3,19 @@ import pytest
 from fle.env.entities import Position
 from fle.env.game_types import Prototype
 
+
 @pytest.fixture()
 def game(instance):
-    instance.initial_inventory = {'iron-chest': 1, 'iron-plate': 10, 'assembling-machine-1': 1, 'copper-cable': 3}
+    instance.initial_inventory = {
+        "iron-chest": 1,
+        "iron-plate": 10,
+        "assembling-machine-1": 1,
+        "copper-cable": 3,
+    }
     instance.reset()
     yield instance.namespace
     instance.reset()
+
 
 def test_extract(game):
     chest = game.place_entity(Prototype.IronChest, position=Position(x=0, y=0))
@@ -17,8 +24,11 @@ def test_extract(game):
     assert game.inspect_inventory()[Prototype.IronPlate] == 2
     assert count == 2
 
+
 def test_extract_assembler_multi(game):
-    assembler = game.place_entity(Prototype.AssemblingMachine1, position=Position(x=0, y=0))
+    assembler = game.place_entity(
+        Prototype.AssemblingMachine1, position=Position(x=0, y=0)
+    )
     game.set_entity_recipe(assembler, Prototype.ElectronicCircuit)
     game.insert_item(Prototype.IronPlate, assembler, quantity=10)
     game.insert_item(Prototype.CopperCable, assembler, quantity=3)

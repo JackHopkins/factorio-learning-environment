@@ -13,20 +13,20 @@ class TestKLDiversityAchievementSampler(unittest.TestCase):
     def setUp(self):
         self.db_client = Mock()
         self.sampler = KLDiversityAchievementSampler(
-            db_client=self.db_client,
-            window_size=3,
-            temperature=1.0
+            db_client=self.db_client, window_size=3, temperature=1.0
         )
 
     def test_compute_achievement_frequencies(self):
         # Test with numeric values
-        achievements = {"static": {"stone": 5, "iron-ore": 9}, "dynamic": {"iron-plate": 1}}
+        achievements = {
+            "static": {"stone": 5, "iron-ore": 9},
+            "dynamic": {"iron-plate": 1},
+        }
         frequencies = self.sampler._compute_achievement_frequencies(achievements)
 
         self.assertEqual(frequencies["static-stone"], 5)
         self.assertEqual(frequencies["static-iron-ore"], 9)
         self.assertEqual(frequencies["dynamic-iron-plate"], 1)
-
 
         # Test with empty achievements
         frequencies = self.sampler._compute_achievement_frequencies({})
@@ -53,36 +53,45 @@ class TestKLDiversityAchievementSampler(unittest.TestCase):
         self.assertIsInstance(kld, float)
         self.assertFalse(np.isnan(kld))
 
-    @patch('numpy.random.choice')
+    @patch("numpy.random.choice")
     async def test_sample_parent(self, mock_choice):
         # Mock database results
         mock_results = [
             {
-                'id': 1,
-                'achievements_json': {"static": {"stone": 5, "iron-ore": 9}, "dynamic": {"iron-plate": 1}},
-                'version': 1,
-                'conversation_json': {'messages': []}
+                "id": 1,
+                "achievements_json": {
+                    "static": {"stone": 5, "iron-ore": 9},
+                    "dynamic": {"iron-plate": 1},
+                },
+                "version": 1,
+                "conversation_json": {"messages": []},
             },
             {
-                'id': 2,
-                'achievements_json': {"static": {"stone": 7, "iron-ore": 9}, "dynamic": {"iron-plate": 2}},
-                'version': 1,
-                'conversation_json': {'messages': []}
+                "id": 2,
+                "achievements_json": {
+                    "static": {"stone": 7, "iron-ore": 9},
+                    "dynamic": {"iron-plate": 2},
+                },
+                "version": 1,
+                "conversation_json": {"messages": []},
             },
             {
-                'id': 3,
-                'achievements_json': {"static": {"stone": 5,}, "dynamic": {}},
-                'version': 1,
-                'conversation_json': {'messages': []}
-            }
+                "id": 3,
+                "achievements_json": {
+                    "static": {
+                        "stone": 5,
+                    },
+                    "dynamic": {},
+                },
+                "version": 1,
+                "conversation_json": {"messages": []},
+            },
         ]
 
         # Mock the database connection and cursor
         mock_conn = Mock()
         mock_cursor = Mock()
-        mock_cursor.fetchall.return_value = [
-            DictRow(row) for row in mock_results
-        ]
+        mock_cursor.fetchall.return_value = [DictRow(row) for row in mock_results]
         mock_cursor.fetchone.return_value = mock_results[0]
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
         self.db_client.get_connection.return_value.__enter__.return_value = mock_conn
@@ -97,14 +106,17 @@ class TestKLDiversityAchievementSampler(unittest.TestCase):
         self.assertEqual(program.id, 1)
 
         # Verify database queries were called correctly
-        mock_cursor.execute.assert_any_call("""
+        mock_cursor.execute.assert_any_call(
+            """
                         SELECT id, achievements_json
                         FROM programs
                         WHERE version = %s 
                         AND achievements_json IS NOT NULL
                         ORDER BY created_at DESC
                         LIMIT %s
-                    """, (1, 3))
+                    """,
+            (1, 3),
+        )
 
     async def test_sample_parent_no_results(self):
         # Mock empty database results
@@ -121,10 +133,13 @@ class TestKLDiversityAchievementSampler(unittest.TestCase):
     async def test_sample_parent_single_result(self):
         # Mock single database result
         mock_result = {
-            'id': 1,
-            'achievements_json': {"static": {"stone": 5, "iron-ore": 9}, "dynamic": {"iron-plate": 1}},
-            'version': 1,
-            'conversation_json': {'messages': []}
+            "id": 1,
+            "achievements_json": {
+                "static": {"stone": 5, "iron-ore": 9},
+                "dynamic": {"iron-plate": 1},
+            },
+            "version": 1,
+            "conversation_json": {"messages": []},
         }
 
         mock_conn = Mock()
@@ -141,5 +156,5 @@ class TestKLDiversityAchievementSampler(unittest.TestCase):
         self.assertEqual(program.id, 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

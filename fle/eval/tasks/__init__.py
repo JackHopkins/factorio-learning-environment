@@ -11,10 +11,10 @@ The task system supports various types of challenges including:
 
 Example usage:
     from fle.eval.tasks import TaskFactory, ThroughputTask
-    
+
     # Create task from JSON definition
     task = TaskFactory.create_task("iron_plate_throughput_16.json")
-    
+
     # Or create task directly
     task = ThroughputTask(
         trajectory_length=100,
@@ -29,7 +29,11 @@ Example usage:
 # Core task classes
 from .task_abc import TaskABC
 from .default_task import DefaultTask
-from .throughput_task import ThroughputTask, LAB_PLAY_POPULATED_STARTING_INVENTORY, CRAFTING_STATISTICS
+from .throughput_task import (
+    ThroughputTask,
+    LAB_PLAY_POPULATED_STARTING_INVENTORY,
+    CRAFTING_STATISTICS,
+)
 from .unbounded_throughput_task import UnboundedThroughputTask
 
 # Task creation utilities
@@ -39,14 +43,11 @@ __all__ = [
     # Abstract base and core classes
     "TaskABC",
     "DefaultTask",
-    
     # Throughput-based tasks
-    "ThroughputTask", 
+    "ThroughputTask",
     "UnboundedThroughputTask",
-    
     # Task creation utilities
     "TaskFactory",
-    
     # Useful constants
     "LAB_PLAY_POPULATED_STARTING_INVENTORY",
     "CRAFTING_STATISTICS",

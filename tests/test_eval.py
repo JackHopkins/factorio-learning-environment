@@ -12,7 +12,7 @@ print(inspect_inventory_wrapper())
 
 expected_result = "{'iron-chest': 2, 'transport-belt': 50, 'burner-inserter': 32, 'small-electric-pole': 10, 'pipe': 15, 'boiler': 1, 'steam-engine': 1, 'burner-mining-drill': 3, 'electric-mining-drill': 1, 'stone-furnace': 9, 'assembling-machine-1': 1, 'coal': 50, 'iron-plate': 50, 'copper-plate': 50}"
 #
-#inventory = {
+# inventory = {
 #    'iron-plate': 50,
 #    'coal': 50,
 #    'copper-plate': 50,
@@ -27,21 +27,24 @@ expected_result = "{'iron-chest': 2, 'transport-belt': 50, 'burner-inserter': 32
 #    'pipe': 15,
 #    'steam-engine': 1,
 #    'small-electric-pole': 10
-#}
-#instance = FactorioInstance(address='localhost',
+# }
+# instance = FactorioInstance(address='localhost',
 #                            bounding_box=200,
 #                            tcp_port=27015,
 #                            fast=True,
 #                            inventory=inventory)
 
+
 def test_nested_functions():
     ips, udp_ports, tcp_ports = get_local_container_ips()
-    instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=tcp_ports[-1],
-                                fast=True,
-                                # cache_scripts=False,
-                                inventory={})
+    instance = FactorioInstance(
+        address="localhost",
+        bounding_box=200,
+        tcp_port=tcp_ports[-1],
+        fast=True,
+        # cache_scripts=False,
+        inventory={},
+    )
 
     score, goal, result = instance.eval_with_error("print(inspect_inventory())")
 
@@ -51,121 +54,145 @@ def test_nested_functions():
 
     assert result[3:] == "(Inventory({}),)"
 
+
 def test_builtin_functions():
-    instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=27000,
-                                fast=True,
-                                # cache_scripts=False,
-                                inventory={})
+    instance = FactorioInstance(
+        address="localhost",
+        bounding_box=200,
+        tcp_port=27000,
+        fast=True,
+        # cache_scripts=False,
+        inventory={},
+    )
 
     score, goal, result = instance.eval_with_error("print(len('hello'))")
 
-    assert result[4:-2] == '5'
+    assert result[4:-2] == "5"
 
     score, goal, result = instance.eval_with_error("print(len([1,2,3,4,5]))")
 
-    assert result[4:-2] == '5'
+    assert result[4:-2] == "5"
 
-    score, goal, result = instance.eval_with_error("print(len({'a': 1, 'b': 2, 'c': 3}))")
+    score, goal, result = instance.eval_with_error(
+        "print(len({'a': 1, 'b': 2, 'c': 3}))"
+    )
 
-    assert result[4:-2] == '3'
+    assert result[4:-2] == "3"
 
     score, goal, result = instance.eval_with_error("print(len((1,2,3,4,5)))")
 
-    assert result[4:-2] == '5'
+    assert result[4:-2] == "5"
 
     score, goal, result = instance.eval_with_error("print(len({1,2,3,4,5}))")
 
-    assert result[4:-2] == '5'
+    assert result[4:-2] == "5"
+
 
 def test_math():
-    instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=27000,
-                                fast=True,
-                                # cache_scripts=False,
-                                inventory={})
+    instance = FactorioInstance(
+        address="localhost",
+        bounding_box=200,
+        tcp_port=27000,
+        fast=True,
+        # cache_scripts=False,
+        inventory={},
+    )
 
     score, goal, result = instance.eval_with_error("print(sqrt(100))", timeout=60)
     assert "10" in result
 
-def test_loop_print():
-    instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=27000,
-                                fast=True,
-                                # cache_scripts=False,
-                                inventory={})
 
-    score, goal, result = instance.eval_with_error("for i in range(3):\n\tprint(i)", timeout=60)
+def test_loop_print():
+    instance = FactorioInstance(
+        address="localhost",
+        bounding_box=200,
+        tcp_port=27000,
+        fast=True,
+        # cache_scripts=False,
+        inventory={},
+    )
+
+    score, goal, result = instance.eval_with_error(
+        "for i in range(3):\n\tprint(i)", timeout=60
+    )
     assert "2: (0,)\n2: (1,)\n2: (2,)" in result
 
 
 def test_name_error():
-    instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=27000,
-                                fast=True,
-                                # cache_scripts=False,
-                                inventory={})
+    instance = FactorioInstance(
+        address="localhost",
+        bounding_box=200,
+        tcp_port=27000,
+        fast=True,
+        # cache_scripts=False,
+        inventory={},
+    )
 
-    score, goal, result = instance.eval_with_error("an_existing_variable=10\nprint(none_existing_variable)", timeout=60)
+    score, goal, result = instance.eval_with_error(
+        "an_existing_variable=10\nprint(none_existing_variable)", timeout=60
+    )
     assert "an_existing_variable" in result
 
+
 def test_sleep():
-    instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=27000,
-                                fast=True,
-                                # cache_scripts=False,
-                                inventory={})
+    instance = FactorioInstance(
+        address="localhost",
+        bounding_box=200,
+        tcp_port=27000,
+        fast=True,
+        # cache_scripts=False,
+        inventory={},
+    )
 
     score, goal, result = instance.eval_with_error("time.sleep(10)", timeout=60)
     assert "10" in result
 
+
 def test_prototype_attribute_error():
-    instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=27000,
-                                fast=True,
-                                # cache_scripts=False,
-                                inventory={})
+    instance = FactorioInstance(
+        address="localhost",
+        bounding_box=200,
+        tcp_port=27000,
+        fast=True,
+        # cache_scripts=False,
+        inventory={},
+    )
 
-    score, goal, result = instance.eval_with_error("print(Prototype.AssemblingMachine)", timeout=60)
+    score, goal, result = instance.eval_with_error(
+        "print(Prototype.AssemblingMachine)", timeout=60
+    )
     assert "AssemblingMachine1" in result
-
-
 
 
 def test_exceptions():
     inventory = {
-        'iron-plate': 50,
-        'coal': 100,
-        'copper-plate': 50,
-        'iron-chest': 2,
-        'burner-mining-drill': 3,
-        'electric-mining-drill': 1,
-        'assembling-machine-1': 1,
-        'stone-furnace': 9,
-        'transport-belt': 500,
-        'boiler': 1,
-        'burner-inserter': 32,
-        'pipe': 15,
-        'steam-engine': 1,
-        'small-electric-pole': 10,
-        'iron-ore': 10
+        "iron-plate": 50,
+        "coal": 100,
+        "copper-plate": 50,
+        "iron-chest": 2,
+        "burner-mining-drill": 3,
+        "electric-mining-drill": 1,
+        "assembling-machine-1": 1,
+        "stone-furnace": 9,
+        "transport-belt": 500,
+        "boiler": 1,
+        "burner-inserter": 32,
+        "pipe": 15,
+        "steam-engine": 1,
+        "small-electric-pole": 10,
+        "iron-ore": 10,
     }
 
-    instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=27000,
-                                fast=True,
-                                # cache_scripts=False,
-                                inventory=inventory)
+    instance = FactorioInstance(
+        address="localhost",
+        bounding_box=200,
+        tcp_port=27000,
+        fast=True,
+        # cache_scripts=False,
+        inventory=inventory,
+    )
 
-    test_string = \
-"""
+    test_string = """
 # Check initial inventory
 iron_position = nearest(Resource.Stone)
 move_to(iron_position)
@@ -191,33 +218,35 @@ print(furnaces)
 
     pass
 
+
 def test_chest_inventory():
     inventory = {
-        'iron-plate': 50,
-        'coal': 100,
-        'copper-plate': 50,
-        'iron-chest': 2,
-        'burner-mining-drill': 3,
-        'electric-mining-drill': 1,
-        'assembling-machine-1': 1,
-        'stone-furnace': 9,
-        'transport-belt': 500,
-        'boiler': 1,
-        'burner-inserter': 32,
-        'pipe': 15,
-        'steam-engine': 1,
-        'small-electric-pole': 10,
-        'iron-ore': 10
+        "iron-plate": 50,
+        "coal": 100,
+        "copper-plate": 50,
+        "iron-chest": 2,
+        "burner-mining-drill": 3,
+        "electric-mining-drill": 1,
+        "assembling-machine-1": 1,
+        "stone-furnace": 9,
+        "transport-belt": 500,
+        "boiler": 1,
+        "burner-inserter": 32,
+        "pipe": 15,
+        "steam-engine": 1,
+        "small-electric-pole": 10,
+        "iron-ore": 10,
     }
 
-    instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=27000,
-                                fast=True,
-                                # cache_scripts=False,
-                                inventory=inventory)
-    test_string = \
-"""
+    instance = FactorioInstance(
+        address="localhost",
+        bounding_box=200,
+        tcp_port=27000,
+        fast=True,
+        # cache_scripts=False,
+        inventory=inventory,
+    )
+    test_string = """
 # Check initial inventory
 iron_position = nearest(Resource.Stone)
 move_to(iron_position)
@@ -237,31 +266,32 @@ print(chests)
 
 def test_try_catch():
     inventory = {
-        'iron-plate': 50,
-        'coal': 100,
-        'copper-plate': 50,
-        'iron-chest': 2,
-        'burner-mining-drill': 3,
-        'electric-mining-drill': 1,
-        'assembling-machine-1': 1,
-        'stone-furnace': 9,
-        'transport-belt': 500,
-        'boiler': 1,
-        'burner-inserter': 32,
-        'pipe': 15,
-        'steam-engine': 1,
-        'small-electric-pole': 10,
-        'iron-ore': 10
+        "iron-plate": 50,
+        "coal": 100,
+        "copper-plate": 50,
+        "iron-chest": 2,
+        "burner-mining-drill": 3,
+        "electric-mining-drill": 1,
+        "assembling-machine-1": 1,
+        "stone-furnace": 9,
+        "transport-belt": 500,
+        "boiler": 1,
+        "burner-inserter": 32,
+        "pipe": 15,
+        "steam-engine": 1,
+        "small-electric-pole": 10,
+        "iron-ore": 10,
     }
 
-    instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=27000,
-                                fast=True,
-                                # cache_scripts=False,
-                                inventory=inventory)
-    test_string = \
-"""
+    instance = FactorioInstance(
+        address="localhost",
+        bounding_box=200,
+        tcp_port=27000,
+        fast=True,
+        # cache_scripts=False,
+        inventory=inventory,
+    )
+    test_string = """
 try:
     if inspect_inventory().get(Prototype.AssemblingMachine1, 0) > 0:
         assembling_machine_position = Position(x=2, y=1)
@@ -276,32 +306,13 @@ except Exception as e:
 
     pass
 
-def test_type_annotations_mixed_depth_prints():
-    inventory = {
-        'iron-plate': 50,
-        'coal': 100,
-        'copper-plate': 50,
-        'iron-chest': 2,
-        'burner-mining-drill': 3,
-        'electric-mining-drill': 1,
-        'assembling-machine-1': 1,
-        'stone-furnace': 9,
-        'transport-belt': 500,
-        'boiler': 1,
-        'burner-inserter': 32,
-        'pipe': 15,
-        'steam-engine': 1,
-        'small-electric-pole': 10,
-        'iron-ore': 10
-    }
 
-    instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=27000,
-                                fast=True)
-                                # cache_scripts=False,
-    test_string = \
-"""
+def test_type_annotations_mixed_depth_prints():
+    instance = FactorioInstance(
+        address="localhost", bounding_box=200, tcp_port=27000, fast=True
+    )
+    # cache_scripts=False,
+    test_string = """
 print("Re-evaluating precise point harvest attempts.")
 
 # Attempt narrower search positions, targeting manual adaptability requirements:
@@ -323,34 +334,34 @@ for dx in [-1, 0, 1]:
     pass
 
 
-
 def test_mixed_hard():
     inventory = {
-        'iron-plate': 50,
-        'coal': 100,
-        'copper-plate': 50,
-        'iron-chest': 2,
-        'burner-mining-drill': 3,
-        'electric-mining-drill': 1,
-        'assembling-machine-1': 1,
-        'stone-furnace': 9,
-        'transport-belt': 500,
-        'boiler': 1,
-        'burner-inserter': 32,
-        'pipe': 15,
-        'steam-engine': 1,
-        'small-electric-pole': 10,
-        'iron-ore': 10
+        "iron-plate": 50,
+        "coal": 100,
+        "copper-plate": 50,
+        "iron-chest": 2,
+        "burner-mining-drill": 3,
+        "electric-mining-drill": 1,
+        "assembling-machine-1": 1,
+        "stone-furnace": 9,
+        "transport-belt": 500,
+        "boiler": 1,
+        "burner-inserter": 32,
+        "pipe": 15,
+        "steam-engine": 1,
+        "small-electric-pole": 10,
+        "iron-ore": 10,
     }
 
-    instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=27000,
-                                fast=True,
-                                inventory=inventory)
-                                # cache_scripts=False,
-    test_string = \
-"""
+    instance = FactorioInstance(
+        address="localhost",
+        bounding_box=200,
+        tcp_port=27000,
+        fast=True,
+        inventory=inventory,
+    )
+    # cache_scripts=False,
+    test_string = """
 # Move to the center of the valid stone patch
 move_to(Position(x=-15.5, y=-15.5))
 
@@ -404,33 +415,35 @@ assert produced_iron_plates == 10, f"Expected 10 iron plates, but got {produced_
 
     pass
 
+
 def test_mixed_hard2():
     inventory = {
-        'iron-plate': 50,
-        'coal': 100,
-        'copper-plate': 50,
-        'iron-chest': 2,
-        'burner-mining-drill': 3,
-        'electric-mining-drill': 1,
-        'assembling-machine-1': 1,
-        'stone-furnace': 9,
-        'transport-belt': 500,
-        'boiler': 1,
-        'burner-inserter': 32,
-        'pipe': 15,
-        'steam-engine': 1,
-        'small-electric-pole': 10,
-        'iron-ore': 10
+        "iron-plate": 50,
+        "coal": 100,
+        "copper-plate": 50,
+        "iron-chest": 2,
+        "burner-mining-drill": 3,
+        "electric-mining-drill": 1,
+        "assembling-machine-1": 1,
+        "stone-furnace": 9,
+        "transport-belt": 500,
+        "boiler": 1,
+        "burner-inserter": 32,
+        "pipe": 15,
+        "steam-engine": 1,
+        "small-electric-pole": 10,
+        "iron-ore": 10,
     }
 
-    instance = FactorioInstance(address='localhost',
-                                bounding_box=200,
-                                tcp_port=27000,
-                                fast=True,
-                                inventory=inventory)
-                                # cache_scripts=False,
-    test_string = \
-"""
+    instance = FactorioInstance(
+        address="localhost",
+        bounding_box=200,
+        tcp_port=27000,
+        fast=True,
+        inventory=inventory,
+    )
+    # cache_scripts=False,
+    test_string = """
 # Specify the drill drop position
 drill_drop_position = Position(x=20.5, y=21.5)
 
@@ -475,5 +488,5 @@ except Exception as e_map_error:
     pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

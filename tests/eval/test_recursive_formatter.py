@@ -17,7 +17,7 @@ class TestRecursiveFormatter(unittest.TestCase):
         self.formatter = RecursiveFormatter(
             chunk_size=4,  # Smaller chunk size for testing
             api_factory=self.mock_llm,
-            cache_dir=self.temp_dir
+            cache_dir=self.temp_dir,
         )
 
     def tearDown(self):
@@ -26,18 +26,15 @@ class TestRecursiveFormatter(unittest.TestCase):
 
     def create_test_conversation(self, length: int) -> Conversation:
         """Helper to create a test conversation of specified length."""
-        messages = [
-            Message(
-                role="system",
-                content="You are a helpful assistant."
-            )
-        ]
+        messages = [Message(role="system", content="You are a helpful assistant.")]
 
         for i in range(length):
-            messages.extend([
-                Message(role="user", content=f"Message {i}"),
-                Message(role="assistant", content=f"Response {i}")
-            ])
+            messages.extend(
+                [
+                    Message(role="user", content=f"Message {i}"),
+                    Message(role="assistant", content=f"Response {i}"),
+                ]
+            )
 
         return Conversation(messages=messages)
 
@@ -45,7 +42,7 @@ class TestRecursiveFormatter(unittest.TestCase):
         """Test that the same messages produce the same hash."""
         messages = [
             Message(role="user", content="Hello"),
-            Message(role="assistant", content="Hi")
+            Message(role="assistant", content="Hi"),
         ]
 
         hash1 = self.formatter._get_chunk_hash(messages)
@@ -57,14 +54,12 @@ class TestRecursiveFormatter(unittest.TestCase):
         """Test cache save and load operations."""
         messages = [
             Message(role="user", content="Test message"),
-            Message(role="assistant", content="Test response")
+            Message(role="assistant", content="Test response"),
         ]
 
         chunk_hash = self.formatter._get_chunk_hash(messages)
         summary = Message(
-            role="assistant",
-            content="Summary content",
-            metadata={"summarized": True}
+            role="assistant", content="Summary content", metadata={"summarized": True}
         )
 
         # Save to cache
@@ -84,10 +79,7 @@ class TestRecursiveFormatter(unittest.TestCase):
         mock_response.content = "Summarized content"
         self.mock_llm.acall.return_value = mock_response
 
-        messages = [
-            Message(role="user", content=f"Message {i}")
-            for i in range(5)
-        ]
+        messages = [Message(role="user", content=f"Message {i}") for i in range(5)]
 
         summary = await self.formatter._summarize_chunk(messages, 1, 5)
 
@@ -136,7 +128,7 @@ class TestRecursiveFormatter(unittest.TestCase):
 
     def test_error_handling(self):
         """Test error handling in cache operations."""
-        with patch('builtins.open', side_effect=IOError):
+        with patch("builtins.open", side_effect=IOError):
             # Should handle cache write failure gracefully
             messages = [Message(role="user", content="Test")]
             chunk_hash = self.formatter._get_chunk_hash(messages)
@@ -150,5 +142,5 @@ class TestRecursiveFormatter(unittest.TestCase):
             self.assertIsNone(loaded)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

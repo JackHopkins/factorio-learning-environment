@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Dict, Any
+from typing import List
 import re
 
 from fle.agents.llm.api_factory import APIFactory
@@ -8,7 +8,7 @@ from fle.agents.llm.api_factory import APIFactory
 class ObjectiveTreeSampler:
     def __init__(self, api_factory):
         self.llm = api_factory
-        self.indent_pattern = re.compile(r'^(\s*)')
+        self.indent_pattern = re.compile(r"^(\s*)")
 
     def _get_indent_level(self, line: str) -> int:
         """Calculate indent level based on spaces before content."""
@@ -46,7 +46,7 @@ class ObjectiveTreeSampler:
         for index, objective in enumerate(initial_objectives):
             stack.append((index, objective))  # (index, objective)
 
-        while stack and (number == -1 or len(objectives) < number+initial_count):
+        while stack and (number == -1 or len(objectives) < number + initial_count):
             current_idx, current_obj = stack[-1]
 
             if current_obj:
@@ -70,7 +70,9 @@ class ObjectiveTreeSampler:
             # Add new objective to our list
             insert_idx = current_idx + 1
             for i in range(current_idx + 1, len(objectives)):
-                if self._get_indent_level(objectives[i]) <= self._get_indent_level(current_obj):
+                if self._get_indent_level(objectives[i]) <= self._get_indent_level(
+                    current_obj
+                ):
                     break
                 insert_idx = i + 1
 
@@ -88,40 +90,36 @@ class ObjectiveTreeSampler:
                     "content": [
                         {
                             "type": "text",
-                            "text": "You are a helpful assistant that decides on the most appropriate Factorio game objective"
+                            "text": "You are a helpful assistant that decides on the most appropriate Factorio game objective",
                         }
-                    ]
+                    ],
                 },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": conversation
-                        }
-                    ]
-                }
+                {"role": "user", "content": [{"type": "text", "text": conversation}]},
             ],
             n_samples=1,
             temperature=0.3,
             max_tokens=128,
-            logit_bias={'808': -5, '28052': -5, '27': -5},
-            stop_sequences=['\n'],
+            logit_bias={"808": -5, "28052": -5, "27": -5},
+            stop_sequences=["\n"],
             model="ft:gpt-4o-mini-2024-07-18:paperplane-ai:plans-tree:AcZ8gHSo",
             presence_penalty=0,
-            frequency_penalty=0.1
+            frequency_penalty=0.1,
         )
         return response.choices[0].message.content
 
 
 async def main():
-    api_factory = APIFactory(model="ft:gpt-4o-mini-2024-07-18:paperplane-ai:plans-tree:AcZ8gHSo")
+    api_factory = APIFactory(
+        model="ft:gpt-4o-mini-2024-07-18:paperplane-ai:plans-tree:AcZ8gHSo"
+    )
     sampler = ObjectiveTreeSampler(api_factory)
-    objectives = await sampler.sample_tree(['1. Set up a basic smelting operation', '2. Optimize furnace layout'], number=1)
+    objectives = await sampler.sample_tree(
+        ["1. Set up a basic smelting operation", "2. Optimize furnace layout"], number=1
+    )
 
     for objective in objectives:
         print(objective)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

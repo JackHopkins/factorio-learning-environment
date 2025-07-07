@@ -20,7 +20,7 @@ class SetResearch(Tool):
         :param technology: Technology to research
         :return: Required ingredients to research the technology.
         """
-        if hasattr(technology, 'value'):
+        if hasattr(technology, "value"):
             name = technology.value
         else:
             name = technology
@@ -29,9 +29,11 @@ class SetResearch(Tool):
 
         if success != {} and isinstance(success, str):
             if success is None:
-                raise Exception(f"Could not set research to {name} - Technology is invalid or unavailable.")
+                raise Exception(
+                    f"Could not set research to {name} - Technology is invalid or unavailable."
+                )
             else:
-                result = ":".join(success.split(':')[2:]).replace('"', '').strip()
+                result = ":".join(success.split(":")[2:]).replace('"', "").strip()
                 if not result:
                     raise Exception(f"Could not set research to {name} - {success}")
                 else:
@@ -41,9 +43,9 @@ class SetResearch(Tool):
         if isinstance(success, list):
             return [
                 Ingredient(
-                    name=ingredient.get('name'),
-                    count=ingredient.get('count', 1),
-                    type=ingredient.get('type')
+                    name=ingredient.get("name"),
+                    count=ingredient.get("count", 1),
+                    type=ingredient.get("type"),
                 )
                 for ingredient in success
             ]

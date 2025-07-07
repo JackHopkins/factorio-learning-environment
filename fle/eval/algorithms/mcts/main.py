@@ -16,15 +16,21 @@ load_dotenv()
 def create_factorio_instances() -> List[FactorioInstance]:
     def init_instance(params: Tuple[str, int, int]) -> FactorioInstance:
         ip, udp_port, tcp_port = params
-        return FactorioInstance(address=ip, tcp_port=tcp_port, bounding_box=200,
-                                fast=True, cache_scripts=False, inventory={})
+        return FactorioInstance(
+            address=ip,
+            tcp_port=tcp_port,
+            bounding_box=200,
+            fast=True,
+            cache_scripts=False,
+            inventory={},
+        )
 
     ips, udp_ports, tcp_ports = get_local_container_ips()
     with concurrent.futures.ThreadPoolExecutor() as executor:
         return list(executor.map(init_instance, zip(ips, udp_ports, tcp_ports)))
 
-SYSTEM_PROMPT = \
-"""
+
+SYSTEM_PROMPT = """
 You are an agent designed to operate within FactoryEnv, a novel evaluation framework built on the game Factorio, with capabilities in long-horizon planning, spatial reasoning, and systematic automation. 
 
 You interact with the environment through Python program synthesis, using any of the API's 28 core methods below.
@@ -59,6 +65,7 @@ You are now ready to begin playing FactoryEnv! Good luck!
 with open("../TEST_PROMPT.md", "r") as f:
     TEST_PROMPT = f.read()
 
+
 async def main():
     try:
         db_client = DBClient(
@@ -67,10 +74,12 @@ async def main():
             port=os.getenv("SKILLS_DB_PORT"),
             dbname=os.getenv("SKILLS_DB_NAME"),
             user=os.getenv("SKILLS_DB_USER"),
-            password=os.getenv("SKILLS_DB_PASSWORD")
+            password=os.getenv("SKILLS_DB_PASSWORD"),
         )
-    except Exception as e:
-        print("\033[91mError connecting to the database. Please check your credentials and try again.\033[91m")
+    except Exception:
+        print(
+            "\033[91mError connecting to the database. Please check your credentials and try again.\033[91m"
+        )
         return
 
     # Get largest version from DB for initialisation purposes. If no versions exist, start at 0.
@@ -80,22 +89,34 @@ async def main():
     try:
         instances = create_factorio_instances()
         for instance in instances:
-            instance.speed(10) # Speed up the game for faster evaluation
-    except Exception as e:
-        print("\033[91mError initialising Factorio instances. Are the docker containers running, and have they been activated?\033[91m")
+            instance.speed(10)  # Speed up the game for faster evaluation
+    except Exception:
+        print(
+            "\033[91mError initialising Factorio instances. Are the docker containers running, and have they been activated?\033[91m"
+        )
         return
 
-    prompt = SYSTEM_PROMPT + '\n\n' + instances[0].get_system_prompt() + '\n\nExamples:\n```\n' + TEST_PROMPT + '\n```'
+    prompt = (
+        SYSTEM_PROMPT
+        + "\n\n"
+        + instances[0].get_system_prompt()
+        + "\n\nExamples:\n```\n"
+        + TEST_PROMPT
+        + "\n```"
+    )
 
     # Get configuration from CLI/interactive prompts
     factory = MCTSFactory()
-    mcts_config, sampler_config = factory.get_config_from_cli(default_version=largest_version_to_date+1)
-
+    mcts_config, sampler_config = factory.get_config_from_cli(
+        default_version=largest_version_to_date + 1
+    )
 
     mcts_config.system_prompt = prompt
 
     # Initialize factory singleton
-    factory.initialize(instances, db_client, mcts_config, sampler_config) #api_factory, config)
+    factory.initialize(
+        instances, db_client, mcts_config, sampler_config
+    )  # api_factory, config)
 
     # Create MCTS instance
     mcts = factory.create_mcts(mcts_config)
@@ -108,8 +129,6 @@ async def main():
     run.save_plots()
 
 
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.get_event_loop().set_debug(True)
     asyncio.run(main())

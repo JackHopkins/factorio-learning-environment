@@ -3,7 +3,6 @@ from fle.env.tools import Tool
 
 
 class LoadBlueprint(Tool):
-
     def __init__(self, *args):
         super().__init__(*args)
 

@@ -58,7 +58,7 @@ You can install the factorio-learning-environment package using either uv or pip
 # Install from PyPI using uv
 uv add factorio-learning-environment
 
-# Or install from PyPI using pip
+# Install from PyPI using pip
 pip install factorio-learning-environment
 ```
 
@@ -72,14 +72,27 @@ import fle
 
 ### Quickstart
 
-1. **Configure Docker permissions** (for Linux users):
+1. **Clone the repository**:
+
+```bash
+git clone https://github.com/JackHopkins/factorio-learning-environment.git
+cd factorio-learning-environment
+
+# Using uv
+uv sync --extra env --extra eval
+
+# Using pip
+pip install -e .[env,eval]
+```
+
+2. **Configure Docker permissions** (for Linux users):
    If you typically run Docker with sudo, add your user to the docker group:
    ```bash
    sudo usermod -aG docker $USER
    newgrp docker
    ```
 
-2. **Launch FLE Docker server**:
+3. **Launch FLE Docker server**:
    ```bash
    # For macOS and Windows (Open Docker Desktop application):
 
@@ -101,38 +114,36 @@ import fle
    ```
    **Note**: The script automatically detects your platform (arm64/amd64) and configures Docker appropriately.
 
-3. **Configure firewall** (if running server on a different machine):
+4. **Configure firewall** (if running server on a different machine):
    Open the following ports:
    - UDP 34197 (Game connection)
    - TCP 27015 (RCON)
 
    **Note**: On Windows, you may need to configure Windows Defender Firewall to allow these ports.
 
-4. **Configure DB**: Copy the example environment file:
+5. **Configure DB**: Copy the example environment file:
    - Note that API keys are only required for the respective model providers that will be evaluated
    ```bash
    cp .example.env .env
    ```
 
-5. **Run Eval**: Running open and lab play with example run configs:
+6. **Run Eval**: Running open and lab play with example run configs:
    1. Open Play (one parallel run):
       ```sh
       # Using uv
       uv run -m fle.run --run_config=eval/algorithms/independent/run_config_example_open_play.json
-      # Or using python
+      # Using python
       python -m fle.run --run_config=eval/algorithms/independent/run_config_example_open_play.json
       ```
    2. Tasks (one parallel run of iron-ore task):
       ```sh
       # Using uv
       uv run -m fle.run --run_config=fle/eval/algorithms/independent/gym_run_config.json
-      # Or using python
+      # Using python
       python -m fle.run --run_config=fle/eval/algorithms/independent/gym_run_config.json
       ```
 
-> **Note:** All commands and scripts can be run with either `uv run` or `python` as shown above. Both uv and pip+python are fully supported.
-
-### Client-side running (optional if you want to see visuals)
+### Client-side running (renders graphics)
 
 1. **Set up Factorio client**:
    - Purchase Factorio from the [official website](https://www.factorio.com/) (recommended) or on Steam.

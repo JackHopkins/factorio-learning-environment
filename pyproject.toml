@@ -106,10 +106,8 @@ env = [
 
 [project.scripts]
 fle = "fle.run:main"
-fle = "fle.run:main"
 
 [tool.hatch.version]
-path = "fle/__about__.py"
 path = "fle/__about__.py"
 
 [tool.hatch.build]
@@ -118,7 +116,6 @@ exclude = [
     "**/*.pyc",
     "**/*.pyo",
     "**/*.pyd",
-    ".git*",
     ".git*",
     ".DS_Store",
     "dist",

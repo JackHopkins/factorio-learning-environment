@@ -884,24 +884,50 @@ factorio-learning-environment/
 ├── .github/                        # GitHub workflows and scripts
 ├── docs/                           # Website and documentation
 ├── fle/                            # Main Factorio Learning Environment codebase
-├── leaderboard/                    # Leaderboard system
+│   ├── agents/                     # Agent implementations
+│   │   ├── formatters/             # Conversation formatting utilities
+│   │   ├── llm/                    # LLM integration utilities
+│   │   ├── agent_abc.py            # Abstract base class for agents
+│   │   ├── basic_agent.py          # Default agent implementation
+│   │   ├── backtracking_agent.py   # Backtracking agent
+│   │   ├── visual_agent.py         # Visual agent implementation
+│   │   └── gym_agent.py            # Gym-compatible agent
+│   ├── cluster/                    # Docker and deployment utilities
+│   │   ├── docker/                 # Docker configurations
+│   │   ├── local/                  # Local deployment scripts
+│   │   ├── remote/                 # Remote deployment utilities
+│   │   └── scenarios/              # Game scenario configurations
+│   ├── commons/                    # Shared utilities and constants
+│   ├── data/                       # Data files and resources
+│   ├── env/                        # Environment implementation
+│   │   ├── gym_env/                # Gym environment interface
+│   │   ├── tools/                  # Agent tools and API
+│   │   ├── protocols/              # Communication protocols (A2A, etc.)
+│   │   ├── utils/                  # Environment utilities
+│   │   ├── lib/                    # Core libraries
+│   │   ├── exceptions/             # Custom exceptions
+│   │   ├── instance.py             # Factorio instance management
+│   │   ├── namespace.py            # Python namespace management
+│   │   ├── entities.py             # Entity definitions
+│   │   └── game_types.py           # Game type definitions
+│   ├── eval/                       # Evaluation framework
+│   │   ├── algorithms/             # Evaluation algorithms
+│   │   ├── tasks/                  # Task definitions and implementations
+│   │   ├── open/                   # Open-play evaluation scripts
+│   │   └── evaluator.py            # Main evaluation logic
+│   ├── run.py                      # Main CLI entry point
+│   ├── server.py                   # Server implementation
+│   └── __init__.py                 # Package initialization
 ├── tests/                          # Test suite
 ├── .example.env                    # Example environment variables
 ├── .gitignore                      # Git ignore file
 ├── BUILD.md                        # Build instructions
 ├── CONTRIBUTING.md                 # Contribution guidelines
 ├── LICENSE                         # License file
-├── MANIFEST.in                     # Manifest for packaging
-├── PUBLISHING.md                   # Publishing instructions
 ├── README.md                       # Project readme
 ├── clean.sh                        # Clean script
-├── prepare_build.py                # Build preparation script
 ├── pyproject.toml                  # Python project config
-├── pytest.ini                      # Pytest config
-├── pyvenv.cfg                      # Python venv config
-├── setup.cfg                       # Setup config
-├── setup.py                        # Setup script
-└── validate_installation.py        # Installation validation script
+└── uv.lock                         # UV lock file
 ```
 
 ## Database

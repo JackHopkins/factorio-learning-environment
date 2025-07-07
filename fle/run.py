@@ -15,8 +15,6 @@ def main():
         epilog="""
 Examples:
   fle --run_config eval/open/independent_runs/run_config_example_lab_play.json
-
-For more information, visit: https://github.com/JackHopkins/PaperclipMaximiser
         """
     )
     

@@ -49,9 +49,3 @@ from fle import env
 # Access modules
 env_instance = env.Instance()
 ```
-
-## Cleaning Up
-
-```bash
-./clean.sh
-```

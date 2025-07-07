@@ -71,7 +71,7 @@ jobs:
         run: |
           cd fle/cluster
           docker compose -f docker-compose-linux.yml ps
-          docker compose -f docker-compose-linux.yml logs factorio_1
+          docker compose -f docker-compose-linux.yml logs factorio
 
       - name: Debug container IPs and ports
         run: |
@@ -119,7 +119,7 @@ jobs:
         run: |
           cd fle/cluster
           echo "=== Factorio container logs ==="
-          docker compose -f docker-compose-linux.yml logs factorio_1
+          docker compose -f docker-compose-linux.yml logs factorio
           
           echo -e "\n=== All container logs ==="
           docker compose -f docker-compose-linux.yml logs

@@ -1,7 +1,10 @@
 name: Factorio Server Tests
 on:
-  #push:
-  #pull_request:
+  pull_request:
+    paths:
+      - 'fle/**'
+      - 'tests/actions/**'
+      - '.github/workflows/factorio-test.yml'
   workflow_dispatch:
 
 jobs:

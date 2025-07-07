@@ -35,20 +35,12 @@ def test_inventory_observation(instance):
     chest = instance.namespace.insert_item(Prototype.Coal, chest, quantity=10)
     
     # Get new observation using a no-op action
-<<<<<<< HEAD
-    no_op_action = {
-        'agent_idx': 0,
-        'code': 'pass'  # No-op Python code
-    }
-    observation, reward, done, info = env.step(no_op_action)
-=======
     action = Action(
         agent_idx=0,
         code='pass',  # No-op Python code
         game_state=None
     )
     observation, reward, terminated, truncated, info = env.step(action)
->>>>>>> origin/main
     
     # Verify chest in observation
     chest_entities = [e for e in observation['entities'] if 'iron-chest' in e]
@@ -81,20 +73,12 @@ def test_entity_placement_observation(instance):
     )
     
     # Get new observation using a no-op action
-<<<<<<< HEAD
-    no_op_action = {
-        'agent_idx': 0,
-        'code': 'pass'  # No-op Python code
-    }
-    observation, reward, done, info = env.step(no_op_action)
-=======
     action = Action(
         agent_idx=0,
         code='pass',  # No-op Python code
         game_state=None
     )
     observation, reward, terminated, truncated, info = env.step(action)
->>>>>>> origin/main
     
     # Verify furnace in observation
     furnace_entities = [e for e in observation['entities'] if 'stone-furnace' in e]
@@ -105,8 +89,6 @@ def test_entity_placement_observation(instance):
     assert 'x=3.0, y=3.0' in furnace_str
     assert 'Direction.UP' in furnace_str
 
-<<<<<<< HEAD
-=======
 def test_research_observation(instance):
     """Test that research state changes are reflected in observations."""
     # Set up initial state with a researchable technology
@@ -187,4 +169,3 @@ def test_messages_observation(instance):
     assert 'messages' in observation
     if observation['messages']:
         assert any('Test message' in m.get('content', '') or 'Test message' in m.get('message', '') for m in observation['messages'])
->>>>>>> origin/main

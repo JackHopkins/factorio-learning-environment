@@ -3,7 +3,6 @@ from fle.env.tools import Tool
 
 
 class ExtendCollisionBoxes(Tool):
-
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
@@ -13,9 +12,11 @@ class ExtendCollisionBoxes(Tool):
         This is necessary when making other pipe connections, as adjacency can inadvertently cause different
         pipe groups to merge
         """
-        response, elapsed = self.execute(self.player_index,
-                                         source_position.x,
-                                         source_position.y,
-                                         target_position.x,
-                                         target_position.y)
+        response, elapsed = self.execute(
+            self.player_index,
+            source_position.x,
+            source_position.y,
+            target_position.x,
+            target_position.y,
+        )
         return True

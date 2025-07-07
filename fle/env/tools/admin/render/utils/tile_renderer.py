@@ -1,5 +1,5 @@
-from typing import List, Dict, Tuple, Any, Callable
-from PIL import Image, ImageDraw
+from typing import List, Dict, Callable
+from PIL import ImageDraw
 import math
 
 from fle.env.tools.admin.render.utils.render_config import RenderConfig
@@ -11,8 +11,13 @@ class TileRenderer:
     def __init__(self, config: RenderConfig):
         self.config = config
 
-    def draw_water_tiles(self, draw: ImageDraw.ImageDraw, water_tiles: List[Dict],
-                         game_to_img_func: Callable, boundaries: Dict[str, float]) -> None:
+    def draw_water_tiles(
+        self,
+        draw: ImageDraw.ImageDraw,
+        water_tiles: List[Dict],
+        game_to_img_func: Callable,
+        boundaries: Dict[str, float],
+    ) -> None:
         """
         Draw water tiles on the map with a cross-hatched pattern
 
@@ -30,7 +35,7 @@ class TileRenderer:
             "water": (0, 70, 140),  # Regular water
             "deepwater": (0, 50, 120),  # Deep water
             "water-shallow": (30, 90, 150),  # Shallow water
-            "water-mud": (70, 80, 50)  # Mud water
+            "water-mud": (70, 80, 50),  # Mud water
         }
 
         cell_size = self.config.style["cell_size"]
@@ -41,7 +46,7 @@ class TileRenderer:
 
         for tile in water_tiles:
             # Get tile position
-            x, y = tile.get('x', 0), tile.get('y', 0)
+            x, y = tile.get("x", 0), tile.get("y", 0)
             x += 0.5
             y += 0.5
 
@@ -49,7 +54,7 @@ class TileRenderer:
             if x < min_x or x > max_x or y < min_y or y > max_y:
                 continue
 
-            tile_name = tile.get('name', 'water')
+            tile_name = tile.get("name", "water")
 
             # Get color based on water type
             water_color = water_colors.get(tile_name, water_colors["water"])
@@ -59,10 +64,14 @@ class TileRenderer:
 
             # Draw water tile background
             draw.rectangle(
-                [img_x - cell_size / 2, img_y - cell_size / 2,
-                 img_x + cell_size / 2, img_y + cell_size / 2],
+                [
+                    img_x - cell_size / 2,
+                    img_y - cell_size / 2,
+                    img_x + cell_size / 2,
+                    img_y + cell_size / 2,
+                ],
                 fill=water_color,
-                outline=None
+                outline=None,
             )
 
             # Add cross-hatched pattern
@@ -74,14 +83,24 @@ class TileRenderer:
                 line_end_y = img_y - cell_size / 2
 
                 # Only draw if endpoints are within tile bounds
-                if line_end_x >= img_x - cell_size / 2 and line_start_y <= img_y + cell_size / 2:
+                if (
+                    line_end_x >= img_x - cell_size / 2
+                    and line_start_y <= img_y + cell_size / 2
+                ):
                     draw.line(
-                        [(line_start_x, line_start_y),
-                         (min(line_end_x, img_x + cell_size / 2),
-                          max(line_end_y, img_y - cell_size / 2))],
-                        fill=(min(water_color[0] +
-                                  30, 255), min(water_color[1] + 30, 255), min(water_color[2] + 40, 255)),
-                        width=1
+                        [
+                            (line_start_x, line_start_y),
+                            (
+                                min(line_end_x, img_x + cell_size / 2),
+                                max(line_end_y, img_y - cell_size / 2),
+                            ),
+                        ],
+                        fill=(
+                            min(water_color[0] + 30, 255),
+                            min(water_color[1] + 30, 255),
+                            min(water_color[2] + 40, 255),
+                        ),
+                        width=1,
                     )
 
             # Second set of diagonal lines (perpendicular to first set)
@@ -92,18 +111,33 @@ class TileRenderer:
                 line_end_y = img_y + cell_size / 2
 
                 # Only draw if endpoints are within tile bounds
-                if line_end_x >= img_x - cell_size / 2 and line_start_y >= img_y - cell_size / 2:
+                if (
+                    line_end_x >= img_x - cell_size / 2
+                    and line_start_y >= img_y - cell_size / 2
+                ):
                     draw.line(
-                        [(line_start_x, line_start_y),
-                         (min(line_end_x, img_x + cell_size / 2),
-                          min(line_end_y, img_y + cell_size / 2))],
-                        fill=(min(water_color[0] +
-                                  15, 255), min(water_color[1] + 15, 255), min(water_color[2] + 25, 255)),
-                        width=1
+                        [
+                            (line_start_x, line_start_y),
+                            (
+                                min(line_end_x, img_x + cell_size / 2),
+                                min(line_end_y, img_y + cell_size / 2),
+                            ),
+                        ],
+                        fill=(
+                            min(water_color[0] + 15, 255),
+                            min(water_color[1] + 15, 255),
+                            min(water_color[2] + 25, 255),
+                        ),
+                        width=1,
                     )
 
-    def draw_resource_entities(self, draw: ImageDraw.ImageDraw, resources: List[Dict],
-                               game_to_img_func: Callable, boundaries: Dict[str, float]) -> None:
+    def draw_resource_entities(
+        self,
+        draw: ImageDraw.ImageDraw,
+        resources: List[Dict],
+        game_to_img_func: Callable,
+        boundaries: Dict[str, float],
+    ) -> None:
         """
         Draw resource entities (ore patches) on the map
 
@@ -123,7 +157,7 @@ class TileRenderer:
             "coal": (50, 50, 50),
             "stone": (130, 130, 110),
             "uranium-ore": (50, 190, 50),
-            "crude-oil": (20, 20, 20)
+            "crude-oil": (20, 20, 20),
         }
 
         cell_size = self.config.style["cell_size"]
@@ -133,14 +167,17 @@ class TileRenderer:
 
         for resource in resources:
             # Get resource position and type
-            x, y = resource.get('position', {}).get('x', 0), resource.get('position', {}).get('y', 0)
+            x, y = (
+                resource.get("position", {}).get("x", 0),
+                resource.get("position", {}).get("y", 0),
+            )
 
             # Skip resources outside the grid boundaries
             if x < min_x or x > max_x or y < min_y or y > max_y:
                 continue
 
-            resource_name = resource.get('name', 'unknown')
-            amount = resource.get('amount', 0)
+            resource_name = resource.get("name", "unknown")
+            amount = resource.get("amount", 0)
 
             # Get color based on resource type
             resource_color = resource_colors.get(resource_name, (150, 150, 150))
@@ -161,19 +198,30 @@ class TileRenderer:
                 draw.ellipse(
                     [img_x - radius, img_y - radius, img_x + radius, img_y + radius],
                     fill=adjusted_color,
-                    outline=(0, 0, 0)
+                    outline=(0, 0, 0),
                 )
                 # Add oil "bubbles"
                 small_radius = radius / 4
-                offsets = [(radius / 2, 0), (0, radius / 2), (-radius / 2, 0), (0, -radius / 2)]
+                offsets = [
+                    (radius / 2, 0),
+                    (0, radius / 2),
+                    (-radius / 2, 0),
+                    (0, -radius / 2),
+                ]
                 for dx, dy in offsets:
                     draw.ellipse(
-                        [img_x + dx - small_radius, img_y + dy - small_radius,
-                         img_x + dx + small_radius, img_y + dy + small_radius],
-                        fill=(min(adjusted_color[0] + 40, 255),
-                              min(adjusted_color[1] + 40, 255),
-                              min(adjusted_color[2] + 40, 255)),
-                        outline=None
+                        [
+                            img_x + dx - small_radius,
+                            img_y + dy - small_radius,
+                            img_x + dx + small_radius,
+                            img_y + dy + small_radius,
+                        ],
+                        fill=(
+                            min(adjusted_color[0] + 40, 255),
+                            min(adjusted_color[1] + 40, 255),
+                            min(adjusted_color[2] + 40, 255),
+                        ),
+                        outline=None,
                     )
             else:
                 # Other resources are drawn as small squares or diamonds
@@ -184,40 +232,48 @@ class TileRenderer:
                     draw.rectangle(
                         [img_x - size, img_y - size, img_x + size, img_y + size],
                         fill=adjusted_color,
-                        outline=(0, 0, 0)
+                        outline=(0, 0, 0),
                     )
 
                     # Add small texture dots
                     dot_size = size / 4
-                    dot_color = (min(adjusted_color[0] + 30, 255),
-                                 min(adjusted_color[1] + 30, 255),
-                                 min(adjusted_color[2] + 30, 255))
+                    dot_color = (
+                        min(adjusted_color[0] + 30, 255),
+                        min(adjusted_color[1] + 30, 255),
+                        min(adjusted_color[2] + 30, 255),
+                    )
 
                     dot_positions = [
                         (img_x - size / 2, img_y - size / 2),
                         (img_x + size / 2, img_y - size / 2),
                         (img_x, img_y),
                         (img_x - size / 2, img_y + size / 2),
-                        (img_x + size / 2, img_y + size / 2)
+                        (img_x + size / 2, img_y + size / 2),
                     ]
 
                     for dot_x, dot_y in dot_positions:
                         draw.ellipse(
-                            [dot_x - dot_size, dot_y - dot_size,
-                             dot_x + dot_size, dot_y + dot_size],
+                            [
+                                dot_x - dot_size,
+                                dot_y - dot_size,
+                                dot_x + dot_size,
+                                dot_y + dot_size,
+                            ],
                             fill=dot_color,
-                            outline=None
+                            outline=None,
                         )
 
                 elif resource_name in ["coal", "stone"]:
                     # Diamond for coal and stone
                     draw.polygon(
-                        [(img_x, img_y - size),  # Top
-                         (img_x + size, img_y),  # Right
-                         (img_x, img_y + size),  # Bottom
-                         (img_x - size, img_y)],  # Left
+                        [
+                            (img_x, img_y - size),  # Top
+                            (img_x + size, img_y),  # Right
+                            (img_x, img_y + size),  # Bottom
+                            (img_x - size, img_y),
+                        ],  # Left
                         fill=adjusted_color,
-                        outline=(0, 0, 0)
+                        outline=(0, 0, 0),
                     )
 
                 elif resource_name == "uranium-ore":
@@ -225,16 +281,20 @@ class TileRenderer:
                     draw.ellipse(
                         [img_x - size, img_y - size, img_x + size, img_y + size],
                         fill=adjusted_color,
-                        outline=(0, 0, 0)
+                        outline=(0, 0, 0),
                     )
 
                     # Draw radiation symbol inside
                     inner_radius = size * 0.5
                     draw.ellipse(
-                        [img_x - inner_radius, img_y - inner_radius,
-                         img_x + inner_radius, img_y + inner_radius],
+                        [
+                            img_x - inner_radius,
+                            img_y - inner_radius,
+                            img_x + inner_radius,
+                            img_y + inner_radius,
+                        ],
                         fill=(0, 0, 0),
-                        outline=None
+                        outline=None,
                     )
 
                     # Radiation "blades"
@@ -248,7 +308,7 @@ class TileRenderer:
                         draw.polygon(
                             [(img_x, img_y), (mid_x, mid_y), (end_x, end_y)],
                             fill=adjusted_color,
-                            outline=None
+                            outline=None,
                         )
                 else:
                     # Default shape (hexagon)
@@ -259,8 +319,4 @@ class TileRenderer:
                         py = img_y + size * math.sin(angle)
                         points.append((px, py))
 
-                    draw.polygon(
-                        points,
-                        fill=adjusted_color,
-                        outline=(0, 0, 0)
-                    )
+                    draw.polygon(points, fill=adjusted_color, outline=(0, 0, 0))

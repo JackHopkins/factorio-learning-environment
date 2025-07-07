@@ -1,7 +1,6 @@
 import json
-import re
 from pathlib import Path
-from typing import Any, Dict, List, Union, Set
+from typing import Dict, List, Set
 from collections import Counter
 import matplotlib.pyplot as plt
 from dataclasses import dataclass, field
@@ -30,8 +29,8 @@ class BlueprintIndex:
         Returns True if blueprint was added, False if it was rejected.
         """
         try:
-            entities = bp_data.get('entities', [])
-            names = frozenset(entity['name'] for entity in entities)  # Use frozenset
+            entities = bp_data.get("entities", [])
+            names = frozenset(entity["name"] for entity in entities)  # Use frozenset
 
             # Check if all entities are valid
             if not names.issubset(self.valid_entities):
@@ -42,7 +41,7 @@ class BlueprintIndex:
                 label=label,
                 data=bp_data,
                 source_file=source_file,
-                entity_count=len(entities)
+                entity_count=len(entities),
             )
 
             self.blueprints.append(blueprint)
@@ -57,46 +56,21 @@ class BlueprintIndex:
             print(f"Error processing blueprint: {e}")
             return False
 
-    def find_blueprints_with_any_of(self, entity_names: Set[str], max_entities=100) -> List[Blueprint]:
+    def find_blueprints_with_any_of(
+        self, entity_names: Set[str], max_entities=100
+    ) -> List[Blueprint]:
         """Find blueprints that contain any of the specified names"""
         result = set()  # Now Blueprint is hashable, this will work
         for name in entity_names:
             if name in self.name_to_blueprints:
                 result.update(self.name_to_blueprints[name])
-        return sorted(list(filter(lambda x:x.entity_count<=max_entities, result)), key=lambda bp: bp.entity_count)
+        return sorted(
+            list(filter(lambda x: x.entity_count <= max_entities, result)),
+            key=lambda bp: bp.entity_count,
+        )
 
     def find_all_blueprints(self, max_entities=100):
-        return list(filter(lambda x:x.entity_count<=max_entities, self.blueprints))
-
-
-def get_blueprints_from_blueprint_book(data: Dict, source_file: str, index: BlueprintIndex) -> int:
-    """Process blueprints from blueprint book and return count of processed blueprints"""
-    processed = 0
-
-    if 'blueprints' in data:
-        for bp in data['blueprints']:
-            if 'blueprint' in bp:
-                if index.add_blueprint(
-                        bp_data=bp['blueprint'],
-                        source_file=source_file,
-                        label=bp['blueprint'].get('label', 'Unnamed Blueprint')
-                ):
-                    processed += 1
-
-    if 'blueprint_book' in data:
-        for bp in data['blueprint_book']['blueprints']:
-            if 'blueprint_book' in bp:
-                processed += get_blueprints_from_blueprint_book(bp, source_file, index)
-            elif 'blueprint' in bp:
-                if index.add_blueprint(
-                        bp_data=bp['blueprint'],
-                        source_file=source_file,
-                        label=bp['blueprint'].get('label', 'Unnamed Blueprint')
-                ):
-                    processed += 1
-
-    return processed
-
+        return list(filter(lambda x: x.entity_count <= max_entities, self.blueprints))
 
 
 def analyze_missing_prototypes(blueprints: List[Blueprint], prototype_names: Set[str]):
@@ -127,7 +101,7 @@ def analyze_missing_prototypes(blueprints: List[Blueprint], prototype_names: Set
     # Print as enum format for easy copying
     print("\nEnum format for missing entities:")
     for name, _ in sorted_missing:
-        sanitized_name = name.replace('-', '_').upper()
+        sanitized_name = name.replace("-", "_").upper()
         print(f'{sanitized_name} = ("{name}",)')
 
 
@@ -137,32 +111,42 @@ def plot_histograms(blueprints: List[Blueprint]):
 
     # Histogram of unique entity names
     unique_lengths = [len(bp.names) for bp in blueprints]
-    ax1.hist(unique_lengths, bins=30, edgecolor='black')
-    ax1.set_title('Unique Entity Types per Blueprint')
-    ax1.set_xlabel('Number of Unique Entity Types')
-    ax1.set_ylabel('Frequency')
+    ax1.hist(unique_lengths, bins=30, edgecolor="black")
+    ax1.set_title("Unique Entity Types per Blueprint")
+    ax1.set_xlabel("Number of Unique Entity Types")
+    ax1.set_ylabel("Frequency")
     ax1.grid(True, alpha=0.3)
 
     # Add mean and median lines
     mean_unique = sum(unique_lengths) / len(unique_lengths)
     median_unique = sorted(unique_lengths)[len(unique_lengths) // 2]
-    ax1.axvline(mean_unique, color='red', linestyle='--', label=f'Mean: {mean_unique:.1f}')
-    ax1.axvline(median_unique, color='green', linestyle='--', label=f'Median: {median_unique}')
+    ax1.axvline(
+        mean_unique, color="red", linestyle="--", label=f"Mean: {mean_unique:.1f}"
+    )
+    ax1.axvline(
+        median_unique, color="green", linestyle="--", label=f"Median: {median_unique}"
+    )
     ax1.legend()
 
     # Histogram of total entities
-    total_lengths = list(filter(lambda x: x < 500,[bp.entity_count for bp in blueprints]))
-    ax2.hist(total_lengths, bins=30, edgecolor='black')
-    ax2.set_title('Total Entities per Blueprint')
-    ax2.set_xlabel('Number of Entities')
-    ax2.set_ylabel('Frequency')
+    total_lengths = list(
+        filter(lambda x: x < 500, [bp.entity_count for bp in blueprints])
+    )
+    ax2.hist(total_lengths, bins=30, edgecolor="black")
+    ax2.set_title("Total Entities per Blueprint")
+    ax2.set_xlabel("Number of Entities")
+    ax2.set_ylabel("Frequency")
     ax2.grid(True, alpha=0.3)
 
     # Add mean and median lines
     mean_total = sum(total_lengths) / len(total_lengths)
     median_total = sorted(total_lengths)[len(total_lengths) // 2]
-    ax2.axvline(mean_total, color='red', linestyle='--', label=f'Mean: {mean_total:.1f}')
-    ax2.axvline(median_total, color='green', linestyle='--', label=f'Median: {median_total}')
+    ax2.axvline(
+        mean_total, color="red", linestyle="--", label=f"Mean: {mean_total:.1f}"
+    )
+    ax2.axvline(
+        median_total, color="green", linestyle="--", label=f"Median: {median_total}"
+    )
     ax2.legend()
 
     plt.tight_layout()
@@ -170,13 +154,13 @@ def plot_histograms(blueprints: List[Blueprint]):
 
     # Print statistics
     print("\nBlueprint Statistics:")
-    print(f"Unique Entity Types:")
+    print("Unique Entity Types:")
     print(f"  Mean: {mean_unique:.1f}")
     print(f"  Median: {median_unique}")
     print(f"  Min: {min(unique_lengths)}")
     print(f"  Max: {max(unique_lengths)}")
 
-    print(f"\nTotal Entities:")
+    print("\nTotal Entities:")
     print(f"  Mean: {mean_total:.1f}")
     print(f"  Median: {median_total}")
     print(f"  Min: {min(total_lengths)}")
@@ -191,51 +175,56 @@ def load_json_files() -> dict:
     return data
 
 
-def get_blueprints_from_blueprint_book(data: Dict, source_file: str, index: BlueprintIndex) -> int:
+def get_blueprints_from_blueprint_book(
+    data: Dict, source_file: str, index: BlueprintIndex
+) -> int:
     """Process blueprints from blueprint book and return count of processed blueprints"""
     processed = 0
 
-    if 'blueprints' in data:
-        for bp in data['blueprints']:
-            if 'blueprint' in bp:
+    if "blueprints" in data:
+        for bp in data["blueprints"]:
+            if "blueprint" in bp:
                 if index.add_blueprint(
-                    bp_data=bp['blueprint'],
+                    bp_data=bp["blueprint"],
                     source_file=source_file,
-                    label=bp['blueprint'].get('label', 'Unnamed Blueprint')
+                    label=bp["blueprint"].get("label", "Unnamed Blueprint"),
                 ):
                     processed += 1
 
-    if 'blueprint_book' in data and 'blueprints' in data['blueprint_book']:
-        for bp in data['blueprint_book']['blueprints']:
-            if 'blueprint_book' in bp:
+    if "blueprint_book" in data and "blueprints" in data["blueprint_book"]:
+        for bp in data["blueprint_book"]["blueprints"]:
+            if "blueprint_book" in bp:
                 processed += get_blueprints_from_blueprint_book(bp, source_file, index)
-            elif 'blueprint' in bp:
+            elif "blueprint" in bp:
                 if index.add_blueprint(
-                    bp_data=bp['blueprint'],
+                    bp_data=bp["blueprint"],
                     source_file=source_file,
-                    label=bp['blueprint'].get('label', 'Unnamed Blueprint')
+                    label=bp["blueprint"].get("label", "Unnamed Blueprint"),
                 ):
                     processed += 1
 
     return processed
+
 
 def write_blueprints_to_folder(blueprints: List[Blueprint], folder: str):
     """Write blueprints to individual files in the specified folder"""
     Path(folder).mkdir(parents=True, exist_ok=True)
 
     for bp in blueprints:
-        label = bp.label.replace('/', '').replace("[", "").replace("]", "")
+        label = bp.label.replace("/", "").replace("[", "").replace("]", "")
         with open(f"{folder}/{label}.json", "w") as f:
             json.dump(bp.data, f, indent=2)
+
 
 def get_processed_filenames(blueprints_dir: str) -> Set[str]:
     """Get all filenames from subdirectories of blueprints folder"""
     processed = set()
     for subdir in Path(blueprints_dir).iterdir():
-        if subdir.is_dir() and subdir.name != 'decoded' and subdir.name != 'misc':
-            for file in subdir.glob('*.json'):
+        if subdir.is_dir() and subdir.name != "decoded" and subdir.name != "misc":
+            for file in subdir.glob("*.json"):
                 processed.add(file.stem)
     return processed
+
 
 def main():
     # Get prototype names
@@ -257,30 +246,28 @@ def main():
     # Get already processed blueprints
     processed_names = get_processed_filenames("blueprints")
 
-
     # Find mining drill blueprints
     # mining_drills = {'burner-mining-drill', 'electric-mining-drill'}
     # drill_blueprints = index.find_blueprints_with_any_of(mining_drills)
     # write_blueprints_to_folder(drill_blueprints, "./blueprints/mining")
 
     # Find smelting blueprints
-   # mining_drills = {'stone-furnace', 'electric-furnace'}
-   # drill_blueprints = index.find_blueprints_with_any_of(mining_drills)
-    #write_blueprints_to_folder(drill_blueprints, "./blueprints/smelting")
+    # mining_drills = {'stone-furnace', 'electric-furnace'}
+    # drill_blueprints = index.find_blueprints_with_any_of(mining_drills)
+    # write_blueprints_to_folder(drill_blueprints, "./blueprints/smelting")
 
     # Find electricity generation blueprints
-    #electricity = { 'boiler', 'offshore-pump' }
-    #electricity_blueprints = index.find_blueprints_with_any_of(electricity)
-    #write_blueprints_to_folder(electricity_blueprints, "./blueprints/electricity")
+    # electricity = { 'boiler', 'offshore-pump' }
+    # electricity_blueprints = index.find_blueprints_with_any_of(electricity)
+    # write_blueprints_to_folder(electricity_blueprints, "./blueprints/electricity")
 
     # load all filenames from directories in blueprints
     # load all blueprints from blueprints
 
-
     # Find assembly  blueprints
 
     all_blueprints = index.find_all_blueprints()
-    #write_blueprints_to_folder(manufacturing_blueprints, "./blueprints/manufacturing")
+    # write_blueprints_to_folder(manufacturing_blueprints, "./blueprints/manufacturing")
 
     # Find unprocessed blueprints
     processed_blueprints = set()
@@ -288,8 +275,11 @@ def main():
         processed_blueprints.add(bp)
 
     # Find blueprints that haven't been processed yet
-    misc_blueprints = [bp for bp in index.blueprints if
-                       bp not in processed_blueprints and bp.label not in processed_names]
+    misc_blueprints = [
+        bp
+        for bp in index.blueprints
+        if bp not in processed_blueprints and bp.label not in processed_names
+    ]
 
     analyze_missing_prototypes(index.blueprints, prototype_names)
 
@@ -297,7 +287,10 @@ def main():
     belt_only_blueprints = []
     non_belt_blueprints = []
     for bp in misc_blueprints:
-        if all('-belt' in entity['name'] or 'splitter' in entity['name'] for entity in bp.data['entities']):
+        if all(
+            "-belt" in entity["name"] or "splitter" in entity["name"]
+            for entity in bp.data["entities"]
+        ):
             belt_only_blueprints.append(bp)
         else:
             non_belt_blueprints.append(bp)
@@ -310,8 +303,8 @@ def main():
     print(f"Processed blueprints: {len(processed_blueprints)}")
     print(f"Misc blueprints: {len(misc_blueprints)}")
 
-
     pass
+
 
 if __name__ == "__main__":
     main()

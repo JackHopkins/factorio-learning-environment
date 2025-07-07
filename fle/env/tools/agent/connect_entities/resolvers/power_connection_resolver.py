@@ -16,22 +16,26 @@ class PowerConnectionResolver(Resolver):
         if not (source_entity and target_entity):
             return False
 
-        if not hasattr(source_entity, 'electrical_id') or not hasattr(target_entity, 'electrical_id'):
+        if not hasattr(source_entity, "electrical_id") or not hasattr(
+            target_entity, "electrical_id"
+        ):
             return False
 
-        return source_entity.electrical_id == target_entity.electrical_id and source_entity.electrical_id is not None
-
+        return (
+            source_entity.electrical_id == target_entity.electrical_id
+            and source_entity.electrical_id is not None
+        )
 
     def _get_entity_connection_points(self, entity: Entity) -> Set[Position]:
         """Get all predefined connection points for an entity."""
         connection_points = set()
 
         # Check for explicitly defined connection points
-        if hasattr(entity, 'connection_points'):
+        if hasattr(entity, "connection_points"):
             connection_points.update(entity.connection_points)
-        if hasattr(entity, 'input_connection_points'):
+        if hasattr(entity, "input_connection_points"):
             connection_points.update(entity.input_connection_points)
-        if hasattr(entity, 'output_connection_points'):
+        if hasattr(entity, "output_connection_points"):
             connection_points.update(entity.output_connection_points)
 
         return connection_points
@@ -84,12 +88,15 @@ class PowerConnectionResolver(Resolver):
 
         return list(set(adjacent_tiles) - ignore_points)
 
-    def resolve(self, source: Union[Position, Entity, ElectricityGroup],
-                target: Union[Position, Entity, ElectricityGroup]) -> List[Tuple[Position, Position]]:
+    def resolve(
+        self,
+        source: Union[Position, Entity, ElectricityGroup],
+        target: Union[Position, Entity, ElectricityGroup],
+    ) -> List[Tuple[Position, Position]]:
         """Resolve positions for power connections"""
 
         # First check if source and target are already connected
-        #if self._check_existing_network_connection(source, target):
+        # if self._check_existing_network_connection(source, target):
         #    raise Exception("Source and target are already connected to the same power network")
 
         if isinstance(source, ElectricityGroup):
@@ -99,15 +106,24 @@ class PowerConnectionResolver(Resolver):
                 target_positions = self._get_valid_connection_points(target)
                 # For each pole in the source group, connect to the nearest valid point
                 for pole in source.poles:
-                    nearest_point = min(target_positions,
-                                        key=lambda pos: abs(pos.x - pole.position.x) + abs(pos.y - pole.position.y))
+                    nearest_point = min(
+                        target_positions,
+                        key=lambda pos: abs(pos.x - pole.position.x)
+                        + abs(pos.y - pole.position.y),
+                    )
                     positions.append((pole.position, nearest_point))
             else:
                 # If target is a Position, round it to the nearest half-tile
-                target_pos = target.position if (isinstance(target, Entity) or isinstance(target, ElectricityGroup)) else target
+                target_pos = (
+                    target.position
+                    if (
+                        isinstance(target, Entity)
+                        or isinstance(target, ElectricityGroup)
+                    )
+                    else target
+                )
                 target_pos = Position(
-                    x=round(target_pos.x * 2) / 2,
-                    y=round(target_pos.y * 2) / 2
+                    x=round(target_pos.x * 2) / 2, y=round(target_pos.y * 2) / 2
                 )
                 for pole in source.poles:
                     positions.append((pole.position, target_pos))
@@ -116,22 +132,30 @@ class PowerConnectionResolver(Resolver):
             source_pos = source.position if isinstance(source, Entity) else source
             # Round source position to nearest half-tile
             source_pos = Position(
-                x=round(source_pos.x * 2) / 2,
-                y=round(source_pos.y * 2) / 2
+                x=round(source_pos.x * 2) / 2, y=round(source_pos.y * 2) / 2
             )
 
             if isinstance(target, Entity):
                 # Get valid connection points for the target entity
                 target_positions = self._get_valid_connection_points(target)
                 # Connect to the nearest valid point
-                nearest_point = min(target_positions,
-                                    key=lambda pos: abs(pos.x - source_pos.x) + abs(pos.y - source_pos.y))
+                nearest_point = min(
+                    target_positions,
+                    key=lambda pos: abs(pos.x - source_pos.x)
+                    + abs(pos.y - source_pos.y),
+                )
                 return [(source_pos, nearest_point)]
             else:
                 # If target is a Position, round it to the nearest half-tile
-                target_pos = target.position if (isinstance(target, Entity) or isinstance(target, ElectricityGroup)) else target
+                target_pos = (
+                    target.position
+                    if (
+                        isinstance(target, Entity)
+                        or isinstance(target, ElectricityGroup)
+                    )
+                    else target
+                )
                 target_pos = Position(
-                    x=round(target_pos.x * 2) / 2,
-                    y=round(target_pos.y * 2) / 2
+                    x=round(target_pos.x * 2) / 2, y=round(target_pos.y * 2) / 2
                 )
                 return [(source_pos, target_pos)]

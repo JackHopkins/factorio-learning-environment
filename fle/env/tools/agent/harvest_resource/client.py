@@ -9,18 +9,13 @@ from fle.env.tools import Tool
 
 
 class HarvestResource(Tool):
-
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
         self.move_to = MoveTo(connection, game_state)
         self.nearest = Nearest(connection, game_state)
         self.get_entity = GetEntity(connection, game_state)
 
-    def __call__(self,
-                 position: Position,
-                 quantity=1,
-                 radius=10
-                 ) -> int:
+    def __call__(self, position: Position, quantity=1, radius=10) -> int:
         """
         Harvest a resource at position (x, y) if it exists on the world.
         :param position: Position to harvest resource
@@ -29,7 +24,9 @@ class HarvestResource(Tool):
         :example harvest_resource(nearest(Resource.Stone), 5)
         :return: The quantity of the resource harvested
         """
-        assert isinstance(position, Position), f"First argument must be a Position object"
+        assert isinstance(position, Position), (
+            "First argument must be a Position object"
+        )
 
         x, y = self.get_position(position)
 
@@ -50,13 +47,15 @@ class HarvestResource(Tool):
         # If `fast` is turned off - we need to long poll the game state to ensure the player has moved
         if not self.game_state.instance.fast:
             remaining_steps = self.connection.rcon_client.send_command(
-                f'/silent-command rcon.print(global.actions.get_harvest_queue_length({self.player_index}))')
+                f"/silent-command rcon.print(global.actions.get_harvest_queue_length({self.player_index}))"
+            )
             attempt = 0
             max_attempts = 10
-            while remaining_steps != '0' and attempt < max_attempts:
+            while remaining_steps != "0" and attempt < max_attempts:
                 sleep(0.5)
                 remaining_steps = self.connection.rcon_client.send_command(
-                    f'/silent-command rcon.print(global.actions.get_harvest_queue_length({self.player_index}))')
+                    f"/silent-command rcon.print(global.actions.get_harvest_queue_length({self.player_index}))"
+                )
 
             max_attempts = 50
             attempt = 0
@@ -67,9 +66,11 @@ class HarvestResource(Tool):
                     self.move_to(nearest_resource)
 
                 try:
-                    harvested = self.__call__(nearest_resource, quantity - int(response))
+                    harvested = self.__call__(
+                        nearest_resource, quantity - int(response)
+                    )
                     return int(response) + harvested
-                except Exception as e:
+                except Exception:
                     attempt += 1
 
             if int(response) < quantity:
@@ -80,13 +81,14 @@ class HarvestResource(Tool):
     def get_resource_type_at_position(self, position: Position):
         x, y = self.get_position(position)
         entity_at_position = self.connection.rcon_client.send_command(
-            f'/silent-command rcon.print(global.actions.get_resource_name_at_position({self.player_index}, {x}, {y}))')
-        if entity_at_position.startswith('tree'):
+            f"/silent-command rcon.print(global.actions.get_resource_name_at_position({self.player_index}, {x}, {y}))"
+        )
+        if entity_at_position.startswith("tree"):
             return Resource.Wood
-        elif entity_at_position.startswith('coal'):
+        elif entity_at_position.startswith("coal"):
             return Resource.Coal
-        elif entity_at_position.startswith('iron'):
+        elif entity_at_position.startswith("iron"):
             return Resource.IronOre
-        elif entity_at_position.startswith('stone'):
+        elif entity_at_position.startswith("stone"):
             return Resource.Stone
         raise Exception(f"Could not find resource to harvest at {x}, {y}")

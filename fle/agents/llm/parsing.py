@@ -9,7 +9,7 @@ from fle.commons.models.conversation import Conversation
 
 class Python(str):
     """A custom type that only accepts syntactically valid Python code."""
-    
+
     @classmethod
     def __get_validators__(cls):
         yield cls.validate
@@ -17,23 +17,25 @@ class Python(str):
     @classmethod
     def validate(cls, value, values=None, config=None, field=None) -> str:
         if not isinstance(value, str):
-            raise TypeError('string required')
+            raise TypeError("string required")
 
         try:
             # Try to parse the string as Python code
             ast.parse(value)
         except SyntaxError as e:
-            raise ValueError(f'Invalid Python syntax: {str(e)}')
+            raise ValueError(f"Invalid Python syntax: {str(e)}")
         except Exception as e:
-            raise ValueError(f'Error parsing Python code: {str(e)}')
+            raise ValueError(f"Error parsing Python code: {str(e)}")
 
         return value
+
 
 class PolicyMeta(BaseModel):
     output_tokens: int
     input_tokens: int
     total_tokens: int
     text_response: str
+
 
 class Policy(BaseModel):
     code: Python
@@ -81,9 +83,9 @@ class PythonParser:
             return ""
 
         # Remove markdown code block markers if present
-        chunk = re.sub(r'^```python\s*', '', chunk)
-        chunk = re.sub(r'^```\s*', '', chunk)
-        chunk = re.sub(r'\s*```$', '', chunk)
+        chunk = re.sub(r"^```python\s*", "", chunk)
+        chunk = re.sub(r"^```\s*", "", chunk)
+        chunk = re.sub(r"\s*```$", "", chunk)
 
         # If it's valid Python, return as is
         if PythonParser.is_valid_python(chunk):
@@ -104,7 +106,7 @@ class PythonParser:
             Combined valid Python code from all blocks, or None if no valid blocks found
         """
         # Find all code blocks marked with ```python
-        pattern = r'```python\s*(.*?)\s*```'
+        pattern = r"```python\s*(.*?)\s*```"
         matches = re.finditer(pattern, content, re.DOTALL)
 
         code_blocks = []
@@ -114,7 +116,7 @@ class PythonParser:
                 code_blocks.append(code)
 
         if code_blocks:
-            combined_code = '\n\n'.join(code_blocks)
+            combined_code = "\n\n".join(code_blocks)
             if PythonParser.is_valid_python(combined_code):
                 return combined_code
 
@@ -130,13 +132,13 @@ class PythonParser:
             lines.pop(0)
         while lines and not lines[-1].strip():
             lines.pop()
-        return '\n'.join(lines) if lines else ''
+        return "\n".join(lines) if lines else ""
 
     @staticmethod
     def wrap_as_comment(text: str) -> str:
         """Wrap text as either a single-line comment or multi-line docstring."""
         if not text.strip():
-            return ''
+            return ""
 
         # If single line, use #
         if len(text.splitlines()) == 1:
@@ -148,7 +150,7 @@ class PythonParser:
     @staticmethod
     def extract_all_valid_python_chunks(content: str) -> Optional[str]:
         # Split content into chunks by double newline
-        chunks = content.split('\n\n')
+        chunks = content.split("\n\n")
         processed_chunks = []
 
         for chunk in chunks:
@@ -165,7 +167,7 @@ class PythonParser:
 
         # Combine processed chunks
         if processed_chunks:
-            final_code = '\n\n'.join(processed_chunks)
+            final_code = "\n\n".join(processed_chunks)
             if PythonParser.is_valid_python(final_code):
                 return final_code
 
@@ -181,7 +183,7 @@ class PythonParser:
             Combined valid Python code from all blocks, or None if no valid blocks found
         """
         # Find all code blocks between backticks, with or without language marker
-        pattern = r'```(?:\w+)?\s*(.*?)\s*```'
+        pattern = r"```(?:\w+)?\s*(.*?)\s*```"
         matches = re.finditer(pattern, content, re.DOTALL)
 
         code_blocks = []
@@ -191,7 +193,7 @@ class PythonParser:
                 code_blocks.append(code)
 
         if code_blocks:
-            combined_code = '\n\n'.join(code_blocks)
+            combined_code = "\n\n".join(code_blocks)
             if PythonParser.is_valid_python(combined_code):
                 return combined_code
 
@@ -209,12 +211,12 @@ class PythonParser:
             Tuple of (processed_code, original_content) or None if no content
         """
         # Get content from response object
-        if hasattr(choice, 'message') and hasattr(choice.message, 'content'):
+        if hasattr(choice, "message") and hasattr(choice.message, "content"):
             content = choice.message.content
-        elif hasattr(choice, 'text'):
+        elif hasattr(choice, "text"):
             content = choice.text
         else:
-            raise RuntimeError('Incorrect message format')
+            raise RuntimeError("Incorrect message format")
 
         if PythonParser.is_valid_python(content):
             return content, content
@@ -251,15 +253,20 @@ class PythonParser:
 
         return None, None
 
+
 def parse_response(response) -> Optional[Policy]:
-    if hasattr(response, 'choices'):
+    if hasattr(response, "choices"):
         choice = response.choices[0]
-        input_tokens = response.usage.prompt_tokens if hasattr(response, 'usage') else 0
-        output_tokens = response.usage.completion_tokens if hasattr(response, 'usage') else 0
+        input_tokens = response.usage.prompt_tokens if hasattr(response, "usage") else 0
+        output_tokens = (
+            response.usage.completion_tokens if hasattr(response, "usage") else 0
+        )
     else:
         choice = response.content[0]
-        input_tokens = response.usage.input_tokens if hasattr(response, 'usage') else 0
-        output_tokens = response.usage.output_tokens if hasattr(response, 'usage') else 0
+        input_tokens = response.usage.input_tokens if hasattr(response, "usage") else 0
+        output_tokens = (
+            response.usage.output_tokens if hasattr(response, "usage") else 0
+        )
 
     total_tokens = input_tokens + output_tokens
     try:
@@ -271,6 +278,13 @@ def parse_response(response) -> Optional[Policy]:
     if not code:
         return None
 
-    policy = Policy(code=code,
-                    meta=PolicyMeta(output_tokens=output_tokens, input_tokens=input_tokens,total_tokens=total_tokens, text_response=text_response))
+    policy = Policy(
+        code=code,
+        meta=PolicyMeta(
+            output_tokens=output_tokens,
+            input_tokens=input_tokens,
+            total_tokens=total_tokens,
+            text_response=text_response,
+        ),
+    )
     return policy

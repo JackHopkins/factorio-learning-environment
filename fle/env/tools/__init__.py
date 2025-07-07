@@ -23,53 +23,48 @@ __version__ = "1.0.0"
 __all__ = [
     # Base classes
     "Controller",
-    "Tool", 
+    "Tool",
     "Init",
 ]
+
 
 # Tool discovery utilities
 def get_agent_tools():
     """Get list of available agent tools"""
-    import os
     from pathlib import Path
-    
+
     agent_dir = Path(__file__).parent / "agent"
     if not agent_dir.exists():
         return []
-    
+
     tools = []
     for item in agent_dir.iterdir():
         if item.is_dir() and (item / "client.py").exists():
             tools.append(item.name)
-    
+
     return sorted(tools)
+
 
 def get_admin_tools():
     """Get list of available admin tools"""
-    import os
     from pathlib import Path
-    
+
     admin_dir = Path(__file__).parent / "admin"
     if not admin_dir.exists():
         return []
-    
+
     tools = []
     for item in admin_dir.iterdir():
         if item.is_dir() and (item / "client.py").exists():
             tools.append(item.name)
-    
+
     return sorted(tools)
+
 
 def get_all_tools():
     """Get dictionary of all available tools organized by category"""
-    return {
-        "agent": get_agent_tools(),
-        "admin": get_admin_tools()
-    }
+    return {"agent": get_agent_tools(), "admin": get_admin_tools()}
+
 
 # Add utility functions to __all__
-__all__.extend([
-    "get_agent_tools",
-    "get_admin_tools", 
-    "get_all_tools"
-])
+__all__.extend(["get_agent_tools", "get_admin_tools", "get_all_tools"])

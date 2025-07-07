@@ -20,10 +20,10 @@ import gym
 import argparse
 import sys
 import os
-from typing import List, Optional
+from typing import List
 
 # Add the project root to the path so we can import our modules
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 from fle.env.gym_env.registry import list_available_environments, get_environment_info
 from fle.env.gym_env.action import Action
@@ -35,24 +35,24 @@ def print_environment_list(env_ids: List[str], detailed: bool = False):
     if not env_ids:
         print("No environments found.")
         return
-    
+
     print(f"Found {len(env_ids)} Factorio gym environments:\n")
-    
+
     for i, env_id in enumerate(env_ids, 1):
         info = get_environment_info(env_id)
         if not info:
             continue
-            
+
         print(f"{i:2d}. {env_id}")
         print(f"     Description: {info['description']}")
-        
+
         if detailed:
             print(f"     Task Key: {info['task_key']}")
             print(f"     Config Path: {info['task_config_path']}")
             print(f"     Agents: {info['num_agents']}")
             print(f"     Model: {info['model']}")
             print(f"     Exit on Success: {info['exit_on_task_success']}")
-        
+
         print()
 
 
@@ -60,28 +60,30 @@ def search_environments(search_term: str, detailed: bool = False) -> List[str]:
     """Search for environments containing the given term"""
     all_env_ids = list_available_environments()
     matching_env_ids = []
-    
+
     search_term_lower = search_term.lower()
-    
+
     for env_id in all_env_ids:
         info = get_environment_info(env_id)
         if not info:
             continue
-            
+
         # Search in environment ID, task key, and description
-        if (search_term_lower in env_id.lower() or
-            search_term_lower in info['task_key'].lower() or
-            search_term_lower in info['description'].lower()):
+        if (
+            search_term_lower in env_id.lower()
+            or search_term_lower in info["task_key"].lower()
+            or search_term_lower in info["description"].lower()
+        ):
             matching_env_ids.append(env_id)
-    
+
     return matching_env_ids
 
 
 def run_interactive_examples():
     """Run interactive examples demonstrating the gym registry functionality"""
-    
+
     print("=== Factorio Gym Registry Interactive Examples ===\n")
-    
+
     # 1. List all available environments
     print("1. Available Environments:")
     env_ids = list_available_environments()
@@ -92,50 +94,52 @@ def run_interactive_examples():
         print(f"     Task Key: {info['task_key']}")
         print(f"     Agents: {info['num_agents']}")
         print()
-    
+
     if len(env_ids) > 3:
         print(f"   ... and {len(env_ids) - 3} more environments")
         print()
-    
+
     # 2. Example of creating and using an environment
     if env_ids:
         example_env_id = env_ids[0]  # Use the first available environment
         print(f"2. Creating environment: {example_env_id}")
-        
+
         try:
             # Create the environment using gym.make()
             env = gym.make(example_env_id)
-            
+
             # Reset the environment with required options parameter
             print("   Resetting environment...")
-            obs, info = env.reset(options={'game_state': None})
+            obs, info = env.reset(options={"game_state": None})
             print(f"   Initial observation keys: {list(obs.keys())}")
-            
+
             # Take a simple action
             print("   Taking a simple action...")
-            
+
             # Get the current game state from the environment
             current_game_state = GameState.from_instance(env.instance)
             action = Action(
                 agent_idx=0,
                 game_state=current_game_state,
-                code='print("Hello from Factorio Gym!")'
+                code='print("Hello from Factorio Gym!")',
             )
-            
+
             obs, reward, terminated, truncated, info = env.step(action)
             print(f"   Reward: {reward}")
             print(f"   Terminated: {terminated}")
             print(f"   Truncated: {truncated}")
             print(f"   Info keys: {list(info.keys())}")
-            
+
             # Close the environment
             env.close()
             print("   Environment closed successfully")
-            
+
         except Exception as e:
             print(f"   Error creating/using environment: {e}")
-            print("   Note: This might be due to missing Factorio containers or other setup requirements")
-    
+            print(
+                "   Note: This might be due to missing Factorio containers or other setup requirements"
+            )
+
     print("\n3. Usage Examples:")
     print("   # List all environments")
     print("   from gym_env.registry import list_available_environments")
@@ -147,7 +151,9 @@ def run_interactive_examples():
     print()
     print("   # Use the environment")
     print("   obs, info = env.reset(options={'game_state': None})")
-    print("   action = Action(agent_idx=0, game_state='', code='print(\"Hello Factorio!\")')")
+    print(
+        "   action = Action(agent_idx=0, game_state='', code='print(\"Hello Factorio!\")')"
+    )
     print("   obs, reward, terminated, truncated, info = env.step(action)")
     print("   env.close()")
 
@@ -165,40 +171,41 @@ Examples:
   python example_usage.py --search iron     # Search for iron-related tasks
   python example_usage.py --search science  # Search for science pack tasks
   python example_usage.py --gym-format      # Output in gym.make() format
-        """
+        """,
     )
-    
+
     parser.add_argument(
-        '--list', '-l',
-        action='store_true',
-        help='List all available environments'
+        "--list", "-l", action="store_true", help="List all available environments"
     )
-    
+
     parser.add_argument(
-        '--detail', '-d',
-        action='store_true',
-        help='Show detailed information for each environment'
+        "--detail",
+        "-d",
+        action="store_true",
+        help="Show detailed information for each environment",
     )
-    
+
     parser.add_argument(
-        '--search', '-s',
+        "--search",
+        "-s",
         type=str,
-        help='Search for environments containing the given term'
+        help="Search for environments containing the given term",
     )
-    
+
     parser.add_argument(
-        '--gym-format', '-g',
-        action='store_true',
-        help='Output in gym.make() format for easy copy-paste'
+        "--gym-format",
+        "-g",
+        action="store_true",
+        help="Output in gym.make() format for easy copy-paste",
     )
-    
+
     args = parser.parse_args()
-    
+
     # If no arguments provided, run interactive examples
     if not any([args.list, args.detail, args.search, args.gym_format]):
         run_interactive_examples()
         return
-    
+
     # Get environments
     if args.search:
         env_ids = search_environments(args.search, args.detail)
@@ -208,7 +215,7 @@ Examples:
         print(f"Environments matching '{args.search}':\n")
     else:
         env_ids = list_available_environments()
-    
+
     # Output in gym format if requested
     if args.gym_format:
         print("# Available Factorio gym environments:")
@@ -217,10 +224,10 @@ Examples:
         for env_id in env_ids:
             print(f"env = gym.make('{env_id}')")
         return
-    
+
     # Print environments
     print_environment_list(env_ids, args.detail)
-    
+
     # Show usage example
     if env_ids:
         example_env = env_ids[0]
@@ -229,7 +236,9 @@ Examples:
         print("import gym")
         print(f"env = gym.make('{example_env}')")
         print("obs, info = env.reset(options={'game_state': None})")
-        print("action = Action(agent_idx=0, game_state='', code='print(\"Hello Factorio!\")')")
+        print(
+            "action = Action(agent_idx=0, game_state='', code='print(\"Hello Factorio!\")')"
+        )
         print("obs, reward, terminated, truncated, info = env.step(action)")
         print("env.close()")
         print("```")
@@ -246,4 +255,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()

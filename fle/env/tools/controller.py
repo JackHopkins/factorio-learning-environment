@@ -4,22 +4,30 @@ from typing import List, Tuple, Dict, Any
 
 from slpp import slpp as lua, ParseError
 
-from fle.env.entities import EntityStatus, Direction
+from fle.env.entities import Direction
 from fle.env.lua_manager import LuaScriptManager
 from fle.env.namespace import FactorioNamespace
 from fle.env.utils.rcon import _lua2python
 
 COMMAND = "/silent-command"
 
-class Controller:
 
-    def __init__(self, lua_script_manager: 'LuaScriptManager', game_state: 'FactorioNamespace', *args, **kwargs):
-        #assert isinstance(lua_script_manager, LuaScriptManager), f"Not correct: {type(lua_script_manager)}"
+class Controller:
+    def __init__(
+        self,
+        lua_script_manager: "LuaScriptManager",
+        game_state: "FactorioNamespace",
+        *args,
+        **kwargs,
+    ):
+        # assert isinstance(lua_script_manager, LuaScriptManager), f"Not correct: {type(lua_script_manager)}"
         self.connection = lua_script_manager
         self.game_state = game_state
         self.name = self.camel_to_snake(self.__class__.__name__)
         self.lua_script_manager = lua_script_manager
-        self.player_index = game_state.agent_index + 1  # +1 because Factorio is 1-indexed
+        self.player_index = (
+            game_state.agent_index + 1
+        )  # +1 because Factorio is 1-indexed
 
     def clean_response(self, response):
         def is_lua_list(d):
@@ -39,11 +47,13 @@ class Controller:
                     return [clean_value(v) for k, v in sorted_items]
 
                 # Handle inventory special case
-                if any(isinstance(k, int) for k in value.keys()) and \
-                        all(isinstance(v, dict) and 'name' in v and 'count' in v for v in value.values()):
+                if any(isinstance(k, int) for k in value.keys()) and all(
+                    isinstance(v, dict) and "name" in v and "count" in v
+                    for v in value.values()
+                ):
                     cleaned_dict = {}
                     for v in value.values():
-                        cleaned_dict[v['name']] = v['count']
+                        cleaned_dict[v["name"]] = v["count"]
                     return cleaned_dict
 
                 # Regular dictionary
@@ -56,17 +66,19 @@ class Controller:
 
         cleaned_response = {}
 
-
-
-        if not hasattr(response, 'items'):
+        if not hasattr(response, "items"):
             pass
 
         for key, value in response.items():
-            #if key == 'status' and isinstance(value, str):
-                #cleaned_response[key] = EntityStatus.from_string(value)
-            if key == 'direction' and isinstance(value, str):
+            # if key == 'status' and isinstance(value, str):
+            # cleaned_response[key] = EntityStatus.from_string(value)
+            if key == "direction" and isinstance(value, str):
                 cleaned_response[key] = Direction.from_string(value)
-            elif not value and key in ('warnings', 'input_connection_points', 'output_connection_points'):
+            elif not value and key in (
+                "warnings",
+                "input_connection_points",
+                "output_connection_points",
+            ):
                 cleaned_response[key] = []
             else:
                 cleaned_response[key] = clean_value(value)
@@ -86,7 +98,7 @@ class Controller:
                 if isinstance(key, int):
                     if last_key is not None and isinstance(d[key], str):
                         # Concatenate the value to the previous key's value
-                        new_dict[last_key] += '-' + d[key]
+                        new_dict[last_key] += "-" + d[key]
                 else:
                     last_key = key
                     if isinstance(d[key], dict):
@@ -108,12 +120,13 @@ class Controller:
                 snake_str += char
         return snake_str
 
-
     def _get_command(self, command, parameters=[], measured=True):
         if command in self.script_dict:
-            script = f'{COMMAND} '+ self.script_dict[command]
+            script = f"{COMMAND} " + self.script_dict[command]
             for index in range(len(parameters)):
-                script = script.replace(f"arg{index + 1}", lua.encode(parameters[index]))
+                script = script.replace(
+                    f"arg{index + 1}", lua.encode(parameters[index])
+                )
         else:
             script = command
         return script
@@ -128,17 +141,22 @@ class Controller:
 
             parsed, elapsed = _lua2python(invocation, lua_response, start=start)
             if parsed is None:
-                return {}, lua_response#elapsed
+                return {}, lua_response  # elapsed
 
-            if not parsed.get('a') and 'b' in parsed and isinstance(parsed['b'], str):
-                if parsed['b'] == 'string':
-                    error = lua_response.split(":")[-1].replace("}","").replace("\"","").strip()
-                    return error, lua_response#elapsed
-                return parsed['b'], lua_response#elapsed
+            if not parsed.get("a") and "b" in parsed and isinstance(parsed["b"], str):
+                if parsed["b"] == "string":
+                    error = (
+                        lua_response.split(":")[-1]
+                        .replace("}", "")
+                        .replace('"', "")
+                        .strip()
+                    )
+                    return error, lua_response  # elapsed
+                return parsed["b"], lua_response  # elapsed
 
-            return parsed.get('b', {}), lua_response#elapsed
+            return parsed.get("b", {}), lua_response  # elapsed
 
-        except Exception as e:
+        except Exception:
             return {}, -1
 
     def execute2(self, *args) -> Tuple[Dict, Any]:
@@ -150,11 +168,11 @@ class Controller:
             wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
             lua_response = self.connection.rcon_client.send_command(wrapped)
             parsed, elapsed = _lua2python(invocation, lua_response, start=start)
-            if not parsed['a'] and 'b' in parsed and isinstance(parsed['b'], str):
-                parts = lua_response.split("[\"b\"] = ")
+            if not parsed["a"] and "b" in parsed and isinstance(parsed["b"], str):
+                parts = lua_response.split('["b"] = ')
                 parts[1] = f"{parts[1][:-2]}" if parts[1][-1] == "}" else parts[1]
-                parsed['b'] = parts[1].replace("!!", "\"")
-            if not 'b' in parsed:
+                parsed["b"] = parts[1].replace("!!", '"')
+            if "b" not in parsed:
                 return {}, elapsed
         except ParseError as e:
             # If a non-string gets passed back from the Lua script, it will raise a ParseError
@@ -165,11 +183,11 @@ class Controller:
             except IndexError:
                 return e.args[0], -1
             return lua_response, -1
-        except TypeError as e:
+        except TypeError:
             return lua_response, -1
-        except Exception as e:
+        except Exception:
             return lua_response, -1
-        return parsed['b'], elapsed
+        return parsed["b"], elapsed
 
     def send(self, command, *parameters, trace=False) -> List[str]:
         start = timer()
@@ -177,4 +195,3 @@ class Controller:
         lua_response = self.connection.send_command(script)
         # print(lua_response)
         return _lua2python(command, lua_response, start=start)
-

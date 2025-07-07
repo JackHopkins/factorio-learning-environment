@@ -16,8 +16,7 @@ from fle.agents.formatters import RecursiveReportFormatter
 from fle.agents.llm.api_factory import APIFactory
 from fle.agents.llm.parsing import parse_response
 
-GYM_AGENT_INSTRUCTIONS = \
-"""
+GYM_AGENT_INSTRUCTIONS = """
 # Factorio Gym Agent Instructions
 
 ## Overview
@@ -116,33 +115,42 @@ ALWAYS WRITE VALID PYTHON AND REMEMBER MAXIMUM 30 LINES OF CODE PER POLICY. YOUR
 
 
 class GymAgent(AgentABC):
-    def __init__(self, model: str, system_prompt: str, task: Any, agent_idx: Optional[int] = None, observation_formatter: Optional[BasicObservationFormatter] = None, *args, **kwargs):
+    def __init__(
+        self,
+        model: str,
+        system_prompt: str,
+        task: Any,
+        agent_idx: Optional[int] = None,
+        observation_formatter: Optional[BasicObservationFormatter] = None,
+        *args,
+        **kwargs,
+    ):
         instructions = self._get_instructions(system_prompt, task, agent_idx)
         super().__init__(model, instructions, *args, **kwargs)
         self.task = task
         self.api_factory = APIFactory(model)
-        self.observation_formatter = observation_formatter or BasicObservationFormatter()
+        self.observation_formatter = (
+            observation_formatter or BasicObservationFormatter()
+        )
         self.conversation = Conversation()
         self.formatter = RecursiveReportFormatter(
             chunk_size=16,
             llm_call=self.api_factory.acall,
-            cache_dir='.fle/summary_cache'
+            cache_dir=".fle/summary_cache",
         )
-        self.generation_params = GenerationParameters(
-            n=1,
-            max_tokens=4096,
-            model=model
-        )
+        self.generation_params = GenerationParameters(n=1, max_tokens=4096, model=model)
 
-    def _get_instructions(self, system_prompt: str, task: TaskABC, agent_idx: Optional[int] = None):
+    def _get_instructions(
+        self, system_prompt: str, task: TaskABC, agent_idx: Optional[int] = None
+    ):
         agent_instructions = ""
         if agent_idx is not None and task.get_agent_instructions(agent_idx) is not None:
             player_idx = agent_idx + 1
             agent_instructions = f"### Specific Instructions for Agent {player_idx}\n{task.get_agent_instructions(agent_idx)}\n\n"
         instructions = GYM_AGENT_INSTRUCTIONS.format(
-            system_prompt=system_prompt, 
+            system_prompt=system_prompt,
             goal_description=task.goal_description,
-            agent_instructions=agent_instructions
+            agent_instructions=agent_instructions,
         )
         return instructions
 
@@ -151,18 +159,24 @@ class GymAgent(AgentABC):
         if self.conversation.messages[0].role != "system":
             self.conversation.set_system_message(self.system_prompt)
 
-    async def update_conversation(self, observation: Observation, previous_program: Optional[Program] = None):
+    async def update_conversation(
+        self, observation: Observation, previous_program: Optional[Program] = None
+    ):
         if previous_program:
             formatted_program = f"```python\n{previous_program.code}\n```"
             self.conversation.add_agent_message(formatted_program)
-        
+
         formatted_obs = self.observation_formatter.format(observation).raw_str
         self.conversation.add_user_message(formatted_obs)
         self.conversation = await self.formatter.format_conversation(self.conversation)
 
-    async def generate_policy(self, observation: Optional[Observation] = None, previous_program: Optional[Program] = None) -> Policy:
+    async def generate_policy(
+        self,
+        observation: Optional[Observation] = None,
+        previous_program: Optional[Program] = None,
+    ) -> Policy:
         """Generate a policy from the current observation.
-        
+
         Returns:
             Policy if generation was successful, None otherwise
         """
@@ -192,4 +206,3 @@ class GymAgent(AgentABC):
     async def end(self, completion: CompletionResult):
         """Cleanup when the trajectory ends"""
         pass
-

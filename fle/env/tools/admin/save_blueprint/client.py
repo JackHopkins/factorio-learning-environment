@@ -5,7 +5,6 @@ from fle.env.tools import Tool
 
 
 class SaveBlueprint(Tool):
-
     def __init__(self, *args):
         super().__init__(*args)
 
@@ -16,6 +15,6 @@ class SaveBlueprint(Tool):
         """
         result, _ = self.execute(self.player_index)
 
-        blueprint = result['blueprint']
-        offset = Position(x=result['center_x'], y=result['center_y'])
+        blueprint = result["blueprint"]
+        offset = Position(x=result["center_x"], y=result["center_y"])
         return blueprint, offset

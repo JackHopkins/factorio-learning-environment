@@ -2,14 +2,14 @@ from dataclasses import dataclass
 import pickle
 import re
 
-from fle.env.entities import EntityStatus, Direction
 from fle.env.gym_env.observation import Observation
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
 class FormattedObservation:
     """Container for formatted observation strings"""
+
     inventory_str: str
     """Formatted string showing current inventory contents.
     Example:
@@ -125,16 +125,18 @@ class FormattedObservation:
 class BasicObservationFormatter:
     """Formats gym environment observations into helpful strings"""
 
-    def __init__(self,
-                 include_inventory: bool = True,
-                 include_entities: bool = True,
-                 include_flows: bool = True,
-                 include_task: bool = True,
-                 include_messages: bool = True,
-                 include_functions: bool = True,
-                 include_state_changes: bool = True,
-                 include_raw_output: bool = True,
-                 include_research: bool = True):
+    def __init__(
+        self,
+        include_inventory: bool = True,
+        include_entities: bool = True,
+        include_flows: bool = True,
+        include_task: bool = True,
+        include_messages: bool = True,
+        include_functions: bool = True,
+        include_state_changes: bool = True,
+        include_raw_output: bool = True,
+        include_research: bool = True,
+    ):
         """Initialize the formatter with flags for which fields to include"""
         self.include_inventory = include_inventory
         self.include_entities = include_entities
@@ -153,8 +155,10 @@ class BasicObservationFormatter:
             return "### Inventory\nEmpty"
 
         # Convert list of dicts to dict for easier sorting
-        inventory_dict = {item['type']: item['quantity'] for item in inventory if item['quantity'] > 0}
-        
+        inventory_dict = {
+            item["type"]: item["quantity"] for item in inventory if item["quantity"] > 0
+        }
+
         # Sort items by quantity for consistent output
         sorted_items = sorted(inventory_dict.items(), key=lambda x: x[1], reverse=True)
 
@@ -176,69 +180,69 @@ class BasicObservationFormatter:
             # Remove class references and unnecessary information
             entity_str = entity_str.replace("class 'env.src.entities.", "")
             entity_str = entity_str.replace("'>", "")
-            
+
             # Split into key-value pairs, being careful with nested structures
             parts = []
             current_part = []
             bracket_level = 0
             quote_level = 0
-            
+
             for char in entity_str:
-                if char == '[':
+                if char == "[":
                     bracket_level += 1
-                elif char == ']':
+                elif char == "]":
                     bracket_level -= 1
                 elif char == "'":
                     quote_level = 1 - quote_level
-                elif char == '(':
+                elif char == "(":
                     bracket_level += 1
-                elif char == ')':
+                elif char == ")":
                     bracket_level -= 1
-                
-                if char == ' ' and bracket_level == 0 and quote_level == 0:
+
+                if char == " " and bracket_level == 0 and quote_level == 0:
                     if current_part:
-                        parts.append(''.join(current_part))
+                        parts.append("".join(current_part))
                         current_part = []
                 else:
                     current_part.append(char)
-            
+
             if current_part:
-                parts.append(''.join(current_part))
-            
+                parts.append("".join(current_part))
+
             # Process each part
             formatted_parts = []
             for part in parts:
-                if '=' in part:
-                    key, value = part.split('=', 1)
+                if "=" in part:
+                    key, value = part.split("=", 1)
                     key = key.strip()
                     value = value.strip()
-                    
+
                     # Clean up the value
-                    if 'Position' in value:
+                    if "Position" in value:
                         # Extract x and y coordinates
-                        x_match = re.search(r'x=([\d.]+)', value)
-                        y_match = re.search(r'y=([\d.]+)', value)
+                        x_match = re.search(r"x=([\d.]+)", value)
+                        y_match = re.search(r"y=([\d.]+)", value)
                         if x_match and y_match:
                             x = float(x_match.group(1))
                             y = float(y_match.group(1))
                             value = f"({x:.1f}, {y:.1f})"
-                    elif 'Dimensions' in value:
+                    elif "Dimensions" in value:
                         # Extract width and height
-                        w_match = re.search(r'width=([\d.]+)', value)
-                        h_match = re.search(r'height=([\d.]+)', value)
+                        w_match = re.search(r"width=([\d.]+)", value)
+                        h_match = re.search(r"height=([\d.]+)", value)
                         if w_match and h_match:
                             w = float(w_match.group(1))
                             h = float(h_match.group(1))
                             value = f"({w:.1f}, {h:.1f})"
-                    elif 'TileDimensions' in value:
+                    elif "TileDimensions" in value:
                         # Extract tile width and height
-                        w_match = re.search(r'tile_width=([\d.]+)', value)
-                        h_match = re.search(r'tile_height=([\d.]+)', value)
+                        w_match = re.search(r"tile_width=([\d.]+)", value)
+                        h_match = re.search(r"tile_height=([\d.]+)", value)
                         if w_match and h_match:
                             w = float(w_match.group(1))
                             h = float(h_match.group(1))
                             value = f"({w:.1f}, {h:.1f})"
-                    elif 'Prototype' in value:
+                    elif "Prototype" in value:
                         # Convert "<Prototype.Boiler: ...>" to "Prototype.Boiler"
                         proto_match = re.search(r"<Prototype\.([^:>]+)[:>]?", value)
                         if proto_match:
@@ -248,7 +252,7 @@ class BasicObservationFormatter:
                             alt_match = re.search(r"Prototype\.([A-Za-z0-9_-]+)", value)
                             if alt_match:
                                 value = f"Prototype.{alt_match.group(1)}"
-                    
+
                     # Format numbers consistently
                     if isinstance(value, str):
                         # Try to convert to float if it's a number
@@ -257,15 +261,15 @@ class BasicObservationFormatter:
                             value = f"{num:.1f}"
                         except ValueError:
                             pass
-                    
+
                     # Remove any double commas
-                    value = re.sub(r',\s*,', ',', value)
-                    
+                    value = re.sub(r",\s*,", ",", value)
+
                     formatted_parts.append(f"{key}={value}")
                 else:
                     formatted_parts.append(part)
-            
-            return ', '.join(formatted_parts)
+
+            return ", ".join(formatted_parts)
 
         # Group entities by type
         entity_groups = {}
@@ -293,18 +297,21 @@ class BasicObservationFormatter:
                 entity_groups[type_match].append(cleaned_str)
             else:
                 # Skip entities we cannot categorise but keep a console warning for debugging
-                print("[ObservationFormatter] Unable to determine type for entity:", entity_str)
+                print(
+                    "[ObservationFormatter] Unable to determine type for entity:",
+                    entity_str,
+                )
 
         # Format each entity group
         group_strs = []
         for entity_type, group in sorted(entity_groups.items()):
             count = len(group)
             group_str = f"- {entity_type}: {count}"
-            
+
             # Add details for each entity in the group
             if group:
                 group_str += "\n" + "\n".join(f"  - {entity}" for entity in group)
-            
+
             group_strs.append(group_str)
 
         return "### Entities\n" + "\n".join(group_strs)
@@ -318,54 +325,57 @@ class BasicObservationFormatter:
         flow_str = "### Production Flows\n"
 
         # Format input flows
-        if flows.get('input'):
+        if flows.get("input"):
             flow_str += "#### Inputs\n"
-            for item in flows['input']:
-                if item['rate'] > 0:
+            for item in flows["input"]:
+                if item["rate"] > 0:
                     flow_str += f"- {item['type']}: {item['rate']:.2f}/s\n"
 
         # Format output flows
-        if flows.get('output'):
-            if flows.get('input'):
+        if flows.get("output"):
+            if flows.get("input"):
                 flow_str += "\n"
             flow_str += "#### Outputs\n"
-            for item in flows['output']:
-                if item['rate'] > 0:
+            for item in flows["output"]:
+                if item["rate"] > 0:
                     flow_str += f"- {item['type']}: {item['rate']:.2f}/s\n"
 
         # Format crafted items
-        if flows.get('crafted'):
-            if flows.get('input') or flows.get('output'):
+        if flows.get("crafted"):
+            if flows.get("input") or flows.get("output"):
                 flow_str += "\n"
             flow_str += "#### Crafted Items\n"
-            for item in flows['crafted']:
-                item_name = item.get('type', 'unknown')
-                count = item.get('count', 1)
+            for item in flows["crafted"]:
+                item_name = item.get("type", "unknown")
+                count = item.get("count", 1)
                 flow_str += f"- {item_name}: {count}\n"
 
         # Format harvested items
-        if flows.get('harvested'):
-            if flows.get('input') or flows.get('output') or flows.get('crafted'):
+        if flows.get("harvested"):
+            if flows.get("input") or flows.get("output") or flows.get("crafted"):
                 flow_str += "\n"
             flow_str += "#### Harvested Items\n"
-            for item in flows['harvested']:
-                if item['amount'] > 0:
+            for item in flows["harvested"]:
+                if item["amount"] > 0:
                     flow_str += f"- {item['type']}: {item['amount']:.2f}\n"
 
         # Format price list
-        if flows.get('price_list'):
-            if any(flows.get(k) for k in ['input', 'output', 'crafted', 'harvested']):
+        if flows.get("price_list"):
+            if any(flows.get(k) for k in ["input", "output", "crafted", "harvested"]):
                 flow_str += "\n"
             flow_str += "#### Price List\n"
-            for item in flows['price_list']:
+            for item in flows["price_list"]:
                 flow_str += f"- {item['type']}: {item['price']:.2f}\n"
 
         # Format static items
-        if flows.get('static_items'):
-            if any(flows.get(k) for k in ['input', 'output', 'crafted', 'harvested', 'price_list']):
+        if flows.get("static_items"):
+            if any(
+                flows.get(k)
+                for k in ["input", "output", "crafted", "harvested", "price_list"]
+            ):
                 flow_str += "\n"
             flow_str += "#### Static Items\n"
-            for item in flows['static_items']:
+            for item in flows["static_items"]:
                 flow_str += f"- {item['type']}: {item['value']:.2f}\n"
 
         return flow_str
@@ -379,42 +389,48 @@ class BasicObservationFormatter:
         research_str = "### Research\n"
 
         # Format current research
-        if research.get('current_research'):
-            research_str += f"#### Current Research\n- {research['current_research']}: {research['research_progress']*100:.1f}%\n"
+        if research.get("current_research"):
+            research_str += f"#### Current Research\n- {research['current_research']}: {research['research_progress'] * 100:.1f}%\n"
 
         # Format research queue
-        if research.get('research_queue'):
-            if research.get('current_research'):
+        if research.get("research_queue"):
+            if research.get("current_research"):
                 research_str += "\n"
             research_str += "#### Research Queue\n"
-            for tech in research['research_queue']:
+            for tech in research["research_queue"]:
                 research_str += f"- {tech}\n"
 
         # Format technologies
-        techs = research.get('technologies')
+        techs = research.get("technologies")
         if techs:
             # Accept both dict and list
             if isinstance(techs, list):
                 # Convert list to dict using 'name' as key
-                techs = {t['name']: t for t in techs if 'name' in t}
-            if research.get('current_research') or research.get('research_queue'):
+                techs = {t["name"]: t for t in techs if "name" in t}
+            if research.get("current_research") or research.get("research_queue"):
                 research_str += "\n"
             research_str += "#### Technologies\n"
             for name, tech in techs.items():
-                status = "✅" if tech.get('researched') else "⏳"
-                enabled = "🔓" if tech.get('enabled') else "🔒"
-                research_str += f"- {status} {enabled} {name} (Level {tech.get('level', 0)})\n"
-                if tech.get('prerequisites'):
-                    research_str += f"  Prerequisites: {', '.join(tech['prerequisites'])}\n"
-                if tech.get('ingredients'):
+                status = "✅" if tech.get("researched") else "⏳"
+                enabled = "🔓" if tech.get("enabled") else "🔒"
+                research_str += (
+                    f"- {status} {enabled} {name} (Level {tech.get('level', 0)})\n"
+                )
+                if tech.get("prerequisites"):
+                    research_str += (
+                        f"  Prerequisites: {', '.join(tech['prerequisites'])}\n"
+                    )
+                if tech.get("ingredients"):
                     # Handle both list of dicts and dict formats
-                    if isinstance(tech['ingredients'], list):
-                        ingredients = ', '.join(
-                            f"{ing.get('name', ing.get('item', ''))} x{ing.get('amount', ing.get('value', 0))}" for ing in tech['ingredients'])
+                    if isinstance(tech["ingredients"], list):
+                        ingredients = ", ".join(
+                            f"{ing.get('name', ing.get('item', ''))} x{ing.get('amount', ing.get('value', 0))}"
+                            for ing in tech["ingredients"]
+                        )
                         research_str += f"  Ingredients: {ingredients}\n"
                     else:
                         research_str += f"  Ingredients: {', '.join(f'{item} x{amount}' for item, amount in tech['ingredients'].items())}\n"
-                if tech.get('research_unit_count', 0) > 0:
+                if tech.get("research_unit_count", 0) > 0:
                     research_str += f"  Research Units: {tech['research_unit_count']} (Energy: {tech.get('research_unit_energy', 0):.1f})\n"
 
         return research_str
@@ -425,30 +441,29 @@ class BasicObservationFormatter:
         if not task:
             return ""
 
-        status = "✅ SUCCESS" if task['success'] else "⏳ IN PROGRESS"
+        status = "✅ SUCCESS" if task["success"] else "⏳ IN PROGRESS"
         task_str = f"### Task Status\n{status}\n"
 
-        if task.get('message'):
+        if task.get("message"):
             task_str += f"\n**Message:** {task['message']}\n"
 
-        if task.get('meta'):
+        if task.get("meta"):
             task_str += "\n**Task Details:**\n"
-            for meta_item in task['meta']:
+            for meta_item in task["meta"]:
                 task_str += f"- {meta_item['key']}: {meta_item['value']}\n"
 
         return task_str
 
     @staticmethod
-    def format_messages(messages: List[Dict[str, Any]], last_timestamp: float = 0.0) -> str:
+    def format_messages(
+        messages: List[Dict[str, Any]], last_timestamp: float = 0.0
+    ) -> str:
         """Format messages from other agents"""
         if not messages:
             return ""
 
         # Filter messages newer than last timestamp
-        new_messages = [
-            msg for msg in messages
-            if msg['timestamp'] > last_timestamp
-        ]
+        new_messages = [msg for msg in messages if msg["timestamp"] > last_timestamp]
 
         if not new_messages:
             return ""
@@ -456,7 +471,9 @@ class BasicObservationFormatter:
         # Format messages
         message_strs = ["### Messages"]
         for msg in new_messages:
-            sender_info = f"Agent {msg['sender']}" if msg['sender'] != "-1" else "Leader"
+            sender_info = (
+                f"Agent {msg['sender']}" if msg["sender"] != "-1" else "Leader"
+            )
             message_strs.append(f"- **[{sender_info}]**: {msg['content']}")
 
         return "\n".join(message_strs)
@@ -472,13 +489,15 @@ class BasicObservationFormatter:
         for func_data in serialized_functions:
             try:
                 # Unpickle the function
-                pickled_data = bytes.fromhex(func_data['pickled_function'])
+                pickled_data = bytes.fromhex(func_data["pickled_function"])
                 func = pickle.loads(pickled_data)
 
                 # Get formatted string representation
                 function_strs.append(f"\n```python\n{func}\n```")
             except Exception as e:
-                function_strs.append(f"\n- {func_data['name']}: [Error unpickling function: {str(e)}]")
+                function_strs.append(
+                    f"\n- {func_data['name']}: [Error unpickling function: {str(e)}]"
+                )
 
         return "\n".join(function_strs)
 
@@ -490,7 +509,9 @@ class BasicObservationFormatter:
 
         return f"### Raw Output\n```\n{raw_text.strip()}\n```"
 
-    def format(self, observation: Observation, last_message_timestamp: float = 0.0) -> FormattedObservation:
+    def format(
+        self, observation: Observation, last_message_timestamp: float = 0.0
+    ) -> FormattedObservation:
         """Format a complete observation into helpful strings"""
         # Convert Observation to dict if needed
         obs_dict = observation.to_dict()
@@ -499,40 +520,44 @@ class BasicObservationFormatter:
         formatted_parts = []
 
         if self.include_inventory:
-            inventory_str = self.format_inventory(obs_dict.get('inventory', []))
+            inventory_str = self.format_inventory(obs_dict.get("inventory", []))
             formatted_parts.append(inventory_str)
 
         if self.include_entities:
-            entities_str = self.format_entities(obs_dict.get('entities', []))
+            entities_str = self.format_entities(obs_dict.get("entities", []))
             formatted_parts.append(entities_str)
 
         if self.include_flows:
-            flows_str = self.format_flows(obs_dict.get('flows', {}))
+            flows_str = self.format_flows(obs_dict.get("flows", {}))
             formatted_parts.append(flows_str)
 
         if self.include_functions:
-            functions_str = self.format_functions(obs_dict.get('serialized_functions', []))
+            functions_str = self.format_functions(
+                obs_dict.get("serialized_functions", [])
+            )
             formatted_parts.append(functions_str)
 
         # Add research information
         if self.include_research:
-            research_str = self.format_research(obs_dict.get('research', {}))
+            research_str = self.format_research(obs_dict.get("research", {}))
             formatted_parts.append(research_str)
 
         # Add optional components if they exist and are enabled
         if self.include_task:
-            task_str = self.format_task(obs_dict.get('task_verification'))
+            task_str = self.format_task(obs_dict.get("task_verification"))
             if task_str:
                 formatted_parts.append(task_str)
 
         if self.include_messages:
-            messages_str = self.format_messages(obs_dict.get('messages', []), last_message_timestamp)
+            messages_str = self.format_messages(
+                obs_dict.get("messages", []), last_message_timestamp
+            )
             if messages_str:
                 formatted_parts.append(messages_str)
 
         # Add raw text output if enabled
         if self.include_raw_output:
-            raw_text_str = self.format_raw_text(obs_dict.get('raw_text', ''))
+            raw_text_str = self.format_raw_text(obs_dict.get("raw_text", ""))
             if raw_text_str:
                 formatted_parts.append(raw_text_str)
 
@@ -541,12 +566,30 @@ class BasicObservationFormatter:
 
         # Create FormattedObservation with all fields, even if they're empty
         return FormattedObservation(
-            inventory_str=self.format_inventory(obs_dict.get('inventory', [])) if self.include_inventory else "",
-            entities_str=self.format_entities(obs_dict.get('entities', [])) if self.include_entities else "",
-            flows_str=self.format_flows(obs_dict.get('flows', {})) if self.include_flows else "",
-            task_str=self.format_task(obs_dict.get('task_verification')) if self.include_task else "",
-            messages_str=self.format_messages(obs_dict.get('messages', []), last_message_timestamp) if self.include_messages else "",
-            functions_str=self.format_functions(obs_dict.get('serialized_functions', [])) if self.include_functions else "",
-            raw_text_str=self.format_raw_text(obs_dict.get('raw_text', '')) if self.include_raw_output else "",
-            raw_str=raw_str
+            inventory_str=self.format_inventory(obs_dict.get("inventory", []))
+            if self.include_inventory
+            else "",
+            entities_str=self.format_entities(obs_dict.get("entities", []))
+            if self.include_entities
+            else "",
+            flows_str=self.format_flows(obs_dict.get("flows", {}))
+            if self.include_flows
+            else "",
+            task_str=self.format_task(obs_dict.get("task_verification"))
+            if self.include_task
+            else "",
+            messages_str=self.format_messages(
+                obs_dict.get("messages", []), last_message_timestamp
+            )
+            if self.include_messages
+            else "",
+            functions_str=self.format_functions(
+                obs_dict.get("serialized_functions", [])
+            )
+            if self.include_functions
+            else "",
+            raw_text_str=self.format_raw_text(obs_dict.get("raw_text", ""))
+            if self.include_raw_output
+            else "",
+            raw_str=raw_str,
         )

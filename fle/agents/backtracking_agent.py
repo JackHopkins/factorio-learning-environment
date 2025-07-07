@@ -3,8 +3,7 @@ from collections import deque
 from typing import Optional
 
 import tenacity
-from tenacity import (retry_if_exception_type, wait_exponential,
-                      wait_random_exponential)
+from tenacity import retry_if_exception_type, wait_exponential
 
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters
@@ -14,13 +13,11 @@ from fle.env.namespace import FactorioNamespace
 from fle.agents.models import CompletionResult, Response
 from fle.agents.llm.parsing import Policy
 from fle.agents.agent_abc import AgentABC
-from fle.agents.basic_agent import GENERAL_INSTRUCTIONS
 from fle.agents.formatters import RecursiveReportFormatter
 from .llm.api_factory import APIFactory
 from .llm.parsing import parse_response
 
-GENERAL_INSTRUCTIONS_BACKTRACKING = \
-"""
+GENERAL_INSTRUCTIONS_BACKTRACKING = """
 # Factorio LLM Agent Instructions
 
 ## Overview
@@ -174,37 +171,58 @@ FINAL_INSTRUCTION = """## Frequent error modes to remember
 - When placing inserters with place_entity_next_to, always use 0 spacing as the inserter needs to benext to the entity. Using spacing higher than 0 will put the insertes too far away from target entity and break the factory
 """
 
+
 class BacktrackingAgent(AgentABC):
     def __init__(self, model, system_prompt, task, *args, **kwargs):
-        backtrack_instructions = GENERAL_INSTRUCTIONS_BACKTRACKING+system_prompt+FINAL_INSTRUCTION
+        backtrack_instructions = (
+            GENERAL_INSTRUCTIONS_BACKTRACKING + system_prompt + FINAL_INSTRUCTION
+        )
         self.task = task
         backtrack_instructions += f"\n\n### General Goal\n{task.goal_description}\n\n"
         self.instructions = backtrack_instructions
-        super().__init__( model, backtrack_instructions, *args, **kwargs)
+        super().__init__(model, backtrack_instructions, *args, **kwargs)
         self.api_factory = APIFactory(model)
-        self.formatter = RecursiveReportFormatter(chunk_size=16,llm_call=self.api_factory.acall,cache_dir='.fle/summary_cache')
+        self.formatter = RecursiveReportFormatter(
+            chunk_size=16,
+            llm_call=self.api_factory.acall,
+            cache_dir=".fle/summary_cache",
+        )
         self.generation_params = GenerationParameters(n=1, max_tokens=2048, model=model)
         self.current_step_memory = deque([])
-        self.max_nr_of_steps = 8 # original + fixing attempts
+        self.max_nr_of_steps = 8  # original + fixing attempts
         self.current_step = 0
-   
-   
-    def create_backtracking_conversation(self, conversation: Conversation, namespace: FactorioNamespace, response) -> Conversation:
-        system_message = Message(role = "system", content = self.instructions)
+
+    def create_backtracking_conversation(
+        self, conversation: Conversation, namespace: FactorioNamespace, response
+    ) -> Conversation:
+        system_message = Message(role="system", content=self.instructions)
         # We add the system message to the conversation
         new_conversation = Conversation(messages=[system_message])
         # Add the last 2 messages from the conversation to the new conversation
         new_conversation.messages.extend(conversation.messages[-2:])
         # add the "last successful step" tag to the last message
-        new_conversation.messages[-1].content = f"Last successful step:\n\n{new_conversation.messages[-1].content}\n\n This is the environment state before the error occurred. The environment has not been altered since the last successful step"
-        latest_program = f"Original attempt at carrying out the next step:\n\n```python{response.code}```" if len(self.current_step_memory) == 0 else f"Error fixing attempt number {len(self.current_step_memory)}:\n\n```python{response.code}```"
+        new_conversation.messages[
+            -1
+        ].content = f"Last successful step:\n\n{new_conversation.messages[-1].content}\n\n This is the environment state before the error occurred. The environment has not been altered since the last successful step"
+        latest_program = (
+            f"Original attempt at carrying out the next step:\n\n```python{response.code}```"
+            if len(self.current_step_memory) == 0
+            else f"Error fixing attempt number {len(self.current_step_memory)}:\n\n```python{response.code}```"
+        )
         # Add the latest program to the conversation
-        latest_program_message = Message(role="assistant", content=latest_program, metadata={})
+        latest_program_message = Message(
+            role="assistant", content=latest_program, metadata={}
+        )
         error_mesasage_str = f"Error message:\n\n{response.response}\n\n NB: This is the error message from the failed attempt. The environment has not been altered since the last successful step"
         # Add the error message to the conversation
         error_message = Message(role="user", content=error_mesasage_str, metadata={})
         # Add the error message to the step memory
-        self.current_step_memory.append({"assistant_message": latest_program_message, "environment_message": error_message})
+        self.current_step_memory.append(
+            {
+                "assistant_message": latest_program_message,
+                "environment_message": error_message,
+            }
+        )
         # If the step memory is too long, remove the oldest step but keep the first one
         if len(self.current_step_memory) > self.max_nr_of_steps:
             original_attempt = self.current_step_memory.popleft()
@@ -217,18 +235,28 @@ class BacktrackingAgent(AgentABC):
             new_conversation.messages.append(step["assistant_message"])
             new_conversation.messages.append(step["environment_message"])
         return new_conversation
-    async def step(self, conversation: Conversation, response: Optional[Response], namespace: FactorioNamespace) -> Policy:
-        conversation = self.create_backtracking_conversation(conversation, namespace, response)
-        temp_conv = Conversation(messages = copy.deepcopy(conversation.messages[3:]))
+
+    async def step(
+        self,
+        conversation: Conversation,
+        response: Optional[Response],
+        namespace: FactorioNamespace,
+    ) -> Policy:
+        conversation = self.create_backtracking_conversation(
+            conversation, namespace, response
+        )
+        temp_conv = Conversation(messages=copy.deepcopy(conversation.messages[3:]))
         temp_conv = await self.formatter.format_conversation(temp_conv, namespace)
         # merge the convs
-        formatted_conversation = Conversation(messages = conversation.messages[:3] + temp_conv.messages)
+        formatted_conversation = Conversation(
+            messages=conversation.messages[:3] + temp_conv.messages
+        )
 
         return await self._get_policy(formatted_conversation), None
 
     @tenacity.retry(
         retry=retry_if_exception_type(Exception),
-        wait=wait_exponential(multiplier=1, min=4, max=10)
+        wait=wait_exponential(multiplier=1, min=4, max=10),
     )
     async def _get_policy(self, conversation: Conversation):
         response = await self.api_factory.acall(
@@ -248,12 +276,10 @@ class BacktrackingAgent(AgentABC):
     def clear_memory(self):
         self.current_step = 0
         self.current_step_memory = deque([])
-    
+
     @property
     def memory_full(self):
         return len(self.current_step_memory) >= self.max_nr_of_steps
 
     async def end(self, conversation: Conversation, completion: CompletionResult):
-       pass
-
-
+        pass

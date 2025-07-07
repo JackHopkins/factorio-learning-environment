@@ -1,11 +1,10 @@
 import datetime
 import enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
 
 from fle.commons.models.achievements import ProductionFlows
-from fle.commons.models.timing_metrics import TimingMetrics
 
 
 class TaskResponse(BaseModel):

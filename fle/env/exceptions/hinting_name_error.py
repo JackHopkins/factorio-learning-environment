@@ -1,4 +1,3 @@
-from difflib import get_close_matches
 from typing import Any, get_type_hints
 import inspect
 
@@ -12,7 +11,7 @@ class HintingNameError(NameError):
                 f"{name}: {type_hint}" if type_hint else name
                 for name, type_hint in suggestions
             ]
-            message += f"\nDid you mean one of these?\n  " + "\n  ".join(suggestion_strs)
+            message += "\nDid you mean one of these?\n  " + "\n  ".join(suggestion_strs)
         super().__init__(message)
 
 
@@ -34,16 +33,16 @@ def get_value_type_str(value: Any) -> str:
                 params.append(f"{name}: {param_type}")
 
             # Get return type
-            return_type = type_hints.get('return', Any).__name__
+            return_type = type_hints.get("return", Any).__name__
 
             return f"def ({', '.join(params)}) -> {return_type}"
         except Exception:
             return "function"
 
     # Handle class instances
-    if hasattr(value, '__class__'):
+    if hasattr(value, "__class__"):
         # For built-in types, just use the class name
-        if value.__class__.__module__ == 'builtins':
+        if value.__class__.__module__ == "builtins":
             return value.__class__.__name__
         # For custom classes, include the module name
         return f"{value.__class__.__module__}.{value.__class__.__name__}"

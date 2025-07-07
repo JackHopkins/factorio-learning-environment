@@ -1,6 +1,4 @@
-import base64
-import io
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 import tenacity
 from tenacity import retry_if_exception_type, wait_exponential
@@ -18,8 +16,7 @@ from fle.env.namespace import FactorioNamespace
 from .llm.api_factory import APIFactory
 from .llm.parsing import parse_response
 
-VISUAL_INSTRUCTIONS = \
-"""
+VISUAL_INSTRUCTIONS = """
 ## Visual Information
 For each step, you will be provided with a visual representation of the current game state.
 This image shows:
@@ -39,6 +36,7 @@ Use this visual information to:
 Correlate what you see in the image with the textual output from your code to make better decisions.
 """
 
+
 class VisualAgent(AgentABC):
     """
     An agent that renders the Factorio map at each step to provide visual context.
@@ -55,7 +53,12 @@ class VisualAgent(AgentABC):
             render_radius: Radius around player to render (default: 20)
         """
         # Initialize the base agent
-        instructions = GENERAL_INSTRUCTIONS + system_prompt + FINAL_INSTRUCTION + VISUAL_INSTRUCTIONS
+        instructions = (
+            GENERAL_INSTRUCTIONS
+            + system_prompt
+            + FINAL_INSTRUCTION
+            + VISUAL_INSTRUCTIONS
+        )
         self.task = task
         instructions += f"\n\n### Goal\n{task.goal_description}\n\n"
 
@@ -66,12 +69,17 @@ class VisualAgent(AgentABC):
         self.formatter = RecursiveReportFormatter(
             chunk_size=16,
             llm_call=self.api_factory.acall,
-            cache_dir='.fle/summary_cache'
+            cache_dir=".fle/summary_cache",
         )
         self.generation_params = GenerationParameters(n=1, max_tokens=2048, model=model)
         self.last_image_base64 = None
 
-    async def step(self, conversation: Conversation, response: Response, namespace: FactorioNamespace) -> Policy:
+    async def step(
+        self,
+        conversation: Conversation,
+        response: Response,
+        namespace: FactorioNamespace,
+    ) -> Policy:
         """
         Execute a step in the agent's process, rendering the map and incorporating it into the prompt.
 
@@ -88,7 +96,9 @@ class VisualAgent(AgentABC):
             render_image = await self._render_map(namespace)
 
             # Format the base conversation
-            formatted_conversation = await self.formatter.format_conversation(conversation, namespace)
+            formatted_conversation = await self.formatter.format_conversation(
+                conversation, namespace
+            )
 
             # Add the rendered image to the latest user message if we have one
             if render_image and len(formatted_conversation.messages) > 0:
@@ -100,22 +110,19 @@ class VisualAgent(AgentABC):
 
                         # Create multimodal content with both text and image
                         formatted_conversation.messages[i].content = [
-                            {
-                                "type": "text",
-                                "text": original_content
-                            },
+                            {"type": "text", "text": original_content},
                             {
                                 "type": "image",
                                 "source": {
                                     "type": "base64",
                                     "media_type": "image/png",
-                                    "data": render_image
-                                }
+                                    "data": render_image,
+                                },
                             },
                             {
                                 "type": "text",
-                                "text": f"[Current map view (radius: {self.render_radius}) - Use this visual information to guide your decisions. Be sure to reference to legend to understand what each entity is.]"
-                            }
+                                "text": f"[Current map view (radius: {self.render_radius}) - Use this visual information to guide your decisions. Be sure to reference to legend to understand what each entity is.]",
+                            },
                         ]
                         break
 
@@ -128,7 +135,9 @@ class VisualAgent(AgentABC):
         except Exception as e:
             print(f"Error in visual agent step: {str(e)}")
             # Fall back to basic approach if rendering fails
-            formatted_conversation = await self.formatter.format_conversation(conversation, namespace)
+            formatted_conversation = await self.formatter.format_conversation(
+                conversation, namespace
+            )
             self.set_conversation(formatted_conversation)
             return await self._get_policy(formatted_conversation)
 
@@ -153,7 +162,7 @@ class VisualAgent(AgentABC):
             # Render around player position
             render = namespace._render(
                 position=player_pos,
-                layers=Layer.ALL  # Render all layers for complete information
+                layers=Layer.ALL,  # Render all layers for complete information
             )
 
             # Convert image to base64 for embedding
@@ -167,7 +176,7 @@ class VisualAgent(AgentABC):
 
     @tenacity.retry(
         retry=retry_if_exception_type(Exception),
-        wait=wait_exponential(multiplier=1, min=4, max=10)
+        wait=wait_exponential(multiplier=1, min=4, max=10),
     )
     async def _get_policy(self, conversation: Conversation):
         """

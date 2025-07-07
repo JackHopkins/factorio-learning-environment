@@ -2,7 +2,6 @@ import builtins
 import inspect
 import marshal
 import types
-from typing import get_type_hints
 
 
 class SerializableFunction:
@@ -20,21 +19,23 @@ class SerializableFunction:
         try:
             sig = inspect.signature(func)
             # Get annotations directly from the function
-            annotations = getattr(func, '__annotations__', {})
+            annotations = getattr(func, "__annotations__", {})
 
             # Store parameters with their annotations
             self.parameters = []
             for name, param in sig.parameters.items():
-                annotation = annotations['args'].get(name, None)
+                annotation = annotations["args"].get(name, None)
                 annotation_str = None
                 if annotation:
-                    annotation_str = getattr(annotation, '__name__', str(annotation))
+                    annotation_str = getattr(annotation, "__name__", str(annotation))
                 self.parameters.append((name, str(param), annotation_str))
 
             # Store return annotation
-            self.return_annotation = annotations['args'].get('return', None)
+            self.return_annotation = annotations["args"].get("return", None)
             if self.return_annotation:
-                self.return_annotation = getattr(self.return_annotation, '__name__', str(self.return_annotation))
+                self.return_annotation = getattr(
+                    self.return_annotation, "__name__", str(self.return_annotation)
+                )
 
         except (ValueError, TypeError):
             self.parameters = []
@@ -47,27 +48,27 @@ class SerializableFunction:
     def __getstate__(self):
         """Control which attributes are pickled"""
         return {
-            'code_bytes': self.code_bytes,
-            'name': self.name,
-            'defaults': self.defaults,
-            'closure': self.closure,
-            'docstring': self.docstring,
-            'parameters': self.parameters,
-            'return_annotation': self.return_annotation,
+            "code_bytes": self.code_bytes,
+            "name": self.name,
+            "defaults": self.defaults,
+            "closure": self.closure,
+            "docstring": self.docstring,
+            "parameters": self.parameters,
+            "return_annotation": self.return_annotation,
         }
 
     def __setstate__(self, state):
         """Restore state after unpickling"""
-        self.code_bytes = state['code_bytes']
-        self.name = state['name']
-        self.defaults = state['defaults']
-        self.closure = state['closure']
-        if 'docstring' in state:
-            self.docstring = state['docstring']
-        if 'parameters' in state:
-            self.parameters = state['parameters']
-        if 'return_annotation' in state:
-            self.return_annotation = state['return_annotation']
+        self.code_bytes = state["code_bytes"]
+        self.name = state["name"]
+        self.defaults = state["defaults"]
+        self.closure = state["closure"]
+        if "docstring" in state:
+            self.docstring = state["docstring"]
+        if "parameters" in state:
+            self.parameters = state["parameters"]
+        if "return_annotation" in state:
+            self.return_annotation = state["return_annotation"]
         self._instance = None
         self._cached_func = None
 
@@ -78,8 +79,8 @@ class SerializableFunction:
         for name, param_str, annotation in self.parameters:
             if annotation:
                 # Handle default values
-                if '=' in param_str:
-                    param_name, default = param_str.split('=', 1)
+                if "=" in param_str:
+                    param_name, default = param_str.split("=", 1)
                     param_strs.append(f"{name}: {annotation}={default.strip()}")
                 else:
                     param_strs.append(f"{name}: {annotation}")
@@ -111,7 +112,9 @@ class SerializableFunction:
         """Make the serialized function directly callable"""
         if self._cached_func is None:
             if self._instance is None:
-                raise RuntimeError("Function must be bound to an instance before calling")
+                raise RuntimeError(
+                    "Function must be bound to an instance before calling"
+                )
             self._cached_func = self.reconstruct(self._instance, self)
         return self._cached_func(*args, **kwargs)
 
@@ -122,21 +125,17 @@ class SerializableFunction:
 
         # Add instance attributes
         for name in dir(instance):
-            if not name.startswith('_'):
+            if not name.startswith("_"):
                 globals_dict[name] = getattr(instance, name)
 
         # Add builtins
         for name in dir(builtins):
-            if not name.startswith('_'):
+            if not name.startswith("_"):
                 globals_dict[name] = getattr(builtins, name)
 
         code = marshal.loads(func_data.code_bytes)
 
         new_func = types.FunctionType(
-            code,
-            globals_dict,
-            func_data.name,
-            func_data.defaults,
-            func_data.closure
+            code, globals_dict, func_data.name, func_data.defaults, func_data.closure
         )
         return new_func

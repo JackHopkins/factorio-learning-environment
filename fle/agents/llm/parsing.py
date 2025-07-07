@@ -236,21 +236,28 @@ class PythonParser:
         return None
 
 def parse_response(response) -> Optional[Policy]:
-    """
-    Parse the LLM response and return a Policy object if possible.
-    """
-    result = PythonParser.extract_code(response)
-    if result is None:
-        return None
-    code, content = result
-    if code is None:
+    if hasattr(response, 'choices'):
+        choice = response.choices[0]
+        input_tokens = response.usage.prompt_tokens if hasattr(response, 'usage') else 0
+        output_tokens = response.usage.completion_tokens if hasattr(response, 'usage') else 0
+    else:
+        choice = response.content[0]
+        input_tokens = response.usage.input_tokens if hasattr(response, 'usage') else 0
+        output_tokens = response.usage.output_tokens if hasattr(response, 'usage') else 0
+
+    total_tokens = input_tokens + output_tokens
+    try:
+        result = PythonParser.extract_code(choice)
+        if result is None:
+            return None
+        code, text_response = result
+    except Exception as e:
+        print(f"Failed to extract code from choice: {str(e)}")
         return None
 
-    total_tokens = response.usage.prompt_tokens + response.usage.completion_tokens if hasattr(response, 'usage') else 0
+    if not code:
+        return None
 
     policy = Policy(code=code,
-                    meta=PolicyMeta(output_tokens=response.usage.completion_tokens if hasattr(response, 'usage') else 0,
-                                    input_tokens=response.usage.prompt_tokens if hasattr(response, 'usage') else 0,
-                                    total_tokens=total_tokens,
-                                    text_response=content))
+                    meta=PolicyMeta(output_tokens=output_tokens, input_tokens=input_tokens,total_tokens=total_tokens, text_response=text_response))
     return policy

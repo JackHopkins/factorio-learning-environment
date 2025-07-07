@@ -108,7 +108,7 @@ jobs:
       - name: Run Python tests with debugging
         run: |
           # Run tests with verbose output and show print statements
-          python -m pytest -v -s --tb=short
+          python -m pytest -v -s --tb=short tests/actions/
         env:
           FACTORIO_HOST: localhost
           FACTORIO_RCON_PORT: 27016

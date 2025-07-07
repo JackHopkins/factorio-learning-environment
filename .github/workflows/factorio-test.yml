@@ -41,6 +41,7 @@ jobs:
           # Update docker-compose.yml to use the locally built image
           cd fle/cluster
           sed -i "s|image: 'factoriotools/factorio:1.1.110'|image: 'factorio:latest'|g" docker-compose-linux.yml
+          sed -i '/image:.*factorio/a\    container_name: factorio_1' docker-compose-linux.yml
 
       - name: Start Factorio server
         run: |
@@ -71,7 +72,7 @@ jobs:
         run: |
           cd fle/cluster
           docker compose -f docker-compose-linux.yml ps
-          docker compose -f docker-compose-linux.yml logs factorio
+          docker compose -f docker-compose-linux.yml logs factorio_1
 
       - name: Debug container IPs and ports
         run: |
@@ -89,7 +90,7 @@ jobs:
         run: |
           echo "=== Testing RCON connectivity ==="
           # First, let's see what port the container is actually exposing
-          CONTAINER_ID=$(docker ps -q -f name=factorio)
+          CONTAINER_ID=$(docker ps -q -f name=factorio_1)
           if [ -n "$CONTAINER_ID" ]; then
             echo "Found container ID: $CONTAINER_ID"
             docker inspect $CONTAINER_ID | grep -A 10 "Ports"
@@ -119,7 +120,7 @@ jobs:
         run: |
           cd fle/cluster
           echo "=== Factorio container logs ==="
-          docker compose -f docker-compose-linux.yml logs factorio
+          docker compose -f docker-compose-linux.yml logs factorio_1
           
           echo -e "\n=== All container logs ==="
           docker compose -f docker-compose-linux.yml logs

@@ -3,6 +3,8 @@ import re
 from typing import Optional, Tuple
 
 from pydantic import BaseModel
+from pydantic import GetCoreSchemaHandler
+from pydantic_core import core_schema
 
 from fle.commons.models.conversation import Conversation
 
@@ -11,10 +13,11 @@ class Python(str):
     """A custom type that only accepts syntactically valid Python code."""
     
     @classmethod
-    # TODO[pydantic]: We couldn't refactor `__get_validators__`, please create the `__get_pydantic_core_schema__` manually.
-    # Check https://docs.pydantic.dev/latest/migration/#defining-custom-types for more information.
-    def __get_validators__(cls):
-        yield cls.validate
+    def __get_pydantic_core_schema__(cls, source, handler: GetCoreSchemaHandler):
+        return core_schema.no_info_plain_validator_function(
+            cls.validate,
+            core_schema.str_schema()
+        )
 
     @classmethod
     def validate(cls, value, values=None, config=None, field=None) -> str:
@@ -39,7 +42,7 @@ class PolicyMeta(BaseModel):
 
 class Policy(BaseModel):
     code: Python
-    input_conversation: Conversation = None
+    input_conversation: Optional[Conversation] = None
     meta: PolicyMeta
 
 
@@ -230,49 +233,24 @@ class PythonParser:
         code = PythonParser.extract_all_valid_python_chunks(content)
         if code:
             return code, content
-        # First try to extract markdown code blocks
-        # markdown_code = PythonParser.extract_markdown_code_blocks(content)
-        # if markdown_code:
-        #     return markdown_code, content
-        #
-        # # Fall back to chunk-based processing
-        # chunks = content.split('\n\n')
-        # processed_chunks = []
-        # for chunk in chunks:
-        #     processed = PythonParser.process_chunk(chunk)
-        #     if processed:
-        #         processed_chunks.append(processed)
-        #
-        # # Combine processed chunks
-        # if processed_chunks:
-        #     final_code = '\n\n'.join(processed_chunks)
-        #     if PythonParser.is_valid_python(final_code):
-        #         return final_code, content
-        #     else:
-        #         raise Exception("Not valid python code")
-
-        return None, None
+        return None
 
 def parse_response(response) -> Optional[Policy]:
-    if hasattr(response, 'choices'):
-        choice = response.choices[0]
-        input_tokens = response.usage.prompt_tokens if hasattr(response, 'usage') else 0
-        output_tokens = response.usage.completion_tokens if hasattr(response, 'usage') else 0
-    else:
-        choice = response.content[0]
-        input_tokens = response.usage.input_tokens if hasattr(response, 'usage') else 0
-        output_tokens = response.usage.output_tokens if hasattr(response, 'usage') else 0
-
-    total_tokens = input_tokens + output_tokens
-    try:
-        code, text_response = PythonParser.extract_code(choice)
-    except Exception as e:
-        print(f"Failed to extract code from choice: {str(e)}")
+    """
+    Parse the LLM response and return a Policy object if possible.
+    """
+    result = PythonParser.extract_code(response)
+    if result is None:
+        return None
+    code, content = result
+    if code is None:
         return None
 
-    if not code:
-        return None
+    total_tokens = response.usage.prompt_tokens + response.usage.completion_tokens if hasattr(response, 'usage') else 0
 
     policy = Policy(code=code,
-                    meta=PolicyMeta(output_tokens=output_tokens, input_tokens=input_tokens,total_tokens=total_tokens, text_response=text_response))
+                    meta=PolicyMeta(output_tokens=response.usage.completion_tokens if hasattr(response, 'usage') else 0,
+                                    input_tokens=response.usage.prompt_tokens if hasattr(response, 'usage') else 0,
+                                    total_tokens=total_tokens,
+                                    text_response=content))
     return policy

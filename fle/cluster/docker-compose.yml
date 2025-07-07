@@ -11,7 +11,7 @@ services:
       - '34198:34197/udp'
       - '27016:27015/tcp'
     restart: always
-    entrypoint: ["sh", "/scenario.sh", "default_lab"]
+    entrypoint: ["sh", "/scenario.sh", "default_lab_scenario"]
     deploy:
       resources:
         limits:

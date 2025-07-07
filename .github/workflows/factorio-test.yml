@@ -52,10 +52,10 @@ jobs:
           echo "Waiting for Factorio server to initialize..."
           sleep 15
           
-          echo "Waiting for RCON port 27016 to be ready..."
+          echo "Waiting for RCON port 27015 to be ready..."
           for i in {1..30}; do
-            if nc -z localhost 27016 2>/dev/null; then
-              echo "✓ RCON port 27016 is open!"
+            if nc -z localhost 27015 2>/dev/null; then
+              echo "✓ RCON port 27015 is open!"
               break
             fi
             echo "Waiting... ($i/30)"

@@ -38,11 +38,9 @@ __all__ = [
     "TrajectoryRunner",
     "SimpleFactorioEvaluator",
     "EvalConfig",
-    
     # Value calculation
-    "ValueCalculator", 
+    "ValueCalculator",
     "Recipe",
-    
     # Utility functions
     "create_factorio_instance",
     "run_process",

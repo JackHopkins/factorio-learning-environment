@@ -11,50 +11,56 @@ from PIL import Image
 from dotenv import load_dotenv
 from matplotlib.ticker import LogLocator
 
-from fle.commons.db_client import DBClient, PostgresDBClient
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+import os
+
+from fle.commons.db_client import PostgresDBClient
 from eval.open.independent_runs.value_calculator import ValueCalculator
 
 load_dotenv()
 
+
 @dataclass
 class Node:
     """Represents a node in the MCTS tree"""
+
     id: int
     parent_id: Optional[int]
     metrics: Dict  # Contains 'value', 'ticks'
     static_achievements: Dict[str, int]
     dynamic_achievements: Dict[str, int]
-    children: List['Node']
+    children: List["Node"]
 
     def to_dict(self):
         """Convert Node to dictionary for caching"""
         return {
-            'id': self.id,
-            'parent_id': self.parent_id,
-            'metrics': self.metrics,
-            'static_achievements': self.static_achievements,
-            'dynamic_achievements': self.dynamic_achievements,
-            'children_ids': [child.id for child in self.children]
+            "id": self.id,
+            "parent_id": self.parent_id,
+            "metrics": self.metrics,
+            "static_achievements": self.static_achievements,
+            "dynamic_achievements": self.dynamic_achievements,
+            "children_ids": [child.id for child in self.children],
         }
 
     @staticmethod
-    def from_dict(data: Dict, nodes_dict: Dict[int, 'Node']):
+    def from_dict(data: Dict, nodes_dict: Dict[int, "Node"]):
         """Create Node from dictionary and populate children from nodes_dict"""
         node = Node(
-            id=data['id'],
-            parent_id=data['parent_id'],
-            metrics=data['metrics'],
-            static_achievements=data['static_achievements'],
-            dynamic_achievements=data['dynamic_achievements'],
-            children=[]
+            id=data["id"],
+            parent_id=data["parent_id"],
+            metrics=data["metrics"],
+            static_achievements=data["static_achievements"],
+            dynamic_achievements=data["dynamic_achievements"],
+            children=[],
         )
-        node.children = [nodes_dict[child_id] for child_id in data['children_ids']]
+        node.children = [nodes_dict[child_id] for child_id in data["children_ids"]]
         return node
 
 
 @dataclass
 class Achievement:
     """Represents an achievement milestone"""
+
     depth: int
     ticks: int
     item_name: str
@@ -66,8 +72,6 @@ class Achievement:
 
 # First, import necessary components at the top of the file
 
-from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-import os
 
 class ProgressionVisualizerWithTicks:
     """Creates publication-quality visualizations of agent progression"""
@@ -78,9 +82,18 @@ class ProgressionVisualizerWithTicks:
     STACK_VERTICAL_SPACING = 12  # Pixels between stacked achievements
     MAX_STACK_SIZE = 5  # Maximum number of achievements to stack vertically
 
-    def __init__(self, db_client, icons_path: str, x_axis: Literal["steps", "ticks"] = "steps",
-                 cache_file: str = "viz_cache.pkl", x_base: float = 10, y_base: float = 10, use_value_gdp=False,
-                 recipes_file="recipes.jsonl", use_log_scale: bool = True):  # Added use_log_scale parameter
+    def __init__(
+        self,
+        db_client,
+        icons_path: str,
+        x_axis: Literal["steps", "ticks"] = "steps",
+        cache_file: str = "viz_cache.pkl",
+        x_base: float = 10,
+        y_base: float = 10,
+        use_value_gdp=False,
+        recipes_file="recipes.jsonl",
+        use_log_scale: bool = True,
+    ):  # Added use_log_scale parameter
         self.db_client = db_client
         self.icons_path = icons_path
         self.x_axis = x_axis
@@ -89,9 +102,18 @@ class ProgressionVisualizerWithTicks:
         self.y_base = y_base
         self.versions = {}
         self.achievements = defaultdict(list)
-        #self.colors = [ '#EE6677', '#228833', '#CCBB44', '#4477AA']
-        #self.colors = ['#8fd7d7', '#FFCD8E', '#00b0be', '#ff8ca1', '#f45f74', '#bdd373', '#98c127', '#ffb255']
-        self.colors = ['#8fd7d7', '#FFCD8E', '#00b0be', '#ff8ca1', '#f45f74', '#bdd373', '#98c127', '#ffb255']
+        # self.colors = [ '#EE6677', '#228833', '#CCBB44', '#4477AA']
+        # self.colors = ['#8fd7d7', '#FFCD8E', '#00b0be', '#ff8ca1', '#f45f74', '#bdd373', '#98c127', '#ffb255']
+        self.colors = [
+            "#8fd7d7",
+            "#FFCD8E",
+            "#00b0be",
+            "#ff8ca1",
+            "#f45f74",
+            "#bdd373",
+            "#98c127",
+            "#ffb255",
+        ]
 
         self.use_value_gdp = use_value_gdp
         self.value_calculator = ValueCalculator(recipes_file) if use_value_gdp else None
@@ -102,7 +124,7 @@ class ProgressionVisualizerWithTicks:
         serialized = {}
         for version, data in self.versions.items():
             nodes_dict = {}
-            for root in data['nodes']:
+            for root in data["nodes"]:
                 stack = [root]
                 while stack:
                     node = stack.pop()
@@ -110,9 +132,9 @@ class ProgressionVisualizerWithTicks:
                     stack.extend(node.children)
 
             serialized[version] = {
-                'nodes_dict': nodes_dict,
-                'root_ids': [root.id for root in data['nodes']],
-                'label': data['label']
+                "nodes_dict": nodes_dict,
+                "root_ids": [root.id for root in data["nodes"]],
+                "label": data["label"],
             }
         return serialized
 
@@ -121,23 +143,25 @@ class ProgressionVisualizerWithTicks:
         for version, data in serialized.items():
             # First create all Node objects without children
             nodes_dict = {}
-            for node_id, node_data in data['nodes_dict'].items():
+            for node_id, node_data in data["nodes_dict"].items():
                 nodes_dict[node_id] = Node(
-                    id=node_data['id'],
-                    parent_id=node_data['parent_id'],
-                    metrics=node_data['metrics'],
-                    static_achievements=node_data['static_achievements'],
-                    dynamic_achievements=node_data['dynamic_achievements'],
-                    children=[]
+                    id=node_data["id"],
+                    parent_id=node_data["parent_id"],
+                    metrics=node_data["metrics"],
+                    static_achievements=node_data["static_achievements"],
+                    dynamic_achievements=node_data["dynamic_achievements"],
+                    children=[],
                 )
 
             # Then populate children
-            for node_id, node_data in data['nodes_dict'].items():
-                nodes_dict[node_id].children = [nodes_dict[child_id] for child_id in node_data['children_ids']]
+            for node_id, node_data in data["nodes_dict"].items():
+                nodes_dict[node_id].children = [
+                    nodes_dict[child_id] for child_id in node_data["children_ids"]
+                ]
 
             self.versions[version] = {
-                'nodes': [nodes_dict[root_id] for root_id in data['root_ids']],
-                'label': data['label']
+                "nodes": [nodes_dict[root_id] for root_id in data["root_ids"]],
+                "label": data["label"],
             }
 
     def load_data(self, version_groups: Dict[str, List[int]], labels: Dict[str, str]):
@@ -150,11 +174,11 @@ class ProgressionVisualizerWithTicks:
         """
         if os.path.exists(self.cache_file):
             try:
-                with open(self.cache_file, 'rb') as f:
+                with open(self.cache_file, "rb") as f:
                     cached_data = pickle.load(f)
-                    if cached_data.get('version_groups') == version_groups:
-                        self._deserialize_version_data(cached_data['data'])
-                        self.achievements = cached_data['achievements']
+                    if cached_data.get("version_groups") == version_groups:
+                        self._deserialize_version_data(cached_data["data"])
+                        self.achievements = cached_data["achievements"]
                         return
             except Exception as e:
                 print(f"Error loading cache: {e}")
@@ -176,8 +200,8 @@ class ProgressionVisualizerWithTicks:
                 print(f"STD GDP across all versions: {np.std(gdps):.1f}")
 
                 self.versions[model_name] = {
-                    'nodes': all_nodes,
-                    'label': f"{labels[model_name]}"
+                    "nodes": all_nodes,
+                    "label": f"{labels[model_name]}",
                 }
 
                 # Process achievements across all versions
@@ -185,22 +209,24 @@ class ProgressionVisualizerWithTicks:
 
         # Cache the loaded data
         try:
-            with open(self.cache_file, 'wb') as f:
-                pickle.dump({
-                    'version_groups': version_groups,
-                    'data': self._serialize_version_data(),
-                    'achievements': self.achievements
-                }, f)
+            with open(self.cache_file, "wb") as f:
+                pickle.dump(
+                    {
+                        "version_groups": version_groups,
+                        "data": self._serialize_version_data(),
+                        "achievements": self.achievements,
+                    },
+                    f,
+                )
         except Exception as e:
             print(f"Error saving cache: {e}")
-
 
     def _process_merged_achievements(self, model_name: str, versions: List[int]):
         """Process achievements across multiple versions of the same model"""
         print(f"\nProcessing achievements for model {model_name}")
 
-        with open('recipes.jsonl', 'r') as f:
-            recipes = {r['name']: r for r in map(json.loads, f)}
+        with open("recipes.jsonl", "r") as f:
+            recipes = {r["name"]: r for r in map(json.loads, f)}
 
         seen = set()
         model_achievements = []
@@ -208,30 +234,37 @@ class ProgressionVisualizerWithTicks:
         # Process achievements across all versions
         for version in versions:
             for root in self._load_version_from_db(version):
-                cumulative_ticks = 0
                 current_path = []
                 stack = [(root, 0, [])]
 
                 while stack:
                     node, depth, path = stack.pop()
                     current_path = path + [node]
-                    path_ticks = sum(n.metrics['ticks'] for n in current_path)
+                    path_ticks = sum(n.metrics["ticks"] for n in current_path)
 
-                    for achievements_dict, is_dynamic in [(node.static_achievements, False),
-                                                          (node.dynamic_achievements, True)]:
+                    for achievements_dict, is_dynamic in [
+                        (node.static_achievements, False),
+                        (node.dynamic_achievements, True),
+                    ]:
                         for item, quantity in achievements_dict.items():
                             achievement_key = (version, item)
                             if achievement_key not in seen:
-                                print(f"\nProcessing achievement: {item} (version {version})")
+                                print(
+                                    f"\nProcessing achievement: {item} (version {version})"
+                                )
                                 print(f"Original ticks: {path_ticks}, depth: {depth}")
 
-                                model_achievements.append(Achievement(
-                                    depth=depth,
-                                    ticks=path_ticks,
-                                    item_name=item,
-                                    ingredients=self._count_ingredients(recipes.get(item, {})),
-                                    is_dynamic=is_dynamic
-                                ))
+                                model_achievements.append(
+                                    Achievement(
+                                        depth=depth,
+                                        ticks=path_ticks,
+                                        item_name=item,
+                                        ingredients=self._count_ingredients(
+                                            recipes.get(item, {})
+                                        ),
+                                        is_dynamic=is_dynamic,
+                                    )
+                                )
                                 seen.add(achievement_key)
 
                     for child in reversed(node.children):
@@ -242,46 +275,52 @@ class ProgressionVisualizerWithTicks:
         for achievement in model_achievements:
             key = achievement.item_name
             if key not in earliest_achievements or (
-                    achievement.ticks < earliest_achievements[key].ticks or
-                    (achievement.ticks == earliest_achievements[key].ticks and
-                     achievement.depth < earliest_achievements[key].depth)
+                achievement.ticks < earliest_achievements[key].ticks
+                or (
+                    achievement.ticks == earliest_achievements[key].ticks
+                    and achievement.depth < earliest_achievements[key].depth
+                )
             ):
                 earliest_achievements[key] = achievement
 
         self.achievements[model_name] = list(earliest_achievements.values())
-        print(f"Total unique achievements processed for model {model_name}: {len(earliest_achievements)}")
+        print(
+            f"Total unique achievements processed for model {model_name}: {len(earliest_achievements)}"
+        )
 
-
-    def organize_achievement_positions(self, achievements_by_depth, depth_stats, ax, series_index, used_positions):
+    def organize_achievement_positions(
+        self, achievements_by_depth, depth_stats, ax, series_index, used_positions
+    ):
         """Organize achievement positions with improved stacking logic and priority items"""
-        positions = {}
         final_positions = {}
         stacks = defaultdict(list)  # Track achievement stacks by x-coordinate bucket
 
         # Priority achievements that should appear at the top
-        PRIORITY_ACHIEVEMENTS = {'lab', 'steam'}
+        PRIORITY_ACHIEVEMENTS = {"lab", "steam"}
 
         # First pass: Group achievements by x-coordinate bucket
         for x_coord, achievements_list in achievements_by_depth.items():
-            if x_coord in depth_stats and depth_stats[x_coord]['mean'] > 0:
-                base_position = depth_stats[x_coord]['mean']
+            if x_coord in depth_stats and depth_stats[x_coord]["mean"] > 0:
+                base_position = depth_stats[x_coord]["mean"]
 
                 # Calculate tolerance based on x-position
                 if self.x_axis == "ticks":
                     # For ticks (log scale), tolerance increases with x
                     log_x = np.log10(x_coord)
                     tolerance = self.BASE_STACK_TOLERANCE * log_x
-                    bucket_key = round(x_coord / (x_coord * tolerance)) * (x_coord * tolerance)
+                    bucket_key = round(x_coord / (x_coord * tolerance)) * (
+                        x_coord * tolerance
+                    )
                 else:
                     # For steps, use smaller fixed tolerance for linear scale
                     if x_coord < 50:
                         tolerance = self.BASE_STACK_TOLERANCE
                     elif x_coord < 100:
-                        tolerance = self.BASE_STACK_TOLERANCE*2
+                        tolerance = self.BASE_STACK_TOLERANCE * 2
                     elif x_coord < 400:
-                        tolerance = self.BASE_STACK_TOLERANCE*4
+                        tolerance = self.BASE_STACK_TOLERANCE * 4
                     else:
-                        tolerance = self.BASE_STACK_TOLERANCE*8
+                        tolerance = self.BASE_STACK_TOLERANCE * 8
                     bucket_key = round(x_coord / tolerance) * tolerance
 
                 # Custom sorting key function that prioritizes lab and steam
@@ -290,15 +329,21 @@ class ProgressionVisualizerWithTicks:
                     is_priority = achievement.item_name in PRIORITY_ACHIEVEMENTS
                     # Second priority: complexity (ingredients)
                     # Third priority: name for stable sorting
-                    return (int(is_priority), -achievement.ingredients, achievement.item_name)
+                    return (
+                        int(is_priority),
+                        -achievement.ingredients,
+                        achievement.item_name,
+                    )
 
                 # Sort achievements using the custom key
                 achievements_list.sort(key=sort_key)
 
-                stacks[bucket_key].extend([
-                    (x_coord, achievement, base_position)
-                    for achievement in achievements_list
-                ])
+                stacks[bucket_key].extend(
+                    [
+                        (x_coord, achievement, base_position)
+                        for achievement in achievements_list
+                    ]
+                )
 
         # Second pass: Calculate stacked positions
         for bucket_key, stack in stacks.items():
@@ -330,7 +375,9 @@ class ProgressionVisualizerWithTicks:
                 display_y = base_display_y + vertical_offset
 
                 # Transform back to data coordinates
-                data_coords = ax.transData.inverted().transform([[base_display_x, display_y]])[0]
+                data_coords = ax.transData.inverted().transform(
+                    [[base_display_x, display_y]]
+                )[0]
                 data_x, data_y = data_coords
 
                 # Store final position
@@ -352,7 +399,9 @@ class ProgressionVisualizerWithTicks:
     def _prepare_achievement_stack(self, achievements, max_stack_size=5):
         """Prepare achievement stack with priority based on complexity"""
         # Sort achievements by complexity (ingredients) and name
-        sorted_achievements = sorted(achievements, key=lambda a: (a.ingredients, a.item_name))
+        sorted_achievements = sorted(
+            achievements, key=lambda a: (a.ingredients, a.item_name)
+        )
 
         # If we have more achievements than max_stack_size, prioritize most complex ones
         if len(sorted_achievements) > max_stack_size:
@@ -360,24 +409,26 @@ class ProgressionVisualizerWithTicks:
 
         return sorted_achievements
 
-    def organize_achievement_positions2(self, achievements_by_depth, depth_stats, ax, series_index, used_positions):
+    def organize_achievement_positions2(
+        self, achievements_by_depth, depth_stats, ax, series_index, used_positions
+    ):
         """Organize achievement positions with improved tick mapping"""
         positions = {}
         final_positions = {}
 
         # First pass: Group achievements by their x-coordinate
         for x_coord, achievements_list in achievements_by_depth.items():
-            if x_coord in depth_stats and depth_stats[x_coord]['mean'] > 0:
-                base_position = depth_stats[x_coord]['mean']
+            if x_coord in depth_stats and depth_stats[x_coord]["mean"] > 0:
+                base_position = depth_stats[x_coord]["mean"]
                 positions[x_coord] = {
-                    'achievements': achievements_list,
-                    'base_y': base_position
+                    "achievements": achievements_list,
+                    "base_y": base_position,
                 }
 
         # Second pass: Calculate final positions with proper coordinate transformation
         for x_coord, group_data in positions.items():
-            achievements = group_data['achievements']
-            base_y = group_data['base_y']
+            achievements = group_data["achievements"]
+            base_y = group_data["base_y"]
 
             # Sort achievements by complexity (ingredients) then name
             achievements.sort(key=lambda a: (a.ingredients, a.item_name))
@@ -400,7 +451,9 @@ class ProgressionVisualizerWithTicks:
                 display_y = base_display_y + vertical_offset
 
                 # Transform back to data coordinates
-                data_coords = ax.transData.inverted().transform([[base_display_x, display_y]])[0]
+                data_coords = ax.transData.inverted().transform(
+                    [[base_display_x, display_y]]
+                )[0]
                 data_x, data_y = data_coords
 
                 # Store final position
@@ -413,10 +466,13 @@ class ProgressionVisualizerWithTicks:
         """Load all trajectories for a version from database"""
         with self.db_client.get_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("""
+                cur.execute(
+                    """
                     SELECT id, parent_id, achievements_json, value, ticks 
                     FROM programs WHERE version = %s
-                """, (version,))
+                """,
+                    (version,),
+                )
                 rows = cur.fetchall()
 
         # Build node tree
@@ -426,10 +482,10 @@ class ProgressionVisualizerWithTicks:
             node = Node(
                 id=id,
                 parent_id=parent_id,
-                metrics={'value': value or 0, 'ticks': ticks or 0},
-                static_achievements=achievements.get('static', {}),
-                dynamic_achievements=achievements.get('dynamic', {}),
-                children=[]
+                metrics={"value": value or 0, "ticks": ticks or 0},
+                static_achievements=achievements.get("static", {}),
+                dynamic_achievements=achievements.get("dynamic", {}),
+                children=[],
             )
             nodes[id] = node
 
@@ -450,7 +506,7 @@ class ProgressionVisualizerWithTicks:
             stack = [root]
             while stack:
                 node = stack.pop()
-                total += node.metrics['value']
+                total += node.metrics["value"]
                 stack.extend(node.children)
             return total
 
@@ -488,15 +544,14 @@ class ProgressionVisualizerWithTicks:
         """Process achievements with correct tick accumulation"""
         print(f"\nProcessing achievements for version {version}")
 
-        with open('recipes.jsonl', 'r') as f:
-            recipes = {r['name']: r for r in map(json.loads, f)}
+        with open("recipes.jsonl", "r") as f:
+            recipes = {r["name"]: r for r in map(json.loads, f)}
 
         seen = set()
         version_achievements = []
 
-        for root in self.versions[version]['nodes']:
+        for root in self.versions[version]["nodes"]:
             # Initialize path tracking for cumulative calculations
-            cumulative_ticks = 0
             current_path = []
             stack = [(root, 0, [])]  # (node, depth, path_to_node)
 
@@ -507,23 +562,29 @@ class ProgressionVisualizerWithTicks:
                 current_path = path + [node]
 
                 # Calculate cumulative ticks for the current path
-                path_ticks = sum(n.metrics['ticks'] for n in current_path)
+                path_ticks = sum(n.metrics["ticks"] for n in current_path)
 
                 # Process achievements
-                for achievements_dict, is_dynamic in [(node.static_achievements, False),
-                                                      (node.dynamic_achievements, True)]:
+                for achievements_dict, is_dynamic in [
+                    (node.static_achievements, False),
+                    (node.dynamic_achievements, True),
+                ]:
                     for item, quantity in achievements_dict.items():
                         if item not in seen:
                             print(f"\nProcessing achievement: {item}")
                             print(f"Original ticks: {path_ticks}, depth: {depth}")
 
-                            version_achievements.append(Achievement(
-                                depth=depth,
-                                ticks=path_ticks,
-                                item_name=item,
-                                ingredients=self._count_ingredients(recipes.get(item, {})),
-                                is_dynamic=is_dynamic
-                            ))
+                            version_achievements.append(
+                                Achievement(
+                                    depth=depth,
+                                    ticks=path_ticks,
+                                    item_name=item,
+                                    ingredients=self._count_ingredients(
+                                        recipes.get(item, {})
+                                    ),
+                                    is_dynamic=is_dynamic,
+                                )
+                            )
                             seen.add(item)
 
                 # Add children to stack with their paths
@@ -540,8 +601,8 @@ class ProgressionVisualizerWithTicks:
             return 1
 
         def traverse(item):
-            seen.add(item['name'])
-            for ingredient in item.get('ingredients', []):
+            seen.add(item["name"])
+            for ingredient in item.get("ingredients", []):
                 traverse(ingredient)
 
         traverse(recipe)
@@ -556,7 +617,7 @@ class ProgressionVisualizerWithTicks:
             os.makedirs("icons", exist_ok=True)
             with Image.open(src) as img:
                 # Get the first frame if it's an animated image
-                if hasattr(img, 'n_frames'):
+                if hasattr(img, "n_frames"):
                     img.seek(0)
 
                 # Extract square tile from top-left
@@ -568,10 +629,10 @@ class ProgressionVisualizerWithTicks:
                     tile = tile.resize((256, 256), Image.Resampling.LANCZOS)
 
                 # Convert to RGBA if needed
-                if tile.mode != 'RGBA':
-                    tile = tile.convert('RGBA')
+                if tile.mode != "RGBA":
+                    tile = tile.convert("RGBA")
 
-                tile.save(dst, format='PNG')
+                tile.save(dst, format="PNG")
 
     def weighted_percentile(self, values, weights, q):
         """Calculate weighted percentile for confidence intervals"""
@@ -590,7 +651,7 @@ class ProgressionVisualizerWithTicks:
         img = np.zeros((size, size, 4))  # RGBA
 
         # Create a circle mask
-        y, x = np.ogrid[-size / 2:size / 2, -size / 2:size / 2]
+        y, x = np.ogrid[-size / 2 : size / 2, -size / 2 : size / 2]
         mask = x * x + y * y <= (size / 2) * (size / 2)
 
         # Set white background with partial transparency
@@ -602,33 +663,32 @@ class ProgressionVisualizerWithTicks:
         edge_width = 3
         for i in range(edge_width):
             edge_mask = (x * x + y * y <= (size / 2 - i) * (size / 2 - i)) & (
-                    x * x + y * y >= (size / 2 - i - 1) * (size / 2 - i - 1))
+                x * x + y * y >= (size / 2 - i - 1) * (size / 2 - i - 1)
+            )
             edge |= edge_mask
 
         # Convert color hex to RGB and apply with transparency
-        rgb_color = np.array([int(color[1:][i:i + 2], 16) / 255 for i in (0, 2, 4)])
+        rgb_color = np.array([int(color[1:][i : i + 2], 16) / 255 for i in (0, 2, 4)])
         img[..., :3][edge] = rgb_color
         img[..., 3][edge] = 0.7  # Edge opacity
 
         return img
-
 
     def _get_step_at_ticks(self, version, target_ticks):
         """Find the step number at which a version reaches the target ticks"""
         if target_ticks <= 0 or np.isinf(target_ticks) or np.isnan(target_ticks):
             return None
 
-        nodes = self.versions[version]['nodes']
-        min_step = float('inf')
+        nodes = self.versions[version]["nodes"]
+        min_step = float("inf")
 
         for root in nodes:
             current_ticks = 0
-            current_step = 0
             stack = [(root, 0, 0)]  # (node, step, accumulated_ticks)
 
             while stack:
                 node, step, prev_ticks = stack.pop()
-                current_ticks = prev_ticks + node.metrics['ticks']
+                current_ticks = prev_ticks + node.metrics["ticks"]
 
                 if current_ticks >= target_ticks:
                     min_step = min(min_step, step)
@@ -637,7 +697,7 @@ class ProgressionVisualizerWithTicks:
                 for child in node.children:
                     stack.append((child, step + 1, current_ticks))
 
-        return min_step if min_step != float('inf') else None
+        return min_step if min_step != float("inf") else None
 
     # After plotting both charts but before saving, add the connection lines
     def add_connecting_lines(self, ax1, ax2, step=990):
@@ -672,11 +732,11 @@ class ProgressionVisualizerWithTicks:
         polygon = plt.Polygon(
             [[x1, y1_min], [x2, y2_min], [x2, y2_max], [x1, y1_max]],
             transform=fig.transFigure,
-            facecolor='gray',
+            facecolor="gray",
             alpha=0.15,
-            edgecolor='#404040',
-            linestyle='--',
-            linewidth=1
+            edgecolor="#404040",
+            linestyle="--",
+            linewidth=1,
         )
         fig.add_artist(polygon)
 
@@ -712,26 +772,33 @@ class ProgressionVisualizerWithTicks:
         polygon = plt.Polygon(
             [[x1, y1_min], [x2, y2_min], [x2, y2_max], [x1, y1_max]],
             transform=fig.transFigure,
-            facecolor='gray',
+            facecolor="gray",
             alpha=0.15,
-            edgecolor='#404040',
-            linestyle='--',
-            linewidth=1
+            edgecolor="#404040",
+            linestyle="--",
+            linewidth=1,
         )
         fig.add_artist(polygon)
 
     def export_split_visualization(self, output_file: str, max_depth: int = 4990):
         """Export a visualization with main progression chart, final GDP scatter plot, and final time plot"""
-        plt.rcParams['figure.dpi'] = 150
-        plt.rcParams['savefig.dpi'] = 300
+        plt.rcParams["figure.dpi"] = 150
+        plt.rcParams["savefig.dpi"] = 300
 
         # Create figure with three subplots
         fig = plt.figure(figsize=(14, 5))
 
         # Create three axes with specific width ratios and three rows
         # First row for plots, second for metric labels, third for 'Final' label
-        #gs = plt.GridSpec(3, 3, height_ratios=[1, 0.1, 0.1], width_ratios=[15, 1, 1], wspace=0.1, hspace=0)
-        gs = plt.GridSpec(3, 3, height_ratios=[0.85, 0.075, 0.075], width_ratios=[15, 1, 1], wspace=0.12, hspace=0.2)
+        # gs = plt.GridSpec(3, 3, height_ratios=[1, 0.1, 0.1], width_ratios=[15, 1, 1], wspace=0.1, hspace=0)
+        gs = plt.GridSpec(
+            3,
+            3,
+            height_ratios=[0.85, 0.075, 0.075],
+            width_ratios=[15, 1, 1],
+            wspace=0.12,
+            hspace=0.2,
+        )
         ax1 = fig.add_subplot(gs[0, 0])  # Main progression plot
         ax2 = fig.add_subplot(gs[0, 1])  # Final GDP scatter plot
         ax3 = fig.add_subplot(gs[0, 2])  # Final time scatter plot
@@ -744,41 +811,43 @@ class ProgressionVisualizerWithTicks:
         ax_shared = fig.add_subplot(gs[2, 1:])
 
         # Hide all axes for labels
-        ax_reward_label.axis('off')
-        ax_time_label.axis('off')
-        ax_shared.axis('off')
+        ax_reward_label.axis("off")
+        ax_time_label.axis("off")
+        ax_shared.axis("off")
 
         # Configure main progression plot
-        ax1.set_xscale('log', base=self.x_base)
-        ax1.set_yscale('log', base=self.y_base)
+        ax1.set_xscale("log", base=self.x_base)
+        ax1.set_yscale("log", base=self.y_base)
 
         if self.x_axis == "ticks":
             ax1.set_xlim(1e3, 1e8)
-            ax1.set_xlabel('Ticks', fontsize=12)
+            ax1.set_xlabel("Ticks", fontsize=12)
         else:
             ax1.set_xlim(100, 5e3)
-            ax1.set_xlabel('Steps', fontsize=12)
+            ax1.set_xlabel("Steps", fontsize=12)
         ax1.set_ylim(1e3, 4e5)
 
         # Create main y-label with two parts
-        ax1.set_ylabel('Reward\nCumulative Production Score',
-                       fontsize=12,
-                       labelpad=10)
+        ax1.set_ylabel("Reward\nCumulative Production Score", fontsize=12, labelpad=10)
 
         # Get the ylabel text object
         ylabel = ax1.yaxis.label
 
         # Get the text content
-        lines = ylabel.get_text().split('\n')
+        lines = ylabel.get_text().split("\n")
 
         # Create two separate text objects
         ax1.set_ylabel(lines[0], fontsize=12, labelpad=20)
-        subtitle = ax1.text(-0.05, 0.5, lines[1],
-                            transform=ax1.transAxes,
-                            rotation=90,
-                            ha='center', va='center',
-                            fontsize=9)
-
+        subtitle = ax1.text(  # noqa
+            -0.05,
+            0.5,
+            lines[1],
+            transform=ax1.transAxes,
+            rotation=90,
+            ha="center",
+            va="center",
+            fontsize=9,
+        )
 
         # Store final values for scatter plots
         final_values = []
@@ -823,24 +892,28 @@ class ProgressionVisualizerWithTicks:
         for idx, (version, data) in enumerate(self.versions.items()):
             color = self.colors[idx % len(self.colors)]
             colors.append(color)
-            stats = self._calculate_statistics(data['nodes'], max_depth)
+            stats = self._calculate_statistics(data["nodes"], max_depth)
 
             # Plot main line and standard error bands
             x_coords = sorted(stats.keys())
-            means = [stats[x]['mean'] for x in x_coords]
-            sem_lower = [stats[x]['sem_lower'] for x in x_coords]
-            sem_upper = [stats[x]['sem_upper'] for x in x_coords]
+            means = [stats[x]["mean"] for x in x_coords]
+            sem_lower = [stats[x]["sem_lower"] for x in x_coords]
+            sem_upper = [stats[x]["sem_upper"] for x in x_coords]
 
-            ax1.plot(x_coords, means, color=color, label=data['label'], linewidth=1.5)
+            ax1.plot(x_coords, means, color=color, label=data["label"], linewidth=1.5)
             ax1.fill_between(x_coords, sem_lower, sem_upper, color=color, alpha=0.2)
 
             # Calculate final values and standard errors at target step
             target_step = 4990
             if means:
                 if self.x_axis == "steps":
-                    target_idx = next((idx for idx, x in enumerate(x_coords) if x >= target_step), -1)
+                    target_idx = next(
+                        (idx for idx, x in enumerate(x_coords) if x >= target_step), -1
+                    )
                 else:
-                    target_idx = next((idx for idx, x in enumerate(x_coords) if x >= target_step), -1)
+                    target_idx = next(
+                        (idx for idx, x in enumerate(x_coords) if x >= target_step), -1
+                    )
 
                 if target_idx != -1:
                     final_values.append(means[target_idx])
@@ -850,12 +923,18 @@ class ProgressionVisualizerWithTicks:
                     final_cis.append((sem_lower[-1], sem_upper[-1]))
 
                 # Calculate final ticks statistics and convert to minutes
-                final_ticks_stats = self._calculate_final_ticks_statistics(data['nodes'], target_step)
-                final_minutes.append(final_ticks_stats['median'] / ticks_per_unit)  # Convert to hours
-                final_minutes_cis.append((
-                    final_ticks_stats['ci_lower'] / ticks_per_unit,
-                    final_ticks_stats['ci_upper'] / ticks_per_unit
-                ))
+                final_ticks_stats = self._calculate_final_ticks_statistics(
+                    data["nodes"], target_step
+                )
+                final_minutes.append(
+                    final_ticks_stats["median"] / ticks_per_unit
+                )  # Convert to hours
+                final_minutes_cis.append(
+                    (
+                        final_ticks_stats["ci_lower"] / ticks_per_unit,
+                        final_ticks_stats["ci_upper"] / ticks_per_unit,
+                    )
+                )
 
             # Process and plot achievements
             achievements_by_depth = defaultdict(list)
@@ -882,53 +961,56 @@ class ProgressionVisualizerWithTicks:
                         self._add_achievement_icon(ax1, item_name, x, y, color)
 
         # Configure main plot grid and legend
-        ax1.grid(True, which='major', linestyle='-', color='gray', alpha=0.2)
-        ax1.grid(True, which='minor', linestyle='--', color='gray', alpha=0.1)
-        ax1.tick_params(axis='both', which='major', labelsize=9)
-        ax1.tick_params(axis='both', which='minor', labelsize=7)
+        ax1.grid(True, which="major", linestyle="-", color="gray", alpha=0.2)
+        ax1.grid(True, which="minor", linestyle="--", color="gray", alpha=0.1)
+        ax1.tick_params(axis="both", which="major", labelsize=9)
+        ax1.tick_params(axis="both", which="minor", labelsize=7)
         ax1.set_axisbelow(True)
-        ax1.legend(loc='lower right', fontsize=10)
+        ax1.legend(loc="lower right", fontsize=10)
 
         # Configure GDP scatter plot
-        x_pos = np.arange(len(final_values))
         x_margin = 0.5
         ax2.set_xlim(-x_margin, len(final_values) - 1 + x_margin)
 
-        for i, (value, (ci_lower, ci_upper), color) in enumerate(zip(final_values, final_cis, colors)):
+        for i, (value, (ci_lower, ci_upper), color) in enumerate(
+            zip(final_values, final_cis, colors)
+        ):
             ax2.vlines(i, ci_lower, ci_upper, color=color, alpha=0.5)
             ax2.scatter(i, value, color=color, s=50, zorder=5)
 
         # Configure GDP plot settings
-        #ax2.set_xticks(x_pos)
-        #ax2.set_xticklabels([''] * len(x_pos))
+        # ax2.set_xticks(x_pos)
+        # ax2.set_xticklabels([''] * len(x_pos))
         ax2.set_xticks([])
 
-        ax2.set_yscale('log', base=self.y_base)
-        ax2.yaxis.set_label_position('right')
+        ax2.set_yscale("log", base=self.y_base)
+        ax2.yaxis.set_label_position("right")
         ax2.yaxis.tick_right()
-        ax2.yaxis.set_minor_locator(LogLocator(base=10, subs='all'))
-        ax2.grid(True, which='major', axis='y', linestyle='-', color='gray', alpha=0.2)
-        ax2.grid(True, which='minor', axis='y', linestyle='--', color='gray', alpha=0.1)
-        ax2.tick_params(axis='y', which='major', labelsize=8)  # Add this line
+        ax2.yaxis.set_minor_locator(LogLocator(base=10, subs="all"))
+        ax2.grid(True, which="major", axis="y", linestyle="-", color="gray", alpha=0.2)
+        ax2.grid(True, which="minor", axis="y", linestyle="--", color="gray", alpha=0.1)
+        ax2.tick_params(axis="y", which="major", labelsize=8)  # Add this line
 
         # Configure time scatter plot
         ax3.set_xlim(-x_margin, len(final_minutes) - 1 + x_margin)
 
-        for i, (value, (ci_lower, ci_upper), color) in enumerate(zip(final_minutes, final_minutes_cis, colors)):
+        for i, (value, (ci_lower, ci_upper), color) in enumerate(
+            zip(final_minutes, final_minutes_cis, colors)
+        ):
             ax3.vlines(i, ci_lower, ci_upper, color=color, alpha=0.5)
             ax3.scatter(i, value, color=color, s=50, zorder=5)
 
         # Configure time plot settings
-        #ax3.set_xticks(x_pos)
-        #ax3.set_xticklabels([''] * len(x_pos))
+        # ax3.set_xticks(x_pos)
+        # ax3.set_xticklabels([''] * len(x_pos))
         ax3.set_xticks([])
-        ax3.set_yscale('log', base=10)
-        ax3.yaxis.set_label_position('right')
+        ax3.set_yscale("log", base=10)
+        ax3.yaxis.set_label_position("right")
         ax3.yaxis.tick_right()
-        ax3.yaxis.set_minor_locator(LogLocator(base=10, subs='all'))
-        ax3.grid(True, which='major', axis='y', linestyle='-', color='gray', alpha=0.2)
-        ax3.grid(True, which='minor', axis='y', linestyle='--', color='gray', alpha=0.1)
-        ax3.tick_params(axis='y', which='major', labelsize=8)  # Add this line
+        ax3.yaxis.set_minor_locator(LogLocator(base=10, subs="all"))
+        ax3.grid(True, which="major", axis="y", linestyle="-", color="gray", alpha=0.2)
+        ax3.grid(True, which="minor", axis="y", linestyle="--", color="gray", alpha=0.1)
+        ax3.tick_params(axis="y", which="major", labelsize=8)  # Add this line
 
         # For reward plot (ax2)
         # y2_min = min(ci[0] for ci in final_cis) * 0.9  # Add some padding
@@ -949,8 +1031,10 @@ class ProgressionVisualizerWithTicks:
         y2_max = max(ci[1] for ci in final_cis)
         ax2.set_ylim(min(0, y2_min * 0.9), y2_max * 1.1)
         # Instead of setting specific tick values, show only min and max rounded values
-        #ax2.yaxis.set_major_locator(plt.FixedLocator([y2_min, y2_max]))
-        ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x / 1000):,}k'))
+        # ax2.yaxis.set_major_locator(plt.FixedLocator([y2_min, y2_max]))
+        ax2.yaxis.set_major_formatter(
+            plt.FuncFormatter(lambda x, p: f"{int(x / 1000):,}k")
+        )
         ax2.yaxis.set_minor_locator(plt.NullLocator())
 
         # For time plot (ax3)
@@ -958,32 +1042,34 @@ class ProgressionVisualizerWithTicks:
         y3_max = max(ci[1] for ci in final_minutes_cis)
         ax3.set_ylim(min(0, y3_min * 0.9), y3_max * 1.1)
         # Use FixedLocator instead of set_yticks
-        #ax3.yaxis.set_major_locator(plt.FixedLocator([y3_min, y3_max]))
-        ax3.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x):,}'))
+        # ax3.yaxis.set_major_locator(plt.FixedLocator([y3_min, y3_max]))
+        ax3.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{int(x):,}"))
         ax3.yaxis.set_minor_locator(plt.NullLocator())
 
         # Add metric labels between charts and 'Final' label
-        ax_reward_label.text(0.5, 1.4, 'Reward', ha='center', va='center', fontsize=10)
-        ax_time_label.text(0.5, 1.4, 'Elapsed (hrs)', ha='center', va='center', fontsize=10)
+        ax_reward_label.text(0.5, 1.4, "Reward", ha="center", va="center", fontsize=10)
+        ax_time_label.text(
+            0.5, 1.4, "Elapsed (hrs)", ha="center", va="center", fontsize=10
+        )
 
         # Add shared 'Final' label under both plots
-        ax_shared.text(0.5, 2.4, 'Final', ha='center', va='center', fontsize=12)
+        ax_shared.text(0.5, 2.4, "Final", ha="center", va="center", fontsize=12)
 
         # Add connecting lines between plots
         self.add_connecting_lines(ax1, ax2)
         self.add_adjacent_connecting_lines(ax2, ax3)
 
         # Save the figure
-        plt.savefig(output_file, bbox_inches='tight', pad_inches=0.1, dpi=300)
+        plt.savefig(output_file, bbox_inches="tight", pad_inches=0.1, dpi=300)
         plt.close()
 
-    def _calculate_final_ticks_statistics(self, roots: List[Node], target_step: int) -> Dict:
+    def _calculate_final_ticks_statistics(
+        self, roots: List[Node], target_step: int
+    ) -> Dict:
         """Calculate statistics for final ticks at target step"""
         final_ticks = []
 
         for root in roots:
-            total_ticks = 0
-            current_step = 0
             stack = [(root, 0, 0)]  # (node, step, accumulated_ticks)
 
             path_ticks = []
@@ -991,23 +1077,25 @@ class ProgressionVisualizerWithTicks:
                 node, step, prev_ticks = stack.pop()
 
                 if step == target_step:
-                    path_ticks.append(prev_ticks + node.metrics['ticks'])
+                    path_ticks.append(prev_ticks + node.metrics["ticks"])
                     continue
 
                 if step < target_step:
                     for child in node.children:
-                        stack.append((child, step + 1, prev_ticks + node.metrics['ticks']))
+                        stack.append(
+                            (child, step + 1, prev_ticks + node.metrics["ticks"])
+                        )
 
             if path_ticks:
                 final_ticks.append(np.median(path_ticks))
 
         if final_ticks:
             return {
-                'median': np.median(final_ticks),
-                'ci_lower': np.percentile(final_ticks, 2.5),
-                'ci_upper': np.percentile(final_ticks, 97.5)
+                "median": np.median(final_ticks),
+                "ci_lower": np.percentile(final_ticks, 2.5),
+                "ci_upper": np.percentile(final_ticks, 97.5),
             }
-        return {'median': 0, 'ci_lower': 0, 'ci_upper': 0}
+        return {"median": 0, "ci_lower": 0, "ci_upper": 0}
 
     def _calculate_statistics(self, roots: List[Node], max_depth: int) -> Dict:
         """Calculate statistics with standard error of mean instead of CI"""
@@ -1016,7 +1104,9 @@ class ProgressionVisualizerWithTicks:
         # Collect raw data points
         for root in roots:
             values_by_x[0].append(0)
-            stack = [(root, 0, 0, 0, defaultdict(int))]  # (node, depth, prev_ticks, prev_value, achievements)
+            stack = [
+                (root, 0, 0, 0, defaultdict(int))
+            ]  # (node, depth, prev_ticks, prev_value, achievements)
 
             while stack:
                 node, depth, prev_ticks, prev_value, prev_achievements = stack.pop()
@@ -1040,20 +1130,22 @@ class ProgressionVisualizerWithTicks:
                         item_value = self.value_calculator.get_value(item)
                         current_value += item_value * quantity
                 else:
-                    current_value = prev_value + node.metrics['value']
+                    current_value = prev_value + node.metrics["value"]
 
                 # Calculate x coordinate
-                ticks = prev_ticks + node.metrics['ticks']
+                ticks = prev_ticks + node.metrics["ticks"]
                 x_coord = ticks if self.x_axis == "ticks" else depth
 
                 values_by_x[x_coord].append(current_value)
 
                 # Add children to stack with updated achievements
                 for child in node.children:
-                    stack.append((child, depth + 1, ticks, current_value, current_achievements))
+                    stack.append(
+                        (child, depth + 1, ticks, current_value, current_achievements)
+                    )
 
         # Calculate statistics
-        stats = {0: {'mean': 0, 'sem_lower': 0, 'sem_upper': 0, 'std': 0}}
+        stats = {0: {"mean": 0, "sem_lower": 0, "sem_upper": 0, "std": 0}}
         x_coords = sorted(x for x in values_by_x.keys() if x > 0)
 
         if self.x_axis == "ticks":
@@ -1062,7 +1154,7 @@ class ProgressionVisualizerWithTicks:
                 np.log(min(x_coords)) / np.log(self.x_base),
                 np.log(max(x_coords)) / np.log(self.x_base),
                 500,
-                base=self.x_base
+                base=self.x_base,
             )
 
             # Calculate smoothed statistics with SEM
@@ -1071,25 +1163,31 @@ class ProgressionVisualizerWithTicks:
                 nearby_values = []
                 for orig_x, values in values_by_x.items():
                     if orig_x > 0:
-                        log_diff = abs(np.log(x) / np.log(self.x_base) -
-                                       np.log(orig_x) / np.log(self.x_base))
+                        log_diff = abs(
+                            np.log(x) / np.log(self.x_base)
+                            - np.log(orig_x) / np.log(self.x_base)
+                        )
                         if log_diff < window:
-                            weight = np.exp(-(log_diff / window) ** 2)
+                            weight = np.exp(-((log_diff / window) ** 2))
                             nearby_values.extend((v, weight) for v in values)
 
                 if nearby_values:
                     values, weights = zip(*nearby_values)
                     mean = np.average(values, weights=weights)
-                    weighted_var = np.average((np.array(values) - mean) ** 2, weights=weights)
+                    weighted_var = np.average(
+                        (np.array(values) - mean) ** 2, weights=weights
+                    )
                     # Calculate weighted SEM
-                    n_effective = (np.sum(weights) ** 2) / np.sum(np.array(weights) ** 2)
+                    n_effective = (np.sum(weights) ** 2) / np.sum(
+                        np.array(weights) ** 2
+                    )
                     sem = np.sqrt(weighted_var / n_effective)
 
                     stats[x] = {
-                        'mean': mean,
-                        'std': np.sqrt(weighted_var),
-                        'sem_lower': mean - sem,
-                        'sem_upper': mean + sem
+                        "mean": mean,
+                        "std": np.sqrt(weighted_var),
+                        "sem_lower": mean - sem,
+                        "sem_upper": mean + sem,
                     }
         else:
             # For steps, use direct statistics
@@ -1100,20 +1198,20 @@ class ProgressionVisualizerWithTicks:
                     std = np.std(values)
                     sem = std / np.sqrt(len(values))  # Standard Error of Mean
                     stats[x] = {
-                        'mean': mean,
-                        'std': std,
-                        'sem_lower': mean - sem,
-                        'sem_upper': mean + sem
+                        "mean": mean,
+                        "std": std,
+                        "sem_lower": mean - sem,
+                        "sem_upper": mean + sem,
                     }
 
         # Ensure monotonicity
-        prev_stats = {'mean': 0, 'sem_lower': 0, 'sem_upper': 0, 'std': 0}
+        prev_stats = {"mean": 0, "sem_lower": 0, "sem_upper": 0, "std": 0}
         for x in sorted(stats.keys()):
             stats[x] = {
-                'mean': max(stats[x]['mean'], prev_stats['mean']),
-                'sem_lower': max(stats[x]['sem_lower'], prev_stats['sem_lower']),
-                'sem_upper': max(stats[x]['sem_upper'], prev_stats['sem_upper']),
-                'std': stats[x]['std']
+                "mean": max(stats[x]["mean"], prev_stats["mean"]),
+                "sem_lower": max(stats[x]["sem_lower"], prev_stats["sem_lower"]),
+                "sem_upper": max(stats[x]["sem_upper"], prev_stats["sem_upper"]),
+                "std": stats[x]["std"],
             }
             prev_stats = stats[x]
 
@@ -1126,7 +1224,9 @@ class ProgressionVisualizerWithTicks:
         # Collect raw data points
         for root in roots:
             values_by_x[0].append(0)
-            stack = [(root, 0, 0, 0, defaultdict(int))]  # (node, depth, prev_ticks, prev_value, achievements)
+            stack = [
+                (root, 0, 0, 0, defaultdict(int))
+            ]  # (node, depth, prev_ticks, prev_value, achievements)
 
             while stack:
                 node, depth, prev_ticks, prev_value, prev_achievements = stack.pop()
@@ -1150,20 +1250,22 @@ class ProgressionVisualizerWithTicks:
                         item_value = self.value_calculator.get_value(item)
                         current_value += item_value * quantity
                 else:
-                    current_value = prev_value + node.metrics['value']
+                    current_value = prev_value + node.metrics["value"]
 
                 # Calculate x coordinate
-                ticks = prev_ticks + node.metrics['ticks']
+                ticks = prev_ticks + node.metrics["ticks"]
                 x_coord = ticks if self.x_axis == "ticks" else depth
 
                 values_by_x[x_coord].append(current_value)
 
                 # Add children to stack with updated achievements
                 for child in node.children:
-                    stack.append((child, depth + 1, ticks, current_value, current_achievements))
+                    stack.append(
+                        (child, depth + 1, ticks, current_value, current_achievements)
+                    )
 
         # Calculate statistics
-        stats = {0: {'mean': 0, 'ci_lower': 0, 'ci_upper': 0, 'std': 0}}
+        stats = {0: {"mean": 0, "ci_lower": 0, "ci_upper": 0, "std": 0}}
         x_coords = sorted(x for x in values_by_x.keys() if x > 0)
 
         if self.x_axis == "ticks":
@@ -1172,7 +1274,7 @@ class ProgressionVisualizerWithTicks:
                 np.log(min(x_coords)) / np.log(self.x_base),
                 np.log(max(x_coords)) / np.log(self.x_base),
                 500,
-                base=self.x_base
+                base=self.x_base,
             )
 
             # Calculate smoothed statistics
@@ -1181,19 +1283,21 @@ class ProgressionVisualizerWithTicks:
                 nearby_values = []
                 for orig_x, values in values_by_x.items():
                     if orig_x > 0:
-                        log_diff = abs(np.log(x) / np.log(self.x_base) -
-                                       np.log(orig_x) / np.log(self.x_base))
+                        log_diff = abs(
+                            np.log(x) / np.log(self.x_base)
+                            - np.log(orig_x) / np.log(self.x_base)
+                        )
                         if log_diff < window:
-                            weight = np.exp(-(log_diff / window) ** 2)
+                            weight = np.exp(-((log_diff / window) ** 2))
                             nearby_values.extend((v, weight) for v in values)
 
                 if nearby_values:
                     values, weights = zip(*nearby_values)
                     stats[x] = {
-                        'mean': np.average(values, weights=weights),
-                        'std': np.std(values),
-                        'ci_lower': self.weighted_percentile(values, weights, 2.5),
-                        'ci_upper': self.weighted_percentile(values, weights, 97.5)
+                        "mean": np.average(values, weights=weights),
+                        "std": np.std(values),
+                        "ci_lower": self.weighted_percentile(values, weights, 2.5),
+                        "ci_upper": self.weighted_percentile(values, weights, 97.5),
                     }
         else:
             # For steps, use direct statistics
@@ -1201,25 +1305,24 @@ class ProgressionVisualizerWithTicks:
                 values = values_by_x[x]
                 if values:
                     stats[x] = {
-                        'mean': np.mean(values),
-                        'std': np.std(values),
-                        'ci_lower': np.percentile(values, 2.5),
-                        'ci_upper': np.percentile(values, 97.5)
+                        "mean": np.mean(values),
+                        "std": np.std(values),
+                        "ci_lower": np.percentile(values, 2.5),
+                        "ci_upper": np.percentile(values, 97.5),
                     }
 
         # Ensure monotonicity
-        prev_stats = {'mean': 0, 'ci_lower': 0, 'ci_upper': 0, 'std': 0 }
+        prev_stats = {"mean": 0, "ci_lower": 0, "ci_upper": 0, "std": 0}
         for x in sorted(stats.keys()):
             stats[x] = {
-                'mean': max(stats[x]['mean'], prev_stats['mean']),
-                'ci_lower': max(stats[x]['ci_lower'], prev_stats['ci_lower']),
-                'ci_upper': max(stats[x]['ci_upper'], prev_stats['ci_upper']),
-                'std': stats[x]['std']
+                "mean": max(stats[x]["mean"], prev_stats["mean"]),
+                "ci_lower": max(stats[x]["ci_lower"], prev_stats["ci_lower"]),
+                "ci_upper": max(stats[x]["ci_upper"], prev_stats["ci_upper"]),
+                "std": stats[x]["std"],
             }
             prev_stats = stats[x]
 
         return stats
-
 
     def _add_achievement_icon(self, ax, item_name: str, x: float, y: float, color: str):
         """Add achievement icon with background circle"""
@@ -1235,11 +1338,7 @@ class ProgressionVisualizerWithTicks:
             circle_box.image.axes = ax
 
             ab_circle = AnnotationBbox(
-                circle_box,
-                (x, y),
-                frameon=False,
-                box_alignment=(0.5, 0.5),
-                pad=0
+                circle_box, (x, y), frameon=False, box_alignment=(0.5, 0.5), pad=0
             )
             ax.add_artist(ab_circle)
 
@@ -1260,16 +1359,20 @@ async def main():
         port=os.getenv("SKILLS_DB_PORT"),
         dbname=os.getenv("SKILLS_DB_NAME"),
         user=os.getenv("SKILLS_DB_USER"),
-        password=os.getenv("SKILLS_DB_PASSWORD")
+        password=os.getenv("SKILLS_DB_PASSWORD"),
     )
 
     icons_path = "/data/icons/early_icons"
 
     for x_axis in ["steps", "ticks"]:
-        viz = ProgressionVisualizerWithTicks(db_client, icons_path, x_axis,
-                                             use_log_scale = x_axis != "ticks",
-                                             use_value_gdp=False,
-                                             recipes_file="/data/recipes/recipes.jsonl")
+        viz = ProgressionVisualizerWithTicks(
+            db_client,
+            icons_path,
+            x_axis,
+            use_log_scale=x_axis != "ticks",
+            use_value_gdp=False,
+            recipes_file="/data/recipes/recipes.jsonl",
+        )
 
         # Configure versions to plot
         version_groups = {
@@ -1277,39 +1380,53 @@ async def main():
             "GPT-4o-Mini": [548, 575, 576, 577, 578],
             "LLaMA-70B": [550, 599, 600, 601, 602],
             "Gemini-2": [595, 596, 597, 598, 805, 806, 807, 808],
-            "GPT-4o": [551, 552, 553, 554, 564, 797, 798, 799, 800],  # Multiple GPT-4 versions
-            "Claude-3.5": [559, 560, 561, 562, 574, 801, 802, 803, 804],  # Multiple Claude versions
+            "GPT-4o": [
+                551,
+                552,
+                553,
+                554,
+                564,
+                797,
+                798,
+                799,
+                800,
+            ],  # Multiple GPT-4 versions
+            "Claude-3.5": [
+                559,
+                560,
+                561,
+                562,
+                574,
+                801,
+                802,
+                803,
+                804,
+            ],  # Multiple Claude versions
             "Claude-3.7": [2223, 2226, 2224, 2225],  # Multiple Claude versions
-            "o3-mini-high": [2229, 2227, 2228, 2230]
+            "o3-mini-high": [2229, 2227, 2228, 2230],
             # "LLaMA-70B": [488],  # Single version
             # "GPT-4-Mini": [505],
             # "o3-mini": [508]
         }
 
-        final_values = [48584.5, 26756.25, 54998.0, 115781.6, 87599.25, 293206.8]
-        final_confidence_intervals = [(33196.05479548047, 63972.94520451953), (22158.66958505618, 31353.83041494382),
-         (32339.065691431995, 77656.934308568), (68869.72848979183, 174369.3576567665),
-         (59074.448683042945, 116124.05131695705), (255855.04995650135, 330558.55004349863)]
-
-
         labels = {
             "Claude-3.7": "Claude-3.7",
             "Claude-3.5": "Claude-3.5",
-            "o3-mini-high": 'o3-mini-high',
+            "o3-mini-high": "o3-mini-high",
             "GPT-4o": "GPT-4o",
             "LLaMA-70B": "LLaMA-70B",
             "GPT-4o-Mini": "GPT-4o-Mini",
             "o3-mini": "o3-mini",
             "Deepseek-v3": "Deepseek-v3",
-            "Gemini-2": "Gemini-2"
+            "Gemini-2": "Gemini-2",
         }
 
         # Generate visualization
         viz.load_data(version_groups, labels)
-        #viz.export_visualization(f"progression_{x_axis}.png", reference_version=492)
+        # viz.export_visualization(f"progression_{x_axis}.png", reference_version=492)
         viz.export_split_visualization(f"progression_{x_axis}_split_ticks.png")
         # Generate new achievement stack visualization
-        #viz.export_achievement_frequency(f"achievement_stack_{x_axis}.png")
+        # viz.export_achievement_frequency(f"achievement_stack_{x_axis}.png")
 
 
 if __name__ == "__main__":

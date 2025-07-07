@@ -18,7 +18,6 @@ from .beam_search import (
     BeamSearch,
     BeamGroup,
     ParallelBeamConfig,
-    
     # Model utilities
     ModelFamily,
     get_model_family,
@@ -36,16 +35,13 @@ __version__ = "1.0.0"
 __all__ = [
     # Main beam search classes
     "ParallelBeamSearch",
-    "BeamSearch", 
+    "BeamSearch",
     "BeamGroup",
     "ParallelBeamConfig",
-    
     # Milestones variant
     "MilestonesBeamSearchExecutor",
-    
     # Model utilities
     "ModelFamily",
     "get_model_family",
     "get_logit_bias",
-    
 ]

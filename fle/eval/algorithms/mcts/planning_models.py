@@ -22,13 +22,16 @@ class LanguageOutput(BaseModel):
     version: int = 1
     version_description: str = ""
 
+
 class TaskOutput(BaseModel):
     task: str
     language_output: Optional[LanguageOutput]
 
+
 class InitialPlanOutput(BaseModel):
     initial_plan: str
     language_output: LanguageOutput
+
 
 class Step(BaseModel):
     candidate_language_outputs: list[LanguageOutput] = []
@@ -47,7 +50,7 @@ class PlanOutput(BaseModel):
     task: TaskOutput
     initial_plan: Optional[InitialPlanOutput]
     final_output: str = ""
-    steps : list[Step] = []
+    steps: list[Step] = []
     logs: Optional[list] = []
     success: bool = False
     meta: Optional[Dict] = {}

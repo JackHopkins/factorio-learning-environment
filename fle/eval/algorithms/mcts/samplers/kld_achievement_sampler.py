@@ -16,11 +16,13 @@ from .db_sampler import DBSampler
 
 class KLDiversityAchievementSampler(DBSampler):
     """
-        A sampler that promotes diversity in achievements by computing KL divergence
-        between achievement distributions and sampling based on maximum divergence.
-        """
+    A sampler that promotes diversity in achievements by computing KL divergence
+    between achievement distributions and sampling based on maximum divergence.
+    """
 
-    def __init__(self, db_client: DBClient, window_size: int = 300, temperature: float = 1.0):
+    def __init__(
+        self, db_client: DBClient, window_size: int = 300, temperature: float = 1.0
+    ):
         """
         Initialize the KL divergence-based achievement sampler.
 
@@ -76,14 +78,14 @@ class KLDiversityAchievementSampler(DBSampler):
         if not achievements_json:
             return frequencies
 
-        static_achievements = achievements_json.get('static', {})
-        dynamic_achievements = achievements_json.get('dynamic', {})
+        static_achievements = achievements_json.get("static", {})
+        dynamic_achievements = achievements_json.get("dynamic", {})
 
         for key, value in static_achievements.items():
             try:
                 # Convert value to float for numerical operations
                 freq = float(value)
-                frequencies['static-'+key] = freq
+                frequencies["static-" + key] = freq
             except (ValueError, TypeError):
                 # If value can't be converted to float, skip this achievement
                 continue
@@ -92,7 +94,7 @@ class KLDiversityAchievementSampler(DBSampler):
             try:
                 # Convert value to float for numerical operations
                 freq = float(value)
-                frequencies['dynamic-' + key] = freq
+                frequencies["dynamic-" + key] = freq
             except (ValueError, TypeError):
                 # If value can't be converted to float, skip this achievement
                 continue
@@ -127,8 +129,10 @@ class KLDiversityAchievementSampler(DBSampler):
         return kld
 
     @tenacity.retry(
-        retry=retry_if_exception_type((psycopg2.OperationalError, psycopg2.InterfaceError)),
-        wait=wait_exponential(multiplier=1, min=4, max=10)
+        retry=retry_if_exception_type(
+            (psycopg2.OperationalError, psycopg2.InterfaceError)
+        ),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
     )
     async def sample_parent(self, version: int = 1, **kwargs) -> Optional[Program]:
         """
@@ -145,14 +149,17 @@ class KLDiversityAchievementSampler(DBSampler):
             with self.db_client.get_connection() as conn:
                 with conn.cursor(cursor_factory=DictCursor) as cur:
                     # Fetch recent programs with achievements
-                    cur.execute("""
+                    cur.execute(
+                        """
                             SELECT id, achievements_json
                             FROM programs
                             WHERE version = %s 
                             AND achievements_json IS NOT NULL
                             ORDER BY created_at DESC
                             LIMIT %s
-                        """, (version, self.window_size))
+                        """,
+                        (version, self.window_size),
+                    )
 
                     results = cur.fetchall()
                     if not results:
@@ -160,7 +167,12 @@ class KLDiversityAchievementSampler(DBSampler):
 
                     # Compute frequency distributions for each program
                     programs: List[Tuple[int, Counter]] = [
-                        (row['id'], self._compute_achievement_frequencies(row['achievements_json']))
+                        (
+                            row["id"],
+                            self._compute_achievement_frequencies(
+                                row["achievements_json"]
+                            ),
+                        )
                         for row in results
                     ]
 
@@ -183,8 +195,12 @@ class KLDiversityAchievementSampler(DBSampler):
                         scores = np.array([score for _, score in diversity_scores])
                         normalized_scores = self._normalize_scores(scores)
 
-                        normalized_scores = normalized_scores / self.temperature  # Apply temperature scaling
-                        softmax_probs = np.exp(normalized_scores - np.max(normalized_scores))
+                        normalized_scores = (
+                            normalized_scores / self.temperature
+                        )  # Apply temperature scaling
+                        softmax_probs = np.exp(
+                            normalized_scores - np.max(normalized_scores)
+                        )
                         softmax_probs = softmax_probs / softmax_probs.sum()
 
                         # Sample program ID based on softmax probabilities

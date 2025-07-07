@@ -44,7 +44,7 @@ jobs:
 
       - name: Start Factorio server
         run: |
-          cd cluster
+          cd fle/cluster
           docker compose up -d
 
       - name: Wait for server to start
@@ -117,7 +117,7 @@ jobs:
       - name: Show test logs on failure
         if: failure()
         run: |
-          cd cluster
+          cd fle/cluster
           echo "=== Factorio container logs ==="
           docker compose logs factorio_1
           

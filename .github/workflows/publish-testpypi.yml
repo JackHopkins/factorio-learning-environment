@@ -1,19 +1,18 @@
 name: "Publish to TestPyPI"
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
+    types:
+      - closed
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  run:
-    name: "Build and publish to TestPyPI"
+  if_merged:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 

@@ -58,7 +58,7 @@ You can install the factorio-learning-environment package using either uv or pip
 # Install from PyPI using uv
 uv add factorio-learning-environment
 
-# Install from PyPI using pip
+# Or install from PyPI using pip
 pip install factorio-learning-environment
 ```
 
@@ -117,12 +117,20 @@ import fle
 5. **Run Eval**: Running open and lab play with example run configs:
    1. Open Play (one parallel run):
       ```sh
+      # Using uv
       uv run -m fle.run --run_config=eval/algorithms/independent/run_config_example_open_play.json
+      # Or using python
+      python -m fle.run --run_config=eval/algorithms/independent/run_config_example_open_play.json
       ```
    2. Tasks (one parallel run of iron-ore task):
       ```sh
+      # Using uv
       uv run -m fle.run --run_config=fle/eval/algorithms/independent/gym_run_config.json
+      # Or using python
+      python -m fle.run --run_config=fle/eval/algorithms/independent/gym_run_config.json
       ```
+
+> **Note:** All commands and scripts can be run with either `uv run` or `python` as shown above. Both uv and pip+python are fully supported.
 
 ### Client-side running (optional if you want to see visuals)
 

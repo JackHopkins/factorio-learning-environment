@@ -62,8 +62,8 @@ jobs:
             sleep 2
           done
           
-          if ! nc -z localhost 27016 2>/dev/null; then
-            echo "❌ RCON port 27016 never became available"
+          if ! nc -z localhost 27015 2>/dev/null; then
+            echo "❌ RCON port 27015 never became available"
             exit 1
           fi
 
@@ -111,7 +111,7 @@ jobs:
           python -m pytest -v -s --tb=short tests/actions/
         env:
           FACTORIO_HOST: localhost
-          FACTORIO_RCON_PORT: 27016
+          FACTORIO_RCON_PORT: 27015
           PYTHONUNBUFFERED: 1
 
       - name: Show test logs on failure

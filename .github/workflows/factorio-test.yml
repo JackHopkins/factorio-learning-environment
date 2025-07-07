@@ -45,7 +45,7 @@ jobs:
       - name: Start Factorio server
         run: |
           cd fle/cluster
-          docker compose up -d
+          docker compose -f docker-compose-linux.yml up -d
 
       - name: Wait for server to start
         run: |
@@ -70,8 +70,8 @@ jobs:
       - name: Check server status
         run: |
           cd fle/cluster
-          docker compose ps
-          docker compose logs factorio_1
+          docker compose -f docker-compose-linux.yml ps
+          docker compose -f docker-compose-linux.yml logs factorio_1
 
       - name: Debug container IPs and ports
         run: |
@@ -119,13 +119,13 @@ jobs:
         run: |
           cd fle/cluster
           echo "=== Factorio container logs ==="
-          docker compose logs factorio_1
+          docker compose -f docker-compose-linux.yml logs factorio_1
           
           echo -e "\n=== All container logs ==="
-          docker compose logs
+          docker compose -f docker-compose-linux.yml logs
 
       - name: Stop server
         if: always()
         run: |
           cd fle/cluster
-          docker compose down
+          docker compose -f docker-compose-linux.yml down

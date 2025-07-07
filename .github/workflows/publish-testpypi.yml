@@ -4,12 +4,10 @@ on:
   pull_request:
     types:
       - closed
-  schedule:
-    - cron: '0 0 * * *'  # Daily at midnight GMT
 
 permissions:
   id-token: write
-  contents: write  # Need write permission for version bumping
+  contents: read
 
 jobs:
   if_merged:
@@ -31,50 +29,4 @@ jobs:
         run: uv build
 
       - name: Publish to TestPyPI
-        run: uv publish --trusted-publishing always --index testpypi
-
-  nightly_bump_and_publish:
-    if: github.event_name == 'schedule'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: uv.lock
-      
-      - name: Set up Python
-        run: uv python install 3.12
-      
-      - name: Check for changes on main
-        id: changes
-        run: |
-          git fetch origin main
-          git log --since="24 hours ago" origin/main --oneline > changes.txt
-          if [ -s changes.txt ]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Bump patch version
-        if: steps.changes.outputs.changed == 'true'
-        run: |
-          uv bump patch pyproject.toml
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add pyproject.toml
-          git commit -m "ci: nightly patch bump"
-          git push
-      
-      - name: Build
-        if: steps.changes.outputs.changed == 'true'
-        run: uv build
-      
-      - name: Publish to TestPyPI
-        if: steps.changes.outputs.changed == 'true'
         run: uv publish --trusted-publishing always --index testpypi

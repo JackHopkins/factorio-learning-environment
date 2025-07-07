@@ -29,7 +29,7 @@ services:
       --map-settings /opt/factorio/config/map-settings.json
       --server-banlist /opt/factorio/config/server-banlist.json
       --rcon-port 27015
-      --rcon-password ""
+      --rcon-password "factorio"
       --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist
       --server-adminlist /opt/factorio/config/server-adminlist.json

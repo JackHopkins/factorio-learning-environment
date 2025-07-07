@@ -663,21 +663,21 @@ class ConnectEntities(Tool):
             case (-1, -1):
                 pass #raise Exception("Cannot rotate non adjacent belts to face one another")
 
-            case (1, _) if source_belt.direction.value not in (Direction.LEFT.value, Direction.RIGHT.value):
+            case (1, _) if source_belt.direction.value not in (DirectionInternal.LEFT.value, DirectionInternal.RIGHT.value):
                 # Source is to right of target - point left
-                source_belt = self.rotate_entity(source_belt, Direction.LEFT)
+                source_belt = self.rotate_entity(source_belt, DirectionInternal.LEFT)
 
-            case (-1, _) if source_belt.direction.value not in (Direction.LEFT.value, Direction.RIGHT.value):
+            case (-1, _) if source_belt.direction.value not in (DirectionInternal.LEFT.value, DirectionInternal.RIGHT.value):
                 # Source is to left of target - point right
-                source_belt = self.rotate_entity(source_belt, Direction.RIGHT)
+                source_belt = self.rotate_entity(source_belt, DirectionInternal.RIGHT)
 
-            case (_, 1) if source_belt.direction.value not in (Direction.UP.value, Direction.DOWN.value):
+            case (_, 1) if source_belt.direction.value not in (DirectionInternal.UP.value, DirectionInternal.DOWN.value):
                 # Source is below target - point up
-                source_belt = self.rotate_entity(source_belt, Direction.UP)
+                source_belt = self.rotate_entity(source_belt, DirectionInternal.UP)
 
-            case (_, -1) if source_belt.direction.value not in (Direction.UP.value, Direction.DOWN.value):
+            case (_, -1) if source_belt.direction.value not in (DirectionInternal.UP.value, DirectionInternal.DOWN.value):
                 # Source is above target - point down
-                source_belt = self.rotate_entity(source_belt, Direction.DOWN)
+                source_belt = self.rotate_entity(source_belt, DirectionInternal.DOWN)
 
         # Update the belt group connections
         target_belt = self.get_entity(target_belt.prototype, target_belt.position)

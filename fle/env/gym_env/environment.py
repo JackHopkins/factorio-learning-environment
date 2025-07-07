@@ -315,6 +315,7 @@ class FactorioGymEnv(gym.Env):
             truncated: Whether the episode is truncated
             info: Additional information
         """
+        assert isinstance(action, Action)
         action = action.to_dict()
         agent_idx = action['agent_idx']
         code = action['code']
@@ -339,6 +340,7 @@ class FactorioGymEnv(gym.Env):
             # Wait for value accrual
             time.sleep(self.value_accrual_time)
             reward = score - initial_score
+        reward = float(reward)  # Ensure reward is always a float
         
         # Get task verification if task exists
         task_response = task_success = None
@@ -395,14 +397,16 @@ class FactorioGymEnv(gym.Env):
         """
         self.instance.reset(state)
 
-    def reset(self, options: Dict[str, Any], seed: Optional[int] = None) -> Dict[str, Any]:
+    def reset(self, options: Optional[Dict[str, Any]] = None, seed: Optional[int] = None) -> Dict[str, Any]:
         """Reset the environment to initial state
         
         Args:
             options: dict containing 'game_state' key with Optional[GameState] value to reset to
             seed: Not used
         """
-        game_state = options['game_state']
+        if options is None:
+            options = {}
+        game_state = options.get('game_state')
         self.reset_instance(game_state)
 
         self.initial_score, _ = self.instance.namespaces[0].score()

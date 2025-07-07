@@ -44,6 +44,14 @@ dependencies = [
     "psycopg2>=2.9.10",
     "aiohttp>=3.8.0",
     "uvicorn>=0.15.0",
+    "gym",
+    "a2a-sdk",
+    "anthropic>=0.49.0",
+    "openai>=1.66.3",
+    "tenacity>=9.0.0",
+    "psycopg2>=2.9.10",
+    "aiohttp>=3.8.0",
+    "uvicorn>=0.15.0",
 ]
 
 [project.optional-dependencies]
@@ -61,6 +69,10 @@ agents = [
 cluster = [
     "docker>=6.0.0",
     "boto3>=1.26.0",
+    "opencv-python",
+    "pyautogui>=0.9.54",
+    "pillow>=10.0.0",
+    "psutil>=5.9.0",
     "opencv-python",
     "pyautogui>=0.9.54",
     "pillow>=10.0.0",
@@ -94,8 +106,10 @@ env = [
 
 [project.scripts]
 fle = "fle.run:main"
+fle = "fle.run:main"
 
 [tool.hatch.version]
+path = "fle/__about__.py"
 path = "fle/__about__.py"
 
 [tool.hatch.build]
@@ -104,6 +118,7 @@ exclude = [
     "**/*.pyc",
     "**/*.pyo",
     "**/*.pyd",
+    ".git*",
     ".git*",
     ".DS_Store",
     "dist",

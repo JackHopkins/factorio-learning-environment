@@ -1,0 +1,39 @@
+{
+        "entities": [
+            {
+                "entity_number": 1,
+                "name": "electric-mining-drill",
+                "position": {
+                    "x": 0.5,
+                    "y": 5.5
+                },
+                "direction": 2
+            },
+            {
+                "entity_number": 2,
+                "name": "electric-mining-drill",
+                "position": {
+                    "x": 3.5,
+                    "y": 5.5
+                },
+                "direction": 4
+            },
+            {
+                "entity_number": 3,
+                "name": "electric-mining-drill",
+                "position": {
+                    "x": 0.5,
+                    "y": 8.5
+                }
+            },
+            {
+                "entity_number": 4,
+                "name": "electric-mining-drill",
+                "position": {
+                    "x": 3.5,
+                    "y": 8.5
+                },
+                "direction": 6
+            }
+        ]
+}

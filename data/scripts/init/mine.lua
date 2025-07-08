@@ -1,0 +1,1 @@
+game.players[arg1].mining_state = {mining = true, position = defines.direction.arg2}

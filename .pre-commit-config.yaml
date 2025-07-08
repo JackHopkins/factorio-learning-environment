@@ -6,7 +6,8 @@ repos:
     # Run the linter.
     - id: ruff-check
       types_or: [ python, pyi ]
-      args: [ --fix, --exclude=fle/agents/data/prompts, --ignore=E722,--ignore=F405 ]
+      args: [ --fix, --exclude=fle/agents/data/prompts, --exclude=data/prompts, --ignore=E722,--ignore=F405 ]
     # Run the formatter.
     - id: ruff-format
-      types_or: [ python, pyi ] 
+      types_or: [ python, pyi ]
+      args: [ --exclude=fle/agents/data/prompts, --exclude=data/prompts ]

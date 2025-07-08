@@ -1,4 +1,10 @@
-"""Common models for the Factorio Learning Environment."""
+"""
+Common data models for the Factorio Learning Environment.
+
+This module contains all the core data models used throughout the FLE system,
+including game state management, conversation tracking, research states,
+and various utility models.
+"""
 
 from fle.commons.models.game_state import GameState, filter_serializable_vars
 from fle.commons.models.research_state import ResearchState

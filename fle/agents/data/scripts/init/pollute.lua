@@ -1,1 +1,0 @@
-game.player.surface.pollute(game.player.position, 1000000)

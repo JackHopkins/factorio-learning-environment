@@ -1,1 +1,0 @@
-rcon.print(#game.players[arg1].get_main_inventory().get_contents())

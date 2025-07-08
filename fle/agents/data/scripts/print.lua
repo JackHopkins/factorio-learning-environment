@@ -1,1 +1,0 @@
-rcon.print( 'this works' )

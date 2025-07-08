@@ -82,11 +82,9 @@ trajectory_logs/
 # Docker compose generated files  
 /fle/cluster/local/docker-compose.yml
 
-
 # Database files
 .fle/
 *.db
-/fle/eval/
 /fle/eval/open/plots/
 /eval/
 /data/

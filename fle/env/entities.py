@@ -1,8 +1,8 @@
 import math
 from typing import Tuple, Any, Union, Dict, Literal
 from typing import List, Optional
-from enum import Enum, Flag, auto, IntFlag
-from pydantic import ConfigDict, BaseModel, PrivateAttr, model_validator
+from enum import Enum, IntFlag
+from pydantic import ConfigDict, BaseModel, model_validator
 
 
 class Layer(IntFlag):
@@ -410,8 +410,10 @@ class Recipe(BaseModel):
 
 class BurnerType(BaseModel):
     """Type of entity that burns fuel"""
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    fuel: Inventory = Inventory() # Use this to check the fuel levels of the entity
+    fuel: Inventory = Inventory()  # Use this to check the fuel levels of the entity
+
 
 class EntityCore(BaseModel):
     # id: Optional[str] = None

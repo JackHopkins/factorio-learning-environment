@@ -14,10 +14,12 @@ class Python(str):
 
     @classmethod
     def __get_pydantic_core_schema__(cls, source, handler: GetCoreSchemaHandler):
-        return core_schema.chain_schema([
-            core_schema.str_schema(),
-            core_schema.no_info_plain_validator_function(cls.validate)
-        ])
+        return core_schema.chain_schema(
+            [
+                core_schema.str_schema(),
+                core_schema.no_info_plain_validator_function(cls.validate),
+            ]
+        )
 
     @classmethod
     def validate(cls, value, values=None, config=None, field=None) -> str:

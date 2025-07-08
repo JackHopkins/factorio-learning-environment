@@ -50,6 +50,7 @@ class Program(BaseModel):
         return (self.value / self.visits) + exploration_constant * np.sqrt(
             np.log(parent_visits) / self.visits
         )
+
     model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
     @classmethod

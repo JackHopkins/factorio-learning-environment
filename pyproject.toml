@@ -108,7 +108,7 @@ env = [
 fle = "fle.run:main"
 
 [tool.hatch.version]
-path = "fle/__init__.py"
+path = "fle/__about__.py"
 
 [tool.hatch.build]
 exclude = [
@@ -129,7 +129,7 @@ exclude = [
     "tests",
     "docs",
     "leaderboard",
-    ".env",
+    "env",
     "*.sh",
     "*.md",
     "*.toml",

@@ -9,16 +9,6 @@ import importlib.resources
 from fle.env.gym_env.run_eval import main as run_eval
 
 
-# Minimal ConfigManager for config loading
-class ConfigManager:
-    @staticmethod
-    def load(config_path):
-        import json
-
-        with open(config_path, "r") as f:
-            return json.load(f)
-
-
 def copy_env_and_configs():
     try:
         pkg = importlib.resources.files("fle")
@@ -146,22 +136,8 @@ Examples:
         eval_command(args)
         return
     else:
-        # No args: run with default example config
-        try:
-            pkg = importlib.resources.files("fle")
-            default_config = (
-                pkg
-                / "eval"
-                / "algorithms"
-                / "independent"
-                / "run_config_example_open_play.json"
-            )
-            with importlib.resources.as_file(default_config) as config_path:
-                sys.argv = ["run_eval", "--run_config", str(config_path)]
-                asyncio.run(run_eval())
-        except Exception as e:
-            print(f"Error: {e}", file=sys.stderr)
-            sys.exit(1)
+        parser.print_help()
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -107,7 +107,7 @@ pip install -e .[env,eval]
    cd ../local
    ./run-envs.sh  # Starts 1 instance with default lab scenario
 
-   # Alternatively, with more options (see cluster/local/!README.md):
+   # Alternatively, with more options (see fle/cluster/local/README.md):
    ./run-envs.sh -n 3 -s open_world  # Starts 3 instances with open world scenario
    ./run-envs.sh stop                # Stops all running instances
    ./run-envs.sh restart             # Restarts with previous configuration

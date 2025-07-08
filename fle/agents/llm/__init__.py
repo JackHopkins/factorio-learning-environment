@@ -1,4 +1,4 @@
-"""LLM agent module."""
+"""LLM utilities for agents package."""
 
 from fle.agents.llm.api_factory import APIFactory
 from fle.agents.llm.parsing import Policy, PolicyMeta, PythonParser

@@ -1,11 +1,13 @@
+"""MCP protocol implementation for Factorio Learning Environment."""
+
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 
 from mcp.server.fastmcp import FastMCP
 
-from .init import initialize_session, shutdown_session
-from .state import FactorioMCPState
+from fle.env.protocols.mcp.init import initialize_session, shutdown_session
+from fle.env.protocols.mcp.state import FactorioMCPState
 
 
 @dataclass
@@ -26,7 +28,7 @@ async def fle_lifespan(server: FastMCP) -> AsyncIterator[FactorioContext]:
 
     # try:
     connection_message = await initialize_session()
-    from .init import state
+    from fle.env.protocols.mcp.init import state
     # finally:
     #     # Restore stdout
     #     sys.stdout.close()

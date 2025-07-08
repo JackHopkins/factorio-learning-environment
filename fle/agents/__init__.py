@@ -14,12 +14,12 @@ from fle.agents.visual_agent import VisualAgent
 from fle.agents.backtracking_agent import BacktrackingAgent
 from fle.agents.backtracking_system import BacktrackingSystem
 
+from fle.agents.llm.parsing import Policy, PolicyMeta
+
 
 # Lazy imports to avoid circular dependencies
 def _get_policy_classes():
     """Lazy import for Policy classes to avoid circular imports."""
-    from fle.agents.llm.parsing import Policy, PolicyMeta
-
     return Policy, PolicyMeta
 
 

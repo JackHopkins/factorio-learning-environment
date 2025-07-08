@@ -8,8 +8,8 @@ import sys
 import os
 from contextlib import contextmanager
 
-from . import mcp
-from .init import state
+from fle.env.protocols.mcp import mcp
+from fle.env.protocols.mcp.init import state
 
 
 # Context manager to suppress stdout

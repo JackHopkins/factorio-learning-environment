@@ -7,8 +7,8 @@ from typing import List, Optional
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
 
-from ..llm.api_factory import APIFactory
-from .conversation_formatter_abc import ConversationFormatter
+from fle.agents.llm.api_factory import APIFactory
+from fle.agents.formatters.conversation_formatter_abc import ConversationFormatter
 
 DEFAULT_INSTRUCTIONS = "Summarize the following conversation chunk maintaining key information and context. Focus on decisions made, actions taken, and important outcomes."
 

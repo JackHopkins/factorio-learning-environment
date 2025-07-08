@@ -29,7 +29,9 @@ from fle.env.utils.rcon import _lua2python, _get_dir
 from fle.commons.models.research_state import ResearchState
 from factorio_rcon import RCONClient
 from fle.commons.models.game_state import GameState
-from .utils.controller_loader.system_prompt_generator import SystemPromptGenerator
+from fle.env.utils.controller_loader.system_prompt_generator import (
+    SystemPromptGenerator,
+)
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000

@@ -12,9 +12,9 @@ Base Classes:
 - Init: Initialization tool for setting up the game environment
 """
 
-from .controller import Controller
-from .init import Init
-from .tool import Tool
+from fle.env.mods.tools.controller import Controller
+from fle.env.mods.tools.init import Init
+from fle.env.mods.tools.tool import Tool
 
 # Public API - expose the main base classes
 __all__ = [

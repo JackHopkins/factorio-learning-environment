@@ -9,7 +9,7 @@ from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
 from fle.env.namespace import FactorioNamespace
 
-from .conversation_formatter_abc import ConversationFormatter
+from fle.agents.formatters.conversation_formatter_abc import ConversationFormatter
 
 DEFAULT_INSTRUCTIONS = """
 You are a report generating model for the game factorio. You are given a number of steps and logs an agent has executed in the game. You are also given the previous historical report. Using the previous historical report and the latest step execution logs you must generate a new report. The report must have 2 sections: EXISTING STRUCTURES and ERROR TIPS. Below are instructions for both of them

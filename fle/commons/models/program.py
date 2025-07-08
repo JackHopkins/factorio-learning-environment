@@ -4,11 +4,11 @@ from typing import Dict, List, Optional
 import numpy as np
 from pydantic import BaseModel, Field
 
-from .timing_metrics import TimingMetrics
+from fle.commons.models.timing_metrics import TimingMetrics
 
-from .achievements import ProductionFlows
-from .conversation import Conversation
-from .game_state import GameState
+from fle.commons.models.achievements import ProductionFlows
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.game_state import GameState
 
 
 class Program(BaseModel):

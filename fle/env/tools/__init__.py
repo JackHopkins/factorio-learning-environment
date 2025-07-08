@@ -1,20 +1,8 @@
-"""
-Factorio Learning Environment Tools
+"""Tools for Factorio environment interaction."""
 
-This module provides the base classes and utilities for interacting with the Factorio game.
-Tools are organized into two main categories:
-- agent: Tools available to agents for game interaction
-- admin: Administrative tools for game management and debugging
-
-Base Classes:
-- Controller: Base class for all game controllers
-- Tool: Base class for all tools that interact with the game
-- Init: Initialization tool for setting up the game environment
-"""
-
-from .controller import Controller
-from .init import Init
-from .tool import Tool
+from fle.env.tools.controller import Controller
+from fle.env.tools.init import Init
+from fle.env.tools.tool import Tool
 
 # Version info
 __version__ = "1.0.0"

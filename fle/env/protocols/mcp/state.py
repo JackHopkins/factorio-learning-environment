@@ -7,7 +7,7 @@ from fle.env import FactorioInstance
 from fle.commons.cluster_ips import get_local_container_ips
 
 from fle.commons.models import FactorioServer, Recipe, ResourcePatch
-from .repository import FactorioMCPRepository
+from fle.env.protocols.mcp.repository import FactorioMCPRepository
 
 
 class FactorioMCPState:

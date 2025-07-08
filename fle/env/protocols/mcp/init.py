@@ -4,7 +4,7 @@ Initialization module for the Factorio MCP server with automatic connection
 
 import asyncio
 import sys
-from .state import FactorioMCPState
+from fle.env.protocols.mcp.state import FactorioMCPState
 
 # Initialize server state
 state = FactorioMCPState()

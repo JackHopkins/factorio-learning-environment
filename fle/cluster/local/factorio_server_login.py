@@ -9,7 +9,7 @@ from pathlib import Path
 from dataclasses import dataclass
 
 from fle.commons.cluster_ips import get_local_container_ips
-from ..remote.factorio_server_login import get_uninitialised_ips
+from fle.cluster.remote.factorio_server_login import get_uninitialised_ips
 from screeninfo import get_monitors
 
 

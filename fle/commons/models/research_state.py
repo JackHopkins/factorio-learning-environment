@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
-from .technology_state import TechnologyState
+from fle.commons.models.technology_state import TechnologyState
 
 
 @dataclass

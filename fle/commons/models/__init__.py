@@ -1,32 +1,20 @@
-"""
-Common data models for the Factorio Learning Environment.
+"""Common models for the Factorio Learning Environment."""
 
-This module contains all the core data models used throughout the FLE system,
-including game state management, conversation tracking, research states,
-and various utility models.
-"""
+from fle.commons.models.game_state import GameState, filter_serializable_vars
+from fle.commons.models.research_state import ResearchState
+from fle.commons.models.technology_state import TechnologyState
 
-# Game state and research models
-from .game_state import GameState, filter_serializable_vars
-from .research_state import ResearchState
-from .technology_state import TechnologyState
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.message import Message
 
-# Conversation and messaging models
-from .conversation import Conversation
-from .message import Message
+from fle.commons.models.program import Program
+from fle.commons.models.serializable_function import SerializableFunction
 
-# Program execution models
-from .program import Program
-from .serializable_function import SerializableFunction
+from fle.commons.models.achievements import ProfitConfig, ProductionFlows
 
-# Achievement and production models
-from .achievements import ProfitConfig, ProductionFlows
+from fle.commons.models.generation_parameters import GenerationParameters
 
-# Generation and configuration models
-from .generation_parameters import GenerationParameters
-
-# Timing and metrics models
-from .timing_metrics import TimingMetrics
+from fle.commons.models.timing_metrics import TimingMetrics
 
 __all__ = [
     # Game state and research

@@ -129,7 +129,7 @@ exclude = [
     "tests",
     "docs",
     "leaderboard",
-    "env",
+    ".env",
     "*.sh",
     "*.md",
     "*.toml",

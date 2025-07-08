@@ -5,7 +5,7 @@ from fle.env.tools import Tool
 
 class ProductionStats(Tool):
     def __init__(self, lua_script_manager, game_state):
-        self.state = { 'input': {}, 'output': {} }
+        self.state = {"input": {}, "output": {}}
         super().__init__(lua_script_manager, game_state)
 
     def __call__(self) -> Dict[str, Dict[str, int]]:
@@ -23,20 +23,16 @@ class ProductionStats(Tool):
 
         # Calculate the difference in production statistics
         input_diff = {}
-        for item, count in result['input'].items():
-            input_diff[item] = count - self.state['input'].get(item, 0)
+        for item, count in result["input"].items():
+            input_diff[item] = count - self.state["input"].get(item, 0)
 
         output_diff = {}
-        for item, count in result['output'].items():
-            output_diff[item] = count - self.state['output'].get(item, 0)
+        for item, count in result["output"].items():
+            output_diff[item] = count - self.state["output"].get(item, 0)
 
         self.state = result
 
-        return {
-            'input': input_diff,
-            'output': output_diff
-        }
-
+        return {"input": input_diff, "output": output_diff}
 
     def reset_production_stats(self):
         """Resets the production statistics to current values"""

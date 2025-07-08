@@ -13,7 +13,11 @@ class ManualGenerator:
             agent_tool_path = folder_path
 
         # get all the folders in tool_paths
-        tool_folders = [f for f in os.listdir(agent_tool_path) if os.path.isdir(os.path.join(agent_tool_path, f))]
+        tool_folders = [
+            f
+            for f in os.listdir(agent_tool_path)
+            if os.path.isdir(os.path.join(agent_tool_path, f))
+        ]
         manual = ""
         for folder in tool_folders:
             # check if it has a agent.md file
@@ -26,6 +30,6 @@ class ManualGenerator:
                 continue
         # read in the agent.md in master_tool_path
         with open(os.path.join(folder_path, "agent.md"), "r") as f:
-            manual += f"## General useful patterns\n"
+            manual += "## General useful patterns\n"
             manual += f.read()
         return manual

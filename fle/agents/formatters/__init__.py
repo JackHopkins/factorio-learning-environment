@@ -6,7 +6,7 @@ from .conversation_formatter_abc import (
     DefaultFormatter,
     StructurePreservingFormatter,
     CodeProcessor,
-    PLANNING_ADDITION_PROMPT
+    PLANNING_ADDITION_PROMPT,
 )
 
 # Advanced recursive formatter
@@ -17,16 +17,14 @@ from .recursive_report_formatter import RecursiveReportFormatter
 
 __all__ = [
     # Base classes
-    'ConversationFormatter',
-    'DefaultFormatter', 
-    'StructurePreservingFormatter',
-    'CodeProcessor',
-    
+    "ConversationFormatter",
+    "DefaultFormatter",
+    "StructurePreservingFormatter",
+    "CodeProcessor",
     # Advanced formatters
-    'RecursiveFormatter',
-    'RecursiveReportFormatter',
-    
+    "RecursiveFormatter",
+    "RecursiveReportFormatter",
     # Constants
-    'PLANNING_ADDITION_PROMPT',
-    'DEFAULT_INSTRUCTIONS',
+    "PLANNING_ADDITION_PROMPT",
+    "DEFAULT_INSTRUCTIONS",
 ]

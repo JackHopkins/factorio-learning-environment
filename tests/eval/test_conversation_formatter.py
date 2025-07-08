@@ -8,56 +8,59 @@ from fle.agents.formatters import StructurePreservingFormatter, CodeProcessor
 class TestStructurePreservingFormatter(unittest.TestCase):
     def setUp(self):
         self.formatter = StructurePreservingFormatter(planning=False)
-        self.conversation = Conversation(messages=[
-            Message(
-                role="system",
-                content="You are a helpful assistant."
-            ),
-            Message(
-                role="user",
-                content="Inventory: {}"
-            ),
-            Message(
-                role="assistant",
-                content="# Gather iron ore\nprint(0)\nprint(1)\n# Construct stone furnace"
-            ),
-            Message(
-                role="user",
-                content="Execution result: 1: 0\n2: 1"
-            ),
-            Message(
-                role="assistant",
-                content="# Gather more iron ore\nprint(2)\nprint(3)\n# Construct stone furnace"
-            ),
-            Message(
-                role="user",
-                content="Execution result: 3: 0\n4: 1"
-            )
-        ])
+        self.conversation = Conversation(
+            messages=[
+                Message(role="system", content="You are a helpful assistant."),
+                Message(role="user", content="Inventory: {}"),
+                Message(
+                    role="assistant",
+                    content="# Gather iron ore\nprint(0)\nprint(1)\n# Construct stone furnace",
+                ),
+                Message(role="user", content="Execution result: 1: 0\n2: 1"),
+                Message(
+                    role="assistant",
+                    content="# Gather more iron ore\nprint(2)\nprint(3)\n# Construct stone furnace",
+                ),
+                Message(role="user", content="Execution result: 3: 0\n4: 1"),
+            ]
+        )
 
     def test_code_extractor(self):
-        code_snippets = CodeProcessor.extract_code_blocks(self.conversation.messages[2].content)
+        code_snippets = CodeProcessor.extract_code_blocks(
+            self.conversation.messages[2].content
+        )
 
         # Should produce one code snippet
         self.assertEqual(len(code_snippets), 1)
 
     def test_code_extractor_2(self):
-        code_snippets = CodeProcessor.extract_code_blocks(self.conversation.messages[2].content)
+        code_snippets = CodeProcessor.extract_code_blocks(
+            self.conversation.messages[2].content
+        )
 
         self.assertIn("print(0)\nprint(1)", code_snippets[0])
 
     def test_code_summariser(self):
         code_block = "# Gather iron ore\nprint(0)\nprint(1)\n# Construct stone furnace"
-        code_snippets = CodeProcessor.extract_code_blocks(code_block)
+        CodeProcessor.extract_code_blocks(code_block)
 
-        summarized = CodeProcessor.summarize_code_block(code_block, preserve_comments=True)
+        summarized = CodeProcessor.summarize_code_block(
+            code_block, preserve_comments=True
+        )
 
-        self.assertEqual("# Gather iron ore\n<LINES 2-3 CUT/>\n# Construct stone furnace", summarized)
+        self.assertEqual(
+            "# Gather iron ore\n<LINES 2-3 CUT/>\n# Construct stone furnace", summarized
+        )
 
         summarized2 = CodeProcessor.summarize_code_block(
-            "# Gather iron ore\n# Gather more iron ore\nprint(0)\nprint(1)\n# Construct stone furnace", preserve_comments=True)
+            "# Gather iron ore\n# Gather more iron ore\nprint(0)\nprint(1)\n# Construct stone furnace",
+            preserve_comments=True,
+        )
 
-        self.assertEqual(summarized2, "# Gather iron ore\n# Gather more iron ore\n<LINES 3-4 CUT/>\n# Construct stone furnace")
+        self.assertEqual(
+            summarized2,
+            "# Gather iron ore\n# Gather more iron ore\n<LINES 3-4 CUT/>\n# Construct stone furnace",
+        )
 
     def test_format_conversation(self):
         formatted = self.formatter.format_conversation(self.conversation)
@@ -73,9 +76,7 @@ class TestStructurePreservingFormatter(unittest.TestCase):
         assistant1 = formatted[2]
         self.assertEqual(assistant1.role, "assistant")
         expected_summary = (
-            "# Gather iron ore\n"
-            "<LINES 2-3 CUT/>\n"
-            "# Construct stone furnace"
+            "# Gather iron ore\n<LINES 2-3 CUT/>\n# Construct stone furnace"
         )
         self.assertEqual(assistant1.content, expected_summary)
 
@@ -83,10 +84,7 @@ class TestStructurePreservingFormatter(unittest.TestCase):
         assistant2 = formatted[4]
         self.assertEqual(assistant2.role, "assistant")
         expected_full = (
-            "# Gather more iron ore\n"
-            "print(2)\n"
-            "print(3)\n"
-            "# Construct stone furnace"
+            "# Gather more iron ore\nprint(2)\nprint(3)\n# Construct stone furnace"
         )
         self.assertEqual(assistant2.content, expected_full)
         self.assertEqual(assistant2.metadata, {"summarized": False})
@@ -104,37 +102,25 @@ class TestStructurePreservingFormatter(unittest.TestCase):
         # Test formatting of a non-last assistant message
         message = Message(
             role="assistant",
-            content="# First task\nprint(1)\n# Second task\nprint(2)\n"
+            content="# First task\nprint(1)\n# Second task\nprint(2)\n",
         )
         formatted = self.formatter.format_message(message, should_format=True)
-        expected = (
-            "# First task\n"
-            "<LINE 2 CUT/>\n"
-            "# Second task\n"
-            "<LINE 4 CUT/>"
-        )
+        expected = "# First task\n<LINE 2 CUT/>\n# Second task\n<LINE 4 CUT/>"
         self.assertEqual(formatted.content, expected)
         self.assertEqual(formatted.metadata, {"summarized": True})
 
         # Test formatting of a last assistant message (should preserve everything)
         formatted_last = self.formatter.format_message(message, should_format=False)
         self.assertEqual(
-            formatted_last.content,
-            "# First task\nprint(1)\n# Second task\nprint(2)\n"
+            formatted_last.content, "# First task\nprint(1)\n# Second task\nprint(2)\n"
         )
         self.assertEqual(formatted_last.metadata, {"summarized": False})
 
     def test_empty_code_blocks(self):
         # Test handling of empty code blocks or blocks without comments
-        message = Message(
-            role="assistant",
-            content="print(1)\nprint(2)\n"
-        )
+        message = Message(role="assistant", content="print(1)\nprint(2)\n")
         formatted = self.formatter.format_message(message, should_format=True)
-        self.assertEqual(
-            formatted.content,
-            "<LINES 1-2 CUT/>"
-        )
+        self.assertEqual(formatted.content, "<LINES 1-2 CUT/>")
 
     def test_docstring_code_summariser(self):
         code_block = '''from factorio_instance import *
@@ -159,10 +145,12 @@ class TestStructurePreservingFormatter(unittest.TestCase):
     inventory = inspect_inventory()
     print(f"Current inventory: {inventory}")'''
 
-        summarized = self.formatter.code_processor.summarize_code_block(code_block, preserve_comments=True)
+        self.formatter.code_processor.summarize_code_block(
+            code_block, preserve_comments=True
+        )
 
         pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

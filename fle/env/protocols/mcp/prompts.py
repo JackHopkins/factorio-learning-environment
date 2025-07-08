@@ -1,8 +1,8 @@
 """
 Dynamic prompt generator for Factorio Learning Environment tasks
 """
+
 import mcp.types as types
-import json
 import pathlib
 import sys
 import os
@@ -10,6 +10,7 @@ from contextlib import contextmanager
 
 from . import mcp
 from .init import state
+
 
 # Context manager to suppress stdout
 @contextmanager
@@ -19,24 +20,27 @@ def suppress_stdout():
     Prevents stdout from interfering with MCP protocol
     """
     save_stdout = sys.stdout
-    sys.stdout = open(os.devnull, 'w')
+    sys.stdout = open(os.devnull, "w")
     try:
         yield
     finally:
         sys.stdout.close()
         sys.stdout = save_stdout
 
+
 # Path to the agent.md file
 TUTORIAL_MD_PATH = pathlib.Path(__file__).parent / "tutorial.md"
+
 
 # Load the agent.md content
 def load_tutorial_md():
     try:
-        with open(TUTORIAL_MD_PATH, 'r') as f:
+        with open(TUTORIAL_MD_PATH, "r") as f:
             return f.read()
     except Exception as e:
         print(f"Error loading agent.md: {e}")
         return "Error loading tutorial content. Please check if agent.md exists."
+
 
 # Define available prompts
 PROMPTS = {
@@ -47,12 +51,12 @@ PROMPTS = {
             types.PromptArgument(
                 name="entity",
                 description="The entity to produce (e.g., 'steel-plate')",
-                required=True
+                required=True,
             ),
             types.PromptArgument(
                 name="quota",
                 description="Number of items to produce per minute",
-                required=True
+                required=True,
             ),
             # types.PromptArgument(
             #     name="trajectory_length",
@@ -62,19 +66,20 @@ PROMPTS = {
             types.PromptArgument(
                 name="holdout_wait_period",
                 description="Time to wait during holdout evaluation (in seconds)",
-                required=False
+                required=False,
             ),
             types.PromptArgument(
                 name="pre_holdout_wait_period",
                 description="Time to wait before holdout evaluation (in seconds)",
-                required=False
-            )
-        ]),
+                required=False,
+            ),
+        ],
+    ),
     "tutorial": types.Prompt(
         name="tutorial",
         description="Comprehensive guide to using the Factorio Learning Environment",
-        arguments=[]
-    )
+        arguments=[],
+    ),
 }
 
 
@@ -96,32 +101,21 @@ async def get_prompt(
         # Extract arguments
         entity = arguments.get("entity", "iron-plate") if arguments else "iron-plate"
         quota = arguments.get("quota", "0") if arguments else "60"
-        #trajectory_length = arguments.get("trajectory_length", "128") if arguments else "128"
-        holdout_wait_period = arguments.get("holdout_wait_period", "60") if arguments else "60"
-        pre_holdout_wait_period = arguments.get("pre_holdout_wait_period", "60") if arguments else "60"
-
-        # Generate task_key if not provided
-        sanitized_entity = entity.replace("-", "_")
-        task_key = f"{sanitized_entity}_throughput_{quota}"
-
+        # trajectory_length = arguments.get("trajectory_length", "128") if arguments else "128"
+        holdout_wait_period = (
+            arguments.get("holdout_wait_period", "60") if arguments else "60"
+        )
         # Build the task configuration
-        task = {
-            "task_type": "throughput",
-            "config": {
-                "goal_description": f"Create an automatic {entity} factory that produces {quota} {entity}s per 60 ingame seconds.",
-                "throughput_entity": entity,
-                "quota": int(quota),
-                "holdout_wait_period": int(holdout_wait_period),
-                "pre_holdout_wait_period": int(pre_holdout_wait_period),
-                "task_key": task_key
-            }
-        }
-        objective = f'Build an automated factory that produces {quota} {entity}(s) per minute'
+        objective = (
+            f"Build an automated factory that produces {quota} {entity}(s) per minute"
+        )
 
         # Suppress stdout when executing transaction to prevent breaking MCP protocol
         # with suppress_stdout():
         #
-        state.active_server.add_command(f'/c game.players[1].set_goal_description("{objective}", true)', raw=True)
+        state.active_server.add_command(
+            f'/c game.players[1].set_goal_description("{objective}", true)', raw=True
+        )
         state.active_server.execute_transaction()
 
         # Create the prompt result
@@ -139,17 +133,17 @@ async def get_prompt(
                         f"- Ensure production is sustainable and consistent\n"
                         f"- The factory should continue to operate without player intervention\n"
                         f"- Your solution will be evaluated *after* a holdout period of {holdout_wait_period} seconds, "
-                             f"requiring a fully automated solution (as you will not be able to interact with the factory during this time)\n\n"
-                        f"Please design and build this factory step by step."
-                    )
+                        f"requiring a fully automated solution (as you will not be able to interact with the factory during this time)\n\n"
+                        f"Please design and build this factory step by step.",
+                    ),
                 )
             ]
         )
-    
+
     elif name == "tutorial":
         # Load the agent.md content
         tutorial_content = load_tutorial_md()
-        
+
         # Create the prompt result with the tutorial content
         return types.GetPromptResult(
             messages=[
@@ -157,11 +151,12 @@ async def get_prompt(
                     role="user",
                     content=types.TextContent(
                         type="text",
-                        text=("You are an expert at at the Factorio Learning Environment, "
-                              "ready to write Python code (with the API) and introspect the existing implementations, to build factories in the game.\n\n"
-                              + tutorial_content )
-
-                    )
+                        text=(
+                            "You are an expert at at the Factorio Learning Environment, "
+                            "ready to write Python code (with the API) and introspect the existing implementations, to build factories in the game.\n\n"
+                            + tutorial_content
+                        ),
+                    ),
                 )
             ]
         )

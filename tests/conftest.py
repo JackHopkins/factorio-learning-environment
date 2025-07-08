@@ -21,37 +21,39 @@ project_root = Path(__file__).parent.parent.parent
 # if str(project_root / 'src') not in sys.path:
 #     sys.path.insert(0, str(project_root / 'src'))
 
-@pytest.fixture()#scope="session")
+
+@pytest.fixture()  # scope="session")
 def instance():
-    #from gym import FactorioInstance
+    # from gym import FactorioInstance
     ips, udp_ports, tcp_ports = get_local_container_ips()
     try:
-        instance = FactorioInstance(address='localhost',
-                                    bounding_box=200,
-                                    tcp_port=tcp_ports[-1],#27019,
-                                    cache_scripts=False,
-                                    fast=True,
-                                    inventory={
-                                        'coal': 50,
-                                        'copper-plate': 50,
-                                        'iron-plate': 50,
-                                        'iron-chest': 2,
-                                        'burner-mining-drill': 3,
-                                        'electric-mining-drill': 1,
-                                        'assembling-machine-1': 1,
-                                        'stone-furnace': 9,
-                                        'transport-belt': 50,
-                                        'boiler': 1,
-                                        'burner-inserter': 32,
-                                        'pipe': 15,
-                                        'steam-engine': 1,
-                                        'small-electric-pole': 10
-                                })
+        instance = FactorioInstance(
+            address="localhost",
+            bounding_box=200,
+            tcp_port=tcp_ports[-1],  # 27019,
+            cache_scripts=False,
+            fast=True,
+            inventory={
+                "coal": 50,
+                "copper-plate": 50,
+                "iron-plate": 50,
+                "iron-chest": 2,
+                "burner-mining-drill": 3,
+                "electric-mining-drill": 1,
+                "assembling-machine-1": 1,
+                "stone-furnace": 9,
+                "transport-belt": 50,
+                "boiler": 1,
+                "burner-inserter": 32,
+                "pipe": 15,
+                "steam-engine": 1,
+                "small-electric-pole": 10,
+            },
+        )
         yield instance
     except Exception as e:
         raise e
     finally:
         # Cleanup RCON connections to prevent connection leaks
-        if 'instance' in locals():
+        if "instance" in locals():
             instance.cleanup()
-

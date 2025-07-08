@@ -2,7 +2,6 @@ from fle.env.tools import Tool
 
 
 class ClearCollisionBoxes(Tool):
-
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 

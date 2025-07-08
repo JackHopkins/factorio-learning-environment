@@ -15,13 +15,21 @@ from fle.commons.db_client import DBClient
 from fle.eval.evaluator import Evaluator
 from fle.eval.algorithms.mcts.grouped_logger import GroupedFactorioLogger
 from fle.eval.algorithms.mcts.parallel_supervised_config import SupervisedExecutorConfig
-from fle.eval.algorithms.mcts.planning_models import PlanOutput, TaskOutput, Step, LanguageOutput, InitialPlanOutput
+from fle.eval.algorithms.mcts.planning_models import (
+    PlanOutput,
+    TaskOutput,
+    Step,
+    LanguageOutput,
+    InitialPlanOutput,
+)
 from fle.commons.models.game_state import GameState
 from fle.commons.models.program import Program
 from fle.env import FactorioInstance
 from fle.eval.tasks import TaskABC
-logger = logging.basicConfig(level=logging.INFO)
+
 from abc import ABC, abstractmethod
+
+logger = logging.basicConfig(level=logging.INFO)
 
 
 @dataclass
@@ -33,14 +41,15 @@ class PlanningGroupV2:
 
 
 class SupervisedTaskExecutorABC(ABC):
-    def __init__(self,
-                 instances: List[FactorioInstance],
-                 db_client: DBClient,
-                 api_factory: Any,
-                 config: SupervisedExecutorConfig,
-                 version=None,
-                 version_description="",
-                 ):
+    def __init__(
+        self,
+        instances: List[FactorioInstance],
+        db_client: DBClient,
+        api_factory: Any,
+        config: SupervisedExecutorConfig,
+        version=None,
+        version_description="",
+    ):
         """
         Initialize parallel planning MCTS
 
@@ -66,10 +75,9 @@ class SupervisedTaskExecutorABC(ABC):
         self.logger = GroupedFactorioLogger(
             n_groups=config.n_parallel,
             instances_per_group=instances_per_group,
-
         )
         self.logger.start()
-        
+
         # Create instance groups
         self.instance_groups = self._create_instance_groups(instances)
 
@@ -82,8 +90,9 @@ class SupervisedTaskExecutorABC(ABC):
             user_prompt = f.read()
         return system_prompt, user_prompt
 
-
-    def _create_instance_groups(self, instances: List['FactorioInstance']) -> List[PlanningGroupV2]:
+    def _create_instance_groups(
+        self, instances: List["FactorioInstance"]
+    ) -> List[PlanningGroupV2]:
         """Create instance groups for parallel execution"""
         instances_per_group = floor(len(instances) / self.config.n_parallel)
         groups = []
@@ -105,11 +114,13 @@ class SupervisedTaskExecutorABC(ABC):
                 logger=self.logger,
             )
 
-            groups.append(PlanningGroupV2(
-                group_id=group_id,
-                evaluator=evaluator,
-                active_instances=active_instances,
-            ))
+            groups.append(
+                PlanningGroupV2(
+                    group_id=group_id,
+                    evaluator=evaluator,
+                    active_instances=active_instances,
+                )
+            )
 
         return groups
 
@@ -127,10 +138,13 @@ class SupervisedTaskExecutorABC(ABC):
                 f"Not enough instances per group (need at least 2, got {instances_per_group})"
             )
 
-    async def search_supervised(self, n_iterations: int, 
-                                task: TaskABC, 
-                                skip_failures: bool = False,
-                                run_id: str = ""):
+    async def search_supervised(
+        self,
+        n_iterations: int,
+        task: TaskABC,
+        skip_failures: bool = False,
+        run_id: str = "",
+    ):
         """
         Run truly parallel MCTS search across all groups
 
@@ -143,13 +157,15 @@ class SupervisedTaskExecutorABC(ABC):
             search_tasks = []
             for group in self.instance_groups:
                 # Each group search runs independently
-                search_task = asyncio.create_task(self._run_group_search(
-                    group=group,
-                    n_iterations=n_iterations,
-                    skip_failures=skip_failures,
-                    task=task,
-                    run_id=run_id
-                ))
+                search_task = asyncio.create_task(
+                    self._run_group_search(
+                        group=group,
+                        n_iterations=n_iterations,
+                        skip_failures=skip_failures,
+                        task=task,
+                        run_id=run_id,
+                    )
+                )
                 search_tasks.append(search_task)
 
             # Wait for ALL groups to complete, allowing them to run simultaneously
@@ -164,32 +180,38 @@ class SupervisedTaskExecutorABC(ABC):
             results = [item for sublist in results for item in sublist]
             return results
 
-
-    async def generate_plans(self, task: TaskABC, nr_of_beams: int) -> List[InitialPlanOutput]:
-        
+    async def generate_plans(
+        self, task: TaskABC, nr_of_beams: int
+    ) -> List[InitialPlanOutput]:
         plan_outputs = {}
         for idx in range(nr_of_beams):
             # plan id coincides with instance id it will be evaluated on
-            plan_output = PlanOutput(task=TaskOutput(task=task.task), meta={"plan_id": idx})
+            plan_output = PlanOutput(
+                task=TaskOutput(task=task.task), meta={"plan_id": idx}
+            )
             plan_outputs[idx] = plan_output
 
         return plan_outputs
-    
+
     @abstractmethod
-    async def _run_group_search(self, group: PlanningGroupV2, task: TaskABC, n_iterations: int, skip_failures: bool = False):
+    async def _run_group_search(
+        self,
+        group: PlanningGroupV2,
+        task: TaskABC,
+        n_iterations: int,
+        skip_failures: bool = False,
+    ):
         """Run parallel planning search across all groups"""
         """
         Need to check again over what to do mcts exactly
         """
         pass
 
-
-
     def cleanup(self):
         """Clean up resources"""
         self.logger.stop()
         for group in self.instance_groups:
-            if hasattr(group.evaluator, 'logger'):
+            if hasattr(group.evaluator, "logger"):
                 group.evaluator.logger.stop()
 
     def get_group_metrics(self, group_id: int) -> Dict[str, Any]:
@@ -197,24 +219,30 @@ class SupervisedTaskExecutorABC(ABC):
         if 0 <= group_id < len(self.instance_groups):
             group = self.instance_groups[group_id]
             return {
-                'active_instances': len(group.active_instances),
-                'total_programs': sum(
+                "active_instances": len(group.active_instances),
+                "total_programs": sum(
                     inst.total_programs
-                    for inst in group.evaluator.logger.groups[group_id].instances.values()
+                    for inst in group.evaluator.logger.groups[
+                        group_id
+                    ].instances.values()
                 ),
-                'error_count': sum(
+                "error_count": sum(
                     inst.error_count
-                    for inst in group.evaluator.logger.groups[group_id].instances.values()
-                )
+                    for inst in group.evaluator.logger.groups[
+                        group_id
+                    ].instances.values()
+                ),
             }
         return {}
 
-    async def _evaluate_step(self,
-                             step: Step,
-                             start_state: GameState,
-                             group: PlanningGroupV2,
-                             instance_id: int,
-                             parent_id) -> Tuple[Step, float, List]:
+    async def _evaluate_step(
+        self,
+        step: Step,
+        start_state: GameState,
+        group: PlanningGroupV2,
+        instance_id: int,
+        parent_id,
+    ) -> Tuple[Step, float, List]:
         """Modified to work with instance groups"""
         entity_list = []
 
@@ -227,15 +255,23 @@ class SupervisedTaskExecutorABC(ABC):
                     print(f"Weird program 1: {program}")
                 # reset the instance to the start state
                 instance.reset(step.start_state)
-                reward, state, response, entities, achievements, profits, error = await group.evaluator._evaluate_single(
-                    instance_id,
-                    program,
-                    instance
+                (
+                    reward,
+                    state,
+                    response,
+                    entities,
+                    achievements,
+                    profits,
+                    error,
+                ) = await group.evaluator._evaluate_single(
+                    instance_id, program, instance
                 )
                 if not isinstance(program, Program):
                     print(f"Weird program 2: {program}")
                 if error:
-                    print(f"Error in group {group.group_id}, instance {instance_id}: {error}")
+                    print(
+                        f"Error in group {group.group_id}, instance {instance_id}: {error}"
+                    )
                 step.program = program
                 if not error:
                     break
@@ -246,7 +282,9 @@ class SupervisedTaskExecutorABC(ABC):
             step.program.meta["post_production_flows"] = post_production_flows
             step.program.meta["profits"] = profits
         except Exception as e:
-            print(f"Error during evaluation in group {group.group_id}, instance {instance_id}: {e}")
+            print(
+                f"Error during evaluation in group {group.group_id}, instance {instance_id}: {e}"
+            )
             raise e
 
         step.program.value = step.reward
@@ -255,19 +293,22 @@ class SupervisedTaskExecutorABC(ABC):
         step.program.response = response
         step.program.parent_id = parent_id
         step.program.achievements = achievements
-        return step,entity_list
+        return step, entity_list
 
-
-    async def _process_last_step(self, plan: PlanOutput,
-                                 start_state: GameState,
-                                 group: PlanningGroupV2,
-                                 instance_id: int,
-                                 parent_id: Optional[int],
-                                 skip_failures: bool) -> PlanOutput:
+    async def _process_last_step(
+        self,
+        plan: PlanOutput,
+        start_state: GameState,
+        group: PlanningGroupV2,
+        instance_id: int,
+        parent_id: Optional[int],
+        skip_failures: bool,
+    ) -> PlanOutput:
         try:
             step_to_process = plan.steps[-1]
-            step_to_process, entity_list = await self._evaluate_step(step_to_process, start_state, group, instance_id,
-                                                                              parent_id)
+            step_to_process, entity_list = await self._evaluate_step(
+                step_to_process, start_state, group, instance_id, parent_id
+            )
 
             if skip_failures and "error" in step_to_process.program.response.lower():
                 raise Exception("Found error in response. Skipping step.")
@@ -277,25 +318,26 @@ class SupervisedTaskExecutorABC(ABC):
             plan.logs.append(log_str)
             return plan
 
-
         except Exception as e:
             print(f"Failed to evaluate program on instance {instance_id}: {str(e)}")
             # pop the last step from plan
             plan.steps.pop()
             return plan
-    
 
-    def check_for_task_completion(self, 
-                                  task: TaskABC,
-                                  plan: PlanOutput,
-                                  group: PlanningGroupV2) -> bool:
+    def check_for_task_completion(
+        self, task: TaskABC, plan: PlanOutput, group: PlanningGroupV2
+    ) -> bool:
         sleep_seconds = 60
         instance_id = plan.meta["plan_id"]
         instance = group.evaluator.instances[instance_id]
         start_state = plan.steps[-1].start_state
         instance.reset(start_state)
         instance_inventory = instance.inspect_inventory()
-        result, achievements, post_production_flows = group.evaluator._evaluate_for_achievements(code = f"sleep({sleep_seconds})", instance=instance)
+        result, achievements, post_production_flows = (
+            group.evaluator._evaluate_for_achievements(
+                code=f"sleep({sleep_seconds})", instance=instance
+            )
+        )
         for check_dict in task.check_dicts:
             if check_dict["task_type"] == "craft":
                 item = check_dict["item"]
@@ -312,24 +354,32 @@ class SupervisedTaskExecutorABC(ABC):
             elif check_dict["task_type"] == "production_flows_output":
                 item = check_dict["item"]
                 quantity = check_dict["quantity"]
-                production_flows_output_item_value = post_production_flows["output"].get(item, 0)
+                production_flows_output_item_value = post_production_flows[
+                    "output"
+                ].get(item, 0)
                 if production_flows_output_item_value < quantity:
                     return False, post_production_flows
             elif check_dict["task_type"] == "production_flows_input":
                 item = check_dict["item"]
                 quantity = check_dict["quantity"]
-                production_flows_output_item_value = post_production_flows["input"].get(item, 0)
+                production_flows_output_item_value = post_production_flows["input"].get(
+                    item, 0
+                )
                 if production_flows_output_item_value < quantity:
                     return False, post_production_flows
         return True, post_production_flows
 
-
-    def _create_output_completed_program(self, plan: PlanOutput,
-                                 parent_id: Optional[int],
-                                 task: TaskABC,
-                                 group: PlanningGroupV2) -> PlanOutput:
+    def _create_output_completed_program(
+        self,
+        plan: PlanOutput,
+        parent_id: Optional[int],
+        task: TaskABC,
+        group: PlanningGroupV2,
+    ) -> PlanOutput:
         if task.check_for_completion:
-            check_result, post_production_flows = self.check_for_task_completion(task, plan, group)
+            check_result, post_production_flows = self.check_for_task_completion(
+                task, plan, group
+            )
             # pop the price list
             post_production_flows.pop("price_list", None)
         else:
@@ -337,27 +387,34 @@ class SupervisedTaskExecutorABC(ABC):
             post_production_flows = None
         objective = f"'{plan.task.task}'"
         python_code = f"print('Objective {objective} has been completed. Now lets prepare the next objective.')"
-        program_parent_id = plan.steps[-2].program.id if len(plan.steps) > 1 else parent_id
+        program_parent_id = (
+            plan.steps[-2].program.id if len(plan.steps) > 1 else parent_id
+        )
         program = Program(
-                        id=hash((python_code, plan.task.task, program_parent_id)),
-                        code=python_code,
-                        conversation=Conversation(messages = []),
-                        parent_id=program_parent_id,
-                        version=self.version,
-                        version_description=self.version_description,
-                        model = self.model_to_evaluate,
-                        meta={"objective": plan.task.task,
-                              "type": "completed_objective",
-                              "checked_result_correct": check_result,
-                              "nr_of_steps": len(plan.steps),
-                              "post_production_flows": post_production_flows}
-                    )
+            id=hash((python_code, plan.task.task, program_parent_id)),
+            code=python_code,
+            conversation=Conversation(messages=[]),
+            parent_id=program_parent_id,
+            version=self.version,
+            version_description=self.version_description,
+            model=self.model_to_evaluate,
+            meta={
+                "objective": plan.task.task,
+                "type": "completed_objective",
+                "checked_result_correct": check_result,
+                "nr_of_steps": len(plan.steps),
+                "post_production_flows": post_production_flows,
+            },
+        )
         return program
 
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
-    async def _generate_natural_language_batch(self, conversation: Conversation,
-                                               generation_params: GenerationParameters,
-                                               meta: dict) -> List[LanguageOutput]:
+    async def _generate_natural_language_batch(
+        self,
+        conversation: Conversation,
+        generation_params: GenerationParameters,
+        meta: dict,
+    ) -> List[LanguageOutput]:
         """Generate multiple programs in a single API call using 'n' parameter"""
         formatted_messages = self.formatter.to_llm_messages(
             self.formatter.format_conversation(conversation)
@@ -374,51 +431,64 @@ class SupervisedTaskExecutorABC(ABC):
                 max_tokens=generation_params.max_tokens,
                 logit_bias=generation_params.logit_bias,
                 stop_sequences=generation_params.stop_sequences,
-                model=generation_params.model
-
+                model=generation_params.model,
             )
 
             outputs = []
             try:
-                messages = conversation.model_dump()['messages']
+                messages = conversation.model_dump()["messages"]
             except:
-                messages = conversation.dict()['messages']
+                messages = conversation.dict()["messages"]
 
             # Process all choices from the response
             if "claude" in generation_params.model:
-
                 str_output = response.content[0].text
-                outputs.append(LanguageOutput(
-                    id=hash((str_output, json.dumps(messages))),
-                    response=str_output,  # I think this could also be multiple
-                    conversation=conversation,
-                    token_usage=response.usage.output_tokens + response.usage.input_tokens if hasattr(response,
-                                                                                                      'usage') else None,
-                    completion_token_usage=response.usage.output_tokens if hasattr(response, 'usage') else None,
-                    prompt_token_usage=response.usage.input_tokens if hasattr(response, 'usage') else None,
-                    version=self.version,
-                    version_description=self.version_description,
-                    meta=meta
-                ))
+                outputs.append(
+                    LanguageOutput(
+                        id=hash((str_output, json.dumps(messages))),
+                        response=str_output,  # I think this could also be multiple
+                        conversation=conversation,
+                        token_usage=response.usage.output_tokens
+                        + response.usage.input_tokens
+                        if hasattr(response, "usage")
+                        else None,
+                        completion_token_usage=response.usage.output_tokens
+                        if hasattr(response, "usage")
+                        else None,
+                        prompt_token_usage=response.usage.input_tokens
+                        if hasattr(response, "usage")
+                        else None,
+                        version=self.version,
+                        version_description=self.version_description,
+                        meta=meta,
+                    )
+                )
             else:
                 # Handle OpenAI response format with multiple choices
                 for choice in response.choices:
                     str_output = choice.message.content
-                    outputs.append(LanguageOutput(
-                        id=hash((str_output, json.dumps(messages))),
-                        response=str_output,
-                        conversation=conversation,
-                        token_usage=response.usage.total_tokens // generation_params.n if hasattr(response,
-                                                                                                  'usage') else None,
-                        completion_token_usage=response.usage.completion_tokens // generation_params.n if hasattr(
-                            response,
-                            'usage') else None,
-                        prompt_token_usage=response.usage.prompt_tokens // generation_params.n if hasattr(response,
-                                                                                                          'usage') else None,
-                        version=self.version,
-                        version_description=self.version_description,
-                        meta=meta
-                    ))
+                    outputs.append(
+                        LanguageOutput(
+                            id=hash((str_output, json.dumps(messages))),
+                            response=str_output,
+                            conversation=conversation,
+                            token_usage=response.usage.total_tokens
+                            // generation_params.n
+                            if hasattr(response, "usage")
+                            else None,
+                            completion_token_usage=response.usage.completion_tokens
+                            // generation_params.n
+                            if hasattr(response, "usage")
+                            else None,
+                            prompt_token_usage=response.usage.prompt_tokens
+                            // generation_params.n
+                            if hasattr(response, "usage")
+                            else None,
+                            version=self.version,
+                            version_description=self.version_description,
+                            meta=meta,
+                        )
+                    )
 
             return outputs
         except Exception as e:
@@ -434,20 +504,22 @@ class SupervisedTaskExecutorABC(ABC):
                 inventory_dict[item] = inventory[item]
         return inventory_dict
 
-
     def format_log_string(self, logs: list):
-        return "\n\n".join(logs) if logs else "The agent has not yet interacted with the world"
-
+        return (
+            "\n\n".join(logs)
+            if logs
+            else "The agent has not yet interacted with the world"
+        )
 
     def _verify_response_is_python(self, content):
         code = content
         # Parse into an AST to verify that this is a program
         try:
-            ast = compile(code, filename="<ast>", mode="exec")
+            compile(code, filename="<ast>", mode="exec")
         except SyntaxError:
             # Take the last line off and try again
-            code = code.rsplit('\n', 1)[0] + '\n'
-            ast = compile(code, filename="<ast>", mode="exec")
+            code = code.rsplit("\n", 1)[0] + "\n"
+            compile(code, filename="<ast>", mode="exec")
 
         return code
 
@@ -459,11 +531,11 @@ class SupervisedTaskExecutorABC(ABC):
             code = self._verify_response_is_python(content)
             code = code.replace("from factorio_instance import *", "")
             return code, None
-        except Exception as e:
+        except Exception:
             try:
                 content = input_str
-                content_split = content.split('```python')
-                code = content_split[1].split('```')[0].strip()
+                content_split = content.split("```python")
+                code = content_split[1].split("```")[0].strip()
                 text_response = content_split[0].strip()
                 code = self._verify_response_is_python(code)
                 code = code.replace("from factorio_instance import *", "")
@@ -477,31 +549,31 @@ class SupervisedTaskExecutorABC(ABC):
                     code = code.replace("from factorio_instance import *", "")
                     code = code.strip()
                     return code, None
-                except Exception as e2:
+                except Exception:
                     try:
-                        content_split = content.split('from factorio_instance import *')
+                        content_split = content.split("from factorio_instance import *")
                         code = content_split[1].strip()
                         text_response = content_split[0].strip()
                         code = self._verify_response_is_python(code)
                         code = code.strip()
                         return code, text_response
-                    except Exception as e2:
+                    except Exception:
                         return "", content.strip()
-                    #print(f"Failed to extract code from choice after removing leading line: {str(e2)}")
+                    # print(f"Failed to extract code from choice after removing leading line: {str(e2)}")
                 print(f"Failed to extract code from choice: {str(e1)}")
 
     @retry(wait=wait_exponential(multiplier=1, min=4, max=10))
-    async def _generate_programs_batch(self, conversation: Conversation,
-                                       generation_params: GenerationParameters,
-                                       meta={}
-                                       ) -> List[Program]:
+    async def _generate_programs_batch(
+        self,
+        conversation: Conversation,
+        generation_params: GenerationParameters,
+        meta={},
+    ) -> List[Program]:
         """Generate multiple programs in a single API call using 'n' parameter"""
         conversation = copy.deepcopy(conversation)
 
         formatted = await self.formatter.format_conversation(conversation)
-        formatted_messages = self.formatter.to_llm_messages(
-            formatted
-        )
+        formatted_messages = self.formatter.to_llm_messages(formatted)
         if "claude" in generation_params.model:
             assert generation_params.n == 1, "Number of samples must be 1 for Claude"
 
@@ -515,56 +587,79 @@ class SupervisedTaskExecutorABC(ABC):
                 logit_bias=generation_params.logit_bias,
                 stop_sequences=generation_params.stop_sequences,
                 model=generation_params.model,
-                presence_penalty=generation_params.presence_penalty
+                presence_penalty=generation_params.presence_penalty,
             )
 
             programs = []
             try:
-                messages = conversation.model_dump()['messages']
-            except Exception as e:
-                messages = conversation.dict()['messages']
+                messages = conversation.model_dump()["messages"]
+            except Exception:
+                messages = conversation.dict()["messages"]
 
             # Process all choices from the response
             if "claude" in generation_params.model:
-
                 # Handle Claude response format
-                code, text_response = self._extract_code_from_choice(response.content[0].text)
-                programs.append(Program(
-                    id=hash((code, json.dumps(messages))),
-                    code=code,
-                    conversation=conversation,
-                    response=response.content[0].text,
-                    token_usage=response.usage.input_tokens + response.usage.output_tokens if hasattr(response, 'usage') else None,
-                    completion_token_usage=response.usage.output_tokens if hasattr(response, 'usage') else None,
-                    prompt_token_usage=response.usage.input_tokens if hasattr(response, 'usage') else None,
-                    version=self.version,
-                    version_description=self.version_description,
-                    meta={"text_response": text_response,
-                          "model": generation_params.model}
-                ))
+                code, text_response = self._extract_code_from_choice(
+                    response.content[0].text
+                )
+                programs.append(
+                    Program(
+                        id=hash((code, json.dumps(messages))),
+                        code=code,
+                        conversation=conversation,
+                        response=response.content[0].text,
+                        token_usage=response.usage.input_tokens
+                        + response.usage.output_tokens
+                        if hasattr(response, "usage")
+                        else None,
+                        completion_token_usage=response.usage.output_tokens
+                        if hasattr(response, "usage")
+                        else None,
+                        prompt_token_usage=response.usage.input_tokens
+                        if hasattr(response, "usage")
+                        else None,
+                        version=self.version,
+                        version_description=self.version_description,
+                        meta={
+                            "text_response": text_response,
+                            "model": generation_params.model,
+                        },
+                    )
+                )
                 if meta:
                     programs[0].meta.update(meta)
             else:
                 # Handle OpenAI response format with multiple choices
                 for choice in response.choices:
-                    code, text_response = self._extract_code_from_choice(choice.message.content)
-                    programs.append(Program(
-                        id=hash((code, json.dumps(messages))),
-                        code=code,
-                        conversation=conversation,
-                        response=choice.message.content,
-                        token_usage=response.usage.total_tokens // generation_params.n if hasattr(response,
-                                                                                                  'usage') else None,
-                        completion_token_usage=response.usage.completion_tokens // generation_params.n if hasattr(
-                            response,
-                            'usage') else None,
-                        prompt_token_usage=response.usage.prompt_tokens // generation_params.n if hasattr(response,
-                                                                                                          'usage') else None,
-                        version=self.version,
-                        version_description=self.version_description,
-                        meta={"text_response": text_response,
-                              "model": generation_params.model}
-                    ))
+                    code, text_response = self._extract_code_from_choice(
+                        choice.message.content
+                    )
+                    programs.append(
+                        Program(
+                            id=hash((code, json.dumps(messages))),
+                            code=code,
+                            conversation=conversation,
+                            response=choice.message.content,
+                            token_usage=response.usage.total_tokens
+                            // generation_params.n
+                            if hasattr(response, "usage")
+                            else None,
+                            completion_token_usage=response.usage.completion_tokens
+                            // generation_params.n
+                            if hasattr(response, "usage")
+                            else None,
+                            prompt_token_usage=response.usage.prompt_tokens
+                            // generation_params.n
+                            if hasattr(response, "usage")
+                            else None,
+                            version=self.version,
+                            version_description=self.version_description,
+                            meta={
+                                "text_response": text_response,
+                                "model": generation_params.model,
+                            },
+                        )
+                    )
                     if meta:
                         programs[-1].meta.update(meta)
 

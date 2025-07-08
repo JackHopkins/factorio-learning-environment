@@ -1,25 +1,32 @@
 import pytest
 
-from fle.env.entities import Entity, Position, ResourcePatch, Recipe, BurnerMiningDrill, EntityStatus, BuildingBox
-from fle.env import DirectionInternal, FactorioInstance
+from fle.env.entities import Position, BuildingBox
 from fle.env.game_types import Prototype, Resource, RecipeName
 
 
 @pytest.fixture()
 def game(instance):
-    instance.initial_inventory = {'stone-furnace': 1,
-                                  'transport-belt': 30,
-                                  'boiler': 1,
-                                  'storage-tank': 5,
-                                  'pipe-to-ground': 50,
-                                  'pumpjack': 5,
-                                  'oil-refinery': 5,
-                                  'small-electric-pole': 50,
-                                  'steam-engine': 1, 'offshore-pump': 1, 'pipe': 100, 'iron-plate': 50, 'copper-plate': 20, 'coal': 50}
+    instance.initial_inventory = {
+        "stone-furnace": 1,
+        "transport-belt": 30,
+        "boiler": 1,
+        "storage-tank": 5,
+        "pipe-to-ground": 50,
+        "pumpjack": 5,
+        "oil-refinery": 5,
+        "small-electric-pole": 50,
+        "steam-engine": 1,
+        "offshore-pump": 1,
+        "pipe": 100,
+        "iron-plate": 50,
+        "copper-plate": 20,
+        "coal": 50,
+    }
 
     instance.reset()
 
     yield instance.namespace
+
 
 def test_full_oil_chain(game):
     # First find water for power generation
@@ -32,28 +39,36 @@ def test_full_oil_chain(game):
     print(f"Placed offshore pump at {offshore_pump.position}")
 
     # Place boiler with space for connections
-    building_box = BuildingBox(width=Prototype.Boiler.WIDTH + 4, height=Prototype.Boiler.HEIGHT + 4)
-    coords = game.nearest_buildable(Prototype.Boiler, building_box, offshore_pump.position)
+    building_box = BuildingBox(
+        width=Prototype.Boiler.WIDTH + 4, height=Prototype.Boiler.HEIGHT + 4
+    )
+    coords = game.nearest_buildable(
+        Prototype.Boiler, building_box, offshore_pump.position
+    )
     game.move_to(coords.center)
     boiler = game.place_entity(Prototype.Boiler, position=coords.center)
     print(f"Placed boiler at {boiler.position}")
 
     # Place steam engine
-    building_box = BuildingBox(width=Prototype.SteamEngine.WIDTH + 4, height=Prototype.SteamEngine.HEIGHT + 4)
-    coords = game.nearest_buildable(Prototype.SteamEngine, building_box, boiler.position)
+    building_box = BuildingBox(
+        width=Prototype.SteamEngine.WIDTH + 4, height=Prototype.SteamEngine.HEIGHT + 4
+    )
+    coords = game.nearest_buildable(
+        Prototype.SteamEngine, building_box, boiler.position
+    )
     game.move_to(coords.center)
     steam_engine = game.place_entity(Prototype.SteamEngine, position=coords.center)
     print(f"Placed steam engine at {steam_engine.position}")
 
     # Connect water system
     game.move_to(offshore_pump.position)
-    water_pipes = game.connect_entities(offshore_pump, boiler, Prototype.Pipe)
-    steam_pipes = game.connect_entities(boiler, steam_engine, Prototype.Pipe)
-    print(f"Connected water and steam pipes")
+    game.connect_entities(offshore_pump, boiler, Prototype.Pipe)
+    game.connect_entities(boiler, steam_engine, Prototype.Pipe)
+    print("Connected water and steam pipes")
 
     # Add fuel to boiler
     boiler = game.insert_item(Prototype.Coal, boiler, 50)
-    print(f"Added coal to boiler")
+    print("Added coal to boiler")
 
     # Move to oil and place pumpjack directly
     oil_pos = game.nearest(Resource.CrudeOil)
@@ -62,8 +77,8 @@ def test_full_oil_chain(game):
     print(f"Placed pumpjack at {pumpjack.position}")
 
     # Connect power to pumpjack
-    poles = game.connect_entities(steam_engine, pumpjack, Prototype.SmallElectricPole)
-    print(f"Connected power to pumpjack")
+    game.connect_entities(steam_engine, pumpjack, Prototype.SmallElectricPole)
+    print("Connected power to pumpjack")
 
     # Place oil refinery 15 spaces east of pumpjack
     refinery_pos = Position(x=pumpjack.position.x + 15, y=pumpjack.position.y)
@@ -73,15 +88,18 @@ def test_full_oil_chain(game):
 
     # Set recipe to basic oil processing
     refinery = game.set_entity_recipe(refinery, RecipeName.BasicOilProcessing)
-    print(f"Set refinery recipe to basic oil processing")
+    print("Set refinery recipe to basic oil processing")
 
     # Connect power to refinery
-    poles = game.connect_entities(pumpjack, refinery, Prototype.SmallElectricPole)
-    print(f"Connected power to refinery")
+    game.connect_entities(pumpjack, refinery, Prototype.SmallElectricPole)
+    print("Connected power to refinery")
 
     # Connect pumpjack to refinery with pipes
-    pipes = game.connect_entities(pumpjack, refinery, {Prototype.UndergroundPipe, Prototype.Pipe})
+    game.connect_entities(
+        pumpjack, refinery, {Prototype.UndergroundPipe, Prototype.Pipe}
+    )
     pass
+
 
 def test_fix_storage_tank_connection(game):
     # First find water for power generation
@@ -94,27 +112,35 @@ def test_fix_storage_tank_connection(game):
     print(f"Placed offshore pump at {offshore_pump.position}")
 
     # Place boiler with space for connections
-    building_box = BuildingBox(width=Prototype.Boiler.WIDTH + 4, height=Prototype.Boiler.HEIGHT + 4)
-    coords = game.nearest_buildable(Prototype.Boiler, building_box, offshore_pump.position)
+    building_box = BuildingBox(
+        width=Prototype.Boiler.WIDTH + 4, height=Prototype.Boiler.HEIGHT + 4
+    )
+    coords = game.nearest_buildable(
+        Prototype.Boiler, building_box, offshore_pump.position
+    )
     game.move_to(coords.center)
     boiler = game.place_entity(Prototype.Boiler, position=coords.center)
     print(f"Placed boiler at {boiler.position}")
 
     # Place steam engine
-    building_box = BuildingBox(width=Prototype.SteamEngine.WIDTH + 4, height=Prototype.SteamEngine.HEIGHT + 4)
-    coords = game.nearest_buildable(Prototype.SteamEngine, building_box, boiler.position)
+    building_box = BuildingBox(
+        width=Prototype.SteamEngine.WIDTH + 4, height=Prototype.SteamEngine.HEIGHT + 4
+    )
+    coords = game.nearest_buildable(
+        Prototype.SteamEngine, building_box, boiler.position
+    )
     game.move_to(coords.center)
     steam_engine = game.place_entity(Prototype.SteamEngine, position=coords.center)
     print(f"Placed steam engine at {steam_engine.position}")
 
     # Connect water system
-    water_pipes = game.connect_entities(offshore_pump, boiler, Prototype.Pipe)
-    steam_pipes = game.connect_entities(boiler, steam_engine, Prototype.Pipe)
-    print(f"Connected water and steam pipes")
+    game.connect_entities(offshore_pump, boiler, Prototype.Pipe)
+    game.connect_entities(boiler, steam_engine, Prototype.Pipe)
+    print("Connected water and steam pipes")
 
     # Add fuel to boiler
     boiler = game.insert_item(Prototype.Coal, boiler, 50)
-    print(f"Added coal to boiler")
+    print("Added coal to boiler")
 
     # Move to oil and place pumpjack directly
     jack_pos = Position(x=32.5, y=49.5)
@@ -123,8 +149,8 @@ def test_fix_storage_tank_connection(game):
     print(f"Placed pumpjack at {pumpjack.position}")
 
     # Connect power to pumpjack
-    poles = game.connect_entities(steam_engine, pumpjack, Prototype.SmallElectricPole)
-    print(f"Connected power to pumpjack")
+    game.connect_entities(steam_engine, pumpjack, Prototype.SmallElectricPole)
+    print("Connected power to pumpjack")
 
     # Place oil refinery 15 spaces east of pumpjack
     refinery_pos = Position(x=pumpjack.position.x + 15, y=pumpjack.position.y)
@@ -134,15 +160,17 @@ def test_fix_storage_tank_connection(game):
 
     # Set recipe to basic oil processing
     refinery = game.set_entity_recipe(refinery, RecipeName.BasicOilProcessing)
-    print(f"Set refinery recipe to basic oil processing")
+    print("Set refinery recipe to basic oil processing")
 
     # Connect power to refinery
-    poles = game.connect_entities(pumpjack, refinery, Prototype.SmallElectricPole)
-    print(f"Connected power to refinery")
+    game.connect_entities(pumpjack, refinery, Prototype.SmallElectricPole)
+    print("Connected power to refinery")
 
     # Connect pumpjack to refinery with pipes
-    pipes = game.connect_entities(pumpjack, refinery, {Prototype.UndergroundPipe, Prototype.Pipe})
-    print(f"Connected pumpjack to refinery with pipes")
+    game.connect_entities(
+        pumpjack, refinery, {Prototype.UndergroundPipe, Prototype.Pipe}
+    )
+    print("Connected pumpjack to refinery with pipes")
 
     # Place storage tank for petroleum gas output
     # Place it 10 spaces east of refinery
@@ -152,5 +180,7 @@ def test_fix_storage_tank_connection(game):
     print(f"Placed storage tank at {storage_tank.position}")
 
     # Connect refinery to storage tank
-    pipes = game.connect_entities(refinery, storage_tank, {Prototype.UndergroundPipe, Prototype.Pipe})
+    game.connect_entities(
+        refinery, storage_tank, {Prototype.UndergroundPipe, Prototype.Pipe}
+    )
     pass

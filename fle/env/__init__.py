@@ -1,6 +1,6 @@
 """Environment and game interaction"""
 
-from .entities import *
+from .entities import *  # noqa
 from .game_types import Prototype, Resource
 from .instance import DirectionInternal, FactorioInstance
 

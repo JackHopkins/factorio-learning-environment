@@ -1,14 +1,11 @@
 import pytest
-from time import sleep
-from fle.env.entities import Position, ResourcePatch
-from fle.env import DirectionInternal
-from fle.env.game_types import Prototype, Resource
 
 
 @pytest.fixture()
 def game(instance):
     instance.reset()
     yield instance.namespace
+
 
 def test_syntax_error(game):
     code = """
@@ -21,6 +18,7 @@ func_1(6)
     _, _, result = game.instance.eval(code)
     assert "invalid syntax" in result
 
+
 def test_assertion_exception(game):
     code = """
 print('a')
@@ -29,6 +27,7 @@ assert 1 == 2
     _, _, result = game.instance.eval(code)
     assert "('a',)" in result
     assert "AssertionError" in result
+
 
 def test_function_with_entity_annotation(game):
     code = """

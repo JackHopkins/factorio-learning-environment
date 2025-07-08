@@ -17,27 +17,30 @@ class ConnectionsLayerRenderer(LayerRenderer):
     def layer_name(self) -> str:
         return "connections"
 
-    def render(self, draw: ImageDraw.ImageDraw,
-               game_to_img_func: Callable,
-               boundaries: Dict[str, float],
-               **kwargs) -> None:
+    def render(
+        self,
+        draw: ImageDraw.ImageDraw,
+        game_to_img_func: Callable,
+        boundaries: Dict[str, float],
+        **kwargs,
+    ) -> None:
         """Draw connections between underground belts and pipes"""
-        entities = kwargs.get('entities', [])
+        entities = kwargs.get("entities", [])
         if not entities:
             return
 
         self._draw_underground_belt_connections(draw, entities, game_to_img_func)
         self._draw_underground_pipe_connections(draw, entities, game_to_img_func)
 
-    def _draw_underground_belt_connections(self, draw: ImageDraw.ImageDraw,
-                                           entities: List[Entity],
-                                           game_to_img_func: Callable) -> None:
+    def _draw_underground_belt_connections(
+        self,
+        draw: ImageDraw.ImageDraw,
+        entities: List[Entity],
+        game_to_img_func: Callable,
+    ) -> None:
         """Draw connections between underground belts"""
         # Find all underground belts
         underground_belts = [e for e in entities if isinstance(e, UndergroundBelt)]
-
-        # Create lookup dictionary by ID
-        underground_belt_by_id = {belt.id: belt for belt in underground_belts if hasattr(belt, 'id')}
 
         # Track already processed connections to avoid duplicates
         processed_connections = set()
@@ -51,20 +54,27 @@ class ConnectionsLayerRenderer(LayerRenderer):
             # Skip if already processed this connection
             connection_key = f"{belt.id}_{belt.connected_to}"
             reverse_key = f"{belt.connected_to}_{belt.id}"
-            if connection_key in processed_connections or reverse_key in processed_connections:
+            if (
+                connection_key in processed_connections
+                or reverse_key in processed_connections
+            ):
                 continue
 
             # Draw the connection
             entity_color = self.color_manager.get_entity_color(belt)
             self.connection_renderer.draw_underground_belt_connection(
-                draw, belt, game_to_img_func, entity_color)
+                draw, belt, game_to_img_func, entity_color
+            )
 
             # Mark this connection as processed
             processed_connections.add(connection_key)
 
-    def _draw_underground_pipe_connections(self, draw: ImageDraw.ImageDraw,
-                                           entities: List[Entity],
-                                           game_to_img_func: Callable) -> None:
+    def _draw_underground_pipe_connections(
+        self,
+        draw: ImageDraw.ImageDraw,
+        entities: List[Entity],
+        game_to_img_func: Callable,
+    ) -> None:
         """Draw connections between underground pipes"""
         # Find all pipes
         pipes = [e for e in entities if isinstance(e, Pipe)]
@@ -72,7 +82,7 @@ class ConnectionsLayerRenderer(LayerRenderer):
         # Create list of underground pipes (input and output)
         underground_pipes = []
         for pipe in pipes:
-            if pipe.name == 'pipe-to-ground':
+            if pipe.name == "pipe-to-ground":
                 underground_pipes.append(pipe)
 
         # Create a lookup dictionary by position
@@ -87,7 +97,7 @@ class ConnectionsLayerRenderer(LayerRenderer):
         # Find and draw connections between input and output underground pipes
         for pipe in underground_pipes:
             # Skip if no connection information
-            if not hasattr(pipe, 'connected_to_position'):
+            if not hasattr(pipe, "connected_to_position"):
                 continue
 
             # Get connection position
@@ -112,8 +122,11 @@ class ConnectionsLayerRenderer(LayerRenderer):
             # Draw the connection
             entity_color = self.color_manager.get_entity_color(pipe)
             self.connection_renderer.draw_underground_pipe_connection(
-                draw, pipe, connected_pipe, game_to_img_func, entity_color)
+                draw, pipe, connected_pipe, game_to_img_func, entity_color
+            )
 
             # Mark as processed
             processed_connections.add(pipe_connection_key)
-            processed_connections.add(f"{connection_key}_{pos_key}")  # Reverse connection
+            processed_connections.add(
+                f"{connection_key}_{pos_key}"
+            )  # Reverse connection

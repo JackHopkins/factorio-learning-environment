@@ -3,8 +3,7 @@ import unittest
 from fle.env import FactorioInstance
 from fle.env.utils.profits import eval_program_with_achievements
 
-test_string = \
-"""
+test_string = """
 pos = nearest(Resource.Stone)
 move_to(pos)
 harvest_resource(pos, 10)
@@ -23,8 +22,7 @@ insert_item(Prototype.Coal, furnace, 5)
 sleep(16)
 """
 
-test_string_1 = \
-"""
+test_string_1 = """
 pos = nearest(Resource.Stone)
 move_to(pos)
 harvest_resource(pos, 10)
@@ -44,26 +42,33 @@ sleep(16)
 extract_item(Prototype.IronPlate, furnace.position, 10)
 """
 
+
 class TestProductionDivergence(unittest.TestCase):
     def test_achievements(self):
-        instance = FactorioInstance(address='localhost',
-                                    bounding_box=200,
-                                    tcp_port=27000,
-                                    fast=True,
-                                    # cache_scripts=False,
-                                    inventory={})
+        instance = FactorioInstance(
+            address="localhost",
+            bounding_box=200,
+            tcp_port=27000,
+            fast=True,
+            # cache_scripts=False,
+            inventory={},
+        )
         instance.speed(10)
 
         _, _, _, achievements = eval_program_with_achievements(instance, test_string_1)
-        ground_truth_achievement = {'static': {'stone-furnace': 1, 'coal': 10, 'stone': 10, 'iron-ore': 10},
-                                    'dynamic': {'iron-plate': 5}}
+        ground_truth_achievement = {
+            "static": {"stone-furnace": 1, "coal": 10, "stone": 10, "iron-ore": 10},
+            "dynamic": {"iron-plate": 5},
+        }
 
         assert achievements == ground_truth_achievement
         _, _, _, achievements = eval_program_with_achievements(instance, test_string)
-        ground_truth_achievement = {'static': {'stone-furnace': 1, 'coal': 10, 'stone': 10, 'copper-ore': 10},
-                                    'dynamic': {'copper-plate': 5}}
+        ground_truth_achievement = {
+            "static": {"stone-furnace": 1, "coal": 10, "stone": 10, "copper-ore": 10},
+            "dynamic": {"copper-plate": 5},
+        }
         assert achievements == ground_truth_achievement
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

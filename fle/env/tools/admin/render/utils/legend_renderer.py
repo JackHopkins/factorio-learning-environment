@@ -1,5 +1,4 @@
-from collections import defaultdict
-from typing import Dict, List, Tuple, Any, Set, Optional
+from typing import Dict, Any, Set, Optional
 from PIL import ImageDraw, ImageFont, Image
 import math
 
@@ -13,8 +12,13 @@ from fle.env.tools.admin.render.utils.shape_renderer import ShapeRenderer
 class LegendRenderer:
     """Renders legends for Factorio entities visualization"""
 
-    def __init__(self, config: RenderConfig, color_manager: ColourManager,
-                 categorizer: EntityCategoriser, shape_renderer: ShapeRenderer):
+    def __init__(
+        self,
+        config: RenderConfig,
+        color_manager: ColourManager,
+        categorizer: EntityCategoriser,
+        shape_renderer: ShapeRenderer,
+    ):
         """Initialize the legend renderer with required components"""
         self.config = config
         self.color_manager = color_manager
@@ -56,11 +60,15 @@ class LegendRenderer:
     #
     #     return dict(entities_by_category), entity_shapes
 
-    def calculate_legend_dimensions(self, img_width: int, img_height: int,
-                                    resources_present: Optional[Set[str]] = None,
-                                    natural_elements_present: Optional[Set[str]] = None,
-                                    statuses_present: Optional[Set[EntityStatus]] = None,
-                                    electricity_networks: Optional[Dict[int, tuple]] = None) -> Dict[str, Any]:
+    def calculate_legend_dimensions(
+        self,
+        img_width: int,
+        img_height: int,
+        resources_present: Optional[Set[str]] = None,
+        natural_elements_present: Optional[Set[str]] = None,
+        statuses_present: Optional[Set[EntityStatus]] = None,
+        electricity_networks: Optional[Dict[int, tuple]] = None,
+    ) -> Dict[str, Any]:
         """
         Calculate the dimensions of the legend without actually drawing it
 
@@ -76,8 +84,8 @@ class LegendRenderer:
             Dict with width, height, and position of the legend
         """
         # Create a temporary image and drawing context to measure text
-        tmp_img = ImageDraw.Draw(Image.new('RGBA', (1, 1), (0, 0, 0, 0)))
-        
+        tmp_img = ImageDraw.Draw(Image.new("RGBA", (1, 1), (0, 0, 0, 0)))
+
         # Get consistent legend settings to ensure readability regardless of zoom
         padding = self.config.style["legend_padding"]
         item_height = self.config.style["legend_item_height"]
@@ -102,7 +110,9 @@ class LegendRenderer:
         entity_categories = {}
 
         # Get entities by category from color manager and include shapes
-        entities_by_category, entity_shapes = self.color_manager.get_entities_by_category()
+        entities_by_category, entity_shapes = (
+            self.color_manager.get_entities_by_category()
+        )
 
         # Flatten all entities into a single list
         all_entities = []
@@ -138,7 +148,7 @@ class LegendRenderer:
                 "coal": "Coal",
                 "stone": "Stone",
                 "uranium-ore": "Uranium Ore",
-                "crude-oil": "Crude Oil"
+                "crude-oil": "Crude Oil",
             }
 
             for resource_id, display_name in resource_mapping.items():
@@ -176,20 +186,19 @@ class LegendRenderer:
             # Only include statuses that are actually present
             for status in statuses_present:
                 if status in status_map:
-                    status_items.append({
-                        "name": status_map[status],
-                        "status": status
-                    })
+                    status_items.append({"name": status_map[status], "status": status})
 
         # Add electricity networks if present
         electricity_items = []
         if electricity_networks:
             for network_id, color in electricity_networks.items():
-                electricity_items.append({
-                    "name": f"Network {network_id}",
-                    "network_id": network_id,
-                    "color": color
-                })
+                electricity_items.append(
+                    {
+                        "name": f"Network {network_id}",
+                        "network_id": network_id,
+                        "color": color,
+                    }
+                )
 
         # Add player marker to the legend
         player_marker = {"name": "Character Position", "is_player": True}
@@ -202,20 +211,33 @@ class LegendRenderer:
             total_categories += 1
 
         # Add resources, natural elements, status items, and electricity networks to total items
-        total_items += len(resource_types) + len(natural_types) + len(status_items) + len(electricity_items) + len(player_items)
+        total_items += (
+            len(resource_types)
+            + len(natural_types)
+            + len(status_items)
+            + len(electricity_items)
+            + len(player_items)
+        )
 
         # Measure text widths to determine legend width
         max_text_width = 0
 
         # Check category titles
-        category_titles = ["TERRAIN", "RESOURCES", "NATURAL", "ENTITIES", "STATUS", "ELECTRICITY"]
+        category_titles = [
+            "TERRAIN",
+            "RESOURCES",
+            "NATURAL",
+            "ENTITIES",
+            "STATUS",
+            "ELECTRICITY",
+        ]
         for title in category_titles:
             title_width = tmp_img.textlength(title, font=font)
             max_text_width = max(max_text_width, title_width)
 
         # Check entity name widths
         for entity_name, count in all_entities:
-            display_name = entity_name.replace('-', ' ').title()
+            display_name = entity_name.replace("-", " ").title()
             display_text = f"{display_name} ({count})"
             text_width = tmp_img.textlength(display_text, font=font)
             max_text_width = max(max_text_width, text_width)
@@ -258,34 +280,66 @@ class LegendRenderer:
         resources_height = 0
         resource_count = len([r for r in resource_types if r["type"] != "water"])
         if resource_count > 0:
-            resources_height = item_height + category_spacing + resource_count * (item_height + item_spacing)
+            resources_height = (
+                item_height
+                + category_spacing
+                + resource_count * (item_height + item_spacing)
+            )
 
         natural_height = 0
         if natural_types:
-            natural_height = item_height + category_spacing + len(natural_types) * (item_height + item_spacing)
+            natural_height = (
+                item_height
+                + category_spacing
+                + len(natural_types) * (item_height + item_spacing)
+            )
 
-        entities_height = item_height + category_spacing + len(all_entities) * (item_height + item_spacing)
+        entities_height = (
+            item_height
+            + category_spacing
+            + len(all_entities) * (item_height + item_spacing)
+        )
 
         # Add height for status indicators
         status_height = 0
         if status_items:
-            status_height = item_height + category_spacing + len(status_items) * (item_height + item_spacing)
+            status_height = (
+                item_height
+                + category_spacing
+                + len(status_items) * (item_height + item_spacing)
+            )
 
         # Add height for electricity networks
         electricity_height = 0
         if electricity_items:
-            electricity_height = item_height + category_spacing + len(electricity_items) * (item_height + item_spacing)
+            electricity_height = (
+                item_height
+                + category_spacing
+                + len(electricity_items) * (item_height + item_spacing)
+            )
 
         # Add height for player marker
-        player_marker_height = item_height + category_spacing + len(player_items) * (item_height + item_spacing)
+        player_marker_height = (
+            item_height
+            + category_spacing
+            + len(player_items) * (item_height + item_spacing)
+        )
 
         # Add height for origin marker if enabled
         origin_height = 0
         if self.config.style["origin_marker_enabled"]:
             origin_height = item_height + item_spacing
 
-        total_height = (terrain_height + resources_height + natural_height + entities_height +
-                        status_height + electricity_height + player_marker_height + origin_height)
+        total_height = (
+            terrain_height
+            + resources_height
+            + natural_height
+            + entities_height
+            + status_height
+            + electricity_height
+            + player_marker_height
+            + origin_height
+        )
 
         # Target height (use 80% of image height as maximum)
         target_height = int(img_height * 0.8) if img_height > 0 else 800
@@ -312,14 +366,20 @@ class LegendRenderer:
             "natural_types": natural_types,
             "status_items": status_items,
             "electricity_items": electricity_items,
-            "player_items": player_items
+            "player_items": player_items,
         }
 
-    def draw_combined_legend(self, draw: ImageDraw.ImageDraw, img_width: int, img_height: int,
-                             font: ImageFont.ImageFont, resources_present: Optional[Set[str]] = None,
-                             natural_elements_present: Optional[Set[str]] = None,
-                             statuses_present: Optional[Set[EntityStatus]] = None,
-                             electricity_networks: Optional[Dict[int, tuple]] = None) -> None:
+    def draw_combined_legend(
+        self,
+        draw: ImageDraw.ImageDraw,
+        img_width: int,
+        img_height: int,
+        font: ImageFont.ImageFont,
+        resources_present: Optional[Set[str]] = None,
+        natural_elements_present: Optional[Set[str]] = None,
+        statuses_present: Optional[Set[EntityStatus]] = None,
+        electricity_networks: Optional[Dict[int, tuple]] = None,
+    ) -> None:
         """Draw a combined legend showing entity types with their actual shapes and colors"""
         if not self.config.style["legend_enabled"]:
             return
@@ -331,9 +391,14 @@ class LegendRenderer:
         category_spacing = item_spacing * 2
 
         # Calculate legend dimensions
-        dimensions = self.calculate_legend_dimensions(img_width, img_height, resources_present,
-                                                      natural_elements_present, statuses_present,
-                                                      electricity_networks)
+        dimensions = self.calculate_legend_dimensions(
+            img_width,
+            img_height,
+            resources_present,
+            natural_elements_present,
+            statuses_present,
+            electricity_networks,
+        )
         legend_width = dimensions["width"]
         legend_height = dimensions["height"]
         num_columns = dimensions["num_columns"]
@@ -346,7 +411,9 @@ class LegendRenderer:
         player_items = dimensions.get("player_items", [])
 
         # Get entity shapes
-        entities_by_category, entity_shapes = self.color_manager.get_entities_by_category()
+        entities_by_category, entity_shapes = (
+            self.color_manager.get_entities_by_category()
+        )
 
         # Position the legend at the right side
         legend_x = img_width - legend_width - padding
@@ -357,7 +424,7 @@ class LegendRenderer:
             [legend_x, legend_y, legend_x + legend_width, legend_y + legend_height],
             fill=self.config.style["legend_bg_color"],
             outline=self.config.style["legend_border_color"],
-            width=1
+            width=1,
         )
 
         # Create a list of sections to distribute across columns
@@ -369,19 +436,20 @@ class LegendRenderer:
             water_section = {
                 "title": "TERRAIN",
                 "items": [
-                    {"name": "Water", "color": self.config.get_category_color("water"), "shape": "square",
-                     "is_water": True}
-                ]
+                    {
+                        "name": "Water",
+                        "color": self.config.get_category_color("water"),
+                        "shape": "square",
+                        "is_water": True,
+                    }
+                ],
             }
             sections.append(water_section)
 
         # Add resources section if any resources are present (except water)
         resource_items = [r for r in resource_types if r["type"] != "water"]
         if resource_items:
-            resource_section = {
-                "title": "RESOURCES",
-                "items": []
-            }
+            resource_section = {"title": "RESOURCES", "items": []}
 
             for resource in resource_items:
                 resource_type = resource["type"]
@@ -391,11 +459,7 @@ class LegendRenderer:
                 shape = self.config.get_category_shape(resource_type)
                 color = self.config.get_category_color(resource_type)
 
-                item = {
-                    "name": resource_name,
-                    "color": color,
-                    "shape": shape
-                }
+                item = {"name": resource_name, "color": color, "shape": shape}
 
                 # Add special properties based on resource type
                 if resource_type in ["iron-ore", "copper-ore"]:
@@ -411,10 +475,7 @@ class LegendRenderer:
 
         # Add natural elements section if any trees or rocks are present
         if natural_types:
-            natural_section = {
-                "title": "NATURAL",
-                "items": []
-            }
+            natural_section = {"title": "NATURAL", "items": []}
 
             for natural in natural_types:
                 natural_type = natural["type"]
@@ -424,11 +485,7 @@ class LegendRenderer:
                 shape = self.config.get_category_shape(natural_type)
                 color = self.config.get_category_color(natural_type)
 
-                item = {
-                    "name": natural_name,
-                    "color": color,
-                    "shape": shape
-                }
+                item = {"name": natural_name, "color": color, "shape": shape}
 
                 # Add special properties based on natural type
                 if natural_type == "tree":
@@ -441,33 +498,25 @@ class LegendRenderer:
             sections.append(natural_section)
 
         # Add all entities in a single section
-        entities_section = {
-            "title": "ENTITIES",
-            "items": []
-        }
+        entities_section = {"title": "ENTITIES", "items": []}
 
         for entity_name, count in all_entities:
-            display_name = entity_name.replace('-', ' ').title()
+            display_name = entity_name.replace("-", " ").title()
             display_text = f"{display_name} ({count})"
             color = self.color_manager.entity_colors[entity_name]
 
             # Get the correct shape for this entity
             shape_type = entity_shapes.get(entity_name, "square")
 
-            entities_section["items"].append({
-                "name": display_text,
-                "color": color,
-                "shape": shape_type
-            })
+            entities_section["items"].append(
+                {"name": display_text, "color": color, "shape": shape_type}
+            )
 
         sections.append(entities_section)
 
         # Add status indicators section if enabled
         if status_items:
-            status_section = {
-                "title": "STATUS",
-                "items": []
-            }
+            status_section = {"title": "STATUS", "items": []}
 
             for status_item in status_items:
                 status = status_item["status"]
@@ -476,64 +525,62 @@ class LegendRenderer:
                 # Get the status color from config
                 status_color = self.config.get_status_color(status)
 
-                status_section["items"].append({
-                    "name": status_name,
-                    "status_color": status_color,
-                    "is_status": True
-                })
+                status_section["items"].append(
+                    {
+                        "name": status_name,
+                        "status_color": status_color,
+                        "is_status": True,
+                    }
+                )
 
             sections.append(status_section)
 
         # Add electricity networks section if present
         if electricity_items:
-            electricity_section = {
-                "title": "ELECTRICITY",
-                "items": []
-            }
+            electricity_section = {"title": "ELECTRICITY", "items": []}
 
             for electricity_item in electricity_items:
-                network_id = electricity_item["network_id"]
                 network_name = electricity_item["name"]
                 network_color = electricity_item["color"]
 
-                electricity_section["items"].append({
-                    "name": network_name,
-                    "color": network_color,
-                    "shape": "circle",
-                    "is_electricity": True
-                })
+                electricity_section["items"].append(
+                    {
+                        "name": network_name,
+                        "color": network_color,
+                        "shape": "circle",
+                        "is_electricity": True,
+                    }
+                )
 
             sections.append(electricity_section)
 
         if player_items:
-            player_section = {
-                "title": "MARKERS",
-                "items": []
-            }
+            player_section = {"title": "MARKERS", "items": []}
 
             for player_item in player_items:
-                player_section["items"].append({
-                    "name": player_item["name"],
-                    "is_player": True
-                })
+                player_section["items"].append(
+                    {"name": player_item["name"], "is_player": True}
+                )
 
             sections.append(player_section)
 
         # Add origin marker if enabled
         if self.config.style["origin_marker_enabled"]:
             # Check if we already have a MARKERS section
-            markers_section = next((s for s in sections if s["title"] == "MARKERS"), None)
+            markers_section = next(
+                (s for s in sections if s["title"] == "MARKERS"), None
+            )
 
             if markers_section:
                 # Add to existing MARKERS section
-                markers_section["items"].append({"name": "Origin (0,0)", "is_origin": True})
+                markers_section["items"].append(
+                    {"name": "Origin (0,0)", "is_origin": True}
+                )
             else:
                 # Create new MARKERS section
                 origin_section = {
                     "title": "MARKERS",
-                    "items": [
-                        {"name": "Origin (0,0)", "is_origin": True}
-                    ]
+                    "items": [{"name": "Origin (0,0)", "is_origin": True}],
                 }
                 sections.append(origin_section)
 
@@ -541,7 +588,9 @@ class LegendRenderer:
         section_heights = []
         for section in sections:
             height = item_height + category_spacing  # Title height
-            height += len(section["items"]) * (item_height + item_spacing)  # Items height
+            height += len(section["items"]) * (
+                item_height + item_spacing
+            )  # Items height
             section_heights.append(height)
 
         # Distribute sections across columns to balance heights
@@ -568,7 +617,7 @@ class LegendRenderer:
                     section["title"],
                     fill=self.config.style["text_color"],
                     anchor="lm",
-                    font=font
+                    font=font,
                 )
                 col_y += item_height + category_spacing
 
@@ -588,18 +637,35 @@ class LegendRenderer:
 
                         # Draw a circle with crosshair
                         draw.ellipse(
-                            [center_x - marker_size, center_y - marker_size,
-                             center_x + marker_size, center_y + marker_size],
-                            outline=marker_color, width=2
+                            [
+                                center_x - marker_size,
+                                center_y - marker_size,
+                                center_x + marker_size,
+                                center_y + marker_size,
+                            ],
+                            outline=marker_color,
+                            width=2,
                         )
 
                         draw.line(
-                            [center_x - marker_size, center_y, center_x + marker_size, center_y],
-                            fill=marker_color, width=2
+                            [
+                                center_x - marker_size,
+                                center_y,
+                                center_x + marker_size,
+                                center_y,
+                            ],
+                            fill=marker_color,
+                            width=2,
                         )
                         draw.line(
-                            [center_x, center_y - marker_size, center_x, center_y + marker_size],
-                            fill=marker_color, width=2
+                            [
+                                center_x,
+                                center_y - marker_size,
+                                center_x,
+                                center_y + marker_size,
+                            ],
+                            fill=marker_color,
+                            width=2,
                         )
                     elif "is_player" in item and item["is_player"]:
                         # Draw player marker (crosshair)
@@ -610,22 +676,40 @@ class LegendRenderer:
 
                         # Draw a distinctive player marker (crosshair inside circle)
                         draw.ellipse(
-                            [center_x - marker_size, center_y - marker_size,
-                             center_x + marker_size, center_y + marker_size],
-                            fill=marker_color
+                            [
+                                center_x - marker_size,
+                                center_y - marker_size,
+                                center_x + marker_size,
+                                center_y + marker_size,
+                            ],
+                            fill=marker_color,
                         )
                         # Add crosshair in center
                         draw.line(
-                            [center_x, center_y - marker_size, center_x, center_y + marker_size],
-                            fill=(0, 0, 0), width=2
+                            [
+                                center_x,
+                                center_y - marker_size,
+                                center_x,
+                                center_y + marker_size,
+                            ],
+                            fill=(0, 0, 0),
+                            width=2,
                         )
                         draw.line(
-                            [center_x - marker_size, center_y, center_x + marker_size, center_y],
-                            fill=(0, 0, 0), width=2
+                            [
+                                center_x - marker_size,
+                                center_y,
+                                center_x + marker_size,
+                                center_y,
+                            ],
+                            fill=(0, 0, 0),
+                            width=2,
                         )
                     elif "is_status" in item and item["is_status"]:
                         # Draw status indicator
-                        status_color = item.get("status_color", (255, 0, 255))  # Default to magenta if missing
+                        status_color = item.get(
+                            "status_color", (255, 0, 255)
+                        )  # Default to magenta if missing
 
                         # Draw a small triangle in top-left of sample square as a status indicator
                         sample_box_size = shape_sample_size * 0.8
@@ -634,18 +718,26 @@ class LegendRenderer:
 
                         # Draw sample entity box
                         draw.rectangle(
-                            [box_x, box_y, box_x + sample_box_size, box_y + sample_box_size],
+                            [
+                                box_x,
+                                box_y,
+                                box_x + sample_box_size,
+                                box_y + sample_box_size,
+                            ],
                             fill=(120, 120, 120),  # Generic entity color
-                            outline=(0, 0, 0)
+                            outline=(0, 0, 0),
                         )
 
                         # Draw status triangle indicator
                         triangle_size = sample_box_size / 2
-                        draw.polygon([
-                            (box_x, box_y),
-                            (box_x + triangle_size, box_y),
-                            (box_x, box_y + triangle_size)
-                        ], fill=status_color)
+                        draw.polygon(
+                            [
+                                (box_x, box_y),
+                                (box_x + triangle_size, box_y),
+                                (box_x, box_y + triangle_size),
+                            ],
+                            fill=status_color,
+                        )
                     elif "is_electricity" in item and item["is_electricity"]:
                         # Draw electricity network indicator
                         network_color = item.get("color", (200, 200, 200))
@@ -659,17 +751,25 @@ class LegendRenderer:
                         # Semi-transparent outer circle for coverage area
                         transparent_color = network_color + (100,)  # Add alpha value
                         draw.ellipse(
-                            [center_x - outer_radius, center_y - outer_radius,
-                             center_x + outer_radius, center_y + outer_radius],
-                            fill=transparent_color
+                            [
+                                center_x - outer_radius,
+                                center_y - outer_radius,
+                                center_x + outer_radius,
+                                center_y + outer_radius,
+                            ],
+                            fill=transparent_color,
                         )
 
                         # Solid inner circle for pole
                         draw.ellipse(
-                            [center_x - inner_radius, center_y - inner_radius,
-                             center_x + inner_radius, center_y + inner_radius],
+                            [
+                                center_x - inner_radius,
+                                center_y - inner_radius,
+                                center_x + inner_radius,
+                                center_y + inner_radius,
+                            ],
                             fill=network_color,
-                            outline=(0, 0, 0)
+                            outline=(0, 0, 0),
                         )
                     else:
                         # Get shape and color
@@ -683,15 +783,23 @@ class LegendRenderer:
                         backing_r = int(r + (255 - r) * lightness_factor)
                         backing_g = int(g + (255 - g) * lightness_factor)
                         backing_b = int(b + (255 - b) * lightness_factor)
-                        backing_color = (backing_r, backing_g, backing_b, 120)  # Semi-transparent
+                        backing_color = (
+                            backing_r,
+                            backing_g,
+                            backing_b,
+                            120,
+                        )  # Semi-transparent
 
                         # Draw backing rectangle
                         draw.rectangle(
-                            [shape_x, shape_y,
-                             shape_x + shape_sample_size,
-                             shape_y + shape_sample_size],
+                            [
+                                shape_x,
+                                shape_y,
+                                shape_x + shape_sample_size,
+                                shape_y + shape_sample_size,
+                            ],
                             fill=backing_color,
-                            outline=(0, 0, 0)
+                            outline=(0, 0, 0),
                         )
 
                         # Draw the actual shape slightly smaller to fit within backing rectangle
@@ -712,7 +820,7 @@ class LegendRenderer:
                             smaller_x2,
                             smaller_y2,
                             shape_type,
-                            color
+                            color,
                         )
 
                         # Add special details for different types
@@ -722,37 +830,78 @@ class LegendRenderer:
                             for i in range(0, shape_sample_size, hatch_spacing):
                                 # Draw diagonal lines (one direction)
                                 draw.line(
-                                    [(shape_x, shape_y + i), (shape_x + min(i, shape_sample_size), shape_y)],
-                                    fill=(min(color[0] + 30, 255), min(color[1] + 30, 255), min(color[2] + 40, 255)),
-                                    width=1
+                                    [
+                                        (shape_x, shape_y + i),
+                                        (shape_x + min(i, shape_sample_size), shape_y),
+                                    ],
+                                    fill=(
+                                        min(color[0] + 30, 255),
+                                        min(color[1] + 30, 255),
+                                        min(color[2] + 40, 255),
+                                    ),
+                                    width=1,
                                 )
                                 # Draw diagonal lines (other direction)
                                 draw.line(
-                                    [(shape_x + i, shape_y + shape_sample_size), (shape_x + shape_sample_size,
-                                                                                  shape_y + shape_sample_size - min(i,
-                                                                                                                    shape_sample_size))],
-                                    fill=(min(color[0] + 30, 255), min(color[1] + 30, 255), min(color[2] + 40, 255)),
-                                    width=1
+                                    [
+                                        (shape_x + i, shape_y + shape_sample_size),
+                                        (
+                                            shape_x + shape_sample_size,
+                                            shape_y
+                                            + shape_sample_size
+                                            - min(i, shape_sample_size),
+                                        ),
+                                    ],
+                                    fill=(
+                                        min(color[0] + 30, 255),
+                                        min(color[1] + 30, 255),
+                                        min(color[2] + 40, 255),
+                                    ),
+                                    width=1,
                                 )
 
                         elif "has_dots" in item and item["has_dots"]:
                             # Add texture dots for ores
                             dot_size = shape_sample_size / 8
-                            dot_color = (min(color[0] + 30, 255), min(color[1] + 30, 255), min(color[2] + 30, 255))
+                            dot_color = (
+                                min(color[0] + 30, 255),
+                                min(color[1] + 30, 255),
+                                min(color[2] + 30, 255),
+                            )
 
                             dot_positions = [
-                                (shape_x + shape_sample_size / 4, shape_y + shape_sample_size / 4),
-                                (shape_x + 3 * shape_sample_size / 4, shape_y + shape_sample_size / 4),
-                                (shape_x + shape_sample_size / 2, shape_y + shape_sample_size / 2),
-                                (shape_x + shape_sample_size / 4, shape_y + 3 * shape_sample_size / 4),
-                                (shape_x + 3 * shape_sample_size / 4, shape_y + 3 * shape_sample_size / 4)
+                                (
+                                    shape_x + shape_sample_size / 4,
+                                    shape_y + shape_sample_size / 4,
+                                ),
+                                (
+                                    shape_x + 3 * shape_sample_size / 4,
+                                    shape_y + shape_sample_size / 4,
+                                ),
+                                (
+                                    shape_x + shape_sample_size / 2,
+                                    shape_y + shape_sample_size / 2,
+                                ),
+                                (
+                                    shape_x + shape_sample_size / 4,
+                                    shape_y + 3 * shape_sample_size / 4,
+                                ),
+                                (
+                                    shape_x + 3 * shape_sample_size / 4,
+                                    shape_y + 3 * shape_sample_size / 4,
+                                ),
                             ]
 
                             for dot_x, dot_y in dot_positions:
                                 draw.ellipse(
-                                    [dot_x - dot_size, dot_y - dot_size, dot_x + dot_size, dot_y + dot_size],
+                                    [
+                                        dot_x - dot_size,
+                                        dot_y - dot_size,
+                                        dot_x + dot_size,
+                                        dot_y + dot_size,
+                                    ],
                                     fill=dot_color,
-                                    outline=None
+                                    outline=None,
                                 )
 
                         elif "is_uranium" in item and item["is_uranium"]:
@@ -763,9 +912,13 @@ class LegendRenderer:
 
                             # Draw center dot
                             draw.ellipse(
-                                [center_x - inner_radius, center_y - inner_radius,
-                                 center_x + inner_radius, center_y + inner_radius],
-                                fill=(0, 0, 0)
+                                [
+                                    center_x - inner_radius,
+                                    center_y - inner_radius,
+                                    center_x + inner_radius,
+                                    center_y + inner_radius,
+                                ],
+                                fill=(0, 0, 0),
                             )
 
                             # Draw radiation "blades"
@@ -777,8 +930,12 @@ class LegendRenderer:
                                 mid_y = center_y + inner_radius * math.sin(angle)
 
                                 draw.polygon(
-                                    [(center_x, center_y), (mid_x, mid_y), (end_x, end_y)],
-                                    fill=(30, 120, 30)
+                                    [
+                                        (center_x, center_y),
+                                        (mid_x, mid_y),
+                                        (end_x, end_y),
+                                    ],
+                                    fill=(30, 120, 30),
                                 )
 
                         elif "is_oil" in item and item["is_oil"]:
@@ -786,14 +943,26 @@ class LegendRenderer:
                             center_x = shape_x + shape_sample_size / 2
                             center_y = shape_y + shape_sample_size / 2
                             small_radius = shape_sample_size / 8
-                            offsets = [(shape_sample_size / 5, 0), (0, shape_sample_size / 5),
-                                       (-shape_sample_size / 5, 0), (0, -shape_sample_size / 5)]
+                            offsets = [
+                                (shape_sample_size / 5, 0),
+                                (0, shape_sample_size / 5),
+                                (-shape_sample_size / 5, 0),
+                                (0, -shape_sample_size / 5),
+                            ]
 
                             for dx, dy in offsets:
                                 draw.ellipse(
-                                    [center_x + dx - small_radius, center_y + dy - small_radius,
-                                     center_x + dx + small_radius, center_y + dy + small_radius],
-                                    fill=(min(color[0] + 40, 255), min(color[1] + 40, 255), min(color[2] + 40, 255))
+                                    [
+                                        center_x + dx - small_radius,
+                                        center_y + dy - small_radius,
+                                        center_x + dx + small_radius,
+                                        center_y + dy + small_radius,
+                                    ],
+                                    fill=(
+                                        min(color[0] + 40, 255),
+                                        min(color[1] + 40, 255),
+                                        min(color[2] + 40, 255),
+                                    ),
                                 )
 
                         elif "is_tree" in item and item["is_tree"]:
@@ -807,18 +976,26 @@ class LegendRenderer:
                             trunk_color = (101, 67, 33)  # Brown
 
                             draw.rectangle(
-                                [center_x - trunk_width / 2, center_y - trunk_height / 2 + trunk_height / 4,
-                                 center_x + trunk_width / 2, center_y + trunk_height / 2],
-                                fill=trunk_color
+                                [
+                                    center_x - trunk_width / 2,
+                                    center_y - trunk_height / 2 + trunk_height / 4,
+                                    center_x + trunk_width / 2,
+                                    center_y + trunk_height / 2,
+                                ],
+                                fill=trunk_color,
                             )
 
                             # Draw foliage (simple circle for legend)
                             foliage_radius = shape_sample_size / 3
 
                             draw.ellipse(
-                                [center_x - foliage_radius, center_y - foliage_radius - trunk_height / 4,
-                                 center_x + foliage_radius, center_y + foliage_radius - trunk_height / 4],
-                                fill=color
+                                [
+                                    center_x - foliage_radius,
+                                    center_y - foliage_radius - trunk_height / 4,
+                                    center_x + foliage_radius,
+                                    center_y + foliage_radius - trunk_height / 4,
+                                ],
+                                fill=color,
                             )
 
                         elif "is_rock" in item and item["is_rock"]:
@@ -840,9 +1017,15 @@ class LegendRenderer:
                                 points.append((px, py))
 
                             # Draw the rock
-                            draw.polygon(points, fill=color, outline=(min(color[0] - 30, 255),
-                                                                      min(color[1] - 30, 255),
-                                                                      min(color[2] - 30, 255)))
+                            draw.polygon(
+                                points,
+                                fill=color,
+                                outline=(
+                                    min(color[0] - 30, 255),
+                                    min(color[1] - 30, 255),
+                                    min(color[2] - 30, 255),
+                                ),
+                            )
 
                     # Draw item label
                     text_x = shape_x + shape_sample_size + padding / 2
@@ -852,7 +1035,7 @@ class LegendRenderer:
                         item["name"],
                         fill=self.config.style["text_color"],
                         anchor="lm",
-                        font=font
+                        font=font,
                     )
 
                     col_y += item_height + item_spacing

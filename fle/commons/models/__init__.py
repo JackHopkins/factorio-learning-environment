@@ -31,25 +31,20 @@ from .timing_metrics import TimingMetrics
 __all__ = [
     # Game state and research
     "GameState",
-    "ResearchState", 
+    "ResearchState",
     "TechnologyState",
     "filter_serializable_vars",
-    
     # Conversation and messaging
     "Conversation",
     "Message",
-    
     # Program execution
     "Program",
     "SerializableFunction",
-    
     # Achievements and production
     "ProfitConfig",
     "ProductionFlows",
-    
     # Generation and configuration
     "GenerationParameters",
-    
     # Timing and metrics
     "TimingMetrics",
 ]

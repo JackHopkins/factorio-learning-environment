@@ -1,7 +1,7 @@
-from typing import Dict, Callable, List
+from typing import Dict, Callable
 from PIL import ImageDraw
 
-from fle.env.entities import Entity, Direction, EntityStatus
+from fle.env.entities import Direction, EntityStatus
 from fle.env.tools.admin.render.layers.layer_renderer import LayerRenderer
 
 
@@ -18,12 +18,15 @@ class EntitiesLayerRenderer(LayerRenderer):
     def layer_name(self) -> str:
         return "entities"
 
-    def render(self, draw: ImageDraw.ImageDraw,
-               game_to_img_func: Callable,
-               boundaries: Dict[str, float],
-               **kwargs) -> None:
+    def render(
+        self,
+        draw: ImageDraw.ImageDraw,
+        game_to_img_func: Callable,
+        boundaries: Dict[str, float],
+        **kwargs,
+    ) -> None:
         """Draw all entities on the map with their shapes, directions, and status indicators"""
-        entities = kwargs.get('entities', [])
+        entities = kwargs.get("entities", [])
         if not entities:
             return
 
@@ -31,8 +34,16 @@ class EntitiesLayerRenderer(LayerRenderer):
             # Get entity position and dimensions
             pos = entity.position
 
-            width = entity.tile_dimensions.tile_width if hasattr(entity, "tile_dimensions") else 1
-            height = entity.tile_dimensions.tile_height if hasattr(entity, "tile_dimensions") else 1
+            width = (
+                entity.tile_dimensions.tile_width
+                if hasattr(entity, "tile_dimensions")
+                else 1
+            )
+            height = (
+                entity.tile_dimensions.tile_height
+                if hasattr(entity, "tile_dimensions")
+                else 1
+            )
 
             if entity.direction.value in (Direction.LEFT.value, Direction.RIGHT.value):
                 width1 = width
@@ -50,14 +61,29 @@ class EntitiesLayerRenderer(LayerRenderer):
 
             # Draw entity shape
             self.shape_renderer.draw_shape(
-                draw, x1, y1, x2, y2, shape_type, entity_color,
-                direction=entity.direction if hasattr(entity, "direction") else None
+                draw,
+                x1,
+                y1,
+                x2,
+                y2,
+                shape_type,
+                entity_color,
+                direction=entity.direction if hasattr(entity, "direction") else None,
             )
 
             # Add status indicator in corner if enabled
-            if self.config.style["status_indicator_enabled"] and entity.status != EntityStatus.NORMAL:
-                self.shape_renderer.draw_status_indicator(draw, x1, y1, x2, y2, entity.status)
+            if (
+                self.config.style["status_indicator_enabled"]
+                and entity.status != EntityStatus.NORMAL
+            ):
+                self.shape_renderer.draw_status_indicator(
+                    draw, x1, y1, x2, y2, entity.status
+                )
 
             # Add direction indicator if enabled
-            if self.config.style["direction_indicator_enabled"] and hasattr(entity, "direction"):
-                self.shape_renderer.draw_direction_indicator(draw, x1, y1, x2, y2, entity.direction)
+            if self.config.style["direction_indicator_enabled"] and hasattr(
+                entity, "direction"
+            ):
+                self.shape_renderer.draw_direction_indicator(
+                    draw, x1, y1, x2, y2, entity.direction
+                )

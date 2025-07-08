@@ -6,7 +6,6 @@ from fle.env.tools import Tool
 
 
 class GetPrototypeRecipe(Tool):
-
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
@@ -27,13 +26,28 @@ class GetPrototypeRecipe(Tool):
         response, elapsed = self.execute(self.player_index, name)
 
         if not isinstance(response, dict):
-            raise Exception(f"Could not get recipe of {name} - {response}. You may need to use the RecipeName enum instead.")
+            raise Exception(
+                f"Could not get recipe of {name} - {response}. You may need to use the RecipeName enum instead."
+            )
 
         parsed_response = self.parse_lua_dict(response)
 
-        ingredients = [Ingredient(name=ingredient['name'], count=ingredient['amount'], type=ingredient['type'] if 'type' in ingredient else None) for ingredient in parsed_response['ingredients']]
-        products = [Product(name=product['name'], count=product['amount'], probability=product['probability'],
-                                  type=product['type'] if 'type' in product else None) for product in
-                       parsed_response['products']]
+        ingredients = [
+            Ingredient(
+                name=ingredient["name"],
+                count=ingredient["amount"],
+                type=ingredient["type"] if "type" in ingredient else None,
+            )
+            for ingredient in parsed_response["ingredients"]
+        ]
+        products = [
+            Product(
+                name=product["name"],
+                count=product["amount"],
+                probability=product["probability"],
+                type=product["type"] if "type" in product else None,
+            )
+            for product in parsed_response["products"]
+        ]
 
         return Recipe(name=name, ingredients=ingredients, products=products)

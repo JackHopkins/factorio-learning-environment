@@ -1,9 +1,22 @@
 from statistics import mean
 from typing import List, Union
-from typing_extensions import deprecated, cast
+from typing_extensions import cast
 
-from fle.env import TransportBelt, BeltGroup, Position, Entity, EntityGroup, PipeGroup, Inventory, \
-    EntityStatus, Pipe, ElectricityGroup, UndergroundBelt, Direction, WallGroup
+from fle.env import (
+    TransportBelt,
+    BeltGroup,
+    Position,
+    Entity,
+    EntityGroup,
+    PipeGroup,
+    Inventory,
+    EntityStatus,
+    Pipe,
+    ElectricityGroup,
+    UndergroundBelt,
+    Direction,
+    WallGroup,
+)
 from fle.env.game_types import Prototype
 
 
@@ -22,10 +35,9 @@ def _deduplicate_entities(entities: List[Entity]) -> List[Entity]:
     return list(reversed(unique_entities))
 
 
-def _construct_group(id: int,
-                     entities: List[Entity],
-                     prototype: Prototype,
-                     position: Position) -> EntityGroup:
+def _construct_group(
+    id: int, entities: List[Entity], prototype: Prototype, position: Position
+) -> EntityGroup:
     if prototype == Prototype.TransportBelt or isinstance(entities[0], TransportBelt):
         if len(entities) == 1:
             return entities[0]
@@ -33,13 +45,17 @@ def _construct_group(id: int,
         outputs = [c for c in entities if c.is_terminus]
         inventory = Inventory()
         for entity in entities:
-            if hasattr(entity, 'inventory') and entity.inventory:  # Check if inventory exists and is not empty
+            if (
+                hasattr(entity, "inventory") and entity.inventory
+            ):  # Check if inventory exists and is not empty
                 entity_inventory = entity.inventory
                 for item, value in entity_inventory.items():
-                    current_value = inventory.get(item, 0)  # Get current value or 0 if not exists
+                    current_value = inventory.get(
+                        item, 0
+                    )  # Get current value or 0 if not exists
                     inventory[item] = current_value + value  # Add new value
 
-        if any(entity.warnings and entity.warnings[0] == 'full' for entity in entities):
+        if any(entity.warnings and entity.warnings[0] == "full" for entity in entities):
             status = EntityStatus.FULL_OUTPUT
         else:
             status = EntityStatus.WORKING
@@ -47,14 +63,18 @@ def _construct_group(id: int,
         if not inventory:
             status = EntityStatus.EMPTY
 
-        return BeltGroup(id=0,
-                         belts=entities,
-                         inventory=inventory,
-                         inputs=inputs,
-                         outputs=outputs,
-                         status = status,
-                         position=position)
-    elif prototype in (Prototype.Pipe, Prototype.UndergroundPipe) or isinstance(entities[0], Pipe):
+        return BeltGroup(
+            id=0,
+            belts=entities,
+            inventory=inventory,
+            inputs=inputs,
+            outputs=outputs,
+            status=status,
+            position=position,
+        )
+    elif prototype in (Prototype.Pipe, Prototype.UndergroundPipe) or isinstance(
+        entities[0], Pipe
+    ):
         entities = _deduplicate_entities(entities)
         if any([pipe.contents > 0 and pipe.flow_rate > 0 for pipe in entities]):
             status = EntityStatus.WORKING
@@ -63,12 +83,12 @@ def _construct_group(id: int,
         elif all([pipe.flow_rate == 0 for pipe in entities]):
             status = EntityStatus.FULL_OUTPUT
 
-        return PipeGroup(pipes=entities,
-                         id=id,
-                         status=status,
-                         position=position)
-    elif prototype in (Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole):
-
+        return PipeGroup(pipes=entities, id=id, status=status, position=position)
+    elif prototype in (
+        Prototype.SmallElectricPole,
+        Prototype.BigElectricPole,
+        Prototype.MediumElectricPole,
+    ):
         if any([pole.flow_rate > 0 for pole in entities]):
             status = EntityStatus.WORKING
         else:
@@ -76,9 +96,18 @@ def _construct_group(id: int,
         mean_x = mean([pole.position.x for pole in entities])
         mean_y = mean([pole.position.y for pole in entities])
 
-        return ElectricityGroup(id=entities[0].electrical_id, poles=list(set(entities)), status=status, position=Position(x=mean_x, y=mean_y))
+        return ElectricityGroup(
+            id=entities[0].electrical_id,
+            poles=list(set(entities)),
+            status=status,
+            position=Position(x=mean_x, y=mean_y),
+        )
     else:
-         return WallGroup(id=sum([hash(entity.position) for entity in entities])%1024, entities=entities, position=entities[0].position)
+        return WallGroup(
+            id=sum([hash(entity.position) for entity in entities]) % 1024,
+            entities=entities,
+            position=entities[0].position,
+        )
 
 
 def consolidate_underground_belts(belt_groups):
@@ -96,13 +125,17 @@ def consolidate_underground_belts(belt_groups):
         for i, belt in enumerate(group.belts):
             if isinstance(belt, UndergroundBelt):
                 if belt.id not in underground_pairs:
-                    underground_pairs[belt.id] = {'entrance': None, 'exit': None, 'index': i}
+                    underground_pairs[belt.id] = {
+                        "entrance": None,
+                        "exit": None,
+                        "index": i,
+                    }
 
         for i, belt in enumerate(group.belts):
             if isinstance(belt, UndergroundBelt):
                 if belt.connected_to:
-                    underground_pairs[belt.connected_to]['exit'] = belt
-                    underground_pairs[belt.id]['entrance'] = belt
+                    underground_pairs[belt.connected_to]["exit"] = belt
+                    underground_pairs[belt.id]["entrance"] = belt
 
         # Third pass: create consolidated underground belts and build new belt list
         for i, belt in enumerate(group.belts):
@@ -111,42 +144,47 @@ def consolidate_underground_belts(belt_groups):
 
             if isinstance(belt, UndergroundBelt):
                 pair_data = underground_pairs.get(belt.id, None)
-                if pair_data and pair_data['entrance'] and pair_data['exit']:
-                    #if i == pair_data['index']:  # Only process at first occurrence
-                        # Create consolidated underground belt
-                        entrance = cast(UndergroundBelt, pair_data['entrance'])
-                        exit = cast(UndergroundBelt, pair_data['exit'])
+                if pair_data and pair_data["entrance"] and pair_data["exit"]:
+                    # if i == pair_data['index']:  # Only process at first occurrence
+                    # Create consolidated underground belt
+                    entrance = cast(UndergroundBelt, pair_data["entrance"])
+                    exit = cast(UndergroundBelt, pair_data["exit"])
 
-                        # Create new underground belt representing the whole section
-                        try:
-                            consolidated = UndergroundBelt(
-                                name=entrance.name,
-                                id=entrance.id,
-                                position=entrance.position,
-                                direction=entrance.direction,
-                                is_input=True,  # Marking as input since it represents the entrance
-                                is_source=entrance.is_source,
-                                is_terminus=exit.is_terminus,
-                                input_position=entrance.input_position,
-                                output_position=exit.position,
-                                connected_to=exit.id,
-                                energy=entrance.energy+exit.energy,
-                                dimensions=entrance.dimensions,
-                                tile_dimensions=entrance.tile_dimensions,
-                                status=entrance.status,
-                                prototype=entrance.prototype,
-                                health=min(entrance.health, exit.health),
-                                inventory=Inventory(**{**entrance.inventory.__dict__, **exit.inventory.__dict__})
-                            )
-                            new_belts.append(consolidated)
-                        except Exception as e:
-                            pass
+                    # Create new underground belt representing the whole section
+                    try:
+                        consolidated = UndergroundBelt(
+                            name=entrance.name,
+                            id=entrance.id,
+                            position=entrance.position,
+                            direction=entrance.direction,
+                            is_input=True,  # Marking as input since it represents the entrance
+                            is_source=entrance.is_source,
+                            is_terminus=exit.is_terminus,
+                            input_position=entrance.input_position,
+                            output_position=exit.position,
+                            connected_to=exit.id,
+                            energy=entrance.energy + exit.energy,
+                            dimensions=entrance.dimensions,
+                            tile_dimensions=entrance.tile_dimensions,
+                            status=entrance.status,
+                            prototype=entrance.prototype,
+                            health=min(entrance.health, exit.health),
+                            inventory=Inventory(
+                                **{
+                                    **entrance.inventory.__dict__,
+                                    **exit.inventory.__dict__,
+                                }
+                            ),
+                        )
+                        new_belts.append(consolidated)
+                    except Exception:
+                        pass
 
-                        # Mark both entrance and exit for removal
-                        exit_idx = group.belts.index(exit)
-                        removed_indices.add(i)
-                        removed_indices.add(exit_idx)
-                    #continue
+                    # Mark both entrance and exit for removal
+                    exit_idx = group.belts.index(exit)
+                    removed_indices.add(i)
+                    removed_indices.add(exit_idx)
+                # continue
 
             if i not in removed_indices:
                 new_belts.append(belt)
@@ -163,18 +201,28 @@ def consolidate_underground_belts(belt_groups):
             position_dict[belt.position] = belt
 
         for belt in new_belts:
-            if belt.is_source and (belt.input_position not in position_dict or position_dict[belt.input_position].output_position != belt.position):
+            if belt.is_source and (
+                belt.input_position not in position_dict
+                or position_dict[belt.input_position].output_position != belt.position
+            ):
                 group.inputs.append(belt)
-            if belt.is_terminus and (belt.output_position not in position_dict or position_dict[belt.output_position].input_position != belt.position):
+            if belt.is_terminus and (
+                belt.output_position not in position_dict
+                or position_dict[belt.output_position].input_position != belt.position
+            ):
                 group.outputs.append(belt)
 
         return group
 
     # Process each belt group
-    return ([process_group(group) for group in belt_groups if isinstance(group, BeltGroup)] +
-            [group for group in belt_groups if not isinstance(group, BeltGroup)])
+    return [
+        process_group(group) for group in belt_groups if isinstance(group, BeltGroup)
+    ] + [group for group in belt_groups if not isinstance(group, BeltGroup)]
 
-def construct_belt_groups(belts: List[Union[TransportBelt, UndergroundBelt]], prototype):
+
+def construct_belt_groups(
+    belts: List[Union[TransportBelt, UndergroundBelt]], prototype
+):
     belts_by_position = {}
     source_belts = []
     terminal_belts = []
@@ -204,7 +252,7 @@ def construct_belt_groups(belts: List[Union[TransportBelt, UndergroundBelt]], pr
     def find_matching_exit(entrance_pos, direction):
         entrance_x, entrance_y = entrance_pos
         closest_exit = None
-        min_distance = float('inf')
+        min_distance = float("inf")
 
         for exit_pos, exit_dir in underground_exits:
             exit_x, exit_y = exit_pos
@@ -346,15 +394,16 @@ def construct_belt_groups(belts: List[Union[TransportBelt, UndergroundBelt]], pr
 
     # Merge overlapping groups
     final_groups = []
-    visited_belts = set()
 
     for group in initial_groups:
         merged = False
         for final_group in final_groups:
             # Check if this group should be merged with an existing group
-            if any((belt.output_position.x, belt.output_position.y) in
-                   {(b.position.x, b.position.y) for b in final_group}
-                   for belt in group):
+            if any(
+                (belt.output_position.x, belt.output_position.y)
+                in {(b.position.x, b.position.y) for b in final_group}
+                for belt in group
+            ):
                 # Merge groups
                 for belt in group:
                     if belt not in final_group:
@@ -365,17 +414,26 @@ def construct_belt_groups(belts: List[Union[TransportBelt, UndergroundBelt]], pr
         if not merged:
             final_groups.append(group)
 
-    groups = [_construct_group(
-        id=i,
-        entities=list(dict.fromkeys(group)),  # Remove any duplicates while preserving order
-        prototype=prototype,
-        position=group[0].position
-    ) for i, group in enumerate(final_groups)]
+    groups = [
+        _construct_group(
+            id=i,
+            entities=list(
+                dict.fromkeys(group)
+            ),  # Remove any duplicates while preserving order
+            prototype=prototype,
+            position=group[0].position,
+        )
+        for i, group in enumerate(final_groups)
+    ]
 
     try:
-        return consolidate_underground_belts(groups) # We want to merge conjoined pairs of underground belts for clarity
+        return consolidate_underground_belts(
+            groups
+        )  # We want to merge conjoined pairs of underground belts for clarity
     except Exception as e:
         raise e
+
+
 #
 # @deprecated("Doesn't support underground belts")
 # def construct_belt_groups_old(belts: List[TransportBelt], prototype):
@@ -468,8 +526,9 @@ def construct_belt_groups(belts: List[Union[TransportBelt, UndergroundBelt]], pr
 #     ) for i, group in enumerate(final_groups)]
 
 
-
-def agglomerate_groupable_entities(connected_entities: List[Entity]) -> List[EntityGroup]:
+def agglomerate_groupable_entities(
+    connected_entities: List[Entity],
+) -> List[EntityGroup]:
     """
     Group contiguous transport belts into BeltGroup objects.
 
@@ -485,10 +544,14 @@ def agglomerate_groupable_entities(connected_entities: List[Entity]) -> List[Ent
     if not connected_entities:
         return []
 
-    if hasattr(connected_entities[0], 'prototype'):
+    if hasattr(connected_entities[0], "prototype"):
         prototype = connected_entities[0].prototype
 
-    if prototype in (Prototype.SmallElectricPole, Prototype.BigElectricPole, Prototype.MediumElectricPole):
+    if prototype in (
+        Prototype.SmallElectricPole,
+        Prototype.BigElectricPole,
+        Prototype.MediumElectricPole,
+    ):
         electricity_ids = {}
         for entity in connected_entities:
             if entity.electrical_id in electricity_ids:
@@ -496,12 +559,15 @@ def agglomerate_groupable_entities(connected_entities: List[Entity]) -> List[Ent
             else:
                 electricity_ids[entity.electrical_id] = [entity]
 
-        return [_construct_group(
-            id=id,
-            entities=entities,
-            prototype=prototype,
-            position=entities[0].position
-        ) for id, entities in electricity_ids.items()]
+        return [
+            _construct_group(
+                id=id,
+                entities=entities,
+                prototype=prototype,
+                position=entities[0].position,
+            )
+            for id, entities in electricity_ids.items()
+        ]
     elif prototype in (Prototype.Pipe, Prototype.UndergroundPipe):
         fluidbox_ids = {}
         for entity in connected_entities:
@@ -510,21 +576,35 @@ def agglomerate_groupable_entities(connected_entities: List[Entity]) -> List[Ent
             else:
                 fluidbox_ids[entity.fluidbox_id] = [entity]
 
-        return [_construct_group(
-            id=id,
-            entities=entities,
-            prototype=prototype,
-            position=entities[0].position
-        ) for id, entities in fluidbox_ids.items()]
+        return [
+            _construct_group(
+                id=id,
+                entities=entities,
+                prototype=prototype,
+                position=entities[0].position,
+            )
+            for id, entities in fluidbox_ids.items()
+        ]
     elif prototype == Prototype.StoneWall:
-        return [_construct_group(
-            id=0,
-            entities=connected_entities,
-            prototype=prototype,
-            position=connected_entities[0].position
-        )]
-    elif prototype in (Prototype.TransportBelt, Prototype.FastTransportBelt, Prototype.ExpressTransportBelt, Prototype.UndergroundBelt, Prototype.FastUndergroundBelt, Prototype.ExpressUndergroundBelt):
+        return [
+            _construct_group(
+                id=0,
+                entities=connected_entities,
+                prototype=prototype,
+                position=connected_entities[0].position,
+            )
+        ]
+    elif prototype in (
+        Prototype.TransportBelt,
+        Prototype.FastTransportBelt,
+        Prototype.ExpressTransportBelt,
+        Prototype.UndergroundBelt,
+        Prototype.FastUndergroundBelt,
+        Prototype.ExpressUndergroundBelt,
+    ):
         groups = construct_belt_groups(connected_entities, prototype)
         return groups
 
-    raise RuntimeError("Failed to group an entity with prototype: {}".format(prototype.name))
+    raise RuntimeError(
+        "Failed to group an entity with prototype: {}".format(prototype.name)
+    )

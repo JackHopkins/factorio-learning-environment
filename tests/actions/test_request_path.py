@@ -1,13 +1,14 @@
 import pytest
 
 from fle.env.entities import Position
-from fle.env.game_types import Prototype
+
 
 @pytest.fixture()
 def game(instance):
     instance.reset()
     yield instance.namespace
     instance.reset()
+
 
 def test_path(game):
     """

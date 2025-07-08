@@ -6,8 +6,8 @@ from typing import Dict
 from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )
-from . import mcp
-from .init import state
+from fle.env.protocols.mcp import mcp
+from fle.env.protocols.mcp.init import state
 
 HOST = "fle"
 

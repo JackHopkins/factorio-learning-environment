@@ -1,8 +1,8 @@
-"""Environment and game interaction"""
+"""Factorio environment module."""
 
-from .entities import *  # noqa
-from .game_types import Prototype, Resource
-from .instance import DirectionInternal, FactorioInstance
+from fle.env.entities import *  # noqa
+from fle.env.game_types import Prototype, Resource
+from fle.env.instance import DirectionInternal, FactorioInstance
 
 __all__ = [
     "FactorioInstance",

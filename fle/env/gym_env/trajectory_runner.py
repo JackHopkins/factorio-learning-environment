@@ -9,11 +9,11 @@ from fle.commons.models.conversation import Conversation
 from fle.commons.models.game_state import GameState
 from fle.commons.models.program import Program
 
-from .action import Action
-from .config import GymEvalConfig
-from .environment import FactorioGymEnv
-from .observation import Observation
-from .trajectory_logger import TrajectoryLogger
+from fle.env.gym_env.action import Action
+from fle.env.gym_env.config import GymEvalConfig
+from fle.env.gym_env.environment import FactorioGymEnv
+from fle.env.gym_env.observation import Observation
+from fle.env.gym_env.trajectory_logger import TrajectoryLogger
 
 
 class GymTrajectoryRunner:

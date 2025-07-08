@@ -14,8 +14,8 @@ from fle.agents.models import CompletionResult, Response
 from fle.agents.llm.parsing import Policy
 from fle.agents.agent_abc import AgentABC
 from fle.agents.formatters import RecursiveReportFormatter
-from .llm.api_factory import APIFactory
-from .llm.parsing import parse_response
+from fle.agents.llm.api_factory import APIFactory
+from fle.agents.llm.parsing import parse_response
 
 GENERAL_INSTRUCTIONS_BACKTRACKING = """
 # Factorio LLM Agent Instructions

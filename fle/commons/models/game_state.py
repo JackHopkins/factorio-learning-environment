@@ -5,8 +5,8 @@ from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from .research_state import ResearchState
-from .technology_state import TechnologyState
+from fle.commons.models.research_state import ResearchState
+from fle.commons.models.technology_state import TechnologyState
 
 
 @dataclass

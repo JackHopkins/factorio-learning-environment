@@ -1,13 +1,13 @@
 """LLM utilities for agents package."""
 
 # API and core functionality
-from .api_factory import APIFactory
+from fle.agents.llm.api_factory import APIFactory
 
 # Parsing utilities
-from .parsing import Policy, PolicyMeta, PythonParser
+from fle.agents.llm.parsing import Policy, PolicyMeta, PythonParser
 
 # Metrics and performance tracking
-from .metrics import (
+from fle.agents.llm.metrics import (
     TimingTracker,
     timing_tracker,
     track_timing,
@@ -17,7 +17,7 @@ from .metrics import (
 )
 
 # Utility functions
-from .utils import (
+from fle.agents.llm.utils import (
     format_messages_for_anthropic,
     format_messages_for_openai,
     has_image_content,

@@ -8,8 +8,8 @@ from fle.commons.models.game_state import GameState
 from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )
-from . import mcp
-from .init import state, initialize_session
+from fle.env.protocols.mcp import mcp
+from fle.env.protocols.mcp.init import state, initialize_session
 
 
 @mcp.tool()

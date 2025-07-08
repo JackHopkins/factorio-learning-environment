@@ -13,8 +13,8 @@ from fle.commons.models.generation_parameters import GenerationParameters
 from fle.env import Layer, Position
 from fle.env.namespace import FactorioNamespace
 
-from .llm.api_factory import APIFactory
-from .llm.parsing import parse_response
+from fle.agents.llm.api_factory import APIFactory
+from fle.agents.llm.parsing import parse_response
 
 VISUAL_INSTRUCTIONS = """
 ## Visual Information

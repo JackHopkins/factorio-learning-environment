@@ -7,26 +7,26 @@ and various utility models.
 """
 
 # Game state and research models
-from .game_state import GameState, filter_serializable_vars
-from .research_state import ResearchState
-from .technology_state import TechnologyState
+from fle.commons.models.game_state import GameState, filter_serializable_vars
+from fle.commons.models.research_state import ResearchState
+from fle.commons.models.technology_state import TechnologyState
 
 # Conversation and messaging models
-from .conversation import Conversation
-from .message import Message
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.message import Message
 
 # Program execution models
-from .program import Program
-from .serializable_function import SerializableFunction
+from fle.commons.models.program import Program
+from fle.commons.models.serializable_function import SerializableFunction
 
 # Achievement and production models
-from .achievements import ProfitConfig, ProductionFlows
+from fle.commons.models.achievements import ProfitConfig, ProductionFlows
 
 # Generation and configuration models
-from .generation_parameters import GenerationParameters
+from fle.commons.models.generation_parameters import GenerationParameters
 
 # Timing and metrics models
-from .timing_metrics import TimingMetrics
+from fle.commons.models.timing_metrics import TimingMetrics
 
 __all__ = [
     # Game state and research

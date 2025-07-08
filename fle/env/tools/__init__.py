@@ -12,9 +12,9 @@ Base Classes:
 - Init: Initialization tool for setting up the game environment
 """
 
-from .controller import Controller
-from .init import Init
-from .tool import Tool
+from fle.env.tools.controller import Controller
+from fle.env.tools.init import Init
+from fle.env.tools.tool import Tool
 
 # Version info
 __version__ = "1.0.0"

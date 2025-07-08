@@ -10,7 +10,7 @@ from pathlib import Path
 from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )
-from . import mcp
+from fle.env.protocols.mcp import mcp
 
 
 def _get_tools_base_path() -> Path:

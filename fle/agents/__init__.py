@@ -1,24 +1,24 @@
 # Core model classes
-from .models import TaskResponse, Response, CompletionReason, CompletionResult
+from fle.agents.models import TaskResponse, Response, CompletionReason, CompletionResult
 
 # Import TimingMetrics from commons to maintain backward compatibility
 from fle.commons.models.timing_metrics import TimingMetrics
 
 # Agent base classes
-from .agent_abc import AgentABC, create_default_agent_card
+from fle.agents.agent_abc import AgentABC, create_default_agent_card
 
 # Agent implementations
-from .basic_agent import BasicAgent
-from .gym_agent import GymAgent
-from .visual_agent import VisualAgent
-from .backtracking_agent import BacktrackingAgent
-from .backtracking_system import BacktrackingSystem
+from fle.agents.basic_agent import BasicAgent
+from fle.agents.gym_agent import GymAgent
+from fle.agents.visual_agent import VisualAgent
+from fle.agents.backtracking_agent import BacktrackingAgent
+from fle.agents.backtracking_system import BacktrackingSystem
 
 
 # Lazy imports to avoid circular dependencies
 def _get_policy_classes():
     """Lazy import for Policy classes to avoid circular imports."""
-    from .llm.parsing import Policy, PolicyMeta
+    from fle.agents.llm.parsing import Policy, PolicyMeta
 
     return Policy, PolicyMeta
 

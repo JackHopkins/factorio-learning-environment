@@ -1,15 +1,14 @@
 import argparse
-import asyncio
 import sys
 import shutil
 import subprocess
 from pathlib import Path
 import importlib.resources
-
+import asyncio
 from fle.env.gym_env.run_eval import main as run_eval
 
 
-def copy_env_and_configs():
+def fle_init():
     try:
         pkg = importlib.resources.files("fle")
         env_template = pkg / ".example.env"
@@ -36,7 +35,7 @@ def copy_env_and_configs():
         sys.exit(1)
 
 
-def run_cluster(args=None):
+def fle_cluster(args):
     script = Path(__file__).parent / "cluster" / "local" / "run-envs.sh"
     if not script.exists():
         print(f"Cluster script not found: {script}", file=sys.stderr)
@@ -56,12 +55,11 @@ def run_cluster(args=None):
         sys.exit(e.returncode)
 
 
-def eval_command(args):
+def fle_eval(args):
     config_path = Path(args.config)
     if not config_path.exists():
         print(f"Error: Config file '{args.config}' not found.", file=sys.stderr)
         sys.exit(1)
-    # Only 'independent' supported for now
     if args.algorithm != "independent":
         print("Only --algorithm independent is supported.", file=sys.stderr)
         sys.exit(1)
@@ -92,11 +90,7 @@ Examples:
         """,
     )
     subparsers = parser.add_subparsers(dest="command")
-
-    # init
     subparsers.add_parser("init", help="Initialize FLE workspace (copy .env, configs)")
-
-    # cluster
     parser_cluster = subparsers.add_parser(
         "cluster", help="Setup Docker containers (run run-envs.sh)"
     )
@@ -116,25 +110,18 @@ Examples:
         default=None,
         help="Scenario (open_world or default_lab_scenario)",
     )
-
-    # eval
     parser_eval = subparsers.add_parser("eval", help="Run experiment")
     parser_eval.add_argument(
         "--algorithm", required=True, help="Algorithm (independent)"
     )
     parser_eval.add_argument("--config", required=True, help="Path to run config JSON")
-
     args = parser.parse_args()
-
     if args.command == "init":
-        copy_env_and_configs()
-        return
+        fle_init()
     elif args.command == "cluster":
-        run_cluster(args)
-        return
+        fle_cluster(args)
     elif args.command == "eval":
-        eval_command(args)
-        return
+        fle_eval(args)
     else:
         parser.print_help()
         sys.exit(1)

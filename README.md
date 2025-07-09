@@ -64,7 +64,20 @@ pip install factorio-learning-environment
 
 ### Usage
 
-After installation, you can import the package in your Python code:
+After installation, you can use the CLI:
+
+```bash
+# Initialize workspace (creates .env and configs)
+fle init
+
+# Start Docker cluster
+fle cluster
+
+# Run evaluation (auto-starts cluster if needed)
+fle eval --config configs/gym_run_config.json
+```
+
+Or import the package in your Python code:
 
 ```python
 import fle
@@ -72,76 +85,41 @@ import fle
 
 ### Quickstart
 
-1. **Clone the repository**:
-
+1. **Install the package**:
 ```bash
-git clone https://github.com/JackHopkins/factorio-learning-environment.git
-cd factorio-learning-environment
-
 # Using uv
-uv sync --extra env --extra eval
+uv add factorio-learning-environment
 
 # Using pip
-pip install -e .[env,eval]
+pip install factorio-learning-environment
 ```
 
-2. **Configure Docker permissions** (for Linux users):
-   If you typically run Docker with sudo, add your user to the docker group:
-   ```bash
-   sudo usermod -aG docker $USER
-   newgrp docker
-   ```
+2. **Initialize workspace**:
+```bash
+fle init
+```
+This creates:
+- `.env` file (edit with your API keys and DB config)
+- `configs/` directory with example configurations
 
-3. **Launch FLE Docker server**:
-   ```bash
-   # For macOS and Windows (Open Docker Desktop application):
+3. **Start the cluster**:
+```bash
+fle cluster
+```
+This builds the Docker image and starts Factorio servers. You can also use:
+- `fle cluster -n 3` for multiple instances
+- `fle cluster -s open_world` for different scenarios
+- `fle cluster stop` to stop servers
 
-   # For Linux (Start Docker daemon):
-   sudo systemctl start docker
+4. **Run an evaluation**:
+```bash
+fle eval --config configs/gym_run_config.json
+```
+This automatically starts the cluster if it's not running.
 
-   # Build Docker image
-   cd cluster/docker
-   docker build -t factorio .
+### Gym Environment Usage
 
-   # Run Factorio servers
-   cd ../local
-   ./run-envs.sh  # Starts 1 instance with default lab scenario
-
-   # Alternatively, with more options (see fle/cluster/local/README.md):
-   ./run-envs.sh -n 3 -s open_world  # Starts 3 instances with open world scenario
-   ./run-envs.sh stop                # Stops all running instances
-   ./run-envs.sh restart             # Restarts with previous configuration
-   ```
-   **Note**: The script automatically detects your platform (arm64/amd64) and configures Docker appropriately.
-
-4. **Configure firewall** (if running server on a different machine):
-   Open the following ports:
-   - UDP 34197 (Game connection)
-   - TCP 27015 (RCON)
-
-   **Note**: On Windows, you may need to configure Windows Defender Firewall to allow these ports.
-
-5. **Configure DB**: Copy the example environment file:
-   - Note that API keys are only required for the respective model providers that will be evaluated
-   ```bash
-   cp .example.env .env
-   ```
-
-6. **Run Eval**: Running open and lab play with example run configs:
-   1. Open Play (one parallel run):
-      ```sh
-      # Using uv
-      uv run -m fle.run --run_config=eval/algorithms/independent/run_config_example_open_play.json
-      # Using python
-      python -m fle.run --run_config=eval/algorithms/independent/run_config_example_open_play.json
-      ```
-   2. Tasks (one parallel run of iron-ore task):
-      ```sh
-      # Using uv
-      uv run -m fle.run --run_config=fle/eval/algorithms/independent/gym_run_config.json
-      # Using python
-      python -m fle.run --run_config=fle/eval/algorithms/independent/gym_run_config.json
-      ```
+FLE can also be used as a gym environment for reinforcement learning experiments. See the [Gym Environment Registry](#gym-environment-registry) section for details.
 
 ### Client-side running (renders graphics)
 
@@ -159,7 +137,6 @@ pip install -e .[env,eval]
 
 ### Troubleshooting
 - **"No valid programs found for version X"**: This is normal during initialization. The system will start generating programs shortly.
-- **Python import errors**: Make sure you're using the run.py script provided above to fix path issues.
 - **Database connection errors**: Verify your database configuration in the .env file and ensure the database exists.
 - **Docker issues**: Ensure your user has permission to run Docker without sudo.
 - **Connection issues**: Make sure the Factorio server is running and ports are properly configured.
@@ -705,6 +682,8 @@ For backward compatibility, you can still use the legacy task-based configuratio
     "model": "gpt-4o-mini-2024-07-18"}
 ]
 ```
+
+**Note**: The CLI (`fle eval`) is the recommended approach for new users.
 
 ## Multiagent Experiments
 

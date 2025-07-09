@@ -84,7 +84,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  fle eval --algorithm independent --config configs/run_config_example_open_play.json
+  fle eval --algorithm independent --config configs/gym_run_config.json
   fle cluster [start|stop|restart|help] [-n N] [-s SCENARIO]
   fle init
         """,

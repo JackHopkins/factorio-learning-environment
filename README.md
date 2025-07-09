@@ -67,55 +67,22 @@ pip install factorio-learning-environment
 After installation, you can use the CLI:
 
 ```bash
-# Initialize workspace (creates .env and configs)
-fle init
-
-# Start Docker cluster
+# Start Docker image
 fle cluster
 
 # Run evaluation (auto-starts cluster if needed)
 fle eval --config configs/gym_run_config.json
 ```
 
+When you run `fle` for the first time, the following will happen automatically:
+- `.env` file created (edit with your API keys and DB config)
+- `configs/` directory with example configurations
+
 Or import the package in your Python code:
 
 ```python
 import fle
 ```
-
-### Quickstart
-
-1. **Install the package**:
-```bash
-# Using uv
-uv add factorio-learning-environment
-
-# Using pip
-pip install factorio-learning-environment
-```
-
-2. **Initialize workspace**:
-```bash
-fle init
-```
-This creates:
-- `.env` file (edit with your API keys and DB config)
-- `configs/` directory with example configurations
-
-3. **Start the cluster**:
-```bash
-fle cluster
-```
-This builds the Docker image and starts Factorio servers. You can also use:
-- `fle cluster -n 3` for multiple instances
-- `fle cluster -s open_world` for different scenarios
-- `fle cluster stop` to stop servers
-
-4. **Run an evaluation**:
-```bash
-fle eval --config configs/gym_run_config.json
-```
-This automatically starts the cluster if it's not running.
 
 ### Gym Environment Usage
 

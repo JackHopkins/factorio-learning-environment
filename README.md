@@ -84,6 +84,39 @@ Or import the package in your Python code:
 import fle
 ```
 
+### Quickstart
+
+1. **Install the package**:
+```bash
+# Using uv
+uv add factorio-learning-environment
+
+# Using pip
+pip install factorio-learning-environment
+```
+
+2. **Run your first evaluation**:
+```bash
+fle eval --config configs/gym_run_config.json
+```
+
+This automatically:
+- Creates `.env` file and `configs/` directory
+- Builds Docker image and starts Factorio servers
+- Runs the evaluation
+
+3. **Customize your setup**:
+```bash
+# Edit API keys and database config
+nano .env
+
+# Start cluster manually (optional)
+fle cluster
+
+# Use different scenarios
+fle cluster -n 3 -s open_world
+```
+
 ### Gym Environment Usage
 
 FLE can also be used as a gym environment for reinforcement learning experiments. See the [Gym Environment Registry](#gym-environment-registry) section for details.
@@ -106,6 +139,13 @@ FLE can also be used as a gym environment for reinforcement learning experiments
 - **"No valid programs found for version X"**: This is normal during initialization. The system will start generating programs shortly.
 - **Database connection errors**: Verify your database configuration in the .env file and ensure the database exists.
 - **Docker issues**: Ensure your user has permission to run Docker without sudo.
+  - For macOS and Windows: Open Docker Desktop application
+  - For Linux: Start Docker daemon with `sudo systemctl start docker`
+  - If you typically run Docker with sudo, add your user to the docker group:
+    ```bash
+    sudo usermod -aG docker $USER
+    newgrp docker
+    ```
 - **Connection issues**: Make sure the Factorio server is running and ports are properly configured.
 
 ## Environment

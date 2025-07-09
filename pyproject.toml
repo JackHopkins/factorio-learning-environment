@@ -108,38 +108,14 @@ env = [
 fle = "fle.run:main"
 
 [tool.hatch.version]
-path = "fle/__about__.py"
+path = "fle/__init__.py"
 
 [tool.hatch.build]
 exclude = [
-    "**/__pycache__",
-    "**/*.pyc",
-    "**/*.pyo",
-    "**/*.pyd",
-    ".git*",
-    ".DS_Store",
-    "dist",
-    ".venv",
-    ".pytest_cache",
-    "summary_cache",
-    "notebooks",
-    "*.ipynb",
-    "clean.sh",
-    "**/*.so",
-    "tests",
-    "docs",
-    "leaderboard",
-    "env",
-    "*.sh",
-    "*.md",
-    "*.toml",
-    "*.ini",
-    "*.cfg",
-    "*.lock",
-    "*.json",
-    "*.yml",
-    "*.yaml",
-    "*.txt",
+    "fle/**/__pycache__",
+    "fle/**/*.pyc",
+    "fle/**/*.pyo",
+    "fle/**/*.pyd",
 ]
 
 [tool.hatch.build.targets.wheel]

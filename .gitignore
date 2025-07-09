@@ -1,92 +1,28 @@
+# Python/venv
 .venv/
-cortex
-/dev/
-.idea
-/.idea/
-.DS_Store
 .env
 .fle/
-.vscode/
-~/PycharmProjects/PaperclipMaximiser/dev/
-/client/log/
-/client/unscored_log/
-# all pycache folders
 __pycache__/
-# all pycache files
 *.pyc
-*/__pycache__/*.pyc
-client/__pycache__/*.pyc
-client/__pycache__/
-/src/log/*.log
-/src/log/*.trace
-/log/
-/environment/src/gpt_events.jsonl
-/environment/src/llama.jsonl
-/environment/src/llama_events.jsonl
-/.git.bak/
-/environment/src/.neptune/
-/environment/src/.neptune/
-/environment/src/.neptune/async/
-/environment/src/skills/bottom_up/skill_generation_logs/
-*.jsonl
-/fle/agents/data/blueprints_to_policies/blueprints/decoded/
-/fle/agents/data/blueprints_to_policies/blueprints/mining/
-/fle/agents/data/blueprints_to_policies/blueprints/electricity/
-/fle/agents/data/blueprints_to_policies/blueprints/manufacturing/
-/fle/agents/data/blueprints_to_policies/blueprints/misc/
-/fle/agents/data/blueprints_to_policies/blueprints/
-/fle/agents/data/encoded/
-/fle/agents/data/full/
-/fle/agents/data/place_next_to_connect/
-/fle/agents/data/refactor/
-/fle/agents/data/refactor2/
-environment/src/skills/expanded_skills/*
-environment/src/skills/ground_truth_skills/*
-/fle/agents/data/plans/factorio_guides/processed/
-/fle/agents/data/plans/factorio_guides/raw/
-/fle/agents/data/plans/factorio_guides/visited/
-/environment/src/datasetgen/mcts/plots/
-/environment/src/search/mcts/runs/
-/fle/agents/data/icons/
-/environment/src/search/beam/summary_cache/
-/environment/src/search/independent_runs/summary_cache/
-/fle/agents/data/screenshots
-/src/search/plots/*.png
-/src/search/plots/*/*.png
-/src/search/plots/*.pkl
-/fle/eval/open/.neptune/
-/fle/eval/open/.neptune/
-/fle/eval/open/plots/icons/
-/fle/eval/open/plots/production_volumes/
-/fle/eval/open/plots/icons/
-/fle/eval/open/plots/viz_cache.pkl
-/fle/eval/open/plots/viz_cache2.pkl
-/fle/eval/algorithms/mcts/runs/
-/fle/eval/algorithms/mcts/independent_runs/summary_cache/
-/fle/eval/algorithms/beam/summary_cache/
-/venv_py311/
-/fle/eval/open/plots/
-*.mp4
-!/docs/assets/videos/*.mp4
-/leaderboard/node_modules/
-/server/CLAUDE.md
 uv.lock
-trajectory_logs/
 
-**/.claude/settings.local.json
-/factorio_learning_environment/
-/factorio_learning_environment.egg-info/
-/dist/
-/build/
+# IDE/editor
+.idea/
+.vscode/
+.DS_Store
 
-# Docker compose generated files  
+# Build/dist
+/dist
+
+# Docker
 /fle/cluster/local/docker-compose.yml
 
-
-# Database files
-.fle/
+# Misc
+trajectory_logs/
+**/.claude/settings.local.json
+*.mp4
+*.jsonl
 *.db
-/fle/eval/
-/fle/eval/open/plots/
-/eval/
-/data/
+
+#fle
+.fle/

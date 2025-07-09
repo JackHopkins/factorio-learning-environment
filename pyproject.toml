@@ -109,9 +109,6 @@ env = [
 [project.scripts]
 fle = "fle.run:main"
 
-[tool.hatch.version]
-path = "fle/__init__.py"
-
 [tool.hatch.build]
 exclude = [
     "fle/**/__pycache__",

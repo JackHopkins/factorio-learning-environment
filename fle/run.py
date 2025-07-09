@@ -9,30 +9,24 @@ from fle.env.gym_env.run_eval import main as run_eval
 
 
 def fle_init():
+    if Path(".env").exists():
+        return True
     try:
         pkg = importlib.resources.files("fle")
         env_template = pkg / ".example.env"
         with importlib.resources.as_file(env_template) as env_path:
-            if not Path(".env").exists():
-                shutil.copy(env_path, ".env")
-                print(
-                    "Created .env file - please edit with your API keys and DB config"
-                )
-            else:
-                print(".env already exists, skipping copy.")
-        run_configs_dir = pkg / "eval" / "algorithms" / "independent"
+            shutil.copy(env_path, ".env")
+            print("Created .env file - please edit with your API keys and DB config")
         configs_out = Path("configs")
         configs_out.mkdir(exist_ok=True)
-        for config in run_configs_dir.iterdir():
-            if config.name.startswith("run_config_example_") and config.name.endswith(
-                ".json"
-            ):
-                with importlib.resources.as_file(config) as config_path:
-                    shutil.copy(config_path, configs_out / config.name)
-        print("Copied example run configs to ./configs/")
+        shutil.copy(
+            str(pkg / "eval" / "algorithms" / "independent" / "gym_run_config.json"),
+            str(configs_out / "gym_run_config.json"),
+        )
     except Exception as e:
         print(f"Error during init: {e}", file=sys.stderr)
         sys.exit(1)
+    return False
 
 
 def fle_cluster(args):
@@ -55,15 +49,19 @@ def fle_cluster(args):
         sys.exit(e.returncode)
 
 
-def fle_eval(args):
+def fle_eval(args, env):
+    if not env:
+        return
+    # Check if Factorio server is running on port 34197
+    probe = Path(__file__).parent / "cluster" / "docker" / "probe.sh"
+    result = subprocess.run(["sh", str(probe)])
+    if result.returncode != 0:
+        print("Server not running, starting cluster...")
+        fle_cluster(None)
     config_path = Path(args.config)
     if not config_path.exists():
         print(f"Error: Config file '{args.config}' not found.", file=sys.stderr)
         sys.exit(1)
-    if args.algorithm != "independent":
-        print("Only --algorithm independent is supported.", file=sys.stderr)
-        sys.exit(1)
-    original_argv = sys.argv.copy()
     try:
         sys.argv = ["run_eval", "--run_config", str(config_path)]
         asyncio.run(run_eval())
@@ -73,8 +71,6 @@ def fle_eval(args):
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
-    finally:
-        sys.argv = original_argv
 
 
 def main():
@@ -84,13 +80,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  fle eval --algorithm independent --config configs/gym_run_config.json
+  fle eval --config configs/gym_run_config.json
   fle cluster [start|stop|restart|help] [-n N] [-s SCENARIO]
-  fle init
         """,
     )
     subparsers = parser.add_subparsers(dest="command")
-    subparsers.add_parser("init", help="Initialize FLE workspace (copy .env, configs)")
     parser_cluster = subparsers.add_parser(
         "cluster", help="Setup Docker containers (run run-envs.sh)"
     )
@@ -111,17 +105,15 @@ Examples:
         help="Scenario (open_world or default_lab_scenario)",
     )
     parser_eval = subparsers.add_parser("eval", help="Run experiment")
-    parser_eval.add_argument(
-        "--algorithm", required=True, help="Algorithm (independent)"
-    )
     parser_eval.add_argument("--config", required=True, help="Path to run config JSON")
     args = parser.parse_args()
-    if args.command == "init":
-        fle_init()
-    elif args.command == "cluster":
+    env = True
+    if args.command:
+        env = fle_init()
+    if args.command == "cluster":
         fle_cluster(args)
     elif args.command == "eval":
-        fle_eval(args)
+        fle_eval(args, env)
     else:
         parser.print_help()
         sys.exit(1)

@@ -1,0 +1,28 @@
+name: Deploy Leaderboard
+
+on:
+  push:
+    branches: [leaderboard]
+
+jobs:
+  process-results:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Process Results
+        run: |
+          node docs/leaderboard/process-results.js
+          
+      - name: Commit and Push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add docs/leaderboard/processed/
+          git commit -m "Update leaderboard data" || exit 0
+          git push 

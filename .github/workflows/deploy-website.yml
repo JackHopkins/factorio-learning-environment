@@ -46,13 +46,6 @@ jobs:
           # Copy docs but exclude leaderboard source files
           cp -r docs deploy
           rm -rf deploy/leaderboard
-          mkdir -p deploy/leaderboard
-          rm -rf deploy/leaderboard/src
-          rm -rf deploy/leaderboard/public
-          rm -rf deploy/leaderboard/node_modules
-          rm deploy/leaderboard/package.json
-          rm deploy/leaderboard/package-lock.json
-          rm deploy/leaderboard/README.md
           # Copy the built React app to replace the source
           cp -r docs/leaderboard/build/* deploy/leaderboard/
 

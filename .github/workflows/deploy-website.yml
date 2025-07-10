@@ -46,6 +46,7 @@ jobs:
           # Copy docs but exclude leaderboard source files
           cp -r docs deploy
           rm -rf deploy/leaderboard
+          mkdir -p deploy/leaderboard
           # Copy the built React app to replace the source
           cp -r docs/leaderboard/build/* deploy/leaderboard/
 

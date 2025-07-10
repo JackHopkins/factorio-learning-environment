@@ -17,7 +17,7 @@ jobs:
           
       - name: Process Results
         run: |
-          node docs/leaderboard/process-results.js
+          node .github/scripts/process-results.js
           
       - name: Commit and Push
         run: |

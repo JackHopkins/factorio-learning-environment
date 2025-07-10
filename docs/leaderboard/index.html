@@ -253,35 +253,11 @@
     </div>
 
     <script>
-        // Load leaderboard data dynamically
+        // Load leaderboard data from combined results
         async function loadLeaderboardData() {
             try {
-                // Load all JSON files from the results directory
-                const response = await fetch('./results/');
-                const text = await response.text();
-                
-                // Parse the directory listing to get JSON files
-                const jsonFiles = [];
-                const lines = text.split('\n');
-                for (const line of lines) {
-                    const match = line.match(/href="([^"]+\.json)"/);
-                    if (match) {
-                        jsonFiles.push(match[1]);
-                    }
-                }
-
-                // Load each JSON file
-                const leaderboardData = [];
-                for (const file of jsonFiles) {
-                    try {
-                        const fileResponse = await fetch(`./results/${file}`);
-                        const data = await fileResponse.json();
-                        leaderboardData.push(data);
-                    } catch (error) {
-                        console.warn(`Failed to load ${file}:`, error);
-                    }
-                }
-
+                const response = await fetch('./processed/combined-results.json');
+                const leaderboardData = await response.json();
                 renderLeaderboard(leaderboardData);
             } catch (error) {
                 console.error('Failed to load leaderboard data:', error);
@@ -313,7 +289,7 @@
                 row.className = 'table-row';
                 row.innerHTML = `
                     <div class="rank">${index + 1}</div>
-                    <div class="model-name">${model.name}</div>
+                    <div class="model-name">${model.model}</div>
                     <div class="score">${model.productionScore.toLocaleString()}</div>
                     <div class="milestone">${model.milestones}</div>
                     <div class="automation">${model.automationMilestones}</div>

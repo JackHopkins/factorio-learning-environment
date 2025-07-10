@@ -282,40 +282,9 @@
                     }
                 }
 
-                // If no data loaded, use fallback
-                if (leaderboardData.length === 0) {
-                    console.warn('No data loaded, using fallback data');
-                    leaderboardData.push(
-                        {
-                            "name": "Claude 3.5-Sonnet",
-                            "productionScore": 293206,
-                            "milestones": 30,
-                            "automationMilestones": 13,
-                            "labTasksSuccessRate": 21.9,
-                            "mostComplexItem": "plastic-bar",
-                            "submittedBy": "JackHopkins",
-                            "submissionDate": "2025-03-06"
-                        }
-                    );
-                }
-
                 renderLeaderboard(leaderboardData);
             } catch (error) {
                 console.error('Failed to load leaderboard data:', error);
-                // Fallback to static data if loading fails
-                const fallbackData = [
-                    {
-                        "name": "Claude 3.5-Sonnet",
-                        "productionScore": 293206,
-                        "milestones": 30,
-                        "automationMilestones": 13,
-                        "labTasksSuccessRate": 21.9,
-                        "mostComplexItem": "plastic-bar",
-                        "submittedBy": "JackHopkins",
-                        "submissionDate": "2025-03-06"
-                    }
-                ];
-                renderLeaderboard(fallbackData);
             }
         }
 

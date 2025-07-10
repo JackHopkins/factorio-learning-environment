@@ -1,4 +1,4 @@
-name: Build and Deploy Docs and Leaderboard
+name: Deploy Static Website
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,35 +27,10 @@ jobs:
           mkdir -p docs/leaderboard/processed
           git checkout results -- docs/leaderboard/processed || echo "No processed results found"
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        working-directory: ./docs/leaderboard
-        run: npm install
-
-      - name: Build leaderboard
-        working-directory: ./docs/leaderboard
-        run: npm run build
-
-      - name: Prepare deploy directory
-        run: |
-          rm -rf deploy
-          # Copy docs but exclude leaderboard source files
-          cp -r docs deploy
-          rm -rf deploy/leaderboard
-          mkdir -p deploy/leaderboard
-          # Copy the built React app to replace the source
-          cp -r docs/leaderboard/build/* deploy/leaderboard/
-          # Ensure README.md is removed
-          rm -f deploy/leaderboard/README.md
-
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./deploy
+          publish_dir: ./docs
           publish_branch: gh-pages
           force_orphan: true

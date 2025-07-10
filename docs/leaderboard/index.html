@@ -253,105 +253,114 @@
     </div>
 
     <script>
-        // Leaderboard data
-        const leaderboardData = [
-            {
-                "name": "Claude 3.5-Sonnet",
-                "productionScore": 293206,
-                "milestones": 30,
-                "automationMilestones": 13,
-                "labTasksSuccessRate": 21.9,
-                "mostComplexItem": "plastic-bar",
-                "submittedBy": "JackHopkins",
-                "submissionDate": "2025-03-06"
-            },
-            {
-                "name": "Gemini-2-Flash",
-                "productionScore": 115782,
-                "milestones": 20,
-                "automationMilestones": 6,
-                "labTasksSuccessRate": 13,
-                "mostComplexItem": "iron-gear-wheel",
-                "submittedBy": "JackHopkins",
-                "submissionDate": "2025-03-07"
-            },
-            {
-                "name": "GPT4o",
-                "productionScore": 87599,
-                "milestones": 30,
-                "automationMilestones": 9,
-                "labTasksSuccessRate": 16.6,
-                "mostComplexItem": "plastic-bar",
-                "submittedBy": "JackHopkins",
-                "submissionDate": "2025-03-07"
-            },
-            {
-                "name": "Llama-3.3-70b",
-                "productionScore": 54998,
-                "milestones": 16,
-                "automationMilestones": 4,
-                "labTasksSuccessRate": 5.2,
-                "mostComplexItem": "iron-plate",
-                "submittedBy": "JackHopkins",
-                "submissionDate": "2025-03-07"
-            },
-            {
-                "name": "Deepseek-v3",
-                "productionScore": 48585,
-                "milestones": 22,
-                "automationMilestones": 7,
-                "labTasksSuccessRate": 15.1,
-                "mostComplexItem": "plastic-bar",
-                "submittedBy": "JackHopkins",
-                "submissionDate": "2025-03-07"
-            },
-            {
-                "name": "GPT4o-Mini",
-                "productionScore": 26756,
-                "milestones": 14,
-                "automationMilestones": 4,
-                "labTasksSuccessRate": 4.2,
-                "mostComplexItem": "iron-plate",
-                "submittedBy": "JackHopkins",
-                "submissionDate": "2025-03-07"
+        // Load leaderboard data dynamically
+        async function loadLeaderboardData() {
+            try {
+                // Load all JSON files from the results directory
+                const response = await fetch('./results/');
+                const text = await response.text();
+                
+                // Parse the directory listing to get JSON files
+                const jsonFiles = [];
+                const lines = text.split('\n');
+                for (const line of lines) {
+                    const match = line.match(/href="([^"]+\.json)"/);
+                    if (match) {
+                        jsonFiles.push(match[1]);
+                    }
+                }
+
+                // Load each JSON file
+                const leaderboardData = [];
+                for (const file of jsonFiles) {
+                    try {
+                        const fileResponse = await fetch(`./results/${file}`);
+                        const data = await fileResponse.json();
+                        leaderboardData.push(data);
+                    } catch (error) {
+                        console.warn(`Failed to load ${file}:`, error);
+                    }
+                }
+
+                // If no data loaded, use fallback
+                if (leaderboardData.length === 0) {
+                    console.warn('No data loaded, using fallback data');
+                    leaderboardData.push(
+                        {
+                            "name": "Claude 3.5-Sonnet",
+                            "productionScore": 293206,
+                            "milestones": 30,
+                            "automationMilestones": 13,
+                            "labTasksSuccessRate": 21.9,
+                            "mostComplexItem": "plastic-bar",
+                            "submittedBy": "JackHopkins",
+                            "submissionDate": "2025-03-06"
+                        }
+                    );
+                }
+
+                renderLeaderboard(leaderboardData);
+            } catch (error) {
+                console.error('Failed to load leaderboard data:', error);
+                // Fallback to static data if loading fails
+                const fallbackData = [
+                    {
+                        "name": "Claude 3.5-Sonnet",
+                        "productionScore": 293206,
+                        "milestones": 30,
+                        "automationMilestones": 13,
+                        "labTasksSuccessRate": 21.9,
+                        "mostComplexItem": "plastic-bar",
+                        "submittedBy": "JackHopkins",
+                        "submissionDate": "2025-03-06"
+                    }
+                ];
+                renderLeaderboard(fallbackData);
             }
-        ];
+        }
 
-        // Sort by production score (descending)
-        leaderboardData.sort((a, b) => b.productionScore - a.productionScore);
+        function renderLeaderboard(leaderboardData) {
+            // Sort by production score (descending)
+            leaderboardData.sort((a, b) => b.productionScore - a.productionScore);
 
-        // Calculate stats
-        const totalModels = leaderboardData.length;
-        const avgScore = Math.round(leaderboardData.reduce((sum, model) => sum + model.productionScore, 0) / totalModels);
-        const topScore = Math.max(...leaderboardData.map(model => model.productionScore));
-        const avgMilestones = Math.round(leaderboardData.reduce((sum, model) => sum + model.milestones, 0) / totalModels);
+            // Calculate stats
+            const totalModels = leaderboardData.length;
+            const avgScore = Math.round(leaderboardData.reduce((sum, model) => sum + model.productionScore, 0) / totalModels);
+            const topScore = Math.max(...leaderboardData.map(model => model.productionScore));
+            const avgMilestones = Math.round(leaderboardData.reduce((sum, model) => sum + model.milestones, 0) / totalModels);
 
-        // Update stats
-        document.getElementById('total-models').textContent = totalModels;
-        document.getElementById('avg-score').textContent = avgScore.toLocaleString();
-        document.getElementById('top-score').textContent = topScore.toLocaleString();
-        document.getElementById('avg-milestones').textContent = avgMilestones;
+            // Update stats
+            document.getElementById('total-models').textContent = totalModels;
+            document.getElementById('avg-score').textContent = avgScore.toLocaleString();
+            document.getElementById('top-score').textContent = topScore.toLocaleString();
+            document.getElementById('avg-milestones').textContent = avgMilestones;
 
-        // Populate leaderboard
-        const leaderboardRows = document.getElementById('leaderboard-rows');
-        leaderboardData.forEach((model, index) => {
-            const row = document.createElement('div');
-            row.className = 'table-row';
-            row.innerHTML = `
-                <div class="rank">${index + 1}</div>
-                <div class="model-name">${model.name}</div>
-                <div class="score">${model.productionScore.toLocaleString()}</div>
-                <div class="milestone">${model.milestones}</div>
-                <div class="automation">${model.automationMilestones}</div>
-                <div class="lab-rate">${model.labTasksSuccessRate}%</div>
-                <div class="complex-item">${model.mostComplexItem}</div>
-                <div class="date">${new Date(model.submissionDate).toLocaleDateString()}</div>
-            `;
-            leaderboardRows.appendChild(row);
-        });
+            // Populate leaderboard
+            const leaderboardRows = document.getElementById('leaderboard-rows');
+            leaderboardRows.innerHTML = ''; // Clear existing rows
+            
+            leaderboardData.forEach((model, index) => {
+                const row = document.createElement('div');
+                row.className = 'table-row';
+                row.innerHTML = `
+                    <div class="rank">${index + 1}</div>
+                    <div class="model-name">${model.name}</div>
+                    <div class="score">${model.productionScore.toLocaleString()}</div>
+                    <div class="milestone">${model.milestones}</div>
+                    <div class="automation">${model.automationMilestones}</div>
+                    <div class="lab-rate">${model.labTasksSuccessRate}%</div>
+                    <div class="complex-item">${model.mostComplexItem}</div>
+                    <div class="date">${new Date(model.submissionDate).toLocaleDateString()}</div>
+                `;
+                leaderboardRows.appendChild(row);
+            });
 
-        // Update last updated date
-        document.getElementById('last-updated').textContent = new Date().toLocaleDateString();
+            // Update last updated date
+            document.getElementById('last-updated').textContent = new Date().toLocaleDateString();
+        }
+
+        // Load data when page loads
+        loadLeaderboardData();
     </script>
 </body>
 </html> 

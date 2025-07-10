@@ -1,0 +1,45 @@
+name: Deploy Leaderboard
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/leaderboard/**'
+      - '!docs/leaderboard/processed/**'
+  workflow_dispatch:
+
+jobs:
+  process-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "latest"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Process leaderboard results
+        run: |
+          node .github/scripts/process-results.js
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          publish_branch: gh-pages
+          force_orphan: true 

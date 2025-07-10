@@ -49,6 +49,8 @@ jobs:
           mkdir -p deploy/leaderboard
           # Copy the built React app to replace the source
           cp -r docs/leaderboard/build/* deploy/leaderboard/
+          # Ensure README.md is removed
+          rm -f deploy/leaderboard/README.md
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

@@ -2,7 +2,12 @@ name: Deploy Leaderboard
 
 on:
   push:
-    branches: [leaderboard]
+    branches:
+      - main
+    paths:
+      - 'docs/leaderboard/**'
+      - '!docs/leaderboard/processed/**'
+  workflow_dispatch:
 
 jobs:
   process-results:

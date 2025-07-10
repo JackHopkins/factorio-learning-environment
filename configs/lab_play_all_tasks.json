@@ -1,0 +1,58 @@
+[
+    {
+        "env_id": "Factorio-automation_science_pack_throughput_16-v0",
+        "model": "claude-sonnet-4-20250514"
+    },
+    {
+        "env_id": "Factorio-crude_oil_throughput_16-v0",
+        "model": "claude-sonnet-4-20250514"
+    },
+    {
+        "env_id": "Factorio-electronic_circuit_throughput_16-v0",
+        "model": "claude-sonnet-4-20250514"
+    },
+    {
+        "env_id": "Factorio-inserter_throughput_16-v0",
+        "model": "claude-sonnet-4-20250514"
+    },
+    {
+        "env_id": "Factorio-iron_gear_wheel_throughput_16-v0",
+        "model": "claude-sonnet-4-20250514"
+    },
+    {
+        "env_id": "Factorio-iron_ore_throughput_16-v0",
+        "model": "claude-sonnet-4-20250514"
+    },
+    {
+        "env_id": "Factorio-iron_plate_throughput_16-v0",
+        "model": "claude-sonnet-4-20250514"
+    },
+    {
+        "env_id": "Factorio-logistics_science_pack_throughput_16-v0",
+        "model": "claude-sonnet-4-20250514"
+    },
+    {
+        "env_id": "Factorio-military_science_pack_throughput_16-v0",
+        "model": "claude-sonnet-4-20250514"
+    },
+    {
+        "env_id": "Factorio-petroleum_gas_throughput_16-v0",
+        "model": "claude-sonnet-4-20250514"
+    },
+    {
+        "env_id": "Factorio-plastic_bar_throughput_16-v0",
+        "model": "claude-sonnet-4-20250514"
+    },
+    {
+        "env_id": "Factorio-steel_plate_throughput_16-v0",
+        "model": "claude-sonnet-4-20250514"
+    },
+    {
+        "env_id": "Factorio-stone_wall_throughput_16-v0",
+        "model": "claude-sonnet-4-20250514"
+    },
+    {
+        "env_id": "Factorio-sulfur_throughput_16-v0",
+        "model": "claude-sonnet-4-20250514"
+    }
+] 

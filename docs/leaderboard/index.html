@@ -89,6 +89,7 @@
             font-weight: 700;
             color: #ff6b6b;
             margin-bottom: 10px;
+            font-family: monospace;
         }
 
         .stat-label {
@@ -145,32 +146,38 @@
         .score {
             font-weight: 600;
             color: #28a745;
+            font-family: monospace;
         }
 
         .milestone {
             font-weight: 500;
             color: #007bff;
+            font-family: monospace;
         }
 
         .automation {
             font-weight: 500;
             color: #6f42c1;
+            font-family: monospace;
         }
 
         .lab-rate {
             font-weight: 500;
             color: #fd7e14;
+            font-family: monospace;
         }
 
         .complex-item {
             font-weight: 500;
             color: #e83e8c;
             font-size: 0.9rem;
+            font-family: monospace;
         }
 
         .date {
             font-size: 0.85rem;
             color: #666;
+            font-family: monospace;
         }
 
         .footer {
@@ -270,38 +277,37 @@
 
             // Calculate stats
             const totalModels = leaderboardData.length;
-            const avgScore = Math.round(leaderboardData.reduce((sum, model) => sum + model.productionScore, 0) / totalModels);
+            const avgScore = leaderboardData.reduce((sum, model) => sum + model.productionScore, 0) / totalModels;
             const topScore = Math.max(...leaderboardData.map(model => model.productionScore));
-            const avgMilestones = Math.round(leaderboardData.reduce((sum, model) => sum + model.milestones, 0) / totalModels);
+            const avgMilestones = leaderboardData.reduce((sum, model) => sum + model.milestones, 0) / totalModels;
 
             // Update stats
             document.getElementById('total-models').textContent = totalModels;
-            document.getElementById('avg-score').textContent = avgScore.toLocaleString();
-            document.getElementById('top-score').textContent = topScore.toLocaleString();
+            document.getElementById('avg-score').textContent = avgScore;
+            document.getElementById('top-score').textContent = topScore;
             document.getElementById('avg-milestones').textContent = avgMilestones;
 
             // Populate leaderboard
             const leaderboardRows = document.getElementById('leaderboard-rows');
-            leaderboardRows.innerHTML = ''; // Clear existing rows
+            leaderboardRows.innerHTML = '';
             
             leaderboardData.forEach((model, index) => {
                 const row = document.createElement('div');
                 row.className = 'table-row';
                 row.innerHTML = `
                     <div class="rank">${index + 1}</div>
-                    <div class="model-name">${model.model}</div>
-                    <div class="score">${model.productionScore.toLocaleString()}</div>
+                    <div class="model-name">${model.name || model.model}</div>
+                    <div class="score">${model.productionScore}</div>
                     <div class="milestone">${model.milestones}</div>
                     <div class="automation">${model.automationMilestones}</div>
                     <div class="lab-rate">${model.labTasksSuccessRate}%</div>
                     <div class="complex-item">${model.mostComplexItem}</div>
-                    <div class="date">${new Date(model.submissionDate).toLocaleDateString()}</div>
+                    <div class="date">${model.submissionDate}</div>
                 `;
                 leaderboardRows.appendChild(row);
             });
 
-            // Update last updated date
-            document.getElementById('last-updated').textContent = new Date().toLocaleDateString();
+            document.getElementById('last-updated').textContent = new Date().toISOString().split('T')[0];
         }
 
         // Load data when page loads

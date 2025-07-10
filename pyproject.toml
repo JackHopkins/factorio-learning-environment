@@ -9,7 +9,8 @@ description = "Factorio Learning Environment"
 authors = [
     {name = "Jack Hopkins", email = "noreply@github.com"},
     {name = "Mart Bakler", email = "noreply@github.com"},
-    {name = "Neel Kant", email = "contact@neelkant.io"}
+    {name = "Neel Kant", email = "contact@neelkant.io"},
+    {name = "Kian Kyars", email = "kiankyars@gmail.com"},
 ]
 readme = "README.md"
 requires-python = ">=3.10"

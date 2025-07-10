@@ -43,9 +43,14 @@ jobs:
       - name: Prepare deploy directory
         run: |
           rm -rf deploy
+          # Copy docs but exclude leaderboard source files
           cp -r docs deploy
-          rm -rf deploy/leaderboard
-          mkdir -p deploy/leaderboard
+          rm -rf deploy/leaderboard/src
+          rm -rf deploy/leaderboard/public
+          rm -rf deploy/leaderboard/node_modules
+          rm -rf deploy/leaderboard/package.json
+          rm -rf deploy/leaderboard/package-lock.json
+          # Copy the built React app to replace the source
           cp -r docs/leaderboard/build/* deploy/leaderboard/
 
       - name: Deploy to GitHub Pages

@@ -3,7 +3,7 @@ name: Build and Deploy Docs and Leaderboard
 on:
   push:
     branches:
-      - leaderboard
+      - main
     paths:
       - 'docs/**'
       - '!docs/leaderboard/results/**'
@@ -43,9 +43,10 @@ jobs:
       - name: Prepare deploy directory
         run: |
           rm -rf deploy
+          cp -r docs deploy
+          rm -rf deploy/leaderboard
           mkdir -p deploy/leaderboard
           cp -r docs/leaderboard/build/* deploy/leaderboard/
-          cp -r docs/index.html deploy/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

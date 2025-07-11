@@ -6,13 +6,12 @@ This directory contains the FLE leaderboard system, which tracks and displays pe
 
 - `/results/`: JSON files with raw results from each model
 - `/processed/`: Combined and processed results (auto-generated, do not modify directly)
-- `/src/`: React application source code for the leaderboard UI
 
 ## Adding New Results
 
 To submit new model results to the leaderboard:
 
-1. Create a new JSON file in the `/leaderboard/results/` directory
+1. Create a new JSON file in the `docs/leaderboard/results/` directory
 2. Name the file using the model name: `model-name.json` (e.g., `claude-3-5-sonnet.json`)
 3. Use the following format for your result data:
 
@@ -21,9 +20,8 @@ To submit new model results to the leaderboard:
   "model": "Your Model Name",
   "productionScore": 123456,
   "milestones": 20,
-  "labTasksCompleted": 5,
+  "labTasksSuccessRate": 15.5,
   "mostComplexItem": "advanced-circuit",
-  "timeToElectricDrill": 3200,
   "submittedBy": "Your Name",
   "submissionDate": "YYYY-MM-DD"
 }
@@ -40,7 +38,7 @@ To submit new model results to the leaderboard:
 | `model` | Name of the model | Yes |
 | `productionScore` | Total production score achieved | Yes |
 | `milestones` | Number of milestones reached | Yes |
-| `labTasksCompleted` | Number of lab tasks successfully completed | Yes |
+| `labTasksSuccessRate` | Percentage of lab tasks successfully completed | Yes |
 | `mostComplexItem` | Most complex item produced | Yes |
 | `timeToElectricDrill` | Steps until first electric drill deployed | No |
 | `submittedBy` | Your name or identifier | Yes |
@@ -48,19 +46,12 @@ To submit new model results to the leaderboard:
 
 ## How It Works
 
-1. When you submit a new result file, a GitHub Action processes all result files to create a combined dataset
-2. The processed results are stored in a dedicated 'results' branch that can only be written to by GitHub Actions
-3. The leaderboard UI is automatically rebuilt to include your new data
-4. Your submission will initially appear as "Pending" and will be marked as "Verified" once merged
-
-## Local Development
-
-To run the leaderboard locally:
-
-1. Navigate to this directory: `cd leaderboard`
-2. Install dependencies: `npm install`
-3. Start the development server: `npm start`
-4. Open your browser to: `http://localhost:3000`
+1. When you submit a new result file via PR, a GitHub Action processes all result files to create a combined dataset
+2. The processed results are stored in a dedicated `results` branch with "Pending" status
+3. A comment is added to your PR showing the processed results
+4. Once the PR is merged, the results are marked as "Verified" and merged from the `results` branch into `main`
+5. The leaderboard is automatically built and deployed to GitHub Pages
+6. The leaderboard UI is updated to include your new data
 
 ## Verification Process
 

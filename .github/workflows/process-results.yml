@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'docs/leaderboard/results/**'
+    types: [opened, synchronize, reopened]
   push:
     branches:
       - main
@@ -22,12 +23,55 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: '18'
 
       - name: Process results
         run: |
           mkdir -p docs/leaderboard/processed
           node .github/scripts/process-results.js
+
+      - name: Create PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Read the processed results to get the new submission
+            const processedPath = 'docs/leaderboard/processed/combined-results.json';
+            let combinedResults = [];
+            
+            if (fs.existsSync(processedPath)) {
+              const data = fs.readFileSync(processedPath, 'utf8');
+              combinedResults = JSON.parse(data);
+            }
+            
+            // Find the new submission (last one in the array)
+            const newSubmission = combinedResults[combinedResults.length - 1];
+            
+            if (newSubmission) {
+              const comment = `## Leaderboard Submission Processed ✅
+              
+              **Model**: ${newSubmission.model}
+              **Production Score**: ${newSubmission.productionScore}
+              **Milestones**: ${newSubmission.milestones}
+              **Lab Tasks Success Rate**: ${newSubmission.labTasksSuccessRate}%
+              **Most Complex Item**: ${newSubmission.mostComplexItem}
+              **Status**: Pending verification
+              
+              Your submission has been processed and will be marked as "Verified" once this PR is merged.
+              
+              ---
+              *This is an automated message from the FLE leaderboard system.*`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
 
       - name: Save processed results
         run: |

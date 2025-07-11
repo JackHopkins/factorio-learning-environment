@@ -6,28 +6,83 @@ on:
       - main
     paths:
       - 'docs/leaderboard/**'
-      - '!docs/leaderboard/processed/**'
+      - '!docs/leaderboard/results/**'
+  pull_request:
+    types: [closed]
+    paths:
+      - 'docs/leaderboard/results/**'
+  repository_dispatch:
+    types: [trigger-deploy-leaderboard]
   workflow_dispatch:
 
 jobs:
-  process-results:
+  verify-and-deploy:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          
-      - name: Process Results
+
+      # If this is a PR merge, mark the submission as verified and merge results branch
+      - name: Mark submission as verified
+        if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
         run: |
-          node .github/scripts/process-results.js
+          # Fetch the results branch
+          git fetch origin results
+          git checkout results
           
-      - name: Commit and Push
-        run: |
+          # Update the verification status in processed results
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            
+            const processedPath = 'docs/leaderboard/processed/combined-results.json';
+            if (fs.existsSync(processedPath)) {
+              const data = fs.readFileSync(processedPath, 'utf8');
+              const results = JSON.parse(data);
+              
+              // Mark the latest submission as verified
+              if (results.length > 0) {
+                results[results.length - 1].verified = true;
+                fs.writeFileSync(processedPath, JSON.stringify(results, null, 2));
+                console.log('Marked latest submission as verified');
+              }
+            }
+          "
+          
+          # Commit and push the verified results
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add docs/leaderboard/processed/
-          git commit -m "Update leaderboard data" || exit 0
-          git push 
+          git commit -m "Mark submission as verified" || echo "No changes to commit"
+          git push origin results
+          
+          # Merge results branch into main
+          git checkout main
+          git merge results --no-edit
+          git push origin main
+
+      - name: Process results
+        run: |
+          mkdir -p docs/leaderboard/processed
+          node .github/scripts/process-results.js
+
+      - name: Build leaderboard
+        working-directory: ./docs/leaderboard
+        run: |
+          npm install
+          npm run build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/leaderboard/build
+          destination_dir: leaderboard 

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 import numpy as np
-from pydantic import BaseModel, Field
+from pydantic import ConfigDict, BaseModel, Field
 
 from fle.commons.models.timing_metrics import TimingMetrics
 
@@ -51,9 +51,7 @@ class Program(BaseModel):
             np.log(parent_visits) / self.visits
         )
 
-    class Config:
-        from_attributes = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
     @classmethod
     def from_row(cls, row: Dict):

@@ -2,7 +2,7 @@ import math
 from typing import Tuple, Any, Union, Dict, Literal
 from typing import List, Optional
 from enum import Enum, IntFlag
-from pydantic import BaseModel, model_validator
+from pydantic import ConfigDict, BaseModel, model_validator
 
 
 class Layer(IntFlag):
@@ -109,9 +109,7 @@ class EntityStatus(Enum):
 
 
 class Inventory(BaseModel):
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
 
     def __init__(self, **data):
         super().__init__()
@@ -402,7 +400,7 @@ class Product(Ingredient):
 
 
 class Recipe(BaseModel):
-    name: Optional[str]
+    name: Optional[str] = None
     ingredients: Optional[List[Ingredient]] = []
     products: Optional[List[Product]] = []
     energy: Optional[float] = 0
@@ -413,9 +411,7 @@ class Recipe(BaseModel):
 class BurnerType(BaseModel):
     """Type of entity that burns fuel"""
 
-    class Config:
-        arbitrary_types_allowed = True
-
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     fuel: Inventory = Inventory()  # Use this to check the fuel levels of the entity
 
 
@@ -437,7 +433,7 @@ class Entity(EntityCore):
     type: Optional[str] = None
     dimensions: Dimensions
     tile_dimensions: TileDimensions
-    prototype: Any  # Prototype
+    prototype: Any = None  # Prototype
     health: float
     warnings: List[str] = []
     status: EntityStatus = EntityStatus.NORMAL

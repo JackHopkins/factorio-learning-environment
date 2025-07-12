@@ -65,12 +65,6 @@ def _get_tool_names(name="tools") -> List[str]:
     return lua_files
 
 
-# @deprecated("Moving to tools")
-# def _get_action_names() -> List[str]:
-#     action_dir = _get_action_dir()
-#     return list(chain.from_iterable(glob(os.path.join(x[0], '*.lua')) for x in os.walk(action_dir)))
-
-
 def _get_lib_names():
     init_dir = _get_mods_dir()
     return list(
@@ -80,17 +74,7 @@ def _get_lib_names():
     )
 
 
-# def _load_action(filename):
-#     actions = _get_action_names()
-#     try :
-#         action = [action for action in actions if action.endswith(filename+".lua")][0]
-#         name, script = _load_script(action)
-#         return script
-#     except IndexError:
-#         raise ValueError(f"No action found with the name {filename}")
-
-
-def _load_lib(filename):
+def _load_mods(filename):
     inits = _get_lib_names()
     try:
         init = [init for init in inits if init.endswith(filename + ".lua")][0]

@@ -8,7 +8,7 @@ from lupa.lua54 import LuaRuntime
 from factorio_rcon import RCONClient
 from fle.env.utils.rcon import (
     _get_dir,
-    _get_lib_dir,
+    _get_mods_dir,
     _get_lib_names,
     _get_tool_names,
     _load_lib,
@@ -24,7 +24,7 @@ class LuaScriptManager:
             self._clear_game_checksums(rcon_client)
         # self.action_directory = _get_action_dir()
 
-        self.lib_directory = _get_lib_dir()
+        self.lib_directory = _get_mods_dir()
         if cache_scripts:
             self.init_action_checksums()
             self.game_checksums = self._get_game_checksums(rcon_client)

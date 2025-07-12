@@ -28,18 +28,10 @@ def _load_scripts(scripts):
     return script_dict
 
 
-#
-# @deprecated("Moving to tools")
-# def _get_action_dir():
-#     # get local execution path
-#     path = os.path.dirname(os.path.realpath(__file__))
-#     return path + "/actions"
-
-
-def _get_lib_dir():
+def _get_mods_dir():
     # get local execution path
     path = os.path.dirname(Path(os.path.dirname(os.path.realpath(__file__))))
-    return path + "/lib"
+    return path + "/mods"
 
 
 def _get_dir(name="tools"):
@@ -80,7 +72,7 @@ def _get_tool_names(name="tools") -> List[str]:
 
 
 def _get_lib_names():
-    init_dir = _get_lib_dir()
+    init_dir = _get_mods_dir()
     return list(
         chain.from_iterable(
             glob(os.path.join(x[0], "*.lua")) for x in os.walk(init_dir)

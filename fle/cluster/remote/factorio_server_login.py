@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 from cluster.remote.cluster_ips import get_public_ips
 from fle.env import FactorioInstance
+from fle.logger import info, error, debug, warning
 
 """
 This script is used to connect the client to each Factorio server running on an ECS cluster,
@@ -75,7 +76,7 @@ def is_initialised(ip_address, port):
                                     fast=True)
         return True
     except Exception as e:
-        print(f"Error connecting to {ip_address}: {str(e)}")
+        error(f"Error connecting to {ip_address}: {str(e)}")
         return False
 
 
@@ -93,7 +94,7 @@ def get_uninitialised_ips(ip_addresses: List[str], tcp_ports: List[str], max_wor
     invalid_ips = []
     total_ips = len(ip_addresses)
 
-    print(f"Starting initialization check for {total_ips} IP addresses...")
+    info(f"Starting initialization check for {total_ips} IP addresses...")
     start_time = time.time()
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -106,16 +107,16 @@ def get_uninitialised_ips(ip_addresses: List[str], tcp_ports: List[str], max_wor
             ip = future_to_ip[future]
             try:
                 if future.result():
-                    print(f"Progress: {i}/{total_ips} - {ip} is valid")
+                    info(f"Progress: {i}/{total_ips} - {ip} is valid")
                 else:
                     invalid_ips.append(ip)
-                    print(f"Progress: {i}/{total_ips} - {ip} is invalid")
+                    warning(f"Progress: {i}/{total_ips} - {ip} is invalid")
             except Exception as e:
-                print(f"Progress: {i}/{total_ips} - Unexpected error with {ip}: {str(e)}")
+                error(f"Progress: {i}/{total_ips} - Unexpected error with {ip}: {str(e)}")
 
     elapsed_time = time.time() - start_time
-    print(f"\nCompleted in {elapsed_time:.2f} seconds")
-    print(f"Found {len(invalid_ips)} uninitialised IPs out of {total_ips}")
+    info(f"Completed in {elapsed_time:.2f} seconds")
+    info(f"Found {len(invalid_ips)} uninitialised IPs out of {total_ips}")
 
     return invalid_ips
 
@@ -131,7 +132,7 @@ def main(cluster_name):
     factorio_process = launch_factorio()
     for ip in ip_addresses:
         connect_to_server(ip)
-        print(f"Connected to and quit from {ip}")
+        info(f"Connected to and quit from {ip}")
     factorio_process.terminate()  # Ensure Factorio is closed at the end
 
 if __name__ == "__main__":
@@ -144,7 +145,7 @@ if __name__ == "__main__":
     elif default_cluster_name:
         cluster_name = default_cluster_name
     else:
-        print("Error: CLUSTER_NAME not set in .env file and not provided as argument")
-        print("Usage: python factorio_server_login.py [cluster_name]")
+        error("CLUSTER_NAME not set in .env file and not provided as argument")
+        error("Usage: python factorio_server_login.py [cluster_name]")
         sys.exit(1)
     main(cluster_name)

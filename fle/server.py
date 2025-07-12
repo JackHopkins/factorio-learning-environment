@@ -5,6 +5,7 @@ import env.protocols.mcp.resources
 import env.protocols.mcp.prompts
 import env.protocols.mcp.unix_tools
 import env.protocols.mcp.version_control
+from fle.logger import info, error
 
 # Command-line interface for the MCP server
 if __name__ == "__main__":
@@ -20,11 +21,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.transport == "stdio":
-        print("Starting Factorio MCP server with stdio transport")
+        info("Starting Factorio MCP server with stdio transport")
         mcp.run(transport='stdio')
     elif args.transport == "sse":
-        print(f"Starting Factorio MCP server with SSE transport on {args.host}:{args.port}")
+        info(f"Starting Factorio MCP server with SSE transport on {args.host}:{args.port}")
         mcp.run(transport='sse', host=args.host, port=args.port)
     else:
-        print(f"Unknown transport: {args.transport}")
+        error(f"Unknown transport: {args.transport}")
         sys.exit(1)

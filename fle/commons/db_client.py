@@ -21,6 +21,7 @@ from tenacity import (retry_if_exception_type, wait_exponential,
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.game_state import GameState
 from fle.commons.models.program import Program
+from fle.logger import info, error, debug, warning
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -107,7 +108,7 @@ class DBClient(ABC):
                     """, (version,))
                     return cur.fetchone()[0]
         except Exception as e:
-            print(f"Error checking version existence: {e}")
+            error(f"Error checking version existence: {e}")
             return False
 
     async def get_version_metadata(self, version: int) -> dict:
@@ -124,7 +125,7 @@ class DBClient(ABC):
                     result = cur.fetchone()
                     return dict(result) if result else {}
         except Exception as e:
-            print(f"Error fetching version metadata: {e}")
+            error(f"Error fetching version metadata: {e}")
             return {}
 
     @tenacity.retry(
@@ -170,7 +171,7 @@ class DBClient(ABC):
                     return program
         except Exception as e:
             conn.rollback()
-            print(f"Error creating program: {e}")
+            error(f"Error creating program: {e}")
             raise e
 
     async def cleanup(self):
@@ -206,7 +207,7 @@ class DBClient(ABC):
                     results = cur.fetchall()
                     return [row[0] for row in results]
         except Exception as e:
-            print(f"Error fetching program rewards: {e}")
+            error(f"Error fetching program rewards: {e}")
             return []
 
 
@@ -226,7 +227,7 @@ class DBClient(ABC):
                     result = cur.fetchone()
                     return result[0] if result and result[0] is not None else 0
         except Exception as e:
-            print(f"Error fetching largest version: {e}")
+            error(f"Error fetching largest version: {e}")
             return 0
 
     async def get_largest_depth_in_version(self, version):
@@ -243,7 +244,7 @@ class DBClient(ABC):
                     result = cur.fetchone()
                     return result[0] if result and result[0] is not None else 0
         except Exception as e:
-            print(f"Error fetching largest depth: {e}")
+            error(f"Error fetching largest depth: {e}")
             return 0
 
 
@@ -309,7 +310,7 @@ class DBClient(ABC):
                         return (compressed + 1.0) / 2.0 + 1e-6
 
                     # Log current compression state
-                    print(f"Using compression strength: {compression_strength:.3f} "
+                    info(f"Using compression strength: {compression_strength:.3f} "
                           f"({'adaptive' if compression_strength is None else 'fixed'})")
 
                     # Calculate transformed weights
@@ -338,7 +339,7 @@ class DBClient(ABC):
                     row = cur.fetchone()
                     return Program.from_row(dict(row)) if row else None
         except Exception as e:
-            print(f"Error sampling parent: {e}")
+            error(f"Error sampling parent: {e}")
             raise e
 
 
@@ -366,7 +367,7 @@ class DBClient(ABC):
                     row = cur.fetchone()
                     return Program.from_row(dict(zip([desc[0] for desc in cur.description], row)))
         except Exception as e:
-            print(f"Error updating program: {e}")
+            error(f"Error updating program: {e}")
             raise e
         
     async def get_resume_state(self, resume_version, process_id, agent_idx=-1) -> tuple[Optional[GameState], Optional[Conversation], Optional[int], Optional[int]]:
@@ -389,7 +390,7 @@ class DBClient(ABC):
                     cur.execute(query, (resume_version, process_id, agent_idx))
                     results = cur.fetchall()
             if not results:
-                print(f"No valid programs found for version {resume_version} ")
+                warning(f"No valid programs found for version {resume_version} ")
                 return None, None, None, None
 
             # Choose a program to resume from
@@ -397,7 +398,7 @@ class DBClient(ABC):
             return program.state, program.conversation, program.id, program.depth
 
         except Exception as e:
-            print(f"Error getting resume state: {e}")
+            error(f"Error getting resume state: {e}")
             return None, None, None, None
 
 
@@ -440,7 +441,7 @@ class PostgresDBClient(DBClient):
                 try:
                     self._pool.putconn(conn)
                 except Exception as e:
-                    print(f"Error returning connection to pool: {e}")
+                    error(f"Error returning connection to pool: {e}")
                     try:
                         self._pool.putconn(conn, close=True)
                     except:
@@ -489,7 +490,7 @@ class SQLliteDBClient(DBClient):
                 result = cur.fetchone()
                 return result[0] if result and result[0] is not None else 0
         except Exception as e:
-            print(f"Error fetching largest version: {e}")
+            error(f"Error fetching largest version: {e}")
             return 0
 
 
@@ -514,7 +515,7 @@ class SQLliteDBClient(DBClient):
                 results = cur.fetchall()
 
             if not results:
-                print(f"No valid programs found for version {resume_version}")
+                warning(f"No valid programs found for version {resume_version}")
                 return None, None, None, None
             resulting_program_dict = dict(zip([desc[0] for desc in cur.description], results[0]))
             # make meta, state_json achievements_json and conversation_json table a dict 
@@ -527,7 +528,7 @@ class SQLliteDBClient(DBClient):
             return program.state, program.conversation, program.id, program.depth
 
         except Exception as e:
-            print(f"Error getting resume state: {e}")
+            error(f"Error getting resume state: {e}")
             return None, None, None, None
         
     
@@ -584,7 +585,7 @@ class SQLliteDBClient(DBClient):
                 return program
         except Exception as e:
             conn.rollback()
-            print(f"Error creating program: {e}")
+            error(f"Error creating program: {e}")
             raise e
 
 def create_default_sqlite_db(db_file: str) -> None:
@@ -606,7 +607,7 @@ def create_default_sqlite_db(db_file: str) -> None:
         """)
         
         if not cursor.fetchone():
-            print(f"Creating SQLite database schema in {db_file}")
+            info(f"Creating SQLite database schema in {db_file}")
             cursor.execute("""
                 CREATE TABLE programs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -636,7 +637,7 @@ def create_default_sqlite_db(db_file: str) -> None:
                 )
             """)
             conn.commit()
-            print("SQLite database schema created successfully!")
+            info("SQLite database schema created successfully!")
         
     finally:
         conn.close()
@@ -661,7 +662,7 @@ def create_default_postgres_db(**db_config) -> None:
         table_exists = cursor.fetchone()[0]
         
         if not table_exists:
-            print(f"Creating PostgreSQL database schema")
+            info(f"Creating PostgreSQL database schema")
             cursor.execute("""
                 CREATE TABLE programs (
                     id SERIAL PRIMARY KEY,
@@ -691,10 +692,10 @@ def create_default_postgres_db(**db_config) -> None:
                 )
             """)
             conn.commit()
-            print("PostgreSQL database schema created successfully!")
+            info("PostgreSQL database schema created successfully!")
         
     except Exception as e:
-        print(f"Error creating PostgreSQL schema: {e}")
+        error(f"Error creating PostgreSQL schema: {e}")
         if conn:
             conn.rollback()
         raise
@@ -719,8 +720,8 @@ async def create_db_client(max_conversation_length: int = 40,
         missing_vars = [var for var in required_vars if not os.getenv(var)]
         
         if missing_vars:
-            print(f"Warning: PostgreSQL requested but missing environment variables: {missing_vars}")
-            print("Falling back to SQLite...")
+            warning(f"PostgreSQL requested but missing environment variables: {missing_vars}")
+            warning("Falling back to SQLite...")
             raise Exception(f"Missing environment variables: {missing_vars}")
         db_config = {
             "host": os.getenv("SKILLS_DB_HOST"),
@@ -740,7 +741,7 @@ async def create_db_client(max_conversation_length: int = 40,
     elif db_type == "sqlite":
         # Default to SQLite
         sqlite_file = os.getenv("SQLITE_DB_FILE", ".fle/data.db") 
-        print(f"Using SQLite database file: {sqlite_file}")
+        info(f"Using SQLite database file: {sqlite_file}")
         
         # Auto-create SQLite database if it doesn't exist
         create_default_sqlite_db(sqlite_file)

@@ -1,6 +1,7 @@
 import subprocess
 import json
 from typing import List
+from fle.logger import info, error, debug, warning
 
 
 def get_local_container_ips() -> tuple[List[str], List[int], List[int]]:
@@ -12,7 +13,7 @@ def get_local_container_ips() -> tuple[List[str], List[int], List[int]]:
     container_ids = [id.strip('"') for id in container_ids]
 
     if not container_ids or container_ids[0] == '':
-        print("No running Factorio containers found")
+        warning("No running Factorio containers found")
         return []
 
     ips = []
@@ -51,8 +52,8 @@ def get_local_container_ips() -> tuple[List[str], List[int], List[int]]:
 if __name__ == "__main__":
     ips, udp_ports, tcp_ports = get_local_container_ips()
     if ips:
-        print("Local Factorio container addresses:")
+        info("Local Factorio container addresses:")
         for ip in ips:
-            print(ip)
+            info(ip)
     else:
-        print("No local Factorio containers found.")
+        warning("No local Factorio containers found.")

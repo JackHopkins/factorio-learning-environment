@@ -4,6 +4,7 @@ import boto3
 import sys
 
 from dotenv import load_dotenv
+from fle.logger import info, error, debug, warning
 
 
 def get_public_ips(cluster_name):
@@ -17,7 +18,7 @@ def get_public_ips(cluster_name):
         tasks.extend(page['taskArns'])
 
     if not tasks:
-        print(f"No running tasks found in cluster {cluster_name}")
+        warning(f"No running tasks found in cluster {cluster_name}")
         return []
 
     public_ips = []
@@ -40,7 +41,7 @@ def get_public_ips(cluster_name):
                     break
 
             if not eni_id:
-                print(f"Warning: No ENI found for task {task['taskArn']}")
+                warning(f"No ENI found for task {task['taskArn']}")
                 continue
 
             # Describe the network interface to get its public IP
@@ -50,7 +51,7 @@ def get_public_ips(cluster_name):
                     public_ip = eni_details['NetworkInterfaces'][0]['Association']['PublicIp']
                     public_ips.append(public_ip)
             except Exception as e:
-                print(f"Error getting public IP for ENI {eni_id}: {str(e)}")
+                error(f"Error getting public IP for ENI {eni_id}: {str(e)}")
 
     return public_ips
 
@@ -67,14 +68,14 @@ if __name__ == "__main__":
     elif default_cluster_name:
         cluster_name = default_cluster_name
     else:
-        print("Error: CLUSTER_NAME not set in .env file and not provided as argument")
-        print("Usage: python cluster_ip.py [cluster_name]")
+        error("CLUSTER_NAME not set in .env file and not provided as argument")
+        error("Usage: python cluster_ip.py [cluster_name]")
         sys.exit(1)
 
     public_ips = get_public_ips(cluster_name)
     if public_ips:
-        print("Public IP addresses of running containers:")
+        info("Public IP addresses of running containers:")
         for ip in public_ips:
-            print(ip)
+            info(ip)
     else:
-        print("No public IP addresses found for running containers.")
+        warning("No public IP addresses found for running containers.")

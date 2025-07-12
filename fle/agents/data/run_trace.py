@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 from fle.commons.db_client import DBClient
 from fle.env import FactorioInstance
+from fle.logger import info, error, debug, warning
 
 # Load environment variables
 load_dotenv()
@@ -99,20 +100,20 @@ async def evaluate_program_trace(version: int = 330) -> None:
             traces = cur.fetchall()
 
     # Evaluate each code snippet in the trace
-    print(f"Found {len(traces)} entries in the program trace")
+    info(f"Found {len(traces)} entries in the program trace")
     for i, trace in enumerate(traces):
         code = trace[1]  # code is the second column
-        print(f"\nEvaluating trace {i + 1}/{len(traces)}")
-        print(f"Program ID: {trace[3]}")  # id is the fourth column
+        info(f"Evaluating trace {i + 1}/{len(traces)}")
+        info(f"Program ID: {trace[3]}")  # id is the fourth column
 
         try:
             # Evaluate the code
             reward, _, result = instance.eval(code, timeout=30)
-            print(f"Evaluation result:")
-            print(f"Reward: {reward}")
-            print(f"Result: {result}")
+            info(f"Evaluation result:")
+            info(f"Reward: {reward}")
+            info(f"Result: {result}")
         except Exception as e:
-            print(f"Error evaluating code: {e}")
+            error(f"Error evaluating code: {e}")
             continue
 
 

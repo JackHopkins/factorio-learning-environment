@@ -14,6 +14,7 @@ import io
 import contextlib
 from timeit import default_timer as timer
 import re
+from fle.logger import info, error, debug
 
 
 
@@ -167,7 +168,7 @@ def _lua2python(command, response, *parameters, trace=False, start=0):
 
         except Exception as e:
             if trace:
-                print(f"Parsing error: {str(e)}")
+                debug(f"Parsing error: {str(e)}")
             return None, (timer() - start)
 
 @deprecated("Doesn't handle nested structures that well")
@@ -177,11 +178,11 @@ def _lua2python_old(command, response, *parameters, trace=False, start=0):
 
     with contextlib.redirect_stdout(stdout):
         if trace:
-            print(command, parameters, response)
+            debug(f"Command: {command}, Parameters: {parameters}, Response: {response}")
 
         if response:
             if trace:
-                print(f"success: {command}")
+                debug(f"success: {command}")
             end = timer()
 
             if response[0] != '{':
@@ -205,7 +206,7 @@ def _lua2python_old(command, response, *parameters, trace=False, start=0):
                     output = None
 
             if trace:
-                print("{hbar}\nCOMMAND: {command}\nPARAMETERS: {parameters}\n\n{response}\n\nOUTPUT:{output}"
+                debug("{hbar}\nCOMMAND: {command}\nPARAMETERS: {parameters}\n\n{response}\n\nOUTPUT:{output}"
                       .format(hbar="-" * 100, command=command, parameters=parameters,
                               response=response, output=output))
 
@@ -221,7 +222,7 @@ def _lua2python_old(command, response, *parameters, trace=False, start=0):
             return output, (end - start)
         else:
             if trace:
-                print(f"failure: {command} \t")
+                debug(f"failure: {command} \t")
             end = timer()
 
             try:

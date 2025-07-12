@@ -4,6 +4,7 @@ import asyncio
 import sys
 from pathlib import Path
 from fle.env.gym_env.run_eval import main as run_eval
+from fle.logger import error
 
 
 def main():
@@ -32,7 +33,7 @@ For more information, visit: https://github.com/JackHopkins/PaperclipMaximiser
     # Validate that the config file exists
     config_path = Path(args.run_config)
     if not config_path.exists():
-        print(f"Error: Configuration file '{args.run_config}' not found.", file=sys.stderr)
+        error(f"Configuration file '{args.run_config}' not found.")
         sys.exit(1)
     
     # Set up arguments for run_eval and call it
@@ -41,10 +42,10 @@ For more information, visit: https://github.com/JackHopkins/PaperclipMaximiser
         sys.argv = ['run_eval', '--run_config', str(config_path)]
         asyncio.run(run_eval())
     except KeyboardInterrupt:
-        print("\nInterrupted by user.", file=sys.stderr)
+        error("Interrupted by user.")
         sys.exit(1)
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        error(f"Error: {e}")
         sys.exit(1)
     finally:
         sys.argv = original_argv

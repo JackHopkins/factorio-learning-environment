@@ -1,0 +1,5 @@
+2025-07-09 23:00:36 - fle - INFO - Using SQLite database file: .fle/data.db
+2025-07-09 23:00:36 - fle - INFO - Creating SQLite database schema in .fle/data.db
+2025-07-09 23:00:36 - fle - INFO - SQLite database schema created successfully!
+2025-07-09 23:00:38 - fle - INFO - Using SQLite database file: .fle/data.db
+2025-07-09 23:00:39 - fle - WARNING - No valid programs found for version 1

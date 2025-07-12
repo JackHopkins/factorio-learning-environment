@@ -4,10 +4,12 @@ from collections import defaultdict
 from typing import List, Dict
 from typing import Union
 
+from fle.agents.data.blueprints_to_policies.models.blueprint_entity import BlueprintEntity
 from fle.env import EntityGroup
 from fle.env import FactorioInstance
 from fle.env.game_types import prototype_by_name
-from data.blueprints_to_policies.models.blueprint_entity import BlueprintEntity
+from fle.logger import info, error
+#from data.blueprints_to_policies.models.blueprint_entity import BlueprintEntity
 
 
 class BlueprintAnalyzerWithConnect:
@@ -351,11 +353,11 @@ if __name__ == "__main__":
             #if os.path.exists(execution_dir + filename.replace(".json", ".py")):
             #    continue
             with open(execution_dir + filename, "r") as f:
-                print(filename)
+                info(filename)
                 blueprint_json = f.read()
                 blueprint = json.loads(blueprint_json)
                 if len(blueprint['entities']) > 200:
-                    print("Skipping large blueprint")
+                    info("Skipping large blueprint")
                     continue
                 analyzer = BlueprintAnalyzerWithConnect(blueprint)
                 code = analyzer.generate_program()
@@ -374,17 +376,17 @@ if __name__ == "__main__":
                     if "error" in result:
                         raise Exception(result["error"])
                 except Exception as e:
-                    print(e)
-                    print("Error in blueprint")
+                    error(str(e))
+                    error("Error in blueprint")
                     continue
 
-                print(code)
+                info(code)
                 game_entities = instance.get_entities()
                 try:
                     analyzer.verify_placement(game_entities)
                 except AssertionError as e:
-                    print(e)
-                    print("Error in blueprint")
+                    error(str(e))
+                    error("Error in blueprint")
                     continue
                 # Write the code to a python file of the same name
                 with open(execution_dir + filename.split('.json')[0] + " with connect"+  ".py", "w") as f1:

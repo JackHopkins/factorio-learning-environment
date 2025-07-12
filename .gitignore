@@ -15,7 +15,7 @@ uv.lock
 /dist
 
 # Docker
-**/docker-compose.yml
+/fle/cluster/local/docker-compose.yml
 
 # Misc
 trajectory_logs/

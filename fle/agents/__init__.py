@@ -36,11 +36,6 @@ __all__ = [
     # Agent classes
     "AgentABC",
     "create_default_agent_card",
-    "BasicAgent",
-    "GymAgent",
-    "VisualAgent",
-    "BacktrackingAgent",
-    "BacktrackingSystem",
     # Lazy-loaded classes
     "Policy",
     "PolicyMeta",

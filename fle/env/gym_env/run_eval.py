@@ -1,11 +1,9 @@
-import argparse
 import asyncio
 import json
 import multiprocessing
 import os
 
 import gym
-import importlib.resources
 from dotenv import load_dotenv
 from fle.env.gym_env.config import GymEvalConfig, GymRunConfig
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
@@ -79,20 +77,9 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     await db_client.cleanup()
 
 
-async def main():
-    parser = argparse.ArgumentParser()
-    pkg = importlib.resources.files("fle")
-    default_config = pkg / "eval" / "algorithms" / "independent" / "gym_run_config.json"
-    parser.add_argument(
-        "--run_config",
-        type=str,
-        help="Path of the run config file",
-        default=str(default_config),
-    )
-    args = parser.parse_args()
-
+async def main(run_configs):
     # Read and validate run configurations
-    run_configs = get_validated_run_configs(args.run_config)
+    run_configs = get_validated_run_configs(run_configs)
 
     # Get starting version number for new runs
     base_version = await get_next_version()

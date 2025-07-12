@@ -39,8 +39,7 @@ For more information, visit: https://github.com/JackHopkins/PaperclipMaximiser
     # Set up arguments for run_eval and call it
     original_argv = sys.argv.copy()
     try:
-        sys.argv = ['run_eval', '--run_config', str(config_path)]
-        asyncio.run(run_eval())
+        asyncio.run(run_eval(config_path))
     except KeyboardInterrupt:
         error("Interrupted by user.")
         sys.exit(1)

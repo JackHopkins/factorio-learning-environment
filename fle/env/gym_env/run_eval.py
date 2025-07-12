@@ -67,15 +67,9 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     await runner.run()
     await db_client.cleanup()
 
-async def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--run_config', type=str, 
-                       help='Path of the run config file', 
-                       default="../../eval/algorithms/independent/gym_run_config.json")#Path("fle", "eval", "algorithms", "independent", "gym_run_config.json"))
-    args = parser.parse_args()
-
+async def main(run_configs):
     # Read and validate run configurations
-    run_configs = get_validated_run_configs(args.run_config)
+    run_configs = get_validated_run_configs(run_configs)
 
     # Get starting version number for new runs
     base_version = await get_next_version()

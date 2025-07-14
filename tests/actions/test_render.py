@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from fle.env.entities import Position, Layer
@@ -26,11 +28,22 @@ def test_basic_render(game):
     game.connect_entities(
         Position(x=0, y=-2),
         Position(x=15, y=5),
-        {Prototype.Pipe, Prototype.UndergroundPipe},
+        {Prototype.TransportBelt, Prototype.UndergroundBelt},
     )
+
+    game.connect_entities(
+        Position(x=15, y=9),
+        Position(x=0, y=2),
+        {Prototype.TransportBelt, Prototype.UndergroundBelt},
+    )
+
     game.connect_entities(
         Position(x=0, y=-10), Position(x=15, y=-10), {Prototype.SmallElectricPole}
     )
+
+    observation = game._observe_all(radius=20)
+    json_observation = json.dumps(observation)
+
     image = game._render(position=Position(x=0, y=5), layers=Layer.ALL)
     image.show()
     pass

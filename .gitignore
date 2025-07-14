@@ -23,6 +23,16 @@ trajectory_logs/
 *.mp4
 *.jsonl
 *.db
+/log/
 
 #fle
 .fle/
+
+# Jack's stuff.
+/docker-compose.yml
+/data/plans/factorio_guides/
+/docs/assets/videos/
+/fle/agents/data/blueprints_to_policies/blueprints/
+/fle/eval/open/plots/technology_icons/
+/data/icons/
+/eval/open/plots/

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Python port of spritesheet.js for extracting Factorio sprites
+Python port of spritesheet.js for extracting Factorio sprites (https://github.com/BlooperDB/BPRenderer)
 Handles complex sprite extraction including multi-layer sprites, rotations, and combinations
 """
 

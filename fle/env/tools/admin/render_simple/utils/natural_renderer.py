@@ -3,7 +3,7 @@ from PIL import ImageDraw
 import math
 import random
 
-from fle.env.tools.admin.render.utils.render_config import RenderConfig
+from fle.env.tools.admin.render_simple.utils.render_config import RenderConfig
 
 
 class NaturalRenderer:

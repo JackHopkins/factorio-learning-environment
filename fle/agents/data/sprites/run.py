@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from data.sprites.renderer import load_game_data, ImageResolver, parse_blueprint, Renderer
+from fle.env.tools.admin.render.renderer import load_game_data, ImageResolver, parse_blueprint, Renderer
 
 
 def render_blueprints_from_directory(blueprints_dir: str, output_dir: str = None, show_images: bool = True):

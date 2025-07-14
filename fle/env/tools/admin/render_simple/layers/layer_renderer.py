@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Callable
 from PIL import ImageDraw
 
-from fle.env.tools.admin.render.utils.render_config import RenderConfig
+from fle.env.tools.admin.render_simple.utils.render_config import RenderConfig
 
 
 class LayerRenderer(ABC):

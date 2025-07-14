@@ -3,7 +3,7 @@ from typing import Tuple, Optional
 from PIL import ImageDraw
 
 from fle.env.entities import Direction, EntityStatus
-from fle.env.tools.admin.render.utils.render_config import RenderConfig
+from fle.env.tools.admin.render_simple.utils.render_config import RenderConfig
 
 
 class ShapeRenderer:

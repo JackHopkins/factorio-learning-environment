@@ -18,6 +18,7 @@ from fle.env.tools.admin.render.utils.render_config import RenderConfig
 from fle.env.tools.admin.render.utils.entity_categoriser import EntityCategoriser
 from fle.env.tools.admin.render.utils.colour_manager import ColourManager
 from fle.env.tools.admin.render.utils.shape_renderer import ShapeRenderer
+from fle.env.tools.admin.render.utils.sprite_renderer import SpriteRenderer
 from fle.env.tools.admin.render.utils.legend_renderer import LegendRenderer
 from fle.env.tools.admin.render.utils.connection_renderer import ConnectionRenderer
 from fle.env.tools.admin.render.utils.image_calculator import ImageCalculator
@@ -46,6 +47,10 @@ class Renderer:
         self.categorizer = EntityCategoriser()
         self.color_manager = ColourManager(self.config, self.categorizer)
         self.shape_renderer = ShapeRenderer(self.config)
+        
+        # Initialize sprite renderer (with fallback to shape renderer)
+        self.sprite_renderer = SpriteRenderer(self.config)
+        
         self.connection_renderer = ConnectionRenderer(self.color_manager)
         self.legend_renderer = LegendRenderer(
             self.config, self.color_manager, self.categorizer, self.shape_renderer
@@ -59,7 +64,7 @@ class Renderer:
             Layer.RESOURCES: ResourcesLayerRenderer(self.config),
             Layer.NATURAL: NaturalLayerRenderer(self.config),
             Layer.ENTITIES: EntitiesLayerRenderer(
-                self.config, self.categorizer, self.color_manager, self.shape_renderer
+                self.config, self.categorizer, self.color_manager, self.sprite_renderer
             ),
             Layer.CONNECTIONS: ConnectionsLayerRenderer(
                 self.config, self.color_manager, self.connection_renderer

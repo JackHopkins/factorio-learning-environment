@@ -73,6 +73,60 @@ def fle_eval(args, env):
         sys.exit(1)
 
 
+def fle_sprites(args):
+    """Handle sprite commands"""
+    try:
+        from fle.agents.data.sprites.download import download_sprites_from_hf, generate_sprites
+    except ImportError as e:
+        print(f"Error: Could not import sprite modules. Make sure dependencies are installed. {str(e)}", file=sys.stderr)
+        sys.exit(1)
+
+    if args.sprites_command == "download":
+        # Download sprites from Hugging Face
+        success = download_sprites_from_hf(
+            repo_id=args.repo,
+            output_dir=args.output,
+            force=args.force
+        )
+        if not success:
+            sys.exit(1)
+
+    elif args.sprites_command == "generate":
+        # Generate individual sprites from spritemaps
+        success = generate_sprites(
+            input_dir=args.input,
+            output_dir=args.output,
+        )
+        if not success:
+            sys.exit(1)
+
+    elif args.sprites_command == "all":
+        # Do both download and generate
+        print("Downloading and generating sprites...")
+
+        # Download first
+        download_dir = ".fle/spritemaps"
+        success = download_sprites_from_hf(
+            repo_id=args.repo,
+            output_dir=download_dir,
+            force=args.force
+        )
+        if not success:
+            sys.exit(1)
+
+        # Then generate
+        success = generate_sprites(
+            input_dir=download_dir,
+            output_dir=args.output,
+            data_path=args.data
+        )
+        if not success:
+            sys.exit(1)
+
+    else:
+        print(f"Unknown sprites command: {args.sprites_command}", file=sys.stderr)
+        sys.exit(1)
+
 def main():
     parser = argparse.ArgumentParser(
         prog="fle",
@@ -82,6 +136,7 @@ def main():
 Examples:
   fle eval --config configs/gym_run_config.json
   fle cluster [start|stop|restart|help] [-n N] [-s SCENARIO]
+  fle sprites [download|generate|all]
         """,
     )
     subparsers = parser.add_subparsers(dest="command")
@@ -106,6 +161,75 @@ Examples:
     )
     parser_eval = subparsers.add_parser("eval", help="Run experiment")
     parser_eval.add_argument("--config", required=True, help="Path to run config JSON")
+
+    # Sprites command
+    parser_sprites = subparsers.add_parser("sprites", help="Manage Factorio sprites")
+    sprites_subparsers = parser_sprites.add_subparsers(dest="sprites_command", help="Sprites subcommands")
+
+    # Sprites download
+    parser_download = sprites_subparsers.add_parser(
+        "download", help="Download sprites from Hugging Face"
+    )
+    parser_download.add_argument(
+        "--repo",
+        default="Noddybear/fle_images",
+        help="Hugging Face dataset repository ID (default: Noddybear/fle_images)"
+    )
+    parser_download.add_argument(
+        "--output",
+        default=".fle/spritemaps",
+        help="Output directory for downloaded sprites (default: .fle/spritemaps)"
+    )
+    parser_download.add_argument(
+        "--force",
+        action="store_true",
+        help="Force re-download even if sprites exist"
+    )
+
+    # Sprites generate
+    parser_generate = sprites_subparsers.add_parser(
+        "generate", help="Generate individual sprites from spritemaps"
+    )
+    parser_generate.add_argument(
+        "--input",
+        default=".fle/spritemaps",
+        help="Input directory containing spritemaps (default: .fle/spritemaps)"
+    )
+    parser_generate.add_argument(
+        "--output",
+        default=".fle/sprites",
+        help="Output directory for generated sprites (default: .fle/sprites)"
+    )
+    parser_generate.add_argument(
+        "--data",
+        default=".fle/spritemaps/data.json",
+        help="Path to data.json file for advanced extraction"
+    )
+
+    # Sprites all (download + generate)
+    parser_all = sprites_subparsers.add_parser(
+        "all", help="Download and generate sprites in one command"
+    )
+    parser_all.add_argument(
+        "--repo",
+        default="Noddybear/fle_images",
+        help="Hugging Face dataset repository ID (default: Noddybear/fle_images)"
+    )
+    parser_all.add_argument(
+        "--output",
+        default=".fle/sprites",
+        help="Output directory for generated sprites (default: .fle/sprites)"
+    )
+    parser_all.add_argument(
+        "--data",
+        help="Path to data.json file for advanced extraction"
+    )
+    parser_all.add_argument(
+        "--force",
+        action="store_true",
+        help="Force re-download even if sprites exist"
+    )
+
     args = parser.parse_args()
     env = True
     if args.command:
@@ -114,6 +238,8 @@ Examples:
         fle_cluster(args)
     elif args.command == "eval":
         fle_eval(args, env)
+    elif args.command == "sprites":
+        fle_sprites(args)
     else:
         parser.print_help()
         sys.exit(1)

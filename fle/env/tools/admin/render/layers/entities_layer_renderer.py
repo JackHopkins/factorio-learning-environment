@@ -59,7 +59,7 @@ class EntitiesLayerRenderer(LayerRenderer):
             category = self.categorizer.get_entity_category(entity)
             shape_type = self.config.get_category_shape(category)
 
-            # Draw entity shape
+            # Draw entity sprite/shape
             self.shape_renderer.draw_shape(
                 draw,
                 x1,
@@ -68,6 +68,7 @@ class EntitiesLayerRenderer(LayerRenderer):
                 y2,
                 shape_type,
                 entity_color,
+                entity_name=getattr(entity, 'name', None),
                 direction=entity.direction if hasattr(entity, "direction") else None,
             )
 

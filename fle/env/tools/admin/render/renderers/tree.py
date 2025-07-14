@@ -209,11 +209,11 @@ def build_available_trees_index(sprites_dir) -> Dict[str, Set[str]]:
             file_counts[key] += 1
             all_files[key].append((state, sprite_file.name))
 
-    # Second pass: only include variations with exactly 10 files
+    # Second pass: only include variations with exactly 5 files
     available_trees = {}
 
     for (tree_type, variation), count in file_counts.items():
-        if count == 10:  # Only complete sets with exactly 10 files
+        if count == 5:  # Only complete sets with exactly 5 files
             if tree_type not in available_trees:
                 available_trees[tree_type] = set()
 

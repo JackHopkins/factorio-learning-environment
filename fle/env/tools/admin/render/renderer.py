@@ -12,7 +12,7 @@ import re
 from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Any, Set
-from fle.env.tools.admin.render.renderers.tree import build_available_trees_index
+from fle.env.tools.admin.render.renderers.tree import build_available_trees_index, get_tree_variant
 import os
 
 # Constants
@@ -251,13 +251,35 @@ class Renderer:
                     sprites_dir = dir_path
                     break
             else:
-                sprites_dir = Path(".fle/sprites")  # Default even if doesn't exist
+                sprites_dir = find_fle_sprites_dir()
 
         self.available_trees = build_available_trees_index(sprites_dir)
 
+        # Pre-calculate tree variants for sorting
+        self.tree_variants = {}
+        for entity in self.entities:
+            if is_tree_entity(entity['name']):
+                x = entity['position']['x']
+                y = entity['position']['y']
+                tree_type = entity['name'].split('-')[-1] if '-' in entity['name'] else '01'
+
+                if 'dead' not in entity['name'] and 'dry' not in entity['name']:
+                    variation, _ = get_tree_variant(x, y, tree_type, self.available_trees)
+                    self.tree_variants[id(entity)] = variation
+                else:
+                    # Dead trees don't have letter variants
+                    self.tree_variants[id(entity)] = 'z'  # Sort after all regular trees
+
         # Sort entities for rendering order
         self.entities.sort(key=lambda e: (
+            # First, separate trees from non-trees (trees first)
             not is_tree_entity(e['name']),  # Trees first (False < True)
+
+            # For trees, sort by variant letter in REVERSE order (higher letters first)
+            # This ensures fallen trees (higher letters) render before upright ones
+            -ord(self.tree_variants.get(id(e), 'a')) if is_tree_entity(e['name']) else 0,
+
+            # Then by standard rendering order
             not e['name'].endswith('inserter'),
             e['position']['y'],
             e['position']['x']
@@ -556,12 +578,25 @@ def get_entity_size(entity: Dict) -> Tuple[float, float]:
         return renderer.get_size(entity)
     return (1, 1)
 
+def find_fle_sprites_dir() -> Path:
+    """Walk up the directory tree until we find .fle directory"""
+    current = Path.cwd()
+
+    while current != current.parent:
+        fle_dir = current / ".fle"
+        if fle_dir.exists() and fle_dir.is_dir():
+            return fle_dir / "sprites"
+        current = current.parent
+
+    # Fallback - return the path even if it doesn't exist
+    # This allows for better error messages
+    return Path.cwd() / ".fle" / "sprites"
 
 class ImageResolver:
     """Resolve image paths and load images (simple PNG-based resolver)"""
 
     def __init__(self, images_dir: str = ".fle/sprites"):
-        self.images_dir = self._find_fle_sprites_dir(images_dir)
+        self.images_dir = find_fle_sprites_dir()
         self.cache = {}
 
     def __call__(self, name: str, shadow: bool = False) -> Optional[Image.Image]:
@@ -581,19 +616,7 @@ class ImageResolver:
         except Exception:
             return None
 
-    def _find_fle_sprites_dir(self, images_dir) -> Path:
-        """Walk up the directory tree until we find .fle directory"""
-        current = Path.cwd()
 
-        while current != current.parent:
-            fle_dir = current / ".fle"
-            if fle_dir.exists() and fle_dir.is_dir():
-                return fle_dir / "sprites"
-            current = current.parent
-
-        # Fallback - return the path even if it doesn't exist
-        # This allows for better error messages
-        return Path.cwd() / ".fle" / "sprites"
 
 def main():
     """Example usage"""

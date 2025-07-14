@@ -1,5 +1,6 @@
 import base64
 import io
+
 from PIL import Image
 
 

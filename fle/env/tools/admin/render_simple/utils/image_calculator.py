@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, Callable
 
 from fle.env.entities import Entity, Position, BoundingBox, Direction
-from fle.env.tools.admin.render.utils.render_config import RenderConfig
+from fle.env.tools.admin.render_simple.utils.render_config import RenderConfig
 
 
 class ImageCalculator:

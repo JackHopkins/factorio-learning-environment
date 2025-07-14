@@ -2,7 +2,7 @@ from typing import Dict, Callable, List
 from PIL import ImageDraw
 
 from fle.env.entities import Entity, UndergroundBelt, Pipe
-from fle.env.tools.admin.render.layers.layer_renderer import LayerRenderer
+from fle.env.tools.admin.render_simple.layers.layer_renderer import LayerRenderer
 
 
 class ConnectionsLayerRenderer(LayerRenderer):

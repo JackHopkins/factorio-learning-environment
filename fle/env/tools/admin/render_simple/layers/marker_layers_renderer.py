@@ -2,7 +2,7 @@ from typing import Dict, Callable
 from PIL import ImageDraw
 
 from fle.env.entities import Position, Layer
-from fle.env.tools.admin.render.layers.layer_renderer import LayerRenderer
+from fle.env.tools.admin.render_simple.layers.layer_renderer import LayerRenderer
 
 
 class MarkersLayerRenderer(LayerRenderer):

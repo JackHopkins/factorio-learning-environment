@@ -7,6 +7,15 @@ from fle.commons.models.timing_metrics import TimingMetrics
 # Agent base classes
 from fle.agents.agent_abc import AgentABC, create_default_agent_card
 
+# Agent implementations
+from fle.agents.basic_agent import BasicAgent
+from fle.agents.gym_agent import GymAgent
+from fle.agents.visual_agent import VisualAgent
+from fle.agents.backtracking_agent import BacktrackingAgent
+from fle.agents.backtracking_system import BacktrackingSystem
+
+from fle.agents.llm.parsing import Policy, PolicyMeta
+
 
 # Lazy imports to avoid circular dependencies
 def _get_policy_classes():
@@ -36,6 +45,11 @@ __all__ = [
     # Agent classes
     "AgentABC",
     "create_default_agent_card",
+    "BasicAgent",
+    "GymAgent",
+    "VisualAgent",
+    "BacktrackingAgent",
+    "BacktrackingSystem",
     # Lazy-loaded classes
     "Policy",
     "PolicyMeta",

@@ -332,7 +332,7 @@ class DBClient(ABC):
                         FROM recent
                         """,
                         (version),
-                    )
+                    )  # , max_assistant_length))
 
                     results = cur.fetchall()
                     if not results:

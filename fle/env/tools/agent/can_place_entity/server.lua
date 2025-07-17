@@ -7,14 +7,18 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
     local dy = player.position.y - y
     local distance = math.sqrt(dx * dx + dy * dy)
 
+    if distance > player.reach_distance then
+        error("The distance to the target position is too far away to place the entity (" ..distance.."). Move closer.")
+    end
+
+    -- if not global.actions.can_reach_entity(player, x, y) then
+    --    error("The target position is too far away to place the entity. The player position is " .. player.position.x .. ", " .. player.position.y .. " and the target position is " .. x .. ", " .. y .. ". Move closer.")
+    -- end
+
     -- Check entity prototype exists
     if game.entity_prototypes[entity] == nil then
         local name = entity:gsub(" ", "_"):gsub("-", "_")
         error(name .. " isn't a valid entity prototype. Did you make a typo?")
-    end
-
-    if distance > player.reach_distance then
-        error("The distance to the target position is too far away to place the entity (" ..distance.."). Move closer.")
     end
 
     -- Check inventory for the entity

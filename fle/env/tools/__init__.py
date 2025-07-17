@@ -16,6 +16,9 @@ from fle.env.tools.controller import Controller
 from fle.env.tools.init import Init
 from fle.env.tools.tool import Tool
 
+# Version info
+__version__ = "1.0.0"
+
 # Public API - expose the main base classes
 __all__ = [
     # Base classes

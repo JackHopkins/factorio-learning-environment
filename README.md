@@ -46,9 +46,9 @@ automation (e.g electronic-circuit manufacturing).
 ## Installation
 
 ### Prerequisites
-- [Factorio](https://www.factorio.com/) (version 1.1.110)
 - Docker 
 - Python 3.10+
+- [Factorio](https://www.factorio.com/) (version 1.1.110) (optional)
 
 ### Package Installation
 

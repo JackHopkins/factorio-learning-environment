@@ -8,10 +8,10 @@ from lupa.lua54 import LuaRuntime
 from factorio_rcon import RCONClient
 from fle.env.utils.rcon import (
     _get_dir,
-    _get_lib_dir,
+    _get_mods_dir,
     _get_lib_names,
     _get_tool_names,
-    _load_lib,
+    _load_mods,
     _load_script,
 )
 
@@ -24,7 +24,7 @@ class LuaScriptManager:
             self._clear_game_checksums(rcon_client)
         # self.action_directory = _get_action_dir()
 
-        self.lib_directory = _get_lib_dir()
+        self.lib_directory = _get_mods_dir()
         if cache_scripts:
             self.init_action_checksums()
             self.game_checksums = self._get_game_checksums(rcon_client)
@@ -35,7 +35,7 @@ class LuaScriptManager:
         self.lua = LuaRuntime(unpack_returned_tuples=True)
 
     def init_action_checksums(self):
-        checksum_init_script = _load_lib("checksum")
+        checksum_init_script = _load_mods("checksum")
         response = self.rcon_client.send_command("/sc " + checksum_init_script)
         return response
 
@@ -48,28 +48,6 @@ class LuaScriptManager:
                 if "global" in e.args[0]:
                     return True, None
             return False, e.args[0]
-
-    # @deprecated("Using tools")
-    # def load_action_into_game(self, name):
-    #
-    #     if name not in self.action_scripts:
-    #         # attempt to load the script from the filesystem
-    #         script = _load_action(name)
-    #         self.action_scripts[name] = script
-    #
-    #     script = self.action_scripts[name]
-    #     if self.cache_scripts:
-    #         checksum = self.calculate_checksum(script)
-    #         if name in self.game_checksums and self.game_checksums[name] == checksum:
-    #             return
-    #         self.update_game_checksum(self.rcon_client, name, checksum)
-    #
-    #     correct, error = self.check_lua_syntax(script)
-    #     if not correct:
-    #         raise Exception(f"Syntax error in: {name}: {error}")
-    #     print(f"{self.rcon_client.port}: Loading action {name} into game")
-    #
-    #     result = self.rcon_client.send_command(f'/sc ' + script)
 
     def load_tool_into_game(self, name):
         # Find all scripts for this action by checking prefixes
@@ -115,7 +93,7 @@ class LuaScriptManager:
     def load_init_into_game(self, name):
         if name not in self.lib_scripts:
             # attempt to load the script from the filesystem
-            script = _load_lib(name)
+            script = _load_mods(name)
             self.lib_scripts[name] = script
 
         script = self.lib_scripts[name]
@@ -129,22 +107,6 @@ class LuaScriptManager:
 
     def calculate_checksum(self, content: str) -> str:
         return hashlib.md5(content.encode()).hexdigest()
-
-    # @deprecated("Moving to tools")
-    # def get_actions_to_load(self):
-    #     scripts_to_load = {}
-    #     script_names = _get_action_names()
-    #     for script_file in script_names:
-    #         name, content = _load_script(script_file)
-    #
-    #         if self.cache_scripts:
-    #             checksum = self.calculate_checksum(content)
-    #             if (name not in self.game_checksums or
-    #                 self.game_checksums[name] != checksum):
-    #                 scripts_to_load[name] = content
-    #         else:
-    #             scripts_to_load[name] = content
-    #     return scripts_to_load
 
     def get_tools_to_load(self):
         scripts_to_load = {}

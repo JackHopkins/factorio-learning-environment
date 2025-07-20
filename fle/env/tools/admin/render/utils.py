@@ -88,6 +88,9 @@ def is_tree_entity(entity_name: str) -> bool:
         'dead-grey-trunk' in entity_name
     )
 
+def is_rock_entity(entity_name: str) -> bool:
+    return 'rock-' in entity_name
+
 
 def parse_blueprint(blueprint_string: str) -> Dict:
     """Parse blueprint string to JSON."""

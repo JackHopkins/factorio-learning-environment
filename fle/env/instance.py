@@ -127,15 +127,15 @@ class FactorioInstance:
         self.pre_tool_hooks = {}
         self.post_tool_hooks = {}
 
-
-        # Load the python controllers that correspond to the Lua scripts
-        self.setup_tools(self.lua_script_manager)
-
         if inventory is None:
             inventory = {}
         self.initial_inventory = inventory
         self.initial_score = 0
         self.initialise(fast)
+
+        # Load the python controllers that correspond to the Lua scripts
+        self.setup_tools(self.lua_script_manager)
+
 
 
         try:
@@ -742,7 +742,11 @@ class FactorioInstance:
 
         inventories = [self.initial_inventory] * self.num_agents
         self._reset(inventories)
-        self.first_namespace._clear_collision_boxes()
+        try:
+            self.first_namespace._clear_collision_boxes()
+        except AttributeError:
+            print("Could not clear collision boxes")
+            return
 
     def _create_agent_game_characters(self):
         """Create Factorio characters for all agents in the game."""

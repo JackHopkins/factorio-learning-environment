@@ -3,6 +3,8 @@ import os
 import sys
 from pathlib import Path
 
+from fle.agents.data.sprites.extractors.decoratives import DecorativeSpriteExtractor
+
 # Add the parent directory to Python path so imports work
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -29,6 +31,7 @@ def main():
     base_input_path = project_root / ".fle" / "spritemaps" / "__base__" / "graphics"
     resources_path = base_input_path / "resources"
     terrain_path = base_input_path / "terrain"
+    decoratives_path = base_input_path / "decorative"
     entities_path = project_root / ".fle" / "spritemaps"
     output_dir = project_root / ".fle" / "sprites"
 
@@ -44,6 +47,14 @@ def main():
         print(f"Error: Input directory does not exist: {entities_path}")
         print("Run 'fle sprites download' first to download the spritemaps.")
         return
+
+    # Extract decoratives
+    if resources_path.exists():
+        print("\n=== Extracting Decorative Sprites ===")
+        resources = DecorativeSpriteExtractor(str(decoratives_path), str(output_dir))
+        resources.extract_all_decoratives()
+    else:
+        print(f"Warning: Resources path not found: {resources_path}")
 
     # Extract entities
     if (entities_path / "data.json").exists():

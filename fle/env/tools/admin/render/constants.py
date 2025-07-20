@@ -66,6 +66,7 @@ DEFAULT_MAX_RESOURCE_AMOUNT: Final[int] = 10000
 MIN_RESOURCE_VOLUME: Final[int] = 1
 MAX_RESOURCE_VOLUME: Final[int] = 8
 DEFAULT_RESOURCE_VARIANTS: Final[int] = 8
+DEFAULT_ROCK_VARIANTS: Final[int] = 20
 OIL_RESOURCE_VARIANTS: Final[int] = 4
 
 # Tree constants
@@ -132,5 +133,10 @@ RENDERERS: Final[Dict[str, str]] = {
     "dead-grey-trunk": "tree",
     "dry-hairy-tree": "tree",
     "dry-tree": "tree",
+    "cliff": "cliff",
+    "cliff-inner": "cliff",
+    "cliff-outer": "cliff",
+    "cliff-entrance": "cliff",
+    "cliff-sides": "cliff",
     #"lab": "lab"
 }

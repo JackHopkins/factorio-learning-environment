@@ -27,7 +27,11 @@ class TerrainSpriteExtractor:
             'water': {'columns': 4, 'rows': 1, 'width': 64, 'height': 64},
             'water-mud': {'columns': 4, 'rows': 1, 'width': 64, 'height': 64},
             'water-green': {'columns': 4, 'rows': 1, 'width': 64, 'height': 64},
-            'water-shallow': {'columns': 4, 'rows': 1, 'width': 64, 'height': 64}
+            'water-shallow': {'columns': 4, 'rows': 1, 'width': 64, 'height': 64},
+            'cliff-inner': {'columns': 8, 'rows': 2, 'width': 128, 'height': 256},
+            'cliff-outer': {'columns': 8, 'rows': 2, 'width': 128, 'height': 256},
+            'cliff-entrance': {'columns': 4, 'rows': 4, 'width': 128, 'height': 128},
+            'cliff-sides': {'columns': 8, 'rows': 4, 'width': 128, 'height': 128},
         }
 
     def extract_resource_sprites(self, resource_name: str):
@@ -44,10 +48,12 @@ class TerrainSpriteExtractor:
 
         # Process both normal and high-res versions
         for prefix in ['', 'hr-']:
-            sprite_sheet_path = resource_dir / f"{prefix}{resource_name}1.png"
+            sprite_sheet_path = resource_dir / f"{prefix}{resource_name}.png"
 
             if not sprite_sheet_path.exists():
-                continue
+                sprite_sheet_path = resource_dir / f"{prefix}{resource_name}1.png"
+                if not sprite_sheet_path.exists():
+                    continue
 
             try:
                 sprite_sheet = Image.open(sprite_sheet_path).convert('RGBA')

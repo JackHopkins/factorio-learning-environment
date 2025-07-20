@@ -127,14 +127,17 @@ class FactorioInstance:
         self.pre_tool_hooks = {}
         self.post_tool_hooks = {}
 
+
         # Load the python controllers that correspond to the Lua scripts
         self.setup_tools(self.lua_script_manager)
 
         if inventory is None:
             inventory = {}
         self.initial_inventory = inventory
-        self.initialise(fast)
         self.initial_score = 0
+        self.initialise(fast)
+
+
         try:
             _, goal = self.first_namespace.score()
             if not goal:

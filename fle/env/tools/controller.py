@@ -140,6 +140,9 @@ class Controller:
             lua_response = self.connection.rcon_client.send_command(wrapped)
             elapsed = time.time() - start
 
+            if isinstance(lua_response, str) and "error" in lua_response.lower():
+                return lua_response, -1
+
             parsed, _ = _lua2python(invocation, lua_response, start=0)
             if parsed is None:
                 result = {}, lua_response  # elapsed

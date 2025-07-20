@@ -1,3 +1,133 @@
+-- Add this function to analyze cliff neighborhoods
+function analyze_cliff_orientation(entity, surface)
+    local pos = entity.position
+
+    -- Check for cliff neighbors in 8 directions
+    local neighbors = {}
+    local directions = {
+        {name = "n", dx = 0, dy = -1},
+        {name = "ne", dx = 1, dy = -1},
+        {name = "e", dx = 1, dy = 0},
+        {name = "se", dx = 1, dy = 1},
+        {name = "s", dx = 0, dy = 1},
+        {name = "sw", dx = -1, dy = 1},
+        {name = "w", dx = -1, dy = 0},
+        {name = "nw", dx = -1, dy = -1}
+    }
+
+    -- Track which positions we've already confirmed as having cliffs
+    local checked_positions = {}
+
+    for _, dir in ipairs(directions) do
+        local check_pos = {x = pos.x + dir.dx*2, y = pos.y + dir.dy*2}
+        local pos_key = check_pos.x .. "," .. check_pos.y
+
+        -- Skip if we've already checked this position
+        if not checked_positions[pos_key] then
+            local area = {
+                left_top = {x = check_pos.x - 0.1, y = check_pos.y - 0.1},
+                right_bottom = {x = check_pos.x + 0.1, y = check_pos.y + 0.1}
+            }
+            local found_cliffs = surface.find_entities_filtered{
+                area = area,
+                type = "cliff"
+            }
+
+            -- Check if any of the found cliffs are NOT the current entity
+            local has_neighbor = false
+            for _, cliff in ipairs(found_cliffs) do
+                if cliff.unit_number ~= entity.unit_number then
+                    has_neighbor = true
+                    break
+                end
+            end
+
+            neighbors[dir.name] = has_neighbor
+            checked_positions[pos_key] = has_neighbor
+        else
+            -- Use the cached result
+            neighbors[dir.name] = checked_positions[pos_key]
+        end
+    end
+
+    -- Count neighbors
+    local neighbor_count = 0
+    for _, has_neighbor in pairs(neighbors) do
+        if has_neighbor then
+            neighbor_count = neighbor_count + 1
+        end
+    end
+
+    -- Determine orientation based on neighbor pattern
+    local orientation = "west-to-east" -- default
+
+    -- End pieces (1 neighbor)
+    if neighbor_count == 1 then
+        if neighbors.n then
+            orientation = "south-to-none"
+        elseif neighbors.s then
+            orientation = "north-to-none"
+        elseif neighbors.e then
+            orientation = "west-to-none"
+        elseif neighbors.w then
+            orientation = "east-to-none"
+        elseif neighbors.ne then
+            orientation = "south-to-none"
+        elseif neighbors.se then
+            orientation = "north-to-none"
+        elseif neighbors.sw then
+            orientation = "north-to-none"
+        elseif neighbors.nw then
+            orientation = "south-to-none"
+        end
+    -- Straight pieces (2 neighbors on opposite sides)
+    elseif neighbor_count == 2 then
+        if neighbors.n and neighbors.s then
+            orientation = "west-to-east"
+        elseif neighbors.e and neighbors.w then
+            orientation = "north-to-south"
+        -- Corner pieces (2 neighbors at 90 degrees)
+        elseif neighbors.n and neighbors.e then
+            orientation = "south-to-west"
+        elseif neighbors.e and neighbors.s then
+            orientation = "west-to-north"
+        elseif neighbors.s and neighbors.w then
+            orientation = "north-to-east"
+        elseif neighbors.w and neighbors.n then
+            orientation = "east-to-south"
+        -- Diagonal connections
+        elseif neighbors.ne and neighbors.sw then
+            orientation = "north-to-south"
+        elseif neighbors.nw and neighbors.se then
+            orientation = "west-to-east"
+        end
+    -- Complex pieces (3+ neighbors)
+    elseif neighbor_count >= 3 then
+        -- T-junctions
+        if not neighbors.n and neighbors.e and neighbors.s and neighbors.w then
+            orientation = "east-to-west"
+        elseif neighbors.n and not neighbors.e and neighbors.s and neighbors.w then
+            orientation = "north-to-south"
+        elseif neighbors.n and neighbors.e and not neighbors.s and neighbors.w then
+            orientation = "west-to-east"
+        elseif neighbors.n and neighbors.e and neighbors.s and not neighbors.w then
+            orientation = "south-to-north"
+        -- Inner corners (3 neighbors forming an L)
+        elseif neighbors.n and neighbors.e and neighbors.ne then
+            orientation = "west-to-south"
+        elseif neighbors.e and neighbors.s and neighbors.se then
+            orientation = "north-to-west"
+        elseif neighbors.s and neighbors.w and neighbors.sw then
+            orientation = "east-to-north"
+        elseif neighbors.w and neighbors.n and neighbors.nw then
+            orientation = "south-to-east"
+        end
+    end
+
+    return orientation
+end
+
+-- Modify the entity processing section in global.actions.render
 global.actions.render = function(player_index, include_status, radius, compression_level)
     local player = global.agent_characters[player_index]
     if not player then
@@ -25,20 +155,44 @@ global.actions.render = function(player_index, include_status, radius, compressi
     local entities = surface.find_entities(area)
     local entity_data = {}
 
+    -- Define resource types to exclude from entities
+    local resource_names = {
+        ["iron-ore"] = true,
+        ["copper-ore"] = true,
+        ["coal"] = true,
+        ["stone"] = true,
+        ["uranium-ore"] = true,
+        ["crude-oil"] = true
+    }
+
     for _, entity in pairs(entities) do
-        if entity.valid then
+        if entity.valid and not resource_names[entity.name] then
             local data = {
                 name = "\""..entity.name.."\"",
                 position = {
                     x = entity.position.x,
                     y = entity.position.y
                 },
-                direction = entity.direction or 0
+                direction = entity.direction or 0,
+                orientation = entity.orientation or 0
             }
 
             if entity.type == 'underground-belt' then
                 if entity.belt_to_ground_type then
                     data.type = entity.belt_to_ground_type
+                end
+            end
+
+            -- Enhanced cliff handling
+            if entity.type == 'cliff' then
+                -- First try to get the actual cliff orientation
+                if entity.cliff_orientation then
+                    data.cliff_orientation = "\""..entity.cliff_orientation.."\""
+                else
+                    -- If not available, analyze neighbors to infer orientation
+                    local inferred_orientation = analyze_cliff_orientation(entity, surface)
+                    data.cliff_orientation = "\""..inferred_orientation.."\""
+                    data.cliff_inferred = true -- Mark as inferred
                 end
             end
 
@@ -50,6 +204,7 @@ global.actions.render = function(player_index, include_status, radius, compressi
         end
     end
 
+    -- Rest of the function remains the same...
     -- WATER TILES - Optimized using run-length encoding
     local water_runs = {}
     local min_x = math.floor(area.left_top.x)
@@ -170,7 +325,6 @@ global.actions.render = function(player_index, include_status, radius, compressi
         }
     end
 end
-
 -- Binary packing functions (since string.pack isn't available in Factorio's Lua 5.2)
 function pack_uint8(n)
     return string.char(bit32.band(n, 0xFF))

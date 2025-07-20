@@ -12,12 +12,12 @@ from typing import Dict, List, Optional
 
 from .constants import (
     DEFAULT_SCALING, GRID_LINE_WIDTH, BACKGROUND_COLOR, GRID_COLOR,
-    OIL_RESOURCE_VARIANTS, RENDERERS
+    OIL_RESOURCE_VARIANTS, RENDERERS, DEFAULT_ROCK_VARIANTS
 )
 from .utils import (
     entities_to_grid, resources_to_grid, get_resource_variant,
     get_resource_volume, is_tree_entity, find_fle_sprites_dir,
-    parse_blueprint, load_game_data
+    parse_blueprint, load_game_data, is_rock_entity
 )
 from .entity_grid import EntityGridView
 from .image_resolver import ImageResolver
@@ -159,7 +159,8 @@ class Renderer:
         
         # Separate entities for proper rendering order
         tree_entities = [e for e in self.entities if is_tree_entity(e['name'])]
-        non_tree_entities = [e for e in self.entities if not is_tree_entity(e['name'])]
+        rock_entities = [e for e in self.entities if is_rock_entity(e['name'])]
+        player_entities = [e for e in self.entities if not is_tree_entity(e['name']) and not is_rock_entity(e['name'])]
         
         grid_view = EntityGridView(self.entity_grid, 0, 0, self.available_trees)
         
@@ -168,9 +169,11 @@ class Renderer:
         self._render_water_tiles(img, size, scaling, image_resolver)
         self._render_tree_shadows(img, tree_entities, size, scaling, grid_view, image_resolver)
         self._render_trees(img, tree_entities, size, scaling, grid_view, image_resolver)
-        self._render_entity_shadows(img, non_tree_entities, size, scaling, grid_view, image_resolver)
-        self._render_rails(img, non_tree_entities, size, scaling, image_resolver)
-        self._render_entities(img, non_tree_entities, size, scaling, grid_view, image_resolver)
+        self._render_decoratives(img, rock_entities, size, scaling, image_resolver)
+
+        self._render_entity_shadows(img, player_entities, size, scaling, grid_view, image_resolver)
+        self._render_rails(img, player_entities, size, scaling, image_resolver)
+        self._render_entities(img, player_entities, size, scaling, grid_view, image_resolver)
         
         return img
     
@@ -209,7 +212,31 @@ class Renderer:
 
             if image:
                 self._paste_image(img, image, relative_x, relative_y, scaling)
-    
+
+    def _render_decoratives(self, img: Image.Image, decoratives: List[Dict], size: Dict, scaling: float, image_resolver) -> None:
+        """Render decoratives."""
+        for decorative in decoratives:
+            pos = decorative['position']
+            relative_x = pos['x'] + abs(size['minX']) + 0.5
+            relative_y = pos['y'] + abs(size['minY']) + 0.5
+
+            variant = get_resource_variant(pos['x'], pos['y'], max_variants=DEFAULT_ROCK_VARIANTS)
+
+            sprite_name = f"{decorative['name']}_{variant}"
+            image = image_resolver(sprite_name, False)
+
+            if image:
+                self._paste_image(img, image, relative_x, relative_y, scaling)
+            else:
+                while not image and variant < DEFAULT_ROCK_VARIANTS:
+                    variant = variant + 1
+                    sprite_name = f"{decorative['name']}_{variant}"
+                    image = image_resolver(sprite_name, False)
+                    if image:
+                        self._paste_image(img, image, relative_x, relative_y, scaling)
+                        break
+
+
     def _render_water_tiles(self, img: Image.Image, size: Dict, scaling: float, image_resolver) -> None:
         """Render water tiles."""
         for water in self.water_tiles:

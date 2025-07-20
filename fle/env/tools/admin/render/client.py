@@ -8,12 +8,15 @@ from fle.env.tools.admin.render.constants import DEFAULT_SCALING
 from typing import Dict, List, Any, Optional
 import base64
 
+from fle.env.tools.agent.get_entities.client import GetEntities
+
 
 class Render(Tool):
     def __init__(self, *args):
         super().__init__(*args)
         self.image_resolver = ImageResolver(".fle/sprites")
         self.decoder = Decoder()
+        self.get_entities = GetEntities(*args)
 
     def _decode_water_runs(self, water_runs: List[Dict]) -> List[Dict]:
         """
@@ -187,6 +190,7 @@ class Render(Tool):
         # Decode the optimized format if necessary
         decoded_result = self._decode_optimized_format(result)
 
+        ent = self.get_entities(radius=10)
         # Parse the Lua dictionaries
         entities = self.parse_lua_dict(decoded_result['entities'])
         water_tiles = decoded_result['water_tiles']

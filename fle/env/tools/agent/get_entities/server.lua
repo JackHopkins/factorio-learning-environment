@@ -20,6 +20,7 @@ global.actions.get_entities = function(player_index, radius, entity_names_json, 
     end
 
     local entities
+
     if #entity_names > 0 then
         entities = player.surface.find_entities_filtered{area = area, force = player.force, filter=filter}
     else

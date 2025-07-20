@@ -19,11 +19,11 @@ def main():
 
     # Check if we're in the right directory structure
     if base.name == 'sprites' or base.name == 'data':
-        project_root = base.parent
+        project_root = base.parent.parent.parent.parent.parent
         if base.name == 'sprites':
-            project_root = base.parent.parent
+            project_root = base.parent.parent.parent.parent
     else:
-        project_root = base
+        project_root = base.parent.parent.parent.parent.parent
 
     # Set up paths relative to project root
     base_input_path = project_root / ".fle" / "spritemaps" / "__base__" / "graphics"

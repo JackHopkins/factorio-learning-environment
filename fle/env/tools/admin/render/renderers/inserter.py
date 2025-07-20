@@ -6,12 +6,7 @@ Inserter renderer
 from typing import Dict, Tuple, Optional, Callable
 from PIL import Image
 
-DIRECTIONS = {
-    0: "north",
-    2: "east",
-    4: "south",
-    6: "west"
-}
+from ..constants import DIRECTIONS
 
 
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:

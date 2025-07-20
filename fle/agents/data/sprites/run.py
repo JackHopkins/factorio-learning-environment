@@ -34,15 +34,15 @@ def render_blueprints_from_directory(blueprints_dir: str, output_dir: str = None
     try:
         from basis_image_resolver import BasisImageResolver
         print("Using BasisImageResolver for .basis file support")
-        base = "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/data/rendering"
+        #base = "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/data/rendering"
         # Load game data
-        game_data, game_recipes = load_game_data(f"{base}/data.json")
+        #game_data, game_recipes = load_game_data(f"{base}/data.json")
         image_resolver = ImageResolver(".fle/sprites")
     except ImportError:
         print("BasisImageResolver not found, using simple PNG resolver")
         print("Place PNG files in 'images' directory")
         # Fallback to simple resolver
-        game_data, game_recipes = load_game_data("data.json")
+        #game_data, game_recipes = load_game_data("data.json")
         image_resolver = ImageResolver(str(sprites_dir))
 
     # Find all JSON files
@@ -58,7 +58,7 @@ def render_blueprints_from_directory(blueprints_dir: str, output_dir: str = None
     successful = 0
     failed = 0
 
-    for json_file in json_files:
+    for json_file in json_files[:3]:
         try:
             print(f"\nProcessing: {json_file.name}")
 
@@ -82,7 +82,7 @@ def render_blueprints_from_directory(blueprints_dir: str, output_dir: str = None
                     continue
 
             # Create blueprint object
-            blueprint = Renderer(blueprint_content, game_data, game_recipes, sprites_dir)
+            blueprint = Renderer(blueprint_content, sprites_dir)
 
             # Calculate render size
             size = blueprint.get_size()
@@ -122,7 +122,8 @@ def render_blueprints_from_directory(blueprints_dir: str, output_dir: str = None
 
 def main():
     """Main function to render all blueprints in the specified directory"""
-    blueprints_dir = "fle/agents/data/blueprints_to_policies/blueprints/other"
+    blueprints_dir = "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/fle/agents/data/blueprints_to_policies/blueprints/other"
+
 
     # Render all blueprints
     # Set show_images=False if you don't want them to pop up on screen

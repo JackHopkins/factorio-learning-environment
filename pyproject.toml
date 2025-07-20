@@ -53,6 +53,7 @@ dependencies = [
     "psycopg2>=2.9.10",
     "aiohttp>=3.8.0",
     "uvicorn>=0.15.0",
+    "inspect-ai>=0.3.80",
 ]
 
 [project.optional-dependencies]

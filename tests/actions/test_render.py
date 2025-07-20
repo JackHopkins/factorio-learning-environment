@@ -15,6 +15,8 @@ def game(instance):
         "pipe": 30,
         "transport-belt": 50,
         "underground-belt": 30,
+        'splitter': 1,
+        'lab': 1
     }
     instance.reset()
     yield instance.namespace
@@ -23,6 +25,11 @@ def game(instance):
 
 def test_basic_render(game):
     game.place_entity(Prototype.IronChest, position=Position(x=0, y=0))
+
+    game.place_entity(Prototype.Splitter, position=Position(x=5, y=0))
+
+    game.place_entity(Prototype.Lab, position=Position(x=10, y=0))
+
     game.connect_entities(
         Position(x=0, y=-2),
         Position(x=15, y=5),

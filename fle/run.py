@@ -117,8 +117,7 @@ def fle_sprites(args):
         # Then generate
         success = generate_sprites(
             input_dir=download_dir,
-            output_dir=args.output,
-            data_path=args.data
+            output_dir=args.output
         )
         if not success:
             sys.exit(1)

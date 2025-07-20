@@ -125,7 +125,9 @@ class LuaScriptManager:
                 return
             self.update_game_checksum(self.rcon_client, name, checksum)
 
-        self.rcon_client.send_command("/sc " + script)
+            self.rcon_client.send_command("/c " + script)
+
+        pass
 
     def calculate_checksum(self, content: str) -> str:
         return hashlib.md5(content.encode()).hexdigest()

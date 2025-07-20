@@ -10,10 +10,10 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw,ImageChops
 from typing import Dict, List, Optional, Tuple, Any
 
-
+TILE_PX = 32
 
 class EntitySpritesheetExtractor:
     """Extract and process Factorio sprites from game data"""
@@ -47,15 +47,6 @@ class EntitySpritesheetExtractor:
         clean_path = path
         while "__" in clean_path:
             clean_path = clean_path.replace("__", "")
-
-        # JavaScript prepends "factorio/data/" to the cleaned path
-        # In our case, the data is organized differently, but we need to handle the path correctly
-
-        # For files like "base/graphics/entity/..." the __ is already in the path as __base__
-        # So we need to map the path correctly
-
-        if 'underground-belt' in path and 'icons' not in path:
-            pass
 
         # If path starts with "base/", we need to map it to "__base__/"
         if clean_path.startswith("base/"):
@@ -437,164 +428,332 @@ class EntitySpritesheetExtractor:
                     combined = self.combine_canvas(belt, in_img)
                     self.save_canvas(f"{entity}_in_left.png", combined)
 
-    def underground_belt2(self, entity: str, data: Dict):
-        """Extract underground belt sprites"""
-        structure = data.get('structure', {})
-        belt_h = data.get('belt_horizontal')
-        belt_v = data.get('belt_vertical')
+    # def underground_belt2(self, entity: str, data: Dict):
+    #     """Extract underground belt sprites"""
+    #     structure = data.get('structure', {})
+    #     belt_h = data.get('belt_horizontal')
+    #     belt_v = data.get('belt_vertical')
+    #
+    #     if not all([structure, belt_h, belt_v]):
+    #         return
+    #
+    #     out_sprites = structure.get('direction_out', {})
+    #     in_sprites = structure.get('direction_in', {})
+    #
+    #     # Output sprites
+    #     if out_sprites.get('sheet'):
+    #         sheet = out_sprites['sheet']
+    #
+    #         # Down
+    #         belt = self.process_picture(belt_v, 0, 40, 40, 20)
+    #         if belt:
+    #             belt = self.rotate_canvas(belt, 180)
+    #             belt = self.extend_canvas(belt, 20, 0, 0, 1)
+    #             out_img = self.process_picture(sheet)
+    #             if out_img:
+    #                 combined = self.combine_canvas(belt, out_img)
+    #                 self.save_canvas(f"{entity}_out_down.png", combined)
+    #
+    #         # Left
+    #         belt = self.process_picture(belt_h)
+    #         out_img = self.process_picture(sheet, sheet.get('width', 0), 0)
+    #         if belt and out_img:
+    #             combined = self.combine_canvas(belt, out_img)
+    #             self.save_canvas(f"{entity}_out_left.png", combined)
+    #
+    #         # Up
+    #         belt = self.process_picture(belt_v)
+    #         if belt:
+    #             belt = self.extend_canvas(belt, 0, 0, 0, 1)
+    #             out_img = self.process_picture(sheet, 2 * sheet.get('width', 0), 0)
+    #             if out_img:
+    #                 combined = self.combine_canvas(belt, out_img)
+    #                 self.save_canvas(f"{entity}_out_up.png", combined)
+    #
+    #         # Right
+    #         belt = self.process_picture(belt_h, 20, 0, 20, 0)
+    #         if belt:
+    #             belt = self.extend_canvas(belt, 0, 0, 0, 21)
+    #             out_img = self.process_picture(sheet, 3 * sheet.get('width', 0), 0)
+    #             if out_img:
+    #                 combined = self.combine_canvas(belt, out_img)
+    #                 self.save_canvas(f"{entity}_out_right.png", combined)
+    #
+    #     # Input sprites
+    #     if in_sprites.get('sheet'):
+    #         sheet = in_sprites['sheet']
+    #         sheet_h = sheet.get('height', 0)
+    #
+    #         # Up
+    #         belt = self.process_picture(belt_v, 0, 60, 40, 20)
+    #         if belt:
+    #             belt = self.extend_canvas(belt, 20, 0, 0, 1)
+    #             in_img = self.process_picture(sheet, 0, sheet_h)
+    #             if in_img:
+    #                 combined = self.combine_canvas(belt, in_img)
+    #                 self.save_canvas(f"{entity}_in_up.png", combined)
+    #
+    #         # Right
+    #         belt = self.process_picture(belt_h, 0, 0, 19, 40)
+    #         if belt:
+    #             belt = self.extend_canvas(belt, 0, 20, 0, 0)
+    #             in_img = self.process_picture(sheet, sheet.get('width', 0), sheet_h)
+    #             if in_img:
+    #                 combined = self.combine_canvas(belt, in_img)
+    #                 self.save_canvas(f"{entity}_in_right.png", combined)
+    #
+    #         # Down
+    #         belt = self.process_picture(belt_v)
+    #         if belt:
+    #             belt = self.rotate_canvas(belt, 180)
+    #             belt = self.extend_canvas(belt, 0, 0, 0, 1)
+    #             in_img = self.process_picture(sheet, 2 * sheet.get('width', 0), sheet_h)
+    #             if in_img:
+    #                 combined = self.combine_canvas(belt, in_img)
+    #                 self.save_canvas(f"{entity}_in_down.png", combined)
+    #
+    #         # Left
+    #         belt = self.process_picture(belt_h, 0, 0, 20, 40)
+    #         if belt:
+    #             belt = self.rotate_canvas(belt, 180)
+    #             belt = self.extend_canvas(belt, 0, 0, 0, 20)
+    #             in_img = self.process_picture(sheet, 3 * sheet.get('width', 0), sheet_h)
+    #             if in_img:
+    #                 combined = self.combine_canvas(belt, in_img)
+    #                 self.save_canvas(f"{entity}_in_left.png", combined)
 
-        if not all([structure, belt_h, belt_v]):
-            return
+    def lab(self, entity: str, data: Dict) -> None:
+        """
+        Render the Factorio lab.
 
-        out_sprites = structure.get('direction_out', {})
-        in_sprites = structure.get('direction_in', {})
+        Saves:
+            <entity>_off.png           – single static sprite
+            <entity>_on_XX.png         – 33‑frame animation, zero‑based
 
-        # Output sprites
-        if out_sprites.get('sheet'):
-            sheet = out_sprites['sheet']
+        Needs:
+            - data["off_animation"]["layers"]
+            - data["on_animation"]["layers"]
+        """
 
-            # Down
-            belt = self.process_picture(belt_v, 0, 40, 40, 20)
-            if belt:
-                belt = self.rotate_canvas(belt, 180)
-                belt = self.extend_canvas(belt, 20, 0, 0, 1)
-                out_img = self.process_picture(sheet)
-                if out_img:
-                    combined = self.combine_canvas(belt, out_img)
-                    self.save_canvas(f"{entity}_out_down.png", combined)
+        # ------------------------------------------------------------------
+        # 1.  Little helpers
+        # ------------------------------------------------------------------
+        def slice_frame(layer: Dict, frame: int) -> Image.Image | None:
+            """
+            Return PIL.Image for *layer* at *frame* (handles HR fallback).
+            """
+            sheet = self.process_picture(layer)
+            if sheet is None:
+                return None
 
-            # Left
-            belt = self.process_picture(belt_h)
-            out_img = self.process_picture(sheet, sheet.get('width', 0), 0)
-            if belt and out_img:
-                combined = self.combine_canvas(belt, out_img)
-                self.save_canvas(f"{entity}_out_left.png", combined)
+            w, h = layer["width"], layer["height"]
+            fc = layer.get("frame_count", 1)
+            ll = layer.get("line_length", fc)
 
-            # Up
-            belt = self.process_picture(belt_v)
-            if belt:
-                belt = self.extend_canvas(belt, 0, 0, 0, 1)
-                out_img = self.process_picture(sheet, 2 * sheet.get('width', 0), 0)
-                if out_img:
-                    combined = self.combine_canvas(belt, out_img)
-                    self.save_canvas(f"{entity}_out_up.png", combined)
+            # When frame_count == 1 but repeat_count > 1 (integration/shadow)
+            # we still slice 0 – factorio repeats that single tile.
+            local_f = 0 if fc == 1 else frame % fc
+            col = local_f % ll
+            row = local_f // ll
+            x0, y0 = col * w, row * h
+            return sheet.crop((x0, y0, x0 + w, y0 + h))
 
-            # Right
-            belt = self.process_picture(belt_h, 20, 0, 20, 0)
-            if belt:
-                belt = self.extend_canvas(belt, 0, 0, 0, 21)
-                out_img = self.process_picture(sheet, 3 * sheet.get('width', 0), 0)
-                if out_img:
-                    combined = self.combine_canvas(belt, out_img)
-                    self.save_canvas(f"{entity}_out_right.png", combined)
+        def shift_img(img: Image.Image, shift_xy: list[float]) -> Image.Image:
+            """
+            Add transparent borders so *img* is offset by `shift`.
+            Positive shift.x  →  right, positive shift.y → down (Factorio style).
+            """
+            dx = int(round(shift_xy[0] * TILE_PX))
+            dy = int(round(shift_xy[1] * TILE_PX))
 
-        # Input sprites
-        if in_sprites.get('sheet'):
-            sheet = in_sprites['sheet']
-            sheet_h = sheet.get('height', 0)
+            left, right = (dx, 0) if dx > 0 else (0, -dx)
+            top, bottom = (dy, 0) if dy > 0 else (0, -dy)
+            return self.extend_canvas(img, left, top, right, bottom)
 
-            # Up
-            belt = self.process_picture(belt_v, 0, 60, 40, 20)
-            if belt:
-                belt = self.extend_canvas(belt, 20, 0, 0, 1)
-                in_img = self.process_picture(sheet, 0, sheet_h)
-                if in_img:
-                    combined = self.combine_canvas(belt, in_img)
-                    self.save_canvas(f"{entity}_in_up.png", combined)
+        def composite(base: Image.Image | None, top: Image.Image, mode: str) -> Image.Image:
+            """
+            Composite *top* onto *base* using *mode*.
+            """
+            if base is None:
+                return top
 
-            # Right
-            belt = self.process_picture(belt_h, 0, 0, 19, 40)
-            if belt:
-                belt = self.extend_canvas(belt, 0, 20, 0, 0)
-                in_img = self.process_picture(sheet, sheet.get('width', 0), sheet_h)
-                if in_img:
-                    combined = self.combine_canvas(belt, in_img)
-                    self.save_canvas(f"{entity}_in_right.png", combined)
+            if mode == "additive":
+                # Pillow's add clips at 255 → faithful enough
+                return ImageChops.add(base, top)
+            else:
+                return self.combine_canvas(base, top)
 
-            # Down
-            belt = self.process_picture(belt_v)
-            if belt:
-                belt = self.rotate_canvas(belt, 180)
-                belt = self.extend_canvas(belt, 0, 0, 0, 1)
-                in_img = self.process_picture(sheet, 2 * sheet.get('width', 0), sheet_h)
-                if in_img:
-                    combined = self.combine_canvas(belt, in_img)
-                    self.save_canvas(f"{entity}_in_down.png", combined)
+        # ------------------------------------------------------------------
+        # 2.  Convenience to render one complete frame
+        # ------------------------------------------------------------------
+        def render_frame(layers: list[Dict], frame_idx: int) -> Image.Image | None:
+            base = None
+            shadows: list[Image.Image] = []
 
-            # Left
-            belt = self.process_picture(belt_h, 0, 0, 20, 40)
-            if belt:
-                belt = self.rotate_canvas(belt, 180)
-                belt = self.extend_canvas(belt, 0, 0, 0, 20)
-                in_img = self.process_picture(sheet, 3 * sheet.get('width', 0), sheet_h)
-                if in_img:
-                    combined = self.combine_canvas(belt, in_img)
-                    self.save_canvas(f"{entity}_in_left.png", combined)
+            # 2a. paint normal + additive layers immediately
+            for lyr in layers:
+                img = slice_frame(lyr, frame_idx)
+                if img is None:
+                    continue
+
+                img = shift_img(img, lyr.get("shift", [0, 0]))
+
+                if lyr.get("draw_as_shadow"):
+                    shadows.append(img)  # postpone until after everything else
+                    continue
+
+                blend = "additive" if lyr.get("blend_mode") == "additive" or lyr.get("draw_as_light") else "normal"
+                base = composite(base, img, blend)
+
+            # 2b. shadows go on top, normal blend
+            for sh in shadows:
+                base = composite(base, sh, "normal")
+
+            return base
+
+        # ------------------------------------------------------------------
+        # 3.  OFF sprite (single frame)
+        # ------------------------------------------------------------------
+        off_layers = data.get("off_animation", {}).get("layers", [])
+        if off_layers:
+            off = render_frame(off_layers, 0)
+            if off:
+                self.save_canvas(f"{entity}_off.png", off)
+
+        # ------------------------------------------------------------------
+        # 4.  ON animation (33 frames)
+        # ------------------------------------------------------------------
+        on_layers = data.get("on_animation", {}).get("layers", [])
+        if on_layers:
+            frame_count = on_layers[0].get("frame_count", 1)
+            for f in range(frame_count):
+                frame_img = render_frame(on_layers, f)
+                if frame_img:
+                    self.save_canvas(f"{entity}_on_{f:02d}.png", frame_img)
 
     def splitter(self, entity: str, data: Dict):
-        """Extract splitter sprites"""
-        structure = data.get('structure', {})
-        belt_h = data.get('belt_horizontal')
-        belt_v = data.get('belt_vertical')
+        """
+        Render the four static splitter sprites (N/E/S/W) from the new
+        1.1‑style prototype definition.
 
-        if not all([structure, belt_h, belt_v]):
+        Required keys inside *data*:
+            - structure:        {north|east|south|west: {...}}
+            - belt_animation_set.animation_set: {...}
+        Optional:
+            - structure_patch:  {east|west: {...}}  # only E/W use patches
+        """
+        # ------------------------------------------------------------------
+        # 1.  Collect the three sprite sources we need
+        # ------------------------------------------------------------------
+        structure = data.get("structure", {})
+        if not structure:
             return
 
-        # North
-        if 'north' in structure:
-            belt1 = self.process_picture(belt_v)
-            belt2 = self.process_picture(belt_v)
-            if belt1 and belt2:
-                belt1 = self.extend_canvas(belt1, 0, 30)
-                belt2 = self.extend_canvas(belt2, 0, 0, 0, 30)
-                belts = self.combine_canvas(belt1, belt2)
-                struct = self.process_picture(structure['north'])
-                if struct:
-                    combined = self.combine_canvas(belts, struct)
-                    self.save_canvas(f"{entity}_north.png", combined)
+        anim_set = (
+            data.get("belt_animation_set", {})
+            .get("animation_set")
+        )
+        if not anim_set:
+            return
 
-        # East
-        if 'east' in structure:
-            belt1 = self.process_picture(belt_h)
-            belt2 = self.process_picture(belt_h)
-            if belt1 and belt2:
-                belt1 = self.extend_canvas(belt1, 34)
-                belt2 = self.extend_canvas(belt2, 0, 0, 34)
-                belts = self.combine_canvas(belt1, belt2)
-                struct = self.process_picture(structure['east'])
-                if struct:
-                    combined = self.combine_canvas(belts, struct)
-                    self.save_canvas(f"{entity}_east.png", combined)
+        patch = data.get("structure_patch", {})  # may be empty
 
-        # South
-        if 'south' in structure:
-            belt1 = self.process_picture(belt_v)
-            belt2 = self.process_picture(belt_v)
-            if belt1 and belt2:
-                belt1 = self.rotate_canvas(belt1, 180)
-                belt2 = self.rotate_canvas(belt2, 180)
-                belt1 = self.extend_canvas(belt1, 0, 32)
-                belt2 = self.extend_canvas(belt2, 0, 0, 0, 32)
-                belts = self.combine_canvas(belt1, belt2)
-                struct = self.process_picture(structure['south'])
-                if struct:
-                    combined = self.combine_canvas(belts, struct)
-                    self.save_canvas(f"{entity}_south.png", combined)
+        # ------------------------------------------------------------------
+        # 2.  Helpers for slicing the belt sprite sheet and applying patches
+        # ------------------------------------------------------------------
+        def belt_frame(direction: int, frame: int = 0):
+            """
+            Crop a *single* belt tile from the big 64×64 (HR:128×128) sheet.
+            *direction* is the sprite‑row (0 = north, 2 = east, 4 = south, 6 = west)
+            *frame*     is the animation frame column (we render frame 0 for static)
+            """
+            sheet = self.process_picture(anim_set)
+            if not sheet:
+                return None
 
-        # West
-        if 'west' in structure:
-            belt1 = self.process_picture(belt_h)
-            belt2 = self.process_picture(belt_h)
-            if belt1 and belt2:
-                belt1 = self.rotate_canvas(belt1, 180)
-                belt2 = self.rotate_canvas(belt2, 180)
-                belt1 = self.extend_canvas(belt1, 34)
-                belt2 = self.extend_canvas(belt2, 0, 0, 34)
-                belts = self.combine_canvas(belt1, belt2)
-                struct = self.process_picture(structure['west'])
-                if struct:
-                    combined = self.combine_canvas(belts, struct)
-                    self.save_canvas(f"{entity}_west.png", combined)
+            w, h = anim_set["width"], anim_set["height"]
+            line_len = anim_set.get("line_length", anim_set["frame_count"])
+
+            col = frame % line_len
+            row = direction
+            x0, y0 = col * w, row * h
+            return sheet.crop((x0, y0, x0 + w, y0 + h))
+
+        def add_patch(canvas, direction: str):
+            """
+            Overlay the (optional) top patch used by east/west splitters.
+            """
+            p = patch.get(direction)
+            # Ignore the canonical 1×1 empty sprite
+            if p and not p["filename"].endswith("empty.png"):
+                patch_img = self.process_picture(p)
+                if patch_img:
+                    canvas = self.combine_canvas(canvas, patch_img)
+            return canvas
+
+        # Pre‑slice static belt tiles once; reuse them for both belts
+        belt_v = belt_frame(0)  # vertical (north‑facing)
+        belt_h = belt_frame(2)  # horizontal (east‑facing)
+        if not belt_v or not belt_h:
+            return
+
+        # ------------------------------------------------------------------
+        # 3.  NORTH
+        # ------------------------------------------------------------------
+        if "north" in structure:
+            belt1 = self.extend_canvas(belt_v.copy(), 0, 30)  # belt entering
+            belt2 = self.extend_canvas(belt_v.copy(), 0, 0, 0, 30)  # belt leaving
+            belts = self.combine_canvas(belt1, belt2)
+
+            struct = self.process_picture(structure["north"])
+            if struct:
+                combined = self.combine_canvas(belts, struct)
+                self.save_canvas(f"{entity}_north.png", combined)
+
+        # ------------------------------------------------------------------
+        # 4.  EAST
+        # ------------------------------------------------------------------
+        if "east" in structure:
+            belt1 = self.extend_canvas(belt_h.copy(), 34)  # belt entering
+            belt2 = self.extend_canvas(belt_h.copy(), 0, 0, 34)  # belt leaving
+            belts = self.combine_canvas(belt1, belt2)
+
+            struct = self.process_picture(structure["east"])
+            if struct:
+                combined = self.combine_canvas(belts, struct)
+                combined = add_patch(combined, "east")
+                self.save_canvas(f"{entity}_east.png", combined)
+
+        # ------------------------------------------------------------------
+        # 5.  SOUTH (rotate belts 180°)
+        # ------------------------------------------------------------------
+        if "south" in structure:
+            belt1 = self.rotate_canvas(belt_v.copy(), 180)
+            belt2 = self.rotate_canvas(belt_v.copy(), 180)
+            belt1 = self.extend_canvas(belt1, 0, 32)
+            belt2 = self.extend_canvas(belt2, 0, 0, 0, 32)
+            belts = self.combine_canvas(belt1, belt2)
+
+            struct = self.process_picture(structure["south"])
+            if struct:
+                combined = self.combine_canvas(belts, struct)
+                self.save_canvas(f"{entity}_south.png", combined)
+
+        # ------------------------------------------------------------------
+        # 6.  WEST (rotate belts 180° + optional patch)
+        # ------------------------------------------------------------------
+        if "west" in structure:
+            belt1 = self.rotate_canvas(belt_h.copy(), 180)
+            belt2 = self.rotate_canvas(belt_h.copy(), 180)
+            belt1 = self.extend_canvas(belt1, 34)
+            belt2 = self.extend_canvas(belt2, 0, 0, 34)
+            belts = self.combine_canvas(belt1, belt2)
+
+            struct = self.process_picture(structure["west"])
+            if struct:
+                combined = self.combine_canvas(belts, struct)
+                combined = add_patch(combined, "west")
+                self.save_canvas(f"{entity}_west.png", combined)
 
     def pipe_to_ground(self, entity: str, data: Dict):
         """Extract pipe-to-ground sprites - similar to underground belt"""

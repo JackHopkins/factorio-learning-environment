@@ -1,7 +1,9 @@
 from fle.env import Position, Layer
 from fle.env.tools import Tool
 from fle.commons.models.rendered_image import RenderedImage
-from fle.env.tools.admin.render.renderer import Renderer, ImageResolver
+from fle.env.tools.admin.render.renderer import Renderer
+from fle.env.tools.admin.render.image_resolver import ImageResolver
+from fle.env.tools.admin.render.constants import DEFAULT_SCALING
 
 
 class Render(Tool):
@@ -33,7 +35,7 @@ class Render(Tool):
                 - position: Position object with x,y coordinates
                 - amount: Resource amount in the patch
         """
-        result, _ = self.execute(self.player_index, include_status, radius)
+        result, _, elapsed = self.execute(self.player_index, include_status, radius, return_elapsed=True)
         
         entities = self.parse_lua_dict(result.get("entities", []))
         water = self.parse_lua_dict(result.get("water_tiles", []))
@@ -46,11 +48,8 @@ class Render(Tool):
         if size['width'] == 0 or size['height'] == 0:
             raise Exception("Nothing to render.")
 
-        scaling = 32
-        #width = min((size['width'] + 2) * scaling, 2048)  # Cap max width
-        #height = min((size['height'] + 2) * scaling, 2048)  # Cap max height
-        width = (size['width']+2) * scaling
-        height = (size['height']+2) * scaling
+        width = (size['width'] + 2) * DEFAULT_SCALING
+        height = (size['height'] + 2) * DEFAULT_SCALING
         # Render the blueprint
         image = renderer.render(width, height, self.image_resolver)
 

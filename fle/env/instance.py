@@ -136,14 +136,18 @@ class FactorioInstance:
         self.initialise(fast)
         self.initial_score = 0
         try:
-            self.first_namespace.score()
+            _, goal = self.first_namespace.score()
+            if not goal:
+                raise Exception("No goal")
         except Exception:
             # Invalidate cache if there is an error
+            self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
             self.lua_script_manager = LuaScriptManager(self.rcon_client, False)
             self.script_dict = {
                 **self.lua_script_manager.lib_scripts,
                 **self.lua_script_manager.tool_scripts,
             }
+
             self.setup_tools(self.lua_script_manager)
             self.initialise(fast)
 
@@ -226,7 +230,7 @@ class FactorioInstance:
 
         # Clear renderings
         self.begin_transaction()
-        self.add_command("/sc rendering.clear()", raw=True)
+        self.add_command("/c rendering.clear()", raw=True)
         self.execute_transaction()
 
     def set_inventory(self, inventory: Dict[str, Any], agent_idx: int = 0):
@@ -240,14 +244,14 @@ class FactorioInstance:
         inventory_items_json = json.dumps(inventory_items)
         player_idx = agent_idx + 1
         self.add_command(
-            f"/sc global.actions.initialise_inventory({player_idx}, '{inventory_items_json}')",
+            f"/c global.actions.initialise_inventory({player_idx}, '{inventory_items_json}')",
             raw=True,
         )
 
         self.execute_transaction()
 
     def speed(self, speed):
-        self.rcon_client.send_command(f"/sc game.speed = {speed}")
+        self.rcon_client.send_command(f"/c game.speed = {speed}")
         self._speed = speed
 
     def get_speed(self):
@@ -663,7 +667,7 @@ class FactorioInstance:
         self._reset_static_achievement_counters()
         self._reset_elapsed_ticks()
 
-    def _execute_transaction(self) -> Dict[str, Any]:
+    def _execute_transaction(self, measured=True) -> Dict[str, Any]:
         start = timer()
         rcon_commands = {}
         for idx, (command, parameters, is_raw) in enumerate(
@@ -673,7 +677,7 @@ class FactorioInstance:
                 rcon_commands[f"{idx}_{command}"] = command
             else:
                 script = self._get_command(
-                    command, parameters=parameters, measured=False
+                    command, parameters=parameters, measured=measured
                 )
                 rcon_commands[f"{idx}_{command}"] = script
 
@@ -714,6 +718,7 @@ class FactorioInstance:
         # Create characters for all agents
         self._create_agent_game_characters()
 
+
         init_scripts = [
             "initialise",
             "clear_entities",
@@ -730,6 +735,7 @@ class FactorioInstance:
             init_scripts.append("enemies")
         for script_name in init_scripts:
             self.lua_script_manager.load_init_into_game(script_name)
+
 
         inventories = [self.initial_inventory] * self.num_agents
         self._reset(inventories)

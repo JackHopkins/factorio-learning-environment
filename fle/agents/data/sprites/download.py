@@ -349,10 +349,10 @@ def generate_sprites(
         sys.path.insert(0, str(sprites_module_path))
 
     try:
-        from extractors.entities import EntitySpritesheetExtractor
-        from extractors.resources import ResourceSpriteExtractor
-        from extractors.terrain import TerrainSpriteExtractor
-        from extractors.trees import TreeSpriteExtractor
+        from fle.agents.data.sprites.extractors.entities import EntitySpritesheetExtractor
+        from fle.agents.data.sprites.extractors.resources import ResourceSpriteExtractor
+        from fle.agents.data.sprites.extractors.terrain import TerrainSpriteExtractor
+        from fle.agents.data.sprites.extractors.trees import TreeSpriteExtractor
     except ImportError:
         print("Error: Could not import extractor modules.")
         print("Make sure the extractor modules are in the correct location.")

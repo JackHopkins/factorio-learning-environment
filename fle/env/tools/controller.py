@@ -1,6 +1,6 @@
 import time
 from timeit import default_timer as timer
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Union
 
 from slpp import slpp as lua, ParseError
 
@@ -131,17 +131,22 @@ class Controller:
             script = command
         return script
 
-    def execute(self, *args) -> Tuple[Dict, Any]:
+    def execute(self, *args, return_elapsed=False) -> Union[Tuple[Dict, Any], Tuple[Dict, Any, float]]:
         try:
             start = time.time()
             parameters = [lua.encode(arg) for arg in args]
             invocation = f"pcall(global.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
             wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
             lua_response = self.connection.rcon_client.send_command(wrapped)
+            elapsed = time.time() - start
 
-            parsed, elapsed = _lua2python(invocation, lua_response, start=start)
+            parsed, _ = _lua2python(invocation, lua_response, start=0)
             if parsed is None:
-                return {}, lua_response  # elapsed
+                result = {}, lua_response  # elapsed
+                if return_elapsed:
+                    return *result, elapsed
+                else:
+                    return result
 
             if not parsed.get("a") and "b" in parsed and isinstance(parsed["b"], str):
                 if parsed["b"] == "string":
@@ -151,10 +156,15 @@ class Controller:
                         .replace('"', "")
                         .strip()
                     )
-                    return error, lua_response  # elapsed
-                return parsed["b"], lua_response  # elapsed
+                    result = error, lua_response  # elapsed
+                else:
+                    result = parsed["b"], lua_response  # elapsed
+            else:
+                result = parsed.get("b", {}), lua_response  # elapsed
 
-            return parsed.get("b", {}), lua_response  # elapsed
+            if return_elapsed:
+                return *result, elapsed
+            return result
 
         except Exception:
             return {}, -1
@@ -192,6 +202,6 @@ class Controller:
     def send(self, command, *parameters, trace=False) -> List[str]:
         start = timer()
         script = self._get_command(command, parameters=list(parameters), measured=False)
-        lua_response = self.connection.send_command(script)
+        lua_response = self.connection.rcon_client.send_command(script)
         # print(lua_response)
         return _lua2python(command, lua_response, start=start)

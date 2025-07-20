@@ -3,9 +3,11 @@
 Tree renderer for various tree types including dead trees
 """
 
+import re
 from typing import Dict, Tuple, Optional, Callable, Set
 from PIL import Image
-import re
+
+from ..constants import TREE_VARIATIONS, TREE_FILES_PER_VARIATION
 
 
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
@@ -103,8 +105,8 @@ def get_tree_variant(x: float, y: float, tree_type: str, available_trees: Dict[s
     position_hash = int((x * 1000) % 97 + (y * 1000) % 89 + ((x + y) * 1000) % 83)
     seed = seed * 29 + position_hash
 
-    # Common tree variations (assuming a-l based on file structure)
-    variations = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l']
+    # Use constants for tree variations
+    variations = TREE_VARIATIONS
 
     # Get available variations for this tree type
     available_for_type = available_trees.get(tree_type, set())
@@ -209,11 +211,11 @@ def build_available_trees_index(sprites_dir) -> Dict[str, Set[str]]:
             file_counts[key] += 1
             all_files[key].append((state, sprite_file.name))
 
-    # Second pass: only include variations with exactly 5 files
+    # Second pass: only include variations with exactly the expected number of files
     available_trees = {}
 
     for (tree_type, variation), count in file_counts.items():
-        if count == 5:  # Only complete sets with exactly 5 files
+        if count == TREE_FILES_PER_VARIATION:  # Only complete sets
             if tree_type not in available_trees:
                 available_trees[tree_type] = set()
 
@@ -221,6 +223,6 @@ def build_available_trees_index(sprites_dir) -> Dict[str, Set[str]]:
             for state, _ in all_files[(tree_type, variation)]:
                 available_trees[tree_type].add(f"{variation}-{state}")
         else:
-            print(f"Skipping tree-{tree_type}-{variation}: has {count} files instead of 10")
+            print(f"Skipping tree-{tree_type}-{variation}: has {count} files instead of {TREE_FILES_PER_VARIATION}")
 
     return available_trees

@@ -6,12 +6,7 @@ from typing import Dict, Tuple, Optional, Callable
 
 from PIL import Image
 
-NORTH = 0
-SOUTH = 4
-EAST = 2
-WEST = 6
-VERTICAL = [NORTH, SOUTH]
-HORIZONTAL = [EAST, WEST]
+from ..constants import NORTH, SOUTH, EAST, WEST, VERTICAL, HORIZONTAL
 
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
     """Render transport belt"""

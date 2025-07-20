@@ -109,8 +109,11 @@ class LuaScriptManager:
                 raise Exception(f"Syntax error in: {script_name}: {error}")
             print(f"{self.rcon_client.port}: Loading action {script_name} into game")
 
-            self.rcon_client.send_command("/sc " + script)
-            pass
+            response = self.rcon_client.send_command("/sc " + script)
+
+            if response and 'error' in response.lower():
+                raise Exception(response)
+
 
     def load_init_into_game(self, name):
         if name not in self.lib_scripts:
@@ -125,7 +128,10 @@ class LuaScriptManager:
                 return
             self.update_game_checksum(self.rcon_client, name, checksum)
 
-            self.rcon_client.send_command("/c " + script)
+        response = self.rcon_client.send_command("/c " + script)
+
+        if response and 'error' in response.lower():
+            raise Exception(response)
 
         pass
 

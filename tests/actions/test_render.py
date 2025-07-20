@@ -24,6 +24,13 @@ def game(instance):
 
 
 def test_basic_render(game):
+    game.instance.rcon_client.send_command(
+        "/sc for i=1,5 do "
+        "game.surfaces[1].create_entity{"
+        "name='rock-huge', "
+        "position={x=-10+i*4, y=-5}} "
+        "end"
+    )
     game.place_entity(Prototype.IronChest, position=Position(x=0, y=0))
 
     game.place_entity(Prototype.Splitter, position=Position(x=5, y=0))

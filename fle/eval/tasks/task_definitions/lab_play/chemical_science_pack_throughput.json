@@ -1,0 +1,14 @@
+
+{                          
+    "task_type": "throughput",
+    "config":
+    {  
+        "goal_description":"Create an automatic chemical-science-pack factory that produces 16 chemical-science-pack per 60 ingame seconds.",
+        "throughput_entity":"chemical-science-pack",
+        "quota":16,
+        "trajectory_length": 128,
+        "holdout_wait_period": 60,
+        "pre_holdout_wait_period": 60,
+        "task_key": "chemical-science-pack_throughput_16"
+    }
+}

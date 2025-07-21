@@ -1,0 +1,14 @@
+
+{                          
+    "task_type": "throughput",
+    "config":
+    {  
+        "goal_description":"Create an automatic engine-unit factory that produces 16 engine-unit per 60 ingame seconds.",
+        "throughput_entity":"engine-unit",
+        "quota":16,
+        "trajectory_length": 128,
+        "holdout_wait_period": 60,
+        "pre_holdout_wait_period": 60,
+        "task_key": "engine-unit_throughput_16"
+    }
+}

@@ -8,6 +8,6 @@
     "trajectory_length": 128,
     "holdout_wait_period": 60,
     "pre_holdout_wait_period": 60,
-    "task_key": "logistic_science_pack_throughput_16"
+    "task_key": "logistic_science_pack_throughput"
     }
 }

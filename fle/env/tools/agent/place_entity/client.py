@@ -89,10 +89,6 @@ class PlaceObject(Tool):
             cleaned_response = self.clean_response(response)
 
             try:
-                with open("debug_entity_instantiation.log", "a") as f:
-                    f.write(
-                        f"[DEBUG] Instantiating {metaclass} with dict: {cleaned_response}\n"
-                    )
                 object = metaclass(
                     prototype=entity.name, game=self.connection, **cleaned_response
                 )

@@ -603,7 +603,7 @@ class MiningDrill(StaticEntity):
 
     def __init__(self, *args, **kwargs):
         try:
-            with open("mining_drill_debug.log", "a") as f:
+            with open(".fle/mining_drill_debug.log", "a") as f:
                 f.write(f"[DEBUG] MiningDrill init args: {args}, kwargs: {kwargs}\n")
         except Exception:
             pass

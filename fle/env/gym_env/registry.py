@@ -45,7 +45,7 @@ class FactorioGymRegistry:
             )
 
         # Discover all JSON task definition files
-        for task_file in self._task_definitions_path.glob("*.json"):
+        for task_file in self._task_definitions_path.rglob("*.json"):
             try:
                 with open(task_file, "r") as f:
                     task_data = json.load(f)

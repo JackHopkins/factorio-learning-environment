@@ -71,12 +71,8 @@ mcp = [
 env = [
     "anyio",
     "neptune",
-    "rich",
-    "openai",
     "scipy",
     "scikit-image",
-    "pyautogui",
-    "tenacity",
     "fastapi>=0.68.0",
 ]
 

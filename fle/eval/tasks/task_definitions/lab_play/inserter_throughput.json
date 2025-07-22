@@ -3,12 +3,12 @@
     "task_type": "throughput",
     "config":
     {  
-        "goal_description":"Create an automatic stone wall factory that produces 16 stone wall per 60 ingame seconds.",
-        "throughput_entity":"stone-wall",
+        "goal_description":"Create an automatic inserter factory that produces 16 inserter per 60 ingame seconds.",
+        "throughput_entity":"inserter",
         "quota":16,
         "trajectory_length": 128,
         "holdout_wait_period": 60,
         "pre_holdout_wait_period": 60,
-        "task_key": "stone_wall_throughput_16"
+        "task_key": "inserter_throughput"
     }
 }

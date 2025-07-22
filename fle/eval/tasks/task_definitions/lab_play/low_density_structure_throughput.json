@@ -1,0 +1,14 @@
+
+{                          
+    "task_type": "throughput",
+    "config":
+    {  
+        "goal_description":"Create an automatic low-density-structure factory that produces 16 low-density-structure per 60 ingame seconds.",
+        "throughput_entity":"low-density-structure",
+        "quota":16,
+        "trajectory_length": 128,
+        "holdout_wait_period": 60,
+        "pre_holdout_wait_period": 60,
+        "task_key": "low-density-structure_throughput"
+    }
+}

@@ -122,10 +122,8 @@ class ThroughputTask(TaskABC):
         # wait the pre-holdout period
         # instance.namespace.sleep(self.pre_holdout_wait_period)
         while True:
-            result_list, result, error, achievements, post_flows = (
-                eval_program_with_achievements(
-                    program=f"sleep({self.holdout_wait_period})", instance=instance
-                )
+            result_list, result, error, achievements = eval_program_with_achievements(
+                program=f"sleep({self.holdout_wait_period})", instance=instance
             )
             if max_achievements is None:
                 max_achievements = achievements

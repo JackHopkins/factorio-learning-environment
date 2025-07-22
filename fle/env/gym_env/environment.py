@@ -18,6 +18,7 @@ from fle.env.gym_env.observation import (
     AgentMessage,
 )
 from fle.eval.tasks import TaskABC
+from fle.env.utils.achievements import eval_program_with_achievements
 
 # need to do this since gym doesn't work with numpy>=2.0 otherwise.
 np.bool8 = np.dtype(np.bool)
@@ -395,9 +396,6 @@ class FactorioGymEnv(gym.Env):
             terminated = task_success.success
 
         # Get post-execution flows and calculate achievements
-        from fle.env.utils.achievements import eval_program_with_achievements
-
-        post_flows = ProductionFlows.from_dict(namespace._get_production_stats())
         _, _, _, achievements, post_flows = eval_program_with_achievements(
             self.instance, code, pre_flows=pre_flows
         )

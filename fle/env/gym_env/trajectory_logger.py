@@ -124,4 +124,4 @@ class TrajectoryLogger:
         )
         prompt_file = os.path.join(self.log_dir, f"agent{agent_idx}_system_prompt.txt")
         with open(prompt_file, "w") as f:
-            f.write(formatted_prompt or "")
+            f.write(formatted_prompt)

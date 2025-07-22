@@ -60,7 +60,7 @@ class AchievementTracker:
 def eval_program_with_achievements(
     instance: Any, program: str, pre_flows: ProductionFlows = None
 ) -> Tuple[List[str], str, bool, Dict[str, Dict[str, float]], ProductionFlows]:
-    """Evaluate a program and calculate achievements. Returns (output_lines, result, error, achievements, post_flows)."""
+    """Evaluate a program and calculate achievements."""
     if pre_flows is None:
         pre_flows = ProductionFlows.from_dict(
             instance.first_namespace._get_production_stats()

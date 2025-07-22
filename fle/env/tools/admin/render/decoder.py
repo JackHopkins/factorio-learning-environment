@@ -53,6 +53,40 @@ class Decoder:
         return bytes(data)
 
     @classmethod
+    def decode_water_runs(cls, water_runs: List[Dict]) -> List[Dict]:
+        """
+        Decode run-length encoded water tiles back to individual tiles.
+
+        Args:
+            water_runs: List of water runs with format:
+                - t: tile type (water, deepwater, etc.)
+                - x: starting x coordinate
+                - y: y coordinate
+                - l: length of the run
+
+        Returns:
+            List of individual water tiles in original format
+        """
+        tiles = []
+        for run in water_runs:
+            tile_type = run.get('t', 'water')
+            start_x = run.get('x', 0)
+            y = run.get('y', 0)
+            length = run.get('l', 1)
+
+            # Expand the run into individual tiles
+            for x in range(start_x, start_x + length):
+                tiles.append({
+                    'x': x,
+                    'y': y,
+                    'name': tile_type
+                })
+
+        return tiles
+
+
+
+    @classmethod
     def decode_water_binary(cls, data: bytes) -> List[Dict]:
         """Decode binary water data back to run format."""
         runs = []
@@ -141,6 +175,57 @@ class Decoder:
             resources[resource_name] = patches
 
         return resources
+
+    @classmethod
+    def decode_resource_patches(cls, resource_patches: Dict[str, List[Dict]]) -> List[Dict]:
+        """
+        Decode patch-based resources back to individual resource entities.
+
+        Args:
+            resource_patches: Dictionary mapping resource types to patches.
+                Each patch has:
+                - c: center position [x, y]
+                - e: list of entities as [dx, dy, amount] relative to center
+
+        Returns:
+            List of individual resource entities in original format
+        """
+        resources = []
+
+        for resource_type, patches in resource_patches.items():
+            for patch in patches:
+                center = patch.get('c', [0, 0])
+                entities = patch.get('e', [])
+
+                # Convert relative positions to absolute
+                for entity in entities:
+                    if len(entity) >= 3:
+                        dx, dy, amount = entity[0], entity[1], entity[2]
+                        resources.append({
+                            'name': resource_type,
+                            'position': {
+                                'x': center[0] + dx,
+                                'y': center[1] + dy
+                            },
+                            'amount': amount
+                        })
+
+        return resources
+
+    @classmethod
+    def decode_base64_urlsafe(cls, data: str) -> bytes:
+        """
+        Decode URL-safe Base64 (using - and _ instead of + and /)
+
+        Args:
+            data: URL-safe Base64 encoded string
+
+        Returns:
+            Decoded bytes
+        """
+        # Replace URL-safe characters with standard Base64 characters
+        standard_b64 = data.replace('-', '+').replace('_', '/')
+        return base64.b64decode(standard_b64)
 
     @staticmethod
     def compress_data(data: Dict) -> str:

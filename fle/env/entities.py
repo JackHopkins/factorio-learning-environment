@@ -162,6 +162,20 @@ class Inventory(BaseModel):
     def values(self):
         return self.__dict__.values()
 
+    def __add__(self, other):
+        if not isinstance(other, Inventory):
+            return NotImplemented
+
+        result = Inventory(**self.__dict__)
+
+        for key, value in other.items():
+            if key in result:
+                result[key] = result[key] + value
+            else:
+                result[key] = value
+
+        return result
+
 
 class Direction(Enum):
     UP = NORTH = 0
@@ -499,7 +513,6 @@ class Entity(EntityCore):
 
 class StaticEntity(Entity):
     """A static (non-moving) entity in the game."""
-
     neighbours: Optional[Union[Dict, List[EntityCore]]] = []
 
 
@@ -525,7 +538,8 @@ class TransportBelt(Entity):
 
     input_position: Position
     output_position: Position
-    inventory: Inventory = Inventory()
+    #inventory: Inventory = Inventory()
+    inventory: Dict[Literal['left', 'right'], Inventory] = {'left': {}, 'right': {}}
     is_terminus: bool = False
     is_source: bool = False
     _height: float = 1

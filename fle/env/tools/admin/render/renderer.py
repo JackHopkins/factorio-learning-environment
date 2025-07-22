@@ -8,21 +8,20 @@ import json
 import math
 from pathlib import Path
 from PIL import Image, ImageDraw
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
-from .constants import (
-    DEFAULT_SCALING, GRID_LINE_WIDTH, BACKGROUND_COLOR, GRID_COLOR,
-    OIL_RESOURCE_VARIANTS, RENDERERS, DEFAULT_ROCK_VARIANTS
-)
-from .utils import (
+from fle.env import Entity, EntityCore
+from fle.env.tools.admin.render.constants import BACKGROUND_COLOR, GRID_LINE_WIDTH, GRID_COLOR, DEFAULT_ROCK_VARIANTS, \
+    OIL_RESOURCE_VARIANTS, RENDERERS, DEFAULT_SCALING
+from fle.env.tools.admin.render.utils import (
     entities_to_grid, resources_to_grid, get_resource_variant,
     get_resource_volume, is_tree_entity, find_fle_sprites_dir,
-    parse_blueprint, load_game_data, is_rock_entity
+    is_rock_entity, flatten_entities
 )
-from .entity_grid import EntityGridView
-from .image_resolver import ImageResolver
-from .renderer_manager import renderer_manager
-from .renderers.tree import build_available_trees_index, get_tree_variant
+from fle.env.tools.admin.render.entity_grid import EntityGridView
+from fle.env.tools.admin.render.image_resolver import ImageResolver
+from fle.env.tools.admin.render.renderer_manager import renderer_manager
+from fle.env.tools.admin.render.renderers.tree import build_available_trees_index, get_tree_variant
 
 
 
@@ -31,7 +30,11 @@ from .renderers.tree import build_available_trees_index, get_tree_variant
 class Renderer:
     """Factorio Blueprint representation."""
 
-    def __init__(self, data: Dict, sprites_dir: Optional[Path] = None):
+    def __init__(self,
+                 entities: Union[List[Dict], List[Entity]] = [],
+                 resources: List[Dict] = [],
+                 water_tiles: List[Dict] = [],
+                 sprites_dir: Optional[Path] = None):
         """Initialize renderer with blueprint data.
         
         Args:
@@ -39,9 +42,10 @@ class Renderer:
             sprites_dir: Optional directory path for sprite files
         """
         self.icons = []
-        self.entities = data.get('entities', [])
-        self.resources = data.get('resources', [])
-        self.water_tiles = data.get('water_tiles', [])
+
+        self.entities = list(flatten_entities(entities)) #data.get('entities', [])
+        self.resources = resources #data.get('resources', [])
+        self.water_tiles = water_tiles #data.get('water_tiles', [])
 
         self.entity_grid = entities_to_grid(self.entities)
         self.resource_grid = resources_to_grid(self.resources)
@@ -72,7 +76,9 @@ class Renderer:
         """Pre-calculate tree variants for sorting."""
         tree_variants = {}
         
-        for entity in self.entities:
+        for e in self.entities:
+            entity = e.__dict__
+
             if not is_tree_entity(entity['name']):
                 continue
                 
@@ -90,12 +96,13 @@ class Renderer:
     
     def _sort_entities_for_rendering(self) -> None:
         """Sort entities for proper rendering order."""
+
         self.entities.sort(key=lambda e: (
-            not is_tree_entity(e['name']),  # Trees first
-            -ord(self.tree_variants.get(id(e), 'a')) if is_tree_entity(e['name']) else 0,
-            not e['name'].endswith('inserter'),
-            e['position']['y'],
-            e['position']['x']
+            not is_tree_entity(e.name),  # Trees first
+            -ord(self.tree_variants.get(id(e), 'a')) if is_tree_entity(e.name) else 0,
+            not e.name.endswith('inserter'),
+            e.position.y,
+            e.position.x
         ))
 
     def get_size(self) -> Dict:
@@ -118,12 +125,12 @@ class Renderer:
 
         # Check entities
         for entity in self.entities:
-            pos = entity['position']
+            pos = entity.position
             size = renderer_manager.get_entity_size(entity)
-            min_width = min(min_width, pos['x'] - size[0] / 2)
-            min_height = min(min_height, pos['y'] - size[1] / 2)
-            max_width = max(max_width, pos['x'] + size[0] / 2)
-            max_height = max(max_height, pos['y'] + size[1] / 2)
+            min_width = min(min_width, pos.x - size[0] / 2)
+            min_height = min(min_height, pos.y - size[1] / 2)
+            max_width = max(max_width, pos.x + size[0] / 2)
+            max_height = max(max_height, pos.y + size[1] / 2)
 
         # Check resources (they are 1x1)
         for resource in self.resources:
@@ -158,9 +165,9 @@ class Renderer:
         self._draw_grid(img, size, scaling, width, height)
         
         # Separate entities for proper rendering order
-        tree_entities = [e for e in self.entities if is_tree_entity(e['name'])]
-        rock_entities = [e for e in self.entities if is_rock_entity(e['name'])]
-        player_entities = [e for e in self.entities if not is_tree_entity(e['name']) and not is_rock_entity(e['name'])]
+        tree_entities = [e for e in self.entities if is_tree_entity(e.name)]
+        rock_entities = [e for e in self.entities if is_rock_entity(e.name)]
+        player_entities = [e for e in self.entities if not is_tree_entity(e.name) and not is_rock_entity(e.name)]
         
         grid_view = EntityGridView(self.entity_grid, 0, 0, self.available_trees)
         
@@ -271,34 +278,34 @@ class Renderer:
     def _render_trees(self, img: Image.Image, tree_entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:
         """Render trees."""
         for tree in tree_entities:
-            pos = tree['position']
-            relative_x = pos['x'] + abs(size['minX']) + 0.5
-            relative_y = pos['y'] + abs(size['minY']) + 0.5
+            pos = tree.position
+            relative_x = pos.x + abs(size['minX']) + 0.5
+            relative_y = pos.y + abs(size['minY']) + 0.5
 
-            grid_view.set_center(pos['x'], pos['y'])
-            renderer = renderer_manager.get_renderer(tree['name'])
+            grid_view.set_center(pos.x, pos.y)
+            renderer = renderer_manager.get_renderer(tree.name)
             
             if renderer and hasattr(renderer, 'render'):
-                tree_image = renderer.render(tree, grid_view, image_resolver)
+                tree_image = renderer.render(tree.model_dump(), grid_view, image_resolver)
                 if tree_image:
                     self._paste_image(img, tree_image, relative_x, relative_y, scaling)
     
     def _render_entity_shadows(self, img: Image.Image, non_tree_entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:
         """Render entity shadows."""
         for entity in non_tree_entities:
-            pos = entity['position']
-            relative_x = pos['x'] + abs(size['minX']) + 0.5
-            relative_y = pos['y'] + abs(size['minY']) + 0.5
+            pos = entity.position
+            relative_x = pos.x + abs(size['minX']) + 0.5
+            relative_y = pos.y + abs(size['minY']) + 0.5
 
-            grid_view.set_center(pos['x'], pos['y'])
+            grid_view.set_center(pos.x, pos.y)
             image = None
 
-            if entity['name'] in RENDERERS:
-                renderer = renderer_manager.get_renderer(entity['name'])
+            if entity.name in RENDERERS:
+                renderer = renderer_manager.get_renderer(entity.name)
                 if renderer and hasattr(renderer, 'render_shadow'):
-                    image = renderer.render_shadow(entity, grid_view, image_resolver)
+                    image = renderer.render_shadow(entity.model_dump(), grid_view, image_resolver)
             else:
-                image = image_resolver(entity['name'], True)
+                image = image_resolver(entity.name, True)
 
             if image:
                 self._paste_image(img, image, relative_x, relative_y, scaling)
@@ -309,20 +316,20 @@ class Renderer:
         
         for pass_num in passes:
             for entity in non_tree_entities:
-                if entity['name'] not in ['straight-rail', 'curved-rail', 'rail-signal', 'rail-chain-signal']:
+                if entity.name not in ['straight-rail', 'curved-rail', 'rail-signal', 'rail-chain-signal']:
                     continue
 
-                pos = entity['position']
-                relative_x = pos['x'] + abs(size['minX']) + 0.5
-                relative_y = pos['y'] + abs(size['minY']) + 0.5
+                pos = entity.position
+                relative_x = pos.x + abs(size['minX']) + 0.5
+                relative_y = pos.y + abs(size['minY']) + 0.5
                 direction = entity.get('direction', 0)
                 image = None
 
-                if entity['name'] == 'straight-rail':
+                if entity.name == 'straight-rail':
                     if direction in [0, 4]:
-                        image = image_resolver(f"{entity['name']}_vertical_pass_{int(pass_num)}", False)
+                        image = image_resolver(f"{entity.name}_vertical_pass_{int(pass_num)}", False)
                     elif direction in [2, 6]:
-                        image = image_resolver(f"{entity['name']}_horizontal_pass_{int(pass_num)}", False)
+                        image = image_resolver(f"{entity.name}_horizontal_pass_{int(pass_num)}", False)
 
                 if image:
                     self._paste_image(img, image, relative_x, relative_y, scaling)
@@ -330,22 +337,25 @@ class Renderer:
     def _render_entities(self, img: Image.Image, non_tree_entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:
         """Render non-rail entities."""
         for entity in non_tree_entities:
-            if entity['name'] in ['straight-rail', 'curved-rail']:
+            if entity.name in ['straight-rail', 'curved-rail']:
                 continue
 
-            pos = entity['position']
-            relative_x = pos['x'] + abs(size['minX']) + 0.5
-            relative_y = pos['y'] + abs(size['minY']) + 0.5
+            pos = entity.position
+            relative_x = pos.x + abs(size['minX']) + 0.5
+            relative_y = pos.y + abs(size['minY']) + 0.5
 
-            grid_view.set_center(pos['x'], pos['y'])
+            grid_view.set_center(pos.x, pos.y)
             image = None
 
-            if entity['name'] in RENDERERS:
-                renderer = renderer_manager.get_renderer(entity['name'])
+            if entity.name in RENDERERS:
+                renderer = renderer_manager.get_renderer(entity.name)
                 if renderer and hasattr(renderer, 'render'):
-                    image = renderer.render(entity, grid_view, image_resolver)
+                    entity_dict = entity.model_dump()
+                    if 'direction' in entity_dict:
+                        entity_dict['direction'] = int(entity_dict['direction'].value)
+                    image = renderer.render(entity_dict, grid_view, image_resolver)
             else:
-                image = image_resolver(entity['name'], False)
+                image = image_resolver(entity.name, False)
 
             if image:
                 self._paste_image(img, image, relative_x, relative_y, scaling)
@@ -360,7 +370,7 @@ class Renderer:
 
 def main():
     """Example usage"""
-    sprites_dir = Path(".fle/spritemaps")
+    sprites_dir = Path("../.fle/sprites")
     image_resolver = ImageResolver(str(sprites_dir))
 
     with open("/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/fle/agents/data/sprites/sample_blueprint.json", "r") as f:

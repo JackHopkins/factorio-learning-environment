@@ -6,10 +6,12 @@ from typing import Dict, Tuple, Optional, Callable
 
 from PIL import Image
 
+from fle.env import EntityCore, Entity
 from ..constants import NORTH, SOUTH, EAST, WEST, VERTICAL, HORIZONTAL
 
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
     """Render transport belt"""
+
     around = get_around(entity, grid)
     count = sum(around)
     direction = entity.get('direction', 0)
@@ -87,6 +89,7 @@ def get_key(entity: Dict, grid) -> str:
     return f"{entity.get('direction', 0)}_{'_'.join(map(str, around))}"
 
 
+# TODO: I think the semantics are wrong here @jack
 def get_around(entity: Dict, grid) -> list:
     """Check surrounding connections"""
     return [
@@ -108,7 +111,7 @@ def get_around(entity: Dict, grid) -> list:
     ]
 
 
-def is_transport_belt(entity: Optional[Dict], direction: int) -> int:
+def is_transport_belt(entity: Optional[Entity], direction: int) -> int:
     """Check if entity is transport belt facing direction"""
     if entity is None:
         return 0
@@ -116,27 +119,27 @@ def is_transport_belt(entity: Optional[Dict], direction: int) -> int:
     belt_types = ['transport-belt', 'fast-transport-belt', 'express-transport-belt']
     underground_types = ['underground-belt', 'fast-underground-belt', 'express-underground-belt']
 
-    if entity['name'] in belt_types:
-        if entity.get('direction', 0) == direction:
+    if entity.name in belt_types:
+        if entity.direction.value == direction:
             return 1
 
-    if entity['name'] in underground_types:
-        if entity.get('type') == 'output':
-            if entity.get('direction', 0) == direction:
+    if entity.name in underground_types:
+        if entity.type == 'output':
+            if entity.direction.value == direction:
                 return 1
 
     return 0
 
 
-def is_splitter(entity: Optional[Dict], direction: int) -> int:
+def is_splitter(entity: Optional[Entity], direction: int) -> int:
     """Check if entity is splitter facing direction"""
     if entity is None:
         return 0
 
     splitter_types = ['splitter', 'fast-splitter', 'express-splitter']
 
-    if entity['name'] in splitter_types:
-        if entity.get('direction', 0) == direction:
+    if entity.name in splitter_types:
+        if entity.direction.value == direction:
             return 1
 
     return 0

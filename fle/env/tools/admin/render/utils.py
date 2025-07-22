@@ -5,23 +5,67 @@ import base64
 import zlib
 import math
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Optional, Any, Union
 
+from fle.env import Entity, EntityGroup, WallGroup, BeltGroup, PipeGroup, ElectricityGroup, EntityCore
 from .constants import (
     DEFAULT_MAX_RESOURCE_AMOUNT, MIN_RESOURCE_VOLUME, MAX_RESOURCE_VOLUME,
     DEFAULT_RESOURCE_VARIANTS, OIL_RESOURCE_VARIANTS
 )
 
+def flatten_entities(entities: List[Union[Dict, Entity, EntityGroup]]) -> List[Union[Entity, EntityCore]]:
+    for entity in entities:
+        if isinstance(entity, dict):
+            yield EntityCore(**entity)
+        elif isinstance(entity, EntityGroup):
+            e_list = []
+            if isinstance(entity, WallGroup):
+                e_list = entity.entities
+            elif isinstance(entity, BeltGroup):
+                e_list = entity.belts
+            elif isinstance(entity, PipeGroup):
+                e_list = entity.pipes
+            elif isinstance(entity, ElectricityGroup):
+                e_list = entity.poles
 
-def entities_to_grid(entities: List[Dict]) -> Dict:
+            for e in e_list:
+                yield e
+        else:
+            yield entity
+
+def entities_to_grid(entities: List[Union[Dict, Entity]]) -> Dict:
     """Convert entity list to position grid."""
     grid = {}
     for entity in entities:
-        x = entity['position']['x']
-        y = entity['position']['y']
-        if x not in grid:
-            grid[x] = {}
-        grid[x][y] = entity
+        if isinstance(entity, dict):
+            x = entity['position']['x']
+            y = entity['position']['y']
+            if x not in grid:
+                grid[x] = {}
+            grid[x][y] = entity
+        elif isinstance(entity, EntityGroup):
+            e_list = []
+            if isinstance(entity, WallGroup):
+                e_list = entity.entities
+            elif isinstance(entity, BeltGroup):
+                e_list = entity.belts
+            elif isinstance(entity, PipeGroup):
+                e_list = entity.pipes
+            elif isinstance(entity, ElectricityGroup):
+                e_list = entity.poles
+
+            for e in e_list:
+                if e.position.x not in grid:
+                    grid[e.position.x] = {}
+                grid[e.position.x][e.position.y] = entity
+
+        elif isinstance(entity, EntityCore):
+            x = entity.position.x
+            y = entity.position.y
+            if x not in grid:
+                grid[x] = {}
+            grid[x][y] = entity
+
     return grid
 
 

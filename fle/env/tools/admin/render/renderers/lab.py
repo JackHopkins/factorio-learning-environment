@@ -11,13 +11,13 @@ from PIL import Image
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
     """Render heat exchanger"""
 
-    return image_resolver(f"{entity['name']}")
+    return image_resolver(f"{entity['name']}_0")
 
 
 def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
     """Render shadow"""
 
-    return image_resolver(f"{entity['name']}_shadow", True)
+    return image_resolver(f"{entity['name']}_2_shadow", True)
 
 
 def get_key(entity: Dict, grid) -> str:

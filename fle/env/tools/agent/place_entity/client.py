@@ -1,13 +1,11 @@
-import logging
 from time import sleep
+
 from fle.env.entities import Position, Entity
 from fle.env import DirectionInternal, Direction
 from fle.env.game_types import Prototype
 from fle.env.tools.agent.get_entity.client import GetEntity
 from fle.env.tools.agent.pickup_entity.client import PickupEntity
 from fle.env.tools import Tool
-
-logging.basicConfig(level=logging.ERROR, force=True)
 
 
 class PlaceObject(Tool):
@@ -91,12 +89,10 @@ class PlaceObject(Tool):
             cleaned_response = self.clean_response(response)
 
             try:
-                logging.error(
-                    f"[DEBUG] Instantiating {metaclass} with dict: {cleaned_response}"
-                )
-                import sys
-
-                sys.stderr.flush()
+                with open("debug_entity_instantiation.log", "a") as f:
+                    f.write(
+                        f"[DEBUG] Instantiating {metaclass} with dict: {cleaned_response}\n"
+                    )
                 object = metaclass(
                     prototype=entity.name, game=self.connection, **cleaned_response
                 )

@@ -42,26 +42,22 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            end
        end
        if closest_entity == nil then
-        error("No entity at given coordinates.")
-    end
-    
-    if not is_fast then
-     player.opened = closest_entity
-     script.on_nth_tick(60, function()
-         if automatic_close == True then
-             player.opened = nil
-             automatic_close = False
-         end
-     end)
-    end
+           error("No entity at given coordinates.")
+       end
        if not closest_entity or not closest_entity.valid then
            error("No valid entity at given coordinates.")
        end
 
-       -- Before every use, check validity
-       if not closest_entity or not closest_entity.valid then
-           error("No valid entity at given coordinates.")
+       if not is_fast then
+           player.opened = closest_entity
+           script.on_nth_tick(60, function()
+               if automatic_close == True then
+                   player.opened = nil
+                   automatic_close = False
+               end
+           end)
        end
+
        if closest_entity.type == "furnace" then
            if not closest_entity or not closest_entity.valid then
                error("No valid entity at given coordinates.")
@@ -72,9 +68,6 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
                source[k] = (source[k] or 0) + v
            end
            return source
-       end
-       if not closest_entity or not closest_entity.valid then
-           error("No valid entity at given coordinates.")
        end
        if closest_entity.type == "assembling-machine" then
            if not closest_entity or not closest_entity.valid then
@@ -87,9 +80,6 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            end
            return source
        end
-       if not closest_entity or not closest_entity.valid then
-           error("No valid entity at given coordinates.")
-       end
        if closest_entity.type == "lab" then
            if not closest_entity or not closest_entity.valid then
                error("No valid entity at given coordinates.")
@@ -97,9 +87,6 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            return closest_entity.get_inventory(defines.inventory.lab_input).get_contents()
        end
        -- Handle centrifuge inventories
-       if not closest_entity or not closest_entity.valid then
-           error("No valid entity at given coordinates.")
-       end
        if closest_entity.type == "assembling-machine" and closest_entity.name == "centrifuge" then
            if not closest_entity or not closest_entity.valid then
                error("No valid entity at given coordinates.")

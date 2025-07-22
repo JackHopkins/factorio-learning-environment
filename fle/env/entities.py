@@ -2,7 +2,7 @@ import math
 from typing import Tuple, Any, Union, Dict, Literal
 from typing import List, Optional
 from enum import Enum, IntFlag
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, model_validator, ConfigDict
 
 
 class Layer(IntFlag):
@@ -435,8 +435,9 @@ class BurnerType(BaseModel):
 
 class EntityCore(BaseModel):
     # id: Optional[str] = None
+    model_config = ConfigDict(extra='allow')
     name: str
-    direction: Direction
+    direction: Direction = Direction.NORTH
     position: Position
 
     def __repr__(self):

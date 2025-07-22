@@ -58,8 +58,11 @@ class RendererManager:
             renderer = self.get_renderer(entity['name'])
         else:
             renderer = self.get_renderer(entity.name)
+
         if renderer and hasattr(renderer, 'get_size'):
-            return renderer.get_size(entity)
+            _entity = entity.model_dump()
+            return renderer.get_size(_entity)
+
         return (1.0, 1.0)
 
 

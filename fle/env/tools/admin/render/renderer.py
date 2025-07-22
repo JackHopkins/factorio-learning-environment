@@ -3,14 +3,14 @@
 Factorio Blueprint Renderer - Extended with Resource Support
 Renders Factorio blueprints including resource patches
 """
-
+import copy
 import json
 import math
 from pathlib import Path
 from PIL import Image, ImageDraw
 from typing import Dict, List, Optional, Union
 
-from fle.env import Entity, EntityCore
+from fle.env import Entity, EntityCore, UndergroundBelt
 from fle.env.tools.admin.render.constants import BACKGROUND_COLOR, GRID_LINE_WIDTH, GRID_COLOR, DEFAULT_ROCK_VARIANTS, \
     OIL_RESOURCE_VARIANTS, RENDERERS, DEFAULT_SCALING
 from fle.env.tools.admin.render.utils import (
@@ -77,7 +77,7 @@ class Renderer:
         tree_variants = {}
         
         for e in self.entities:
-            entity = e.__dict__
+            entity = e.model_dump() if not isinstance(e, dict) else e
 
             if not is_tree_entity(entity['name']):
                 continue
@@ -165,10 +165,13 @@ class Renderer:
         self._draw_grid(img, size, scaling, width, height)
         
         # Separate entities for proper rendering order
-        tree_entities = [e for e in self.entities if is_tree_entity(e.name)]
-        rock_entities = [e for e in self.entities if is_rock_entity(e.name)]
+        tree_entities = [e.model_dump() if not isinstance(e, dict) else e for e in self.entities if is_tree_entity(e.name)]
+        rock_entities = [e.model_dump() if not isinstance(e, dict) else e for e in self.entities if is_rock_entity(e.name)]
         player_entities = [e for e in self.entities if not is_tree_entity(e.name) and not is_rock_entity(e.name)]
-        
+
+        # Expand consolidate underground belts into pairs
+        player_entities = self._disintegrate_underground_belts(player_entities)
+
         grid_view = EntityGridView(self.entity_grid, 0, 0, self.available_trees)
         
         # Render in order: resources -> tree shadows -> trees -> entity shadows -> rails -> entities
@@ -183,6 +186,21 @@ class Renderer:
         self._render_entities(img, player_entities, size, scaling, grid_view, image_resolver)
         
         return img
+
+    def _disintegrate_underground_belts(self, player_entities):
+        entities = []
+        for entity in player_entities:
+            if isinstance(entity, UndergroundBelt):
+                # input
+                entities.append(entity)
+                # output
+                output = copy.deepcopy(entity)
+                output.is_input = False
+                output.position = output.output_position
+                entities.append(output)
+            else:
+                entities.append(entity)
+        return entities
     
     def _create_base_image(self, width: int, height: int) -> Image.Image:
         """Create base image with background color."""
@@ -278,34 +296,38 @@ class Renderer:
     def _render_trees(self, img: Image.Image, tree_entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:
         """Render trees."""
         for tree in tree_entities:
-            pos = tree.position
-            relative_x = pos.x + abs(size['minX']) + 0.5
-            relative_y = pos.y + abs(size['minY']) + 0.5
+            pos = tree['position']
+            relative_x = pos['x'] + abs(size['minX']) + 0.5
+            relative_y = pos['y'] + abs(size['minY']) + 0.5
 
-            grid_view.set_center(pos.x, pos.y)
-            renderer = renderer_manager.get_renderer(tree.name)
+            grid_view.set_center(pos['x'], pos['y'])
+            renderer = renderer_manager.get_renderer(tree['name'])
             
             if renderer and hasattr(renderer, 'render'):
-                tree_image = renderer.render(tree.model_dump(), grid_view, image_resolver)
+                tree_image = renderer.render(tree, grid_view, image_resolver)
                 if tree_image:
                     self._paste_image(img, tree_image, relative_x, relative_y, scaling)
     
     def _render_entity_shadows(self, img: Image.Image, non_tree_entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:
         """Render entity shadows."""
         for entity in non_tree_entities:
-            pos = entity.position
-            relative_x = pos.x + abs(size['minX']) + 0.5
-            relative_y = pos.y + abs(size['minY']) + 0.5
+            entity = entity.model_dump() if hasattr(entity, 'model_dump') else entity
+            pos = entity['position']
+            relative_x = pos['x'] + abs(size['minX']) + 0.5
+            relative_y = pos['y'] + abs(size['minY']) + 0.5
 
-            grid_view.set_center(pos.x, pos.y)
+            grid_view.set_center(pos['x'], pos['y'])
             image = None
 
-            if entity.name in RENDERERS:
-                renderer = renderer_manager.get_renderer(entity.name)
+            if entity['name'] in RENDERERS:
+                renderer = renderer_manager.get_renderer(entity['name'])
                 if renderer and hasattr(renderer, 'render_shadow'):
-                    image = renderer.render_shadow(entity.model_dump(), grid_view, image_resolver)
+
+                    if 'direction' in entity:
+                        entity['direction'] = int(entity['direction'].value)
+                    image = renderer.render_shadow(entity, grid_view, image_resolver)
             else:
-                image = image_resolver(entity.name, True)
+                image = image_resolver(entity['name'], True)
 
             if image:
                 self._paste_image(img, image, relative_x, relative_y, scaling)
@@ -316,12 +338,13 @@ class Renderer:
         
         for pass_num in passes:
             for entity in non_tree_entities:
-                if entity.name not in ['straight-rail', 'curved-rail', 'rail-signal', 'rail-chain-signal']:
+                entity = entity.model_dump() if hasattr(entity, 'model_dump') else entity
+                if entity['name'] not in ['straight-rail', 'curved-rail', 'rail-signal', 'rail-chain-signal']:
                     continue
 
-                pos = entity.position
-                relative_x = pos.x + abs(size['minX']) + 0.5
-                relative_y = pos.y + abs(size['minY']) + 0.5
+                pos = entity['position']
+                relative_x = pos['x'] + abs(size['minX']) + 0.5
+                relative_y = pos['y'] + abs(size['minY']) + 0.5
                 direction = entity.get('direction', 0)
                 image = None
 

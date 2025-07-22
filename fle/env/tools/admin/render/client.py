@@ -57,6 +57,8 @@ class Render(Tool):
             ent = self.get_entities(radius=20)
             # Parse the Lua dictionaries
             entities = self.parse_lua_dict(decoded_result['entities'])
+
+            ent.extend(entities)
             water_tiles = decoded_result['water_tiles']
             resources = decoded_result['resources']
 

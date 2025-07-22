@@ -99,10 +99,14 @@ class GetEntities(Tool):
 
                 try:
                     if "inventory" in entity_data:
-                        inventory_data = {
-                            k: v for k, v in entity_data['inventory'].items() if v or isinstance(v, int)
-                        }
-                        entity_data['inventory'] = inventory_data
+                        if isinstance(entity_data["inventory"], list):
+                            for inv in entity_data["inventory"]:
+                                entity_data['inventory'] += inv
+                        else:
+                            inventory_data = {
+                                k: v for k, v in entity_data['inventory'].items() if v or isinstance(v, int)
+                            }
+                            entity_data['inventory'] = inventory_data
 
                     entity = metaclass(**entity_data)
                     entities_list.append(entity)

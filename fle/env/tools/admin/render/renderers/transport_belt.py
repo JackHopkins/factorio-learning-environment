@@ -111,7 +111,7 @@ def get_around(entity: Dict, grid) -> list:
     ]
 
 
-def is_transport_belt(entity: Optional[Entity], direction: int) -> int:
+def is_transport_belt(entity: Optional[Dict], direction: int) -> int:
     """Check if entity is transport belt facing direction"""
     if entity is None:
         return 0
@@ -119,27 +119,33 @@ def is_transport_belt(entity: Optional[Entity], direction: int) -> int:
     belt_types = ['transport-belt', 'fast-transport-belt', 'express-transport-belt']
     underground_types = ['underground-belt', 'fast-underground-belt', 'express-underground-belt']
 
-    if entity.name in belt_types:
-        if entity.direction.value == direction:
+    if entity['name'] in belt_types:
+        if entity['direction'] == direction or (
+                entity['direction'].value == direction if not isinstance(entity['direction'], int) else 0
+        ):
             return 1
 
-    if entity.name in underground_types:
-        if entity.type == 'output':
-            if entity.direction.value == direction:
+    if entity['name'] in underground_types:
+        if entity['type'] == 'output':
+            if entity['direction'] == direction or (
+                    entity['direction'].value == direction if not isinstance(entity['direction'], int) else 0
+            ):
                 return 1
 
     return 0
 
 
-def is_splitter(entity: Optional[Entity], direction: int) -> int:
+def is_splitter(entity: Optional[Dict], direction: int) -> int:
     """Check if entity is splitter facing direction"""
     if entity is None:
         return 0
 
     splitter_types = ['splitter', 'fast-splitter', 'express-splitter']
 
-    if entity.name in splitter_types:
-        if entity.direction.value == direction:
+    if entity['name'] in splitter_types:
+        if entity['direction'] == direction or (
+                entity['direction'].value == direction if not isinstance(entity['direction'], int) else 0
+        ):
             return 1
 
     return 0

@@ -35,7 +35,10 @@ class EntityGridView:
 
         if x not in self.grid:
             return None
-        return self.grid[x].get(y)
+        val = self.grid[x].get(y)
+        if val is None:
+            return None
+        return val.model_dump()
 
     def set_center(self, center_x: float, center_y: float) -> None:
         """Update center position.

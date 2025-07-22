@@ -601,6 +601,14 @@ class MiningDrill(StaticEntity):
     drop_position: Position
     resources: List[Ingredient]
 
+    def __init__(self, *args, **kwargs):
+        try:
+            with open("/tmp/mining_drill_debug.log", "a") as f:
+                f.write(f"[DEBUG] MiningDrill init args: {args}, kwargs: {kwargs}\n")
+        except Exception:
+            pass
+        super().__init__(*args, **kwargs)
+
 
 class ElectricMiningDrill(MiningDrill, Electric):
     """An electrically-powered mining drill."""

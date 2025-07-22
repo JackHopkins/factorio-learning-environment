@@ -91,12 +91,6 @@ class TrajectoryLogger:
             observation: The observation to log
             program: The program to log
         """
-        # Log program
-        print(
-            f"\n\033[95mProgram for agent {agent_idx} at iteration {iteration}:\033[0m"
-        )
-        print(program.code)
-
         if self.log_dir:
             prog_file = os.path.join(
                 self.log_dir, f"agent{agent_idx}_iter{iteration}_program.py"
@@ -106,11 +100,6 @@ class TrajectoryLogger:
 
         # Log observation
         formatted_obs = agent.observation_formatter.format(observation).raw_str
-        print(
-            f"\n\033[94mObservation for agent {agent_idx} at iteration {iteration}:\033[0m"
-        )
-        print(formatted_obs)
-
         if self.log_dir:
             obs_file = os.path.join(
                 self.log_dir, f"agent{agent_idx}_iter{iteration}_observation.txt"
@@ -125,3 +114,14 @@ class TrajectoryLogger:
             iteration_time: Time taken for the iteration
         """
         self.iteration_times.append(iteration_time)
+
+    def save_system_prompt(self, agent: GymAgent, agent_idx: int):
+        """
+        Save the system prompt for the agent at the beginning of the trajectory.
+        """
+        formatted_prompt = agent.system_prompt_formatter.format(
+            agent.task, agent.system_prompt
+        )
+        prompt_file = os.path.join(self.log_dir, f"agent{agent_idx}_system_prompt.txt")
+        with open(prompt_file, "w") as f:
+            f.write(formatted_prompt or "")

@@ -6,6 +6,8 @@ Assembling machine renderer with recipe icons
 from typing import Dict, Tuple, Optional, Callable
 from PIL import Image, ImageDraw
 
+from fle.env import EntityCore
+
 DIRECTIONS = {
     0: "north",
     2: "east",
@@ -14,7 +16,9 @@ DIRECTIONS = {
 }
 
 
-def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
+def render(ent: EntityCore, grid, image_resolver: Callable) -> Optional[Image.Image]:
+    """Render arithmetic combinator with display"""
+    entity = ent.model_dump()
     """Render assembling machine with recipe icon"""
     base_image = image_resolver(entity['name'])
     if base_image is None:

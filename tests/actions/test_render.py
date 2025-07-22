@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import pytest
 
 from fle.env.entities import Position, Layer
@@ -12,76 +15,44 @@ def game(instance):
         "iron-plate": 10,
         "assembling-machine-1": 1,
         "pipe-to-ground": 10,
+        'burner-inserter': 1,
         "pipe": 30,
         "transport-belt": 50,
         "underground-belt": 30,
         'splitter': 1,
-        'lab': 1
+        'lab': 1,
+        'coal': 10,
+        'iron-ore': 100
     }
     instance.reset()
     yield instance.namespace
     instance.reset()
 
+def test_blueprint_render(game):
+    #image = game._render(position=Position(x=0, y=5), layers=Layer.ALL)
+    #image.show()
+
+    # Find all JSON files
+    blueprints_path = Path("/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/fle/agents/data/blueprints_to_policies/blueprints/other")
+    json_files = list(blueprints_path.glob("*.json"))
+
+    # Load the JSON file
+    with open(json_files[0], 'r') as f:
+        blueprint_data = json.load(f)
+
+        image = game._render(blueprint=blueprint_data)
+        image.show()
+    pass
 
 def test_basic_render(game):
     game.reset()
 
-    # Clear existing cliffs and rocks before creating new ones
-    game.instance.rcon_client.send_command(
-        "/sc "
-        "-- Clear all cliffs\n"
-        "for _, cliff in pairs(game.surfaces[1].find_entities_filtered{type='cliff'}) do "
-        "cliff.destroy() "
-        "end "
-        "-- Clear all rocks\n"
-        "for _, rock in pairs(game.surfaces[1].find_entities_filtered{name='rock-huge'}) do "
-        "rock.destroy() "
-        "end "
-        "for _, rock in pairs(game.surfaces[1].find_entities_filtered{name='rock-big'}) do "
-        "rock.destroy() "
-        "end "
-        "for _, rock in pairs(game.surfaces[1].find_entities_filtered{name='rock-medium'}) do "
-        "rock.destroy() "
-        "end "
-        "for _, rock in pairs(game.surfaces[1].find_entities_filtered{name='rock-small'}) do "
-        "rock.destroy() "
-        "end"
-    )
+    chest = game.place_entity(Prototype.IronChest, position=Position(x=0, y=0))
 
-    # Create cliffs in various positions
-    game.instance.rcon_client.send_command(
-        "/sc "
-        "-- Create horizontal cliff line\n"
-        "for i=-5,5 do "
-        "game.surfaces[1].create_entity{"
-        "name='cliff', "
-        "position={x=i*2, y=-15}, "
-        "cliff_orientation='west-to-east'} "
-        "end "
-        "-- Create vertical cliff line\n"
-        "for i=-3,3 do "
-        "game.surfaces[1].create_entity{"
-        "name='cliff', "
-        "position={x=-20, y=i*2}, "
-        "cliff_orientation='north-to-south'} "
-        "end "
-        "-- Create diagonal cliffs\n"
-        "for i=1,4 do "
-        "game.surfaces[1].create_entity{"
-        "name='cliff', "
-        "position={x=20+i*2, y=i*2}, "
-        "cliff_orientation='east-to-west'} "
-        "end"
-    )
+    game.insert_item(Prototype.IronOre, chest, 100)
 
-    game.instance.rcon_client.send_command(
-        "/sc for i=1,5 do "
-        "game.surfaces[1].create_entity{"
-        "name='rock-huge', "
-        "position={x=-10+i*4, y=-5}} "
-        "end"
-    )
-    game.place_entity(Prototype.IronChest, position=Position(x=0, y=0))
+    entity = game.place_entity(Prototype.BurnerInserter, position=chest.position.above())
+    game.insert_item(Prototype.Coal, entity, 10)
 
     game.place_entity(Prototype.Splitter, position=Position(x=5, y=0))
 

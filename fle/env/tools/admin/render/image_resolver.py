@@ -31,7 +31,7 @@ class ImageResolver:
         """
         filename = f"{name}_shadow" if shadow else name
 
-        if filename in self.cache:
+        if filename in self.cache and self.cache[filename]:
             return self.cache[filename]
 
         path = self.images_dir / f"{filename}.png"

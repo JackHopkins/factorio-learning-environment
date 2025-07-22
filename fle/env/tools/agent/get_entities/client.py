@@ -33,7 +33,7 @@ class GetEntities(Tool):
             if not isinstance(entities, Set):
                 entities = set([entities])
 
-                # Serialize entity_names as a string
+            # Serialize entity_names as a string
             entity_names = (
                 "[" + ",".join([f'"{entity.value[0]}"' for entity in entities]) + "]"
                 if entities
@@ -98,6 +98,12 @@ class GetEntities(Tool):
                 }
 
                 try:
+                    if "inventory" in entity_data:
+                        inventory_data = {
+                            k: v for k, v in entity_data['inventory'].items() if v or isinstance(v, int)
+                        }
+                        entity_data['inventory'] = inventory_data
+
                     entity = metaclass(**entity_data)
                     entities_list.append(entity)
                 except Exception as e1:

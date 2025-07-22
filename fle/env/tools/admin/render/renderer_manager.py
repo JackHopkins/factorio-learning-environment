@@ -1,7 +1,8 @@
 """Renderer management and caching."""
 
-from typing import Dict, Optional, Tuple, Any
+from typing import Dict, Optional, Tuple, Any, Union
 
+from fle.env import EntityCore
 from .constants import RENDERERS
 
 
@@ -44,7 +45,7 @@ class RendererManager:
             print(f"Warning: Could not import renderer for {renderer_name}: {e}")
             self._renderer_cache[renderer_name] = None
     
-    def get_entity_size(self, entity: Dict) -> Tuple[float, float]:
+    def get_entity_size(self, entity: Union[Dict, EntityCore]) -> Tuple[float, float]:
         """Get entity size.
         
         Args:
@@ -53,7 +54,10 @@ class RendererManager:
         Returns:
             Tuple of (width, height) in tiles
         """
-        renderer = self.get_renderer(entity['name'])
+        if isinstance(entity, dict):
+            renderer = self.get_renderer(entity['name'])
+        else:
+            renderer = self.get_renderer(entity.name)
         if renderer and hasattr(renderer, 'get_size'):
             return renderer.get_size(entity)
         return (1.0, 1.0)

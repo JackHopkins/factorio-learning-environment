@@ -82,7 +82,7 @@ def render_blueprints_from_directory(blueprints_dir: str, output_dir: str = None
                     continue
 
             # Create blueprint object
-            blueprint = Renderer(blueprint_content, sprites_dir)
+            blueprint = Renderer(sprites_dir, entities=blueprint_content["entities"],)
 
             # Calculate render size
             size = blueprint.get_size()

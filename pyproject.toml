@@ -52,7 +52,6 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "black>=23.0.0",
-    "isort>=5.12.0",
     "rich>=14.0.0",
     "questionary>=2.1.0",
 ]
@@ -61,7 +60,6 @@ cluster = [
     "boto3>=1.26.0",
     "opencv-python",
     "pyautogui>=0.9.54",
-    "pillow>=10.0.0",
     "psutil>=5.9.0",
 ]
 mcp = [
@@ -69,10 +67,7 @@ mcp = [
     "dulwich",
 ]
 env = [
-    "anyio",
     "neptune",
-    "scipy",
-    "scikit-image",
     "fastapi>=0.68.0",
 ]
 

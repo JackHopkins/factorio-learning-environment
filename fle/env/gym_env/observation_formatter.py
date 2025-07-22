@@ -388,10 +388,12 @@ class BasicObservationFormatter:
 
         research_str = "### Research\n"
 
+        if "research_progress" not in research:
+            print("[ERROR] research_progress missing from research dict:", research)
+            raise KeyError("research_progress missing from research dict")
         # Format current research
         if research.get("current_research"):
-            progress = research.get("research_progress", 0.0)
-            research_str += f"#### Current Research\n- {research['current_research']}: {progress * 100:.1f}%\n"
+            research_str += f"#### Current Research\n- {research['current_research']}: {research['research_progress'] * 100:.1f}%\n"
 
         # Format research queue
         if research.get("research_queue"):

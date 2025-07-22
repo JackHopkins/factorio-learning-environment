@@ -46,7 +46,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            error("No entity at given coordinates.")
        end
       if not closest_entity or not closest_entity.valid then
-          local f = io.open("/tmp/invalid_entity.log", "a")
+          local f = io.open(".fle/invalid_entity.log", "a")
           if f then
               f:write("Invalid entity encountered: ")
               if closest_entity then
@@ -62,7 +62,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
 
        -- Before every use, check validity
        if not closest_entity or not closest_entity.valid then
-           local f = io.open("/tmp/invalid_entity.log", "a")
+           local f = io.open(".fle/invalid_entity.log", "a")
            if f then
                f:write("Invalid entity before .type: ")
                if closest_entity then
@@ -77,7 +77,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
        end
        if closest_entity.type == "furnace" then
            if not closest_entity or not closest_entity.valid then
-               local f = io.open("/tmp/invalid_entity.log", "a")
+               local f = io.open(".fle/invalid_entity.log", "a")
                if f then
                    f:write("Invalid entity before .get_inventory (furnace): ")
                    if closest_entity then
@@ -98,7 +98,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            return source
        end
        if not closest_entity or not closest_entity.valid then
-           local f = io.open("/tmp/invalid_entity.log", "a")
+           local f = io.open(".fle/invalid_entity.log", "a")
            if f then
                f:write("Invalid entity before .type (assembling): ")
                if closest_entity then
@@ -113,7 +113,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
        end
        if closest_entity.type == "assembling-machine" then
            if not closest_entity or not closest_entity.valid then
-               local f = io.open("/tmp/invalid_entity.log", "a")
+               local f = io.open(".fle/invalid_entity.log", "a")
                if f then
                    f:write("Invalid entity before .get_inventory (assembling): ")
                    if closest_entity then
@@ -134,7 +134,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            return source
        end
        if not closest_entity or not closest_entity.valid then
-           local f = io.open("/tmp/invalid_entity.log", "a")
+           local f = io.open(".fle/invalid_entity.log", "a")
            if f then
                f:write("Invalid entity before .type (lab): ")
                if closest_entity then
@@ -149,7 +149,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
        end
        if closest_entity.type == "lab" then
            if not closest_entity or not closest_entity.valid then
-               local f = io.open("/tmp/invalid_entity.log", "a")
+               local f = io.open(".fle/invalid_entity.log", "a")
                if f then
                    f:write("Invalid entity before .get_inventory (lab): ")
                    if closest_entity then
@@ -166,7 +166,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
        end
        -- Handle centrifuge inventories
        if not closest_entity or not closest_entity.valid then
-           local f = io.open("/tmp/invalid_entity.log", "a")
+           local f = io.open(".fle/invalid_entity.log", "a")
            if f then
                f:write("Invalid entity before .type (centrifuge): ")
                if closest_entity then
@@ -181,7 +181,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
        end
        if closest_entity.type == "assembling-machine" and closest_entity.name == "centrifuge" then
            if not closest_entity or not closest_entity.valid then
-               local f = io.open("/tmp/invalid_entity.log", "a")
+               local f = io.open(".fle/invalid_entity.log", "a")
                if f then
                    f:write("Invalid entity before .get_inventory (centrifuge): ")
                    if closest_entity then
@@ -203,7 +203,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            return source
        end
        if not closest_entity or not closest_entity.valid then
-           local f = io.open("/tmp/invalid_entity.log", "a")
+           local f = io.open(".fle/invalid_entity.log", "a")
            if f then
                f:write("Invalid entity before .get_inventory (chest): ")
                if closest_entity then

@@ -1,0 +1,14 @@
+
+{                          
+    "task_type": "throughput",
+    "config":
+    {  
+        "goal_description":"Create an automatic processing-unit factory that produces 16 processing-unit per 60 ingame seconds.",
+        "throughput_entity":"processing-unit",
+        "quota":16,
+        "trajectory_length": 128,
+        "holdout_wait_period": 60,
+        "pre_holdout_wait_period": 60,
+        "task_key": "processing-unit_throughput_16"
+    }
+}

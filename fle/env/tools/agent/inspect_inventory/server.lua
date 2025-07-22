@@ -45,6 +45,9 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
        if closest_entity == nil then
            error("No entity at given coordinates.")
        end
+      if not closest_entity or not closest_entity.valid then
+          error("No valid entity at given coordinates.")
+      end
 
        if not is_fast then
            player.opened = closest_entity
@@ -54,10 +57,6 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
                    automatic_close = False
                end
            end)
-       end
-
-       if not closest_entity or not closest_entity.valid then
-           error("No valid entity at given coordinates.")
        end
 
        if closest_entity.type == "furnace" then

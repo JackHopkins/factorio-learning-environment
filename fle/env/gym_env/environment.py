@@ -11,6 +11,7 @@ from fle.env import FactorioInstance
 from fle.commons.models.game_state import GameState
 from fle.env.gym_env.action import Action
 from fle.commons.models.achievements import ProductionFlows
+from fle.env.utils.profits import get_achievements
 from fle.agents import Response, TaskResponse
 from fle.env.gym_env.observation import (
     Observation,
@@ -18,7 +19,6 @@ from fle.env.gym_env.observation import (
     AgentMessage,
 )
 from fle.eval.tasks import TaskABC
-from fle.env.utils.achievements import eval_program_with_achievements
 
 # need to do this since gym doesn't work with numpy>=2.0 otherwise.
 np.bool8 = np.dtype(np.bool)
@@ -255,7 +255,6 @@ class FactorioGymEnv(gym.Env):
         self.last_observation = None
         # Track last message timestamp for each agent
         self.last_message_timestamps = {i: 0.0 for i in range(instance.num_agents)}
-        self._last_post_flows = None
 
     def get_observation(
         self, agent_idx: int = 0, response: Optional[Response] = None
@@ -361,11 +360,9 @@ class FactorioGymEnv(gym.Env):
             self.reset_instance(GameState.parse_raw(game_state_raw))
 
         namespace = self.instance.namespaces[agent_idx]
-        # Use last post_flows as pre_flows if available
-        if self._last_post_flows is not None:
-            pre_flows = self._last_post_flows
-        else:
-            pre_flows = ProductionFlows.from_dict(namespace._get_production_stats())
+        start_production_flows = ProductionFlows.from_dict(
+            namespace._get_production_stats()
+        )
         initial_score, _ = namespace.score()
 
         # Execute the action
@@ -380,27 +377,31 @@ class FactorioGymEnv(gym.Env):
         if error_occurred:
             reward = -self.error_penalty
         else:
+            # Wait for value accrual
             time.sleep(self.value_accrual_time)
             reward = score - initial_score
-        reward = float(reward)
+        reward = float(reward)  # Ensure reward is always a float
 
-        # Task verification
+        # Get task verification if task exists
         task_response = task_success = None
         terminated = truncated = False
         output_game_state = GameState.from_instance(self.instance)
         if self.task:
+            # First get the raw verification
             task_success = self.task.verify(reward, self.instance, step_statistics={})
+            # Then enhance the response with task output
             task_response = self.task.enhance_response_with_task_output(
                 result, task_success
             )
             terminated = task_success.success
 
         # Get post-execution flows and calculate achievements
-        _, _, _, achievements, post_flows = eval_program_with_achievements(
-            self.instance, code, pre_flows=pre_flows
+        current_flows = ProductionFlows.from_dict(namespace._get_production_stats())
+        achievements = get_achievements(
+            start_production_flows.__dict__, current_flows.__dict__
         )
-        self._last_post_flows = post_flows
 
+        # Create response object for observation
         response = Response(
             code=f"```python\n{code}\n```",
             created_at=datetime.datetime.now(),
@@ -408,14 +409,17 @@ class FactorioGymEnv(gym.Env):
             achievements=achievements,
             step=0,
             ticks=self.instance.get_elapsed_ticks(),
-            flows=pre_flows.get_new_flows(post_flows),
+            flows=start_production_flows.get_new_flows(current_flows),
             response=task_response if task_response else result,
             task=task_success if task_success else TaskResponse(success=False, meta={}),
             error=error_occurred,
             program_id=None,
         )
 
+        # Get observation for the acting agent
         observation = self.get_observation(agent_idx, response)
+
+        # Get additional info
         info = {
             "error_occurred": error_occurred,
             "result": result,
@@ -426,6 +430,7 @@ class FactorioGymEnv(gym.Env):
             "task_verification": task_response,
             "output_game_state": output_game_state,
         }
+
         return observation.to_dict(), reward, terminated, truncated, info
 
     def reset_instance(self, state: Optional[GameState] = None) -> None:
@@ -435,7 +440,6 @@ class FactorioGymEnv(gym.Env):
             state: Optional[GameState] to reset to. If None, resets to initial state.
         """
         self.instance.reset(state)
-        self._last_post_flows = None
 
     def reset(
         self, options: Optional[Dict[str, Any]] = None, seed: Optional[int] = None

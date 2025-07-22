@@ -45,49 +45,16 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
        if closest_entity == nil then
            error("No entity at given coordinates.")
        end
-      if not closest_entity or not closest_entity.valid then
-          local f = io.open(".fle/invalid_entity.log", "a")
-          if f then
-              f:write("Invalid entity encountered: ")
-              if closest_entity then
-                  f:write(serpent and serpent.block and serpent.block(closest_entity) or tostring(closest_entity))
-              else
-                  f:write("nil")
-              end
-              f:write("\n")
-              f:close()
-          end
-          error("No valid entity at given coordinates.")
-      end
+       if not closest_entity or not closest_entity.valid then
+           error("No valid entity at given coordinates.")
+       end
 
        -- Before every use, check validity
        if not closest_entity or not closest_entity.valid then
-           local f = io.open(".fle/invalid_entity.log", "a")
-           if f then
-               f:write("Invalid entity before .type: ")
-               if closest_entity then
-                   f:write(serpent and serpent.block and serpent.block(closest_entity) or tostring(closest_entity))
-               else
-                   f:write("nil")
-               end
-               f:write("\n")
-               f:close()
-           end
            error("No valid entity at given coordinates.")
        end
        if closest_entity.type == "furnace" then
            if not closest_entity or not closest_entity.valid then
-               local f = io.open(".fle/invalid_entity.log", "a")
-               if f then
-                   f:write("Invalid entity before .get_inventory (furnace): ")
-                   if closest_entity then
-                       f:write(serpent and serpent.block and serpent.block(closest_entity) or tostring(closest_entity))
-                   else
-                       f:write("nil")
-                   end
-                   f:write("\n")
-                   f:close()
-               end
                error("No valid entity at given coordinates.")
            end
            local source = closest_entity.get_inventory(defines.inventory.furnace_source).get_contents()
@@ -98,32 +65,10 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            return source
        end
        if not closest_entity or not closest_entity.valid then
-           local f = io.open(".fle/invalid_entity.log", "a")
-           if f then
-               f:write("Invalid entity before .type (assembling): ")
-               if closest_entity then
-                   f:write(serpent and serpent.block and serpent.block(closest_entity) or tostring(closest_entity))
-               else
-                   f:write("nil")
-               end
-               f:write("\n")
-               f:close()
-           end
            error("No valid entity at given coordinates.")
        end
        if closest_entity.type == "assembling-machine" then
            if not closest_entity or not closest_entity.valid then
-               local f = io.open(".fle/invalid_entity.log", "a")
-               if f then
-                   f:write("Invalid entity before .get_inventory (assembling): ")
-                   if closest_entity then
-                       f:write(serpent and serpent.block and serpent.block(closest_entity) or tostring(closest_entity))
-                   else
-                       f:write("nil")
-                   end
-                   f:write("\n")
-                   f:close()
-               end
                error("No valid entity at given coordinates.")
            end
            local source = closest_entity.get_inventory(defines.inventory.assembling_machine_input).get_contents()
@@ -134,64 +79,20 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            return source
        end
        if not closest_entity or not closest_entity.valid then
-           local f = io.open(".fle/invalid_entity.log", "a")
-           if f then
-               f:write("Invalid entity before .type (lab): ")
-               if closest_entity then
-                   f:write(serpent and serpent.block and serpent.block(closest_entity) or tostring(closest_entity))
-               else
-                   f:write("nil")
-               end
-               f:write("\n")
-               f:close()
-           end
            error("No valid entity at given coordinates.")
        end
        if closest_entity.type == "lab" then
            if not closest_entity or not closest_entity.valid then
-               local f = io.open(".fle/invalid_entity.log", "a")
-               if f then
-                   f:write("Invalid entity before .get_inventory (lab): ")
-                   if closest_entity then
-                       f:write(serpent and serpent.block and serpent.block(closest_entity) or tostring(closest_entity))
-                   else
-                       f:write("nil")
-                   end
-                   f:write("\n")
-                   f:close()
-               end
                error("No valid entity at given coordinates.")
            end
            return closest_entity.get_inventory(defines.inventory.lab_input).get_contents()
        end
        -- Handle centrifuge inventories
        if not closest_entity or not closest_entity.valid then
-           local f = io.open(".fle/invalid_entity.log", "a")
-           if f then
-               f:write("Invalid entity before .type (centrifuge): ")
-               if closest_entity then
-                   f:write(serpent and serpent.block and serpent.block(closest_entity) or tostring(closest_entity))
-               else
-                   f:write("nil")
-               end
-               f:write("\n")
-               f:close()
-           end
            error("No valid entity at given coordinates.")
        end
        if closest_entity.type == "assembling-machine" and closest_entity.name == "centrifuge" then
            if not closest_entity or not closest_entity.valid then
-               local f = io.open(".fle/invalid_entity.log", "a")
-               if f then
-                   f:write("Invalid entity before .get_inventory (centrifuge): ")
-                   if closest_entity then
-                       f:write(serpent and serpent.block and serpent.block(closest_entity) or tostring(closest_entity))
-                   else
-                       f:write("nil")
-                   end
-                   f:write("\n")
-                   f:close()
-               end
                error("No valid entity at given coordinates.")
            end
            local source = closest_entity.get_inventory(defines.inventory.assembling_machine_input).get_contents()
@@ -203,17 +104,6 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            return source
        end
        if not closest_entity or not closest_entity.valid then
-           local f = io.open(".fle/invalid_entity.log", "a")
-           if f then
-               f:write("Invalid entity before .get_inventory (chest): ")
-               if closest_entity then
-                   f:write(serpent and serpent.block and serpent.block(closest_entity) or tostring(closest_entity))
-               else
-                   f:write("nil")
-               end
-               f:write("\n")
-               f:close()
-           end
            error("No valid entity at given coordinates.")
        end
        return closest_entity.get_inventory(defines.inventory.chest).get_contents()

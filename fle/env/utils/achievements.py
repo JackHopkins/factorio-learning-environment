@@ -58,13 +58,12 @@ class AchievementTracker:
 
 
 def eval_program_with_achievements(
-    instance: Any, program: str, pre_flows: ProductionFlows = None
-) -> Tuple[List[str], str, bool, Dict[str, Dict[str, float]], ProductionFlows]:
+    instance: Any, program: str
+) -> Tuple[List[str], str, bool, Dict[str, Dict[str, float]]]:
     """Evaluate a program and calculate achievements."""
-    if pre_flows is None:
-        pre_flows = ProductionFlows.from_dict(
-            instance.first_namespace._get_production_stats()
-        )
+    pre_flows = ProductionFlows.from_dict(
+        instance.first_namespace._get_production_stats()
+    )
 
     try:
         score, goal, result = instance.eval_with_error(program, timeout=300)
@@ -78,4 +77,4 @@ def eval_program_with_achievements(
     )
     achievements = AchievementTracker.calculate_achievements(pre_flows, post_flows)
 
-    return result.splitlines(), result, error, achievements, post_flows
+    return result.splitlines(), result, error, achievements

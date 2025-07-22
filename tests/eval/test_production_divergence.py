@@ -55,16 +55,14 @@ class TestProductionDivergence(unittest.TestCase):
         )
         instance.speed(10)
 
-        _, _, _, achievements, _ = eval_program_with_achievements(
-            instance, test_string_1
-        )
+        _, _, _, achievements = eval_program_with_achievements(instance, test_string_1)
         ground_truth_achievement = {
             "static": {"stone-furnace": 1, "coal": 10, "stone": 10, "iron-ore": 10},
             "dynamic": {"iron-plate": 5},
         }
 
         assert achievements == ground_truth_achievement
-        _, _, _, achievements, _ = eval_program_with_achievements(instance, test_string)
+        _, _, _, achievements = eval_program_with_achievements(instance, test_string)
         ground_truth_achievement = {
             "static": {"stone-furnace": 1, "coal": 10, "stone": 10, "copper-ore": 10},
             "dynamic": {"copper-plate": 5},

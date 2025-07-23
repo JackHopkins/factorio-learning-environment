@@ -2,6 +2,7 @@
 """
 Transport belt renderer
 """
+import random
 from typing import Dict, Tuple, Optional, Callable
 
 from PIL import Image
@@ -179,9 +180,12 @@ def render_inventory(entity: Dict, grid, image_resolver: Callable) -> Optional[I
         item_name = list(items_dict.keys())[0]
         item_count = min(items_dict[item_name], max_items_per_lane)
 
-        item_icon = image_resolver(f"icon_{item_name}", False)
+        choice = random.choice([1,2,3])
+        item_icon = image_resolver(f"icon_{item_name}-{choice}", False)
         if not item_icon:
-            return
+            item_icon = image_resolver(f"icon_{item_name}", False)
+            if not item_icon:
+                return
 
         item_icon = item_icon.resize((item_size, item_size), Image.Resampling.LANCZOS)
 
@@ -282,6 +286,7 @@ def render_inventory(entity: Dict, grid, image_resolver: Callable) -> Optional[I
             # Center the item icon at position
             paste_x = x - item_size // 2
             paste_y = y - item_size // 2
+
             overlay.paste(item_icon, (paste_x, paste_y), item_icon if item_icon.mode == 'RGBA' else None)
 
     # Process both lanes

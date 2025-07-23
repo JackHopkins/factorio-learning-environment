@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from fle.agents.data.sprites.extractors.decoratives import DecorativeSpriteExtractor
+from fle.agents.data.sprites.extractors.icons import IconSpriteExtractor
 
 # Add the parent directory to Python path so imports work
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -32,6 +33,9 @@ def main():
     resources_path = base_input_path / "resources"
     terrain_path = base_input_path / "terrain"
     decoratives_path = base_input_path / "decorative"
+    icons_path = base_input_path / "icons"
+
+
     entities_path = project_root / ".fle" / "spritemaps"
     output_dir = project_root / ".fle" / "sprites"
 
@@ -47,6 +51,15 @@ def main():
         print(f"Error: Input directory does not exist: {entities_path}")
         print("Run 'fle sprites download' first to download the spritemaps.")
         return
+
+
+    # Extract icons
+    if icons_path.exists():
+        print("\n=== Extracting Icon Sprites ===")
+        icon = IconSpriteExtractor(str(icons_path), str(output_dir))
+        icon.extract_all_icons()
+    else:
+        print(f"Warning: Icon path not found: {terrain_path}")
 
     # Extract decoratives
     if resources_path.exists():

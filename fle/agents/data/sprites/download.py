@@ -16,6 +16,8 @@ from tqdm import tqdm
 from huggingface_hub import hf_hub_download, list_repo_files, snapshot_download
 import threading
 
+from fle.agents.data.sprites.extractors.icons import IconSpriteExtractor
+
 
 class OptimizedSpriteDownloader:
     def __init__(self, repo_id: str = "Noddybear/fle_images", num_workers: int = 10):
@@ -395,6 +397,12 @@ def generate_sprites(
                 terrain = TerrainSpriteExtractor(str(terrain_path), str(output_path))
                 terrain.extract_all_resources()
                 terrain.create_all_icons()
+
+            icons_path = base_graphics / "icons"
+            if icons_path.exists():
+                icon = IconSpriteExtractor(str(icons_path), str(output_path))
+                icon.extract_all_icons()
+
         else:
             # Fallback: Just copy PNG files from spritemaps
             print("No __base__/graphics structure found, copying PNG files directly...")

@@ -6,15 +6,6 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
     local automatic_close = True
 
     local function get_player_inventory_items(player)
-       -- if not is_fast then
-       --     player.opened = player
-       --     script.on_nth_tick(60, function()
-       --         if automatic_close == True then
-       --             player.opened = nil
-       --             automatic_close = False
-       --         end
-       --     end)
-       -- end
 
        local inventory = player.get_main_inventory()
        if not inventory or not inventory.valid then
@@ -41,6 +32,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
                end
            end
        end
+       
        if closest_entity == nil then
            error("No entity at given coordinates.")
        end
@@ -52,7 +44,9 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            player.opened = closest_entity
            script.on_nth_tick(60, function()
                if automatic_close == True then
-                   player.opened = nil
+                   if closest_entity and closest_entity.valid then
+                       player.opened = nil
+                   end
                    automatic_close = False
                end
            end)

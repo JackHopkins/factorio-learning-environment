@@ -55,13 +55,9 @@ class FactorioGymRegistry:
                 goal_description = task_data.get("config", {}).get(
                     "goal_description", f"Task: {task_key}"
                 )
-
-                # Create environment ID
-                env_id = f"Factorio-{task_key}-v0"
-
                 # Register the environment
                 self.register_environment(
-                    env_id=env_id,
+                    env_id=task_key,
                     task_key=task_key,
                     task_config_path=str(task_file),
                     description=goal_description,

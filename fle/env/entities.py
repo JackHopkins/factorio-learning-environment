@@ -2,7 +2,7 @@ import math
 from typing import Tuple, Any, Union, Dict, Literal
 from typing import List, Optional
 from enum import Enum, IntFlag
-from pydantic import BaseModel, model_validator, ConfigDict
+from pydantic import BaseModel, model_validator, ConfigDict, model_serializer
 
 
 class Layer(IntFlag):
@@ -175,6 +175,11 @@ class Inventory(BaseModel):
                 result[key] = value
 
         return result
+
+    @model_serializer
+    def serialize_model(self):
+        return {k: v for k, v in self.__dict__.items()
+                if not k.startswith('_')}
 
 
 class Direction(Enum):

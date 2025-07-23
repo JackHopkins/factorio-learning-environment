@@ -184,6 +184,9 @@ class Renderer:
         self._render_entity_shadows(img, player_entities, size, scaling, grid_view, image_resolver)
         self._render_rails(img, player_entities, size, scaling, image_resolver)
         self._render_entities(img, player_entities, size, scaling, grid_view, image_resolver)
+
+        # This is needed for belts
+        self._render_visible_inventories(img, player_entities, size, scaling, grid_view, image_resolver)
         
         return img
 
@@ -328,6 +331,25 @@ class Renderer:
                     image = renderer.render_shadow(entity, grid_view, image_resolver)
             else:
                 image = image_resolver(entity['name'], True)
+
+            if image:
+                self._paste_image(img, image, relative_x, relative_y, scaling)
+
+    def _render_visible_inventories(self, img: Image.Image, entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:
+        """Render entity shadows."""
+        for entity in entities:
+            entity = entity.model_dump() if hasattr(entity, 'model_dump') else entity
+            pos = entity['position']
+            relative_x = pos['x'] + abs(size['minX']) + 0.5
+            relative_y = pos['y'] + abs(size['minY']) + 0.5
+
+            grid_view.set_center(pos['x'], pos['y'])
+            image = None
+
+            if entity['name'] in RENDERERS:
+                renderer = renderer_manager.get_renderer(entity['name'])
+                if renderer and hasattr(renderer, 'render_inventory'):
+                    image = renderer.render_inventory(entity, grid_view, image_resolver)
 
             if image:
                 self._paste_image(img, image, relative_x, relative_y, scaling)

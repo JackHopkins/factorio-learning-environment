@@ -96,20 +96,18 @@ async def main():
     base_version = await get_next_version()
     version_offset = 0
 
-    # Create and start processes
-    processes = []
-    for run_idx, run_config in enumerate(run_configs):
-        # Get environment info from registry
+    # Get available containers
+    ips, udp_ports, tcp_ports = get_local_container_ips()
+    num_available = len(tcp_ports)
+    total_runs = len(run_configs)
+
+    def create_process(run_idx, run_config, version_offset):
         env_info = get_environment_info(run_config.env_id)
         if env_info is None:
             raise ValueError(f"Could not get environment info for {run_config.env_id}")
-
-        # Create gym environment to get task and instance
         gym_env = gym.make(run_config.env_id)
         task = gym_env.unwrapped.task
         instance = gym_env.unwrapped.instance
-
-        # Create agents and their agent cards
         agents = []
         agent_cards = []
         for agent_idx in range(run_config.num_agents):
@@ -123,20 +121,13 @@ async def main():
                 system_prompt_formatter=SystemPromptFormatter(),
             )
             agents.append(agent)
-
-            # Create agent card for a2a support
             agent_card = agent.get_agent_card()
             agent_cards.append(agent_card)
-
-        # Set version
         version = (
             run_config.version
             if run_config.version is not None
             else base_version + version_offset
         )
-        version_offset += 1
-
-        # Create eval config with agent cards for a2a support
         config = GymEvalConfig(
             agents=agents,
             version=version,
@@ -146,18 +137,36 @@ async def main():
             agent_cards=agent_cards,
             env_id=run_config.env_id,
         )
-
-        # Ensure agent cards are properly set for a2a functionality
         assert config.agent_cards is not None
-
-        # Start process
         p = multiprocessing.Process(target=run_process, args=(run_idx, config))
         p.start()
-        processes.append(p)
+        return p
 
-    # Wait for all processes to complete
-    for p in processes:
-        p.join()
+    if num_available >= total_runs:
+        # Run all in parallel
+        processes = []
+        for run_idx, run_config in enumerate(run_configs):
+            p = create_process(run_idx, run_config, version_offset)
+            processes.append(p)
+            version_offset += 1
+        for p in processes:
+            p.join()
+    else:
+        # Run in batches
+        for batch_start in range(0, total_runs, num_available):
+            batch_end = min(batch_start + num_available, total_runs)
+            batch = run_configs[batch_start:batch_end]
+            print(
+                f"Running batch {batch_start // num_available + 1}: jobs {batch_start} to {batch_end - 1}"
+            )
+            processes = []
+            for batch_idx, run_config in enumerate(batch):
+                run_idx = batch_start + batch_idx
+                p = create_process(run_idx, run_config, version_offset)
+                processes.append(p)
+                version_offset += 1
+            for p in processes:
+                p.join()
 
 
 if __name__ == "__main__":

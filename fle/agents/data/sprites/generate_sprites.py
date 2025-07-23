@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fle.agents.data.sprites.extractors.decoratives import DecorativeSpriteExtractor
 from fle.agents.data.sprites.extractors.icons import IconSpriteExtractor
+from fle.agents.data.sprites.extractors.alerts import AlertSpriteExtractor
 
 # Add the parent directory to Python path so imports work
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -34,7 +35,7 @@ def main():
     terrain_path = base_input_path / "terrain"
     decoratives_path = base_input_path / "decorative"
     icons_path = base_input_path / "icons"
-
+    alerts_path = icons_path / "alerts"
 
     entities_path = project_root / ".fle" / "spritemaps"
     output_dir = project_root / ".fle" / "sprites"
@@ -52,22 +53,29 @@ def main():
         print("Run 'fle sprites download' first to download the spritemaps.")
         return
 
-
     # Extract icons
     if icons_path.exists():
         print("\n=== Extracting Icon Sprites ===")
         icon = IconSpriteExtractor(str(icons_path), str(output_dir))
         icon.extract_all_icons()
     else:
-        print(f"Warning: Icon path not found: {terrain_path}")
+        print(f"Warning: Icon path not found: {icons_path}")
+
+    # Extract alerts
+    if alerts_path.exists():
+        print("\n=== Extracting Alert Sprites ===")
+        alerts = AlertSpriteExtractor(str(alerts_path), str(output_dir))
+        alerts.extract_all_alerts()
+    else:
+        print(f"Warning: Alerts path not found: {alerts_path}")
 
     # Extract decoratives
-    if resources_path.exists():
+    if decoratives_path.exists():
         print("\n=== Extracting Decorative Sprites ===")
-        resources = DecorativeSpriteExtractor(str(decoratives_path), str(output_dir))
-        resources.extract_all_decoratives()
+        decoratives = DecorativeSpriteExtractor(str(decoratives_path), str(output_dir))
+        decoratives.extract_all_decoratives()
     else:
-        print(f"Warning: Resources path not found: {resources_path}")
+        print(f"Warning: Decoratives path not found: {decoratives_path}")
 
     # Extract entities
     if (entities_path / "data.json").exists():

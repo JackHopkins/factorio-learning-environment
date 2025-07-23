@@ -6,6 +6,7 @@ import pytest
 
 from fle.env.entities import Position, Layer
 from fle.env.game_types import Prototype
+from fle.env.tools.admin.render.performance_tools import start_profiling, stop_profiling_and_report
 
 
 @pytest.fixture()
@@ -23,7 +24,8 @@ def game(instance):
         'splitter': 1,
         'lab': 1,
         'coal': 10,
-        'iron-ore': 200
+        'iron-ore': 200,
+        'gun-turret': 2
     }
     instance.reset()
     yield instance.namespace
@@ -45,7 +47,12 @@ def test_blueprint_render(game):
         image.show()
     pass
 
+
+
 def test_basic_render(game):
+    # Start profiling
+    analyzer = start_profiling("renderer_test")
+
     game.reset()
 
     chest = game.place_entity(Prototype.IronChest, position=Position(x=0, y=0))
@@ -58,6 +65,8 @@ def test_basic_render(game):
     game.place_entity(Prototype.Splitter, position=Position(x=5, y=0))
 
     game.place_entity(Prototype.Lab, position=Position(x=10, y=0))
+
+    game.place_entity(Prototype.GunTurret, position=Position(x=8, y=0))
 
     game.connect_entities(
         Position(x=0, y=-2),
@@ -84,10 +93,29 @@ def test_basic_render(game):
 
     #observation = game._observe_all(radius=20)
     #json_observation = json.dumps(observation)
-    sleep(2)
+    #sleep(2)
 
     image = game._render(position=Position(x=0, y=5), layers=Layer.ALL)
+
+    # Generate comprehensive report
+    report = stop_profiling_and_report(analyzer)
+    print(report)
+
+    # Also save detailed analysis
+    output_dir = Path("./performance_reports")
+    output_dir.mkdir(exist_ok=True)
+
+    detailed_report = analyzer.generate_performance_report(
+        output_file=output_dir / "detailed_report.txt",
+        include_raw_data=True
+    )
+
+
     image.show()
+
+    # image2 = game._render_simple(position=Position(x=0, y=5), layers=Layer.ALL)
+    # image2.show()
+
     pass
 
 

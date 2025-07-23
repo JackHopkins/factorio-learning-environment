@@ -72,7 +72,6 @@ def fle_eval(args, env):
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
-
 def fle_sprites(args):
     """Handle sprite commands"""
     try:
@@ -126,6 +125,7 @@ def fle_sprites(args):
         print(f"Unknown sprites command: {args.sprites_command}", file=sys.stderr)
         sys.exit(1)
 
+
 def main():
     parser = argparse.ArgumentParser(
         prog="fle",
@@ -135,7 +135,10 @@ def main():
 Examples:
   fle eval --config configs/gym_run_config.json
   fle cluster [start|stop|restart|help] [-n N] [-s SCENARIO]
+<<<<<<< HEAD
   fle sprites [download|generate|all]
+=======
+>>>>>>> edc256b29593fc338d192ca866221f3b996ef8b7
         """,
     )
     subparsers = parser.add_subparsers(dest="command")

@@ -3,6 +3,8 @@ import re
 from typing import Optional, Tuple
 
 from pydantic import BaseModel
+from pydantic import GetCoreSchemaHandler
+from pydantic_core import core_schema
 
 from fle.commons.models.conversation import Conversation
 
@@ -11,8 +13,13 @@ class Python(str):
     """A custom type that only accepts syntactically valid Python code."""
 
     @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
+    def __get_pydantic_core_schema__(cls, source, handler: GetCoreSchemaHandler):
+        return core_schema.chain_schema(
+            [
+                core_schema.str_schema(),
+                core_schema.no_info_plain_validator_function(cls.validate),
+            ]
+        )
 
     @classmethod
     def validate(cls, value, values=None, config=None, field=None) -> str:
@@ -39,7 +46,7 @@ class PolicyMeta(BaseModel):
 
 class Policy(BaseModel):
     code: Python
-    input_conversation: Conversation = None
+    input_conversation: Optional[Conversation] = None
     meta: PolicyMeta
 
 
@@ -230,28 +237,7 @@ class PythonParser:
         code = PythonParser.extract_all_valid_python_chunks(content)
         if code:
             return code, content
-        # First try to extract markdown code blocks
-        # markdown_code = PythonParser.extract_markdown_code_blocks(content)
-        # if markdown_code:
-        #     return markdown_code, content
-        #
-        # # Fall back to chunk-based processing
-        # chunks = content.split('\n\n')
-        # processed_chunks = []
-        # for chunk in chunks:
-        #     processed = PythonParser.process_chunk(chunk)
-        #     if processed:
-        #         processed_chunks.append(processed)
-        #
-        # # Combine processed chunks
-        # if processed_chunks:
-        #     final_code = '\n\n'.join(processed_chunks)
-        #     if PythonParser.is_valid_python(final_code):
-        #         return final_code, content
-        #     else:
-        #         raise Exception("Not valid python code")
-
-        return None, None
+        return None
 
 
 def parse_response(response) -> Optional[Policy]:
@@ -270,7 +256,10 @@ def parse_response(response) -> Optional[Policy]:
 
     total_tokens = input_tokens + output_tokens
     try:
-        code, text_response = PythonParser.extract_code(choice)
+        result = PythonParser.extract_code(choice)
+        if result is None:
+            return None
+        code, text_response = result
     except Exception as e:
         print(f"Failed to extract code from choice: {str(e)}")
         return None

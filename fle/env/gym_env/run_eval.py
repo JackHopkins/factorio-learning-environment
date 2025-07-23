@@ -9,6 +9,7 @@ import gym
 from dotenv import load_dotenv
 from fle.env.gym_env.config import GymEvalConfig, GymRunConfig
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
+from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
 from fle.env.gym_env.registry import get_environment_info, list_available_environments
 from fle.env.gym_env.trajectory_runner import GymTrajectoryRunner
 
@@ -119,6 +120,7 @@ async def main():
                 task=task,
                 agent_idx=agent_idx,
                 observation_formatter=BasicObservationFormatter(include_research=False),
+                system_prompt_formatter=SystemPromptFormatter(),
             )
             agents.append(agent)
 

@@ -53,7 +53,7 @@ dependencies = [
     "psycopg2>=2.9.10",
     "aiohttp>=3.8.0",
     "uvicorn>=0.15.0",
-    "inspect-ai>=0.3.80",
+    "pytest>=8.4.1",
 ]
 
 [project.optional-dependencies]
@@ -106,6 +106,10 @@ env = [
     "pyautogui",
     "tenacity",
     "fastapi>=0.68.0",
+]
+
+data = [
+    "inspect-ai>=0.3.80",
 ]
 
 [project.scripts]

@@ -255,6 +255,7 @@ class FactorioGymEnv(gym.Env):
         self.last_observation = None
         # Track last message timestamp for each agent
         self.last_message_timestamps = {i: 0.0 for i in range(instance.num_agents)}
+        self._last_production_flows = {}
 
     def get_observation(
         self, agent_idx: int = 0, response: Optional[Response] = None
@@ -360,9 +361,15 @@ class FactorioGymEnv(gym.Env):
             self.reset_instance(GameState.parse_raw(game_state_raw))
 
         namespace = self.instance.namespaces[agent_idx]
-        start_production_flows = ProductionFlows.from_dict(
-            namespace._get_production_stats()
-        )
+        # Use last post_production_flows as pre_production_flows if available
+        if self._last_production_flows.get(agent_idx) is not None:
+            start_production_flows = ProductionFlows.from_dict(
+                self._last_production_flows[agent_idx]
+            )
+        else:
+            start_production_flows = ProductionFlows.from_dict(
+                namespace._get_production_stats()
+            )
         initial_score, _ = namespace.score()
 
         # Execute the action
@@ -400,6 +407,8 @@ class FactorioGymEnv(gym.Env):
         achievements = get_achievements(
             start_production_flows.__dict__, current_flows.__dict__
         )
+        # Store for next step
+        self._last_production_flows[agent_idx] = current_flows.__dict__
 
         # Create response object for observation
         response = Response(
@@ -440,6 +449,7 @@ class FactorioGymEnv(gym.Env):
             state: Optional[GameState] to reset to. If None, resets to initial state.
         """
         self.instance.reset(state)
+        self._last_production_flows = {i: None for i in range(self.instance.num_agents)}
 
     def reset(
         self, options: Optional[Dict[str, Any]] = None, seed: Optional[int] = None

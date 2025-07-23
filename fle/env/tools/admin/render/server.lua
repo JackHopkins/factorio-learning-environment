@@ -152,7 +152,7 @@ global.actions.render = function(player_index, include_status, radius, compressi
     }
 
     -- ENTITIES - Keep as is, they're already relatively efficient
-    local entities = surface.find_entities(area)
+    local entities = surface.find_entities_filtered({ area=area, force = "neutral"})
     local entity_data = {}
 
     -- Define resource types to exclude from entities

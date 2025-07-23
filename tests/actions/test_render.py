@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from time import sleep
 
 import pytest
 
@@ -17,12 +18,12 @@ def game(instance):
         "pipe-to-ground": 10,
         'burner-inserter': 1,
         "pipe": 30,
-        "transport-belt": 50,
+        "transport-belt": 80,
         "underground-belt": 30,
         'splitter': 1,
         'lab': 1,
         'coal': 10,
-        'iron-ore': 100
+        'iron-ore': 200
     }
     instance.reset()
     yield instance.namespace
@@ -49,7 +50,7 @@ def test_basic_render(game):
 
     chest = game.place_entity(Prototype.IronChest, position=Position(x=0, y=0))
 
-    game.insert_item(Prototype.IronOre, chest, 100)
+    game.insert_item(Prototype.IronOre, chest, 200)
 
     entity = game.place_entity(Prototype.BurnerInserter, position=chest.position.above())
     game.insert_item(Prototype.Coal, entity, 10)
@@ -61,14 +62,21 @@ def test_basic_render(game):
     game.connect_entities(
         Position(x=0, y=-2),
         Position(x=15, y=5),
-        {Prototype.TransportBelt, Prototype.UndergroundBelt},
+        Position(x=5, y=8),
+        Position(x=15, y=15),
+        Prototype.TransportBelt
     )
+    # game.connect_entities(
+    #     Position(x=0, y=-2),
+    #     Position(x=15, y=5),
+    #     {Prototype.TransportBelt, Prototype.UndergroundBelt},
+    # )
 
-    game.connect_entities(
-        Position(x=15, y=9),
-        Position(x=0, y=2),
-        {Prototype.TransportBelt, Prototype.UndergroundBelt},
-    )
+    # game.connect_entities(
+    #     Position(x=15, y=9),
+    #     Position(x=0, y=2),
+    #     {Prototype.TransportBelt, Prototype.UndergroundBelt},
+    # )
 
     game.connect_entities(
         Position(x=0, y=-10), Position(x=15, y=-10), {Prototype.SmallElectricPole}
@@ -76,6 +84,7 @@ def test_basic_render(game):
 
     #observation = game._observe_all(radius=20)
     #json_observation = json.dumps(observation)
+    sleep(2)
 
     image = game._render(position=Position(x=0, y=5), layers=Layer.ALL)
     image.show()

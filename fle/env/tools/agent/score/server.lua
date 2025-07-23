@@ -342,7 +342,6 @@ function dump(o)
   end
 end
 
-
 global.goal = nil
 global.actions.score = function()
     local production_score = production_score.get_production_scores()

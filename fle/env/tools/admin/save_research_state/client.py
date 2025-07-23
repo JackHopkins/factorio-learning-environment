@@ -50,5 +50,7 @@ class SaveResearchState(Tool):
             )
 
         except Exception as e:
+            with open("research_save_error.log", "a") as f:
+                f.write(f"Could not save technologies: {e}\n")
             print(f"Could not save technologies: {e}")
             raise e

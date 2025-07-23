@@ -7,6 +7,7 @@ from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters
 from fle.commons.models.program import Program
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
+from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
 from fle.eval.tasks import TaskABC
 
 from fle.agents.models import CompletionResult
@@ -122,6 +123,7 @@ class GymAgent(AgentABC):
         task: Any,
         agent_idx: Optional[int] = None,
         observation_formatter: Optional[BasicObservationFormatter] = None,
+        system_prompt_formatter: Optional[SystemPromptFormatter] = None,
         *args,
         **kwargs,
     ):
@@ -139,6 +141,7 @@ class GymAgent(AgentABC):
             cache_dir=".fle/summary_cache",
         )
         self.generation_params = GenerationParameters(n=1, max_tokens=4096, model=model)
+        self.system_prompt_formatter = system_prompt_formatter
 
     def _get_instructions(
         self, system_prompt: str, task: TaskABC, agent_idx: Optional[int] = None

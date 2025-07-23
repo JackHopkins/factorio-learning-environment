@@ -25,7 +25,6 @@ trajectory_logs/
 *.db
 /log/
 
-#fle
 .fle/
 
 # Jack's stuff.
@@ -36,3 +35,4 @@ trajectory_logs/
 /fle/eval/open/plots/technology_icons/
 /data/icons/
 /eval/open/plots/
+

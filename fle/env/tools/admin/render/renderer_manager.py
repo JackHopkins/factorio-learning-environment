@@ -4,6 +4,7 @@ from typing import Dict, Optional, Tuple, Any, Union
 
 from fle.env import EntityCore
 from .constants import RENDERERS
+from .profiler import profiler, profile_method
 
 
 class RendererManager:
@@ -13,6 +14,7 @@ class RendererManager:
         """Initialize renderer manager."""
         self._renderer_cache: Dict[str, Any] = {}
     
+    @profile_method(include_args=True)
     def get_renderer(self, entity_name: str) -> Optional[Any]:
         """Get renderer module for entity.
         

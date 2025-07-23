@@ -7,6 +7,7 @@ from fle.env.tools.admin.render.decoder import Decoder
 from fle.env.tools.admin.render.image_resolver import ImageResolver
 from fle.env.tools.admin.render.renderer import Renderer
 from fle.env.tools.agent.get_entities.client import GetEntities
+from fle.env.tools.admin.render.profiler import profiler, profile_method
 
 
 class Render(Tool):
@@ -16,6 +17,23 @@ class Render(Tool):
         self.decoder = Decoder()
         self.get_entities = GetEntities(*args)
 
+    @profile_method(include_args=True)
+    def _get_map_entities(self, include_status, radius, compression_level):
+        # Execute the Lua function with compression level
+        result, _, elapsed = self.execute(
+            self.player_index,
+            include_status,
+            radius,
+            compression_level,
+            return_elapsed=True
+        )
+
+        # Decode the optimized format if necessary
+        decoded_result = self._decode_optimized_format(result)
+
+        return decoded_result
+
+    @profile_method(include_args=True)
     def __call__(self,
                  include_status: bool = False,
                  radius: int = 50,
@@ -42,25 +60,15 @@ class Render(Tool):
             RenderedImage containing the visual representation of the area
         """
         if not blueprint:
-            # Execute the Lua function with compression level
-            result, _, elapsed = self.execute(
-                self.player_index,
-                include_status,
-                radius,
-                compression_level,
-                return_elapsed=True
-            )
-
-            # Decode the optimized format if necessary
-            decoded_result = self._decode_optimized_format(result)
+            result = self._get_map_entities(include_status, radius, compression_level)
 
             ent = self.get_entities(radius=20)
             # Parse the Lua dictionaries
-            entities = self.parse_lua_dict(decoded_result['entities'])
+            entities = self.parse_lua_dict(result['entities'])
 
             ent.extend(entities)
-            water_tiles = decoded_result['water_tiles']
-            resources = decoded_result['resources']
+            water_tiles = result['water_tiles']
+            resources = result['resources']
 
             # Create renderer with decoded data
             renderer = Renderer(

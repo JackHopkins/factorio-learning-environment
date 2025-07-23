@@ -10,7 +10,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 from typing import Dict, List, Optional, Union
 
-from fle.env import Entity, EntityCore, UndergroundBelt
+from fle.env import Entity, EntityCore, UndergroundBelt, EntityStatus
 from fle.env.tools.admin.render.constants import BACKGROUND_COLOR, GRID_LINE_WIDTH, GRID_COLOR, DEFAULT_ROCK_VARIANTS, \
     OIL_RESOURCE_VARIANTS, RENDERERS, DEFAULT_SCALING
 from fle.env.tools.admin.render.utils import (
@@ -22,6 +22,7 @@ from fle.env.tools.admin.render.entity_grid import EntityGridView
 from fle.env.tools.admin.render.image_resolver import ImageResolver
 from fle.env.tools.admin.render.renderer_manager import renderer_manager
 from fle.env.tools.admin.render.renderers.tree import build_available_trees_index, get_tree_variant
+from fle.env.tools.admin.render.profiler import profiler, profile_method
 
 
 
@@ -30,6 +31,7 @@ from fle.env.tools.admin.render.renderers.tree import build_available_trees_inde
 class Renderer:
     """Factorio Blueprint representation."""
 
+    @profile_method(include_args=True)
     def __init__(self,
                  entities: Union[List[Dict], List[Entity]] = [],
                  resources: List[Dict] = [],
@@ -54,7 +56,8 @@ class Renderer:
         self.available_trees = build_available_trees_index(self.sprites_dir)
         self.tree_variants = self._precompute_tree_variants()
         self._sort_entities_for_rendering()
-    
+
+    @profile_method()
     def _resolve_sprites_dir(self, sprites_dir: Optional[Path]) -> Path:
         """Resolve sprites directory location."""
         if sprites_dir is not None:
@@ -71,7 +74,136 @@ class Renderer:
                 return dir_path
                 
         return find_fle_sprites_dir()
-    
+
+    @profile_method()
+    def _render_alert_overlays(self, img: Image.Image, entities, size: Dict, scaling: float, image_resolver) -> None:
+        """Render alert overlays for entities with non-normal status."""
+
+        # Status to alert icon mapping
+        status_alert_mapping = {
+            EntityStatus.NO_POWER: 'alert-no-electricity',
+            EntityStatus.LOW_POWER: 'alert-no-electricity',
+            EntityStatus.NO_FUEL: 'alert-no-fuel',
+            EntityStatus.EMPTY: 'alert-warning',
+            EntityStatus.NOT_PLUGGED_IN_ELECTRIC_NETWORK: 'alert-disconnected',
+            EntityStatus.CHARGING: 'alert-recharge-needed',
+            EntityStatus.DISCHARGING: 'alert-recharge-needed',
+            EntityStatus.FULLY_CHARGED: None,  # No alert for fully charged
+            EntityStatus.NO_RECIPE: 'alert-no-building-materials',
+            EntityStatus.NO_INGREDIENTS: 'alert-no-building-materials',
+            EntityStatus.NOT_CONNECTED: 'alert-disconnected',
+            EntityStatus.NO_INPUT_FLUID: 'alert-no-fluid',
+            EntityStatus.NO_RESEARCH_IN_PROGRESS: 'alert-warning',
+            EntityStatus.NO_MINABLE_RESOURCES: 'alert-warning',
+            EntityStatus.LOW_INPUT_FLUID: 'alert-no-fluid',
+            EntityStatus.FLUID_INGREDIENT_SHORTAGE: 'alert-no-fluid',
+            EntityStatus.FULL_OUTPUT: 'alert-no-storage',
+            EntityStatus.FULL_BURNT_RESULT_OUTPUT: 'alert-no-storage',
+            EntityStatus.ITEM_INGREDIENT_SHORTAGE: 'alert-no-building-materials',
+            EntityStatus.MISSING_REQUIRED_FLUID: 'alert-no-fluid',
+            EntityStatus.MISSING_SCIENCE_PACKS: 'alert-no-building-materials',
+            EntityStatus.WAITING_FOR_SOURCE_ITEMS: 'alert-logistic-delivery',
+            EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION: 'alert-no-storage',
+            EntityStatus.PREPARING_ROCKET_FOR_LAUNCH: 'alert-warning',
+            EntityStatus.WAITING_TO_LAUNCH_ROCKET: 'alert-warning',
+            EntityStatus.LAUNCHING_ROCKET: 'alert-warning',
+            EntityStatus.NO_AMMO: 'alert-no-ammo',
+            EntityStatus.LOW_TEMPERATURE: 'alert-warning',
+            EntityStatus.NOT_CONNECTED_TO_RAIL: 'alert-disconnected',
+        }
+
+        for entity in entities:
+            # Handle both Entity objects and dicts
+            if hasattr(entity, 'status'):
+                status = entity.status
+                entity_dict = entity.model_dump() if hasattr(entity, 'model_dump') else entity.__dict__
+            elif isinstance(entity, dict) and 'status' in entity:
+                status = entity['status']
+                if isinstance(status, str):
+                    status = EntityStatus.from_string(status)
+                entity_dict = entity
+            else:
+                continue  # Skip entities without status
+
+            # Not being plugged in takes precedence over no power.
+            if status == EntityStatus.NO_POWER:
+                if hasattr(entity, 'electrical_id'):
+                    if not entity.electrical_id:
+                        status = EntityStatus.NOT_PLUGGED_IN_ELECTRIC_NETWORK
+                elif isinstance(entity, dict) and 'electrical_id' in entity:
+                    if not entity['electrical_id']:
+                        status = EntityStatus.NOT_PLUGGED_IN_ELECTRIC_NETWORK
+
+
+            # Skip if status is NORMAL or WORKING
+            if status in (EntityStatus.NORMAL, EntityStatus.WORKING):
+                continue
+
+            # Get the appropriate alert icon
+            alert_name = status_alert_mapping.get(status, 'alert-warning')
+            if not alert_name:
+                continue
+
+            # Load the alert icon
+            alert_icon = image_resolver(alert_name, False)
+            if not alert_icon:
+                # Try with icon_ prefix as fallback
+                alert_icon = image_resolver(f"icon_{alert_name}", False)
+                if not alert_icon:
+                    profiler.increment_counter('alert_icon_not_found')
+                    continue
+
+            # Get entity position and size
+            pos = entity_dict.get('position', {})
+            if hasattr(pos, 'x'):
+                x, y = pos.x, pos.y
+            else:
+                x = pos.get('x', 0)
+                y = pos.get('y', 0)
+
+            if hasattr(entity, 'tile_dimensions'):
+                entity_size = (entity.tile_dimensions.tile_width, entity.tile_dimensions.tile_height)
+            else:
+                entity_size = renderer_manager.get_entity_size(entity)
+
+            # Scale the alert icon to 2x its original size
+            scale_factor = 0.5 if entity_size[0] + entity_size[1] > 2 else 0.25
+            new_width = int(alert_icon.width * scale_factor)
+            new_height = int(alert_icon.height * scale_factor)
+            alert_icon = alert_icon.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+            # Convert alert icon to RGBA if it isn't already
+            if alert_icon.mode != 'RGBA':
+                alert_icon = alert_icon.convert('RGBA')
+
+            # Apply 50% alpha by modifying the alpha channel
+            pixels = alert_icon.load()
+            for y_pixel in range(new_height):
+                for x_pixel in range(new_width):
+                    r, g, b, a = pixels[x_pixel, y_pixel]
+                    # Reduce alpha to 50% of its original value
+                    pixels[x_pixel, y_pixel] = (r, g, b, int(a * 0.75))
+
+            # Calculate position for alert overlay
+            # Place alert in top-right corner of entity
+            relative_x = x + abs(size['minX']) + 0.5
+            relative_y = y + abs(size['minY']) + 0.5
+
+            # Calculate pixel position
+            # Offset to place icon in top-right of entity
+            # Adjust offset for the larger icon size
+            icon_offset_x = 0#(entity_size[0] / 2) * scaling - new_width * 0.6
+            icon_offset_y = 0#-(entity_size[1] / 2) * scaling - new_height * 0.2
+
+            start_x = int((relative_x * scaling + scaling / 2) - new_width / 2 + icon_offset_x)
+            start_y = int((relative_y * scaling + scaling / 2) - new_height / 2 + icon_offset_y)
+
+            # Paste the alert icon with alpha channel
+            img.paste(alert_icon, (start_x, start_y), alert_icon)
+
+            profiler.increment_counter('alert_overlays_rendered')
+
+    @profile_method()
     def _precompute_tree_variants(self) -> Dict:
         """Pre-calculate tree variants for sorting."""
         tree_variants = {}
@@ -93,7 +225,8 @@ class Renderer:
                 tree_variants[id(entity)] = 'z'  # Sort after all regular trees
                 
         return tree_variants
-    
+
+    @profile_method()
     def _sort_entities_for_rendering(self) -> None:
         """Sort entities for proper rendering order."""
 
@@ -105,6 +238,7 @@ class Renderer:
             e.position.x
         ))
 
+    @profile_method()
     def get_size(self) -> Dict:
         """Calculate blueprint bounds including resources and trees."""
         bounds = self._calculate_bounds()
@@ -147,6 +281,7 @@ class Renderer:
             'max_height': max_height
         }
 
+    @profile_method(include_args=True)
     def render(self, width: int, height: int, image_resolver) -> Image.Image:
         """Render blueprint to image.
         
@@ -174,6 +309,14 @@ class Renderer:
 
         grid_view = EntityGridView(self.entity_grid, 0, 0, self.available_trees)
         
+        # Record entity counts for profiling
+        profiler.increment_counter('total_entities', len(self.entities))
+        profiler.increment_counter('tree_entities', len(tree_entities))
+        profiler.increment_counter('rock_entities', len(rock_entities))
+        profiler.increment_counter('player_entities', len(player_entities))
+        profiler.increment_counter('resources', len(self.resources))
+        profiler.increment_counter('water_tiles', len(self.water_tiles))
+
         # Render in order: resources -> tree shadows -> trees -> entity shadows -> rails -> entities
         self._render_resources(img, size, scaling, image_resolver)
         self._render_water_tiles(img, size, scaling, image_resolver)
@@ -187,7 +330,9 @@ class Renderer:
 
         # This is needed for belts
         self._render_visible_inventories(img, player_entities, size, scaling, grid_view, image_resolver)
-        
+
+        # This should be last so alerts appear on top of everything
+        self._render_alert_overlays(img, player_entities, size, scaling, image_resolver)
         return img
 
     def _disintegrate_underground_belts(self, player_entities):
@@ -204,11 +349,13 @@ class Renderer:
             else:
                 entities.append(entity)
         return entities
-    
+
+    @profile_method()
     def _create_base_image(self, width: int, height: int) -> Image.Image:
         """Create base image with background color."""
         return Image.new('RGB', (width, height), BACKGROUND_COLOR)
-    
+
+    @profile_method()
     def _draw_grid(self, img: Image.Image, size: Dict, scaling: float, width: int, height: int) -> None:
         """Draw grid lines on the image."""
         draw = ImageDraw.Draw(img)
@@ -221,6 +368,7 @@ class Renderer:
             y = i * scaling - GRID_LINE_WIDTH / 2
             draw.rectangle([0, y, width, y + GRID_LINE_WIDTH], fill=GRID_COLOR)
     
+    @profile_method()
     def _render_resources(self, img: Image.Image, size: Dict, scaling: float, image_resolver) -> None:
         """Render resource patches."""
         for resource in self.resources:
@@ -264,7 +412,7 @@ class Renderer:
                         self._paste_image(img, image, relative_x, relative_y, scaling)
                         break
 
-
+    @profile_method()
     def _render_water_tiles(self, img: Image.Image, size: Dict, scaling: float, image_resolver) -> None:
         """Render water tiles."""
         for water in self.water_tiles:
@@ -281,6 +429,7 @@ class Renderer:
             if image:
                 self._paste_image(img, image, relative_x, relative_y, scaling)
     
+    @profile_method()
     def _render_tree_shadows(self, img: Image.Image, tree_entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:
         """Render tree shadows."""
         for tree in tree_entities:
@@ -296,6 +445,7 @@ class Renderer:
                 if shadow_image:
                     self._paste_image(img, shadow_image, relative_x, relative_y, scaling)
     
+    @profile_method()
     def _render_trees(self, img: Image.Image, tree_entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:
         """Render trees."""
         for tree in tree_entities:
@@ -311,6 +461,7 @@ class Renderer:
                 if tree_image:
                     self._paste_image(img, tree_image, relative_x, relative_y, scaling)
     
+    @profile_method()
     def _render_entity_shadows(self, img: Image.Image, non_tree_entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:
         """Render entity shadows."""
         for entity in non_tree_entities:
@@ -335,6 +486,7 @@ class Renderer:
             if image:
                 self._paste_image(img, image, relative_x, relative_y, scaling)
 
+    @profile_method()
     def _render_visible_inventories(self, img: Image.Image, entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:
         """Render entity shadows."""
         for entity in entities:
@@ -354,6 +506,7 @@ class Renderer:
             if image:
                 self._paste_image(img, image, relative_x, relative_y, scaling)
     
+    @profile_method()
     def _render_rails(self, img: Image.Image, non_tree_entities, size: Dict, scaling: float, image_resolver) -> None:
         """Render rail entities with multiple passes."""
         passes = [1, 2, 3, 3.5, 4, 5]
@@ -379,6 +532,7 @@ class Renderer:
                 if image:
                     self._paste_image(img, image, relative_x, relative_y, scaling)
     
+    @profile_method()
     def _render_entities(self, img: Image.Image, non_tree_entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:
         """Render non-rail entities."""
         for entity in non_tree_entities:
@@ -404,7 +558,8 @@ class Renderer:
 
             if image:
                 self._paste_image(img, image, relative_x, relative_y, scaling)
-    
+
+    @profile_method()
     def _paste_image(self, img: Image.Image, sprite: Image.Image, relative_x: float, relative_y: float, scaling: float) -> None:
         """Paste a sprite image onto the main image at the specified position."""
         start_x = int((relative_x * scaling + scaling / 2) - sprite.width / 2)

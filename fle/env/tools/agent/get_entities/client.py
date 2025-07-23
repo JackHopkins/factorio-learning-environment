@@ -1,7 +1,10 @@
 from time import sleep
 from typing import List, Set, Union
+from memoization import cached
+
 from fle.env.entities import Position, Entity, EntityGroup
 from fle.env.game_types import Prototype
+from fle.env.tools.admin.render.profiler import profile_method
 from fle.env.tools.agent.connect_entities.groupable_entities import (
     agglomerate_groupable_entities,
 )
@@ -12,6 +15,7 @@ class GetEntities(Tool):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
+    @cached(max_size=16, ttl=1)
     def __call__(
         self,
         entities: Union[Set[Prototype], Prototype] = set(),
@@ -26,6 +30,7 @@ class GetEntities(Tool):
         :param player_only: If True, only player entities are returned, otherwise terrain features too.
         :return: Found entities
         """
+        print("getting entities")
         try:
             if not isinstance(position, Position) and position is not None:
                 raise ValueError("The second argument must be a Position object")

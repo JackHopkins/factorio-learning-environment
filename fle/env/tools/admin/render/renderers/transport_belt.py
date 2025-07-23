@@ -9,9 +9,11 @@ from PIL import Image
 
 from fle.env import EntityCore, Entity
 from ..constants import NORTH, SOUTH, EAST, WEST, VERTICAL, HORIZONTAL, DEFAULT_SCALING
+from ..profiler import profiler, profile_function
 
 
 
+@profile_function("transport_belt.render", include_args=True)
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
     """Render transport belt"""
 
@@ -88,6 +90,7 @@ def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Imag
     return None
 
 
+@profile_function("transport_belt.render_inventory", include_args=True)
 def render_inventory(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
     """Transport belts display their contents on them"""
     inventory = entity.get('inventory', {})
@@ -684,6 +687,7 @@ def get_key(entity: Dict, grid) -> str:
 
 
 # TODO: I think the semantics are wrong here @jack
+@profile_function("transport_belt.get_around")
 def get_around(entity: Dict, grid) -> list:
     """Check surrounding connections"""
     return [

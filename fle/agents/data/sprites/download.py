@@ -16,6 +16,7 @@ from tqdm import tqdm
 from huggingface_hub import hf_hub_download, list_repo_files, snapshot_download
 import threading
 
+from fle.agents.data.sprites.extractors.alerts import AlertSpriteExtractor
 from fle.agents.data.sprites.extractors.icons import IconSpriteExtractor
 
 
@@ -402,6 +403,11 @@ def generate_sprites(
             if icons_path.exists():
                 icon = IconSpriteExtractor(str(icons_path), str(output_path))
                 icon.extract_all_icons()
+
+            alerts_path = icons_path / "alerts"
+            if alerts_path.exists():
+                icon = AlertSpriteExtractor(str(alerts_path), str(output_path))
+                icon.extract_all_alerts()
 
         else:
             # Fallback: Just copy PNG files from spritemaps

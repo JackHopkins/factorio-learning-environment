@@ -6,6 +6,7 @@ from pathlib import Path
 import importlib.resources
 import asyncio
 from fle.env.gym_env.run_eval import main as run_eval
+import json
 
 
 def fle_init():
@@ -57,7 +58,21 @@ def fle_eval(args, env):
     result = subprocess.run(["sh", str(probe)])
     if result.returncode != 0:
         print("Server not running, starting cluster...")
-        fle_cluster(None)
+        # Count number of environments in config
+        config_path = Path(args.config)
+        if not config_path.exists():
+            print(f"Error: Config file '{args.config}' not found.", file=sys.stderr)
+            sys.exit(1)
+        with open(config_path, "r") as f:
+            run_configs = json.load(f)
+        num_envs = len(run_configs)
+
+        class DummyArgs:
+            cluster_command = None
+            n = num_envs
+            s = None
+
+        fle_cluster(DummyArgs())
     config_path = Path(args.config)
     if not config_path.exists():
         print(f"Error: Config file '{args.config}' not found.", file=sys.stderr)

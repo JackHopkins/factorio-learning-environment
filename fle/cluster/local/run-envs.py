@@ -5,6 +5,8 @@ import argparse
 from pathlib import Path
 import docker
 
+import docker.errors
+
 from enum import Enum
 
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
@@ -34,6 +36,8 @@ class PlatformConfig:
         self.cluster_dir = ROOT_DIR / "fle" / "cluster"
         self.scenario_dir = self.cluster_dir / "scenarios"
         self.screenshots_dir = ROOT_DIR / "data" / "_screenshots"
+        self.factorio_path = "/opt/factorio/bin/x64/factorio"
+        self.image_name = "factoriotools/factorio:1.1.110"
 
     def _detect_mods_path(self) -> str:
         if any(x in self.os_name for x in ("MINGW", "MSYS", "CYGWIN")):
@@ -73,11 +77,51 @@ class FactorioClusterManager:
         self.client = docker.from_env()
         self.dry_run = dry_run
 
-    def start(self, scenario: str, use_latest: bool):
+    def _ensure_image(self):
+        """
+        Ensure the Factorio Docker image is available locally; pull it if missing.
+        """
+        try:
+            self.client.images.get(self.config.image_name)
+        except docker.errors.ImageNotFound:
+            print(
+                f"Docker image '{self.config.image_name}' not found locally. Pulling from Docker Hub..."
+            )
+            self.client.images.pull(self.config.image_name, platform=self.docker_platform)
+
+    def start(self, use_latest: bool):
+        # Make sure the Factorio image is present
+        self._ensure_image()
         # ensure save subdirs exist
         if use_latest:
             for i in range(self.num):
                 (self.config.saves_path / str(i)).mkdir(parents=True, exist_ok=True)
+
+        # If running a fresh scenario (not use_latest) and no save exists, convert scenario to a save
+        if not use_latest:
+            # Ensure the first-instance save directory exists
+            first_save_dir = self.config.saves_path / "0"
+            first_save_dir.mkdir(parents=True, exist_ok=True)
+
+            # Check for existing .zip saves
+            save_zips = list(first_save_dir.glob("*.zip"))
+            if not save_zips:
+                print(f"No save found for scenario '{self.config.scenario}'. Converting scenario to saved map...")
+                conversion = self.client.containers.run(
+                    self.config.image_name,
+                    name=f"factorio_convert_{self.config.scenario}",
+                    volumes=self._get_volumes(0),
+                    environment=self._get_environment(False),
+                    entrypoint=["/opt/factorio/config/scenario2map.sh"],
+                    command=[self.config.scenario],
+                    detach=True,
+                    platform=self.docker_platform,
+                    auto_remove=True,
+                )
+                conversion.wait()
+                print("Scenario conversion complete.")
+            # After conversion, switch to loading latest save
+            use_latest = True
 
         # render compose file
         for i in range(self.num):
@@ -86,27 +130,19 @@ class FactorioClusterManager:
                 f"{self.config.udp_port}/udp": self.config.udp_port + i,
                 f"{self.config.rcon_port}/tcp": self.config.rcon_port + i,
             }
-            command = [
-                f"/opt/factorio/bin/x64/factorio",
-                self._get_start_command(use_latest),
-                *self._get_connection_flags(),
-                *self._get_server_settings(),
-            ]
             if self.dry_run:
                 print(name)
                 print(ports)
-                print(" ".join(command))
                 print(self._get_volumes(i))
                 print(self.docker_platform)
                 print("-" * 100)
             else:
                 self.client.containers.run(
-                    "factorio",
-                    command=command,
+                    self.config.image_name,
                     name=name,
                     ports=ports,
                     volumes=self._get_volumes(i),
-                    environment=self._get_environment(i, use_latest),
+                    environment=self._get_environment(use_latest),
                     detach=True,
                     platform=self.docker_platform,
                     restart_policy={"Name": "unless-stopped"},
@@ -119,55 +155,9 @@ class FactorioClusterManager:
                 container.stop()
                 container.remove()
 
-    def restart(self, scenario: str, use_latest: bool):
+    def restart(self, use_latest: bool):
         self.stop()
-        self.start(scenario, use_latest)
-
-    def _get_start_command(self, use_latest: bool) -> str:
-        return (
-            f"--start-server-load-latest"
-            if use_latest
-            else f"--start-server-load-scenario {self.config.scenario}"
-        )
-
-    def _get_connection_flags(self) -> list[str]:
-        return [
-            "--rcon-port",
-            str(self.config.rcon_port),
-            "--rcon-password",
-            self.config.rcon_password,
-            "--port",
-            str(self.config.udp_port),
-        ]
-
-    def _get_server_settings(self) -> list[str]:
-        server_setting = (
-            "--server-settings",
-            "/opt/factorio/config/server-settings.json",
-        )
-        map_gen_settings = (
-            "--map-gen-settings",
-            "/opt/factorio/config/map-gen-settings.json",
-        )
-        map_settings = (
-            "--map-settings",
-            "/opt/factorio/config/map-settings.json",
-        )
-        mod_directory = (
-            "--mod-directory",
-            "/opt/factorio/mods",
-        )
-        map_gen_seed = (
-            "--map-gen-seed",
-            str(self.config.map_gen_seed),
-        )
-        return [
-            *server_setting,
-            *map_gen_settings,
-            *map_settings,
-            *mod_directory,
-            *map_gen_seed,
-        ]
+        self.start(use_latest)
 
     def _get_volumes(self, instance_index: int) -> dict:
         return {
@@ -186,9 +176,10 @@ class FactorioClusterManager:
             },
         }
 
-    def _get_environment(self, instance_index: int, use_latest: bool) -> dict:
+    def _get_environment(self, use_latest: bool) -> dict:
         """Get environment variables for the container."""
         env = {
+            "LOAD_LATEST_SAVE": "true" if use_latest else "false",
             "SAVES": "/opt/factorio/saves",
             "CONFIG": "/opt/factorio/config",
             "MODS": "/opt/factorio/mods",
@@ -250,11 +241,11 @@ def main():
     mgr = FactorioClusterManager(docker_platform, config, args.n, args.dry_run)
 
     if args.command == "start":
-        mgr.start(args.s, args.l)
+        mgr.start(args.l)
     elif args.command == "stop":
         mgr.stop()
     elif args.command == "restart":
-        mgr.restart(args.s, args.l)
+        mgr.restart(args.l)
 
 
 if __name__ == "__main__":

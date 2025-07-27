@@ -11,14 +11,6 @@ from enum import Enum
 
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
-print(ROOT_DIR)
-
-# Enable docker debug logging
-import logging
-logging.basicConfig(level=logging.DEBUG)
-logging.getLogger('docker').setLevel(logging.DEBUG)
-
-
 
 class Scenario(Enum):
     OPEN_WORLD = "open_world"
@@ -106,7 +98,6 @@ class FactorioClusterManager:
         # render compose file
         for i in range(self.num):
             name = f"factorio_{i}"
-            self.convert_scenario2map(name, i)
             if self.dry_run:
                 print(f"\nContainer name: {name}")
                 print(f"Port mappings: {self._get_ports(i)}")
@@ -114,64 +105,26 @@ class FactorioClusterManager:
                 print(f"Environment variables: {self._get_environment()}")
                 print(f"Docker platform: {self.docker_platform}")
                 print("\n" + "=" * 80)
-            else:
-                self.client.containers.run(
-                    self.config.image_name,
-                    name=name,
-                    ports=self._get_ports(i),
-                    volumes=self._get_volumes(i),
-                    environment=self._get_environment(),
-                    detach=True,
-                    platform=self.docker_platform,
-                    restart_policy={"Name": "unless-stopped"},
-                    mem_limit="1024m",
-                )
+                return
+            self.convert_scenario2map(name, i)
+            self.client.containers.run(
+                self.config.image_name,
+                name=name,
+                ports=self._get_ports(i),
+                volumes=self._get_volumes(i),
+                environment=self._get_environment(),
+                detach=True,
+                platform=self.docker_platform,
+                restart_policy={"Name": "unless-stopped"},
+                mem_limit="1024m",
+            )
 
-    def stop(self, force: bool = False, timeout: int = 10):
-        """
-        Stop and remove all factorio containers.
-        
-        Args:
-            force: If True, force kill containers instead of graceful stop
-            timeout: Timeout in seconds for graceful stop (ignored if force=True)
-        """
-        containers_to_stop = []
-        
-        # Find all factorio containers
+                
+    def stop(self):
         for container in self.client.containers.list(all=True):
             if container.name.startswith("factorio_"):
-                containers_to_stop.append(container)
-        
-        if not containers_to_stop:
-            print("No factorio containers found to stop.")
-            return
-        
-        print(f"Stopping {len(containers_to_stop)} factorio container(s)...")
-        
-        for container in containers_to_stop:
-            try:
-                print(f"Stopping container: {container.name}")
-                
-                if force:
-                    # Force kill the container
-                    container.kill()
-                    print(f"Force killed: {container.name}")
-                    container.remove()
-                    print(f"Removed: {container.name}")
-                else:
-                    # Graceful stop with timeout
-                    container.stop(timeout=timeout)
-                    print(f"Gracefully stopped: {container.name}")
-                
-                
-            except docker.errors.NotFound:
-                print(f"Container {container.name} not found (already removed)")
-            except docker.errors.APIError as e:
-                print(f"Error stopping {container.name}: {e}")
-            except Exception as e:
-                print(f"Unexpected error with {container.name}: {e}")
-        
-        print("Stop operation completed.")
+                container.stop()
+                container.remove()
 
     def restart(self):
         self.stop()
@@ -183,7 +136,6 @@ class FactorioClusterManager:
 
         # Check for existing .zip saves
         save_zips = list(save_dir.glob("*.zip"))
-        print(f"before:instance_index: {instance_index}, save_zips: {save_zips}")
         if not save_zips:
             print(f"No save found for {name}")
             print(f"Converting {self.config.scenario_name} to saved map...")
@@ -201,7 +153,6 @@ class FactorioClusterManager:
             conversion.wait()
             save_zips = list(save_dir.glob("*.zip"))
             print("Scenario converted successfully.")
-        print(f"after: instance_index: {instance_index}, save_zips: {save_zips}")
     
     def _get_ports(self, instance_index: int) -> dict:
         return {
@@ -292,9 +243,9 @@ def main():
     if args.command == "start":
         mgr.start()
     elif args.command == "stop":
-        mgr.stop(force=args.force, timeout=args.timeout)
+        mgr.stop()
     elif args.command == "restart":
-        mgr.stop(force=args.force, timeout=args.timeout)
+        mgr.stop()
         mgr.start()
 
 

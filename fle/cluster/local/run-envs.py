@@ -84,10 +84,10 @@ class FactorioClusterManager:
         try:
             self.client.images.get(self.config.image_name)
         except docker.errors.ImageNotFound:
-            print(
-                f"Docker image '{self.config.image_name}' not found locally. Pulling from Docker Hub..."
-            )
+            print(f"'{self.config.image_name}' Image not found locally.")
+            print("Pulling from Docker Hub...")
             self.client.images.pull(self.config.image_name, platform=self.docker_platform)
+            print("Image pulled successfully.")
 
     def start(self, use_latest: bool):
         # Make sure the Factorio image is present
@@ -131,11 +131,12 @@ class FactorioClusterManager:
                 f"{self.config.rcon_port}/tcp": self.config.rcon_port + i,
             }
             if self.dry_run:
-                print(name)
-                print(ports)
-                print(self._get_volumes(i))
-                print(self.docker_platform)
-                print("-" * 100)
+                print(f"\nContainer name: {name}")
+                print(f"Port mappings: {ports}")
+                print(f"Volume mounts: {self._get_volumes(i)}")
+                print(f"Environment variables: {self._get_environment(use_latest)}")
+                print(f"Docker platform: {self.docker_platform}")
+                print("\n" + "=" * 80)
             else:
                 self.client.containers.run(
                     self.config.image_name,
@@ -179,7 +180,7 @@ class FactorioClusterManager:
     def _get_environment(self, use_latest: bool) -> dict:
         """Get environment variables for the container."""
         env = {
-            "LOAD_LATEST_SAVE": "true" if use_latest else "false",
+            "LOAD_LATEST_SAVE": use_latest,
             "SAVES": "/opt/factorio/saves",
             "CONFIG": "/opt/factorio/config",
             "MODS": "/opt/factorio/mods",

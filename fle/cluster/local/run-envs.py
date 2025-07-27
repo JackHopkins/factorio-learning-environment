@@ -106,6 +106,7 @@ class FactorioClusterManager:
                     name=name,
                     ports=ports,
                     volumes=self._get_volumes(i),
+                    environment=self._get_environment(i, use_latest),
                     detach=True,
                     platform=self.docker_platform,
                     restart_policy={"Name": "unless-stopped"},
@@ -184,6 +185,23 @@ class FactorioClusterManager:
                 "mode": "rw",
             },
         }
+
+    def _get_environment(self, instance_index: int, use_latest: bool) -> dict:
+        """Get environment variables for the container."""
+        env = {
+            "SAVES": "/opt/factorio/saves",
+            "CONFIG": "/opt/factorio/config",
+            "MODS": "/opt/factorio/mods",
+            "SCENARIOS": "/opt/factorio/scenarios",
+            "PORT": str(self.config.udp_port),
+            "RCON_PORT": str(self.config.rcon_port),
+        }
+
+        # Only set SERVER_SCENARIO if not using latest save
+        if not use_latest:
+            env["SERVER_SCENARIO"] = self.config.scenario
+
+        return env
 
 
 def parse_args():

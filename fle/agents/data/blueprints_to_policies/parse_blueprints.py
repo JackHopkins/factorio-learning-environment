@@ -5,7 +5,7 @@ from collections import Counter
 import matplotlib.pyplot as plt
 from dataclasses import dataclass, field
 
-from game_types import Prototype
+from fle.env import Prototype
 
 
 @dataclass(frozen=True)  # Make the class immutable and hashable

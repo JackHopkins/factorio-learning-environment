@@ -8,7 +8,7 @@ import json
 import math
 from pathlib import Path
 from PIL import Image, ImageDraw
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Any
 
 from fle.env import Entity, EntityCore, UndergroundBelt, EntityStatus
 from fle.env.tools.admin.render.constants import BACKGROUND_COLOR, GRID_LINE_WIDTH, GRID_COLOR, DEFAULT_ROCK_VARIANTS, \
@@ -45,7 +45,20 @@ class Renderer:
         """
         self.icons = []
 
-        self.entities = list(flatten_entities(entities)) #data.get('entities', [])
+        flattened_entities = list(flatten_entities(entities)) #data.get('entities', [])
+
+        # Find minimum coordinates across all items
+        min_x, min_y = self._find_min_coordinates(flattened_entities, resources, water_tiles)
+
+        # Store the offset for normalization
+        self.offset_x = min_x
+        self.offset_y = min_y
+
+        # Normalize all coordinates by subtracting the minimum
+        self.entities = self._normalize_positions(flattened_entities)
+        self.resources = self._normalize_positions(resources)
+        self.water_tiles = self._normalize_positions(water_tiles)
+
         self.resources = resources #data.get('resources', [])
         self.water_tiles = water_tiles #data.get('water_tiles', [])
 
@@ -242,16 +255,109 @@ class Renderer:
     def get_size(self) -> Dict:
         """Calculate blueprint bounds including resources and trees."""
         bounds = self._calculate_bounds()
-        
+
+        # Calculate actual content dimensions (not including origin distance)
+        content_width = bounds['max_width'] - bounds['min_width']
+        content_height = bounds['max_height'] - bounds['min_height']
+
         return {
             'minX': bounds['min_width'],
-            'minY': bounds['min_height'], 
+            'minY': bounds['min_height'],
             'maxX': bounds['max_width'],
             'maxY': bounds['max_height'],
-            'width': math.ceil(abs(bounds['min_width']) + bounds['max_width']),
-            'height': math.ceil(abs(bounds['min_height']) + bounds['max_height'])
+            'width': math.ceil(content_width),
+            'height': math.ceil(content_height)
         }
-    
+
+    def _get_position(self, item: Any) -> Optional[Dict[str, float]]:
+        """Extract position from an item, handling both dict and object formats.
+
+        Returns position as dict with 'x' and 'y' keys, or None if no position found.
+        """
+        # Handle water tiles which have x,y directly
+        if isinstance(item, dict) and 'x' in item and 'y' in item and 'position' not in item:
+            return {'x': item['x'], 'y': item['y']}
+
+        # Handle items with position attribute/key
+        if hasattr(item, 'position'):
+            pos = item.position
+            if hasattr(pos, 'x') and hasattr(pos, 'y'):
+                return {'x': pos.x, 'y': pos.y}
+            elif isinstance(pos, dict):
+                return pos
+        elif isinstance(item, dict) and 'position' in item:
+            return item['position']
+
+        return None
+
+    def _set_position(self, item: Any, x: float, y: float) -> Any:
+        """Set position on an item, handling both dict and object formats.
+
+        Returns a copy of the item with updated position.
+        """
+        item_copy = copy.deepcopy(item)
+
+        # Handle water tiles which have x,y directly
+        if isinstance(item_copy, dict) and 'x' in item_copy and 'y' in item_copy and 'position' not in item_copy:
+            item_copy['x'] = x
+            item_copy['y'] = y
+        # Handle items with position attribute
+        elif hasattr(item_copy, 'position'):
+            if hasattr(item_copy.position, 'x') and hasattr(item_copy.position, 'y'):
+                item_copy.position.x = x
+                item_copy.position.y = y
+            elif isinstance(item_copy.position, dict):
+                item_copy.position['x'] = x
+                item_copy.position['y'] = y
+        # Handle dict items with position key
+        elif isinstance(item_copy, dict) and 'position' in item_copy:
+            item_copy['position']['x'] = x
+            item_copy['position']['y'] = y
+
+        return item_copy
+
+    def _find_min_coordinates(self, entities: List[Any], resources: List[Any], water_tiles: List[Any]) -> tuple[
+        float, float]:
+        """Find minimum x and y coordinates across all items."""
+        min_x, min_y = float('inf'), float('inf')
+
+        # Check all items for minimum coordinates
+        all_items = list(entities) + list(resources) + list(water_tiles)
+
+        for item in all_items:
+            pos = self._get_position(item)
+            if pos:
+                min_x = min(min_x, pos['x'])
+                min_y = min(min_y, pos['y'])
+
+        # If no positions found, default to 0,0
+        if min_x == float('inf'):
+            min_x = 0
+        if min_y == float('inf'):
+            min_y = 0
+
+        return min_x, min_y
+
+    def _normalize_positions(self, items: List[Any]) -> List[Any]:
+        """Normalize positions of all items by subtracting minimum coordinates."""
+        normalized = []
+
+        for item in items:
+            pos = self._get_position(item)
+            if pos:
+                # Create normalized copy with adjusted position
+                normalized_item = self._set_position(
+                    item,
+                    pos['x'] - self.offset_x,
+                    pos['y'] - self.offset_y
+                )
+                normalized.append(normalized_item)
+            else:
+                # No position to normalize, keep as is
+                normalized.append(copy.deepcopy(item))
+
+        return normalized
+
     def _calculate_bounds(self) -> Dict:
         """Calculate the bounding box for all entities and resources."""
         min_width = min_height = 0

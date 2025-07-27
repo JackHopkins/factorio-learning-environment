@@ -1,0 +1,10 @@
+Given a modified Factorio blueprint where an entity has been removed, generate a clear, vague question asking about what's missing at position x={{ position.x }}, y={{ position.y }}.
+
+The removed entity was: {{ entity_name }}
+
+Generate a natural question that would help identify the missing entity. Examples:
+- "What entity should be placed at position ({{ position.x }}, {{ position.y }}) to complete this blueprint?"
+- "An entity is missing at x={{ position.x }}, y={{ position.y }}. What type of entity belongs there?"
+- "This blueprint has a gap at coordinates ({{ position.x }}, {{ position.y }}). What should fill it?"
+
+Return only the question, nothing else.

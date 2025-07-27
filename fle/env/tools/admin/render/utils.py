@@ -14,9 +14,25 @@ from .constants import (
 )
 
 def flatten_entities(entities: List[Union[Dict, Entity, EntityGroup]]) -> List[Union[Entity, EntityCore]]:
+    # Sometimes directions are 0-12
+    max_direction = 0
     for entity in entities:
         if isinstance(entity, dict):
-            yield EntityCore(**entity)
+            if not 'direction' in entity:
+                entity['direction'] = 0
+            direction = entity['direction'] if 'direction' in entity else 0
+            if direction > max_direction:
+                max_direction = direction
+
+
+    for entity in entities:
+        if isinstance(entity, dict):
+            try:
+                # Sigh. Some blueprints are 0-12.
+                entity['direction'] = entity['direction'] / 2 if max_direction > 6 else entity['direction']
+                yield EntityCore(**entity)
+            except Exception as e:
+                pass
         elif isinstance(entity, EntityGroup):
             e_list = []
             if isinstance(entity, WallGroup):

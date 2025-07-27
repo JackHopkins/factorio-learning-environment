@@ -36,15 +36,16 @@ def test_blueprint_render(game):
     #image.show()
 
     # Find all JSON files
-    blueprints_path = Path("/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/fle/agents/data/blueprints_to_policies/blueprints/other")
+    blueprints_path = Path("/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/.fle/blueprints")
     json_files = list(blueprints_path.glob("*.json"))
 
     # Load the JSON file
     with open(json_files[0], 'r') as f:
         blueprint_data = json.load(f)
 
-        image = game._render(blueprint=blueprint_data)
-        image.show()
+        if blueprint_data['label'] == '11_10_balancer_red_blue':
+            image = game._render(blueprint=blueprint_data)
+            image.show()
     pass
 
 

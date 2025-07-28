@@ -30,6 +30,7 @@ class PlatformConfig:
         self.rcon_port = 27015
         self.udp_port = 34197
         self.scenario_name = Scenario.DEFAULT_LAB_SCENARIO.value
+        self.server_config_dir = Path(__file__).parent.resolve() / "config"
 
     def _detect_mods_path(self) -> str:
         if any(x in self.os_name for x in ("MINGW", "MSYS", "CYGWIN")):
@@ -75,7 +76,9 @@ class FactorioClusterManager:
         except DockerError:
             print(f"'{self.config.image_name}' image not found locally.")
             print("Pulling from Docker Hub...")
-            await self.docker.images.pull(self.config.image_name)
+            await self.docker.images.pull(
+                self.config.image_name, platform=self.docker_platform
+            )
             print("Image pulled successfully.")
 
     def _get_ports(self, instance_index: int) -> dict:
@@ -89,7 +92,7 @@ class FactorioClusterManager:
         }
         return ports
 
-    def _get_volumes(self, instance_index: int) -> list:
+    def _get_volumes(self, instance_index: int, for_server: bool = True) -> list:
         vols = {
             self.config.mods_path: {"bind": "/factorio/mods", "mode": "rw"},
             str(self.config.saves_path / str(instance_index)): {
@@ -105,6 +108,11 @@ class FactorioClusterManager:
                 "mode": "rw",
             },
         }
+        if for_server:
+            vols[str(self.config.server_config_dir.resolve())] = {
+                "bind": "/factorio/config",
+                "mode": "rw",
+            }
         # HostConfig.Binds expects ["host:container:mode", ...]
         return [f"{host}:{b['bind']}:{b['mode']}" for host, b in vols.items()]
 
@@ -114,10 +122,7 @@ class FactorioClusterManager:
             "PORT": str(self.config.udp_port),
             "RCON_PORT": str(self.config.rcon_port),
             "SERVER_SCENARIO": self.config.scenario_name,
-            "SAVES": "/opt/factorio/saves",
-            "CONFIG": "/opt/factorio/config",
-            "MODS": "/opt/factorio/mods",
-            "SCENARIOS": "/opt/factorio/scenarios",
+            "DLC_SPACE_AGE": "false",
         }
         # Docker API wants ["KEY=VALUE", ...]
         return [f"{k}={v}" for k, v in env.items()]
@@ -133,7 +138,7 @@ class FactorioClusterManager:
         config = {
             "Image": self.config.image_name,
             "Env": self._get_environment(),
-            "HostConfig": {"Binds": self._get_volumes(instance_index)},
+            "HostConfig": {"Binds": self._get_volumes(instance_index, for_server=False)},
             "Entrypoint": ["/scenario2map.sh"],
             "Cmd": [self.config.scenario_name],
             "Platform": self.docker_platform,

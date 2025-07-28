@@ -20,22 +20,15 @@ class Scenario(Enum):
 class PlatformConfig:
     def __init__(self):
         self.arch = platform.machine()
-        self.saves_path = ROOT_DIR / ".fle" / "saves"
         self.os_name = platform.system()
-        self.fle_dir = ROOT_DIR
-        self.mods_path = self._detect_mods_path()
-        self.compose_path = (
-            ROOT_DIR / "fle" / "cluster" / "local" / "docker-compose.yml"
-        )
-        self.rcon_port = 27015
-        self.udp_port = 34197
-        self.rcon_password = "factorio"
-        self.map_gen_seed = 44340
+        self.saves_path = ROOT_DIR / ".fle" / "saves"
         self.cluster_dir = ROOT_DIR / "fle" / "cluster"
         self.scenario_dir = self.cluster_dir / "scenarios"
         self.screenshots_dir = ROOT_DIR / "data" / "_screenshots"
-        self.factorio_path = "/factorio/bin/x64/factorio"
+        self.mods_path = self._detect_mods_path()
         self.image_name = "factoriotools/factorio:1.1.110"
+        self.rcon_port = 27015
+        self.udp_port = 34197
         self.scenario_name = Scenario.DEFAULT_LAB_SCENARIO.value
 
     def _detect_mods_path(self) -> str:
@@ -86,10 +79,15 @@ class FactorioClusterManager:
             print("Image pulled successfully.")
 
     def _get_ports(self, instance_index: int) -> dict:
-        return {
-            f"{self.config.udp_port}/udp": self.config.udp_port + instance_index,
-            f"{self.config.rcon_port}/tcp": self.config.rcon_port + instance_index,
+        ports = {
+            f"{self.config.udp_port}/udp": [
+                {"HostPort": str(self.config.udp_port + instance_index)}
+            ],
+            f"{self.config.rcon_port}/tcp": [
+                {"HostPort": str(self.config.rcon_port + instance_index)}
+            ],
         }
+        return ports
 
     def _get_volumes(self, instance_index: int) -> list:
         vols = {
@@ -124,6 +122,13 @@ class FactorioClusterManager:
         # Docker API wants ["KEY=VALUE", ...]
         return [f"{k}={v}" for k, v in env.items()]
 
+    def check_save_exists(self, instance_index: int):
+        save_dir = self.config.saves_path / str(instance_index)
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+        save_zips = list(save_dir.glob("*.zip"))
+        return len(save_zips) > 0
+
     async def get_scenario2map_ctr(self, instance_index: int):
         config = {
             "Image": self.config.image_name,
@@ -136,37 +141,34 @@ class FactorioClusterManager:
         return await self.docker.containers.run(
             config=config, name=f"conv_factorio_{instance_index}"
         )
-    
+
     async def get_server_ctr(self, instance_index: int):
         config = {
             "Image": self.config.image_name,
             "Env": self._get_environment(),
             "HostConfig": {
-                "PortBindings": {
-                    f"{self.config.udp_port}/udp": [
-                        {"HostPort": str(self.config.udp_port + instance_index)}
-                    ],
-                    f"{self.config.rcon_port}/tcp": [
-                        {"HostPort": str(self.config.rcon_port + instance_index)}
-                    ],
-                },
+                "PortBindings": self._get_ports(instance_index),
                 "Binds": self._get_volumes(instance_index),
                 "RestartPolicy": {"Name": "unless-stopped"},
                 "Memory": 1024 * 1024 * 1024,
             },
             "Platform": self.docker_platform,
         }
-        return await self.docker.containers.create_or_replace(config=config, name=f"factorio_{instance_index}")
-    
+        return await self.docker.containers.create_or_replace(
+            config=config, name=f"factorio_{instance_index}"
+        )
+
     async def get_containers_to_run(self):
-        # Create tasks for concurrent execution
-        scenario2map_tasks = [self.get_scenario2map_ctr(i) for i in range(self.num) if not self.check_save_exists(i)]
+        scenario2map_tasks = [
+            self.get_scenario2map_ctr(i)
+            for i in range(self.num)
+            if not self.check_save_exists(i)
+        ]
         server_tasks = [self.get_server_ctr(i) for i in range(self.num)]
-        
-        # Execute tasks concurrently
+
         scenario2map_ctrs = await asyncio.gather(*scenario2map_tasks)
         server_ctrs = await asyncio.gather(*server_tasks)
-        
+
         return scenario2map_ctrs, server_ctrs
 
     async def start(self):
@@ -193,13 +195,6 @@ class FactorioClusterManager:
         await asyncio.gather(*[item.wait() for item in scenario2map_ctrs])
         await asyncio.gather(*[item.delete() for item in scenario2map_ctrs])
         await asyncio.gather(*[item.start() for item in server_ctrs])
-    
-    def check_save_exists(self, instance_index: int):
-        save_dir = self.config.saves_path / str(instance_index)
-        save_dir.mkdir(parents=True, exist_ok=True)
-
-        save_zips = list(save_dir.glob("*.zip"))
-        return len(save_zips) > 0
 
     async def stop(self):
         # Stop & remove any container whose name starts with "factorio_"
@@ -218,7 +213,10 @@ class FactorioClusterManager:
 def parse_args():
     p = argparse.ArgumentParser(description="Manage a local Factorio cluster")
     p.add_argument(
-        "command", choices=["start", "stop", "restart", "clean"], nargs="?", default="start"
+        "command",
+        choices=["start", "stop", "restart", "clean"],
+        nargs="?",
+        default="start",
     )
     p.add_argument("-n", type=int, default=1, help="Number of instances (1-33)")
     p.add_argument(

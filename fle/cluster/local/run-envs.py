@@ -119,7 +119,6 @@ class FactorioClusterManager:
                 mem_limit="1024m",
             )
 
-                
     def stop(self):
         for container in self.client.containers.list(all=True):
             if container.name.startswith("factorio_"):
@@ -127,8 +126,9 @@ class FactorioClusterManager:
                 container.remove()
 
     def restart(self):
-        self.stop()
-        self.start()
+        for container in self.client.containers.list(all=True):
+            if container.name.startswith("factorio_"):
+                container.restart()
 
     def convert_scenario2map(self, name: str, instance_index: int):
         save_dir = self.config.saves_path / str(instance_index)
@@ -141,7 +141,7 @@ class FactorioClusterManager:
             print(f"Converting {self.config.scenario_name} to saved map...")
             conversion = self.client.containers.run(
                 self.config.image_name,
-                name=name,
+                name=f"conv_{name}",
                 volumes=self._get_volumes(instance_index),
                 environment=self._get_environment(),
                 entrypoint=f"/scenario2map.sh",

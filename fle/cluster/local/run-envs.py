@@ -157,6 +157,17 @@ class FactorioClusterManager:
             "Platform": self.docker_platform,
         }
         return await self.docker.containers.create_or_replace(config=config, name=f"factorio_{instance_index}")
+    
+    async def get_containers_to_run(self):
+        # Create tasks for concurrent execution
+        scenario2map_tasks = [self.get_scenario2map_ctr(i) for i in range(self.num) if not self.check_save_exists(i)]
+        server_tasks = [self.get_server_ctr(i) for i in range(self.num)]
+        
+        # Execute tasks concurrently
+        scenario2map_ctrs = await asyncio.gather(*scenario2map_tasks)
+        server_ctrs = await asyncio.gather(*server_tasks)
+        
+        return scenario2map_ctrs, server_ctrs
 
     async def start(self):
         await self._ensure_image()
@@ -176,13 +187,11 @@ class FactorioClusterManager:
 
         # Launch all instances concurrently
         containers = await self.get_containers_to_run()
-
         scenario2map_ctrs = containers[0]
         server_ctrs = containers[1]
 
         await asyncio.gather(*[item.wait() for item in scenario2map_ctrs])
         await asyncio.gather(*[item.delete() for item in scenario2map_ctrs])
-
         await asyncio.gather(*[item.start() for item in server_ctrs])
     
     def check_save_exists(self, instance_index: int):
@@ -191,36 +200,18 @@ class FactorioClusterManager:
 
         save_zips = list(save_dir.glob("*.zip"))
         return len(save_zips) > 0
-    
-    async def get_containers_to_run(self):
-        scenario2map_ctrs = [await self.get_scenario2map_ctr(i) for i in range(self.num) if not self.check_save_exists(i)]
-        server_ctrs = [await self.get_server_ctr(i) for i in range(self.num)]
-        return scenario2map_ctrs, server_ctrs
 
     async def stop(self):
         # Stop & remove any container whose name starts with "factorio_"
-        ctrs = await self.docker.containers.list(all=True)
-        # Prepare concurrent stop/delete tasks
-        tasks_stop = []
-        tasks_delete = []
-        for ctr in ctrs:
-            info = await ctr.show()
-            nm = info.get("Name", "").lstrip("/")
-            if nm.startswith("factorio_"):
-                tasks_stop.append(ctr.stop())
-                tasks_delete.append(ctr.delete())
-        # Run all stops/deletes concurrently
+        ctrs = await self.docker.containers.list(filters={"name": ["/factorio_"]})
+        tasks_stop = [ctr.stop() for ctr in ctrs]
+        tasks_delete = [ctr.delete() for ctr in ctrs]
         await asyncio.gather(*tasks_stop)
         await asyncio.gather(*tasks_delete)
 
     async def restart(self):
-        ctrs = await self.docker.containers.list(all=True)
-        tasks = []
-        for ctr in ctrs:
-            info = await ctr.show()
-            nm = info.get("Name", "").lstrip("/")
-            if nm.startswith("factorio_"):
-                tasks.append(ctr.restart())
+        ctrs = await self.docker.containers.list(filters={"name": ["/factorio_"]})
+        tasks = [ctr.restart() for ctr in ctrs]
         await asyncio.gather(*tasks)
 
 

@@ -11,10 +11,20 @@ from enum import Enum
 
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 class Scenario(Enum):
     OPEN_WORLD = "open_world"
     DEFAULT_LAB_SCENARIO = "default_lab_scenario"
+
+
+class Mode(Enum):
+    SAVE_BASED = "save-based"
+    SCENARIO = "scenario"
 
 
 class PlatformConfig:
@@ -30,6 +40,8 @@ class PlatformConfig:
         self.scenario_name = Scenario.DEFAULT_LAB_SCENARIO.value
         self.scenario_dir = Path(__file__).parent.resolve() / "scenarios"
         self.server_config_dir = Path(__file__).parent.resolve() / "config"
+        self.mode = Mode.SAVE_BASED.value
+        self.temp_playing_dir = "/opt/factorio/temp/currently-playing"
 
     def _detect_mods_path(self) -> str:
         if any(x in self.os_name for x in ("MINGW", "MSYS", "CYGWIN")):
@@ -98,8 +110,8 @@ class FactorioClusterManager:
                 "bind": "/factorio/saves",
                 "mode": "rw",
             },
-            str((self.config.scenario_dir / self.config.scenario_name).resolve()): {
-                "bind": f"/factorio/scenarios/{self.config.scenario_name}",
+            str(self.config.scenario_dir.resolve()): {
+                "bind": f"/factorio/scenarios/",
                 "mode": "rw",
             },
             str(self.config.screenshots_dir.resolve()): {
@@ -117,12 +129,16 @@ class FactorioClusterManager:
 
     def _get_environment(self) -> list:
         env = {
-            "LOAD_LATEST_SAVE": "true",
+            "LOAD_LATEST_SAVE": (
+                "true" if self.config.mode == Mode.SAVE_BASED.value else "false"
+            ),
             "PORT": str(self.config.udp_port),
             "RCON_PORT": str(self.config.rcon_port),
             "SERVER_SCENARIO": self.config.scenario_name,
             "DLC_SPACE_AGE": "false",
         }
+        if self.config.mode == Mode.SCENARIO.value:
+            env["PRESET"] = "default"
         # Docker API wants ["KEY=VALUE", ...]
         return [f"{k}={v}" for k, v in env.items()]
 
@@ -137,7 +153,9 @@ class FactorioClusterManager:
         config = {
             "Image": self.config.image_name,
             "Env": self._get_environment(),
-            "HostConfig": {"Binds": self._get_volumes(instance_index, for_server=False)},
+            "HostConfig": {
+                "Binds": self._get_volumes(instance_index, for_server=False)
+            },
             "Entrypoint": ["/scenario2map.sh"],
             "Cmd": [self.config.scenario_name],
             "Platform": self.docker_platform,
@@ -153,11 +171,15 @@ class FactorioClusterManager:
             "HostConfig": {
                 "PortBindings": self._get_ports(instance_index),
                 "Binds": self._get_volumes(instance_index),
-                "RestartPolicy": {"Name": "unless-stopped"},
+                # "RestartPolicy": {"Name": "unless-stopped"},
                 "Memory": 1024 * 1024 * 1024,
             },
             "Platform": self.docker_platform,
         }
+        if self.config.mode == Mode.SCENARIO.value:
+            config["Entrypoint"] = ["/scenario.sh"]
+            config["Cmd"] = [self.config.scenario_name]
+        print(config)
         return await self.docker.containers.create_or_replace(
             config=config, name=f"factorio_{instance_index}"
         )
@@ -192,12 +214,20 @@ class FactorioClusterManager:
             return
 
         # Launch all instances concurrently
-        containers = await self.get_containers_to_run()
-        scenario2map_ctrs = containers[0]
-        server_ctrs = containers[1]
+        if self.config.mode == Mode.SAVE_BASED.value:
+            scenario2map_ctrs = await asyncio.gather(
+                *[
+                    self.get_scenario2map_ctr(i)
+                    for i in range(self.num)
+                    if not self.check_save_exists(i)
+                ]
+            )
+            await asyncio.gather(*[item.wait() for item in scenario2map_ctrs])
+            await asyncio.gather(*[item.delete() for item in scenario2map_ctrs])
 
-        await asyncio.gather(*[item.wait() for item in scenario2map_ctrs])
-        await asyncio.gather(*[item.delete() for item in scenario2map_ctrs])
+        server_ctrs = await asyncio.gather(
+            *[self.get_server_ctr(i) for i in range(self.num)]
+        )
         await asyncio.gather(*[item.start() for item in server_ctrs])
 
     async def stop(self):
@@ -213,14 +243,48 @@ class FactorioClusterManager:
         tasks = [ctr.restart() for ctr in ctrs]
         await asyncio.gather(*tasks)
 
+    async def hot_reload_scenario(self):
+        # Sync scenario files into the server's temp directory for hot-reload
+        containers = await self.docker.containers.list(filters={"name": ["/factorio_"]})
+        
+        async def sync_container(ctr):
+            cmd = (
+                f"docker exec -u root {ctr.id} sh -c "
+                f"'cp -a /factorio/scenarios/{self.config.scenario_name}/. {self.config.temp_playing_dir} && "
+                f"chown -R factorio:factorio {self.config.temp_playing_dir}'"
+            )
+            
+            proc = await asyncio.create_subprocess_shell(
+                cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await proc.communicate()
+            
+            if stdout:
+                print(f"stdout: {stdout.decode()}")
+            if stderr:
+                print(f"stderr: {stderr.decode()}")
+            print(f"Container {ctr.id} sync complete (exit code: {proc.returncode})")
+        
+        # Run all container syncs concurrently
+        await asyncio.gather(*[sync_container(ctr) for ctr in containers])
+        print("Hot-reload sync complete.")
+
 
 def parse_args():
     p = argparse.ArgumentParser(description="Manage a local Factorio cluster")
     p.add_argument(
         "command",
-        choices=["start", "stop", "restart", "clean"],
+        choices=["start", "stop", "restart", "hot-reload-scenario"],
         nargs="?",
         default="start",
+    )
+    p.add_argument(
+        "--mode",
+        choices=["scenario", "save-based"],
+        default="save-based",
+        help="Mode to run the server in",
     )
     p.add_argument("-n", type=int, default=1, help="Number of instances (1-33)")
     p.add_argument(
@@ -260,6 +324,10 @@ async def main():
         config.scenario_name = Scenario.OPEN_WORLD.value
     elif args.s == Scenario.DEFAULT_LAB_SCENARIO.value:
         config.scenario_name = Scenario.DEFAULT_LAB_SCENARIO.value
+    if args.mode == Mode.SCENARIO.value:
+        config.mode = Mode.SCENARIO.value
+    elif args.mode == Mode.SAVE_BASED.value:
+        config.mode = Mode.SAVE_BASED.value
 
     mgr = FactorioClusterManager(docker_platform, config, args.n, args.dry_run)
     if args.command == "start":
@@ -268,6 +336,10 @@ async def main():
         await mgr.stop()
     elif args.command == "restart":
         await mgr.restart()
+    elif args.command == "hot-reload-scenario":
+        if config.mode == Mode.SAVE_BASED.value:
+            raise ValueError("Hot-reload is not supported in save-based mode")
+        await mgr.hot_reload_scenario()
 
     await mgr.docker.close()
 

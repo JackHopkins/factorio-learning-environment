@@ -17,7 +17,7 @@ end
 
 
 -- Note: The debug_rendering.lua library will be loaded separately by the LuaScriptManager
---local player = game.players[arg1]
+local player = game.players[1]
 player.surface.always_day=true
 --game.players[1].character_collision_mask = "not-colliding-with-itself"
 player.force.character_build_distance_bonus = 100

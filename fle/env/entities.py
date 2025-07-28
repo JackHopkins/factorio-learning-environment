@@ -2,7 +2,8 @@ import math
 from typing import Tuple, Any, Union, Dict, Literal
 from typing import List, Optional
 from enum import Enum, IntFlag
-from pydantic import ConfigDict, BaseModel, model_validator
+from pydantic import ConfigDict, BaseModel, model_validator, model_serializer
+
 
 
 class Layer(IntFlag):
@@ -160,12 +161,36 @@ class Inventory(BaseModel):
     def values(self):
         return self.__dict__.values()
 
+    def __add__(self, other):
+        if not isinstance(other, Inventory):
+            return NotImplemented
+
+        result = Inventory(**self.__dict__)
+
+        for key, value in other.items():
+            if key in result:
+                result[key] = result[key] + value
+            else:
+                result[key] = value
+
+        return result
+
+    @model_serializer
+    def serialize_model(self):
+        return {k: v for k, v in self.__dict__.items()
+                if not k.startswith('_')}
+
 
 class Direction(Enum):
     UP = NORTH = 0
     RIGHT = EAST = 2
     DOWN = SOUTH = 4
     LEFT = WEST = 6
+    #
+    # UPRIGHT = NORTHEAST = 8
+    # DOWNRIGHT = SOUTHEAST = 10
+    # DOWNLEFT = SOUTHWEST = 12
+    # UPLEFT = NORTHWEST = 14
 
     def __repr__(self):
         return f"Direction.{self.name}"
@@ -417,8 +442,9 @@ class BurnerType(BaseModel):
 
 class EntityCore(BaseModel):
     # id: Optional[str] = None
+    model_config = ConfigDict(extra='allow')
     name: str
-    direction: Direction
+    direction: Direction = Direction.NORTH
     position: Position
 
     def __repr__(self):
@@ -495,7 +521,6 @@ class Entity(EntityCore):
 
 class StaticEntity(Entity):
     """A static (non-moving) entity in the game."""
-
     neighbours: Optional[Union[Dict, List[EntityCore]]] = []
 
 
@@ -521,7 +546,8 @@ class TransportBelt(Entity):
 
     input_position: Position
     output_position: Position
-    inventory: Inventory = Inventory()
+    #inventory: Inventory = Inventory()
+    inventory: Dict[Literal['left', 'right'], Inventory] = {'left': {}, 'right': {}}
     is_terminus: bool = False
     is_source: bool = False
     _height: float = 1

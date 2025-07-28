@@ -1,0 +1,16 @@
+Analyze this Factorio blueprint and generate metadata.
+
+Blueprint:
+{{ blueprint | tojson(indent=2) }}
+
+Generate:
+1. A concise title (max 10 words) that describes what this blueprint builds
+2. A purpose description (1-2 sentences) explaining what it does and how it's used
+
+Format your response as JSON:
+```json
+{
+    "title": "...",
+    "purpose": "..."
+}
+```

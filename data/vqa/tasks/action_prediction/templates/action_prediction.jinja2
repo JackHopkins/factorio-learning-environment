@@ -1,0 +1,11 @@
+Given the following sequence of actions to build a Factorio blueprint, predict the next action.
+
+Previous actions:
+{% for action in previous_actions %}
+{{ loop.index }}. {{ action }}
+{% endfor %}
+
+Blueprint being constructed:
+{{ blueprint | tojson(indent=2) }}
+
+What is the next action? Provide only the action command.

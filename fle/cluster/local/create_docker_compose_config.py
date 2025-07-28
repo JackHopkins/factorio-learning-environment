@@ -28,12 +28,12 @@ def generate_compose_config(num_instances: int, map: str) -> Dict[str, Any]:
             "volumes": [
                 {
                     "type": "bind",
-                    "source": "../scenarios/default_lab_scenario",
+                    "source": "./fle/cluster/scenarios/default_lab_scenario",
                     "target": "/opt/factorio/scenarios/default_lab_scenario",
                 },
                 {
                     "type": "bind",
-                    "source": "../scenarios/open_world",
+                    "source": "./fle/cluster/scenarios/open_world",
                     "target": "/opt/factorio/scenarios/open_world",
                 },
                 {

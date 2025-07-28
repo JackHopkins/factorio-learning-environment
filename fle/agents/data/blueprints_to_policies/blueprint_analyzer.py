@@ -7,7 +7,7 @@ from typing import Union
 from fle.env import EntityGroup
 from fle.env import FactorioInstance
 from fle.env.game_types import prototype_by_name
-from data.blueprints_to_policies.models.blueprint_entity import BlueprintEntity
+from fle.agents.data.blueprints_to_policies.models.blueprint_entity import BlueprintEntity
 
 
 class BlueprintAnalyzer:
@@ -174,9 +174,9 @@ class BlueprintAnalyzer:
         vertical_patterns, horizontal_patterns, singles = self.find_patterns()
         miners = [e for e in self.entities if "mining-drill" in e.name]
         if miners:
-            origin_calc = f"game.nearest_buildable({self._name_to_prototype_string(miners[0].name)}, bounding_box=miner_box)"
+            origin_calc = f"game.nearest_buildable({self._name_to_prototype_string(miners[0].name)}, center_position=Position(**{self.entities[0].position}),building_box=miner_box)"
         else:
-            origin_calc = f"game.nearest_buildable({self._name_to_prototype_string(self.entities[0].name)}, bounding_box=miner_box)"
+            origin_calc = f"game.nearest_buildable({self._name_to_prototype_string(self.entities[0].name)}, center_position=Position(**{self.entities[0].position}), building_box=miner_box)"
 
         lines = [
             "# Calculate bounding box",
@@ -184,9 +184,17 @@ class BlueprintAnalyzer:
             "    x=0,",
             "    y=0",
             ")",
+            "left_bottom = Position(",
+            "     x=0,",
+            f"    y={self.max_y - self.min_y}",
+            ")",
             "right_bottom = Position(",
             f"    x={self.max_x - self.min_x},",
             f"    y={self.max_y - self.min_y}",
+            ")",
+            "right_top = Position(",
+            f"    x={self.max_x - self.min_x},",
+            f"    y=0",
             ")",
             "center = Position(",
             "    x=(left_top.x + right_bottom.x) / 2,",
@@ -196,7 +204,8 @@ class BlueprintAnalyzer:
             "miner_box = BoundingBox(",
             "    left_top=left_top,",
             "    right_bottom=right_bottom,",
-            "    center=center",
+            "    left_bottom=left_bottom,",
+            "    right_top=right_top"
             ")",
             "",
             "# Find valid position using nearest_buildable",
@@ -304,7 +313,7 @@ def analyze_blueprint(blueprint_json: str) -> str:
     return analyzer.generate_program(), analyzer.get_inventory()
 
 
-execution_dir = os.path.dirname(os.path.realpath(__file__)) + "/blueprints/misc/"
+execution_dir = os.path.dirname(os.path.realpath(__file__)) + "/blueprints/other/"
 filename = "1a. Mining"  # Early Mining"
 
 # iterate over all json files in the directory
@@ -343,7 +352,7 @@ for filename in os.listdir(execution_dir):
                 continue
 
             print(code)
-            game_entities = instance.get_entities()
+            game_entities = instance.namespace.get_entities()
             try:
                 analyzer.verify_placement(game_entities)
             except AssertionError as e:

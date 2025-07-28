@@ -54,7 +54,7 @@ def generate_spatial_reasoning_with_code(questions_per_blueprint: int = 3) -> So
 
         image: RenderedImage = instance.namespace._render(blueprint=blueprint)
         id = str(hash(str(blueprint)))
-        image.save(f"../../images/{id}.jpg")
+        image.save(f"../../dataset/images/{id}.jpg")
         state.metadata["image"] = id
 
         if len(entities) < 2:
@@ -269,7 +269,7 @@ print(json.dumps(enhanced_pairs, indent=2))
         blueprint = state.metadata.get("blueprint", {})
         image: RenderedImage = instance.namespace._render(blueprint=blueprint)
         id = str(hash(str(blueprint)))
-        image.save(f"../../images/{id}.jpg")
+        image.save(f"../../dataset/images/{id}.jpg")
         state.metadata["image"] = id
 
         return state

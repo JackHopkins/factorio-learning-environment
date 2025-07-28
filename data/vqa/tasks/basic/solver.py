@@ -146,7 +146,7 @@ def generate_position_questions(questions_per_blueprint: int = 3) -> Solver:
 
         image: RenderedImage = instance.namespace._render(blueprint=blueprint)
         id = str(hash(str(blueprint)))
-        image.save(f"./{id}.jpg")
+        image.save(f"../../dataset/images/{id}.jpg")
         state.metadata["image"] = id
 
         # Group entities by name to handle multiple instances

@@ -28,8 +28,10 @@ def flatten_entities(entities: List[Union[Dict, Entity, EntityGroup]]) -> List[U
     for entity in entities:
         if isinstance(entity, dict):
             try:
-                # Sigh. Some blueprints are 0-12.
+                #Sigh. Some blueprints are 0-12.
+                #if 'belt' in entity['name']:
                 entity['direction'] = entity['direction'] / 2 if max_direction > 6 else entity['direction']
+
                 yield EntityCore(**entity)
             except Exception as e:
                 pass

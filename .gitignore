@@ -40,3 +40,8 @@ trajectory_logs/
 /data/vqa/tasks/spatial_reasoning/.compose.yaml
 /data/vqa/tasks/spatial_reasoning/logs/
 /data/vqa/tasks/logs/
+/data/vqa/images/
+/data/vqa/dataset/images/
+/data/vqa/tasks/basic/logs/
+/data/vqa/tasks/contrastive_alignment/logs/
+/data/vqa/tasks/contrastive_alignment/logs/

@@ -63,10 +63,15 @@ def contrastive_alignment_dataset(*args,
         random.shuffle(all_choices)
         target = all_choices.index(correct_answer)
 
-        image: RenderedImage = instance.namespace._render(blueprint=s.metadata['blueprint'])
-        id = str(hash(str(s.metadata['blueprint'])))
-        image.save(f"./{id}.jpg")
-        files = {"image": id}
+        try:
+            image: RenderedImage = instance.namespace._render(blueprint=s.metadata['blueprint'])
+            id = str(hash(str(s.metadata['blueprint'])))
+            image.save(f"../../images/{id}.jpg")
+            files = {"image": id}
+        except Exception as e:
+            print(e)
+            continue
+
         input = "What is the best title for this blueprint?" if subset == 'title' else "What is the purpose of this blueprint?"
         sample = Sample(choices=all_choices, target=str(target), input=input, files=files)
         samples.append(sample)
@@ -86,11 +91,12 @@ from data.vqa.hook import *
 if __name__ == "__main__":
     model = ["anthropic/claude-opus-4-20250514"]
     dataset = contrastive_alignment_dataset(subset="title")
+
     # Example: Run a denoising task
     results = eval(
         tasks=[],
         model=model,
         limit=1,
-        log_dir="./logs",
+        log_dir="./../logs",
         hooks=[VQAPairsHook()]
     )

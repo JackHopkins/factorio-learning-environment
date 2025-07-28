@@ -13,7 +13,7 @@ from data.vqa.tasks.denoising.solver import entity_removal_denoising
 from inspect_ai.solver import use_tools
 from inspect_ai.util import sandbox
 
-from data.vqa.hook import *
+from data.vqa.hook import VQAPairsHook
 
 
 @task
@@ -110,6 +110,7 @@ if __name__ == "__main__":
         model=["anthropic/claude-3-5-haiku-latest"],
         limit=2,  # Process 3 blueprints for testing
         log_dir="../../logs/spatial_sandbox",
+        hooks=[VQAPairsHook()]
     )
 
     # Print some generated questions
@@ -131,7 +132,7 @@ if __name__ == "__main__":
         model=["anthropic/claude-3-5-haiku-latest"],
         limit=2,
         log_dir="../../logs/spatial_context_sandbox",
-
+        hooks=[VQAPairsHook()]
     )
 
     # Print

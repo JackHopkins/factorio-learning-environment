@@ -60,9 +60,12 @@ def entity_removal_denoising(qa_pairs_per_blueprint: int = 5) -> Solver:
             question_response = await generate(state)
             question = question_response.output.completion.strip("\"")
 
-            image: RenderedImage = instance.namespace._render(blueprint=blueprint)
-            id = str(hash(str(blueprint)))
-            image.save(f"./{id}.jpg")
+            if not question:
+                continue
+
+            image: RenderedImage = instance.namespace._render(blueprint=modified_blueprint)
+            id = str(hash(str(modified_blueprint)))
+            image.save(f"../../dataset/images/{id}.jpg")
 
             # Generate the answer
             answer = entity_name

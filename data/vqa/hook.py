@@ -5,13 +5,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-from inspect_ai.hooks import Hooks, SampleEnd, TaskStart, hooks
+from inspect_ai.hooks import Hooks, SampleEnd, TaskStart, hooks, TaskEnd
+
 from inspect_ai.log import EvalConfig, EvalLog, EvalSample
 
 class VQAPairsSerializer:
     """Serializer for VQA pairs that collects and saves QA data to JSONL files."""
 
-    def __init__(self, output_dir: str = "./vqa_output"):
+    def __init__(self, output_dir: str = "./dataset"):
         """
         Initialize the serializer.
 
@@ -67,6 +68,8 @@ class VQAPairsSerializer:
                 if isinstance(field_data, list):
                     for qa in field_data:
                         normalized = normalizer(qa, metadata)
+                        if 'image_id' not in normalized.keys():
+                            normalized['image_id'] = metadata['image']
                         if normalized:
                             qa_pairs.append(normalized)
 
@@ -343,11 +346,12 @@ class VQAPairsSerializer:
 class VQAPairsHook(Hooks):
     """Hook that automatically serializes QA pairs after evaluation."""
 
-    def __init__(self, output_dir: str = "./vqa_output"):
+    def __init__(self, output_dir: str = "./../../dataset"):
         self.serializer = VQAPairsSerializer(output_dir)
 
-    def __call__(self, log: EvalLog):
+    async def on_task_end(self, task: TaskEnd):
         """Called after evaluation completes."""
+        log = task.log
         filepath = self.serializer.save_from_eval_log(log)
         stats = self.serializer.get_statistics(filepath)
 
@@ -355,3 +359,13 @@ class VQAPairsHook(Hooks):
         print(f"Statistics: {json.dumps(stats, indent=2)}")
 
         return log
+
+    # def __call__(self, log: EvalLog):
+    #     """Called after evaluation completes."""
+    #     filepath = self.serializer.save_from_eval_log(log)
+    #     stats = self.serializer.get_statistics(filepath)
+    #
+    #     print(f"\nVQA Pairs saved to: {filepath}")
+    #     print(f"Statistics: {json.dumps(stats, indent=2)}")
+    #
+    #     return log

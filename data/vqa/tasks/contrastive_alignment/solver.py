@@ -13,6 +13,7 @@ def generate_blueprint_title_and_purpose() -> Solver:
         blueprint = state.metadata.get("blueprint", {})
 
         # Generate prompt using Jinja2 template
+        del blueprint["label"]
         prompt = Templates.blueprint_title_purpose(blueprint=blueprint)
 
         state.messages[-1] = ChatMessageUser(content=prompt)

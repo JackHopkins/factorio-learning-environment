@@ -61,10 +61,10 @@ if __name__ == "__main__":
 
     # Example: Run a denoising task
     results = eval(
-        tasks=denoising_blueprint_task(qa_pairs_per_blueprint=5),
+        tasks=denoising_validation_task(qa_pairs_per_blueprint=5),
         model=model,
         limit=1,
-        log_dir="./logs",
+        log_dir="../../logs",
         hooks=[VQAPairsHook()]
     )
 

@@ -5,10 +5,12 @@ import re
 
 from inspect_ai.model import ChatMessageUser
 from inspect_ai.solver import Solver, solver, TaskState, Generate
+
+from fle.agents.data.screenshots_from_run import create_factorio_instance
+from fle.commons.models.rendered_image import RenderedImage
 from .templates import Templates
 
 
-# Alternative solver that generates both title and purpose
 @solver
 def generate_blueprint_title_and_purpose() -> Solver:
     """Generate both title and purpose description for blueprints."""
@@ -170,7 +172,7 @@ def generate_spatial_context_question() -> Solver:
     Alternative solver that generates more complex spatial reasoning questions
     for each QA pair that was already generated.
     """
-
+    instance = create_factorio_instance()
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         qa_pairs = state.metadata.get("qa_pairs", [])
         if not qa_pairs:
@@ -225,6 +227,11 @@ def generate_spatial_context_question() -> Solver:
             spatial_qa = qa_pair.copy()
             spatial_qa["spatial_question"] = spatial_question
             spatial_qa["nearby_entities"] = nearby_entities[:3]  # Keep top 3 nearest
+            blueprint = state.metadata.get("blueprint", {})
+            image: RenderedImage = instance.namespace._render(blueprint=blueprint)
+            id = str(hash(str(blueprint)))
+            image.save(f"../../images/{id}.jpg")
+            spatial_qa["image"] = id
 
             spatial_qa_pairs.append(spatial_qa)
 

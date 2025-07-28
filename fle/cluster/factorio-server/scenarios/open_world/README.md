@@ -1,0 +1,1 @@
+This remains empty, as it will cause the map to generate with the default seed

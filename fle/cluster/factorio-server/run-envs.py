@@ -22,14 +22,13 @@ class PlatformConfig:
         self.arch = platform.machine()
         self.os_name = platform.system()
         self.saves_path = ROOT_DIR / ".fle" / "saves"
-        self.cluster_dir = ROOT_DIR / "fle" / "cluster"
-        self.scenario_dir = self.cluster_dir / "scenarios"
         self.screenshots_dir = ROOT_DIR / "data" / "_screenshots"
         self.mods_path = self._detect_mods_path()
         self.image_name = "factoriotools/factorio:1.1.110"
         self.rcon_port = 27015
         self.udp_port = 34197
         self.scenario_name = Scenario.DEFAULT_LAB_SCENARIO.value
+        self.scenario_dir = Path(__file__).parent.resolve() / "scenarios"
         self.server_config_dir = Path(__file__).parent.resolve() / "config"
 
     def _detect_mods_path(self) -> str:

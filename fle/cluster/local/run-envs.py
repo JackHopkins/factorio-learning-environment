@@ -3,9 +3,9 @@ import os
 import platform
 import argparse
 from pathlib import Path
-import docker
-
-import docker.errors
+import asyncio
+import aiodocker
+from aiodocker.exceptions import DockerError
 
 from enum import Enum
 
@@ -73,95 +73,26 @@ class FactorioClusterManager:
         self.docker_platform = docker_platform
         self.config = config
         self.num = num_instances
-        self.client = docker.from_env()
         self.dry_run = dry_run
+        self.docker = aiodocker.Docker()
 
-    def _ensure_image(self):
-        """
-        Ensure the Factorio Docker image is available locally; pull it if missing.
-        """
+    async def _ensure_image(self):
         try:
-            self.client.images.get(self.config.image_name)
-        except docker.errors.ImageNotFound:
-            print(f"'{self.config.image_name}' Image not found locally.")
+            await self.docker.images.inspect(self.config.image_name)
+        except DockerError:
+            print(f"'{self.config.image_name}' image not found locally.")
             print("Pulling from Docker Hub...")
-            self.client.images.pull(self.config.image_name, platform=self.docker_platform)
+            await self.docker.images.pull(self.config.image_name)
             print("Image pulled successfully.")
 
-    def start(self):
-        # Make sure the Factorio image is present
-        self._ensure_image()
-        # ensure save subdirs exist
-        for i in range(self.num):
-            (self.config.saves_path / str(i)).mkdir(parents=True, exist_ok=True)
-
-        # render compose file
-        for i in range(self.num):
-            name = f"factorio_{i}"
-            if self.dry_run:
-                print(f"\nContainer name: {name}")
-                print(f"Port mappings: {self._get_ports(i)}")
-                print(f"Volume mounts: {self._get_volumes(i)}")
-                print(f"Environment variables: {self._get_environment()}")
-                print(f"Docker platform: {self.docker_platform}")
-                print("\n" + "=" * 80)
-                return
-            self.convert_scenario2map(name, i)
-            self.client.containers.run(
-                self.config.image_name,
-                name=name,
-                ports=self._get_ports(i),
-                volumes=self._get_volumes(i),
-                environment=self._get_environment(),
-                detach=True,
-                platform=self.docker_platform,
-                restart_policy={"Name": "unless-stopped"},
-                mem_limit="1024m",
-            )
-
-    def stop(self):
-        for container in self.client.containers.list(all=True):
-            if container.name.startswith("factorio_"):
-                container.stop()
-                container.remove()
-
-    def restart(self):
-        for container in self.client.containers.list(all=True):
-            if container.name.startswith("factorio_"):
-                container.restart()
-
-    def convert_scenario2map(self, name: str, instance_index: int):
-        save_dir = self.config.saves_path / str(instance_index)
-        save_dir.mkdir(parents=True, exist_ok=True)
-
-        # Check for existing .zip saves
-        save_zips = list(save_dir.glob("*.zip"))
-        if not save_zips:
-            print(f"No save found for {name}")
-            print(f"Converting {self.config.scenario_name} to saved map...")
-            conversion = self.client.containers.run(
-                self.config.image_name,
-                name=f"conv_{name}",
-                volumes=self._get_volumes(instance_index),
-                environment=self._get_environment(),
-                entrypoint=f"/scenario2map.sh",
-                command=[self.config.scenario_name],
-                detach=True,
-                platform=self.docker_platform,
-                auto_remove=True,
-            )
-            conversion.wait()
-            save_zips = list(save_dir.glob("*.zip"))
-            print("Scenario converted successfully.")
-    
     def _get_ports(self, instance_index: int) -> dict:
         return {
             f"{self.config.udp_port}/udp": self.config.udp_port + instance_index,
             f"{self.config.rcon_port}/tcp": self.config.rcon_port + instance_index,
         }
 
-    def _get_volumes(self, instance_index: int) -> dict:
-        return {
+    def _get_volumes(self, instance_index: int) -> list:
+        vols = {
             self.config.mods_path: {"bind": "/factorio/mods", "mode": "rw"},
             str(self.config.saves_path / str(instance_index)): {
                 "bind": "/factorio/saves",
@@ -171,20 +102,120 @@ class FactorioClusterManager:
                 "bind": f"/factorio/scenarios/{self.config.scenario_name}",
                 "mode": "rw",
             },
-            str((self.config.screenshots_dir).resolve()): {
+            str(self.config.screenshots_dir.resolve()): {
                 "bind": "/factorio/script-output",
                 "mode": "rw",
             },
         }
+        # HostConfig.Binds expects ["host:container:mode", ...]
+        return [f"{host}:{b['bind']}:{b['mode']}" for host, b in vols.items()]
 
-    def _get_environment(self) -> dict:
-        """Get environment variables for the container."""
-        return {
-            "LOAD_LATEST_SAVE": "true",  # "true" string not python bool !
+    def _get_environment(self) -> list:
+        env = {
+            "LOAD_LATEST_SAVE": "true",
             "PORT": str(self.config.udp_port),
             "RCON_PORT": str(self.config.rcon_port),
             "SERVER_SCENARIO": self.config.scenario_name,
+            "SAVES": "/opt/factorio/saves",
+            "CONFIG": "/opt/factorio/config",
+            "MODS": "/opt/factorio/mods",
+            "SCENARIOS": "/opt/factorio/scenarios",
         }
+        # Docker API wants ["KEY=VALUE", ...]
+        return [f"{k}={v}" for k, v in env.items()]
+
+    async def convert_scenario2map(self, name: str, instance_index: int):
+        save_dir = self.config.saves_path / str(instance_index)
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+        save_zips = list(save_dir.glob("*.zip"))
+        if not save_zips:
+            print(f"No save found for {name}")
+            print(f"Converting {self.config.scenario_name} to saved map...")
+            config = {
+                "Image": self.config.image_name,
+                "Env": self._get_environment(),
+                "HostConfig": {"Binds": self._get_volumes(instance_index)},
+                "Entrypoint": ["/scenario2map.sh"],
+                "Cmd": [self.config.scenario_name],
+                "Platform": self.docker_platform,
+            }
+            container = await self.docker.containers.run(
+                config=config, name=f"conv_{name}"
+            )
+            await container.wait()
+            await container.delete()
+            print("Scenario converted successfully.")
+
+    async def start(self):
+        await self._ensure_image()
+        for i in range(self.num):
+            (self.config.saves_path / str(i)).mkdir(parents=True, exist_ok=True)
+
+        if self.dry_run:
+            for i in range(self.num):
+                name = f"factorio_{i}"
+                print(f"\nContainer name: {name}")
+                print(f"Port mappings: {self._get_ports(i)}")
+                print(f"Volume mounts: {self._get_volumes(i)}")
+                print(f"Environment variables: {self._get_environment()}")
+                print(f"Docker platform: {self.docker_platform}")
+                print("\n" + "=" * 80)
+            return
+
+        # Launch all instances concurrently
+        tasks = [self._start_instance(i) for i in range(self.num)]
+        await asyncio.gather(*tasks)
+
+    async def _start_instance(self, instance_index: int):
+        name = f"factorio_{instance_index}"
+        await self.convert_scenario2map(name, instance_index)
+        config = {
+            "Image": self.config.image_name,
+            "Env": self._get_environment(),
+            "HostConfig": {
+                "PortBindings": {
+                    f"{self.config.udp_port}/udp": [
+                        {"HostPort": str(self.config.udp_port + instance_index)}
+                    ],
+                    f"{self.config.rcon_port}/tcp": [
+                        {"HostPort": str(self.config.rcon_port + instance_index)}
+                    ],
+                },
+                "Binds": self._get_volumes(instance_index),
+                "RestartPolicy": {"Name": "unless-stopped"},
+                "Memory": 1024 * 1024 * 1024,
+            },
+            "Platform": self.docker_platform,
+        }
+        await self.docker.containers.run(config=config, name=name)
+
+    async def stop(self):
+        # Stop & remove any container whose name starts with "factorio_"
+        ctrs = await self.docker.containers.list(all=True)
+        # Prepare concurrent stop/delete tasks
+        tasks = []
+        for ctr in ctrs:
+            info = await ctr.show()
+            nm = info.get("Name", "").lstrip("/")
+            if nm.startswith("factorio_"):
+                tasks.append(self._stop_and_delete(ctr))
+        # Run all stops/deletes concurrently
+        await asyncio.gather(*tasks)
+
+    async def _stop_and_delete(self, ctr):
+        await ctr.stop()
+        await ctr.delete()
+
+    async def restart(self):
+        ctrs = await self.docker.containers.list(all=True)
+        tasks = []
+        for ctr in ctrs:
+            info = await ctr.show()
+            nm = info.get("Name", "").lstrip("/")
+            if nm.startswith("factorio_"):
+                tasks.append(ctr.restart())
+        await asyncio.gather(*tasks)
 
 
 def parse_args():
@@ -200,15 +231,9 @@ def parse_args():
         help="Scenario to load",
     )
     p.add_argument(
-        "--force-amd64",
-        action="store_true",
-        help="Force use of amd64 platform",
+        "--force-amd64", action="store_true", help="Force use of amd64 platform"
     )
-    p.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Dry run",
-    )
+    p.add_argument("--dry-run", action="store_true", help="Dry run")
     p.add_argument(
         "--force",
         action="store_true",
@@ -223,7 +248,7 @@ def parse_args():
     return p.parse_args()
 
 
-def main():
+async def main():
     args = parse_args()
     config = PlatformConfig()
 
@@ -232,22 +257,21 @@ def main():
     )
     if args.force_amd64:
         docker_platform = "linux/amd64"
-
     if args.s == Scenario.OPEN_WORLD.value:
         config.scenario_name = Scenario.OPEN_WORLD.value
     elif args.s == Scenario.DEFAULT_LAB_SCENARIO.value:
         config.scenario_name = Scenario.DEFAULT_LAB_SCENARIO.value
 
     mgr = FactorioClusterManager(docker_platform, config, args.n, args.dry_run)
-
     if args.command == "start":
-        mgr.start()
+        await mgr.start()
     elif args.command == "stop":
-        mgr.stop()
+        await mgr.stop()
     elif args.command == "restart":
-        mgr.stop()
-        mgr.start()
+        await mgr.restart()
+
+    await mgr.docker.close()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

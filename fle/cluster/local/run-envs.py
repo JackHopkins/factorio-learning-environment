@@ -124,52 +124,20 @@ class FactorioClusterManager:
         # Docker API wants ["KEY=VALUE", ...]
         return [f"{k}={v}" for k, v in env.items()]
 
-    async def convert_scenario2map(self, name: str, instance_index: int):
-        save_dir = self.config.saves_path / str(instance_index)
-        save_dir.mkdir(parents=True, exist_ok=True)
-
-        save_zips = list(save_dir.glob("*.zip"))
-        if not save_zips:
-            print(f"No save found for {name}")
-            print(f"Converting {self.config.scenario_name} to saved map...")
-            config = {
-                "Image": self.config.image_name,
-                "Env": self._get_environment(),
-                "HostConfig": {"Binds": self._get_volumes(instance_index)},
-                "Entrypoint": ["/scenario2map.sh"],
-                "Cmd": [self.config.scenario_name],
-                "Platform": self.docker_platform,
-            }
-            container = await self.docker.containers.run(
-                config=config, name=f"conv_{name}"
-            )
-            await container.wait()
-            await container.delete()
-            print("Scenario converted successfully.")
-
-    async def start(self):
-        await self._ensure_image()
-        for i in range(self.num):
-            (self.config.saves_path / str(i)).mkdir(parents=True, exist_ok=True)
-
-        if self.dry_run:
-            for i in range(self.num):
-                name = f"factorio_{i}"
-                print(f"\nContainer name: {name}")
-                print(f"Port mappings: {self._get_ports(i)}")
-                print(f"Volume mounts: {self._get_volumes(i)}")
-                print(f"Environment variables: {self._get_environment()}")
-                print(f"Docker platform: {self.docker_platform}")
-                print("\n" + "=" * 80)
-            return
-
-        # Launch all instances concurrently
-        tasks = [self._start_instance(i) for i in range(self.num)]
-        await asyncio.gather(*tasks)
-
-    async def _start_instance(self, instance_index: int):
-        name = f"factorio_{instance_index}"
-        await self.convert_scenario2map(name, instance_index)
+    async def get_scenario2map_ctr(self, instance_index: int):
+        config = {
+            "Image": self.config.image_name,
+            "Env": self._get_environment(),
+            "HostConfig": {"Binds": self._get_volumes(instance_index)},
+            "Entrypoint": ["/scenario2map.sh"],
+            "Cmd": [self.config.scenario_name],
+            "Platform": self.docker_platform,
+        }
+        return await self.docker.containers.run(
+            config=config, name=f"conv_factorio_{instance_index}"
+        )
+    
+    async def get_server_ctr(self, instance_index: int):
         config = {
             "Image": self.config.image_name,
             "Env": self._get_environment(),
@@ -188,24 +156,62 @@ class FactorioClusterManager:
             },
             "Platform": self.docker_platform,
         }
-        await self.docker.containers.run(config=config, name=name)
+        return await self.docker.containers.create_or_replace(config=config, name=f"factorio_{instance_index}")
+
+    async def start(self):
+        await self._ensure_image()
+        for i in range(self.num):
+            (self.config.saves_path / str(i)).mkdir(parents=True, exist_ok=True)
+
+        if self.dry_run:
+            for i in range(self.num):
+                name = f"factorio_{i}"
+                print(f"\nContainer name: {name}")
+                print(f"Port mappings: {self._get_ports(i)}")
+                print(f"Volume mounts: {self._get_volumes(i)}")
+                print(f"Environment variables: {self._get_environment()}")
+                print(f"Docker platform: {self.docker_platform}")
+                print("\n" + "=" * 80)
+            return
+
+        # Launch all instances concurrently
+        containers = await self.get_containers_to_run()
+
+        scenario2map_ctrs = containers[0]
+        server_ctrs = containers[1]
+
+        await asyncio.gather(*[item.wait() for item in scenario2map_ctrs])
+        await asyncio.gather(*[item.delete() for item in scenario2map_ctrs])
+
+        await asyncio.gather(*[item.start() for item in server_ctrs])
+    
+    def check_save_exists(self, instance_index: int):
+        save_dir = self.config.saves_path / str(instance_index)
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+        save_zips = list(save_dir.glob("*.zip"))
+        return len(save_zips) > 0
+    
+    async def get_containers_to_run(self):
+        scenario2map_ctrs = [await self.get_scenario2map_ctr(i) for i in range(self.num) if not self.check_save_exists(i)]
+        server_ctrs = [await self.get_server_ctr(i) for i in range(self.num)]
+        return scenario2map_ctrs, server_ctrs
 
     async def stop(self):
         # Stop & remove any container whose name starts with "factorio_"
         ctrs = await self.docker.containers.list(all=True)
         # Prepare concurrent stop/delete tasks
-        tasks = []
+        tasks_stop = []
+        tasks_delete = []
         for ctr in ctrs:
             info = await ctr.show()
             nm = info.get("Name", "").lstrip("/")
             if nm.startswith("factorio_"):
-                tasks.append(self._stop_and_delete(ctr))
+                tasks_stop.append(ctr.stop())
+                tasks_delete.append(ctr.delete())
         # Run all stops/deletes concurrently
-        await asyncio.gather(*tasks)
-
-    async def _stop_and_delete(self, ctr):
-        await ctr.stop()
-        await ctr.delete()
+        await asyncio.gather(*tasks_stop)
+        await asyncio.gather(*tasks_delete)
 
     async def restart(self):
         ctrs = await self.docker.containers.list(all=True)
@@ -221,7 +227,7 @@ class FactorioClusterManager:
 def parse_args():
     p = argparse.ArgumentParser(description="Manage a local Factorio cluster")
     p.add_argument(
-        "command", choices=["start", "stop", "restart"], nargs="?", default="start"
+        "command", choices=["start", "stop", "restart", "clean"], nargs="?", default="start"
     )
     p.add_argument("-n", type=int, default=1, help="Number of instances (1-33)")
     p.add_argument(

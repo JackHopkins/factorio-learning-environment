@@ -17,10 +17,11 @@ from fle.env.utils.rcon import (
 
 import importlib.util
 
+
 class ToolHookRegistry:
     def __init__(self):
         # Structure: hooks[tool_name]['pre' or 'post'] -> list of callbacks
-        self.hooks = defaultdict(lambda: {'pre': [], 'post': []})
+        self.hooks = defaultdict(lambda: {"pre": [], "post": []})
 
     def register(self, tool_name, phase, callback=None):
         """
@@ -35,6 +36,7 @@ class ToolHookRegistry:
             def decorator(fn):
                 self.hooks[tool_name][phase].append(fn)
                 return fn
+
             return decorator
         else:
             # direct call
@@ -51,16 +53,21 @@ class ToolHookRegistry:
     @contextmanager
     def around(self, tool_name, tool_instance, *args, **kwargs):
         # run all pre-hooks
-        self.execute(tool_name, 'pre', tool_instance, *args, **kwargs)
+        self.execute(tool_name, "pre", tool_instance, *args, **kwargs)
         try:
             yield
         finally:
             # run all post-hooks
-            self.execute(tool_name, 'post', tool_instance, *args, **kwargs)
+            self.execute(tool_name, "post", tool_instance, *args, **kwargs)
 
 
 class LuaScriptManager:
-    def __init__(self, rcon_client: RCONClient, tool_hook_registry: ToolHookRegistry, cache_scripts: bool = False):
+    def __init__(
+        self,
+        rcon_client: RCONClient,
+        tool_hook_registry: ToolHookRegistry,
+        cache_scripts: bool = False,
+    ):
         self.rcon_client = rcon_client
         self.tool_hook_registry = tool_hook_registry
         self.cache_scripts = cache_scripts
@@ -77,7 +84,6 @@ class LuaScriptManager:
         self.lib_scripts = self.get_libs_to_load()
         self.lua = LuaRuntime(unpack_returned_tuples=True)
 
-
     def update_game_checksum(self, script_name: str, checksum: str):
         self.rcon_client.send_command(
             f"/sc global.set_lua_script_checksum('{script_name}', '{checksum}')"
@@ -92,7 +98,9 @@ class LuaScriptManager:
         self.rcon_client.send_command("/sc global.clear_lua_script_checksums()")
 
     def _get_game_checksums(self):
-        response = self.rcon_client.send_command("/sc rcon.print(global.get_lua_script_checksums())")
+        response = self.rcon_client.send_command(
+            "/sc rcon.print(global.get_lua_script_checksums())"
+        )
         return json.loads(response)
 
     def check_lua_syntax(self, script):
@@ -211,15 +219,18 @@ class LuaScriptManager:
 
         return scripts_to_load
 
-
-    def register_controllers(self, server, namespaces: list, invalidate_cache: bool = False):
+    def register_controllers(
+        self, server, namespaces: list, invalidate_cache: bool = False
+    ):
         """
         Load Python controllers from valid tool directories via RCON.
         Delegated from FactorioServer.register_controllers.
         """
         # Reinitialize manager and script_dict if needed
         if invalidate_cache:
-            server.lua_script_manager = LuaScriptManager(server.rcon_client, server.tool_hook_registry, False)
+            server.lua_script_manager = LuaScriptManager(
+                server.rcon_client, server.tool_hook_registry, False
+            )
             manager = server.lua_script_manager
             server.script_dict = {
                 **manager.lib_scripts,
@@ -239,7 +250,9 @@ class LuaScriptManager:
 
             @wraps(orig_callable)
             def wrapper(*args, **kwargs):
-                with self.tool_hook_registry.around(tool_name, orig_callable, *args, **kwargs):
+                with self.tool_hook_registry.around(
+                    tool_name, orig_callable, *args, **kwargs
+                ):
                     return orig_callable(*args, **kwargs)
 
             return wrapper
@@ -257,7 +270,9 @@ class LuaScriptManager:
                 directory_name = Path(dirpath).parent.name
 
                 # Load Python module
-                module_spec = importlib.util.spec_from_file_location(tool_name, client_file)
+                module_spec = importlib.util.spec_from_file_location(
+                    tool_name, client_file
+                )
                 module = importlib.util.module_from_spec(module_spec)
                 module_spec.loader.exec_module(module)
 
@@ -271,10 +286,18 @@ class LuaScriptManager:
                     for i, namespace in enumerate(namespaces):
                         callable_class = getattr(module, class_name)
                         callable_instance = callable_class(server, namespace)
-                        wrapped_instance = create_hook_wrapper(tool_name.lower(), callable_instance)
+                        wrapped_instance = create_hook_wrapper(
+                            tool_name.lower(), callable_instance
+                        )
                         server.controllers[tool_name.lower()] = callable_instance
 
-                        attr = f"_{tool_name.lower()}" if directory_name == "admin" else tool_name.lower()
+                        attr = (
+                            f"_{tool_name.lower()}"
+                            if directory_name == "admin"
+                            else tool_name.lower()
+                        )
                         setattr(namespace, attr, wrapped_instance)
                 except Exception as e:
-                    raise Exception(f"Could not instantiate {class_name} from {client_file}. {e}")
+                    raise Exception(
+                        f"Could not instantiate {class_name} from {client_file}. {e}"
+                    )

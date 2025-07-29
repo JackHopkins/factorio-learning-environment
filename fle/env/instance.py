@@ -75,7 +75,9 @@ class DirectionInternal(enum.Enum):
 class FactorioTransaction:
     def __init__(self, server):
         self.server = server
-        self.commands: List[Tuple[str, List[Any], bool]] = []  # (command, parameters, is_raw)
+        self.commands: List[Tuple[str, List[Any], bool]] = (
+            []
+        )  # (command, parameters, is_raw)
 
     def add_command(self, command: str, *parameters, raw=False):
         self.commands.append((command, list(parameters), raw))
@@ -90,12 +92,14 @@ class FactorioTransaction:
         """Execute all commands in this transaction"""
         start = timer()
         rcon_commands = {}
-        
+
         for idx, (command, parameters, is_raw) in enumerate(self.commands):
             if is_raw:
                 rcon_commands[f"{idx}_{command}"] = command
             else:
-                script = self.server._get_command(command, parameters=parameters, measured=False)
+                script = self.server._get_command(
+                    command, parameters=parameters, measured=False
+                )
                 rcon_commands[f"{idx}_{command}"] = script
 
         lua_responses = self.server.rcon_client.send_commands(rcon_commands)
@@ -118,29 +122,32 @@ class FactorioTransaction:
         if exc_type is None:  # Only execute if no exception occurred
             self.execute()
 
+
 class FactorioServer:
     def __init__(self, address, tcp_port, cache_scripts=True):
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
         self.cache_scripts = cache_scripts
         self.tool_hook_registry = ToolHookRegistry()
         # Initialize Lua script manager and script dictionary
-        self.lua_script_manager = LuaScriptManager(self.rcon_client, self.tool_hook_registry, cache_scripts)
+        self.lua_script_manager = LuaScriptManager(
+            self.rcon_client, self.tool_hook_registry, cache_scripts
+        )
         self.script_dict = {
             **self.lua_script_manager.lib_scripts,
             **self.lua_script_manager.tool_scripts,
         }
-    
+
     def ensure_rcon_client(self):
         if not self.rcon_client:
             self.rcon_client = RCONClient(self.address, self.tcp_port, "factorio")
         return self.rcon_client
-    
+
     def run_rcon_print(self, command: str):
         return self.rcon_client.send_command(f"/sc rcon.print({command})")
-    
+
     def send_command(self, command: str):
         return self.rcon_client.send_command(command)
-    
+
     def load_init_into_game(self, init_scripts):
         if type(init_scripts) == str:
             init_scripts = [init_scripts]
@@ -149,8 +156,7 @@ class FactorioServer:
 
     def load_tool_into_game(self, name):
         self.lua_script_manager.load_tool_into_game(name)
-    
-    
+
     def connect_to_server(self, address, tcp_port):
         try:
             rcon_client = RCONClient(address, tcp_port, "factorio")
@@ -188,7 +194,9 @@ class FactorioServer:
             # Only execute if no exception occurred
             tx.execute()
 
-    def register_controllers(self, namespaces: List["FactorioNamespace"], invalidate_cache: bool = False):
+    def register_controllers(
+        self, namespaces: List["FactorioNamespace"], invalidate_cache: bool = False
+    ):
         """
         Load Python controllers from valid tool directories (delegated).
         """
@@ -244,7 +252,6 @@ class FactorioInstance:
 
         self.peaceful = peaceful
         self.namespaces = [self.namespace_class(self, i) for i in range(num_agents)]
-
 
         # Register controllers with the server
         self.server.register_controllers(self.namespaces)
@@ -338,7 +345,9 @@ class FactorioInstance:
         This resets the cached production flows that we track for achievements and diversity sampling.
         """
         with self.server.transaction() as t:
-            t.add_command("/sc global.crafted_items = {}; global.harvested_items = {}", raw=True)
+            t.add_command(
+                "/sc global.crafted_items = {}; global.harvested_items = {}", raw=True
+            )
 
     def _reset_elapsed_ticks(self):
         """
@@ -386,9 +395,9 @@ class FactorioInstance:
 
     def reset(self, game_state: Optional[GameState] = None):
         # Reset the namespace (clear variables, functions etc)
-        assert not game_state or len(game_state.inventories) == self.num_agents, (
-            "Game state must have the same number of inventories as num_agents"
-        )
+        assert (
+            not game_state or len(game_state.inventories) == self.num_agents
+        ), "Game state must have the same number of inventories as num_agents"
 
         for namespace in self.namespaces:
             namespace.reset()
@@ -480,7 +489,7 @@ class FactorioInstance:
         ]
         if self.peaceful:
             init_scripts.append("enemies")
-        
+
         self.server.load_init_into_game(init_scripts)
 
         inventories = [self.initial_inventory] * self.num_agents

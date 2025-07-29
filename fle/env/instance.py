@@ -34,6 +34,7 @@ from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )
 from fle.env.utils.rcon import _load_lib
+from collections import defaultdict
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000
@@ -119,10 +120,52 @@ class FactorioTransaction:
         if exc_type is None:  # Only execute if no exception occurred
             self.execute()
 
+class ToolHookRegistry:
+    def __init__(self):
+        # Structure: hooks[tool_name]['pre' or 'post'] -> list of callbacks
+        self.hooks = defaultdict(lambda: {'pre': [], 'post': []})
+
+    def register(self, tool_name, phase, callback=None):
+        """
+        Usage:
+          @registry.register("mine", "pre")
+          def before_mine(tool, *args): ...
+
+          registry.register("mine", "post", callback_fn)
+        """
+        if callback is None:
+            # used as decorator
+            def decorator(fn):
+                self.hooks[tool_name][phase].append(fn)
+                return fn
+            return decorator
+        else:
+            # direct call
+            self.hooks[tool_name][phase].append(callback)
+            return callback
+
+    def execute(self, tool_name, phase, tool_instance, *args, **kwargs):
+        for fn in self.hooks[tool_name][phase]:
+            try:
+                fn(tool_instance, *args, **kwargs)
+            except Exception as e:
+                print(f"[HookError] {phase} hook for {tool_name}: {e}")
+
+    @contextmanager
+    def around(self, tool_name, tool_instance, *args, **kwargs):
+        # run all pre-hooks
+        self.execute(tool_name, 'pre', tool_instance, *args, **kwargs)
+        try:
+            yield
+        finally:
+            # run all post-hooks
+            self.execute(tool_name, 'post', tool_instance, *args, **kwargs)
+
 class FactorioServer:
     def __init__(self, address, tcp_port, cache_scripts=True):
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
         self.cache_scripts = cache_scripts
+        self.tool_hook_registry = ToolHookRegistry()
         # Initialize Lua script manager and script dictionary
         self.lua_script_manager = LuaScriptManager(self.rcon_client, cache_scripts)
         self.script_dict = {
@@ -188,140 +231,7 @@ class FactorioServer:
         with transaction as t:
             yield t
 
-    def register_post_tool_hook(self, tool_name, callback=None):
-        """
-        Register a hook to be called after a specific tool is executed.
-        Can be used as a regular function or as a decorator.
-
-        Args:
-            tool_name (str): Name of the tool to hook into
-            callback (callable, optional): Function to call after the tool is executed.
-                                          Will receive the tool instance and the result as arguments.
-
-        Returns:
-            If used as a regular function (with callback provided), returns the callback.
-            If used as a decorator (without callback), returns a decorator function.
-        """
-        # When used as a decorator without parentheses: @register_post_tool_hook
-        if tool_name is not None and callback is None and callable(tool_name):
-            callback = tool_name
-            tool_name = callback.__name__
-            if not hasattr(self, "post_tool_hooks"):
-                self.post_tool_hooks = {}
-            if tool_name not in self.post_tool_hooks:
-                self.post_tool_hooks[tool_name] = []
-            self.post_tool_hooks[tool_name].append(callback)
-            return callback
-
-        # When used as a decorator with arguments: @register_post_tool_hook("tool_name")
-        if callback is None:
-
-            def decorator(func):
-                if not hasattr(self, "post_tool_hooks"):
-                    self.post_tool_hooks = {}
-                if tool_name not in self.post_tool_hooks:
-                    self.post_tool_hooks[tool_name] = []
-                self.post_tool_hooks[tool_name].append(func)
-                return func
-
-            return decorator
-
-        # When used as a regular function: register_post_tool_hook("tool_name", callback_func)
-        if not callable(callback):
-            raise TypeError("Callback must be callable")
-
-        if not hasattr(self, "post_tool_hooks"):
-            self.post_tool_hooks = {}
-        if tool_name not in self.post_tool_hooks:
-            self.post_tool_hooks[tool_name] = []
-
-        self.post_tool_hooks[tool_name].append(callback)
-        return callback
-
-    def register_pre_tool_hook(self, tool_name, callback=None):
-        """
-        Register a hook to be called before a specific tool is executed.
-        Can be used as a regular function or as a decorator.
-
-        Args:
-            tool_name (str): Name of the tool to hook into
-            callback (callable, optional): Function to call before the tool is executed.
-                                          Will receive the tool instance and the arguments as parameters.
-
-        Returns:
-            If used as a regular function (with callback provided), returns the callback.
-            If used as a decorator (without callback), returns a decorator function.
-        """
-        # When used as a decorator without parentheses: @register_pre_tool_hook
-        if tool_name is not None and callback is None and callable(tool_name):
-            callback = tool_name
-            tool_name = callback.__name__
-            if not hasattr(self, "pre_tool_hooks"):
-                self.pre_tool_hooks = {}
-            if tool_name not in self.pre_tool_hooks:
-                self.pre_tool_hooks[tool_name] = []
-            self.pre_tool_hooks[tool_name].append(callback)
-            return callback
-
-        # When used as a decorator with arguments: @register_pre_tool_hook("tool_name")
-        if callback is None:
-
-            def decorator(func):
-                if not hasattr(self, "pre_tool_hooks"):
-                    self.pre_tool_hooks = {}
-                if tool_name not in self.pre_tool_hooks:
-                    self.pre_tool_hooks[tool_name] = []
-                self.pre_tool_hooks[tool_name].append(func)
-                return func
-
-            return decorator
-
-        # When used as a regular function: register_pre_tool_hook("tool_name", callback_func)
-        if not callable(callback):
-            raise TypeError("Callback must be callable")
-
-        if not hasattr(self, "pre_tool_hooks"):
-            self.pre_tool_hooks = {}
-        if tool_name not in self.pre_tool_hooks:
-            self.pre_tool_hooks[tool_name] = []
-
-        self.pre_tool_hooks[tool_name].append(callback)
-        return callback
-
-    def execute_post_tool_hooks(self, tool_name, tool_instance, result):
-        """
-        Execute all hooks registered for a tool after it has been executed.
-
-        Args:
-            tool_name (str): Name of the tool
-            tool_instance: The tool instance that was executed
-            result: The result of the tool execution
-        """
-        if tool_name in self.post_tool_hooks:
-            for callback in self.post_tool_hooks[tool_name]:
-                try:
-                    callback(tool_instance, result)
-                except Exception as e:
-                    print(f"Error in post-tool hook for {tool_name}: {e}")
-
-    def execute_pre_tool_hooks(self, tool_name, tool_instance, *args, **kwargs):
-        """
-        Execute all hooks registered for a tool before it is executed.
-
-        Args:
-            tool_name (str): Name of the tool
-            tool_instance: The tool instance to be executed
-            *args, **kwargs: The arguments passed to the tool
-        """
-        if tool_name in self.pre_tool_hooks:
-            for callback in self.pre_tool_hooks[tool_name]:
-                try:
-                    callback(tool_instance, *args, **kwargs)
-                except Exception as e:
-                    print(f"Error in pre-tool hook for {tool_name}: {e}")
-
-
-    def register_controllers(self, namespaces, invalidate_cache=False):
+    def register_controllers(self, namespaces: List[FactorioNamespace], invalidate_cache: bool = False):
         """
         Load Python controllers from valid tool directories (those containing both client.py and server.lua)
         """
@@ -340,30 +250,13 @@ class FactorioServer:
             return "".join(word.capitalize() for word in snake_str.split("_"))
 
         # Create a function that wraps a tool's call method to execute hooks
-        def create_hook_wrapper(tool_name, original_callable):
+        def create_hook_wrapper(tool_name, orig_callable):
             from functools import wraps
 
-            @wraps(original_callable)
+            @wraps(orig_callable)
             def wrapper(*args, **kwargs):
-                # Execute pre-tool hooks
-                try:
-                    self.execute_pre_tool_hooks(
-                        tool_name, original_callable, *args, **kwargs
-                    )
-                except Exception as e:
-                    print(f"Error in pre-tool hook for {tool_name}: {e}")
-
-                # Execute the original callable
-                result = original_callable(*args, **kwargs)
-
-                # Execute post-tool hooks
-                try:
-                    self.execute_post_tool_hooks(tool_name, original_callable, result)
-                except Exception as e:
-                    print(f"Error in post-tool hook for {tool_name}: {e}")
-
-                return result
-
+                with self.tool_hook_registry.around(tool_name, orig_callable, *args, **kwargs):
+                    return orig_callable(*args, **kwargs)
             return wrapper
 
         # Walk through all subdirectories
@@ -435,8 +328,7 @@ class FactorioServer:
         if hasattr(self, "rcon_client") and self.rcon_client:
             self.rcon_client.close()
 
-        self.post_tool_hooks = {}
-        self.pre_tool_hooks = {}
+        self.tool_hook_registry = ToolHookRegistry()
 
         # Join all non-daemon threads
         for thread in threading.enumerate():

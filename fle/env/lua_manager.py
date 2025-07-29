@@ -2,9 +2,9 @@ import hashlib
 import json
 import os
 from pathlib import Path
-
+from collections import defaultdict
 from lupa.lua54 import LuaRuntime
-
+from contextlib import contextmanager
 from factorio_rcon import RCONClient
 from fle.env.utils.rcon import (
     _get_dir,
@@ -15,13 +15,54 @@ from fle.env.utils.rcon import (
     _load_script,
 )
 
+class ToolHookRegistry:
+    def __init__(self):
+        # Structure: hooks[tool_name]['pre' or 'post'] -> list of callbacks
+        self.hooks = defaultdict(lambda: {'pre': [], 'post': []})
+
+    def register(self, tool_name, phase, callback=None):
+        """
+        Usage:
+          @registry.register("mine", "pre")
+          def before_mine(tool, *args): ...
+
+          registry.register("mine", "post", callback_fn)
+        """
+        if callback is None:
+            # used as decorator
+            def decorator(fn):
+                self.hooks[tool_name][phase].append(fn)
+                return fn
+            return decorator
+        else:
+            # direct call
+            self.hooks[tool_name][phase].append(callback)
+            return callback
+
+    def execute(self, tool_name, phase, tool_instance, *args, **kwargs):
+        for fn in self.hooks[tool_name][phase]:
+            try:
+                fn(tool_instance, *args, **kwargs)
+            except Exception as e:
+                print(f"[HookError] {phase} hook for {tool_name}: {e}")
+
+    @contextmanager
+    def around(self, tool_name, tool_instance, *args, **kwargs):
+        # run all pre-hooks
+        self.execute(tool_name, 'pre', tool_instance, *args, **kwargs)
+        try:
+            yield
+        finally:
+            # run all post-hooks
+            self.execute(tool_name, 'post', tool_instance, *args, **kwargs)
+
 
 class LuaScriptManager:
     def __init__(self, rcon_client: RCONClient, cache_scripts: bool = False):
         self.rcon_client = rcon_client
         self.cache_scripts = cache_scripts
         if not cache_scripts:
-            self._clear_game_checksums(rcon_client)
+            self._clear_game_checksums()
         # self.action_directory = _get_action_dir()
 
         self.lib_directory = _get_lib_dir()
@@ -33,6 +74,18 @@ class LuaScriptManager:
         self.lib_scripts = self.get_libs_to_load()
         self.lua = LuaRuntime(unpack_returned_tuples=True)
 
+
+    def update_game_checksum(self, script_name: str, checksum: str):
+        self.rcon_client.send_command(
+            f"/sc global.set_lua_script_checksum('{script_name}', '{checksum}')"
+        )
+
+    def _clear_game_checksums(self):
+        self.rcon_client.send_command("/sc global.clear_lua_script_checksums()")
+
+    def _get_game_checksums(self):
+        response = self.rcon_client.send_command("/sc rcon.print(global.get_lua_script_checksums())")
+        return json.loads(response)
 
     def check_lua_syntax(self, script):
         try:
@@ -75,7 +128,7 @@ class LuaScriptManager:
                     and self.game_checksums[script_name] == checksum
                 ):
                     continue
-                self.update_game_checksum(self.rcon_client, script_name, checksum)
+                self.update_game_checksum(script_name, checksum)
 
             correct, error = self.check_lua_syntax(script)
             if not correct:
@@ -96,7 +149,7 @@ class LuaScriptManager:
             checksum = self.calculate_checksum(script)
             if name in self.game_checksums and self.game_checksums[name] == checksum:
                 return
-            self.update_game_checksum(self.rcon_client, name, checksum)
+            self.update_game_checksum(name, checksum)
 
         self.rcon_client.send_command("/sc " + script)
 

@@ -42,6 +42,8 @@ class PlatformConfig:
         self.server_config_dir = Path(__file__).parent.resolve() / "config"
         self.mode = Mode.SAVE_BASED.value
         self.temp_playing_dir = "/opt/factorio/temp/currently-playing"
+        with open(self.server_config_dir / "rconpw", "r") as f:
+            self.factorio_password = f.read().strip()
 
     def _detect_mods_path(self) -> str:
         if any(x in self.os_name for x in ("MINGW", "MSYS", "CYGWIN")):

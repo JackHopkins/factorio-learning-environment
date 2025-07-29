@@ -60,8 +60,9 @@ class ToolHookRegistry:
 
 
 class LuaScriptManager:
-    def __init__(self, rcon_client: RCONClient, cache_scripts: bool = False):
+    def __init__(self, rcon_client: RCONClient, tool_hook_registry: ToolHookRegistry, cache_scripts: bool = False):
         self.rcon_client = rcon_client
+        self.tool_hook_registry = tool_hook_registry
         self.cache_scripts = cache_scripts
         if not cache_scripts:
             self._clear_game_checksums()
@@ -81,6 +82,11 @@ class LuaScriptManager:
         self.rcon_client.send_command(
             f"/sc global.set_lua_script_checksum('{script_name}', '{checksum}')"
         )
+
+    def init_action_checksums(self):
+        checksum_init_script = _load_lib("checksum")
+        response = self.rcon_client.send_command("/sc " + checksum_init_script)
+        return response
 
     def _clear_game_checksums(self):
         self.rcon_client.send_command("/sc global.clear_lua_script_checksums()")
@@ -213,7 +219,7 @@ class LuaScriptManager:
         """
         # Reinitialize manager and script_dict if needed
         if invalidate_cache:
-            server.lua_script_manager = LuaScriptManager(server.rcon_client, False)
+            server.lua_script_manager = LuaScriptManager(server.rcon_client, server.tool_hook_registry, False)
             manager = server.lua_script_manager
             server.script_dict = {
                 **manager.lib_scripts,
@@ -233,7 +239,7 @@ class LuaScriptManager:
 
             @wraps(orig_callable)
             def wrapper(*args, **kwargs):
-                with server.tool_hook_registry.around(tool_name, orig_callable, *args, **kwargs):
+                with self.tool_hook_registry.around(tool_name, orig_callable, *args, **kwargs):
                     return orig_callable(*args, **kwargs)
 
             return wrapper

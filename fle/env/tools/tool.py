@@ -1,7 +1,8 @@
 from typing import Tuple, Union
 
 from fle.env.entities import Position, Entity
-from fle.env.namespace import FactorioNamespace, FactorioServer
+from fle.env.namespace import FactorioNamespace
+from fle.env.instance import FactorioServer
 from fle.env.tools.controller import Controller
 
 

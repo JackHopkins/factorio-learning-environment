@@ -33,8 +33,6 @@ from fle.commons.models.game_state import GameState
 from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )
-from fle.env.utils.rcon import _load_lib
-from collections import defaultdict
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000
@@ -126,11 +124,16 @@ class FactorioServer:
         self.cache_scripts = cache_scripts
         self.tool_hook_registry = ToolHookRegistry()
         # Initialize Lua script manager and script dictionary
-        self.lua_script_manager = LuaScriptManager(self.rcon_client, cache_scripts)
+        self.lua_script_manager = LuaScriptManager(self.rcon_client, self.tool_hook_registry, cache_scripts)
         self.script_dict = {
             **self.lua_script_manager.lib_scripts,
             **self.lua_script_manager.tool_scripts,
         }
+    
+    def ensure_rcon_client(self):
+        if not self.rcon_client:
+            self.rcon_client = RCONClient(self.address, self.tcp_port, "factorio")
+        return self.rcon_client
     
     def run_rcon_print(self, command: str):
         return self.rcon_client.send_command(f"/sc rcon.print({command})")
@@ -139,13 +142,14 @@ class FactorioServer:
         return self.rcon_client.send_command(command)
     
     def load_init_into_game(self, init_scripts):
+        if type(init_scripts) == str:
+            init_scripts = [init_scripts]
         for script_name in init_scripts:
             self.lua_script_manager.load_init_into_game(script_name)
+
+    def load_tool_into_game(self, name):
+        self.lua_script_manager.load_tool_into_game(name)
     
-    def init_action_checksums(self):
-        checksum_init_script = _load_lib("checksum")
-        response = self.send_command("/sc " + checksum_init_script)
-        return response
     
     def connect_to_server(self, address, tcp_port):
         try:
@@ -174,9 +178,15 @@ class FactorioServer:
     @contextmanager
     def transaction(self):
         """Context manager for backward compatibility"""
-        transaction = FactorioTransaction(self)
-        with transaction as t:
-            yield t
+        tx = FactorioTransaction(self)
+        try:
+            yield tx
+        except:
+            # On error, do not execute queued commands
+            raise
+        else:
+            # Only execute if no exception occurred
+            tx.execute()
 
     def register_controllers(self, namespaces: List["FactorioNamespace"], invalidate_cache: bool = False):
         """
@@ -207,7 +217,7 @@ class FactorioServer:
 class FactorioInstance:
     namespace_class = FactorioNamespace
     _cleanup_registered = False  # Only register cleanup once per process
-    namespaces = List[FactorioNamespace]
+    namespaces: List[FactorioNamespace]
 
     def __init__(
         self,
@@ -327,17 +337,15 @@ class FactorioInstance:
         """
         This resets the cached production flows that we track for achievements and diversity sampling.
         """
-        self.server.add_command(
-            "/sc global.crafted_items = {}; global.harvested_items = {}", raw=True
-        )
-        self.server.execute_transaction()
+        with self.server.transaction() as t:
+            t.add_command("/sc global.crafted_items = {}; global.harvested_items = {}", raw=True)
 
     def _reset_elapsed_ticks(self):
         """
         This resets the cached production flows that we track for achievements and diversity sampling.
         """
-        self.server.add_command("/sc global.elapsed_ticks = 0", raw=True)
-        self.server.execute_transaction()
+        with self.server.transaction() as t:
+            t.add_command("/sc global.elapsed_ticks = 0", raw=True)
 
     def _reset(self, inventories: List[Dict[str, Any]]):
         with self.server.transaction() as t:
@@ -633,6 +641,3 @@ class FactorioInstance:
 
     def cleanup(self):
         self.server.cleanup()
-    
-    def reset(self, game_state: Optional[GameState] = None):
-        self.server.reset(game_state)

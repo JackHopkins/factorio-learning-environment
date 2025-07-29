@@ -14,7 +14,6 @@ def game(instance):
         "burner-mining-drill": 10,
     }
     instance.reset()
-    instance.execute_transaction()
     yield instance.namespace
 
 

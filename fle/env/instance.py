@@ -177,7 +177,7 @@ class FactorioServer:
 
     @contextmanager
     def transaction(self):
-        """Context manager for backward compatibility"""
+        """Context manager for executing transactions"""
         tx = FactorioTransaction(self)
         try:
             yield tx

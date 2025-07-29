@@ -71,7 +71,7 @@ class LuaScriptManager:
         self.lib_directory = _get_lib_dir()
         if cache_scripts:
             self.init_action_checksums()
-            self.game_checksums = self._get_game_checksums(rcon_client)
+            self.game_checksums = self._get_game_checksums()
 
         self.tool_scripts = self.get_tools_to_load()
         self.lib_scripts = self.get_libs_to_load()

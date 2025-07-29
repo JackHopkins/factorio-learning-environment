@@ -78,8 +78,8 @@ game.surfaces[1].create_entity({
 def test_harvest_stump(game):
     instance = game.instance
 
-    instance.add_command(f"/c {create_stump}", raw=True)
-    instance.execute_transaction()
+    with instance.server.transaction() as t:
+        t.add_command(f"/c {create_stump}", raw=True)
     harvested = game.harvest_resource(Position(x=0, y=0), quantity=1)
 
     assert harvested == 2
@@ -96,8 +96,8 @@ game.surfaces[1].create_entity({
 def test_harvest_rock(game):
     instance = game.instance
 
-    instance.add_command(f"/c {create_rock}", raw=True)
-    instance.execute_transaction()
+    with instance.server.transaction() as t:
+        t.add_command(f"/c {create_rock}", raw=True)
     harvested = game.harvest_resource(Position(x=0, y=0), quantity=1)
 
     assert harvested == 20

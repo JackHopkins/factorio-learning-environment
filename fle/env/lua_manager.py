@@ -15,6 +15,8 @@ from fle.env.utils.rcon import (
     _load_script,
 )
 
+import importlib.util
+
 class ToolHookRegistry:
     def __init__(self):
         # Structure: hooks[tool_name]['pre' or 'post'] -> list of callbacks
@@ -202,3 +204,71 @@ class LuaScriptManager:
                 scripts_to_load[name] = content
 
         return scripts_to_load
+
+
+    def register_controllers(self, server, namespaces: list, invalidate_cache: bool = False):
+        """
+        Load Python controllers from valid tool directories via RCON.
+        Delegated from FactorioServer.register_controllers.
+        """
+        # Reinitialize manager and script_dict if needed
+        if invalidate_cache:
+            server.lua_script_manager = LuaScriptManager(server.rcon_client, False)
+            manager = server.lua_script_manager
+            server.script_dict = {
+                **manager.lib_scripts,
+                **manager.tool_scripts,
+            }
+        else:
+            manager = self
+
+        tool_dir = _get_dir("tools")
+        server.controllers = {}
+
+        def snake_to_camel(snake_str):
+            return "".join(word.capitalize() for word in snake_str.split("_"))
+
+        def create_hook_wrapper(tool_name, orig_callable):
+            from functools import wraps
+
+            @wraps(orig_callable)
+            def wrapper(*args, **kwargs):
+                with server.tool_hook_registry.around(tool_name, orig_callable, *args, **kwargs):
+                    return orig_callable(*args, **kwargs)
+
+            return wrapper
+
+        # Discover and load controllers
+        for dirpath, _, filenames in os.walk(tool_dir):
+            if dirpath == tool_dir:
+                continue
+
+            server_file = os.path.join(dirpath, "server.lua")
+            client_file = os.path.join(dirpath, "client.py")
+
+            if os.path.isfile(server_file) and os.path.isfile(client_file):
+                tool_name = os.path.basename(dirpath)
+                directory_name = Path(dirpath).parent.name
+
+                # Load Python module
+                module_spec = importlib.util.spec_from_file_location(tool_name, client_file)
+                module = importlib.util.module_from_spec(module_spec)
+                module_spec.loader.exec_module(module)
+
+                class_name = snake_to_camel(tool_name)
+                if tool_name == "place_entity":
+                    class_name = "PlaceObject"
+                if tool_name == "score":
+                    class_name = "Reward"
+
+                try:
+                    for i, namespace in enumerate(namespaces):
+                        callable_class = getattr(module, class_name)
+                        callable_instance = callable_class(server, namespace)
+                        wrapped_instance = create_hook_wrapper(tool_name.lower(), callable_instance)
+                        server.controllers[tool_name.lower()] = callable_instance
+
+                        attr = f"_{tool_name.lower()}" if directory_name == "admin" else tool_name.lower()
+                        setattr(namespace, attr, wrapped_instance)
+                except Exception as e:
+                    raise Exception(f"Could not instantiate {class_name} from {client_file}. {e}")

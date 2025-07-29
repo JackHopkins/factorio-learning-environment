@@ -24,7 +24,7 @@ from slpp import slpp as lua
 from fle.env.entities import BoundingBox
 from fle.env.utils.camera import Camera
 
-from fle.env.lua_manager import LuaScriptManager
+from fle.env.lua_manager import LuaScriptManager, ToolHookRegistry
 from fle.env.namespace import FactorioNamespace
 from fle.env.utils.rcon import _lua2python, _get_dir
 from fle.commons.models.research_state import ResearchState
@@ -120,47 +120,6 @@ class FactorioTransaction:
         if exc_type is None:  # Only execute if no exception occurred
             self.execute()
 
-class ToolHookRegistry:
-    def __init__(self):
-        # Structure: hooks[tool_name]['pre' or 'post'] -> list of callbacks
-        self.hooks = defaultdict(lambda: {'pre': [], 'post': []})
-
-    def register(self, tool_name, phase, callback=None):
-        """
-        Usage:
-          @registry.register("mine", "pre")
-          def before_mine(tool, *args): ...
-
-          registry.register("mine", "post", callback_fn)
-        """
-        if callback is None:
-            # used as decorator
-            def decorator(fn):
-                self.hooks[tool_name][phase].append(fn)
-                return fn
-            return decorator
-        else:
-            # direct call
-            self.hooks[tool_name][phase].append(callback)
-            return callback
-
-    def execute(self, tool_name, phase, tool_instance, *args, **kwargs):
-        for fn in self.hooks[tool_name][phase]:
-            try:
-                fn(tool_instance, *args, **kwargs)
-            except Exception as e:
-                print(f"[HookError] {phase} hook for {tool_name}: {e}")
-
-    @contextmanager
-    def around(self, tool_name, tool_instance, *args, **kwargs):
-        # run all pre-hooks
-        self.execute(tool_name, 'pre', tool_instance, *args, **kwargs)
-        try:
-            yield
-        finally:
-            # run all post-hooks
-            self.execute(tool_name, 'post', tool_instance, *args, **kwargs)
-
 class FactorioServer:
     def __init__(self, address, tcp_port, cache_scripts=True):
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
@@ -182,18 +141,6 @@ class FactorioServer:
     def load_init_into_game(self, init_scripts):
         for script_name in init_scripts:
             self.lua_script_manager.load_init_into_game(script_name)
-
-    def update_game_checksum(self, script_name: str, checksum: str):
-        self.send_command(
-            f"/sc global.set_lua_script_checksum('{script_name}', '{checksum}')"
-        )
-
-    def _clear_game_checksums(self):
-        self.send_command("/sc global.clear_lua_script_checksums()")
-
-    def _get_game_checksums(self):
-        response = self.run_rcon_print("global.get_lua_script_checksums()")
-        return json.loads(response)
     
     def init_action_checksums(self):
         checksum_init_script = _load_lib("checksum")
@@ -231,97 +178,11 @@ class FactorioServer:
         with transaction as t:
             yield t
 
-    def register_controllers(self, namespaces: List[FactorioNamespace], invalidate_cache: bool = False):
+    def register_controllers(self, namespaces: List["FactorioNamespace"], invalidate_cache: bool = False):
         """
-        Load Python controllers from valid tool directories (those containing both client.py and server.lua)
+        Load Python controllers from valid tool directories (delegated).
         """
-
-        if invalidate_cache:
-            self.lua_script_manager = LuaScriptManager(self.rcon_client, False)
-            self.script_dict = {
-                **self.lua_script_manager.lib_scripts,
-                **self.lua_script_manager.tool_scripts,
-            }
-
-        tool_dir = _get_dir("tools")
-        self.controllers = {}
-
-        def snake_to_camel(snake_str):
-            return "".join(word.capitalize() for word in snake_str.split("_"))
-
-        # Create a function that wraps a tool's call method to execute hooks
-        def create_hook_wrapper(tool_name, orig_callable):
-            from functools import wraps
-
-            @wraps(orig_callable)
-            def wrapper(*args, **kwargs):
-                with self.tool_hook_registry.around(tool_name, orig_callable, *args, **kwargs):
-                    return orig_callable(*args, **kwargs)
-            return wrapper
-
-        # Walk through all subdirectories
-        for dirpath, _, filenames in os.walk(tool_dir):
-            # Skip the root directory
-            if dirpath == tool_dir:
-                continue
-
-            # Check if this is a valid tool directory
-            server_file = os.path.join(dirpath, "server.lua")
-            client_file = os.path.join(dirpath, "client.py")
-
-            if os.path.isfile(server_file) and os.path.isfile(client_file):
-                # Get the tool name from the directory
-                tool_name = os.path.basename(dirpath)
-
-                directory_name = Path(dirpath).parent.name
-                # Load the Python module
-                module_spec = importlib.util.spec_from_file_location(
-                    tool_name,
-                    client_file,
-                )
-                module = importlib.util.module_from_spec(module_spec)
-                module_spec.loader.exec_module(module)
-
-                class_name = snake_to_camel(tool_name)
-
-                # Handle special case renames
-                if tool_name == "place_entity":
-                    class_name = "PlaceObject"
-                if tool_name == "score":
-                    class_name = "Reward"
-
-                try:
-                    for i in range(len(namespaces)):
-                        # Get and instantiate the controller class
-                        callable_class = getattr(module, class_name)
-                        callable_instance = callable_class(
-                            self, namespaces[i]
-                        )
-
-                        # Create a wrapper that will execute hooks
-                        wrapped_instance = create_hook_wrapper(
-                            tool_name.lower(), callable_instance
-                        )
-
-                        # Store the controller and add it to namespace
-                        self.controllers[tool_name.lower()] = callable_instance
-
-                        if directory_name == "admin":
-                            # If this is an admin method, we hide it in the namespace by adding a shebang
-                            setattr(
-                                namespaces[i],
-                                f"_{tool_name.lower()}",
-                                wrapped_instance,
-                            )
-                        else:
-                            setattr(
-                                namespaces[i], tool_name.lower(), wrapped_instance
-                            )
-
-                except Exception as e:
-                    raise Exception(
-                        f"Could not instantiate {class_name} from {client_file}. {e}"
-                    )
+        self.lua_script_manager.register_controllers(self, namespaces, invalidate_cache)
 
     def cleanup(self):
         # Close the RCON connection

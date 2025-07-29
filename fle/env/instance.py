@@ -1,38 +1,37 @@
 import atexit
 import enum
 import functools
-import importlib
 import inspect
 import json
 import os
-import shutil
 import signal
 import threading
-import time
 import traceback
 import types
-from contextlib import contextmanager
+import uuid
 from concurrent.futures import TimeoutError
+from contextlib import contextmanager
 from pathlib import Path
 from timeit import default_timer as timer
-from typing_extensions import Optional, List, Dict, Any, Tuple
-import uuid
 
 from dotenv import load_dotenv
+from factorio_rcon import RCONClient
 from slpp import slpp as lua
+from typing_extensions import Any, Dict, List, Optional, Tuple
 
-from fle.env.entities import BoundingBox
-from fle.env.utils.camera import Camera
-
+from fle.commons.models.game_state import GameState
+from fle.commons.models.research_state import ResearchState
 from fle.env.lua_manager import LuaScriptManager, ToolHookRegistry
 from fle.env.namespace import FactorioNamespace
-from fle.env.utils.rcon import _lua2python, _get_dir
-from fle.commons.models.research_state import ResearchState
-from factorio_rcon import RCONClient
-from fle.commons.models.game_state import GameState
 from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )
+from fle.env.utils.rcon import _lua2python
+
+from fle.cluster.factorio_server.run_envs import PlatformConfig
+
+PLATFORM_CONFIG = PlatformConfig()
+
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000
@@ -124,7 +123,7 @@ class FactorioTransaction:
 
 
 class FactorioServer:
-    def __init__(self, address, tcp_port, cache_scripts=True):
+    def __init__(self, address, tcp_port = PLATFORM_CONFIG.rcon_port, cache_scripts=True):
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
         self.cache_scripts = cache_scripts
         self.tool_hook_registry = ToolHookRegistry()
@@ -139,7 +138,7 @@ class FactorioServer:
 
     def ensure_rcon_client(self):
         if not self.rcon_client:
-            self.rcon_client = RCONClient(self.address, self.tcp_port, "factorio")
+            self.rcon_client = RCONClient(self.address, self.tcp_port, PLATFORM_CONFIG.factorio_password)
         return self.rcon_client
 
     def run_rcon_print(self, command: str):
@@ -159,11 +158,11 @@ class FactorioServer:
 
     def connect_to_server(self, address, tcp_port):
         try:
-            rcon_client = RCONClient(address, tcp_port, "factorio")
+            rcon_client = RCONClient(address, tcp_port, PLATFORM_CONFIG.factorio_password)
             address = address
         except ConnectionError as e:
             print(e)
-            rcon_client = RCONClient("localhost", tcp_port, "factorio")
+            rcon_client = RCONClient("localhost", tcp_port, PLATFORM_CONFIG.factorio_password)
             address = "localhost"
 
         print(f"Connected to {address} client at tcp/{tcp_port}.")
@@ -292,7 +291,7 @@ class FactorioInstance:
         return self.num_agents > 1
 
     def set_speed(self, speed):
-        self.rcon_client.send_command(f"/sc game.speed = {speed}")
+        self.server.rcon_client.send_command(f"/sc game.speed = {speed}")
         self._speed = speed
 
     def get_speed(self):

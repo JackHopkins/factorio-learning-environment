@@ -101,6 +101,7 @@ class FactorioInstance:
         all_technologies_researched=True,
         peaceful=True,
         num_agents=1,
+        regenerate="map",
         **kwargs,
     ):
         self.id = str(uuid.uuid4())[:8]
@@ -113,6 +114,7 @@ class FactorioInstance:
         self._speed = 1
         self._ticks_elapsed = 0
         self._is_initialised = False
+        self.regenerate = regenerate
 
         self.peaceful = peaceful
         self.namespaces = [self.namespace_class(self, i) for i in range(num_agents)]
@@ -625,17 +627,18 @@ class FactorioInstance:
 
     def _reset(self, inventories: List[Dict[str, Any]]):
         self.begin_transaction()
+        if self.regenerate == "resources":
+            regenerate_func = "global.actions.regenerate_resources(1)"
+        elif self.regenerate == "map":
+            regenerate_func = "global.actions.regenerate_map(1)"
+        else:
+            raise ValueError(f"Invalid regenerate value: {self.regenerate}")
+
         self.add_command(
-            "/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)",
+            f"/sc global.alerts = {{}}; game.reset_game_state(); global.actions.reset_production_stats(); {regenerate_func}",
             raw=True,
         )
         # self.add_command('/sc script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
-        for i in range(self.num_agents):
-            player_index = i + 1
-            self.add_command(
-                f"/sc global.actions.regenerate_resources({player_index})", raw=True
-            )
-            # self.add_command('clear_inventory', player_index)
 
         self.execute_transaction()
 

@@ -177,6 +177,13 @@ class Direction(Enum):
                 return status
         return None
 
+    @classmethod
+    def from_int(cls, direction_int):
+        for status in cls:
+            if status.value == direction_int:
+                return status
+        return None
+
 
 class Position(BaseModel):
     x: float

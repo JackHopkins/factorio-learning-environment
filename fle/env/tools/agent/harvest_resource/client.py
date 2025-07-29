@@ -46,15 +46,15 @@ class HarvestResource(Tool):
 
         # If `fast` is turned off - we need to long poll the game state to ensure the player has moved
         if not self.game_state.instance.fast:
-            remaining_steps = self.connection.rcon_client.send_command(
-                f"/silent-command rcon.print(global.actions.get_harvest_queue_length({self.player_index}))"
+            remaining_steps = self.factorio_server.run_rcon_print(
+                f"global.actions.get_harvest_queue_length({self.player_index})"
             )
             attempt = 0
             max_attempts = 10
             while remaining_steps != "0" and attempt < max_attempts:
                 sleep(0.5)
-                remaining_steps = self.connection.rcon_client.send_command(
-                    f"/silent-command rcon.print(global.actions.get_harvest_queue_length({self.player_index}))"
+                remaining_steps = self.factorio_server.run_rcon_print(
+                    f"global.actions.get_harvest_queue_length({self.player_index})"
                 )
 
             max_attempts = 50
@@ -80,8 +80,8 @@ class HarvestResource(Tool):
 
     def get_resource_type_at_position(self, position: Position):
         x, y = self.get_position(position)
-        entity_at_position = self.connection.rcon_client.send_command(
-            f"/silent-command rcon.print(global.actions.get_resource_name_at_position({self.player_index}, {x}, {y}))"
+        entity_at_position = self.factorio_server.run_rcon_print(
+            f"global.actions.get_resource_name_at_position({self.player_index}, {x}, {y})"
         )
         if entity_at_position.startswith("tree"):
             return Resource.Wood

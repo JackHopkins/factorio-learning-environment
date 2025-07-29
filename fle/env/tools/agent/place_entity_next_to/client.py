@@ -54,7 +54,7 @@ class PlaceEntityNextTo(Tool):
 
             try:
                 object = metaclass(
-                    prototype=name, game=self.connection, **cleaned_response
+                    prototype=name, game=self.factorio_server, **cleaned_response
                 )
             except Exception as e:
                 raise Exception(

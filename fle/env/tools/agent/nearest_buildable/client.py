@@ -4,8 +4,8 @@ from fle.env.tools import Tool
 
 
 class NearestBuildable(Tool):
-    def __init__(self, lua_script_manager, game_state):
-        super().__init__(lua_script_manager, game_state)
+    def __init__(self, factorio_server, game_state):
+        super().__init__(factorio_server, game_state)
         # self.connection = connection
         self.game_state = game_state
 

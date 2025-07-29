@@ -90,7 +90,7 @@ class PlaceObject(Tool):
 
             try:
                 object = metaclass(
-                    prototype=entity.name, game=self.connection, **cleaned_response
+                    prototype=entity.name, game=self.factorio_server, **cleaned_response
                 )
             except Exception as e:
                 raise Exception(

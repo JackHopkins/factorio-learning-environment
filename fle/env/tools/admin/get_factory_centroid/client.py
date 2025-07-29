@@ -4,9 +4,9 @@ from fle.env.utils.camera import Camera
 
 
 class GetFactoryCentroid(Tool):
-    def __init__(self, lua_script_manager, game_state):
+    def __init__(self, factorio_server, game_state):
         self.state = {"input": {}, "output": {}}
-        super().__init__(lua_script_manager, game_state)
+        super().__init__(factorio_server, game_state)
 
     def __call__(self) -> Camera:
         """

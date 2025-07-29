@@ -58,7 +58,7 @@ class TaskABC:
         """Add task specific information to the environment response"""
         return response
 
-    def setup(self, instance):
+    def setup(self, instance: FactorioInstance):
         """setup function"""
         instance.initial_inventory = self.starting_inventory
         instance.all_technologies_researched = self.all_technology_reserached

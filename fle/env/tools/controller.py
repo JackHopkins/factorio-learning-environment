@@ -5,8 +5,8 @@ from typing import List, Tuple, Dict, Any
 from slpp import slpp as lua, ParseError
 
 from fle.env.entities import Direction
-from fle.env.lua_manager import LuaScriptManager
 from fle.env.namespace import FactorioNamespace
+from fle.env.instance import FactorioServer
 from fle.env.utils.rcon import _lua2python
 
 COMMAND = "/silent-command"
@@ -15,16 +15,14 @@ COMMAND = "/silent-command"
 class Controller:
     def __init__(
         self,
-        lua_script_manager: "LuaScriptManager",
+        factorio_server: "FactorioServer",
         game_state: "FactorioNamespace",
         *args,
         **kwargs,
     ):
-        # assert isinstance(lua_script_manager, LuaScriptManager), f"Not correct: {type(lua_script_manager)}"
-        self.connection = lua_script_manager
+        self.factorio_server = factorio_server
         self.game_state = game_state
         self.name = self.camel_to_snake(self.__class__.__name__)
-        self.lua_script_manager = lua_script_manager
         self.player_index = (
             game_state.agent_index + 1
         )  # +1 because Factorio is 1-indexed
@@ -137,7 +135,7 @@ class Controller:
             parameters = [lua.encode(arg) for arg in args]
             invocation = f"pcall(global.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
             wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
-            lua_response = self.connection.rcon_client.send_command(wrapped)
+            lua_response = self.factorio_server.send_command(wrapped)
 
             parsed, elapsed = _lua2python(invocation, lua_response, start=start)
             if parsed is None:
@@ -166,7 +164,7 @@ class Controller:
             parameters = [lua.encode(arg) for arg in args]
             invocation = f"pcall(global.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
             wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
-            lua_response = self.connection.rcon_client.send_command(wrapped)
+            lua_response = self.factorio_server.rcon_client.send_command(wrapped)
             parsed, elapsed = _lua2python(invocation, lua_response, start=start)
             if not parsed["a"] and "b" in parsed and isinstance(parsed["b"], str):
                 parts = lua_response.split('["b"] = ')
@@ -192,6 +190,6 @@ class Controller:
     def send(self, command, *parameters, trace=False) -> List[str]:
         start = timer()
         script = self._get_command(command, parameters=list(parameters), measured=False)
-        lua_response = self.connection.send_command(script)
+        lua_response = self.factorio_server.send_command(script)
         # print(lua_response)
         return _lua2python(command, lua_response, start=start)

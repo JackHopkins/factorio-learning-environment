@@ -55,7 +55,7 @@ class A2AFactorioInstance(FactorioInstance):
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit"""
-        self.cleanup()
+        self.server.cleanup()
 
     @classmethod
     def _ensure_server_running(cls):

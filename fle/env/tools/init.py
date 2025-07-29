@@ -1,18 +1,17 @@
 from fle.env.tools.controller import Controller
-from fle.env.instance import FactorioInstance
-from fle.env.lua_manager import LuaScriptManager
+from fle.env.instance import FactorioInstance, FactorioServer
 
 
 class Init(Controller):
     def __init__(
         self,
-        lua_script_manager: "LuaScriptManager",
+        factorio_server: "FactorioServer",
         game_state: "FactorioInstance",
         *args,
         **kwargs,
     ):
-        super().__init__(lua_script_manager, game_state)
+        super().__init__(factorio_server, game_state)
         self.load()
 
     def load(self):
-        self.lua_script_manager.load_init_into_game(self.name)
+        self.factorio_server.load_init_into_game(self.name)

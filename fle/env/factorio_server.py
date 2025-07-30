@@ -7,7 +7,7 @@ from factorio_rcon import RCONClient
 from slpp import slpp as lua
 from typing_extensions import Any, Dict, List, Tuple
 
-from fle.cluster.factorio_server.run_envs import PlatformConfig
+from fle.env.run_envs import PlatformConfig
 from fle.env.lua_manager import LuaScriptManager, ToolHookRegistry
 from fle.env.namespace import FactorioNamespace
 from fle.env.utils.rcon import _lua2python

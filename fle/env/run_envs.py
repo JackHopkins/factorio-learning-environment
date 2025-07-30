@@ -6,10 +6,12 @@ from pathlib import Path
 import asyncio
 import aiodocker
 from aiodocker.exceptions import DockerError
+from typing import List
+import json
 
 from enum import Enum
 
-ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 import logging
 
@@ -38,8 +40,8 @@ class PlatformConfig:
         self.rcon_port = 27015
         self.udp_port = 34197
         self.scenario_name = Scenario.DEFAULT_LAB_SCENARIO.value
-        self.scenario_dir = Path(__file__).parent.resolve() / "scenarios"
-        self.server_config_dir = Path(__file__).parent.resolve() / "config"
+        self.scenario_dir = Path(__file__).parent.resolve() / "factorio" / "scenarios"
+        self.server_config_dir = Path(__file__).parent.resolve() / "factorio" / "config"
         self.mode = Mode.SAVE_BASED.value
         self.temp_playing_dir = "/opt/factorio/temp/currently-playing"
         with open(self.server_config_dir / "rconpw", "r") as f:
@@ -273,12 +275,53 @@ class FactorioClusterManager:
         await asyncio.gather(*[sync_container(ctr) for ctr in containers])
         print("Hot-reload sync complete.")
 
+    async def get_local_container_ips(self) -> tuple[List[str], List[int], List[int]]:
+        """Get IP addresses of running Factorio containers in the local Docker setup."""
+        # Get container IDs for factorio containers
+        containers = await self.docker.containers.list(filters={"name": ["/factorio_"]})
+        container_ids = [ctr.id for ctr in containers]
+        print(container_ids)
+
+        if not container_ids or container_ids[0] == "":
+            print("No running Factorio containers found")
+            return []
+
+        ips = []
+        udp_ports = []
+        tcp_ports = []
+        for container in containers:
+            # Get container details in JSON format
+            container_info = await container.show()
+            # print(container_info)
+
+            # Get host ports for UDP game port
+            ports = container_info["NetworkSettings"]["Ports"]
+
+            # Find the UDP port mapping
+            for port, bindings in ports.items():
+                if "/udp" in port and bindings:
+                    udp_port = bindings[0]["HostPort"]
+                    udp_ports.append(int(udp_port))
+
+                if "/tcp" in port and bindings:
+                    tcp_port = bindings[0]["HostPort"]
+                    tcp_ports.append(int(tcp_port))
+
+            # Append the IP address with the UDP port to the list
+            ips.append("127.0.0.1")
+
+        # order by port number
+        udp_ports.sort(key=lambda x: int(x))
+        tcp_ports.sort(key=lambda x: int(x))
+
+        return ips, udp_ports, tcp_ports
+
 
 def parse_args():
     p = argparse.ArgumentParser(description="Manage a local Factorio cluster")
     p.add_argument(
         "command",
-        choices=["start", "stop", "restart", "hot-reload-scenario"],
+        choices=["start", "stop", "restart", "hot-reload-scenario", "get-ips"],
         nargs="?",
         default="start",
     )
@@ -342,7 +385,9 @@ async def main():
         if config.mode == Mode.SAVE_BASED.value:
             raise ValueError("Hot-reload is not supported in save-based mode")
         await mgr.hot_reload_scenario()
-
+    elif args.command == "get-ips":
+        ips, udp_ports, tcp_ports = await mgr.get_local_container_ips()
+        print(ips, udp_ports, tcp_ports)
     await mgr.docker.close()
 
 

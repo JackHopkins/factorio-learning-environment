@@ -3,6 +3,7 @@
 from fle.env.entities import *  # noqa
 from fle.env.game_types import Prototype, Resource
 from fle.env.instance import DirectionInternal, FactorioInstance
+from fle.env.factorio_server import FactorioServer
 
 __all__ = [
     "FactorioInstance",
@@ -14,4 +15,5 @@ __all__ = [
     "EntityGroup",
     "Prototype",
     "Resource",
+    "FactorioServer",
 ]

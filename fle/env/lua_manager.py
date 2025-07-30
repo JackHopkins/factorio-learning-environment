@@ -8,10 +8,10 @@ from contextlib import contextmanager
 from factorio_rcon import RCONClient
 from fle.env.utils.rcon import (
     _get_dir,
-    _get_lib_dir,
+    _get_mods_dir,
     _get_lib_names,
     _get_tool_names,
-    _load_lib,
+    _load_mods,
     _load_script,
 )
 
@@ -75,7 +75,7 @@ class LuaScriptManager:
             self._clear_game_checksums()
         # self.action_directory = _get_action_dir()
 
-        self.lib_directory = _get_lib_dir()
+        self.lib_directory = _get_mods_dir()
         if cache_scripts:
             self.init_action_checksums()
             self.game_checksums = self._get_game_checksums()
@@ -90,7 +90,7 @@ class LuaScriptManager:
         )
 
     def init_action_checksums(self):
-        checksum_init_script = _load_lib("checksum")
+        checksum_init_script = _load_mods("checksum")
         response = self.rcon_client.send_command("/sc " + checksum_init_script)
         return response
 
@@ -157,7 +157,7 @@ class LuaScriptManager:
     def load_init_into_game(self, name):
         if name not in self.lib_scripts:
             # attempt to load the script from the filesystem
-            script = _load_lib(name)
+            script = _load_mods(name)
             self.lib_scripts[name] = script
 
         script = self.lib_scripts[name]

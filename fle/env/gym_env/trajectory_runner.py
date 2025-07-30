@@ -171,6 +171,10 @@ class GymTrajectoryRunner:
         max_steps = self.config.task.trajectory_length
         current_state, agent_steps = await self._initialize_trajectory_state()
 
+        # Save system prompts for all agents at the start
+        for agent_idx, agent in enumerate(self.agents):
+            self.logger.save_system_prompt(agent, agent_idx)
+
         # Run trajectory
         for _, agent_idx in product(range(max_steps), range(len(self.agents))):
             agent = self.agents[agent_idx]

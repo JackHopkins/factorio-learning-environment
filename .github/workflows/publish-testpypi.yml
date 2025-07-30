@@ -1,17 +1,14 @@
 name: "Publish to TestPyPI"
 
 on:
-  pull_request:
-    types:
-      - closed
+  workflow_dispatch:
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  if_merged:
-    if: github.event.pull_request.merged == true
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

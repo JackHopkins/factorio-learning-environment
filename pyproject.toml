@@ -4,12 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "factorio-learning-environment"
-version = "0.3.0"
+version = "0.2.2"
 description = "Factorio Learning Environment"
 authors = [
     {name = "Jack Hopkins", email = "noreply@github.com"},
     {name = "Mart Bakler", email = "noreply@github.com"},
-    {name = "Neel Kant", email = "contact@neelkant.io"}
+    {name = "Neel Kant", email = "contact@neelkant.io"},
+    {name = "Kian Kyars", email = "kiankyars@gmail.com"},
 ]
 readme = "README.md"
 requires-python = ">=3.10"
@@ -52,6 +53,7 @@ dependencies = [
     "psycopg2>=2.9.10",
     "aiohttp>=3.8.0",
     "uvicorn>=0.15.0",
+    "pytest>=8.4.1",
 ]
 
 [project.optional-dependencies]
@@ -108,38 +110,14 @@ env = [
 fle = "fle.run:main"
 
 [tool.hatch.version]
-path = "fle/__about__.py"
+path = "fle/__init__.py"
 
 [tool.hatch.build]
 exclude = [
-    "**/__pycache__",
-    "**/*.pyc",
-    "**/*.pyo",
-    "**/*.pyd",
-    ".git*",
-    ".DS_Store",
-    "dist",
-    ".venv",
-    ".pytest_cache",
-    "summary_cache",
-    "notebooks",
-    "*.ipynb",
-    "clean.sh",
-    "**/*.so",
-    "tests",
-    "docs",
-    "leaderboard",
-    "env",
-    "*.sh",
-    "*.md",
-    "*.toml",
-    "*.ini",
-    "*.cfg",
-    "*.lock",
-    "*.json",
-    "*.yml",
-    "*.yaml",
-    "*.txt",
+    "fle/**/__pycache__",
+    "fle/**/*.pyc",
+    "fle/**/*.pyo",
+    "fle/**/*.pyd",
 ]
 
 [tool.hatch.build.targets.wheel]

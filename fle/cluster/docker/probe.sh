@@ -1,9 +1,6 @@
-lines=$(echo | lsof -i -P -n | grep $1 | wc -c)
-
-if [[ $lines -gt 0 ]]; then
-  echo 'Running on' $1;
-  exit;
-fi;
-
-echo 'Dead';
-exit 1;
+#!/bin/bash
+if nc -zu 127.0.0.1 34197; then
+  exit 0
+else
+  exit 1
+fi

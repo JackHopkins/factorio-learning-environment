@@ -10,7 +10,7 @@ from fle.env.gym_env.run_eval import main as run_eval
 
 def fle_init():
     if Path(".env").exists():
-        return True
+        return
     try:
         pkg = importlib.resources.files("fle")
         env_template = pkg / ".example.env"
@@ -26,7 +26,6 @@ def fle_init():
     except Exception as e:
         print(f"Error during init: {e}", file=sys.stderr)
         sys.exit(1)
-    return False
 
 
 def fle_cluster(args):
@@ -49,10 +48,7 @@ def fle_cluster(args):
         sys.exit(e.returncode)
 
 
-def fle_eval(args, env):
-    if not env:
-        return
-    # Check if Factorio server is running on port 34197
+def fle_eval(args):
     config_path = Path(args.config)
     if not config_path.exists():
         print(f"Error: Config file '{config_path}' not found.", file=sys.stderr)
@@ -102,13 +98,12 @@ Examples:
     parser_eval = subparsers.add_parser("eval", help="Run experiment")
     parser_eval.add_argument("--config", required=True, help="Path to run config JSON")
     args = parser.parse_args()
-    env = True
     if args.command:
-        env = fle_init()
+        fle_init()
     if args.command == "cluster":
         fle_cluster(args)
     elif args.command == "eval":
-        fle_eval(args, env)
+        fle_eval(args)
     else:
         parser.print_help()
         sys.exit(1)

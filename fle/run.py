@@ -6,7 +6,6 @@ from pathlib import Path
 import importlib.resources
 import asyncio
 from fle.env.gym_env.run_eval import main as run_eval
-import json
 
 
 def fle_init():
@@ -58,14 +57,6 @@ def fle_eval(args, env):
     if not config_path.exists():
         print(f"Error: Config file '{config_path}' not found.", file=sys.stderr)
         sys.exit(1)
-    probe = Path(__file__).parent / "cluster" / "docker" / "probe.sh"
-    result = subprocess.run(["sh", str(probe)])
-    if result.returncode != 0:
-        with open(config_path, "r") as f:
-            run_configs = json.load(f)
-        num_envs = len(run_configs)
-        args = argparse.Namespace(cluster_command=None, n=num_envs, s=None)
-        fle_cluster(args)
     try:
         sys.argv = ["run_eval", "--run_config", str(config_path)]
         asyncio.run(run_eval())

@@ -66,7 +66,7 @@ class FactorioTransaction:
 
 
 class FactorioServer:
-    def __init__(self, address, tcp_port = PLATFORM_CONFIG.rcon_port, cache_scripts=True):
+    def __init__(self, address, tcp_port = PLATFORM_CONFIG.rcon_port, cache_scripts=True, server_docker_config=None):
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
         self.cache_scripts = cache_scripts
         self.tool_hook_registry = ToolHookRegistry()
@@ -78,6 +78,7 @@ class FactorioServer:
             **self.lua_script_manager.lib_scripts,
             **self.lua_script_manager.tool_scripts,
         }
+        self.server_docker_config = server_docker_config
 
     def ensure_rcon_client(self):
         if not self.rcon_client:

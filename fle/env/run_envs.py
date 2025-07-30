@@ -44,6 +44,7 @@ class PlatformConfig:
         self.server_config_dir = Path(__file__).parent.resolve() / "factorio" / "config"
         self.mode = Mode.SAVE_BASED.value
         self.temp_playing_dir = "/opt/factorio/temp/currently-playing"
+        self.name_prefix = "factorio_"
         with open(self.server_config_dir / "rconpw", "r") as f:
             self.factorio_password = f.read().strip()
 
@@ -165,7 +166,7 @@ class FactorioClusterManager:
             "Platform": self.docker_platform,
         }
         return await self.docker.containers.run(
-            config=config, name=f"conv_factorio_{instance_index}"
+            config=config, name=f"conv_{self.config.name_prefix}{instance_index}"
         )
 
     async def get_server_ctr(self, instance_index: int):
@@ -185,7 +186,7 @@ class FactorioClusterManager:
             config["Cmd"] = [self.config.scenario_name]
         print(config)
         return await self.docker.containers.create_or_replace(
-            config=config, name=f"factorio_{instance_index}"
+            config=config, name=f"{self.config.name_prefix}{instance_index}"
         )
 
     async def get_containers_to_run(self):
@@ -208,7 +209,7 @@ class FactorioClusterManager:
 
         if self.dry_run:
             for i in range(self.num):
-                name = f"factorio_{i}"
+                name = f"{self.config.name_prefix}{i}"
                 print(f"\nContainer name: {name}")
                 print(f"Port mappings: {self._get_ports(i)}")
                 print(f"Volume mounts: {self._get_volumes(i)}")
@@ -236,20 +237,20 @@ class FactorioClusterManager:
 
     async def stop(self):
         # Stop & remove any container whose name starts with "factorio_"
-        ctrs = await self.docker.containers.list(filters={"name": ["/factorio_"]})
+        ctrs = await self.docker.containers.list(filters={"name": [f"/{self.config.name_prefix}"]})
         tasks_stop = [ctr.stop() for ctr in ctrs]
         tasks_delete = [ctr.delete() for ctr in ctrs]
         await asyncio.gather(*tasks_stop)
         await asyncio.gather(*tasks_delete)
 
     async def restart(self):
-        ctrs = await self.docker.containers.list(filters={"name": ["/factorio_"]})
+        ctrs = await self.docker.containers.list(filters={"name": [f"/{self.config.name_prefix}"]})
         tasks = [ctr.restart() for ctr in ctrs]
         await asyncio.gather(*tasks)
 
     async def hot_reload_scenario(self):
         # Sync scenario files into the server's temp directory for hot-reload
-        containers = await self.docker.containers.list(filters={"name": ["/factorio_"]})
+        containers = await self.docker.containers.list(filters={"name": [f"/{self.config.name_prefix}"]})
         
         async def sync_container(ctr):
             cmd = (
@@ -278,9 +279,8 @@ class FactorioClusterManager:
     async def get_local_container_ips(self) -> tuple[List[str], List[int], List[int]]:
         """Get IP addresses of running Factorio containers in the local Docker setup."""
         # Get container IDs for factorio containers
-        containers = await self.docker.containers.list(filters={"name": ["/factorio_"]})
+        containers = await self.docker.containers.list(filters={"name": [f"/{self.config.name_prefix}"]})
         container_ids = [ctr.id for ctr in containers]
-        print(container_ids)
 
         if not container_ids or container_ids[0] == "":
             print("No running Factorio containers found")
@@ -289,15 +289,12 @@ class FactorioClusterManager:
         ips = []
         udp_ports = []
         tcp_ports = []
-        for container in containers:
-            # Get container details in JSON format
-            container_info = await container.show()
-            # print(container_info)
-
-            # Get host ports for UDP game port
+        tasks = [ctr.show() for ctr in containers]
+        container_infos = await asyncio.gather(*tasks)
+        
+        for container_info in container_infos:
             ports = container_info["NetworkSettings"]["Ports"]
 
-            # Find the UDP port mapping
             for port, bindings in ports.items():
                 if "/udp" in port and bindings:
                     udp_port = bindings[0]["HostPort"]

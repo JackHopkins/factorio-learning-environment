@@ -17,12 +17,6 @@ def fle_init():
         with importlib.resources.as_file(env_template) as env_path:
             shutil.copy(env_path, ".env")
             print("Created .env file - please edit with your API keys and DB config")
-        configs_out = Path("configs")
-        configs_out.mkdir(exist_ok=True)
-        shutil.copy(
-            str(pkg / "eval" / "algorithms" / "independent" / "gym_run_config.json"),
-            str(configs_out / "gym_run_config.json"),
-        )
     except Exception as e:
         print(f"Error during init: {e}", file=sys.stderr)
         sys.exit(1)

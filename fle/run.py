@@ -54,29 +54,20 @@ def fle_eval(args, env):
     if not env:
         return
     # Check if Factorio server is running on port 34197
+    config_path = Path(args.config)
+    if not config_path.exists():
+        print(f"Error: Config file '{config_path}' not found.", file=sys.stderr)
+        sys.exit(1)
     probe = Path(__file__).parent / "cluster" / "docker" / "probe.sh"
     result = subprocess.run(["sh", str(probe)])
+    print(result.returncode)
+
     if result.returncode != 0:
-        print("Server not running, starting cluster...")
-        # Count number of environments in config
-        config_path = Path(args.config)
-        if not config_path.exists():
-            print(f"Error: Config file '{args.config}' not found.", file=sys.stderr)
-            sys.exit(1)
         with open(config_path, "r") as f:
             run_configs = json.load(f)
         num_envs = len(run_configs)
-
-        class DummyArgs:
-            cluster_command = None
-            n = num_envs
-            s = None
-
-        fle_cluster(DummyArgs())
-    config_path = Path(args.config)
-    if not config_path.exists():
-        print(f"Error: Config file '{args.config}' not found.", file=sys.stderr)
-        sys.exit(1)
+        args = argparse.Namespace(cluster_command=None, n=num_envs, s=None)
+        fle_cluster(args)
     try:
         sys.argv = ["run_eval", "--run_config", str(config_path)]
         asyncio.run(run_eval())

@@ -43,10 +43,11 @@ def fle_cluster(args):
 
 
 def fle_eval(args):
-    config_path = Path(args.config)
-    sys.argv = ["run_eval"]
-    if config_path.exists():
-        sys.argv.extend(["--run_config", str(config_path)])
+    try:
+        config_path = Path(args.config)
+        sys.argv = ["run_eval", "--run_config", str(config_path)]
+    except TypeError:
+        sys.argv = ["run_eval"]
     try:
         asyncio.run(run_eval())
     except Exception as e:
@@ -86,7 +87,7 @@ Examples:
         help="Scenario (open_world or default_lab_scenario)",
     )
     parser_eval = subparsers.add_parser("eval", help="Run experiment")
-    parser_eval.add_argument("--config", required=True, help="Path to run config JSON")
+    parser_eval.add_argument("--config", required=False, help="Path to run config JSON")
     args = parser.parse_args()
     if args.command:
         fle_init()

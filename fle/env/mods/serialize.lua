@@ -1876,6 +1876,3 @@ global.utils.serialize_entity = function(entity)
 
     return serialized
 end
-for i in {1..8}; do
-    fle eval --config .fle/labplay_group1.json
-  done

@@ -60,8 +60,6 @@ def fle_eval(args, env):
         sys.exit(1)
     probe = Path(__file__).parent / "cluster" / "docker" / "probe.sh"
     result = subprocess.run(["sh", str(probe)])
-    print(result.returncode)
-
     if result.returncode != 0:
         with open(config_path, "r") as f:
             run_configs = json.load(f)

@@ -44,15 +44,11 @@ def fle_cluster(args):
 
 def fle_eval(args):
     config_path = Path(args.config)
-    if not config_path.exists():
-        print(f"Error: Config file '{config_path}' not found.", file=sys.stderr)
-        sys.exit(1)
+    sys.argv = ["run_eval"]
+    if config_path.exists():
+        sys.argv.extend(["--run_config", str(config_path)])
     try:
-        sys.argv = ["run_eval", "--run_config", str(config_path)]
         asyncio.run(run_eval())
-    except KeyboardInterrupt:
-        print("\nInterrupted by user.", file=sys.stderr)
-        sys.exit(1)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

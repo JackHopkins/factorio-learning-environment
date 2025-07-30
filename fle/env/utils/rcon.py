@@ -12,6 +12,9 @@ from slpp import slpp as lua
 import io
 import contextlib
 
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+print(ROOT_DIR)
+
 
 def _load_script(filename):
     with open(filename, "r", encoding="utf-8") as file:
@@ -30,14 +33,12 @@ def _load_scripts(scripts):
 
 def _get_mods_dir():
     # get local execution path
-    path = os.path.dirname(Path(os.path.dirname(os.path.realpath(__file__))))
-    return path + "/mods"
+    return str(ROOT_DIR / "env" / "factorio" / "mods")
 
 
 def _get_dir(name="tools"):
     # get local execution path
-    path = os.path.dirname(Path(os.path.dirname(os.path.realpath(__file__))))
-    return path + f"/{name}"
+    return str(ROOT_DIR / "env" / "factorio" / name)
 
 
 def _get_tool_names(name="tools") -> List[str]:

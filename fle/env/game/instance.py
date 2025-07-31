@@ -9,22 +9,19 @@ import traceback
 import types
 import uuid
 from concurrent.futures import TimeoutError
-
 from pathlib import Path
 from timeit import default_timer as timer
 
 from dotenv import load_dotenv
 from typing_extensions import Any, Dict, List, Optional
 
-from fle.env.game.game_state import GameState
 from fle.commons.models.research_state import ResearchState
+from fle.env.game.factorio_client import FactorioClient
+from fle.env.game.game_state import GameState
 from fle.env.game.namespace import FactorioNamespace
-from fle.env.utils.controller_loader.system_prompt_generator import (
-    SystemPromptGenerator,
-)
-from fle.env.factorio_client import FactorioClient
+from fle.env.utils.controller_loader.system_prompt_generator import \
+    SystemPromptGenerator
 from fle.services.rcon import _lua2python
-
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000

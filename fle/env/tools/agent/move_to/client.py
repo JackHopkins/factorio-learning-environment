@@ -18,11 +18,18 @@ class MoveTo(Tool):
         self.get_path = GetPath(connection, game_state)
 
     def __call__(
-        self, position: Position, laying: Prototype = None, leading: Prototype = None
+        self,
+        position: Position,
+        laying: Prototype = None,
+        leading: Prototype = None,
+        tick: int = None,
     ) -> Position:
         """
         Move to a position.
         :param position: Position to move to.
+        :param laying: Entity to lay while moving
+        :param leading: Entity to lead while moving
+        :param tick: Game tick to execute this command at (for batch mode)
         :return: Your final position
         """
 
@@ -46,18 +53,23 @@ class MoveTo(Tool):
         try:
             if laying is not None:
                 entity_name = laying.value[0]
-                response, execution_time = self.execute(
-                    self.player_index, path_handle, entity_name, 1
+                response, execution_time = self.execute_or_batch(
+                    tick, self.player_index, path_handle, entity_name, 1
                 )
             elif leading:
                 entity_name = leading.value[0]
-                response, execution_time = self.execute(
-                    self.player_index, path_handle, entity_name, 0
+                response, execution_time = self.execute_or_batch(
+                    tick, self.player_index, path_handle, entity_name, 0
                 )
             else:
-                response, execution_time = self.execute(
-                    self.player_index, path_handle, NONE, NONE
+                response, execution_time = self.execute_or_batch(
+                    tick, self.player_index, path_handle, NONE, NONE
                 )
+
+            # Check if we're in batch mode - if so, return early without processing response
+            if isinstance(response, dict) and response.get("batched"):
+                # In batch mode, return the target position since we can't get actual position yet
+                return position
 
             if isinstance(response, int) and response == 0:
                 raise Exception("Could not move.")
@@ -80,8 +92,7 @@ class MoveTo(Tool):
                     remaining_steps = self.connection.rcon_client.send_command(
                         f"/silent-command rcon.print(global.actions.get_walking_queue_length({self.player_index}))"
                     )
-                self.game_state.player_location = Position(x=position.x, y=position.y)
 
-            return Position(x=response["x"], y=response["y"])  # , execution_time
+            return self.game_state.player_location
         except Exception as e:
             raise Exception(f"Cannot move. {e}")

@@ -29,6 +29,29 @@ class Controller:
             game_state.agent_index + 1
         )  # +1 because Factorio is 1-indexed
 
+        # Batch mode support
+        self.batch_manager = None  # Will be set when batch mode is enabled
+
+    def set_batch_manager(self, batch_manager):
+        """Set the batch manager for this tool."""
+        self.batch_manager = batch_manager
+
+    def execute_or_batch(self, tick: int = None, *args):
+        """Execute immediately or add to batch based on batch manager."""
+        if self.batch_manager:
+            # If no tick provided, get current tick from game state
+            if tick is None:
+                tick = self.game_state.instance.get_elapsed_ticks()
+            # Add to batch instead of executing
+            # Skip the first arg (self.player_index) since add_tool_command will add it
+            batch_info = self.batch_manager.add_tool_command(
+                tick, self.name, self.player_index, *args[1:]
+            )
+            return batch_info, 0  # Return tuple for consistency
+        else:
+            # Execute immediately (current behavior)
+            return self.execute(*args)
+
     def clean_response(self, response):
         def is_lua_list(d):
             """Check if dictionary represents a Lua-style list (keys are consecutive numbers from 1)"""

@@ -10,12 +10,13 @@ class SetEntityRecipe(Tool):
         super().__init__(connection, game_state)
 
     def __call__(
-        self, entity: Entity, prototype: Union[Prototype, RecipeName]
+        self, entity: Entity, prototype: Union[Prototype, RecipeName], tick: int = None
     ) -> Entity:
         """
         Sets the recipe of an given entity.
         :param entity: Entity to set recipe
         :param prototype: The prototype to create, or a recipe name for more complex processes
+        :param tick: Game tick to execute this command at (for batch mode)
         :return: Entity that had its recipe set
         """
 
@@ -28,7 +29,22 @@ class SetEntityRecipe(Tool):
         else:
             raise ValueError(f"Invalid entity type: {prototype}")
 
-        response, elapsed = self.execute(self.player_index, name, x, y)
+        response, elapsed = self.execute_or_batch(tick, self.player_index, name, x, y)
+
+        # Check if we're in batch mode - if so, return early without processing response
+        if isinstance(response, dict) and response.get("batched"):
+            # In batch mode, return a modified copy of the input entity with recipe set
+            modified_entity = (
+                entity.model_copy() if hasattr(entity, "model_copy") else entity
+            )
+            # Handle filter inserters differently
+            if "filter" in entity.name:
+                modified_entity.filter = name  # Store the filter item
+            else:
+                modified_entity.recipe = (
+                    name  # Store the recipe for assembling machines
+                )
+            return modified_entity
 
         if not isinstance(response, dict):
             raise Exception(

@@ -13,12 +13,16 @@ class RotateEntity(Tool):
         super().__init__(connection, game_state)
 
     def __call__(
-        self, entity: Entity, direction: DirectionInternal = DirectionInternal.UP
+        self,
+        entity: Entity,
+        direction: DirectionInternal = DirectionInternal.UP,
+        tick: int = None,
     ) -> Entity:
         """
         Rotate an entity to a specified direction
         :param entity: Entity to rotate
         :param direction: Direction to rotate
+        :param tick: Game tick to execute this command at (for batch mode)
         :example rotate_entity(iron_chest, Direction.UP)
         :return: Returns the rotated entity
         """
@@ -39,9 +43,16 @@ class RotateEntity(Tool):
 
             factorio_direction = DirectionInternal.to_factorio_direction(direction)
 
-            response, elapsed = self.execute(
-                self.player_index, x, y, factorio_direction, entity.name
+            response, elapsed = self.execute_or_batch(
+                tick, self.player_index, x, y, factorio_direction, entity.name
             )
+
+            # Check if we're in batch mode - if so, return early without processing response
+            if isinstance(response, dict) and response.get("batched"):
+                # In batch mode, return a modified copy of the input entity with new direction
+                rotated_entity = entity.model_copy()
+                rotated_entity.direction = direction
+                return rotated_entity
 
             if not response:
                 raise Exception(f"Could not rotate: {response}")

@@ -32,6 +32,16 @@ from fle.commons.models.game_state import GameState
 from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )
+from fle.env.game_types import PrototypeJSONEncoder
+
+# Add Lua syntax validation
+try:
+    from luaparser import ast as lua_ast
+
+    LUAPARSER_AVAILABLE = True
+except ImportError:
+    LUAPARSER_AVAILABLE = False
+    print("WARNING: luaparser not available. Install with: pip install luaparser")
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000
@@ -87,6 +97,291 @@ class FactorioTransaction:
         return self.commands
 
 
+class BatchManager:
+    def __init__(self, instance):
+        self.instance = instance
+        self.is_active = False
+        self.scheduled_commands = []
+        self.current_batch_id = None
+
+    def activate(self):
+        """Enable batch mode for all tools."""
+        self.is_active = True
+        # Clear any existing commands
+        self.scheduled_commands.clear()
+        self.current_batch_id = None
+        # Set this batch manager on all tools
+        for namespace in self.instance.namespaces:
+            for tool_name in self.instance.controllers:
+                controller = self.instance.controllers[tool_name]
+                controller.set_batch_manager(self)
+
+    def deactivate(self):
+        """Disable batch mode."""
+        self.is_active = False
+        self.scheduled_commands.clear()
+        self.current_batch_id = None
+        for namespace in self.instance.namespaces:
+            for tool_name in self.instance.controllers:
+                controller = self.instance.controllers[tool_name]
+                controller.set_batch_manager(None)
+
+    def add_tool_command(self, tick: int, tool_name: str, player_index: int, *args):
+        """Add a processed tool command to the batch."""
+        if not self.is_active:
+            raise RuntimeError("BatchManager not activated - call activate() first")
+
+        # Store command with all necessary info for later submission
+        # Add player_index to front since Lua functions expect it as first parameter
+        parameters = [player_index] + list(args)
+        self.scheduled_commands.append(
+            {"tick": tick, "command": tool_name, "parameters": parameters, "raw": False}
+        )
+        return {"batched": True, "tick": tick, "tool": tool_name}
+
+    def submit_batch(self):
+        """Submit all batched commands to the server and return batch info."""
+        if not self.scheduled_commands:
+            return {}
+
+        # Store the total number of commands for completion tracking
+        total_commands = len(self.scheduled_commands)
+        print(f"DEBUG: Submitting batch with {total_commands} commands:")
+        for i, cmd in enumerate(self.scheduled_commands):
+            print(f"  {i + 1}. {cmd['command']} at tick {cmd['tick']}")
+
+        # Submit the batch directly to the server
+        import json
+
+        batch_json = json.dumps(self.scheduled_commands, cls=PrototypeJSONEncoder)
+
+        # Validate the JSON as a Lua string
+        escaped_batch_json = batch_json.replace('"', '\\"')
+        lua_command = (
+            f'/c global.actions.submit_scheduled_batch("{escaped_batch_json}")'
+        )
+        is_valid, validation_msg = validate_lua_syntax(lua_command)
+        if not is_valid:
+            print(f"DEBUG: Lua validation failed: {validation_msg}")
+            pass  # Command validation failed but continue
+
+        self.instance.begin_transaction()
+        self.instance.add_command("/c global.actions.reset_user_tick(0)", raw=True)
+        self.instance.add_command(lua_command, raw=True)
+        submit_result = self.instance.execute_transaction()
+
+        # Check if the result indicates an error (None usually means the function failed)
+        for key, value in submit_result.items():
+            if isinstance(value, tuple) and value[0] is None:
+                # Try to get more error details
+                self.instance.begin_transaction()
+                self.instance.add_command(
+                    "/sc rcon.print('Last error: ' .. tostring(global.last_error or 'no error recorded'))",
+                    raw=True,
+                )
+                self.instance.execute_transaction()
+
+        # Extract batch_id from submission result
+        # The response comes back as a parsed Lua table from _lua2python()
+        batch_id = None
+
+        # Look through all the responses to find our batch submission result
+        for key, value in submit_result.items():
+            if isinstance(value, tuple) and len(value) >= 1:
+                response_data = value[0]  # The actual parsed data from _lua2python()
+
+                # Now response_data should be a proper Python dict from Lua table parsing
+                if isinstance(response_data, dict) and "batch_id" in response_data:
+                    batch_id = response_data["batch_id"]
+                    break
+
+        if not batch_id:
+            raise RuntimeError("Failed to get batch_id from server")
+
+        self.current_batch_id = batch_id
+        self.expected_command_count = total_commands  # Store for completion tracking
+
+        # Clear the batch
+        self.scheduled_commands.clear()
+
+        return {"batch_id": batch_id, "submitted": True}
+
+    def wait_for_batch_completion(self, timeout_seconds=30):
+        """Wait for the batch to complete and return results."""
+        if not self.current_batch_id:
+            raise RuntimeError("No active batch to wait for")
+
+        import time
+
+        start_time = time.time()
+
+        while time.time() - start_time < timeout_seconds:
+            # Check batch status
+            self.instance.begin_transaction()
+            self.instance.add_command(
+                f'/c global.actions.get_batch_results("{self.current_batch_id}")',
+                raw=True,
+            )
+            result = self.instance.execute_transaction()
+
+            # Extract batch results
+            batch_results = None
+            for key, value in result.items():
+                if isinstance(value, dict) and "completed" in value:
+                    batch_results = value
+                    break
+
+            if batch_results and batch_results.get("completed"):
+                # Clean up server-side results
+                self.instance.begin_transaction()
+                self.instance.add_command(
+                    f'/c global.actions.clear_batch_results("{self.current_batch_id}")',
+                    raw=True,
+                )
+                self.instance.execute_transaction()
+
+                self.current_batch_id = None
+                return batch_results["results"]
+
+            time.sleep(0.1)  # Wait before checking again
+
+        raise TimeoutError(f"Batch did not complete within {timeout_seconds} seconds")
+
+    def submit_batch_and_wait(self, timeout_seconds=30):
+        """Submit batch and wait for completion, returning all results."""
+        self.submit_batch()
+        return self.wait_for_batch_completion(timeout_seconds)
+
+    def submit_batch_and_stream(self, timeout_seconds=30, poll_interval=0.1):
+        """Submit batch and yield results as they become available.
+
+        Args:
+            timeout_seconds: Maximum time to wait for batch completion
+            poll_interval: How often to check for new results (in seconds)
+
+        Yields:
+            dict: Individual command results as they complete
+
+        Each yielded result contains:
+        - command_index: The index of the command in the batch
+        - command: The command name
+        - success: Whether the command succeeded
+        - result: The command result or error message
+        - tick: The game tick when the command was executed
+        """
+        if not self.scheduled_commands:
+            return
+
+        # Submit the batch
+        self.submit_batch()
+
+        if not self.current_batch_id:
+            raise RuntimeError("Failed to submit batch")
+
+        import time
+
+        start_time = time.time()
+        yielded_results = set()  # Track which results we've already yielded
+
+        try:
+            while time.time() - start_time < timeout_seconds:
+                # Check batch status
+                self.instance.begin_transaction()
+                self.instance.add_command(
+                    f'/c global.actions.get_batch_results("{self.current_batch_id}")',
+                    raw=True,
+                )
+                result = self.instance.execute_transaction()
+
+                # Process responses - now expecting proper Lua table format
+                for key, value in result.items():
+                    if not isinstance(value, tuple) or len(value) < 1:
+                        continue
+
+                    response_data = value[0]  # Parsed Lua table from _lua2python()
+
+                    # Handle proper Lua table response format
+                    if isinstance(response_data, dict):
+                        batch_id_from_response = response_data.get("batch_id")
+                        if batch_id_from_response != self.current_batch_id:
+                            continue
+
+                        # Process results
+                        batch_results_data = response_data.get("results", {})
+                        is_complete = response_data.get("completed", False)
+
+                        # Yield new results - handle both numeric and string keys
+                        for cmd_index_key, cmd_result in batch_results_data.items():
+                            try:
+                                # Convert key to integer (Lua arrays start at 1, Python at 0)
+                                if isinstance(cmd_index_key, str):
+                                    command_index = (
+                                        int(cmd_index_key) - 1
+                                    )  # Convert 1-based to 0-based
+                                elif isinstance(cmd_index_key, int):
+                                    command_index = (
+                                        cmd_index_key - 1
+                                    )  # Convert 1-based to 0-based
+                                else:
+                                    print(
+                                        f"DEBUG: Unexpected command index type: {type(cmd_index_key)}"
+                                    )
+                                    continue
+
+                                if command_index not in yielded_results:
+                                    yielded_results.add(command_index)
+                                    yield {
+                                        "command_index": command_index,
+                                        "command": cmd_result.get("command", "unknown"),
+                                        "success": cmd_result.get("success", False),
+                                        "result": cmd_result.get("result"),
+                                        "tick": cmd_result.get("user_tick", 0),
+                                    }
+                                    print(
+                                        f"DEBUG: Yielded result for command_index: {command_index}"
+                                    )
+
+                            except (ValueError, TypeError) as e:
+                                print(
+                                    f"DEBUG: Failed to parse command index {cmd_index_key}: {e}"
+                                )
+
+                        # Check if batch is complete
+                        if is_complete:
+                            print(f"DEBUG: Batch {batch_id_from_response} is complete!")
+                            # Clean up
+                            self.instance.begin_transaction()
+                            self.instance.add_command(
+                                f'/c global.actions.clear_batch_results("{self.current_batch_id}")',
+                                raw=True,
+                            )
+                            self.instance.execute_transaction()
+
+                            self.current_batch_id = None
+                            return
+
+                time.sleep(poll_interval)
+
+            raise TimeoutError(
+                f"Batch did not complete within {timeout_seconds} seconds"
+            )
+
+        except Exception:
+            # Clean up on error
+            if self.current_batch_id:
+                try:
+                    self.instance.begin_transaction()
+                    self.instance.add_command(
+                        f'/c global.actions.clear_batch_results("{self.current_batch_id}")',
+                        raw=True,
+                    )
+                    self.instance.execute_transaction()
+                except:
+                    pass  # Best effort cleanup
+                self.current_batch_id = None
+            raise
+
+
 class FactorioInstance:
     namespace_class = FactorioNamespace
     _cleanup_registered = False  # Only register cleanup once per process
@@ -131,6 +426,9 @@ class FactorioInstance:
 
         # Load the python controllers that correspond to the Lua scripts
         self.setup_tools(self.lua_script_manager)
+
+        # Initialize batch manager
+        self.batch_manager = BatchManager(self)
 
         if inventory is None:
             inventory = {}
@@ -728,6 +1026,7 @@ class FactorioInstance:
             "serialize",
             "production_score",
             "initialise_inventory",
+            "scheduled_batch",  # Add the new batch scheduler
         ]
         if self.peaceful:
             init_scripts.append("enemies")
@@ -1043,3 +1342,15 @@ class FactorioInstance:
                     thread.join(timeout=5)  # Wait up to 5 seconds for each thread
                 except Exception as e:
                     print(f"Error joining thread {thread.name}: {e}")
+
+
+def validate_lua_syntax(lua_code: str) -> Tuple[bool, str]:
+    """Validate Lua syntax using luaparser if available"""
+    if not LUAPARSER_AVAILABLE:
+        return True, "luaparser not available - skipping validation"
+
+    try:
+        lua_ast.parse(lua_code)
+        return True, "Valid Lua syntax"
+    except Exception as e:
+        return False, f"Lua syntax error: {str(e)}"

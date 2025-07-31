@@ -28,24 +28,24 @@ def generate_compose_config(num_instances: int, map: str) -> Dict[str, Any]:
             "volumes": [
                 {
                     "type": "bind",
-                    "source": "./fle/cluster/scenarios/default_lab_scenario",
+                    "source": "../scenarios/default_lab_scenario",
                     "target": "/opt/factorio/scenarios/default_lab_scenario",
                 },
                 {
                     "type": "bind",
-                    "source": "./fle/cluster/scenarios/open_world",
+                    "source": "../scenarios/open_world",
                     "target": "/opt/factorio/scenarios/open_world",
                 },
-                {
-                    "type": "bind",
-                    "source": "~/Applications/Factorio.app/Contents/Resources/mods",
-                    "target": "/opt/factorio/mods",
-                },
-                {
-                    "type": "bind",
-                    "source": "../../data/_screenshots",
-                    "target": "/opt/factorio/script-output",
-                },
+                # {
+                #     "type": "bind",
+                #     "source": "~/Applications/Factorio.app/Contents/Resources/mods",
+                #     "target": "/opt/factorio/mods",
+                # },
+                # {
+                #     "type": "bind",
+                #     "source": "../../data/_screenshots",
+                #     "target": "/opt/factorio/script-output",
+                # },
             ],
             "ports": [
                 f"{base_udp_port + i}:{base_udp_port}/udp",
@@ -96,7 +96,7 @@ def setup_docker_compose(num_instances: int, map: str):
 
 
 if __name__ == "__main__":
-    num_instances = 33
+    num_instances = 8
     map = "open_world"  # or default_lab_scenario
     if len(sys.argv) != 2:
         print("Usage: python create_docker_compose_config.py <number_of_instances>")

@@ -315,6 +315,7 @@ class TrajectoryRunner:
                     instance_namespace_before_program = (
                         self.evaluator.instance.namespaces[agent_idx]
                     )
+
                     (
                         evaluated_program,
                         task_verification_response,

@@ -59,6 +59,9 @@ class Render(Tool):
         Returns:
             RenderedImage containing the visual representation of the area
         """
+        assert isinstance(include_status, bool), "Include status must be boolean"
+        assert isinstance(radius, (int, float)), "Radius must be a number"
+
         if not blueprint:
             result = self._get_map_entities(include_status, radius, compression_level)
 

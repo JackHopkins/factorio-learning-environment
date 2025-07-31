@@ -81,14 +81,11 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
 
 async def main():
     parser = argparse.ArgumentParser()
-    package_dir = Path(__file__).parent.parent.parent.parent  # Go up to fle/ root
+    import fle
+
+    package_dir = Path(fle.__file__).parent
     default_config = (
-        package_dir
-        / "fle"
-        / "eval"
-        / "algorithms"
-        / "independent"
-        / "gym_run_config.json"
+        package_dir / "eval" / "algorithms" / "independent" / "gym_run_config.json"
     )
     parser.add_argument(
         "--run_config",

@@ -30,7 +30,7 @@ class GetEntities(Tool):
         :param player_only: If True, only player entities are returned, otherwise terrain features too.
         :return: Found entities
         """
-        print("getting entities")
+
         try:
             if not isinstance(position, Position) and position is not None:
                 raise ValueError("The second argument must be a Position object")

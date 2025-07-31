@@ -135,10 +135,7 @@ def main():
 Examples:
   fle eval --config configs/gym_run_config.json
   fle cluster [start|stop|restart|help] [-n N] [-s SCENARIO]
-<<<<<<< HEAD
   fle sprites [download|generate|all]
-=======
->>>>>>> edc256b29593fc338d192ca866221f3b996ef8b7
         """,
     )
     subparsers = parser.add_subparsers(dest="command")
@@ -248,4 +245,12 @@ Examples:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        prog="fle",
+        description="Factorio Learning Environment CLI",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("--config", default="eval/algorithms/independent/rebuttals_run_config.json", help="Path to run config JSON")
+    args = parser.parse_args()
+    fle_eval(args, True)
+    #main()

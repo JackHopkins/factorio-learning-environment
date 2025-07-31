@@ -73,12 +73,14 @@ class UnboundedThroughputTask(TaskABC):
                 max_achievements = achievements
             else:
                 break
+
+        current_step = step_statistics["current_step_id"] if "current_step_id" in step_statistics else 0
         return TaskResponse(
             success=False,
             meta={
                 "achievements": max_achievements,
                 "nr_of_steps_left": self.trajectory_length
-                - step_statistics["current_step_id"]
+                - current_step
                 - 1,
             },
         )

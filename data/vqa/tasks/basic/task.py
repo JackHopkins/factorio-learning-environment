@@ -109,7 +109,7 @@ if __name__ == "__main__":
     results = eval(
         tasks=[comprehensive_basic_task()],
         model=model,
-        limit=1,
+        limit=5,
         log_dir="../../logs",
         hooks=[VQAPairsHook()]
     )

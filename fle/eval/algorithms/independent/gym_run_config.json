@@ -1,6 +1,6 @@
 [
     {
-        "env_id": "Factorio-iron_ore_throughput_16-v0",
+        "env_id": "iron_plate_throughput_unbounded_steps_show_steps_false",
         "model": "claude-3-5-sonnet-latest"
     }
 ] 

@@ -255,7 +255,7 @@ class APIFactory:
                     stream=False,
                 )
 
-        elif "o1-mini" in model_to_use or "o3-mini" in model_to_use:
+        elif "o1-mini" in model_to_use or "o3-mini" in model_to_use or "o3" in model_to_use:
             if has_images:
                 raise ValueError(
                     "Claude o1-mini and o3-mini models do not support image inputs."
@@ -281,6 +281,8 @@ class APIFactory:
                         model = "o3-mini"
                     elif "o1-mini" in model:
                         model = "o1-mini"
+                    elif "o3" in model:
+                        model = "o3-2025-04-16"
 
                     response = await client.chat.completions.create(
                         *args,

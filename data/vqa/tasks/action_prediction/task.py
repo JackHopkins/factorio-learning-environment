@@ -3,6 +3,7 @@ from inspect_ai.solver import system_message
 
 from ...dataset import raw_blueprint_dataset
 from .solver import generate_action_sequence, generate_next_action_questions, generate_construction_order_questions
+from ...common_solvers import validate_qa_answerability, convert_directions_to_compass, normalize_position_format
 
 
 @task
@@ -46,6 +47,9 @@ def next_action_prediction_task(num_questions: int = 3) -> Task:
                 action should be based on the blueprint and construction principles."""),
             generate_action_sequence(max_actions=10),
             generate_next_action_questions(num_questions=num_questions),
+            convert_directions_to_compass(),
+            normalize_position_format(),
+            validate_qa_answerability(),
         ],
         scorer=None,  # We're generating data, not scoring
     )
@@ -69,6 +73,9 @@ def construction_order_task(num_questions: int = 2) -> Task:
                 Determine the optimal order to build entities considering power requirements, 
                 dependencies, and construction efficiency."""),
             generate_construction_order_questions(num_questions=num_questions),
+            convert_directions_to_compass(),
+            normalize_position_format(),
+            validate_qa_answerability(),
         ],
         scorer=None,  # We're generating data, not scoring
     )
@@ -93,6 +100,9 @@ def comprehensive_action_task(max_actions: int = 8, next_action_questions: int =
             generate_action_sequence(max_actions=max_actions),
             generate_next_action_questions(num_questions=next_action_questions),
             generate_construction_order_questions(num_questions=order_questions),
+            convert_directions_to_compass(),
+            normalize_position_format(),
+            validate_qa_answerability(),
         ],
         scorer=None,  # We're generating data, not scoring
     )

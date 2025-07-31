@@ -1,53 +1,113 @@
-I want to train a visual encoder for the Factorio Learning Environment.
+# CLAUDE.md
 
-We have Blueprints, which represent entities on the map. Blueprints can be converted into Python - the imperative steps to construct the blueprint.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Our goal is to construct tasks that train a model to effectively reason over a rendering of the game state, using a text representation as ground truth.
+## Project Overview
 
-# Tools
-- Load blueprint - load_blueprint()
-- Render it - render()
+This is the Visual Question Answering (VQA) module for the Factorio Learning Environment (FLE). The goal is to train visual encoders for Factorio using text representations as ground truth.
 
-# VQA Tasks
+## Key Commands
 
-## Basic
-- Render a blueprint
-- Predict the name of the entity | position
+### Running Tasks
+```bash
+# Run all VQA tasks
+python tasks.py
 
-## Spatial Reasoning
-- Render the blueprint
-- Determine relative entity offsets to each other
-- Compose natural language reasoning questions e.g:
-  - what is 5 to the left, and 2 below the leftmost mining drill?
-  - what is the distance between the leftmost and rightmost mining drill?
-- Predict the name of the entity | Q ∪ image
+# Run specific task type
+python tasks/basic/task.py
+python tasks/spatial_reasoning/task.py
+python tasks/denoising/task.py
+# etc.
+```
 
-## State Prediction
-- Render a live factory
-- Predict the state of an entity | Q ∪ image
+### Installation
+```bash
+pip install -r requirements.txt
+```
 
-## Denoising
-- Pick an entity
-- Remove / Modify / Replace it
-- Q: What entity should be at X, Y?
-- Predict the original entity | Q ∪ image
+## Architecture
 
-## Action Prediction
-- Get blueprint
-- Convert it to Python
-- Run N-1 Python actions
-- Predict Nth action | image
+### Core Components
 
-## Productivity Planning
-- Get a live factory
-- Connect 2 entities
-- Predict the production throughput | image
+1. **Blueprint Loading**: Blueprints are loaded from `.fle/blueprints/` via `utils.find_blueprints_dir()`
+2. **Rendering**: Use `instance.namespace._render(blueprint=blueprint)` to render blueprints to images
+3. **Dataset Generation**: `dataset.py` creates `MemoryDataset` from blueprints
+4. **Task System**: Each task type has:
+   - `task.py`: Task definitions using `@task` decorator
+   - `solver.py`: Question generation logic using `@solver` decorator
+   - `templates/`: Jinja2 templates for prompts
+5. **Common Solvers**: `common_solvers.py` contains:
+   - `validate_qa_answerability()`: Validates if questions are answerable and unambiguous
+   - `convert_directions_to_compass()`: Converts numeric directions to compass directions
+6. **Direction Utilities**: `direction_utils.py` provides Direction enum and conversion utilities
 
+### Task Types
 
-## Contrastive Image–Text Alignment
-- Get blueprint (main)
-  - Get 3 other named blueprints
-  - Summarize each blueprint into a 'title' \ 'purpose': e.g
-    - title: 15-to-6 Express Belt Balancer (Compact, Prioritized)" 
-    - purpose: Evenly distributes items from 15 input belts across 6 output belts, ensuring balanced throughput in a high-capacity logistics system.
-- Predict the title/purpose | Q ∪ image ∪ options
+1. **Basic** (`tasks/basic/`)
+   - Entity name prediction from position
+   - Position prediction from entity name
+   - Entity counting
+
+2. **Spatial Reasoning** (`tasks/spatial_reasoning/`)
+   - Relative entity positions
+   - Distance calculations
+   - Spatial context questions
+
+3. **State Prediction** - **NOT IMPLEMENTED**
+   - Should predict entity states from live factories
+   - Needs access to live game state, not just blueprints
+
+4. **Denoising** (`tasks/denoising/`)
+   - Remove/modify/replace entities
+   - Predict original entity
+
+5. **Action Prediction** (`tasks/action_prediction/`)
+   - Predict next construction action
+   - Construction order questions
+
+6. **Productivity Planning** (`tasks/productivity_planning/`)
+   - Throughput predictions
+   - Bottleneck analysis
+   - Optimization suggestions
+
+7. **Contrastive Alignment** (`tasks/contrastive_alignment/`)
+   - Blueprint title/purpose matching
+   - Multiple choice format
+
+### Data Flow
+
+1. Blueprint JSON → `raw_blueprint_dataset()` → Task
+2. Task uses solver to generate questions
+3. Solver renders blueprint: `instance.namespace._render(blueprint=blueprint)`
+4. Image saved to `dataset/images/{hash}.jpg`
+5. **Validation Pipeline**:
+   - `convert_directions_to_compass()`: Converts numeric directions (0,2,4,6) to compass (north/east/south/west)
+   - `validate_qa_answerability()`: Validates questions are answerable and unambiguous, regenerates if needed
+6. QA pairs collected by `VQAPairsHook`
+7. Results saved as JSONL in `dataset/`
+
+### Key Integration Points
+
+- **FLE Instance**: Create with `create_factorio_instance()` from `fle.agents.data.screenshots_from_run`
+- **Rendering**: Returns `RenderedImage` object, save with `.save(path)`
+- **Image IDs**: Use hash of blueprint string as image ID
+- **Hooks**: `VQAPairsHook` automatically serializes QA pairs after evaluation
+
+### Adding New Task Types
+
+1. Create directory: `tasks/new_task_type/`
+2. Create `task.py` with `@task` decorated functions
+3. Create `solver.py` with `@solver` decorated question generators
+4. Add templates in `templates/` if needed
+5. Update `tasks/__init__.py` to export new tasks
+6. Add normalization method in `hook.py` for new QA format
+
+### Important Notes
+
+- **State Prediction tasks** need live game state, not implemented yet
+- **Direction Handling**: All tasks now convert numeric directions to compass directions automatically
+- **Question Validation**: All generated questions are validated for answerability and clarity
+- **Images** are saved with hash-based filenames to avoid duplicates
+- **QA Pairs** are normalized to consistent format in `hook.py`
+- **Framework**: Use `inspect_ai` framework for task/solver definitions
+- **Validation Steps**: Always include `convert_directions_to_compass()` and `validate_qa_answerability()` in solver pipelines

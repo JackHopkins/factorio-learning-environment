@@ -7,6 +7,8 @@ from json import JSONDecodeError
 from inspect_ai.model import ChatMessageUser
 from inspect_ai.solver import Solver, solver, TaskState, Generate
 from data.vqa.templates import Templates
+from data.vqa.direction_utils import Direction, convert_numeric_direction, format_direction_in_text
+from data.vqa.position_utils import format_position
 from fle.agents.data.screenshots_from_run import create_factorio_instance
 from fle.commons.models.rendered_image import RenderedImage
 
@@ -62,24 +64,41 @@ def generate_entity_name_questions(questions_per_blueprint: int = 3) -> Solver:
 
 
 
+            # Convert direction to compass if present
+            if "direction" in entity_properties:
+                dir_value = entity_properties["direction"]
+                compass_dir = convert_numeric_direction(dir_value)
+                entity_properties["direction_compass"] = compass_dir
+
             # Create prompt for the model to generate a question/answer pair
-            prompt = f"""Given this Factorio entity and its properties, generate a question and answer pair.
+            prompt = f"""Given this Factorio entity and its properties, generate a SPECIFIC and UNAMBIGUOUS question and answer pair.
 
 Entity Properties:
 {entity_properties}
 
-Generate a question that asks about any property of this entity (not just position or name).
-Examples of good questions:
-- "What entity is located at position ({x}, {y})?"
-- "What direction is the {entity_name} at ({x}, {y}) facing?"
-- "What recipe is configured in the {entity_name} at position ({x}, {y})?"
-- "How many filters are set on the {entity_name} at ({x}, {y})?"
-- "What is the entity number of the {entity_name} at position ({x}, {y})?"
+IMPORTANT GUIDELINES:
+1. Questions must be answerable from just looking at the blueprint image
+2. Always use exact positions when referring to entities (e.g., "at Position(x={x}, y={y})")
+3. Use compass directions (north/east/south/west) instead of numbers for directions
+4. Be specific - if there are multiple entities of the same type, specify which one
+5. Avoid vague references like "the inserter" without position
+
+Examples of GOOD questions:
+- "What entity is located at Position(x={x}, y={y})?"
+- "Which direction is the {entity_name} at Position(x={x}, y={y}) facing?"
+- "What recipe is configured in the {entity_name} at Position(x={x}, y={y})?"
+- "How many filters are set on the {entity_name} at Position(x={x}, y={y})?"
+- "Is there a {entity_name} at Position(x={x}, y={y})?"
+
+Examples of BAD questions (too vague):
+- "What direction is the inserter facing?" (which inserter?)
+- "Where is the belt?" (which belt?)
+- "What's in the north?" (too vague)
 
 Return your response in this exact JSON format:
 ```json
 {{
-    "question": "Your question here",
+    "question": "Your specific question here",
     "answer": "The precise answer"
 }}
 ```"""
@@ -98,16 +117,16 @@ Return your response in this exact JSON format:
                 json_match = re.search(r'```json\s*\n(.*?)\n```', completion, re.DOTALL)
                 if json_match:
                     qa_data = json.loads(json_match.group(1))
-                    question = qa_data.get("question", f"What entity is at ({x}, {y})?")
+                    question = qa_data.get("question", f"What entity is at {format_position(x, y)}?")
                     answer = qa_data.get("answer", entity_name)
                 else:
                     # Fallback to default question format
-                    question = f"What entity is located at position ({x}, {y})?"
+                    question = f"What entity is located at position {format_position(x, y)}?"
                     answer = entity_name
 
             except (JSONDecodeError, AttributeError):
                 # Fallback to default question format if parsing fails
-                question = f"What entity is located at position ({x}, {y})?"
+                question = f"What entity is located at position {format_position(x, y)}?"
                 answer = entity_name
 
             basic_questions.append({
@@ -184,27 +203,37 @@ def generate_position_questions(questions_per_blueprint: int = 3) -> Solver:
             nearby_entities.sort(key=lambda e: e["distance"])
 
             # Create prompt for model
-            prompt = f"""Given this Factorio entity and context, generate a question asking about its position and provide the answer.
+            prompt = f"""Given this Factorio entity and context, generate a SPECIFIC question asking about its position.
 
 Entity: {entity_name}
-Position: ({x}, {y})
+Position: {format_position(x, y)}
 Total {entity_name}s in blueprint: {same_type_count}
 Nearby entities (within 5 tiles): {nearby_entities[:3] if nearby_entities else "None"}
 
-Generate a creative question that asks about this entity's position. The question should be specific enough to identify this particular instance if there are multiple.
+IMPORTANT GUIDELINES:
+1. If there's only one {entity_name}, the question can be simple
+2. If there are multiple, use specific identifiers:
+   - Relative positions (northernmost, southernmost, etc.)
+   - Distance from other entities with their exact positions
+   - Unique characteristics visible in the image
+3. Always make the question answerable from just the visual image
 
-Examples of good position questions:
-- "Where is the {entity_name} located?"
-- "What are the coordinates of the northernmost {entity_name}?"
-- "At what position is the {entity_name} that's closest to the inserter?"
-- "Where is the {entity_name} that's 3 tiles east of the assembly machine?"
-- "What's the position of the isolated {entity_name}?"
+Examples of GOOD position questions:
+{f'- "Where is the {entity_name} located?"' if same_type_count == 1 else ''}
+{f'- "What are the coordinates of the {entity_name} at the northernmost position?"' if same_type_count > 1 else ''}
+{f'- "At what position is the {entity_name} that is closest to the inserter at ({nearby_entities[0]["position"]["x"]}, {nearby_entities[0]["position"]["y"]}}})?"' if nearby_entities and same_type_count > 1 else ''}
+- "What is the position of the {entity_name} that is exactly 3 tiles east of the assembly-machine at Position(x=5, y=2)?"
+{f'- "Where is the isolated {entity_name} that has no other entities within 3 tiles?"' if not nearby_entities else ''}
+
+Examples of BAD questions:
+- "Where is the {entity_name} near the belt?" (which belt? what position?)
+- "What's the position of the middle {entity_name}?" (ambiguous)
 
 Return your response in this exact JSON format:
 ```json
 {{
-    "question": "Your position question here",
-    "answer": "({x}, {y})"
+    "question": "Your specific position question here",
+    "answer": "{format_position(x, y)}"
 }}
 ```"""
 
@@ -218,14 +247,14 @@ Return your response in this exact JSON format:
                 if json_match:
                     qa_data = json.loads(json_match.group(1))
                     question = qa_data.get("question", f"Where is the {entity_name} located?")
-                    answer = qa_data.get("answer", f"({x}, {y})")
+                    answer = qa_data.get("answer", format_position(x, y))
                 else:
                     question = f"Where is the {entity_name} located?"
-                    answer = f"({x}, {y})"
+                    answer = format_position(x, y)
 
             except (json.JSONDecodeError, AttributeError):
                 question = f"Where is the {entity_name} located?"
-                answer = f"({x}, {y})"
+                answer = format_position(x, y)
 
             position_questions.append({
                 "question": question,
@@ -272,9 +301,10 @@ def generate_counting_questions(questions_per_blueprint: int = 2) -> Solver:
             entity_name = entity.get("name", "unknown")
             entity_counts[entity_name] += 1
 
-            # Count by direction
+            # Count by direction (convert to compass)
             direction = entity.get("direction", 0)
-            entity_by_direction[entity_name][direction] += 1
+            compass_dir = convert_numeric_direction(direction)
+            entity_by_direction[entity_name][compass_dir] += 1
 
             # Count by region (quadrants)
             pos = entity.get("position", {})

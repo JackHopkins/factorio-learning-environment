@@ -15,7 +15,7 @@ from fle.eval.algorithms.independent.simple_evaluator import SimpleFactorioEvalu
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
 from fle.commons.models.program import Program
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 from fle.commons.cluster_ips import get_local_container_ips
 from fle.agents.llm.metrics import timing_tracker, log_metrics
 

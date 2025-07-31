@@ -11,7 +11,7 @@ from fle.agents.formatters import RecursiveFormatter
 from fle.agents.llm.api_factory import APIFactory
 from fle.services.db_client import DBClient
 from fle.commons.models import GameState
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 
 from .beam_search import ParallelBeamConfig, ParallelBeamSearch
 

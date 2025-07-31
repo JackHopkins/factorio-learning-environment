@@ -2,34 +2,34 @@ from PIL import Image, ImageDraw, ImageFont
 from typing import List, Dict, Optional
 
 from fle.env.game.entities import Entity, Position, BoundingBox, Layer, EntityStatus
-from fle.env.factorio.tools.admin.render.layers.connection_layers_renderer import (
+from fle.env.game.tools.admin.render.layers.connection_layers_renderer import (
     ConnectionsLayerRenderer,
 )
-from fle.env.factorio.tools.admin.render.layers.marker_layers_renderer import (
+from fle.env.game.tools.admin.render.layers.marker_layers_renderer import (
     MarkersLayerRenderer,
 )
-from fle.env.factorio.tools.admin.render.layers.resource_layer_renderer import (
+from fle.env.game.tools.admin.render.layers.resource_layer_renderer import (
     ResourcesLayerRenderer,
 )
-from fle.env.factorio.tools.admin.render.utils.electricity_renderer import (
+from fle.env.game.tools.admin.render.utils.electricity_renderer import (
     ElectricityLayerRenderer,
 )
-from fle.env.factorio.tools.admin.render.utils.render_config import RenderConfig
-from fle.env.factorio.tools.admin.render.utils.entity_categoriser import EntityCategoriser
-from fle.env.factorio.tools.admin.render.utils.colour_manager import ColourManager
-from fle.env.factorio.tools.admin.render.utils.shape_renderer import ShapeRenderer
-from fle.env.factorio.tools.admin.render.utils.legend_renderer import LegendRenderer
-from fle.env.factorio.tools.admin.render.utils.connection_renderer import ConnectionRenderer
-from fle.env.factorio.tools.admin.render.utils.image_calculator import ImageCalculator
+from fle.env.game.tools.admin.render.utils.render_config import RenderConfig
+from fle.env.game.tools.admin.render.utils.entity_categoriser import EntityCategoriser
+from fle.env.game.tools.admin.render.utils.colour_manager import ColourManager
+from fle.env.game.tools.admin.render.utils.shape_renderer import ShapeRenderer
+from fle.env.game.tools.admin.render.utils.legend_renderer import LegendRenderer
+from fle.env.game.tools.admin.render.utils.connection_renderer import ConnectionRenderer
+from fle.env.game.tools.admin.render.utils.image_calculator import ImageCalculator
 
 
 # Import layer renderers
-from fle.env.factorio.tools.admin.render.layers.grid_layer_renderer import GridLayerRenderer
-from fle.env.factorio.tools.admin.render.layers.water_layer_renderer import WaterLayerRenderer
-from fle.env.factorio.tools.admin.render.layers.natural_layer_renderer import (
+from fle.env.game.tools.admin.render.layers.grid_layer_renderer import GridLayerRenderer
+from fle.env.game.tools.admin.render.layers.water_layer_renderer import WaterLayerRenderer
+from fle.env.game.tools.admin.render.layers.natural_layer_renderer import (
     NaturalLayerRenderer,
 )
-from fle.env.factorio.tools.admin.render.layers.entities_layer_renderer import (
+from fle.env.game.tools.admin.render.layers.entities_layer_renderer import (
     EntitiesLayerRenderer,
 )
 

@@ -3,7 +3,7 @@
 from fle.env.game.entities import *  # noqa
 from fle.env.game.game_types import Prototype, Resource
 from fle.env.game.instance import DirectionInternal, FactorioInstance
-from fle.env.factorio_client import FactorioClient
+from fle.env.game.factorio_client import FactorioClient
 
 __all__ = [
     "FactorioInstance",

@@ -22,6 +22,7 @@ from fle.env.game.namespace import FactorioNamespace
 from fle.env.utils.controller_loader.system_prompt_generator import \
     SystemPromptGenerator
 from fle.services.rcon import _lua2python
+from fle.services.docker_manager import ServerSettings
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000
@@ -65,15 +66,13 @@ class FactorioInstance:
     namespace_class = FactorioNamespace
     _cleanup_registered = False  # Only register cleanup once per process
     namespaces: List[FactorioNamespace]
-    server: FactorioClient
+    client: FactorioClient
 
     def __init__(
         self,
-        address=None,
+        server_settings: ServerSettings,
         fast=False,
-        tcp_port=27000,
         inventory=None,
-        cache_scripts=True,
         all_technologies_researched=True,
         peaceful=True,
         num_agents=1,
@@ -83,7 +82,6 @@ class FactorioInstance:
         self.num_agents = num_agents
         self.persistent_vars = {}
         self.tcp_port = tcp_port
-        self.server = FactorioClient(address, tcp_port, cache_scripts)
         self.all_technologies_researched = all_technologies_researched
         self.fast = fast
         self._speed = 1
@@ -94,7 +92,7 @@ class FactorioInstance:
         self.namespaces = [self.namespace_class(self, i) for i in range(num_agents)]
 
         # Register controllers with the server
-        self.server.register_controllers(self.namespaces)
+        self.client.register_controllers(self.namespaces)
 
         if inventory is None:
             inventory = {}
@@ -105,7 +103,7 @@ class FactorioInstance:
             self.first_namespace.score()
         except Exception:
             # Invalidate cache if there is an error
-            self.server.register_controllers(self.namespaces, invalidate_cache=True)
+            self.client.register_controllers(self.namespaces, invalidate_cache=True)
             self.initialise(fast)
 
         self.initial_score, goal = self.first_namespace.score()
@@ -132,14 +130,14 @@ class FactorioInstance:
         return self.num_agents > 1
 
     def set_speed(self, speed):
-        self.server.rcon_client.send_command(f"/sc game.speed = {speed}")
+        self.client.rcon_client.send_command(f"/sc game.speed = {speed}")
         self._speed = speed
 
     def get_speed(self):
         return self._speed
 
     def get_elapsed_ticks(self):
-        response = self.server.run_rcon_print("global.elapsed_ticks or 0")
+        response = self.client.run_rcon_print("global.elapsed_ticks or 0")
         if not response:
             return 0
         return int(response)
@@ -184,7 +182,7 @@ class FactorioInstance:
         """
         This resets the cached production flows that we track for achievements and diversity sampling.
         """
-        with self.server.transaction() as t:
+        with self.client.transaction() as t:
             t.add_command(
                 "/sc global.crafted_items = {}; global.harvested_items = {}", raw=True
             )
@@ -193,11 +191,11 @@ class FactorioInstance:
         """
         This resets the cached production flows that we track for achievements and diversity sampling.
         """
-        with self.server.transaction() as t:
+        with self.client.transaction() as t:
             t.add_command("/sc global.elapsed_ticks = 0", raw=True)
 
     def _reset(self, inventories: List[Dict[str, Any]]):
-        with self.server.transaction() as t:
+        with self.client.transaction() as t:
             t.add_command(
                 "/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)",
                 raw=True,
@@ -210,7 +208,7 @@ class FactorioInstance:
                 )
                 # self.server.add_command('clear_inventory', player_index)
 
-        with self.server.transaction() as t:
+        with self.client.transaction() as t:
             t.add_command("/sc global.actions.clear_walking_queue()", raw=True)
             for i in range(self.num_agents):
                 player_index = i + 1
@@ -288,14 +286,14 @@ class FactorioInstance:
             self.initial_score = 0
 
         # Clear renderings
-        with self.server.transaction() as t:
+        with self.client.transaction() as t:
             t.add_command("/sc rendering.clear()", raw=True)
 
     def set_inventory(self, inventory: Dict[str, Any], agent_idx: int = 0):
-        with self.server.transaction() as t:
+        with self.client.transaction() as t:
             t.add_command("clear_inventory", agent_idx + 1)
 
-        with self.server.transaction() as t:
+        with self.client.transaction() as t:
             inventory_items = {k: v for k, v in inventory.items()}
             inventory_items_json = json.dumps(inventory_items)
             player_idx = agent_idx + 1
@@ -305,7 +303,7 @@ class FactorioInstance:
             )
 
     def initialise(self, fast=True):
-        with self.server.transaction() as t:
+        with self.client.transaction() as t:
             t.add_command("/sc global.alerts = {}", raw=True)
             t.add_command("/sc global.elapsed_ticks = 0", raw=True)
             t.add_command(
@@ -330,7 +328,7 @@ class FactorioInstance:
         if self.peaceful:
             init_scripts.append("enemies")
 
-        self.server.load_init_into_game(init_scripts)
+        self.client.load_init_into_game(init_scripts)
 
         inventories = [self.initial_inventory] * self.num_agents
         self._reset(inventories)
@@ -339,7 +337,7 @@ class FactorioInstance:
     def _create_agent_game_characters(self):
         """Create Factorio characters for all agents in the game."""
         # Create characters in Factorio
-        with self.server.transaction() as t:
+        with self.client.transaction() as t:
             color_logic = ""
             if self.num_agents > 1:
                 color_logic = "if i==1 then char.color={r=0,g=1,b=0,a=1} elseif i==2 then char.color={r=0,g=0,b=1,a=1} end;"
@@ -357,7 +355,7 @@ class FactorioInstance:
         :return:
         """
         start = timer()
-        lua_response = self.server.run_rcon_print(f"dump(global.get_alerts({seconds}))")
+        lua_response = self.client.run_rcon_print(f"dump(global.get_alerts({seconds}))")
         # print(lua_response)
         alert_dict, duration = _lua2python("alerts", lua_response, start=start)
         if isinstance(alert_dict, dict):
@@ -489,4 +487,4 @@ class FactorioInstance:
                 self.cleanup()
 
     def cleanup(self):
-        self.server.cleanup()
+        self.client.cleanup()

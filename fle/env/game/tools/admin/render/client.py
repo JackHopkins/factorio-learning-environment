@@ -1,11 +1,11 @@
 from typing import Optional, Dict
 import math
 
-from fle.env import BoundingBox, Position, BeltGroup, PipeGroup, ElectricityGroup, Layer
-from fle.env.factorio.tools.admin.render.rendered_image import RenderedImage
-from fle.env.factorio.tools.admin.render.renderer import Renderer
-from fle.env.factorio.tools.agent.get_entities.client import GetEntities
-from fle.env.factorio.tools import Tool
+from fle.env.game import BoundingBox, Position, BeltGroup, PipeGroup, ElectricityGroup, Layer
+from fle.env.game.tools.admin.render.rendered_image import RenderedImage
+from fle.env.game.tools.admin.render.renderer import Renderer
+from fle.env.game.tools.agent.get_entities.client import GetEntities
+from fle.env.game.tools import Tool
 
 MAX_TILES = (
     20  # Don't parameterise this, as the agent could break if it chooses a huge grid.

@@ -3,7 +3,7 @@ from time import sleep
 import pytest
 
 from fle.env.game.entities import Position, ResourcePatch, BeltGroup, Direction
-from fle.env.game_types import Prototype, Resource
+from fle.env.game.game_types import Prototype, Resource
 
 
 @pytest.fixture()

@@ -1,7 +1,7 @@
 from typing import Tuple
 
 from fle.env.game.entities import Position
-from fle.env.factorio.tools import Tool
+from fle.env.game.tools import Tool
 
 
 class SaveBlueprint(Tool):

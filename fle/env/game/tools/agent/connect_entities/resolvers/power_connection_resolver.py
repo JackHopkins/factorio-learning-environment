@@ -1,6 +1,6 @@
 from typing import Union, Tuple, List, Set
 from fle.env.game.entities import Position, Entity, ElectricityGroup
-from fle.env.factorio.tools.agent.connect_entities.resolver import Resolver
+from fle.env.game.tools.agent.connect_entities.resolver import Resolver
 
 
 class PowerConnectionResolver(Resolver):

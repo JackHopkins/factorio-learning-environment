@@ -7,7 +7,7 @@ from fle.commons.models.achievements import ProductionFlows
 from fle.env.game.game_state import GameState
 from fle.commons.models.program import Program
 from fle.env.game.entities import Entity, EntityGroup
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 from fle.env.utils.profits import get_achievements
 
 

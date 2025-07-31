@@ -1,13 +1,13 @@
 from typing import Union
 
 from fle.env.game.entities import Entity, Direction
-from fle.env.game_types import prototype_by_name
-from fle.env import DirectionInternal as DirectionA
-from fle.env.factorio.tools.agent.can_place_entity.client import CanPlaceEntity
-from fle.env.factorio.tools.agent.connect_entities.client import ConnectEntities
-from fle.env.factorio.tools.agent.pickup_entity.client import PickupEntity
-from fle.env.factorio.tools.agent.place_entity.client import PlaceObject as PlaceEntity
-from fle.env.factorio.tools import Tool
+from fle.env.game.game_types import prototype_by_name
+from fle.env.game import DirectionInternal as DirectionA
+from fle.env.game.tools.agent.can_place_entity.client import CanPlaceEntity
+from fle.env.game.tools.agent.connect_entities.client import ConnectEntities
+from fle.env.game.tools.agent.pickup_entity.client import PickupEntity
+from fle.env.game.tools.agent.place_entity.client import PlaceObject as PlaceEntity
+from fle.env.game.tools import Tool
 
 
 class ShiftEntity(Tool):

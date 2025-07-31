@@ -2,7 +2,7 @@ from typing import Dict, Callable, List
 from PIL import ImageDraw
 
 from fle.env.game.entities import Entity, UndergroundBelt, Pipe
-from fle.env.factorio.tools.admin.render.layers.layer_renderer import LayerRenderer
+from fle.env.game.tools.admin.render.layers.layer_renderer import LayerRenderer
 
 
 class ConnectionsLayerRenderer(LayerRenderer):

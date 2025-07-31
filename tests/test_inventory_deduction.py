@@ -1,6 +1,6 @@
 import pytest
-from fle.env import FactorioInstance
-from fle.env.game_types import Prototype
+from fle.env.game import FactorioInstance
+from fle.env.game.game_types import Prototype
 from fle.env.game.entities import Position, Direction
 
 @pytest.fixture()

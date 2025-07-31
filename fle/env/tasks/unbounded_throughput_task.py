@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
-from fle.env import Entity
-from fle.env import FactorioInstance
+from fle.env.game import Entity
+from fle.env.game import FactorioInstance
 from fle.env.tasks import TaskABC
 from fle.env.tasks import LAB_PLAY_POPULATED_STARTING_INVENTORY, CRAFTING_STATISTICS
 from fle.env.utils.achievements import eval_program_with_achievements

@@ -27,7 +27,7 @@ from fle.commons.models.conversation import Conversation
 from fle.env.game.game_state import GameState
 from fle.commons.models.message import Message
 from fle.commons.models.program import Program
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 
 # Configure environment
 os.environ.update({"FORCE_COLOR": "1", "TERM": "xterm-256color"})

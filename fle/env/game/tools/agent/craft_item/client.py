@@ -1,8 +1,8 @@
 from time import sleep
 
-from fle.env.game_types import Prototype
-from fle.env.factorio.tools.agent.inspect_inventory.client import InspectInventory
-from fle.env.factorio.tools import Tool
+from fle.env.game.game_types import Prototype
+from fle.env.game.tools.agent.inspect_inventory.client import InspectInventory
+from fle.env.game.tools import Tool
 
 
 class CraftItem(Tool):

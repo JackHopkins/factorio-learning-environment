@@ -3,7 +3,7 @@ from typing import Tuple, Optional
 from PIL import ImageDraw
 
 from fle.env.game.entities import Direction, EntityStatus
-from fle.env.factorio.tools.admin.render.utils.render_config import RenderConfig
+from fle.env.game.tools.admin.render.utils.render_config import RenderConfig
 
 
 class ShapeRenderer:

@@ -1,5 +1,5 @@
 import time
-from fle.env import FactorioInstance, Direction
+from fle.env.game import FactorioInstance, Direction
 from entities import Position
 from game_types import Prototype, Resource
 

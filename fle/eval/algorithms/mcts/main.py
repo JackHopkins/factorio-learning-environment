@@ -5,7 +5,7 @@ from fle.commons.cluster_ips import get_local_container_ips
 from fle.services.db_client import DBClient
 from fle.eval.algorithms.mcts import MCTSFactory
 from fle.eval.open.plots.run_results import RunResults
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 import concurrent.futures
 from typing import List, Tuple
 

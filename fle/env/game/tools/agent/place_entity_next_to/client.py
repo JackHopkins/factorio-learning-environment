@@ -1,7 +1,7 @@
 from fle.env.game.entities import Position, Entity
-from fle.env import DirectionInternal
-from fle.env.game_types import Prototype
-from fle.env.factorio.tools import Tool
+from fle.env.game import DirectionInternal
+from fle.env.game.game_types import Prototype
+from fle.env.game.tools import Tool
 
 
 class PlaceEntityNextTo(Tool):

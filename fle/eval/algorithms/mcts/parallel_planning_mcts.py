@@ -19,7 +19,7 @@ from fle.env.game.game_state import GameState
 from fle.commons.models.generation_parameters import GenerationParameters
 from fle.commons.models.message import Message
 from fle.commons.models.program import Program
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 from fle.eval.algorithms.mcts.grouped_logger import GroupedFactorioLogger
 from fle.eval.algorithms.mcts.parallel_mcts_config import ParallelMCTSConfig
 from fle.eval.algorithms.mcts.planning_models import (

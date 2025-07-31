@@ -3,9 +3,9 @@ from typing import Dict, List, Tuple
 from collections import defaultdict
 
 from fle.env.game.entities import Entity, EntityStatus
-from fle.env.game_types import prototype_by_name
-from fle.env.factorio.tools.admin.render.utils.render_config import RenderConfig
-from fle.env.factorio.tools.admin.render.utils.entity_categoriser import EntityCategoriser
+from fle.env.game.game_types import prototype_by_name
+from fle.env.game.tools.admin.render.utils.render_config import RenderConfig
+from fle.env.game.tools.admin.render.utils.entity_categoriser import EntityCategoriser
 
 
 class ColourManager:

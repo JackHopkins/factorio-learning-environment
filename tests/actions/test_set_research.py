@@ -1,7 +1,7 @@
 import pytest
 
-from fle.env import FactorioInstance
-from fle.env.game_types import Technology
+from fle.env.game import FactorioInstance
+from fle.env.game.game_types import Technology
 from fle.commons.cluster_ips import get_local_container_ips
 
 

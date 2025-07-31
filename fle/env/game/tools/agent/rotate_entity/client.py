@@ -3,9 +3,9 @@ from fle.env.game.entities import (
     Direction as DirectionA,
     AssemblingMachine,
 )  # We have 2 Direction objects to avoid circular deps
-from fle.env import DirectionInternal
-from fle.env.game_types import prototype_by_name
-from fle.env.factorio.tools import Tool
+from fle.env.game import DirectionInternal
+from fle.env.game.game_types import prototype_by_name
+from fle.env.game.tools import Tool
 
 
 class RotateEntity(Tool):

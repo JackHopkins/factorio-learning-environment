@@ -1,7 +1,7 @@
 from typing import List, Optional
 from pydantic import BaseModel
-from fle.env.game_types import Technology
-from fle.env.factorio.tools import Tool
+from fle.env.game.game_types import Technology
+from fle.env.game.tools import Tool
 
 
 class Ingredient(BaseModel):

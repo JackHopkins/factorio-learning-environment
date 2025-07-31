@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, Callable
 
 from fle.env.game.entities import Entity, Position, BoundingBox, Direction
-from fle.env.factorio.tools.admin.render.utils.render_config import RenderConfig
+from fle.env.game.tools.admin.render.utils.render_config import RenderConfig
 
 
 class ImageCalculator:

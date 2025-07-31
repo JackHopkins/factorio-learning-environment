@@ -1,11 +1,11 @@
 from time import sleep
 
 from fle.env.game.entities import Position
-from fle.env.game_types import Resource
-from fle.env.factorio.tools.agent.get_entity.client import GetEntity
-from fle.env.factorio.tools.agent.move_to.client import MoveTo
-from fle.env.factorio.tools.agent.nearest.client import Nearest
-from fle.env.factorio.tools import Tool
+from fle.env.game.game_types import Resource
+from fle.env.game.tools.agent.get_entity.client import GetEntity
+from fle.env.game.tools.agent.move_to.client import MoveTo
+from fle.env.game.tools.agent.nearest.client import Nearest
+from fle.env.game.tools import Tool
 
 
 class HarvestResource(Tool):

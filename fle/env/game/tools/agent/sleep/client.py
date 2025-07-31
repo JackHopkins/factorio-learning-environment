@@ -1,6 +1,6 @@
 from time import sleep
 
-from fle.env.factorio.tools import Tool
+from fle.env.game.tools import Tool
 
 
 class Sleep(Tool):

@@ -3,10 +3,10 @@ from time import sleep
 
 from fle.env.game.entities import Position
 from fle.env.game.instance import NONE
-from fle.env.game_types import Prototype
-from fle.env.factorio.tools.admin.get_path.client import GetPath
-from fle.env.factorio.tools.admin.request_path.client import RequestPath
-from fle.env.factorio.tools import Tool
+from fle.env.game.game_types import Prototype
+from fle.env.game.tools.admin.get_path.client import GetPath
+from fle.env.game.tools.admin.request_path.client import RequestPath
+from fle.env.game.tools import Tool
 from fle.env.lua_manager import LuaScriptManager
 
 

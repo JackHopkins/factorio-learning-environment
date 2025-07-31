@@ -1,7 +1,7 @@
 from typing import Dict, Callable
 from PIL import ImageDraw
 
-from fle.env.factorio.tools.admin.render.layers.layer_renderer import LayerRenderer
+from fle.env.game.tools.admin.render.layers.layer_renderer import LayerRenderer
 
 
 class WaterLayerRenderer(LayerRenderer):

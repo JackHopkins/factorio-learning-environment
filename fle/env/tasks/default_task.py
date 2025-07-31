@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Optional
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 from fle.env.tasks import TaskABC
 from fle.agents import TaskResponse
 

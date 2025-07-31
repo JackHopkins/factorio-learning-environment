@@ -3,7 +3,7 @@ import json
 import zlib
 from typing import Dict, List, Union
 
-from fle.env.factorio.tools import Tool
+from fle.env.game.tools import Tool
 
 
 class SaveEntityState(Tool):

@@ -1,6 +1,6 @@
 from typing import Dict
 
-from fle.env.factorio.tools import Tool
+from fle.env.game.tools import Tool
 
 
 class ProductionStats(Tool):

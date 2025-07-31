@@ -2,7 +2,7 @@ from typing import List, Dict, Callable
 from PIL import ImageDraw
 import math
 
-from fle.env.factorio.tools.admin.render.utils.render_config import RenderConfig
+from fle.env.game.tools.admin.render.utils.render_config import RenderConfig
 
 
 class TileRenderer:

@@ -1,4 +1,4 @@
-from fle.env.factorio.tools.controller import Controller
+from fle.env.game.tools.controller import Controller
 from fle.env.game.instance import FactorioInstance, FactorioClient
 
 

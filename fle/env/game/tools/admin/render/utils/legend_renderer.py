@@ -3,10 +3,10 @@ from PIL import ImageDraw, ImageFont, Image
 import math
 
 from fle.env.game.entities import EntityStatus
-from fle.env.factorio.tools.admin.render.utils.render_config import RenderConfig
-from fle.env.factorio.tools.admin.render.utils.colour_manager import ColourManager
-from fle.env.factorio.tools.admin.render.utils.entity_categoriser import EntityCategoriser
-from fle.env.factorio.tools.admin.render.utils.shape_renderer import ShapeRenderer
+from fle.env.game.tools.admin.render.utils.render_config import RenderConfig
+from fle.env.game.tools.admin.render.utils.colour_manager import ColourManager
+from fle.env.game.tools.admin.render.utils.entity_categoriser import EntityCategoriser
+from fle.env.game.tools.admin.render.utils.shape_renderer import ShapeRenderer
 
 
 class LegendRenderer:

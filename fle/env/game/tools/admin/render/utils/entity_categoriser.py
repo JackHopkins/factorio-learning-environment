@@ -1,4 +1,4 @@
-from fle.env.game_types import Prototype
+from fle.env.game.game_types import Prototype
 
 
 class EntityCategoriser:
@@ -15,7 +15,7 @@ class EntityCategoriser:
         Returns:
             String representing the entity category
         """
-        from fle.env import (
+        from fle.env.game import (
             TransportBelt,
             Splitter,
             UndergroundBelt,

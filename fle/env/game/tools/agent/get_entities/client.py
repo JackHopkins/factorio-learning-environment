@@ -1,11 +1,11 @@
 from time import sleep
 from typing import List, Set, Union
 from fle.env.game.entities import Position, Entity, EntityGroup
-from fle.env.game_types import Prototype
-from fle.env.factorio.tools.agent.connect_entities.groupable_entities import (
+from fle.env.game.game_types import Prototype
+from fle.env.game.tools.agent.connect_entities.groupable_entities import (
     agglomerate_groupable_entities,
 )
-from fle.env.factorio.tools import Tool
+from fle.env.game.tools import Tool
 
 
 class GetEntities(Tool):

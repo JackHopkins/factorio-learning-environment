@@ -12,9 +12,9 @@ Base Classes:
 - Init: Initialization tool for setting up the game environment
 """
 
-from fle.env.factorio.tools.controller import Controller
-from fle.env.factorio.tools.init import Init
-from fle.env.factorio.tools.tool import Tool
+from fle.env.game.tools.controller import Controller
+from fle.env.game.tools.init import Init
+from fle.env.game.tools.tool import Tool
 
 # Public API - expose the main base classes
 __all__ = [

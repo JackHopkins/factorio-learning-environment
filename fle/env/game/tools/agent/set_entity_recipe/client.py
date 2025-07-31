@@ -1,8 +1,8 @@
 from typing import Union
 
 from fle.env.game.entities import Entity
-from fle.env.game_types import Prototype, RecipeName
-from fle.env.factorio.tools import Tool
+from fle.env.game.game_types import Prototype, RecipeName
+from fle.env.game.tools import Tool
 
 
 class SetEntityRecipe(Tool):

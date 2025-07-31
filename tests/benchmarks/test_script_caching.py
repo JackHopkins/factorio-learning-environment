@@ -5,7 +5,7 @@ import pstats
 import io
 from pstats import SortKey
 
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 
 INVENTORY = {
     "coal": 50,

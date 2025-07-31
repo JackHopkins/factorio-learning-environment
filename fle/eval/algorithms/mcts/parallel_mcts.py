@@ -10,7 +10,7 @@ from fle.eval.evaluator import Evaluator
 from rich.console import Console
 
 from fle.services.db_client import DBClient
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

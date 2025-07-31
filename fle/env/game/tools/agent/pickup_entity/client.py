@@ -1,8 +1,8 @@
 from typing import Union, Optional
 
-from fle.env import entities as ent
-from fle.env.game_types import Prototype
-from fle.env.factorio.tools import Tool
+from fle.env.game import entities as ent
+from fle.env.game.game_types import Prototype
+from fle.env.game.tools import Tool
 
 
 class PickupEntity(Tool):

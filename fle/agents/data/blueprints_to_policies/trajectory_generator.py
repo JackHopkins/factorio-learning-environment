@@ -3,9 +3,9 @@ import os
 
 from jinja2 import Template
 
-from fle.env import Position, BoundingBox, EntityGroup
-from fle.env import FactorioInstance, Direction
-from fle.env.game_types import Resource, prototype_by_name
+from fle.env.game import Position, BoundingBox, EntityGroup
+from fle.env.game import FactorioInstance, Direction
+from fle.env.game.game_types import Resource, prototype_by_name
 
 from enum import Enum
 from typing import Dict, List, Optional, Tuple, NamedTuple

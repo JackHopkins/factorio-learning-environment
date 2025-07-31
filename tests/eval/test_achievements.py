@@ -1,6 +1,6 @@
 import unittest
 
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 from fle.env.utils.achievements import eval_program_with_achievements
 
 

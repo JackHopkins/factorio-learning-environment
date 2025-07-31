@@ -1,6 +1,6 @@
 import pytest
 from fle.env.game.instance import FactorioInstance
-from fle.env.game_types import Resource
+from fle.env.game.game_types import Resource
 
 
 @pytest.fixture()

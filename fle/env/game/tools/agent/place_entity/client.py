@@ -1,11 +1,11 @@
 from time import sleep
 
 from fle.env.game.entities import Position, Entity
-from fle.env import DirectionInternal, Direction
-from fle.env.game_types import Prototype
-from fle.env.factorio.tools.agent.get_entity.client import GetEntity
-from fle.env.factorio.tools.agent.pickup_entity.client import PickupEntity
-from fle.env.factorio.tools import Tool
+from fle.env.game import DirectionInternal, Direction
+from fle.env.game.game_types import Prototype
+from fle.env.game.tools.agent.get_entity.client import GetEntity
+from fle.env.game.tools.agent.pickup_entity.client import PickupEntity
+from fle.env.game.tools import Tool
 
 
 class PlaceObject(Tool):

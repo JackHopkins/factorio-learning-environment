@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional
 import time
-from fle.env.factorio.tools import Tool
-from fle.env.factorio.tools.admin.render_message.client import RenderMessage
+from fle.env.game.tools import Tool
+from fle.env.game.tools.admin.render_message.client import RenderMessage
 import logging
 import uuid
 from a2a.types import Message, Part, TextPart

@@ -1,6 +1,6 @@
 from fle.commons.models.research_state import ResearchState
 from fle.commons.models.technology_state import TechnologyState
-from fle.env.factorio.tools import Tool
+from fle.env.game.tools import Tool
 
 
 class SaveResearchState(Tool):

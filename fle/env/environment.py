@@ -11,7 +11,7 @@ from gym import spaces
 from fle.agents import Response, TaskResponse
 from fle.commons.models.achievements import ProductionFlows
 from fle.env.game.game_state import GameState
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 from fle.env.gym_env.action import Action
 from fle.env.gym_env.observation import AgentMessage, GameInfo, Observation
 from fle.env.tasks import TaskABC

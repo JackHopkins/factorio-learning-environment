@@ -1,7 +1,7 @@
 from typing import List, Union
 
-from fle.env import Inventory, Entity, Position
-from fle.env.factorio.tools import Tool
+from fle.env.game import Inventory, Entity, Position
+from fle.env.game.tools import Tool
 
 
 class InspectInventory(Tool):

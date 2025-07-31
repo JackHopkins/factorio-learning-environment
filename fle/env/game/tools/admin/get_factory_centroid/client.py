@@ -1,5 +1,5 @@
 from fle.env.game.entities import BoundingBox, Position
-from fle.env.factorio.tools import Tool
+from fle.env.game.tools import Tool
 from fle.env.utils.camera import Camera
 
 

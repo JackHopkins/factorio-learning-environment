@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
 from typing import Union
 
-from fle.env import EntityGroup
-from fle.env import FactorioInstance, Direction
-from fle.env.game_types import prototype_by_name, Resource
+from fle.env.game import EntityGroup
+from fle.env.game import FactorioInstance, Direction
+from fle.env.game.game_types import prototype_by_name, Resource
 
 
 @dataclass

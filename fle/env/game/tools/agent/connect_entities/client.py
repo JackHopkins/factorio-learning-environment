@@ -3,7 +3,7 @@ from typing import Union, Optional, List, Dict, cast, Set
 
 import numpy
 
-from fle.env import (
+from fle.env.game import (
     EntityGroup,
     Entity,
     Position,
@@ -19,33 +19,33 @@ from fle.env import (
     OilRefinery,
     MultiFluidHandler,
 )
-from fle.env import DirectionInternal
-from fle.env.game_types import Prototype
-from fle.env.factorio.tools.admin.clear_collision_boxes.client import ClearCollisionBoxes
-from fle.env.factorio.tools.admin.extend_collision_boxes.client import ExtendCollisionBoxes
-from fle.env.factorio.tools.admin.get_path.client import GetPath
-from fle.env.factorio.tools.admin.request_path.client import RequestPath
-from fle.env.factorio.tools.agent.connect_entities.path_result import PathResult
-from fle.env.factorio.tools.agent.connect_entities.resolver import ConnectionType, Resolver
-from fle.env.factorio.tools.agent.connect_entities.resolvers.fluid_connection_resolver import (
+from fle.env.game import DirectionInternal
+from fle.env.game.game_types import Prototype
+from fle.env.game.tools.admin.clear_collision_boxes.client import ClearCollisionBoxes
+from fle.env.game.tools.admin.extend_collision_boxes.client import ExtendCollisionBoxes
+from fle.env.game.tools.admin.get_path.client import GetPath
+from fle.env.game.tools.admin.request_path.client import RequestPath
+from fle.env.game.tools.agent.connect_entities.path_result import PathResult
+from fle.env.game.tools.agent.connect_entities.resolver import ConnectionType, Resolver
+from fle.env.game.tools.agent.connect_entities.resolvers.fluid_connection_resolver import (
     FluidConnectionResolver,
 )
-from fle.env.factorio.tools.agent.connect_entities.resolvers.power_connection_resolver import (
+from fle.env.game.tools.agent.connect_entities.resolvers.power_connection_resolver import (
     PowerConnectionResolver,
 )
-from fle.env.factorio.tools.agent.connect_entities.resolvers.transport_connection_resolver import (
+from fle.env.game.tools.agent.connect_entities.resolvers.transport_connection_resolver import (
     TransportConnectionResolver,
 )
-from fle.env.factorio.tools.agent.connect_entities.groupable_entities import (
+from fle.env.game.tools.agent.connect_entities.groupable_entities import (
     _deduplicate_entities,
     agglomerate_groupable_entities,
 )
-from fle.env.factorio.tools.agent.get_entities.client import GetEntities
-from fle.env.factorio.tools.agent.get_entity.client import GetEntity
-from fle.env.factorio.tools.agent.inspect_inventory.client import InspectInventory
-from fle.env.factorio.tools.agent.pickup_entity.client import PickupEntity
-from fle.env.factorio.tools.agent.rotate_entity.client import RotateEntity
-from fle.env.factorio.tools import Tool
+from fle.env.game.tools.agent.get_entities.client import GetEntities
+from fle.env.game.tools.agent.get_entity.client import GetEntity
+from fle.env.game.tools.agent.inspect_inventory.client import InspectInventory
+from fle.env.game.tools.agent.pickup_entity.client import PickupEntity
+from fle.env.game.tools.agent.rotate_entity.client import RotateEntity
+from fle.env.game.tools import Tool
 from collections.abc import Set as AbstractSet
 
 

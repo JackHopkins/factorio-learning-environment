@@ -850,7 +850,7 @@ class Lab(Entity, Electric):
     _width: float = 3
 
     def __repr__(self) -> str:
-        from fle.env.game_types import technology_by_name
+        from fle.env.game.game_types import technology_by_name
 
         research_string = ""
         if self.research and self.research in technology_by_name:

@@ -28,7 +28,7 @@ from rich import print
 
 from fle.services.db_client import DBClient
 from fle.env.game.game_state import GameState
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 
 load_dotenv()
 

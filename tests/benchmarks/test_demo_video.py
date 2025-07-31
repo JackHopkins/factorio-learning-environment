@@ -5,7 +5,7 @@
 
 # from fle.env.game.entities import Position
 # from fle.env import FactorioInstance
-# from fle.env.game_types import Prototype
+# from fle.env.game.game_types import Prototype
 # from fle.env.utils.profits import eval_program_with_profits
 
 # @pytest.fixture()

@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 
 from fle.services.db_client import DBClient
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 
 # Load environment variables
 load_dotenv()

@@ -1,9 +1,9 @@
 from typing import Union
 
 from fle.env.game.entities import Entity, Position, EntityGroup
-from fle.env.game_types import Prototype
-from fle.env.factorio.tools.agent.connect_entities.client import ConnectEntities
-from fle.env.factorio.tools import Tool
+from fle.env.game.game_types import Prototype
+from fle.env.game.tools.agent.connect_entities.client import ConnectEntities
+from fle.env.game.tools import Tool
 
 
 class GetConnectionAmount(Tool):

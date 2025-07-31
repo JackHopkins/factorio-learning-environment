@@ -3,7 +3,7 @@ from typing import Tuple, Union
 from fle.env.game.entities import Position, Entity
 from fle.env.game.namespace import FactorioNamespace
 from fle.env.game.instance import FactorioClient
-from fle.env.factorio.tools.controller import Controller
+from fle.env.game.tools.controller import Controller
 
 
 class Tool(Controller):

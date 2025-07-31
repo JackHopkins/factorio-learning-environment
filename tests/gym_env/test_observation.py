@@ -3,7 +3,7 @@ from fle.env.gym_env.action import Action
 
 # from fle.env.gym_env.validation import validate_observation
 from fle.env.game.entities import Position, Direction
-from fle.env.game_types import Prototype
+from fle.env.game.game_types import Prototype
 
 
 def test_reset_observation(instance):

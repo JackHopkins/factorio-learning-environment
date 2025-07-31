@@ -7,7 +7,7 @@ from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
 from fle.env.game.game_state import GameState
 from fle.commons.models.program import Program
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 
 
 class BlueprintScenarioSampler:

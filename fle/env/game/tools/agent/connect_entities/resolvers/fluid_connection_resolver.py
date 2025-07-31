@@ -1,6 +1,6 @@
 from typing import Union, Tuple, List, Optional
 
-from fle.env import (
+from fle.env.game import (
     FluidHandler,
     Position,
     Entity,
@@ -13,8 +13,8 @@ from fle.env import (
     PipeGroup,
     PumpJack,
 )
-from fle.env.game_types import Prototype, prototype_by_name
-from fle.env.factorio.tools.agent.connect_entities.resolver import Resolver
+from fle.env.game.game_types import Prototype, prototype_by_name
+from fle.env.game.tools.agent.connect_entities.resolver import Resolver
 
 
 class FluidConnectionResolver(Resolver):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import enum
 from difflib import get_close_matches
-from fle.env import entities as ent
+import fle.env.game.entities as ent
 
 
 class ResourceName(enum.Enum):

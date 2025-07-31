@@ -1,4 +1,4 @@
-from fle.env.factorio.tools.init import Init
+from fle.env.game.tools.init import Init
 
 
 class ClearEntities(Init):

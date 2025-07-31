@@ -2,7 +2,7 @@ from statistics import mean
 from typing import List, Union
 from typing_extensions import cast
 
-from fle.env import (
+from fle.env.game import (
     TransportBelt,
     BeltGroup,
     Position,
@@ -17,7 +17,7 @@ from fle.env import (
     Direction,
     WallGroup,
 )
-from fle.env.game_types import Prototype
+from fle.env.game.game_types import Prototype
 
 
 def _deduplicate_entities(entities: List[Entity]) -> List[Entity]:

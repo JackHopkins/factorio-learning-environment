@@ -2,8 +2,8 @@ import math
 from typing import Tuple, Callable, List
 
 from PIL import ImageDraw
-from fle.env import UndergroundBelt, Pipe
-from fle.env.factorio.tools.admin.render.utils.colour_manager import ColourManager
+from fle.env.game import UndergroundBelt, Pipe
+from fle.env.game.tools.admin.render.utils.colour_manager import ColourManager
 
 
 class ConnectionRenderer:

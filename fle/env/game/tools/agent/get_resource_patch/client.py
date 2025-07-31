@@ -1,8 +1,8 @@
 from typing import Optional
 
 from fle.env.game.entities import Position, ResourcePatch, BoundingBox
-from fle.env.game_types import Resource
-from fle.env.factorio.tools import Tool
+from fle.env.game.game_types import Resource
+from fle.env.game.tools import Tool
 
 
 class GetResourcePatch(Tool):

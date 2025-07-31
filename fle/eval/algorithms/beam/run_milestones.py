@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 from fle.agents.formatters import RecursiveReportFormatter
 from fle.services.db_client import DBClient
-from fle.env import FactorioInstance, GameState
+from fle.env.game import FactorioInstance, GameState
 from fle.eval.algorithms.beam import MilestonesBeamSearchExecutor
 from fle.eval.algorithms.mcts import SupervisedExecutorConfig
 from fle.env.tasks.throughput_task import (

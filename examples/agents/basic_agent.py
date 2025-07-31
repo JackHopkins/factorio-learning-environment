@@ -1,7 +1,7 @@
 from typing import Optional
 
 import tenacity
-from fle.env.namespace import FactorioNamespace
+from fle.env.game.namespace import FactorioNamespace
 from tenacity import retry_if_exception_type, wait_exponential
 
 from fle.commons.models.conversation import Conversation

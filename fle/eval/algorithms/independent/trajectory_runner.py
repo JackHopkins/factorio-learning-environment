@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 from fle.agents import CompletionResult, CompletionReason
 from fle.agents.agent_abc import AgentABC
-from fle.services.db_client import DBClient, create_db_client
+from fle.services.db.db_client import DBClient, create_db_client
 from fle.eval.algorithms.independent.simple_evaluator import SimpleFactorioEvaluator
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message

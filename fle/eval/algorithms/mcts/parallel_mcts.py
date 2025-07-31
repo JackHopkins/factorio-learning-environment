@@ -9,7 +9,7 @@ from fle.eval.algorithms.mcts.parallel_mcts_config import ParallelMCTSConfig
 from fle.eval.evaluator import Evaluator
 from rich.console import Console
 
-from fle.services.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from fle.env.game import FactorioInstance
 
 # Configure logging

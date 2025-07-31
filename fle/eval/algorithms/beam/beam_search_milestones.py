@@ -13,7 +13,7 @@ from eval.algorithms.mcts import (
 )
 from tenacity import retry, wait_exponential
 
-from fle.services.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from fle.commons.models.conversation import Conversation
 from fle.env.game.game_state import GameState
 from fle.commons.models.generation_parameters import GenerationParameters

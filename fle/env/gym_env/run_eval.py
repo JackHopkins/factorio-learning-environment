@@ -16,7 +16,7 @@ from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
 from fle.env.gym_env.trajectory_runner import GymTrajectoryRunner
 from fle.env.registry import get_environment_info, list_available_environments
 from fle.eval.algorithms.independent import get_next_version
-from fle.services.db_client import create_db_client
+from fle.services.db.db_client import create_db_client
 
 load_dotenv()
 

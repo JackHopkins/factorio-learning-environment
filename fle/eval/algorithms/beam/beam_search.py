@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from rich.console import Console
 
 from fle.agents.formatters import ConversationFormatter, DefaultFormatter
-from fle.services.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from fle.commons.models.conversation import Conversation
 from fle.env.game.game_state import GameState
 from fle.commons.models.generation_parameters import GenerationParameters

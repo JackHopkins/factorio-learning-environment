@@ -1,7 +1,7 @@
 import os
 import asyncio
 from dotenv import load_dotenv
-from fle.services.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from eval.open.plots.run_results import RunResults
 import questionary
 import neptune

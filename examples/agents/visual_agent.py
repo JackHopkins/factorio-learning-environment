@@ -10,8 +10,8 @@ from fle.agents.formatters import RecursiveReportFormatter
 from fle.agents.models import CompletionResult, Response
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters
-from fle.env import Layer, Position
-from fle.env.namespace import FactorioNamespace
+from fle.env.game import Layer, Position
+from fle.env.game.namespace import FactorioNamespace
 
 from fle.agents.llm.api_factory import APIFactory
 from fle.agents.llm.parsing import parse_response

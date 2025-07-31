@@ -14,7 +14,7 @@ from fle.agents.formatters.conversation_formatter_abc import (
 from fle.agents.llm.parsing import PythonParser
 from tenacity import retry, retry_if_exception_type, wait_exponential
 
-from fle.services.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from fle.commons.models.conversation import Conversation
 from fle.env.game.game_state import GameState
 from fle.commons.models.generation_parameters import GenerationParameters

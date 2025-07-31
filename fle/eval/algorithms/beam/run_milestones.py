@@ -11,7 +11,7 @@ from fle.commons.cluster_ips import get_local_container_ips
 from dotenv import load_dotenv
 
 from fle.agents.formatters import RecursiveReportFormatter
-from fle.services.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from fle.env.game import FactorioInstance, GameState
 from fle.eval.algorithms.beam import MilestonesBeamSearchExecutor
 from fle.eval.algorithms.mcts import SupervisedExecutorConfig

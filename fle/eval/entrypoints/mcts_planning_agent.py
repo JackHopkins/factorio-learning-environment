@@ -26,7 +26,7 @@ from fle.commons.cluster_ips import get_local_container_ips
 from dotenv import load_dotenv
 from rich import print
 
-from fle.services.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from fle.env.game.game_state import GameState
 from fle.env.game import FactorioInstance
 

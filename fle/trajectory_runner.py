@@ -12,7 +12,7 @@ from fle.env.gym_env.action import Action
 from fle.env.gym_env.config import GymEvalConfig
 from fle.env.gym_env.observation import Observation
 from fle.env.gym_env.trajectory_logger import TrajectoryLogger
-from fle.services.db_client import DBClient
+from fle.services.db.db_client import DBClient
 
 
 class GymTrajectoryRunner:

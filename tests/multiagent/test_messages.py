@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from fle.agents.basic_agent import BasicAgent
-from fle.services.db_client import PostgresDBClient
+from fle.services.db.db_client import PostgresDBClient
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
 from fle.env.a2a_instance import A2AFactorioInstance

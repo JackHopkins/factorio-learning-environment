@@ -11,7 +11,7 @@ import copy
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters
 from fle.agents.formatters.conversation_formatter_abc import DefaultFormatter
-from fle.services.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from fle.eval.evaluator import Evaluator
 from fle.eval.algorithms.mcts.grouped_logger import GroupedFactorioLogger
 from fle.eval.algorithms.mcts.parallel_supervised_config import SupervisedExecutorConfig

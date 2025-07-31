@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple, Union
 
 from fle.env.utils.profits import get_achievements
 
-from fle.services.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from fle.env.game.game_state import GameState
 from fle.commons.models.program import Program
 from fle.env.game.entities import Entity, EntityGroup

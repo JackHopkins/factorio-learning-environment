@@ -2,7 +2,7 @@ import asyncio
 import copy
 from typing import List, Tuple, Union, Dict
 
-from fle.services.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from fle.commons.models.achievements import ProductionFlows
 from fle.env.game.game_state import GameState
 from fle.commons.models.program import Program

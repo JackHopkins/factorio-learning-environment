@@ -22,7 +22,7 @@ from fle.env.game.namespace import FactorioNamespace
 from fle.env.utils.controller_loader.system_prompt_generator import \
     SystemPromptGenerator
 from fle.services.rcon import _lua2python
-from fle.services.docker_manager import ServerSettings
+from fle.services.docker.docker_manager import ServerSettings
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000

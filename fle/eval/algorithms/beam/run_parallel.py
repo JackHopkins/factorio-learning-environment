@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from fle.agents.formatters import RecursiveReportFormatter
 from fle.agents.llm.api_factory import APIFactory
 from fle.commons.cluster_ips import get_local_container_ips
-from fle.services.db_client import create_db_client
+from fle.services.db.db_client import create_db_client
 from fle.env.game.game_state import GameState
 from fle.env.game import FactorioInstance
 from fle.eval.algorithms.beam import ParallelBeamConfig, ParallelBeamSearch

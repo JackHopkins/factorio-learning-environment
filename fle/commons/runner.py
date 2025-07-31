@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Generic, TypeVar
 import time
 from dataclasses import dataclass
-from fle.services.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from fle.commons.models.program import Program
 from fle.env.game.game_state import GameState
 from fle.commons.models.conversation import Conversation

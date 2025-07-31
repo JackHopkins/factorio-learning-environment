@@ -64,8 +64,11 @@ def entity_removal_denoising(qa_pairs_per_blueprint: int = 5) -> Solver:
                 continue
 
             image: RenderedImage = instance.namespace._render(blueprint=modified_blueprint)
-            id = str(hash(str(modified_blueprint)))
-            image.save(f"../../dataset/images/{id}.jpg")
+            from data.vqa.image_utils import save_rendered_image
+            # Pass modification info to distinguish denoising variants
+            modification_info = f"denoising_removed_{removed_entity.get('name', 'unknown')}_{idx}"
+            image_id = save_rendered_image(image, modified_blueprint, state.metadata, modification_info)
+            id = image_id
 
             # Generate the answer
             answer = entity_name

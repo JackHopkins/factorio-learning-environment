@@ -79,7 +79,7 @@ pip install -r requirements.txt
 1. Blueprint JSON → `raw_blueprint_dataset()` → Task
 2. Task uses solver to generate questions
 3. Solver renders blueprint: `instance.namespace._render(blueprint=blueprint)`
-4. Image saved to `dataset/images/{hash}.jpg`
+4. Image saved to `dataset/images/{blueprint_name}/{variant_hash}.jpg`
 5. **Validation Pipeline**:
    - `convert_directions_to_compass()`: Converts numeric directions (0,2,4,6) to compass (north/east/south/west)
    - `validate_qa_answerability()`: Validates questions are answerable and unambiguous, regenerates if needed
@@ -90,7 +90,7 @@ pip install -r requirements.txt
 
 - **FLE Instance**: Create with `create_factorio_instance()` from `fle.agents.data.screenshots_from_run`
 - **Rendering**: Returns `RenderedImage` object, save with `.save(path)`
-- **Image IDs**: Use hash of blueprint string as image ID
+- **Image IDs**: Use folder structure `/dataset/images/{blueprint_name}/{variant_hash}` with clean blueprint names and variant-specific hashes
 - **Hooks**: `VQAPairsHook` automatically serializes QA pairs after evaluation
 
 ### Adding New Task Types
@@ -107,7 +107,7 @@ pip install -r requirements.txt
 - **State Prediction tasks** need live game state, not implemented yet
 - **Direction Handling**: All tasks now convert numeric directions to compass directions automatically
 - **Question Validation**: All generated questions are validated for answerability and clarity
-- **Images** are saved with hash-based filenames to avoid duplicates
+- **Images** are saved with organized folder structure `{blueprint_name}/{variant_hash}.jpg` for better organization
 - **QA Pairs** are normalized to consistent format in `hook.py`
 - **Framework**: Use `inspect_ai` framework for task/solver definitions
 - **Validation Steps**: Always include `convert_directions_to_compass()` and `validate_qa_answerability()` in solver pipelines

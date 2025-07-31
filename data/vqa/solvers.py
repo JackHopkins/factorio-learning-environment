@@ -229,9 +229,9 @@ def generate_spatial_context_question() -> Solver:
             spatial_qa["nearby_entities"] = nearby_entities[:3]  # Keep top 3 nearest
             blueprint = state.metadata.get("blueprint", {})
             image: RenderedImage = instance.namespace._render(blueprint=blueprint)
-            id = str(hash(str(blueprint)))
-            image.save(f"../../images/{id}.jpg")
-            spatial_qa["image"] = id
+            from data.vqa.image_utils import save_rendered_image
+            image_id = save_rendered_image(image, blueprint, state.metadata, "spatial_qa", "../../images")
+            spatial_qa["image"] = image_id
 
             spatial_qa_pairs.append(spatial_qa)
 

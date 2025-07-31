@@ -164,9 +164,9 @@ def generate_position_questions(questions_per_blueprint: int = 3) -> Solver:
         position_questions = []
 
         image: RenderedImage = instance.namespace._render(blueprint=blueprint)
-        id = str(hash(str(blueprint)))
-        image.save(f"../../dataset/images/{id}.jpg")
-        state.metadata["image"] = id
+        from data.vqa.image_utils import save_rendered_image
+        image_id = save_rendered_image(image, blueprint, state.metadata)
+        state.metadata["image"] = image_id
 
         # Group entities by name to handle multiple instances
         entities_by_name = defaultdict(list)

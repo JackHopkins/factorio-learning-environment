@@ -3,7 +3,7 @@ from inspect_ai.solver import system_message
 
 from data.vqa.dataset import raw_blueprint_dataset
 from data.vqa.tasks.denoising.solver import entity_removal_denoising, validate_denoising_qa
-from data.vqa.common_solvers import validate_qa_answerability, convert_directions_to_compass, normalize_position_format
+from data.vqa.common_solvers import validate_qa_answerability, generate_direction_questions, normalize_position_format, attach_bounding_box
 
 
 @task
@@ -22,8 +22,9 @@ def denoising_blueprint_task(qa_pairs_per_blueprint: int = 5) -> Task:
         solver=[
             system_message(
                 """You are an expert at analyzing Factorio blueprints and identifying missing components."""),
+            attach_bounding_box(),
             entity_removal_denoising(qa_pairs_per_blueprint=qa_pairs_per_blueprint),
-            convert_directions_to_compass(),
+            generate_direction_questions(),
             normalize_position_format(),
             validate_qa_answerability(),
         ],
@@ -47,9 +48,10 @@ def denoising_validation_task(qa_pairs_per_blueprint: int = 5) -> Task:
         solver=[
             system_message(
                 """You are an expert at analyzing Factorio blueprints and identifying missing components."""),
+            attach_bounding_box(),
             entity_removal_denoising(qa_pairs_per_blueprint=qa_pairs_per_blueprint),
             validate_denoising_qa(),
-            convert_directions_to_compass(),
+            generate_direction_questions(),
             normalize_position_format(),
             validate_qa_answerability(),
         ],

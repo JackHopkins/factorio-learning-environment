@@ -3,7 +3,7 @@ from inspect_ai.solver import system_message
 
 from ...dataset import raw_blueprint_dataset
 from .solver import generate_action_sequence, generate_next_action_questions, generate_construction_order_questions
-from ...common_solvers import validate_qa_answerability, convert_directions_to_compass, normalize_position_format
+from ...common_solvers import validate_qa_answerability, generate_direction_questions, normalize_position_format, attach_bounding_box
 
 
 @task
@@ -45,9 +45,10 @@ def next_action_prediction_task(num_questions: int = 3) -> Task:
             system_message("""You are an expert at Factorio construction planning. 
                 Given a sequence of construction actions, predict what the next logical 
                 action should be based on the blueprint and construction principles."""),
+            attach_bounding_box(),
             generate_action_sequence(max_actions=10),
             generate_next_action_questions(num_questions=num_questions),
-            convert_directions_to_compass(),
+            generate_direction_questions(),
             normalize_position_format(),
             validate_qa_answerability(),
         ],
@@ -72,8 +73,9 @@ def construction_order_task(num_questions: int = 2) -> Task:
             system_message("""You are an expert at Factorio construction planning. 
                 Determine the optimal order to build entities considering power requirements, 
                 dependencies, and construction efficiency."""),
+            attach_bounding_box(),
             generate_construction_order_questions(num_questions=num_questions),
-            convert_directions_to_compass(),
+            generate_direction_questions(),
             normalize_position_format(),
             validate_qa_answerability(),
         ],
@@ -97,10 +99,11 @@ def comprehensive_action_task(max_actions: int = 8, next_action_questions: int =
             system_message("""You are an expert at Factorio construction and automation. 
                 Plan construction sequences, predict next actions, and determine optimal 
                 build orders for efficient factory construction."""),
+            attach_bounding_box(),
             generate_action_sequence(max_actions=max_actions),
             generate_next_action_questions(num_questions=next_action_questions),
             generate_construction_order_questions(num_questions=order_questions),
-            convert_directions_to_compass(),
+            generate_direction_questions(),
             normalize_position_format(),
             validate_qa_answerability(),
         ],

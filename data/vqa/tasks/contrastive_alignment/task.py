@@ -8,7 +8,7 @@ from inspect_ai.solver import system_message
 
 from data.vqa.tasks.contrastive_alignment.dataset import raw_blueprint_dataset
 from data.vqa.tasks.contrastive_alignment.solver import generate_blueprint_title_and_purpose
-from data.vqa.common_solvers import validate_qa_answerability, convert_directions_to_compass
+from data.vqa.common_solvers import validate_qa_answerability, generate_direction_questions, normalize_position_format, attach_bounding_box
 from fle.agents.data.screenshots_from_run import create_factorio_instance
 from fle.commons.models.rendered_image import RenderedImage
 
@@ -26,8 +26,10 @@ def contrastive_blueprint_labelling_task() -> Task:
             system_message("""You are an expert Factorio player analyzing blueprints. 
                 Generate clear, concise titles and purpose descriptions that would help 
                 other players understand what each blueprint does."""),
+            attach_bounding_box(),
             generate_blueprint_title_and_purpose(),
-            convert_directions_to_compass(),
+            generate_direction_questions(),
+            normalize_position_format(),
             validate_qa_answerability(),
         ],
         scorer=[includes()]
@@ -68,9 +70,9 @@ def contrastive_alignment_dataset(*args,
 
         try:
             image: RenderedImage = instance.namespace._render(blueprint=s.metadata['blueprint'])
-            id = str(hash(str(s.metadata['blueprint'])))
-            image.save(f"../../images/{id}.jpg")
-            files = {"image": id}
+            from data.vqa.image_utils import save_rendered_image
+            image_id = save_rendered_image(image, s.metadata['blueprint'], s.metadata, "contrastive", "../../images")
+            files = {"image": image_id}
         except Exception as e:
             print(e)
             continue

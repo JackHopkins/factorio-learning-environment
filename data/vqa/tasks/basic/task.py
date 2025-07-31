@@ -3,7 +3,7 @@ from inspect_ai.solver import system_message
 
 from data.vqa.dataset import raw_blueprint_dataset
 from data.vqa.tasks.basic.solver import generate_entity_name_questions, generate_position_questions, generate_counting_questions
-from data.vqa.common_solvers import validate_qa_answerability, convert_directions_to_compass, normalize_position_format
+from data.vqa.common_solvers import validate_qa_answerability, generate_direction_questions, normalize_position_format, attach_bounding_box
 
 
 @task
@@ -22,8 +22,9 @@ def basic_entity_name_task(questions_per_blueprint: int = 3) -> Task:
         solver=[
             system_message("""You are analyzing Factorio blueprints to identify entities. 
                 Answer questions about what entities are located at specific positions."""),
+            attach_bounding_box(),
             generate_entity_name_questions(questions_per_blueprint=questions_per_blueprint),
-            convert_directions_to_compass(),
+            generate_direction_questions(),
             normalize_position_format(),
             validate_qa_answerability(),
         ],
@@ -47,8 +48,9 @@ def basic_position_task(questions_per_blueprint: int = 3) -> Task:
         solver=[
             system_message("""You are analyzing Factorio blueprints to locate entities. 
                 Answer questions about where specific entities are positioned."""),
+            attach_bounding_box(),
             generate_position_questions(questions_per_blueprint=questions_per_blueprint),
-            convert_directions_to_compass(),
+            generate_direction_questions(),
             normalize_position_format(),
             validate_qa_answerability(),
         ],
@@ -72,8 +74,9 @@ def basic_counting_task(questions_per_blueprint: int = 2) -> Task:
         solver=[
             system_message("""You are analyzing Factorio blueprints to count entities. 
                 Answer questions about how many entities of each type are present."""),
+            attach_bounding_box(),
             generate_counting_questions(questions_per_blueprint=questions_per_blueprint),
-            convert_directions_to_compass(),
+            generate_direction_questions(),
             normalize_position_format(),
             validate_qa_answerability(),
         ],
@@ -82,7 +85,10 @@ def basic_counting_task(questions_per_blueprint: int = 2) -> Task:
 
 
 @task
-def comprehensive_basic_task(entity_questions: int = 2, position_questions: int = 2, counting_questions: int = 1) -> Task:
+def comprehensive_basic_task(entity_questions: int = 2,
+                             position_questions: int = 2,
+                             counting_questions: int = 1,
+                             direction_questions: int = 2) -> Task:
     """
     Comprehensive basic VQA task combining all basic question types.
     
@@ -98,12 +104,13 @@ def comprehensive_basic_task(entity_questions: int = 2, position_questions: int 
         solver=[
             system_message("""You are analyzing Factorio blueprints. Answer questions about 
                 entity names, positions, and counts accurately and concisely."""),
+            attach_bounding_box(),
             generate_entity_name_questions(questions_per_blueprint=entity_questions),
             generate_position_questions(questions_per_blueprint=position_questions),
             generate_counting_questions(questions_per_blueprint=counting_questions),
-            convert_directions_to_compass(),
+            generate_direction_questions(questions_per_blueprint=direction_questions),
             normalize_position_format(),
-            validate_qa_answerability(),
+            validate_qa_answerability(), # Optional: The data will be more expensive, but better
         ],
         scorer=None,  # We're generating data, not scoring
     )
@@ -122,7 +129,7 @@ if __name__ == "__main__":
     results = eval(
         tasks=[comprehensive_basic_task()],
         model=model,
-        limit=5,
+        limit=20,
         log_dir="../../logs",
         hooks=[VQAPairsHook()]
     )

@@ -8,7 +8,7 @@ import subprocess
 import sys
 from dotenv import load_dotenv
 
-from fle.cluster.remote.cluster_ips import get_public_ips
+from fle.services.remote.cluster_ips import get_public_ips
 from fle.env import FactorioInstance
 
 """

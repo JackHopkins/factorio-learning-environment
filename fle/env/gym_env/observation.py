@@ -6,7 +6,7 @@ from fle.commons.models.technology_state import TechnologyState
 from fle.commons.models.research_state import ResearchState
 from fle.commons.models.achievements import ProductionFlows
 from fle.agents import TaskResponse
-from fle.env.entities import Inventory
+from fle.env.game.entities import Inventory
 
 
 @dataclass

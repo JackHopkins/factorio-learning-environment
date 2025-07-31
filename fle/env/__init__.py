@@ -1,9 +1,9 @@
 """Factorio environment module."""
 
-from fle.env.entities import *  # noqa
-from fle.env.game_types import Prototype, Resource
-from fle.env.instance import DirectionInternal, FactorioInstance
-from fle.env.factorio_server import FactorioServer
+from fle.env.game.entities import *  # noqa
+from fle.env.game.game_types import Prototype, Resource
+from fle.env.game.instance import DirectionInternal, FactorioInstance
+from fle.env.factorio_client import FactorioClient
 
 __all__ = [
     "FactorioInstance",
@@ -15,5 +15,5 @@ __all__ = [
     "EntityGroup",
     "Prototype",
     "Resource",
-    "FactorioServer",
+    "FactorioClient",
 ]

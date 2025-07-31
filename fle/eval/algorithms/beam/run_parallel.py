@@ -12,8 +12,8 @@ from dotenv import load_dotenv
 from fle.agents.formatters import RecursiveReportFormatter
 from fle.agents.llm.api_factory import APIFactory
 from fle.commons.cluster_ips import get_local_container_ips
-from fle.commons.db_client import create_db_client
-from fle.commons.models.game_state import GameState
+from fle.services.db_client import create_db_client
+from fle.env.game.game_state import GameState
 from fle.env import FactorioInstance
 from fle.eval.algorithms.beam import ParallelBeamConfig, ParallelBeamSearch
 from fle.eval.algorithms.beam.run import MANUAL, OBSERVATION_SPACE, SYSTEM_PROMPT

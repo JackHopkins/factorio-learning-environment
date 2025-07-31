@@ -15,9 +15,9 @@ from fle.agents.formatters.conversation_formatter_abc import (
 )
 from fle.agents.llm.api_factory import APIFactory
 from fle.commons.cluster_ips import get_local_container_ips
-from fle.commons.db_client import DBClient
+from fle.services.db_client import DBClient
 from fle.commons.models.conversation import Conversation
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 from fle.commons.models.message import Message
 from fle.commons.models.program import Program
 from fle.env import FactorioInstance

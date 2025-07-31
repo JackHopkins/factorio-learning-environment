@@ -2,7 +2,7 @@ import os
 import asyncio
 from dotenv import load_dotenv
 from fle.commons.cluster_ips import get_local_container_ips
-from fle.commons.db_client import DBClient
+from fle.services.db_client import DBClient
 from fle.eval.algorithms.mcts import MCTSFactory
 from fle.eval.open.plots.run_results import RunResults
 from fle.env import FactorioInstance

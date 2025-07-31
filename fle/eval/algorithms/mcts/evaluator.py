@@ -4,11 +4,11 @@ from typing import Dict, List, Tuple, Union
 
 from fle.env.utils.profits import get_achievements
 
-from fle.commons.db_client import DBClient
-from fle.commons.models.game_state import GameState
+from fle.services.db_client import DBClient
+from fle.env.game.game_state import GameState
 from fle.commons.models.program import Program
-from fle.env.entities import Entity, EntityGroup
-from fle.env.instance import FactorioInstance
+from fle.env.game.entities import Entity, EntityGroup
+from fle.env.game.instance import FactorioInstance
 
 from fle.eval.algorithms.mcts.logger import FactorioLogger
 

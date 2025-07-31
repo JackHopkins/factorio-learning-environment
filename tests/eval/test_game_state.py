@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from fle.env import FactorioInstance
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 
 
 def test_game_state():

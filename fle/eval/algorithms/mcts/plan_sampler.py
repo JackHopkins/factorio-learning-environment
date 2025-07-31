@@ -3,7 +3,7 @@ import json
 from typing import Any, Tuple, Optional
 
 from fle.agents.llm.api_factory import APIFactory
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 from fle.env import FactorioInstance
 
 

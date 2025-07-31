@@ -2,7 +2,7 @@ from fle.env.gym_env.environment import FactorioGymEnv
 from fle.env.gym_env.action import Action
 
 # from fle.env.gym_env.validation import validate_observation
-from fle.env.entities import Position, Direction
+from fle.env.game.entities import Position, Direction
 from fle.env.game_types import Prototype
 
 

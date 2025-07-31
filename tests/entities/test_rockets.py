@@ -1,5 +1,5 @@
 import json
-from fle.env.entities import Position, Direction, EntityStatus
+from fle.env.game.entities import Position, Direction, EntityStatus
 from fle.env.game_types import Resource, Prototype
 import pytest
 

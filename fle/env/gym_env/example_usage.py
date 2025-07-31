@@ -25,9 +25,9 @@ from typing import List
 # Add the project root to the path so we can import our modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
-from fle.env.gym_env.registry import list_available_environments, get_environment_info
+from fle.env.registry import list_available_environments, get_environment_info
 from fle.env.gym_env.action import Action
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 
 
 def print_environment_list(env_ids: List[str], detailed: bool = False):

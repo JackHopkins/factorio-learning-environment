@@ -1,9 +1,9 @@
-from dataclasses import dataclass
 import pickle
 import re
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 from fle.env.gym_env.observation import Observation
-from typing import Any, Dict, List, Optional
 
 
 @dataclass

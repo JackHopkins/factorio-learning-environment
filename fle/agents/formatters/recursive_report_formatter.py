@@ -7,7 +7,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, TypedDict
 
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
-from fle.env.namespace import FactorioNamespace
+from fle.env.game.namespace import FactorioNamespace
 
 from fle.agents.formatters.conversation_formatter_abc import ConversationFormatter
 

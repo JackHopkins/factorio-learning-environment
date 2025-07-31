@@ -2,7 +2,7 @@ import pytest
 
 from fle.commons.cluster_ips import get_local_container_ips
 from fle.env.game_types import Prototype, Resource
-from fle.env.entities import Position, BuildingBox, Direction
+from fle.env.game.entities import Position, BuildingBox, Direction
 from fle.env import FactorioInstance
 
 # @pytest.fixture()

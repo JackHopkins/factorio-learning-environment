@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 from fle.agents.formatters import RecursiveFormatter
 from fle.agents.llm.api_factory import APIFactory
-from fle.commons.db_client import DBClient
+from fle.services.db_client import DBClient
 from fle.commons.models import GameState
 from fle.env import FactorioInstance
 

@@ -5,7 +5,7 @@ from psycopg2.extras import DictCursor
 
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 from fle.commons.models.program import Program
 from fle.env import FactorioInstance
 

@@ -1,6 +1,6 @@
 import pytest
 from fle.agents.basic_agent import BasicAgent
-from fle.eval.tasks import UnboundedThroughputTask
+from fle.env.tasks import UnboundedThroughputTask
 
 
 def test_basic_agent_instructions():

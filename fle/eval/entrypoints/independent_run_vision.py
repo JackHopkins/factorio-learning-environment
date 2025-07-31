@@ -9,7 +9,7 @@ from fle.eval.algorithms.independent import (
     create_factorio_instance,
     EvalConfig,
 )
-from fle.eval.tasks.task_factory import TaskFactory
+from fle.env.tasks.task_factory import TaskFactory
 from fle.commons.cluster_ips import get_local_container_ips
 from pathlib import Path
 import json

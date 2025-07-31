@@ -1,5 +1,5 @@
 import pytest
-from fle.env.instance import FactorioInstance
+from fle.env.game.instance import FactorioInstance
 from fle.env.game_types import Resource
 
 

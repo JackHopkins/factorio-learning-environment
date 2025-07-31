@@ -12,9 +12,9 @@ from dotenv import load_dotenv
 from rich.console import Console
 
 from fle.agents.formatters import ConversationFormatter, DefaultFormatter
-from fle.commons.db_client import DBClient
+from fle.services.db_client import DBClient
 from fle.commons.models.conversation import Conversation
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 from fle.commons.models.generation_parameters import GenerationParameters
 from fle.commons.models.message import Message
 from fle.commons.models.program import Program
@@ -318,20 +318,6 @@ class ParallelBeamSearch:
 
         # Create beam groups
         self.beam_groups = self._create_beam_groups(instances)
-
-    # async def _monitor_progress(self):
-    #     """Monitor for hanging operations"""
-    #     while True:
-    #         try:
-    #             await asyncio.sleep(30)  # Check every 30 seconds
-    #             current_time = time.time()
-    #             if current_time - self._last_progress_time > self._progress_timeout:
-    #                 print(f"Operation potentially hanging - no progress for {self._progress_timeout} seconds")
-    #                 self._hanging_detector.set()
-    #                 return
-    #         except Exception as e:
-    #             print(f"Error in progress monitor: {e}")
-    #             return
 
     async def _verify_version_compatibility(self):
         """Verify that resuming version is compatible with current configuration"""

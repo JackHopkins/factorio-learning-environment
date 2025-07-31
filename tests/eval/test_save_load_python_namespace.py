@@ -2,7 +2,7 @@ import pickle
 import unittest
 
 from fle.eval.algorithms.mcts.chunked_mcts import ChunkedMCTS
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 from fle.env.game_types import Prototype
 from fle.env import FactorioInstance
 

@@ -2,7 +2,7 @@ from time import sleep
 
 import pytest
 
-from fle.env.entities import (
+from fle.env.game.entities import (
     Entity,
     Position,
     ResourcePatch,

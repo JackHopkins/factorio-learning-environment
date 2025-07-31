@@ -1,7 +1,7 @@
 import unittest
 
 from fle.env import FactorioInstance
-from fle.env.utils.rcon import _lua2python
+from fle.services.rcon import _lua2python
 from fle.env.game_types import Resource
 
 

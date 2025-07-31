@@ -1,6 +1,6 @@
 import pytest
 
-from fle.env.entities import Position, BoundingBox  # , Direction
+from fle.env.game.entities import Position, BoundingBox  # , Direction
 from fle.env import DirectionInternal as Direction
 from fle.env.game_types import Prototype
 

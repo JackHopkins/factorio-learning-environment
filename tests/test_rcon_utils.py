@@ -1,6 +1,6 @@
 import pytest
 
-from fle.env.utils.rcon import _lua2python
+from fle.services.rcon import _lua2python
 
 
 @pytest.fixture()

@@ -3,7 +3,7 @@ from typing import Optional
 
 from psycopg2.extras import DictCursor
 
-from fle.commons.db_client import DBClient
+from fle.services.db_client import DBClient
 from fle.commons.models.program import Program
 
 

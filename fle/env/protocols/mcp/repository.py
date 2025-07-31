@@ -6,7 +6,7 @@ from dulwich.objects import Blob, Tree, Commit
 from dulwich.repo import Repo
 
 from fle.env import FactorioInstance
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 
 
 class FactorioMCPRepository:

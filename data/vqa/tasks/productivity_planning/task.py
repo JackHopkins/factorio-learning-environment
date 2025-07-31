@@ -3,6 +3,7 @@ from inspect_ai.solver import system_message
 
 from ...dataset import raw_blueprint_dataset
 from .solver import generate_throughput_questions, generate_bottleneck_questions, generate_optimization_questions
+from ...common_solvers import validate_qa_answerability, convert_directions_to_compass, normalize_position_format
 
 
 @task
@@ -23,6 +24,9 @@ def throughput_prediction_task(num_questions: int = 2) -> Task:
                 Calculate production throughput, identify bottlenecks, and predict the effects 
                 of connecting different entities in factory setups."""),
             generate_throughput_questions(num_questions=num_questions),
+            convert_directions_to_compass(),
+            normalize_position_format(),
+            validate_qa_answerability(),
         ],
         scorer=None,  # We're generating data, not scoring
     )
@@ -46,6 +50,9 @@ def bottleneck_analysis_task(num_questions: int = 2) -> Task:
                 bottlenecks, production limits, and areas where throughput is constrained 
                 by entity capabilities or layout design."""),
             generate_bottleneck_questions(num_questions=num_questions),
+            convert_directions_to_compass(),
+            normalize_position_format(),
+            validate_qa_answerability(),
         ],
         scorer=None,  # We're generating data, not scoring
     )
@@ -69,6 +76,9 @@ def optimization_planning_task(num_questions: int = 2) -> Task:
                 layouts and suggest improvements to maximize production efficiency, 
                 reduce bottlenecks, and optimize resource usage."""),
             generate_optimization_questions(num_questions=num_questions),
+            convert_directions_to_compass(),
+            normalize_position_format(),
+            validate_qa_answerability(),
         ],
         scorer=None,  # We're generating data, not scoring
     )
@@ -95,6 +105,9 @@ def comprehensive_productivity_task(throughput_questions: int = 2, bottleneck_qu
             generate_throughput_questions(num_questions=throughput_questions),
             generate_bottleneck_questions(num_questions=bottleneck_questions), 
             generate_optimization_questions(num_questions=optimization_questions),
+            convert_directions_to_compass(),
+            normalize_position_format(),
+            validate_qa_answerability(),
         ],
         scorer=None,  # We're generating data, not scoring
     )

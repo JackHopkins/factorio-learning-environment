@@ -8,6 +8,7 @@ from inspect_ai.solver import system_message
 
 from data.vqa.tasks.contrastive_alignment.dataset import raw_blueprint_dataset
 from data.vqa.tasks.contrastive_alignment.solver import generate_blueprint_title_and_purpose
+from data.vqa.common_solvers import validate_qa_answerability, convert_directions_to_compass
 from fle.agents.data.screenshots_from_run import create_factorio_instance
 from fle.commons.models.rendered_image import RenderedImage
 
@@ -26,6 +27,8 @@ def contrastive_blueprint_labelling_task() -> Task:
                 Generate clear, concise titles and purpose descriptions that would help 
                 other players understand what each blueprint does."""),
             generate_blueprint_title_and_purpose(),
+            convert_directions_to_compass(),
+            validate_qa_answerability(),
         ],
         scorer=[includes()]
     )

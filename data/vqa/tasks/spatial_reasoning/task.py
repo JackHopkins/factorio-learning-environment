@@ -12,6 +12,7 @@ from inspect_ai.tool import bash, python
 from data.vqa.tasks.denoising.solver import entity_removal_denoising
 from inspect_ai.solver import use_tools
 from inspect_ai.util import sandbox
+from data.vqa.common_solvers import validate_qa_answerability, convert_directions_to_compass, normalize_position_format
 
 from data.vqa.hook import VQAPairsHook
 
@@ -47,6 +48,9 @@ def spatial_reasoning_sandbox_task(questions_per_blueprint: int = 3) -> Task:
                 Your code has access to the blueprint data and can use standard Python
                 libraries for calculations."""),
             generate_spatial_reasoning_with_code(questions_per_blueprint=questions_per_blueprint),
+            convert_directions_to_compass(),
+            normalize_position_format(),
+            validate_qa_answerability(),
         ],
         sandbox='docker',  # Use local Python sandbox
         scorer=None,
@@ -85,6 +89,9 @@ def spatial_context_sandbox_task(qa_pairs_per_blueprint: int = 5) -> Task:
                 questions that require understanding these relationships."""),
             entity_removal_denoising(qa_pairs_per_blueprint=qa_pairs_per_blueprint),
             generate_spatial_context_with_code(),
+            convert_directions_to_compass(),
+            normalize_position_format(),
+            validate_qa_answerability(),
         ],
         sandbox='docker',
         scorer=None,

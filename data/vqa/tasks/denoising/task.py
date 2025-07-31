@@ -3,6 +3,7 @@ from inspect_ai.solver import system_message
 
 from data.vqa.dataset import raw_blueprint_dataset
 from data.vqa.tasks.denoising.solver import entity_removal_denoising, validate_denoising_qa
+from data.vqa.common_solvers import validate_qa_answerability, convert_directions_to_compass, normalize_position_format
 
 
 @task
@@ -22,6 +23,9 @@ def denoising_blueprint_task(qa_pairs_per_blueprint: int = 5) -> Task:
             system_message(
                 """You are an expert at analyzing Factorio blueprints and identifying missing components."""),
             entity_removal_denoising(qa_pairs_per_blueprint=qa_pairs_per_blueprint),
+            convert_directions_to_compass(),
+            normalize_position_format(),
+            validate_qa_answerability(),
         ],
         scorer=None,  # We're generating data, not scoring
     )
@@ -45,6 +49,9 @@ def denoising_validation_task(qa_pairs_per_blueprint: int = 5) -> Task:
                 """You are an expert at analyzing Factorio blueprints and identifying missing components."""),
             entity_removal_denoising(qa_pairs_per_blueprint=qa_pairs_per_blueprint),
             validate_denoising_qa(),
+            convert_directions_to_compass(),
+            normalize_position_format(),
+            validate_qa_answerability(),
         ],
         scorer=None,  # Custom scorer would evaluate validation accuracy
     )
@@ -61,7 +68,7 @@ if __name__ == "__main__":
 
     # Example: Run a denoising task
     results = eval(
-        tasks=denoising_validation_task(qa_pairs_per_blueprint=5),
+        tasks=denoising_validation_task(qa_pairs_per_blueprint=10),
         model=model,
         limit=1,
         log_dir="../../logs",

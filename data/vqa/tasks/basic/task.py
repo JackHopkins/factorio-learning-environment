@@ -3,6 +3,7 @@ from inspect_ai.solver import system_message
 
 from data.vqa.dataset import raw_blueprint_dataset
 from data.vqa.tasks.basic.solver import generate_entity_name_questions, generate_position_questions, generate_counting_questions
+from data.vqa.common_solvers import validate_qa_answerability, convert_directions_to_compass, normalize_position_format
 
 
 @task
@@ -22,6 +23,9 @@ def basic_entity_name_task(questions_per_blueprint: int = 3) -> Task:
             system_message("""You are analyzing Factorio blueprints to identify entities. 
                 Answer questions about what entities are located at specific positions."""),
             generate_entity_name_questions(questions_per_blueprint=questions_per_blueprint),
+            convert_directions_to_compass(),
+            normalize_position_format(),
+            validate_qa_answerability(),
         ],
         scorer=None,  # We're generating data, not scoring
     )
@@ -44,6 +48,9 @@ def basic_position_task(questions_per_blueprint: int = 3) -> Task:
             system_message("""You are analyzing Factorio blueprints to locate entities. 
                 Answer questions about where specific entities are positioned."""),
             generate_position_questions(questions_per_blueprint=questions_per_blueprint),
+            convert_directions_to_compass(),
+            normalize_position_format(),
+            validate_qa_answerability(),
         ],
         scorer=None,  # We're generating data, not scoring
     )
@@ -66,6 +73,9 @@ def basic_counting_task(questions_per_blueprint: int = 2) -> Task:
             system_message("""You are analyzing Factorio blueprints to count entities. 
                 Answer questions about how many entities of each type are present."""),
             generate_counting_questions(questions_per_blueprint=questions_per_blueprint),
+            convert_directions_to_compass(),
+            normalize_position_format(),
+            validate_qa_answerability(),
         ],
         scorer=None,  # We're generating data, not scoring
     )
@@ -91,6 +101,9 @@ def comprehensive_basic_task(entity_questions: int = 2, position_questions: int 
             generate_entity_name_questions(questions_per_blueprint=entity_questions),
             generate_position_questions(questions_per_blueprint=position_questions),
             generate_counting_questions(questions_per_blueprint=counting_questions),
+            convert_directions_to_compass(),
+            normalize_position_format(),
+            validate_qa_answerability(),
         ],
         scorer=None,  # We're generating data, not scoring
     )

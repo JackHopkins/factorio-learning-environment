@@ -53,9 +53,9 @@ def generate_spatial_reasoning_with_code(questions_per_blueprint: int = 3) -> So
         entities = blueprint.get("entities", [])
 
         image: RenderedImage = instance.namespace._render(blueprint=blueprint)
-        id = str(hash(str(blueprint)))
-        image.save(f"../../dataset/images/{id}.jpg")
-        state.metadata["image"] = id
+        from data.vqa.image_utils import save_rendered_image
+        image_id = save_rendered_image(image, blueprint, state.metadata, "spatial_reasoning")
+        state.metadata["image"] = image_id
 
         if len(entities) < 2:
             state.metadata["error"] = "Not enough entities for spatial reasoning"
@@ -268,9 +268,9 @@ print(json.dumps(enhanced_pairs, indent=2))
 
         blueprint = state.metadata.get("blueprint", {})
         image: RenderedImage = instance.namespace._render(blueprint=blueprint)
-        id = str(hash(str(blueprint)))
-        image.save(f"../../dataset/images/{id}.jpg")
-        state.metadata["image"] = id
+        from data.vqa.image_utils import save_rendered_image
+        image_id = save_rendered_image(image, blueprint, state.metadata, "spatial_context")
+        state.metadata["image"] = image_id
 
         return state
 

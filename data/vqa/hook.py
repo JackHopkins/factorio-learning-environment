@@ -41,6 +41,7 @@ class VQAPairsSerializer:
             ("basic_questions", self._normalize_basic_qa),
             ("position_questions", self._normalize_position_qa),
             ("counting_questions", self._normalize_counting_qa),
+            ("direction_questions", self._normalize_direction_qa),
 
             # Spatial reasoning tasks
             ("spatial_questions", self._normalize_spatial_qa),
@@ -75,9 +76,20 @@ class VQAPairsSerializer:
 
         return qa_pairs
 
+    def _add_global_metadata(self, normalized: Dict[str, Any], metadata: Dict) -> None:
+        """Add global metadata (bounding box, blueprint center, etc.) to a normalized QA pair."""
+        
+        # Add bounding box if present
+        if "bounding_box" in metadata:
+            normalized["bounding_box"] = metadata["bounding_box"]
+        
+        # Add blueprint center if present  
+        if "blueprint_center" in metadata:
+            normalized["blueprint_center"] = metadata["blueprint_center"]
+
     def _normalize_basic_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
         """Normalize basic QA pairs (entity name/position questions)."""
-        return {
+        normalized = {
             "task_type": "basic",
             "question": qa.get("question", ""),
             "answer": qa.get("answer", ""),
@@ -86,10 +98,14 @@ class VQAPairsSerializer:
             "entity_properties": qa.get("entity_properties", {}),
             "position": qa.get("position", {}),
         }
+        
+        # Add global metadata
+        self._add_global_metadata(normalized, metadata)
+        return normalized
 
     def _normalize_position_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
         """Normalize position QA pairs."""
-        return {
+        normalized = {
             "task_type": "position",
             "question": qa.get("question", ""),
             "answer": qa.get("answer", ""),
@@ -98,10 +114,14 @@ class VQAPairsSerializer:
             "entity": qa.get("entity", {}),
             "context": qa.get("context", {}),
         }
+        
+        # Add global metadata
+        self._add_global_metadata(normalized, metadata)
+        return normalized
 
     def _normalize_counting_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
         """Normalize counting QA pairs."""
-        return {
+        normalized = {
             "task_type": "counting",
             "question": qa.get("question", ""),
             "answer": qa.get("answer", ""),
@@ -110,10 +130,31 @@ class VQAPairsSerializer:
             "explanation": qa.get("explanation", ""),
             "context": qa.get("context", {}),
         }
+        
+        # Add global metadata
+        self._add_global_metadata(normalized, metadata)
+        return normalized
+
+    def _normalize_direction_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
+        """Normalize direction QA pairs."""
+        normalized = {
+            "task_type": "direction",
+            "question": qa.get("question", ""),
+            "answer": qa.get("answer", ""),
+            "image_id": metadata.get("image", ""),
+            "blueprint_file": metadata.get("filename", ""),
+            "entity": qa.get("entity", {}),
+            "direction_type": qa.get("direction_type", ""),
+            "direction_enum": qa.get("direction_enum", ""),
+        }
+        
+        # Add global metadata
+        self._add_global_metadata(normalized, metadata)
+        return normalized
 
     def _normalize_spatial_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
         """Normalize spatial reasoning QA pairs."""
-        return {
+        normalized = {
             "task_type": "spatial_reasoning",
             "question": qa.get("question", "") or qa.get("spatial_question", ""),
             "answer": qa.get("answer", ""),
@@ -122,10 +163,14 @@ class VQAPairsSerializer:
             "metadata": qa.get("metadata", {}),
             "nearby_entities": qa.get("nearby_entities", []),
         }
+        
+        # Add global metadata
+        self._add_global_metadata(normalized, metadata)
+        return normalized
 
     def _normalize_state_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
         """Normalize state prediction QA pairs."""
-        return {
+        normalized = {
             "task_type": "state_prediction",
             "question": qa.get("question", ""),
             "answer": qa.get("answer", ""),
@@ -133,10 +178,14 @@ class VQAPairsSerializer:
             "blueprint_file": metadata.get("filename", ""),
             "entity_type": qa.get("entity_type", ""),
         }
+        
+        # Add global metadata
+        self._add_global_metadata(normalized, metadata)
+        return normalized
 
     def _normalize_inventory_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
         """Normalize inventory QA pairs."""
-        return {
+        normalized = {
             "task_type": "inventory",
             "question": qa.get("question", ""),
             "answer": qa.get("answer", ""),
@@ -145,6 +194,10 @@ class VQAPairsSerializer:
             "item": qa.get("item", ""),
             "quantity": qa.get("quantity", 0),
         }
+        
+        # Add global metadata
+        self._add_global_metadata(normalized, metadata)
+        return normalized
 
     def _normalize_denoising_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
         """Normalize denoising QA pairs."""
@@ -166,11 +219,13 @@ class VQAPairsSerializer:
         if "nearby_entities" in qa:
             base["nearby_entities"] = qa["nearby_entities"]
 
+        # Add global metadata
+        self._add_global_metadata(base, metadata)
         return base
 
     def _normalize_action_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
         """Normalize action prediction QA pairs."""
-        return {
+        normalized = {
             "task_type": "action_prediction",
             "question": qa.get("question_prompt", ""),
             "answer": qa.get("answer", ""),
@@ -179,10 +234,14 @@ class VQAPairsSerializer:
             "previous_actions": [a.get("action", "") for a in qa.get("previous_actions", [])],
             "split_point": qa.get("split_point", 0),
         }
+        
+        # Add global metadata
+        self._add_global_metadata(normalized, metadata)
+        return normalized
 
     def _normalize_construction_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
         """Normalize construction order QA pairs."""
-        return {
+        normalized = {
             "task_type": "construction_order",
             "question": qa.get("question", ""),
             "answer": qa.get("answer", ""),
@@ -190,10 +249,14 @@ class VQAPairsSerializer:
             "blueprint_file": metadata.get("filename", ""),
             "entity_names": qa.get("entity_names", []),
         }
+        
+        # Add global metadata
+        self._add_global_metadata(normalized, metadata)
+        return normalized
 
     def _normalize_throughput_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
         """Normalize throughput QA pairs."""
-        return {
+        normalized = {
             "task_type": "throughput",
             "question": qa.get("question", ""),
             "answer": qa.get("answer", ""),
@@ -201,10 +264,14 @@ class VQAPairsSerializer:
             "blueprint_file": metadata.get("filename", ""),
             "calculated_throughput": qa.get("calculated_throughput", 0),
         }
+        
+        # Add global metadata
+        self._add_global_metadata(normalized, metadata)
+        return normalized
 
     def _normalize_bottleneck_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
         """Normalize bottleneck QA pairs."""
-        return {
+        normalized = {
             "task_type": "bottleneck",
             "question": qa.get("question", ""),
             "answer": qa.get("answer", ""),
@@ -212,10 +279,14 @@ class VQAPairsSerializer:
             "blueprint_file": metadata.get("filename", ""),
             "analysis_type": qa.get("analysis_type", ""),
         }
+        
+        # Add global metadata
+        self._add_global_metadata(normalized, metadata)
+        return normalized
 
     def _normalize_optimization_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
         """Normalize optimization QA pairs."""
-        return {
+        normalized = {
             "task_type": "optimization",
             "question": qa.get("question", ""),
             "answer": qa.get("answer", ""),
@@ -224,6 +295,10 @@ class VQAPairsSerializer:
             "entity_counts": qa.get("entity_counts", {}),
             "total_entities": qa.get("total_entities", 0),
         }
+        
+        # Add global metadata
+        self._add_global_metadata(normalized, metadata)
+        return normalized
 
     def save_qa_pairs(self, qa_pairs: List[Dict[str, Any]], task_name: str,
                       timestamp: Optional[str] = None) -> Path:

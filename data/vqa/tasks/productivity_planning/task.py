@@ -3,7 +3,7 @@ from inspect_ai.solver import system_message
 
 from ...dataset import raw_blueprint_dataset
 from .solver import generate_throughput_questions, generate_bottleneck_questions, generate_optimization_questions
-from ...common_solvers import validate_qa_answerability, convert_directions_to_compass, normalize_position_format
+from ...common_solvers import validate_qa_answerability, generate_direction_questions, normalize_position_format, attach_bounding_box
 
 
 @task
@@ -23,8 +23,9 @@ def throughput_prediction_task(num_questions: int = 2) -> Task:
             system_message("""You are an expert at Factorio production planning and optimization. 
                 Calculate production throughput, identify bottlenecks, and predict the effects 
                 of connecting different entities in factory setups."""),
+            attach_bounding_box(),
             generate_throughput_questions(num_questions=num_questions),
-            convert_directions_to_compass(),
+            generate_direction_questions(),
             normalize_position_format(),
             validate_qa_answerability(),
         ],
@@ -49,8 +50,9 @@ def bottleneck_analysis_task(num_questions: int = 2) -> Task:
             system_message("""You are analyzing Factorio factory efficiency. Identify 
                 bottlenecks, production limits, and areas where throughput is constrained 
                 by entity capabilities or layout design."""),
+            attach_bounding_box(),
             generate_bottleneck_questions(num_questions=num_questions),
-            convert_directions_to_compass(),
+            generate_direction_questions(),
             normalize_position_format(),
             validate_qa_answerability(),
         ],
@@ -75,8 +77,9 @@ def optimization_planning_task(num_questions: int = 2) -> Task:
             system_message("""You are a Factorio optimization expert. Analyze factory 
                 layouts and suggest improvements to maximize production efficiency, 
                 reduce bottlenecks, and optimize resource usage."""),
+            attach_bounding_box(),
             generate_optimization_questions(num_questions=num_questions),
-            convert_directions_to_compass(),
+            generate_direction_questions(),
             normalize_position_format(),
             validate_qa_answerability(),
         ],
@@ -102,10 +105,11 @@ def comprehensive_productivity_task(throughput_questions: int = 2, bottleneck_qu
                 factory setups for throughput calculation, bottleneck identification, and 
                 optimization opportunities. Provide detailed insights into production 
                 efficiency and improvement strategies."""),
+            attach_bounding_box(),
             generate_throughput_questions(num_questions=throughput_questions),
             generate_bottleneck_questions(num_questions=bottleneck_questions), 
             generate_optimization_questions(num_questions=optimization_questions),
-            convert_directions_to_compass(),
+            generate_direction_questions(),
             normalize_position_format(),
             validate_qa_answerability(),
         ],

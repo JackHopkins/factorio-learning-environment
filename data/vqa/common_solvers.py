@@ -2,9 +2,12 @@
 
 import json
 import re
+import random
 from inspect_ai.model import ChatMessageUser
 from inspect_ai.solver import Solver, solver, TaskState, Generate
 from data.vqa.position_utils import normalize_position_references_in_qa
+from data.vqa.bounding_box_utils import calculate_blueprint_bounding_box
+from data.vqa.direction_utils import Direction
 
 
 @solver
@@ -27,7 +30,8 @@ def validate_qa_answerability() -> Solver:
             "basic_questions", "position_questions", "counting_questions",
             "spatial_questions", "state_questions", "inventory_questions",
             "qa_pairs", "next_action_questions", "construction_order_questions",
-            "throughput_questions", "bottleneck_questions", "optimization_questions"
+            "throughput_questions", "bottleneck_questions", "optimization_questions",
+            "direction_questions"
         ]
         blueprint = state.metadata['blueprint']
         
@@ -53,8 +57,6 @@ def validate_qa_answerability() -> Solver:
                 
 Question: {question}
 Answer: {answer}
-
-Blueprint:{blueprint}
 
 Please evaluate if this Q&A pair meets the following criteria:
 
@@ -217,7 +219,8 @@ def normalize_position_format() -> Solver:
             "basic_questions", "position_questions", "counting_questions",
             "spatial_questions", "state_questions", "inventory_questions",
             "qa_pairs", "next_action_questions", "construction_order_questions",
-            "throughput_questions", "bottleneck_questions", "optimization_questions"
+            "throughput_questions", "bottleneck_questions", "optimization_questions",
+            "direction_questions"
         ]
         
         for field in question_fields:
@@ -236,6 +239,144 @@ def normalize_position_format() -> Solver:
             
             # Update metadata with normalized questions
             state.metadata[field] = normalized_questions
+        
+        return state
+    
+    return solve
+
+
+@solver
+def attach_bounding_box() -> Solver:
+    """
+    Solver that calculates and attaches the blueprint bounding box to metadata.
+    
+    This ensures the bounding box information is available for grounding positions
+    in questions and answers, and gets included in the JSONL output.
+    """
+    
+    async def solve(state: TaskState, generate: Generate) -> TaskState:
+        blueprint = state.metadata.get("blueprint", {})
+        
+        if blueprint:
+            # Calculate bounding box
+            bounding_box = calculate_blueprint_bounding_box(blueprint)
+            
+            # Attach to metadata
+            state.metadata["bounding_box"] = bounding_box
+            
+            # Also calculate and attach center point for convenience
+            center_x = (bounding_box["min_x"] + bounding_box["max_x"]) / 2
+            center_y = (bounding_box["min_y"] + bounding_box["max_y"]) / 2
+            state.metadata["blueprint_center"] = {"x": center_x, "y": center_y}
+        
+        return state
+    
+    return solve
+
+
+@solver
+def generate_direction_questions(questions_per_blueprint: int = 2) -> Solver:
+    """
+    Solver that generates questions about entity orientations using Direction enums.
+    
+    This solver analyzes blueprint entities that have directional properties
+    and generates questions about their orientations using the Direction enum.
+    
+    Args:
+        questions_per_blueprint: Number of direction questions to generate per blueprint
+    """
+    
+    async def solve(state: TaskState, generate: Generate) -> TaskState:
+        blueprint = state.metadata.get("blueprint", {})
+        entities = blueprint.get("entities", [])
+        
+        # Filter entities that have direction properties
+        directional_entities = []
+        for entity in entities:
+            if "direction" in entity and entity.get("direction") is not None:
+                directional_entities.append(entity)
+        
+        if not directional_entities:
+            # No directional entities, skip generation
+            state.metadata["direction_questions"] = []
+            return state
+        
+        # Create prompt for generating direction questions
+        entity_info = []
+        for entity in directional_entities[:10]:  # Limit to first 10 for prompt length
+            pos = entity.get("position", {})
+            direction_val = entity.get("direction", 0)
+            direction_enum = Direction.from_value(direction_val)
+            entity_info.append({
+                "name": entity.get("name", "unknown"),
+                "position": f"Position(x={pos.get('x', 0)}, y={pos.get('y', 0)})",
+                "direction": direction_enum.name if direction_enum else f"Direction({direction_val})"
+            })
+        
+        # Generate direction-focused questions
+        direction_prompt = f"""You are analyzing a Factorio blueprint and need to generate {questions_per_blueprint} questions about entity orientations.
+
+Blueprint has {len(directional_entities)} entities with directional properties:
+{json.dumps(entity_info, indent=2)}
+
+Generate {questions_per_blueprint} questions about entity orientations. Focus on:
+
+1. **Specific entity directions**: Ask about the direction/orientation of specific entities
+2. **Relative orientations**: Compare directions between entities  
+3. **Direction patterns**: Identify orientation patterns in the layout
+4. **Functional directions**: Questions about how entity directions affect function
+
+**Important guidelines:**
+- Use Direction enum values in answers: Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST
+- Reference entities by their exact positions using Position(x=X, y=Y) format
+- Be specific about which entity you're asking about
+- Focus on orientations that are visually apparent and functionally relevant
+
+Return your response as a JSON array of question-answer pairs:
+```json
+[
+  {{
+    "question": "What direction is the [entity] facing at Position(x=X, y=Y)?",
+    "answer": "Direction.NORTH",
+    "entity_type": "entity_name",
+    "position": {{"x": X, "y": Y}},
+    "direction_value": 0,
+    "question_type": "entity_direction"
+  }}
+]
+```"""
+
+        # Generate the questions
+        state.messages = [ChatMessageUser(content=direction_prompt)]
+        response = await generate(state)
+        
+        try:
+            completion = response.output.completion
+            json_match = re.search(r'```json\s*\n(.*?)\n```', completion, re.DOTALL)
+            
+            if json_match:
+                direction_questions = json.loads(json_match.group(1))
+                
+                # Validate and clean up the questions
+                validated_questions = []
+                for qa in direction_questions[:questions_per_blueprint]:
+                    if isinstance(qa, dict) and "question" in qa and "answer" in qa:
+                        # Ensure answer uses Direction enum format
+                        answer = qa["answer"]
+                        if not answer.startswith("Direction."):
+                            # Try to convert numeric or string directions to Direction enum
+                            direction = Direction.from_value(answer)
+                            if direction:
+                                qa["answer"] = f"Direction.{direction.name}"
+                        
+                        validated_questions.append(qa)
+                
+                state.metadata["direction_questions"] = validated_questions
+            else:
+                state.metadata["direction_questions"] = []
+                
+        except (json.JSONDecodeError, AttributeError):
+            state.metadata["direction_questions"] = []
         
         return state
     

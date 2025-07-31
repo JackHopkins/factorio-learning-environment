@@ -6,8 +6,8 @@ from copy import deepcopy
 
 import pytest
 
-from fle.env.entities import Position, Direction
-from fle.env.game_types import Prototype
+from fle.env.game.entities import Position, Direction
+from fle.env.game.game_types import Prototype
 
 
 @pytest.fixture()
@@ -89,13 +89,13 @@ def test_save_load1(game):
     game.insert_item(Prototype.Coal, furnace, quantity=5)
     game.insert_item(Prototype.IronOre, furnace, quantity=5)
     game.move_to(Position(x=20, y=20))
-    game.instance.speed(1)
+    game.instance.set_speed(1)
     entities = game._save_entity_state(distance=30, player_entities=True)
     copied_entities = deepcopy(entities)
     game.instance.reset()
     assert game._load_entity_state(entities)
     entities = game._save_entity_state(distance=30, player_entities=True)
-    game.instance.speed(1)
+    game.instance.set_speed(1)
     assert (
         copied_entities[0]["burner"]["inventory"]["coal"]
         == entities[0]["burner"]["inventory"]["coal"]

@@ -2,9 +2,9 @@ import pickle
 import unittest
 
 from fle.eval.algorithms.mcts.chunked_mcts import ChunkedMCTS
-from fle.commons.models.game_state import GameState
-from fle.env.game_types import Prototype
-from fle.env import FactorioInstance
+from fle.env.game.game_state import GameState
+from fle.env.game.game_types import Prototype
+from fle.env.game import FactorioInstance
 
 FULL_PROGRAM = """
 # First, let's gather some basic resources to start building our factory

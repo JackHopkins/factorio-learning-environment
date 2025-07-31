@@ -2,12 +2,12 @@ import asyncio
 import copy
 from typing import List, Tuple, Union, Dict
 
-from fle.commons.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from fle.commons.models.achievements import ProductionFlows
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 from fle.commons.models.program import Program
-from fle.env.entities import Entity, EntityGroup
-from fle.env import FactorioInstance
+from fle.env.game.entities import Entity, EntityGroup
+from fle.env.game import FactorioInstance
 from fle.env.utils.profits import get_achievements
 
 

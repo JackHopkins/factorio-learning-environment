@@ -1,7 +1,7 @@
 import pytest
 
-from fle.env import entities as ent
-from fle.env.game_types import Prototype, Resource
+from fle.env.game import entities as ent
+from fle.env.game.game_types import Prototype, Resource
 
 
 @pytest.fixture()

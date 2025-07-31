@@ -2,7 +2,7 @@ from time import sleep
 
 import pytest
 
-from fle.env.entities import (
+from fle.env.game.entities import (
     Entity,
     Position,
     ResourcePatch,
@@ -10,8 +10,8 @@ from fle.env.entities import (
     BurnerMiningDrill,
     EntityStatus,
 )
-from fle.env import DirectionInternal as Direction
-from fle.env.game_types import Prototype, Resource
+from fle.env.game import DirectionInternal as Direction
+from fle.env.game.game_types import Prototype, Resource
 
 
 @pytest.fixture()
@@ -29,7 +29,7 @@ def game(instance):
     }
 
     instance.reset()
-    instance.speed(10)
+    instance.set_speed(10)
     yield instance.namespace
 
 

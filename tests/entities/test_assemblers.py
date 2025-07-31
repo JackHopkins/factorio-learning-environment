@@ -1,7 +1,7 @@
 import pytest
 
-from fle.env import Direction, Position
-from fle.env.game_types import Prototype, Resource
+from fle.env.game import Direction, Position
+from fle.env.game.game_types import Prototype, Resource
 
 
 @pytest.fixture()
@@ -19,7 +19,7 @@ def game(instance):
         "stone-brick": 20,
         "iron-ore": 20,
     }
-    instance.speed(10)
+    instance.set_speed(10)
     instance.reset()
     yield instance.namespace
 

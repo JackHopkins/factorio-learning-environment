@@ -1,6 +1,6 @@
 import pytest
-from fle.env.instance import FactorioInstance
-from fle.env.game_types import Resource
+from fle.env.game.instance import FactorioInstance
+from fle.env.game.game_types import Resource
 
 
 @pytest.fixture()
@@ -8,7 +8,7 @@ def game():
     instance = FactorioInstance(
         address="localhost", bounding_box=200, tcp_port=27000, fast=True, inventory={}
     )
-    instance.speed(1)
+    instance.set_speed(1)
     instance.reset()
     yield instance.namespace
 

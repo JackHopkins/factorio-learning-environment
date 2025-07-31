@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Tuple
 
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
-from fle.env.namespace import FactorioNamespace
+from fle.env.game.namespace import FactorioNamespace
 
 PLANNING_ADDITION_PROMPT = """
 Your goal is to automate an increasingly complex factory process.

@@ -1,9 +1,9 @@
 import pytest
 from time import sleep
 
-from fle.env.entities import Position
-from fle.env import DirectionInternal as Direction
-from fle.env.game_types import Prototype, Resource
+from fle.env.game.entities import Position
+from fle.env.game import DirectionInternal as Direction
+from fle.env.game.game_types import Prototype, Resource
 
 
 @pytest.fixture()

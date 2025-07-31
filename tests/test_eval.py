@@ -1,7 +1,7 @@
 import unittest
 
 from fle.commons.cluster_ips import get_local_container_ips
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 
 embedded_function = """
 def inspect_inventory_wrapper():

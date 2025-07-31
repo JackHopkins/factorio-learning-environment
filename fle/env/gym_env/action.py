@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
 
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 
 
 @dataclass

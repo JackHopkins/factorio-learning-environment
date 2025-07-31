@@ -8,9 +8,9 @@ from psycopg2.extras import DictCursor
 
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
-from fle.commons.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from fle.commons.models.program import Program
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 
 load_dotenv()
 

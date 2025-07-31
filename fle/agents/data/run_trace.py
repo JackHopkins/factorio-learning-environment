@@ -2,8 +2,8 @@ import asyncio
 import os
 from dotenv import load_dotenv
 
-from fle.commons.db_client import DBClient
-from fle.env import FactorioInstance
+from fle.services.db.db_client import DBClient
+from fle.env.game import FactorioInstance
 
 # Load environment variables
 load_dotenv()

@@ -1,6 +1,6 @@
 import unittest
 
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 from fle.env.utils.profits import eval_program_with_achievements
 
 test_string = """
@@ -53,7 +53,7 @@ class TestProductionDivergence(unittest.TestCase):
             # cache_scripts=False,
             inventory={},
         )
-        instance.speed(10)
+        instance.set_speed(10)
 
         _, _, _, achievements = eval_program_with_achievements(instance, test_string_1)
         ground_truth_achievement = {

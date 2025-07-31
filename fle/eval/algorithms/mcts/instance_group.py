@@ -3,7 +3,7 @@ from typing import List
 
 from fle.eval.evaluator import Evaluator
 from fle.eval.algorithms.mcts.mcts import MCTS
-from fle.env.instance import FactorioInstance
+from fle.env.game.instance import FactorioInstance
 
 
 @dataclass

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
-from fle.env import FactorioInstance
-from fle.commons.models.game_state import GameState
+from fle.env.game import FactorioInstance
+from fle.env.game.game_state import GameState
 
 
 def test_game_state():
@@ -34,7 +34,7 @@ def test_game_state():
         # cache_scripts=False,
         inventory={},
     )
-    instance.speed(10)
+    instance.set_speed(10)
     instance.reset(game_state)
     pass
 

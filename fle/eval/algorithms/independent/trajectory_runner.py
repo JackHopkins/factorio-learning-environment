@@ -10,22 +10,22 @@ from dotenv import load_dotenv
 
 from fle.agents import CompletionResult, CompletionReason
 from fle.agents.agent_abc import AgentABC
-from fle.commons.db_client import DBClient, create_db_client
+from fle.services.db.db_client import DBClient, create_db_client
 from fle.eval.algorithms.independent.simple_evaluator import SimpleFactorioEvaluator
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
 from fle.commons.models.program import Program
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 from fle.commons.cluster_ips import get_local_container_ips
 from fle.agents.llm.metrics import timing_tracker, log_metrics
 
 # from fle.commons.models.response import EnvironmentResponse
-from fle.env.namespace import FactorioNamespace
+from fle.env.game.namespace import FactorioNamespace
 from fle.env.protocols.a2a.handler import A2AMessage
 from a2a.types import AgentCard
 
 from fle.agents import Response
-from fle.eval.tasks import TaskABC
+from fle.env.tasks import TaskABC
 
 load_dotenv()
 
@@ -466,7 +466,7 @@ async def create_factorio_instance(
     else:
         instance = FactorioInstance(**common_kwargs)
 
-    instance.speed(10)
+    instance.set_speed(10)
     return instance
 
 

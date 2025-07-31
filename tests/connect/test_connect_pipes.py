@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from fle.env.entities import (
+from fle.env.game.entities import (
     BuildingBox,
     Direction,
     Entity,
@@ -12,7 +12,7 @@ from fle.env.entities import (
     Position,
     ResourcePatch,
 )
-from fle.env.game_types import Prototype, Resource
+from fle.env.game.game_types import Prototype, Resource
 
 
 @pytest.fixture()

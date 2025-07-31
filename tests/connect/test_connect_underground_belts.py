@@ -1,7 +1,7 @@
 import pytest
 
-from fle.env.entities import Position, UndergroundBelt
-from fle.env.game_types import Prototype
+from fle.env.game.entities import Position, UndergroundBelt
+from fle.env.game.game_types import Prototype
 
 
 @pytest.fixture()
@@ -19,10 +19,10 @@ def game(instance):
         "wooden-chest": 5,
         "assembling-machine": 10,
     }
-    instance.speed(10)
+    instance.set_speed(10)
     instance.reset()
     yield instance.namespace
-    instance.speed(10)
+    instance.set_speed(10)
     # instance.reset()
 
 

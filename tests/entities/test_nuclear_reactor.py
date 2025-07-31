@@ -1,7 +1,7 @@
 import pytest
 
-from fle.env import Direction, EntityStatus, Position
-from fle.env.game_types import Prototype, Resource, RecipeName
+from fle.env.game import Direction, EntityStatus, Position
+from fle.env.game.game_types import Prototype, Resource, RecipeName
 
 
 @pytest.fixture()
@@ -20,7 +20,7 @@ def game(instance):
         "inserter": 5,
         "iron-chest": 5,
     }
-    instance.speed(10)
+    instance.set_speed(10)
     instance.reset()
     yield instance.namespace
 

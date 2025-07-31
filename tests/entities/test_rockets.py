@@ -1,6 +1,6 @@
 import json
-from fle.env.entities import Position, Direction, EntityStatus
-from fle.env.game_types import Resource, Prototype
+from fle.env.game.entities import Position, Direction, EntityStatus
+from fle.env.game.game_types import Resource, Prototype
 import pytest
 
 
@@ -23,7 +23,7 @@ def game(instance):
         "rocket-fuel": 200,
         "low-density-structure": 200,
     }
-    instance.speed(10)
+    instance.set_speed(10)
     instance.reset()
     yield instance.namespace
 
@@ -146,11 +146,11 @@ def test_rocket_launch(game):
             "low-density-structure": 112,
         }
         inventory_items_json = json.dumps(inventory_items)
-        game.instance.add_command(
-            f"/c global.actions.initialise_inventory({1}, '{inventory_items_json}')",
-            raw=True,
-        )
-        game.instance.execute_transaction()
+        with game.instance.server.transaction() as t:
+            t.add_command(
+                f"/c global.actions.initialise_inventory({1}, '{inventory_items_json}')",
+                raw=True,
+            )
 
     # Verify initial state
     # assert silo.status == EntityStatus.NORMAL

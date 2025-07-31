@@ -7,7 +7,7 @@ and various utility models.
 """
 
 # Game state and research models
-from fle.commons.models.game_state import GameState, filter_serializable_vars
+from fle.env.game.game_state import GameState, filter_serializable_vars
 from fle.commons.models.research_state import ResearchState
 from fle.commons.models.technology_state import TechnologyState
 

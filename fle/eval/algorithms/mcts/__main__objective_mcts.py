@@ -15,12 +15,12 @@ from fle.agents.formatters.conversation_formatter_abc import (
 )
 from fle.agents.llm.api_factory import APIFactory
 from fle.commons.cluster_ips import get_local_container_ips
-from fle.commons.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from fle.commons.models.conversation import Conversation
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 from fle.commons.models.message import Message
 from fle.commons.models.program import Program
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 from fle.eval.algorithms.mcts.samplers import (
     BlueprintScenarioSampler,
     KLDiversityAchievementSampler,
@@ -259,7 +259,7 @@ async def main():
     # Set up Factorio instances
     instances = create_factorio_instances()
     for instance in instances:
-        instance.speed(10)
+        instance.set_speed(10)
 
     initial_state = GameState.from_instance(instances[0])
 

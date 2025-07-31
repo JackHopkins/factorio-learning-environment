@@ -1,7 +1,7 @@
 import pytest
 from time import sleep
-from fle.env.entities import Position, ResourcePatch, Direction
-from fle.env.game_types import Prototype, Resource
+from fle.env.game.entities import Position, ResourcePatch, Direction
+from fle.env.game.game_types import Prototype, Resource
 
 
 @pytest.fixture()

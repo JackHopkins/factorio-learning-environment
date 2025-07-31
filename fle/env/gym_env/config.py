@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from fle.agents.gym_agent import GymAgent
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
-from fle.eval.tasks import TaskABC
+from fle.env.tasks import TaskABC
 from a2a.types import AgentCard
 
 

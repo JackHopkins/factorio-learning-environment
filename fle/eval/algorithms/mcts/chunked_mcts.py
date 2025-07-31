@@ -6,11 +6,11 @@ import re
 from typing import Optional, Tuple, Union
 
 from fle.commons.models.conversation import Conversation
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 from fle.commons.models.generation_parameters import GenerationParameters
 from fle.commons.models.message import Message
 from fle.commons.models.program import Program
-from fle.env.entities import Entity, EntityGroup
+from fle.env.game.entities import Entity, EntityGroup
 
 from .mcts import MCTS
 

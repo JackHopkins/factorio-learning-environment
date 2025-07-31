@@ -8,7 +8,7 @@ from tenacity import retry_if_exception_type, wait_exponential
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters
 from fle.commons.models.message import Message
-from fle.env.namespace import FactorioNamespace
+from fle.env.game.namespace import FactorioNamespace
 
 from fle.agents.models import CompletionResult, Response
 from fle.agents.llm.parsing import Policy

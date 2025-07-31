@@ -1,10 +1,10 @@
 import pytest
 
 from fle.commons.cluster_ips import get_local_container_ips
-from fle.env.instance import FactorioInstance
-from fle.env.entities import Direction
-from fle.env.game_types import Resource, Prototype, Technology
-from fle.commons.models.game_state import GameState
+from fle.env.game.instance import FactorioInstance
+from fle.env.game.entities import Direction
+from fle.env.game.game_types import Resource, Prototype, Technology
+from fle.env.game.game_state import GameState
 
 
 @pytest.fixture()

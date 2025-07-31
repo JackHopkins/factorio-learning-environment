@@ -9,7 +9,7 @@ Provides functionality for managing game state versions, including:
 """
 
 from mcp.server.fastmcp import Context
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 from fle.env.protocols.mcp import mcp
 from fle.env.protocols.mcp.init import state
 

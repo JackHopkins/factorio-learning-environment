@@ -15,7 +15,7 @@ class SystemPromptGenerator:
         self.base_path = Path(base_path)
         self.tool_path = self.base_path / "tools" / "agent"
 
-    def generate(self, multiagent_str: str = "") -> str:
+    def generate(self, num_agents: int = 1,  agent_idx: int = 0) -> str:
         # Generate schema
         schema_generator = SchemaGenerator(str(self.tool_path))
         schema = schema_generator.generate_schema(with_docstring=True).replace(
@@ -33,9 +33,20 @@ class SystemPromptGenerator:
 
         # Load and process the manuals (agent.md files)
         manual_defs = ManualGenerator.generate_manual(str(self.base_path / "tools"))
+
+        if num_agents > 1:
+            player_idx = agent_idx + 1
+            multiagent_str = (
+                f"## MULTIAGENT INSTRUCTIONS\n"
+                f"You are Agent {player_idx} out of {num_agents} agent(s) in the game. "
+                f"Follow your specific instructions given to you by the task."
+                f"Use the send_message() tool regularly to communicate with other agents about your current activities and any challenges you encounter. "
+                f"Start each program with a send_message() call to explain what you are doing. "
+                f"End each program with a send_message() call to confirm your actions. If your program errors out prior to send_message() being called, the message will not be sent. "
+            )
+
         if multiagent_str:
             manual_defs += f"\n\n{multiagent_str}"
-
         # Combine all parts into final prompt
         return (
             f"```types\n{type_defs}\n{entity_defs}\n```\n"

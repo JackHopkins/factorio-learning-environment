@@ -9,7 +9,7 @@ from fle.eval.algorithms.independent import (
     create_factorio_instance,
     EvalConfig,
 )
-from fle.eval.tasks.task_factory import TaskFactory
+from fle.env.tasks.task_factory import TaskFactory
 from pathlib import Path
 import json
 from dataclasses import dataclass

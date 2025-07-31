@@ -5,7 +5,7 @@ from typing import List, Optional
 
 from a2a.types import AgentCard
 
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 
 from fle.env.a2a_namespace import A2AFactorioNamespace
 from fle.env.protocols.a2a.server import ServerManager
@@ -55,7 +55,7 @@ class A2AFactorioInstance(FactorioInstance):
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit"""
-        self.cleanup()
+        self.client.cleanup()
 
     @classmethod
     def _ensure_server_running(cls):

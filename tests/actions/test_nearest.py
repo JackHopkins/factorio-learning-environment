@@ -1,7 +1,7 @@
 import pytest
 
-from fle.env.entities import Position
-from fle.env.game_types import Resource
+from fle.env.game.entities import Position
+from fle.env.game.game_types import Resource
 
 
 @pytest.fixture()

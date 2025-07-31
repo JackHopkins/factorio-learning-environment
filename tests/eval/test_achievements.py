@@ -1,6 +1,6 @@
 import unittest
 
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 from fle.env.utils.achievements import eval_program_with_achievements
 
 
@@ -14,7 +14,7 @@ class TestAchievements(unittest.TestCase):
             # cache_scripts=False,
             inventory={},
         )
-        instance.speed(10)
+        instance.set_speed(10)
 
         test_string_1 = "pos = nearest(Resource.Stone)\nmove_to(pos)\nharvest_resource(pos, 10)\ncraft_item(Prototype.StoneFurnace, 1)\npos = nearest(Resource.Coal)\nmove_to(pos)\nharvest_resource(pos, 10)\npos = nearest(Resource.IronOre)\nmove_to(pos)\nharvest_resource(pos, 10)\npos = Position(x = 0, y = 0)\nmove_to(pos)\nfurnace = place_entity(Prototype.StoneFurnace, position = pos)\ninsert_item(Prototype.IronOre, furnace, 5)\ninsert_item(Prototype.Coal, furnace, 5)\nsleep(16)\nextract_item(Prototype.IronPlate, furnace.position, 10)"
         _, _, _, achievements = eval_program_with_achievements(instance, test_string_1)

@@ -11,11 +11,11 @@ from fle.commons.cluster_ips import get_local_container_ips
 from dotenv import load_dotenv
 
 from fle.agents.formatters import RecursiveReportFormatter
-from fle.commons.db_client import DBClient
-from fle.env import FactorioInstance, GameState
+from fle.services.db.db_client import DBClient
+from fle.env.game import FactorioInstance, GameState
 from fle.eval.algorithms.beam import MilestonesBeamSearchExecutor
 from fle.eval.algorithms.mcts import SupervisedExecutorConfig
-from fle.eval.tasks.throughput_task import (
+from fle.env.tasks.throughput_task import (
     LAB_PLAY_POPULATED_STARTING_INVENTORY,
     ThroughputTask,
 )
@@ -154,7 +154,7 @@ def create_factorio_instance(instance_id: int) -> FactorioInstance:
         inventory={},
         all_technologies_researched=True,
     )
-    instance.speed(10)
+    instance.set_speed(10)
     return instance
 
 

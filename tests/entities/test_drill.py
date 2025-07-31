@@ -1,6 +1,6 @@
 import pytest
-from fle.env import Direction
-from fle.env.game_types import Prototype, Resource
+from fle.env.game import Direction
+from fle.env.game.game_types import Prototype, Resource
 
 
 @pytest.fixture()
@@ -21,7 +21,7 @@ def game(instance):
         "copper-plate": 100,
         "electronic-circuit": 100,
     }
-    instance.speed(10)
+    instance.set_speed(10)
     instance.reset()
     yield instance.namespace
 

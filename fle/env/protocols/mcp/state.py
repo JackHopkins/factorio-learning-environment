@@ -3,7 +3,7 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 from fle.commons.cluster_ips import get_local_container_ips
 
 from fle.commons.models import FactorioServer, Recipe, ResourcePatch
@@ -48,7 +48,7 @@ class FactorioMCPState:
                 inventory={},
                 all_technologies_researched=True,
             )
-            instance.speed(10)
+            instance.set_speed(10)
             return instance
         except Exception as e:
             print(f"Error creating Factorio instance: {e}")

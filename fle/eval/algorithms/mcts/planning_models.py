@@ -4,7 +4,7 @@ from typing import Dict, Optional
 from pydantic import BaseModel, Field
 
 from fle.commons.models.conversation import Conversation
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 from fle.commons.models.program import Program
 
 

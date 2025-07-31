@@ -1,7 +1,7 @@
 import pytest
 
-from fle.env.entities import Position, Direction, Entity
-from fle.env.game_types import Prototype, RecipeName, prototype_by_name, Resource
+from fle.env.game.entities import Position, Direction, Entity
+from fle.env.game.game_types import Prototype, RecipeName, prototype_by_name, Resource
 
 
 @pytest.fixture()
@@ -30,7 +30,7 @@ def game(instance):
         "copper-plate": 50,
         "pumpjack": 1,
     }
-    instance.speed(10)
+    instance.set_speed(10)
     instance.reset()
     yield instance.namespace
 

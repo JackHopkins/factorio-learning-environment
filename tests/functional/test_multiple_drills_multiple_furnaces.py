@@ -1,7 +1,7 @@
 import pytest
 
-from fle.env.entities import Position, Direction, BuildingBox
-from fle.env.game_types import Prototype, Resource
+from fle.env.game.entities import Position, Direction, BuildingBox
+from fle.env.game.game_types import Prototype, Resource
 
 
 @pytest.fixture()
@@ -28,7 +28,7 @@ def game(instance):
         "assembling-machine-1": 5,
     }
     instance.reset()
-    instance.speed(10)
+    instance.set_speed(10)
     yield instance.namespace
 
 

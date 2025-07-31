@@ -3,9 +3,9 @@
 
 # import pytest
 
-# from fle.env.entities import Position
+# from fle.env.game.entities import Position
 # from fle.env import FactorioInstance
-# from fle.env.game_types import Prototype
+# from fle.env.game.game_types import Prototype
 # from fle.env.utils.profits import eval_program_with_profits
 
 # @pytest.fixture()
@@ -40,7 +40,7 @@
 #                                 #cache_scripts=False,
 #                                 inventory={})
 
-#         instance.speed(10)
+#         instance.set_speed(10)
 #         time.sleep(5)
 #         profit_config = {"max_static_unit_profit_cap": 5,
 #                                                     "dynamic_profit_multiplier": 10}

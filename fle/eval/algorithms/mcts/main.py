@@ -2,10 +2,10 @@ import os
 import asyncio
 from dotenv import load_dotenv
 from fle.commons.cluster_ips import get_local_container_ips
-from fle.commons.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from fle.eval.algorithms.mcts import MCTSFactory
 from fle.eval.open.plots.run_results import RunResults
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 import concurrent.futures
 from typing import List, Tuple
 
@@ -89,7 +89,7 @@ async def main():
     try:
         instances = create_factorio_instances()
         for instance in instances:
-            instance.speed(10)  # Speed up the game for faster evaluation
+            instance.set_speed(10)  # Speed up the game for faster evaluation
     except Exception:
         print(
             "\033[91mError initialising Factorio instances. Are the docker containers running, and have they been activated?\033[91m"

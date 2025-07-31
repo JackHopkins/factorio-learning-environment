@@ -26,9 +26,9 @@ from fle.commons.cluster_ips import get_local_container_ips
 from dotenv import load_dotenv
 from rich import print
 
-from fle.commons.db_client import DBClient
-from fle.commons.models.game_state import GameState
-from fle.env import FactorioInstance
+from fle.services.db.db_client import DBClient
+from fle.env.game.game_state import GameState
+from fle.env.game import FactorioInstance
 
 load_dotenv()
 
@@ -184,7 +184,7 @@ async def main():
 
     instances = create_factorio_instances()
     for instance in instances:
-        instance.speed(10)  # Set the game speed to 10x normal speed for faster testing
+        instance.set_speed(10)  # Set the game speed to 10x normal speed for faster testing
 
     # Initialize FactorioEvaluator with the list of instances
 

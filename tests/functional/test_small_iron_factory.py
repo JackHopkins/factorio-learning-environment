@@ -1,6 +1,6 @@
 import pytest
-from fle.env.entities import Position, Direction
-from fle.env.game_types import Prototype, Resource
+from fle.env.game.entities import Position, Direction
+from fle.env.game.game_types import Prototype, Resource
 
 
 @pytest.fixture()
@@ -14,7 +14,6 @@ def game(instance):
         "burner-mining-drill": 10,
     }
     instance.reset()
-    instance.execute_transaction()
     yield instance.namespace
 
 

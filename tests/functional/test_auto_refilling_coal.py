@@ -1,7 +1,7 @@
 import pytest
 
-from fle.env.entities import Position, Direction
-from fle.env.game_types import Prototype, Resource
+from fle.env.game.entities import Position, Direction
+from fle.env.game.game_types import Prototype, Resource
 
 
 @pytest.fixture()
@@ -15,10 +15,10 @@ def game(instance):
         "burner-mining-drill": 5,
     }
     instance.reset()
-    instance.speed(10)
+    instance.set_speed(10)
     yield instance.namespace
     # instance.reset()
-    # instance.speed(1)
+    # instance.set_speed(1)
 
 
 def test_build_auto_refilling_coal_system(game):

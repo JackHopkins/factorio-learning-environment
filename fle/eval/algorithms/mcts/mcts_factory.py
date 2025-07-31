@@ -10,7 +10,7 @@ import questionary
 from dataclasses import asdict
 
 from .samplers import BeamSampler
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 from fle.agents.llm.api_factory import APIFactory
 
 

@@ -3,7 +3,7 @@ from typing import Optional
 
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message
-from fle.env.namespace import FactorioNamespace
+from fle.env.game.namespace import FactorioNamespace
 
 from fle.agents.models import CompletionResult, Response
 from fle.agents.llm.parsing import Policy

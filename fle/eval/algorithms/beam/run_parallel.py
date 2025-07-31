@@ -12,9 +12,9 @@ from dotenv import load_dotenv
 from fle.agents.formatters import RecursiveReportFormatter
 from fle.agents.llm.api_factory import APIFactory
 from fle.commons.cluster_ips import get_local_container_ips
-from fle.commons.db_client import create_db_client
-from fle.commons.models.game_state import GameState
-from fle.env import FactorioInstance
+from fle.services.db.db_client import create_db_client
+from fle.env.game.game_state import GameState
+from fle.env.game import FactorioInstance
 from fle.eval.algorithms.beam import ParallelBeamConfig, ParallelBeamSearch
 from fle.eval.algorithms.beam.run import MANUAL, OBSERVATION_SPACE, SYSTEM_PROMPT
 
@@ -46,7 +46,7 @@ def create_factorio_instances(start_index: int, count: int) -> List[FactorioInst
                 inventory={},
                 all_technologies_researched=False,
             )
-            instance.speed(10)
+            instance.set_speed(10)
             instances.append(instance)
         except Exception as e:
             errors.append(f"Failed to create instance at {ip}:{tcp_port} - {str(e)}")
@@ -89,7 +89,7 @@ async def run_model_search(
         # Create 4 instances for each model's beam search
         instances = create_factorio_instances(instance_start, 4)
         for instance in instances:
-            instance.speed(10)
+            instance.set_speed(10)
     except Exception as e:
         print(
             f"\033[91mError initialising Factorio instances for model {model}: {e}\033[91m"

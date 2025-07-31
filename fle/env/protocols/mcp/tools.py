@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import Dict
 
 from mcp.server.fastmcp import Image
-from fle.env.entities import Position
-from fle.commons.models.game_state import GameState
+from fle.env.game.entities import Position
+from fle.env.game.game_state import GameState
 from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )

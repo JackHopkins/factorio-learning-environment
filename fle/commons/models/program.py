@@ -8,7 +8,7 @@ from fle.commons.models.timing_metrics import TimingMetrics
 
 from fle.commons.models.achievements import ProductionFlows
 from fle.commons.models.conversation import Conversation
-from fle.commons.models.game_state import GameState
+from fle.env.game.game_state import GameState
 
 
 class Program(BaseModel):

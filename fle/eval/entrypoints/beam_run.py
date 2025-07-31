@@ -9,9 +9,9 @@ from dotenv import load_dotenv
 
 from fle.agents.formatters import RecursiveFormatter
 from fle.agents.llm.api_factory import APIFactory
-from fle.commons.db_client import DBClient
+from fle.services.db.db_client import DBClient
 from fle.commons.models import GameState
-from fle.env import FactorioInstance
+from fle.env.game import FactorioInstance
 
 from .beam_search import ParallelBeamConfig, ParallelBeamSearch
 
@@ -137,7 +137,7 @@ async def main():
     try:
         instances = create_factorio_instances()
         for instance in instances:
-            instance.speed(10)  # Speed up the game for faster evaluation
+            instance.set_speed(10)  # Speed up the game for faster evaluation
     except Exception:
         print(
             "\033[91mError initialising Factorio instances. Are the docker containers running, and have they been activated?\033[91m"

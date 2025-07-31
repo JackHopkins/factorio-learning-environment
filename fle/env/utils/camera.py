@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from fle.env.entities import Position, BoundingBox
+from fle.env.game.entities import Position, BoundingBox
 
 
 class Camera(BaseModel):

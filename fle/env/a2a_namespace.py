@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 from a2a.types import AgentCard, Message, Part, TextPart
 from fle.agents.agent_abc import create_default_agent_card
 
-from fle.env.namespace import FactorioNamespace
+from fle.env.game.namespace import FactorioNamespace
 from fle.env.protocols.a2a.handler import A2AProtocolHandler
 
 

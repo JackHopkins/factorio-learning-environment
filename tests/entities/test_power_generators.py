@@ -1,7 +1,7 @@
 import pytest
 
-from fle.env import Direction, EntityStatus
-from fle.env.game_types import Prototype
+from fle.env.game import Direction, EntityStatus
+from fle.env.game.game_types import Prototype
 
 
 @pytest.fixture()
@@ -13,7 +13,7 @@ def game(instance):
         "steam-engine": 3,
         "small-electric-pole": 4,
     }
-    instance.speed(10)
+    instance.set_speed(10)
     instance.reset()
     yield instance.namespace
 

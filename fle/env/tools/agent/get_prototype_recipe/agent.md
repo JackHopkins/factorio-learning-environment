@@ -5,6 +5,7 @@ The `get_prototype_recipe` tool retrieves the complete recipe information for an
 ## Core Functionality
 
 The tool returns a Recipe object containing:
+
 - List of required ingredients with quantities
 - List of products produced
 - Additional metadata like crafting time and category
@@ -27,9 +28,11 @@ recipe = get_prototype_recipe(RecipeName.SolidFuelFromHeavyOil)
 for ingredient in recipe.ingredients:
     print(f"Need {ingredient.count} {ingredient.name}")
 ```
+
 ### Parameters
 
 The tool accepts one of:
+
 1. `Prototype` enum value
 2. `RecipeName` enum value
 3. Raw string name of the recipe
@@ -37,6 +40,7 @@ The tool accepts one of:
 ### Return Value
 
 Returns a `Recipe` object with the following structure:
+
 ```python
 Recipe(
     name=str,
@@ -48,6 +52,7 @@ Recipe(
 ## Common Use Cases
 
 ### 1. Basic Recipe Checking
+
 ```python
 # Check light oil cracking  requirements
 recipe = get_prototype_recipe(RecipeName.LightOilCracking)

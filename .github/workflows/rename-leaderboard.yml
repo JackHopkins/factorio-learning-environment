@@ -1,9 +1,12 @@
-name: Process Leaderboard
+name: Rename Leaderboard
 
 on:
   pull_request:
     types: [closed]
     paths: ['docs/leaderboard/results/**']
+  push:
+    branches:
+      - leaderboard
   workflow_dispatch:
 
 jobs:

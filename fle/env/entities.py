@@ -432,6 +432,29 @@ class EntityCore(BaseModel):
         return f"Entity(name='{self.name}', direction={self.direction.name}, position=Position({self.position})"
 
 
+class PlaceholderEntity(BaseModel):
+    """A placeholder entity used in batch mode when we don't have access to actual server-side entities yet."""
+
+    name: str
+    position: Position
+    direction: Optional[Direction] = Direction.UP
+
+    def __init__(
+        self,
+        name: str,
+        position: Position,
+        direction: Optional[Direction] = Direction.UP,
+        **kwargs,
+    ):
+        # Handle case where position might be passed as tuple
+        if isinstance(position, tuple):
+            position = Position(x=position[0], y=position[1])
+        super().__init__(name=name, position=position, direction=direction, **kwargs)
+
+    def __repr__(self):
+        return f"PlaceholderEntity(name='{self.name}', position={self.position}, direction={self.direction})"
+
+
 class Entity(EntityCore):
     """Base class for all entities in the game."""
 

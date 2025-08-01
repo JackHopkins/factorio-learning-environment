@@ -8,8 +8,14 @@ import time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "."))
 
 from fle.env.instance import FactorioInstance
-from fle.env.entities import Position, Direction, Dimensions, TileDimensions
-from fle.env.game_types import Prototype, Technology
+from fle.env.entities import (
+    Position,
+    Direction,
+    Dimensions,
+    TileDimensions,
+    PlaceholderEntity,
+)
+from fle.env.game_types import Prototype
 
 
 def convert_dict_to_entity(entity_dict):
@@ -103,6 +109,7 @@ def example_batch_streaming():
         inventory={
             "stone": 50,
             "iron-ore": 30,
+            "coal": 20,  # Added coal for furnace fuel demonstration
             "burner-mining-drill": 10,
             "stone-furnace": 10,
             "transport-belt": 20,
@@ -111,6 +118,7 @@ def example_batch_streaming():
             "iron-plate": 20,
             "copper-plate": 10,
             "iron-gear-wheel": 5,
+            "iron-chest": 5,
         },
         fast=True,
     )
@@ -138,11 +146,11 @@ def example_batch_streaming():
         commands_info_batch1 = []
 
         # Command 1: Set research first (quick operation)
-        tick1 = current_tick + 5
-        result1 = namespace.set_research(Technology.Automation, tick=tick1)
-        commands_info_batch1.append(
-            (f"Set research to Automation at tick {tick1}", result1)
-        )
+        # tick1 = current_tick + 5
+        # result1 = namespace.set_research(Technology.Automation, tick=tick1)
+        # commands_info_batch1.append(
+        #     (f"Set research to Automation at tick {tick1}", result1)
+        # )
 
         # Command 2: Move to working area
         tick2 = current_tick + 20
@@ -174,12 +182,14 @@ def example_batch_streaming():
             (f"Place stone furnace at (10,6) at tick {tick5}", result5)
         )
 
-        # Command 6: Place transport belt
+        # Command 6: Place iron chest (for insert/extract operations)
         tick6 = current_tick + 220
         result6 = namespace.place_entity(
-            Prototype.TransportBelt, position=Position(x=10, y=7), tick=tick6
+            Prototype.IronChest, position=Position(x=10, y=7), tick=tick6
         )
-        commands_info_batch1.append((f"Place belt at (10,7) at tick {tick6}", result6))
+        commands_info_batch1.append(
+            (f"Place iron chest at (10,7) at tick {tick6}", result6)
+        )
 
         # Command 7: Place inserter (we'll need this entity for batch 2)
         tick7 = current_tick + 260
@@ -196,7 +206,35 @@ def example_batch_streaming():
             Prototype.AssemblingMachine1, position=Position(x=11, y=10), tick=tick8
         )
         commands_info_batch1.append(
-            (f"Place assembling machine at (8,6) at tick {tick8}", result8)
+            (f"Place assembling machine at (11,10) at tick {tick8}", result8)
+        )
+
+        # Command 9: Insert iron plates into the chest using PlaceholderEntity
+        # Create a PlaceholderEntity for the chest we placed earlier
+        chest_placeholder = PlaceholderEntity(
+            name="iron-chest", position=Position(x=10, y=7)
+        )
+        tick9 = current_tick + 340
+        result9 = namespace.insert_item(
+            Prototype.IronPlate, chest_placeholder, quantity=10, tick=tick9
+        )
+        commands_info_batch1.append(
+            (
+                f"Insert 10 iron plates into chest using PlaceholderEntity at tick {tick9}",
+                result9,
+            )
+        )
+
+        # Command 10: Extract iron plates from the chest using PlaceholderEntity
+        tick10 = current_tick + 380
+        result10 = namespace.extract_item(
+            Prototype.IronPlate, chest_placeholder, quantity=5, tick=tick10
+        )
+        commands_info_batch1.append(
+            (
+                f"Extract 5 iron plates from chest using PlaceholderEntity at tick {tick10}",
+                result10,
+            )
         )
 
         print("   Commands added to first batch:")
@@ -239,36 +277,35 @@ def example_batch_streaming():
 
         # Extract real entity references from first batch streamed results
         # result7 is the inserter (index 6), result8 is the assembling machine (index 7)
-        # result5 is the stone furnace (index 4), result6 is the transport belt (index 5)
+        # result5 is the stone furnace (index 4), result6 is the iron chest (index 5)
+        # result9 is insert_item (index 8), result10 is extract_item (index 9)
         inserter_entity = None
         assembling_machine_entity = None
         stone_furnace_entity = None
-        transport_belt_position = None
+        iron_chest_entity = None
 
         for command_index, result in batch1_results.items():
             if result["success"]:
-                if command_index == 6:  # result7 - inserter
+                if command_index == 5:  # result7 - inserter
                     inserter_entity = convert_dict_to_entity(result["result"])
                     print(f"     ✓ Inserter entity created: {inserter_entity}")
-                elif command_index == 7:  # result8 - assembling machine
+                elif command_index == 6:  # result8 - assembling machine
                     assembling_machine_entity = convert_dict_to_entity(result["result"])
                     print(
                         f"     ✓ Assembling machine entity created: {assembling_machine_entity}"
                     )
-                elif command_index == 4:  # result5 - stone furnace
+                elif command_index == 3:  # result5 - stone furnace
                     stone_furnace_entity = convert_dict_to_entity(result["result"])
                     print(
                         f"     ✓ Stone furnace entity created: {stone_furnace_entity}"
                     )
-                elif command_index == 5:  # result6 - transport belt
-                    belt_data = result["result"]
-                    if isinstance(belt_data, dict) and "position" in belt_data:
-                        transport_belt_position = Position(
-                            x=belt_data["position"]["x"], y=belt_data["position"]["y"]
-                        )
-                        print(
-                            f"     ✓ Transport belt position recorded: {transport_belt_position}"
-                        )
+                elif command_index == 4:  # result6 - iron chest
+                    iron_chest_entity = convert_dict_to_entity(result["result"])
+                    print(f"     ✓ Iron chest entity created: {iron_chest_entity}")
+                elif command_index == 7:  # result9 - insert_item
+                    print(f"     ✓ Insert item command executed: {result['result']}")
+                elif command_index == 8:  # result10 - extract_item
+                    print(f"     ✓ Extract item command executed: {result['result']}")
             else:
                 print(f"     ✗ Command {command_index + 1} failed: {result['result']}")
 
@@ -321,6 +358,22 @@ def example_batch_streaming():
             "     ℹ Skipping furnace extraction - furnace is empty (no iron ore was added)"
         )
 
+        # Command 11: Insert coal into the stone furnace using PlaceholderEntity
+        # This demonstrates referencing an entity created in the first batch
+        furnace_placeholder = PlaceholderEntity(
+            name="stone-furnace", position=Position(x=10, y=6)
+        )
+        tick11 = current_tick + 80
+        result11 = namespace.insert_item(
+            Prototype.Coal, furnace_placeholder, quantity=5, tick=tick11
+        )
+        commands_info_batch2.append(
+            (
+                f"Insert 5 coal into stone furnace using PlaceholderEntity at tick {tick11}",
+                result11,
+            )
+        )
+
         # Command 12: Inspect inventory to see current state
         tick12 = current_tick + 120  # Moved up since we skipped command 11
         result12 = namespace.inspect_inventory(tick=tick12)
@@ -328,18 +381,16 @@ def example_batch_streaming():
 
         # Command 13: Pick up the transport belt (cleanup) - use actual position
         tick13 = current_tick + 160  # Moved up since we skipped command 11
-        if transport_belt_position:
-            result13 = namespace.pickup_entity(
-                Prototype.TransportBelt, position=transport_belt_position, tick=tick13
-            )
+        if iron_chest_entity:
+            result13 = namespace.pickup_entity(iron_chest_entity, tick=tick13)
             commands_info_batch2.append(
                 (
-                    f"Pick up transport belt at {transport_belt_position} at tick {tick13}",
+                    f"Pick up iron chest at {iron_chest_entity.position} at tick {tick13}",
                     result13,
                 )
             )
         else:
-            print("     ⚠ Skipping transport belt pickup - position not available")
+            print("     ⚠ Skipping iron chest pickup - entity not available")
 
         print("   Commands added to second batch:")
         for desc, result in commands_info_batch2:
@@ -410,7 +461,13 @@ def comparison_example():
     instance = FactorioInstance(
         address="localhost",
         tcp_port=27000,
-        inventory={"stone": 50, "transport-belt": 10, "inserter": 5, "iron-plate": 20},
+        inventory={
+            "stone": 50,
+            "transport-belt": 10,
+            "inserter": 5,
+            "iron-plate": 20,
+            "coal": 10,
+        },
     )
 
     namespace = instance.namespace

@@ -1350,6 +1350,7 @@ def validate_lua_syntax(lua_code: str) -> Tuple[bool, str]:
         return True, "luaparser not available - skipping validation"
 
     try:
+        lua_code = lua_code.replace("/sc", "").replace("/c", "").strip()
         lua_ast.parse(lua_code)
         return True, "Valid Lua syntax"
     except Exception as e:

@@ -160,7 +160,9 @@ class APIFactory:
                     raise RuntimeError("No system message!!")
 
                 try:
-                    client = anthropic.Anthropic(max_retries=0)
+                    client = anthropic.Anthropic(
+                        max_retries=0, api_key=os.getenv("ANTHROPIC_API_KEY")
+                    )
                     # Use asyncio.to_thread for CPU-bound operations
                     response = await asyncio.to_thread(
                         client.messages.create,

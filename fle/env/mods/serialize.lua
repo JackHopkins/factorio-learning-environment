@@ -1569,7 +1569,12 @@ global.utils.serialize_entity = function(entity)
 
         -- Get the mining area
         local prototype = game.entity_prototypes[entity.name]
-        local mining_area = prototype.mining_drill_radius * 2
+        local mining_area = 1
+        if prototype["mining_drill_radius"] then
+            mining_area = prototype.mining_drill_radius * 2
+        elseif prototype["mining_drill_resource_searching_radius"] then
+            mining_area = prototype.mining_drill_resource_searching_radius * 2
+        end
 
         local position = entity.position
 

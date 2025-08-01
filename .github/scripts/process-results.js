@@ -19,7 +19,7 @@ resultFiles.forEach(file => {
     const isVerified = process.env.GITHUB_REF === 'refs/heads/main';
     
     const processedData = {
-      model: resultData.model,
+      name: resultData.name,
       productionScore: resultData.productionScore || 0,
       milestones: resultData.milestones || 0,
       automationMilestones: resultData.automationMilestones || 0,

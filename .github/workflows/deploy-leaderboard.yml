@@ -2,7 +2,7 @@ name: Deploy Leaderboard
 
 on:
   push:
-    branches: [main]
+    branches: [leaderboard]
     paths: ['docs/leaderboard/results/**']
   pull_request:
     types: [closed]

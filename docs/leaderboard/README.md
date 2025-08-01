@@ -17,9 +17,10 @@ To submit new model results to the leaderboard:
 
 ```json
 {
-  "model": "Your Model Name",
+  "name": "Your Model Name",
   "productionScore": 123456,
   "milestones": 20,
+  "automationMilestones": 4,
   "labTasksSuccessRate": 15.5,
   "mostComplexItem": "advanced-circuit",
   "submittedBy": "Your Name",

@@ -3,12 +3,13 @@ import asyncio
 import json
 import multiprocessing
 import os
-from pathlib import Path
 
 import gym
+import importlib.resources
 from dotenv import load_dotenv
 from fle.env.gym_env.config import GymEvalConfig, GymRunConfig
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
+from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
 from fle.env.gym_env.registry import get_environment_info, list_available_environments
 from fle.env.gym_env.trajectory_runner import GymTrajectoryRunner
 
@@ -80,11 +81,13 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
 
 async def main():
     parser = argparse.ArgumentParser()
+    pkg = importlib.resources.files("fle")
+    default_config = pkg / "eval" / "algorithms" / "independent" / "gym_run_config.json"
     parser.add_argument(
         "--run_config",
         type=str,
         help="Path of the run config file",
-        default=Path("eval", "open", "independent_runs", "gym_run_config.json"),
+        default=str(default_config),
     )
     args = parser.parse_args()
 
@@ -119,6 +122,7 @@ async def main():
                 task=task,
                 agent_idx=agent_idx,
                 observation_formatter=BasicObservationFormatter(include_research=False),
+                system_prompt_formatter=SystemPromptFormatter(),
             )
             agents.append(agent)
 

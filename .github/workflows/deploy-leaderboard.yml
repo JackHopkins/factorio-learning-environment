@@ -12,7 +12,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/leaderboard'
     
     steps:
       - uses: actions/checkout@v4
@@ -24,20 +24,10 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Process and verify results
+      - name: Process results
         run: |
           mkdir -p docs/leaderboard/processed
           node .github/scripts/process-results.js
-          
-          # Mark as verified if on main branch
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            node -e "
-              const fs = require('fs');
-              const data = JSON.parse(fs.readFileSync('docs/leaderboard/processed/combined-results.json'));
-              if (data.length > 0) data[data.length - 1].verified = true;
-              fs.writeFileSync('docs/leaderboard/processed/combined-results.json', JSON.stringify(data, null, 2));
-            "
-          fi
 
       - name: Build and deploy
         working-directory: ./docs/leaderboard

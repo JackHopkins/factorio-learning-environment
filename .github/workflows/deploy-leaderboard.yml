@@ -1,45 +1,20 @@
-name: Deploy Leaderboard
+name: Process Leaderboard
 
 on:
-  push:
-    branches: [leaderboard]
-    paths: ['docs/leaderboard/results/**']
   pull_request:
     types: [closed]
     paths: ['docs/leaderboard/results/**']
   workflow_dispatch:
 
 jobs:
-  deploy:
+  process:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/leaderboard'
-    
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-
-      - name: Process results
+      - name: Process and build
         run: |
-          mkdir -p docs/leaderboard/processed
           node .github/scripts/process-results.js
-
-      - name: Build and deploy
-        working-directory: ./docs/leaderboard
-        run: |
-          npm install
-          npm run build
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/leaderboard/build
-          destination_dir: leaderboard 

@@ -136,7 +136,7 @@ body {
     color: #333;
 }
 
-.score, .milestone, .automation, .lab-rate, .complex-item, .submitted-by, .date {
+.data-cell {
     font-weight: 500;
     font-family: monospace;
     font-size: 0.9rem;

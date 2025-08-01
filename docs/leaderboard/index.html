@@ -94,13 +94,13 @@
                 row.innerHTML = `
                     <div class="rank">${index + 1}</div>
                     <div class="name">${model.name}</div>
-                    <div class="score">${model.productionScore}</div>
-                    <div class="milestone">${model.milestones}</div>
-                    <div class="automation">${model.automationMilestones}</div>
-                    <div class="lab-rate">${model.labTasksSuccessRate}%</div>
-                    <div class="complex-item">${model.mostComplexItem}</div>
-                    <div class="submitted-by">${model.submittedBy}</div>
-                    <div class="date">${model.submissionDate}</div>
+                    <div class="score data-cell">${model.productionScore}</div>
+                    <div class="milestone data-cell">${model.milestones}</div>
+                    <div class="automation data-cell">${model.automationMilestones}</div>
+                    <div class="lab-rate data-cell">${model.labTasksSuccessRate}%</div>
+                    <div class="complex-item data-cell">${model.mostComplexItem}</div>
+                    <div class="submitted-by data-cell">${model.submittedBy}</div>
+                    <div class="date data-cell">${model.submissionDate}</div>
                 `;
                 leaderboardRows.appendChild(row);
             });

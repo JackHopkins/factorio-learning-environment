@@ -90,17 +90,17 @@
             
             leaderboardData.forEach((model, index) => {
                 const row = document.createElement('div');
-                row.className = 'table-row';
+                row.className = 'table-row data-cell';
                 row.innerHTML = `
                     <div class="rank">${index + 1}</div>
                     <div class="name">${model.name}</div>
-                    <div class="data-cell">${model.productionScore}</div>
-                    <div class="data-cell">${model.milestones}</div>
-                    <div class="data-cell">${model.automationMilestones}</div>
-                    <div class="data-cell">${model.labTasksSuccessRate}%</div>
-                    <div class="data-cell">${model.mostComplexItem}</div>
-                    <div class="data-cell">${model.submittedBy}</div>
-                    <div class="data-cell">${model.submissionDate}</div>
+                    <div>${model.productionScore}</div>
+                    <div>${model.milestones}</div>
+                    <div>${model.automationMilestones}</div>
+                    <div>${model.labTasksSuccessRate}%</div>
+                    <div>${model.mostComplexItem}</div>
+                    <div>${model.submittedBy}</div>
+                    <div>${model.submissionDate}</div>
                 `;
                 leaderboardRows.appendChild(row);
             });

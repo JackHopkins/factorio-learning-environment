@@ -26,7 +26,6 @@ resultFiles.forEach(file => {
       mostComplexItem: resultData.mostComplexItem || 'none',
       submittedBy: resultData.submittedBy || 'Unknown',
       submissionDate: resultData.submissionDate || new Date().toISOString().split('T')[0],
-      url: resultData.url || null
     };
 
     combinedResults.push(processedData);

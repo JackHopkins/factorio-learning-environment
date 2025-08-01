@@ -33,16 +33,16 @@ To submit new model results to the leaderboard:
 
 ## Fields Explanation
 
-| Field | Description | Required |
-|-------|-------------|----------|
-| `name` | Name of the model | Yes |
-| `productionScore` | Total production score achieved | Yes |
-| `milestones` | Number of milestones reached | Yes |
-| `automationMilestones` | Number of automation milestones reached | Yes |
-| `labTasksSuccessRate` | Percentage of lab tasks successfully completed | Yes |
-| `mostComplexItem` | Most complex item produced | Yes |
-| `submittedBy` | Your name or identifier | Yes |
-| `submissionDate` | Date of submission (YYYY-MM-DD) | Yes |
+| Field | Description |
+|-------|-------------|
+| `name` | Name of the model
+| `productionScore` | Total production score achieved
+| `milestones` | Number of milestones reached
+| `automationMilestones` | Number of automation milestones reached
+| `labTasksSuccessRate` | Percentage of lab tasks successfully completed
+| `mostComplexItem` | Most complex item produced
+| `submittedBy` | Your name or identifier
+| `submissionDate` | Date of submission (YYYY-MM-DD)
 
 ## How It Works
 

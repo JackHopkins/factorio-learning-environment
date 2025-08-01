@@ -54,7 +54,8 @@ dependencies = [
     "aiohttp>=3.8.0",
     "uvicorn>=0.15.0",
     "pytest>=8.4.1",
-    "memoization>=0.4.0"
+    "memoization>=0.4.0",
+    "huggingface-hub>=0.34.3",
 ]
 
 [project.optional-dependencies]

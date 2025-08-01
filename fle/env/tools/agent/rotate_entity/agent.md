@@ -11,10 +11,12 @@ rotate_entity(entity: Entity, direction: Direction = Direction.UP) -> Entity
 Returns the rotated Entity object.
 
 ### Parameters
+
 - `entity`: Entity to rotate
 - `direction`: Target direction (UP/DOWN/LEFT/RIGHT)
 
 ### Examples
+
 ```python
 # Rotating inserters - Inserter rotation affects pickup/drop positions
 # Important: By default inserters take from entities they are placed next to
@@ -28,7 +30,9 @@ print(f"Rotated inserter: pickup={inserter.pickup_position}, drop={inserter.drop
 ## Entity-Specific Behaviors
 
 ### 1. Assembling Machines, Oil refineris and Chemical Cplants
+
 Always need to set the recipe for assembling machines, oil refineries and chemical plants as their behaviour differs with recipes
+
 ```python
 # Must set recipe before rotating
 assembler = place_entity(Prototype.AssemblingMachine1, position=pos)

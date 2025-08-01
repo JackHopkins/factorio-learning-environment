@@ -14,10 +14,12 @@ pickup_entity(
 Returns True if pickup was successful.
 
 ### Parameters
+
 - `entity`: Entity/Prototype to pickup
 - `position`: Optional position to pickup from (required for Prototypes)
 
 ### Examples
+
 ```python
 # Pickup using prototype and position
 pickup_entity(Prototype.Boiler, Position(x=0, y=0))
@@ -39,6 +41,7 @@ pickup_entity(belt_group)  # Picks up all belts in group
 ## Best Practices
 
 1. **Group Cleanup**
+
 ```python
 def cleanup_belt_line(belt_group):
     try:

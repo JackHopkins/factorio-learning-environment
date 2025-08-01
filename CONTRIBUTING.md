@@ -23,7 +23,7 @@ We welcome contributions to the Factorio Learning Environment! Here's how you ca
 
 1. Ensure your code passes all existing tests
 2. Add tests for new functionality
-3. Update documentation as needed
+3. If documentation changes were made, run: `npx prettier --write **/*.md`
 4. Link any related issues in your pull request description
 5. Wait for review from maintainers
 
@@ -55,6 +55,7 @@ When implementing new agents:
 6. Provide baseline performance metrics on standard tasks (128 steps) and open-world scenarios (3,000 steps).
 
 Key considerations:
+
 - Handle context management for long episodes
 - Implement proper error handling and recovery
 - Document any assumptions about the environment
@@ -83,6 +84,7 @@ When adding new evaluation tasks:
 6. Add test cases in `eval/tasks/tests/`
 
 Best practices:
+
 - Design clear, measurable success criteria
 - Include progressive difficulty levels
 - Provide example solutions

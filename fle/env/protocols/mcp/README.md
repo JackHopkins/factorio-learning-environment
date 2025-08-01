@@ -74,6 +74,7 @@ The server provides the following tools:
 ### Version Control
 
 Tools for managing game state versions (in `version_control.py`):
+
 - `commit(tag_name, message)` - Tag the current state
 - `restore(ref)` - Restore to a previous tagged state
 - `undo()` - Undo the last operation
@@ -97,7 +98,7 @@ These tools help agents explore and understand the codebase:
 
 - `ls(path, pattern)` - List tools and directories in the tools path
 - `cat(file_path)` - Display the contents of a file
-- `find(path, name_pattern, content_pattern, type_filter, max_depth)` - Find files or directories 
+- `find(path, name_pattern, content_pattern, type_filter, max_depth)` - Find files or directories
 - `grep(pattern, path, recursive, case_sensitive, line_numbers)` - Search for a pattern in files
 - `which(command)` - Find the implementation file for a specific Factorio tool
 - `head(file_path, lines)` - Display the first lines of a file

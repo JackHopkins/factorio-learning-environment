@@ -35,16 +35,16 @@ To submit new model results to the leaderboard:
 
 ## Fields Explanation
 
-| Field | Description | Required |
-|-------|-------------|----------|
-| `model` | Name of the model | Yes |
-| `productionScore` | Total production score achieved | Yes |
-| `milestones` | Number of milestones reached | Yes |
-| `labTasksCompleted` | Number of lab tasks successfully completed | Yes |
-| `mostComplexItem` | Most complex item produced | Yes |
-| `timeToElectricDrill` | Steps until first electric drill deployed | No |
-| `submittedBy` | Your name or identifier | Yes |
-| `submissionDate` | Date of submission (YYYY-MM-DD) | Yes |
+| Field                 | Description                                | Required |
+| --------------------- | ------------------------------------------ | -------- |
+| `model`               | Name of the model                          | Yes      |
+| `productionScore`     | Total production score achieved            | Yes      |
+| `milestones`          | Number of milestones reached               | Yes      |
+| `labTasksCompleted`   | Number of lab tasks successfully completed | Yes      |
+| `mostComplexItem`     | Most complex item produced                 | Yes      |
+| `timeToElectricDrill` | Steps until first electric drill deployed  | No       |
+| `submittedBy`         | Your name or identifier                    | Yes      |
+| `submissionDate`      | Date of submission (YYYY-MM-DD)            | Yes      |
 
 ## How It Works
 
@@ -65,6 +65,7 @@ To run the leaderboard locally:
 ## Verification Process
 
 Model results go through a two-stage verification process:
+
 1. **Pending**: Results submitted via PR that haven't been reviewed
 2. **Verified**: Results that have been reviewed and merged into the main branch
 

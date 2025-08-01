@@ -5,6 +5,7 @@ This directory contains scripts and configuration files for running and managing
 ## Overview
 
 The system allows you to:
+
 - Create and manage multiple Factorio server instances using Docker
 - Automatically connect to and initialize each server instance
 - Configure server settings, ports, and resources for each instance
@@ -81,11 +82,13 @@ The `run-envs.sh` script provides a convenient way to start, stop, and manage Fa
 ### Creating Server Instances (Legacy Method)
 
 1. Generate a Docker Compose configuration:
+
 ```bash
 python create_docker_compose_config.py <number_of_instances>
 ```
 
 For example, to create 4 instances:
+
 ```bash
 python create_docker_compose_config.py 4
 ```
@@ -93,6 +96,7 @@ python create_docker_compose_config.py 4
 ### Server Configuration
 
 Each Factorio instance is configured with:
+
 - Resource limits: 1 CPU core and 1024MB memory
 - Shared scenarios directory
 - Unique UDP port for game traffic (starting at 34197)
@@ -102,11 +106,13 @@ Each Factorio instance is configured with:
 ### Server Initialization
 
 To connect to and initialize all server instances:
+
 ```bash
 python factorio_server_login.py
 ```
 
 This script will:
+
 1. Detect running Factorio containers
 2. Launch the Factorio client
 3. Automatically connect to each server from the client (necessary to initialise the game servers)
@@ -120,6 +126,7 @@ This script will:
 ## Volume Mounts
 
 The following directories are mounted in each container:
+
 - Scenarios: `../scenarios/default_lab_scenario`, `../scenarios/open_world`
 - Mods: `~/Applications/Factorio.app/Contents/Resources/mods`
 - Screenshots: `../../data/_screenshots`
@@ -134,6 +141,7 @@ The following directories are mounted in each container:
 ## Troubleshooting
 
 If you encounter issues:
+
 1. Ensure Docker is running and has sufficient resources
 2. Check container logs using `docker logs factorio_<instance_number>`
 3. Verify port availability using `netstat` or similar tools

@@ -9,6 +9,7 @@ uv build
 ```
 
 This will:
+
 1. Create the package structure
 2. Build a wheel (.whl) in the `dist/` directory
 

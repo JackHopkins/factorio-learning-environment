@@ -11,9 +11,11 @@ nearest(type: Union[Prototype, Resource]) -> Position
 The function returns a Position object with the coordinates of the nearest entity or resource.
 
 ### Parameters
+
 - `type`: Resource or Prototype to find (e.g., Resource.Coal, Resource.Water)
 
 ### Examples
+
 ```python
 # Find nearest coal
 coal_pos = nearest(Resource.Coal)
@@ -28,6 +30,7 @@ water_pos = nearest(Resource.Water)
 ## Supported Resource Types
 
 ### Basic Resources
+
 ```python
 # Ores
 nearest(Resource.Coal)
@@ -47,6 +50,7 @@ nearest(Resource.Wood)  # Finds nearest tree
 ## Important Behavior
 
 1. **Search Range**
+
 ```python
 # Searches within 500 tiles of player position
 # Will raise exception if nothing found:
@@ -59,6 +63,7 @@ except Exception as e:
 ## Common Patterns
 
 1. **Resource Collection Pattern**
+
 ```python
 def collect_resource(resource_type: Resource, amount: int):
     # Find resource

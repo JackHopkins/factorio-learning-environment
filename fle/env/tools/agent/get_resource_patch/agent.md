@@ -5,6 +5,7 @@ The `get_resource_patch` tool analyzes and returns information about resource pa
 ## Core Functionality
 
 The tool provides:
+
 - Total resource amount in a patch
 - Bounding box coordinates of the patch
 - Support for all resource types (ores, water, trees)
@@ -29,6 +30,7 @@ patch = get_resource_patch(
 ### Return Value
 
 Returns a ResourcePatch object containing:
+
 ```python
 ResourcePatch(
     name=str,              # Resource name
@@ -45,6 +47,7 @@ ResourcePatch(
 ## Resource Types
 
 ### 1. Ore Resources
+
 ```python
 # Check iron ore patch
 iron_patch = get_resource_patch(
@@ -55,6 +58,7 @@ print(f"Found {iron_patch.size} iron ore")
 ```
 
 ### 2. Water Resources
+
 ```python
 # Check water area
 water_patch = get_resource_patch(

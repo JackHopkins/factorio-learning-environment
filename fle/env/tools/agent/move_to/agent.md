@@ -24,15 +24,19 @@ new_pos = move_to(Position(x=10, y=10))
 coal_pos = nearest(Resource.Coal)
 move_to(coal_pos)
 ```
+
 ## Movement Patterns
 
 ### 1. Resource Navigation
+
 ```python
 move_to(nearest(IronOre))
 ```
 
 ### 2. Move before placing
+
 always need to move to the position where you need to place the entity
+
 ```python
 move_to(Position(x = 0, y = 0))
 chest = place_entity(Prototypw.WoodenChest, position = Position(x = 0, y = 0))

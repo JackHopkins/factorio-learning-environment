@@ -26,9 +26,10 @@ The function returns a list of Entity objects that match the specified criteria.
 - `type`: Entity type category to search for (optional)
 
 **Search Behavior**
-   - If no prototype/name/type is specified, returns all entities within radius
-   - Returns empty list if no matching entities are found
-   - Maximum radius is limited to 50 tiles for performance reasons
+
+- If no prototype/name/type is specified, returns all entities within radius
+- Returns empty list if no matching entities are found
+- Maximum radius is limited to 50 tiles for performance reasons
 
 ## Examples
 
@@ -47,7 +48,6 @@ if furnaces:
     print(f"Closest furnace is at {closest_furnace.position}")
 ```
 
-
 ## Common Pitfalls
 
 1. **Performance Considerations**
@@ -60,6 +60,7 @@ if furnaces:
 ## Best Practices
 
 1. **Efficient Searching**
+
 ```python
 # Instead of searching the entire map:
 def find_resource_patch(resource_type: Prototype):
@@ -68,19 +69,20 @@ def find_resource_patch(resource_type: Prototype):
         resources = get_entities(prototype=resource_type, radius=radius)
         if resources:
             return resources
-    
+
     # If still not found, search in different directions
     for direction in [(50, 0), (0, 50), (-50, 0), (0, -50)]:
-        pos = Position(x=player.position.x + direction[0], 
+        pos = Position(x=player.position.x + direction[0],
                        y=player.position.y + direction[1])
         resources = get_entities(prototype=resource_type, position=pos, radius=40)
         if resources:
             return resources
-    
+
     return []
 ```
 
 2. **Combining with Other Tools**
+
 ```python
 # Find and interact with all chests containing iron plates
 chests = get_entities(prototype=Prototype.IronChest)
@@ -94,7 +96,7 @@ for chest in chests:
 
 # Extract iron from the chest with the most plates
 if iron_containing_chests:
-    target_chest = max(iron_containing_chests, 
+    target_chest = max(iron_containing_chests,
                        key=lambda c: inspect_inventory(c)[Prototype.IronPlate])
     extracted = extract_item(Prototype.IronPlate, target_chest, quantity=10)
     print(f"Extracted {extracted} iron plates from chest at {target_chest.position}")

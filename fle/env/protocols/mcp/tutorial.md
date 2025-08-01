@@ -27,6 +27,7 @@ One of the most powerful features of the FLE is its built-in version control sys
 - Analyze the code that led to specific results
 
 This system is crucial for learning and experimentation as it allows you to:
+
 - Try multiple approaches to solving problems
 - Backtrack when a design doesn't work
 - Compare different strategies
@@ -40,6 +41,7 @@ The core of the FLE is the ability to write and execute Python code that interac
 ### Code Structure Overview
 
 Your Python code will typically handle:
+
 - Finding resource patches like iron ore, copper ore, coal, etc.
 - Moving to locations before interacting with the world
 - Placing entities like mining drills, furnaces, and assembling machines
@@ -136,8 +138,9 @@ You can access this code through the Unix-like tools provided in the environment
 ## Getting Started
 
 When you begin, it is wise to:
+
 1. Read a complete list of prototypes
-2. Read the API schema to understand the object model of Factorio 
+2. Read the API schema to understand the object model of Factorio
 3. Read the manuals of all tools to see how they work
 4. Write utility functions to combine the tools in useful ways
 5. Test your code by running it, and rolling back on failure to address the root issue before proceeding

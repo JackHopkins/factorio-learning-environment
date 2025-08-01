@@ -15,22 +15,25 @@ nearest_buildable(
 The function returns a BoundingBox object containing buildable area coordinates.
 
 ### Parameters
+
 - `entity`: Prototype of entity to place
 - `building_box`: BuildingBox defining required area dimensions
 - `center_position`: Position to search around
 
 ### Return Value
+
 Returns a BoundingBox with these attributes:
+
 - `left_top`: Top-left corner Position
 - `right_bottom`: Bottom-right corner Position
 - `left_bottom`: Bottom-left corner Position
 - `right_top`: Top-right corner Position
 - `center`: Center position
 
-
 ## Common Use Cases
 
 ### 1. Basic Entity Placement
+
 ```python
 # Find place for chest near the origin
 chest_box = BuildingBox(height=Prototype.WoodenChest.HEIGHT, width=Prototype.WoodenChest.WIDTH)
@@ -46,6 +49,7 @@ chest = place_entity(Prototype.WoodenChest, position=buildable_area.center)
 ```
 
 ### 2. Mining Drill Placement
+
 ```python
 # Setup mining drill on ore patch
 resource_pos = nearest(Resource.IronOre)
@@ -66,16 +70,18 @@ drill = place_entity(
     position=buildable_area.center
 )
 ```
+
 ## Common Patterns
 
 1. **Multiple Entity Placement**
-Example: Create a copper plate mining line with 3 drills with inserters for future integration
+   Example: Create a copper plate mining line with 3 drills with inserters for future integration
+
 ```python
 # log your general idea what you will do next
 print(f"I will create a single line of 3 drills to mine copper ore")
 # Find space for a line of 3 miners
 move_to(source_position)
-# define the BuildingBox for the drill. 
+# define the BuildingBox for the drill.
 # We need 3 drills so width is 3*drill.WIDTH, height is drill.HEIGHT + furnace.HEIGHT, 3 for drill, one for furnace
 building_box = BuildingBox(width = 3 * Prototype.ElectricMiningDrill.WIDTH, height = Prototype.ElectricMiningDrill.HEIGHT + Prototype.StoneFurnace.HEIGHT)
 # get the nearest buildable area around the source_position
@@ -112,6 +118,7 @@ assert inspect_inventory(entity=furnace).get(Prototype.CopperPlate, 0) > 0, f"No
 ```
 
 ## Best practices
+
 - Always use Prototype.X.WIDTH and .HEIGHT to plan the buildingboxes
 - When doing power setups or setups with inserters, ensure the buildingbox is large enough to have room for connection types
 

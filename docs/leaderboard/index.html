@@ -42,6 +42,7 @@
                 <div>Automation</div>
                 <div>Lab Success %</div>
                 <div>Complex Item</div>
+                <div>Submitted By</div>
                 <div>Date</div>
             </div>
             <div id="leaderboard-rows">
@@ -92,12 +93,13 @@
                 row.className = 'table-row';
                 row.innerHTML = `
                     <div class="rank">${index + 1}</div>
-                    <div class="model-name">${model.name}</div>
+                    <div class="name">${model.name}</div>
                     <div class="score">${model.productionScore}</div>
                     <div class="milestone">${model.milestones}</div>
                     <div class="automation">${model.automationMilestones}</div>
                     <div class="lab-rate">${model.labTasksSuccessRate}%</div>
                     <div class="complex-item">${model.mostComplexItem}</div>
+                    <div class="submitted-by">${model.submittedBy}</div>
                     <div class="date">${model.submissionDate}</div>
                 `;
                 leaderboardRows.appendChild(row);

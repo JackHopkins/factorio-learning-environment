@@ -98,7 +98,7 @@ body {
 
 .table-header {
     display: grid;
-    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
     gap: 15px;
     padding: 20px;
     background: #f8f9fa;
@@ -110,7 +110,7 @@ body {
 
 .table-row {
     display: grid;
-    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
     gap: 15px;
     padding: 20px;
     background: white;
@@ -131,46 +131,43 @@ body {
     font-size: 1.2rem;
 }
 
-.model-name {
+.name {
     font-weight: 600;
     color: #333;
 }
 
-.score {
-    font-weight: 600;
-    color: #28a745;
+.score, .milestone, .automation, .lab-rate, .complex-item, .submitted-by, .date {
+    font-weight: 500;
     font-family: monospace;
+    font-size: 0.9rem;
+}
+
+.score {
+    color: #28a745;
 }
 
 .milestone {
-    font-weight: 500;
     color: #007bff;
-    font-family: monospace;
 }
 
 .automation {
-    font-weight: 500;
     color: #6f42c1;
-    font-family: monospace;
 }
 
 .lab-rate {
-    font-weight: 500;
     color: #fd7e14;
-    font-family: monospace;
 }
 
 .complex-item {
-    font-weight: 500;
     color: #e83e8c;
-    font-size: 0.9rem;
-    font-family: monospace;
+}
+
+.submitted-by {
+    color: #495057;
 }
 
 .date {
-    font-size: 0.85rem;
     color: #666;
-    font-family: monospace;
 }
 
 .footer {

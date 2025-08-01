@@ -3,10 +3,9 @@ import asyncio
 import json
 import multiprocessing
 import os
-from pathlib import Path
 
 import gym
-import fle
+import importlib.resources
 from dotenv import load_dotenv
 from fle.env.gym_env.config import GymEvalConfig, GymRunConfig
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
@@ -82,10 +81,8 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
 
 async def main():
     parser = argparse.ArgumentParser()
-    package_dir = Path(fle.__file__).parent
-    default_config = (
-        package_dir / "eval" / "algorithms" / "independent" / "gym_run_config.json"
-    )
+    pkg = importlib.resources.files("fle")
+    default_config = pkg / "eval" / "algorithms" / "independent" / "gym_run_config.json"
     parser.add_argument(
         "--run_config",
         type=str,

@@ -13,10 +13,9 @@ def fle_init():
         return
     try:
         pkg = importlib.resources.files("fle")
-        env_template = pkg / ".example.env"
-        with importlib.resources.as_file(env_template) as env_path:
-            shutil.copy(env_path, ".env")
-            print("Created .env file - please edit with your API keys and DB config")
+        env_path = pkg / ".example.env"
+        shutil.copy(str(env_path), ".env")
+        print("Created .env file - please edit with your API keys and DB config")
     except Exception as e:
         print(f"Error during init: {e}", file=sys.stderr)
         sys.exit(1)

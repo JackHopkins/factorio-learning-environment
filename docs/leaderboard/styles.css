@@ -140,33 +140,6 @@ body {
     font-weight: 500;
     font-family: monospace;
     font-size: 0.9rem;
-}
-
-.score {
-    color: #28a745;
-}
-
-.milestone {
-    color: #007bff;
-}
-
-.automation {
-    color: #6f42c1;
-}
-
-.lab-rate {
-    color: #fd7e14;
-}
-
-.complex-item {
-    color: #e83e8c;
-}
-
-.submitted-by {
-    color: #495057;
-}
-
-.date {
     color: #666;
 }
 

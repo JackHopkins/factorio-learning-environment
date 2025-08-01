@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 import gym
+import fle
 from dotenv import load_dotenv
 from fle.env.gym_env.config import GymEvalConfig, GymRunConfig
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
@@ -81,8 +82,6 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
 
 async def main():
     parser = argparse.ArgumentParser()
-    import fle
-
     package_dir = Path(fle.__file__).parent
     default_config = (
         package_dir / "eval" / "algorithms" / "independent" / "gym_run_config.json"

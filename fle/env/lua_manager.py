@@ -28,7 +28,6 @@ class LuaScriptManager:
         if cache_scripts:
             self.init_action_checksums()
             self.game_checksums = self._get_game_checksums(rcon_client)
-
         self.tool_scripts = self.get_tools_to_load()
 
         self.lib_scripts = self.get_libs_to_load()
@@ -102,8 +101,7 @@ class LuaScriptManager:
             if name in self.game_checksums and self.game_checksums[name] == checksum:
                 return
             self.update_game_checksum(self.rcon_client, name, checksum)
-
-        self.rcon_client.send_command("/sc " + script)
+        self.rcon_client.send_command("/c " + script)
 
     def calculate_checksum(self, content: str) -> str:
         return hashlib.md5(content.encode()).hexdigest()

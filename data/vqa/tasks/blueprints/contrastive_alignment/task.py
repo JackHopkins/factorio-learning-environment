@@ -9,10 +9,10 @@ from inspect_ai.solver import system_message
 from data.vqa.common_solvers import validate_qa_answerability, generate_direction_questions, normalize_position_format, \
     attach_bounding_box, render_blueprint_image
 from data.vqa.dataset import augmented_blueprint_dataset
-from data.vqa.tasks.contrastive_alignment.solver import generate_blueprint_title_and_purpose
+from data.vqa.tasks.blueprints.contrastive_alignment.solver import generate_blueprint_title_and_purpose
 from fle.agents.data.screenshots_from_run import create_factorio_instance
 from fle.commons.models.rendered_image import RenderedImage
-from inspect_ai.solver import Solver, solver, TaskState, Generate
+from inspect_ai.solver import solver, TaskState, Generate
 
 
 @task

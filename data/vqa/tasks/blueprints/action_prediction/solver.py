@@ -1,7 +1,6 @@
 import random
-from inspect_ai.model import ChatMessageUser
 from inspect_ai.solver import Solver, solver, TaskState, Generate
-from ...templates import Templates
+from ....templates import Templates
 
 
 @solver

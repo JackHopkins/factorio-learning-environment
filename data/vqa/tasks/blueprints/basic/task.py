@@ -1,25 +1,10 @@
-from typing import List
-from inspect_ai import task, Task
-from inspect_ai.solver import system_message
-
-from data.vqa.dataset import raw_blueprint_dataset, augmented_blueprint_dataset, augmented_blueprint_dataset_with_chunks
-from data.vqa.tasks.basic.solver import generate_entity_name_questions, generate_position_questions, \
-    generate_counting_questions
-from data.vqa.common_solvers import validate_qa_answerability, generate_direction_questions, normalize_position_format, \
-    attach_bounding_box, render_blueprint_image
+from data.vqa.dataset import augmented_blueprint_dataset_with_chunks
 
 # task.py - Refactored into separate task files
 
-from typing import List
 from inspect_ai import task, Task
 from inspect_ai.solver import system_message
 
-from data.vqa.dataset import raw_blueprint_dataset, augmented_blueprint_dataset
-from data.vqa.tasks.basic.solver import (
-    generate_entity_name_questions,
-    generate_position_questions,
-    generate_counting_questions
-)
 from data.vqa.common_solvers import (
     validate_qa_answerability,
     generate_direction_questions,
@@ -27,13 +12,18 @@ from data.vqa.common_solvers import (
     attach_bounding_box,
     render_blueprint_image
 )
-
-# Main tasks module - imports all task definitions from subdirectories
-from inspect_ai import eval
-
+from data.vqa.dataset import augmented_blueprint_dataset_with_chunks
 # Import all tasks from the task modules
 from data.vqa.tasks import *
-from data.vqa.hook import *
+from data.vqa.tasks.blueprints.basic.solver import (
+    generate_entity_name_questions,
+    generate_position_questions,
+    generate_counting_questions
+)
+
+
+# task.py - Refactored into separate task files
+# Main tasks module - imports all task definitions from subdirectories
 
 
 # ============= ENTITY NAME TASKS =============
@@ -236,5 +226,5 @@ if __name__ == "__main__":
         tasks=multiple_choice_tasks,  # Choose which task set to run
         model=model,
         limit=2,
-        log_dir="../../logs/multiple_choice_tasks"
+        log_dir="../../../logs"
     )

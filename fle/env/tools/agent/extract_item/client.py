@@ -1,7 +1,6 @@
 from typing import Union
 
 from fle.env.entities import Position, Entity, PlaceholderEntity
-from fle.env.instance import NONE
 from fle.env.game_types import Prototype
 from fle.env.tools import Tool
 
@@ -27,7 +26,7 @@ class ExtractItem(Tool):
         :example extract_item(Prototype.CopperWire, stone_furnace, 5)
         :return The number of items extracted.
         """
-        source_name = NONE
+        source_name = None
         if isinstance(source, Position):
             x, y = self.get_position(source)
 
@@ -48,7 +47,7 @@ class ExtractItem(Tool):
 
         if isinstance(response, str):
             msg = self.get_error_message(response)
-            if source_name != NONE:
+            if source_name is not None:
                 raise Exception(
                     f"Could not extract {name} from {source_name} at ({x}, {y}): {msg}"
                 )

@@ -391,6 +391,7 @@ def execute_events_from_file(
 
             except Exception as e:
                 print(f"\033[91mError processing event {i + 1}: {e}\033[0m")
+                # raise e
                 continue
 
         # Wait a bit for any remaining async actions to complete
@@ -407,7 +408,8 @@ def execute_events_from_file(
     except KeyboardInterrupt:
         print("\nExecution interrupted by user")
     except Exception as e:
-        print(f"Error during execution: {e}")
+        raise e
+        # print(f"Error during execution: {e}")
     finally:
         # Cleanup logging only if it was enabled
         if enable_logging:

@@ -151,8 +151,30 @@ class InsertItem(Tool):
         if isinstance(cleaned_response, dict):
             if not isinstance(target, (BeltGroup, PipeGroup)):
                 _type = type(target)
-                prototype = Prototype._value2member_map_[(target.name, type(target))]
-                target = _type(prototype=prototype, **cleaned_response)
+
+                # Handle PlaceholderEntity specially
+                if isinstance(target, PlaceholderEntity):
+                    # Find the prototype by name
+                    matching_prototype = None
+                    for prototype in Prototype:
+                        if prototype.value[0] == target.name:
+                            matching_prototype = prototype
+                            break
+
+                    if matching_prototype is None:
+                        raise Exception(
+                            f"No matching Prototype found for PlaceholderEntity with name '{target.name}'"
+                        )
+                    entity_class = matching_prototype.value[1]
+                    target = entity_class(
+                        prototype=matching_prototype, **cleaned_response
+                    )
+                else:
+                    # Original logic for non-PlaceholderEntity
+                    prototype = Prototype._value2member_map_[
+                        (target.name, type(target))
+                    ]
+                    target = _type(prototype=prototype, **cleaned_response)
             elif isinstance(target, BeltGroup):
                 group = self.get_entities(
                     {

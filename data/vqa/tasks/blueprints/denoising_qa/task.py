@@ -1,9 +1,10 @@
 from inspect_ai import task, Task
 from inspect_ai.solver import system_message
 
-from data.vqa.dataset import raw_blueprint_dataset, augmented_blueprint_dataset
-from data.vqa.tasks.denoising_qa.solver import entity_removal_denoising, validate_denoising_qa
-from data.vqa.common_solvers import validate_qa_answerability, generate_direction_questions, normalize_position_format, attach_bounding_box
+from data.vqa.common_solvers import validate_qa_answerability, generate_direction_questions, normalize_position_format, \
+    attach_bounding_box
+from data.vqa.dataset import augmented_blueprint_dataset
+from data.vqa.tasks.blueprints.denoising_qa.solver import entity_removal_denoising, validate_denoising_qa
 
 
 @task

@@ -1,9 +1,9 @@
 from inspect_ai import task, Task
 from inspect_ai.solver import system_message
 
-from ...dataset import raw_blueprint_dataset
+from ....dataset import raw_blueprint_dataset
 from .solver import generate_action_sequence, generate_next_action_questions, generate_construction_order_questions
-from ...common_solvers import validate_qa_answerability, generate_direction_questions, normalize_position_format, attach_bounding_box
+from ....common_solvers import validate_qa_answerability, generate_direction_questions, normalize_position_format, attach_bounding_box
 
 
 @task
@@ -127,6 +127,6 @@ if __name__ == "__main__":
         tasks=[],
         model=model,
         limit=1,
-        log_dir="./logs",
+        log_dir="../../../logs",
         hooks=[VQAPairsHook()]
     )

@@ -1,18 +1,12 @@
 import json
-import random
-from typing import List, Dict, Any
-from inspect_ai import task, Task
+
 from inspect_ai.model import ChatMessageUser, ChatMessageTool
 from inspect_ai.solver import Solver, solver, TaskState, Generate
 from inspect_ai.tool import tool, ToolError
-from inspect_ai.dataset import MemoryDataset, Sample
-from inspect_ai.solver import system_message, use_tools
 from inspect_ai.util import sandbox
 
 from fle.agents.data.screenshots_from_run import create_factorio_instance
 from fle.commons.models.rendered_image import RenderedImage
-from ...dataset import raw_blueprint_dataset
-from ...templates import Templates
 
 
 @tool

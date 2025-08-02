@@ -4,14 +4,14 @@ from inspect_ai import task, Task
 from inspect_ai.solver import system_message
 
 from data.vqa.dataset import raw_blueprint_dataset
-from data.vqa.tasks.spatial_reasoning.solver import (
+from data.vqa.tasks.blueprints.spatial_reasoning.solver import (
     generate_spatial_reasoning_with_code,
     generate_spatial_context_with_code
 )
 from inspect_ai.tool import bash, python
-from data.vqa.tasks.denoising_qa.solver import entity_removal_denoising
+from data.vqa.tasks.blueprints.denoising_qa.solver import entity_removal_denoising
 from inspect_ai.solver import use_tools
-from inspect_ai.util import sandbox
+
 from data.vqa.common_solvers import validate_qa_answerability, generate_direction_questions, normalize_position_format, attach_bounding_box
 
 from data.vqa.hook import VQAPairsHook
@@ -93,7 +93,7 @@ def spatial_context_sandbox_task(qa_pairs_per_blueprint: int = 5) -> Task:
             generate_spatial_context_with_code(),
             generate_direction_questions(),
             normalize_position_format(),
-            validate_qa_answerability(),
+            #validate_qa_answerability(),
         ],
         sandbox='docker',
         scorer=None,
@@ -104,19 +104,17 @@ def spatial_context_sandbox_task(qa_pairs_per_blueprint: int = 5) -> Task:
 Example of using the spatial reasoning sandbox tasks
 """
 from inspect_ai import eval
-from data.vqa.tasks.spatial_reasoning.task import (
-    spatial_reasoning_sandbox_task,
-    spatial_context_sandbox_task
-)
 
 if __name__ == "__main__":
     # Example 1: Basic spatial reasoning with code generation
     print("Running spatial reasoning with Python code generation...")
 
+    model = ["anthropic/claude-opus-4-20250514"]
+
     results = eval(
         tasks=spatial_reasoning_sandbox_task(questions_per_blueprint=20),
         #model=["anthropic/claude-opus-4-20250514"],  # or any other model
-        model=["anthropic/claude-3-5-haiku-latest"],
+        model=model,
         limit=2,
         log_dir="../../logs",
         hooks=[VQAPairsHook()]
@@ -138,7 +136,7 @@ if __name__ == "__main__":
 
     results2 = eval(
         tasks=spatial_context_sandbox_task(qa_pairs_per_blueprint=20),
-        model=["anthropic/claude-3-5-haiku-latest"],
+        model=model,
         limit=2,
         log_dir="../../logs",
         hooks=[VQAPairsHook()]

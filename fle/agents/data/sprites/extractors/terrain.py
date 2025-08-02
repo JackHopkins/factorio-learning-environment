@@ -28,6 +28,7 @@ class TerrainSpriteExtractor:
             'water-mud': {'columns': 4, 'rows': 1, 'width': 64, 'height': 64},
             'water-green': {'columns': 4, 'rows': 1, 'width': 64, 'height': 64},
             'water-shallow': {'columns': 4, 'rows': 1, 'width': 64, 'height': 64},
+            'deepwater': {'columns': 8, 'rows': 1, 'width': 32, 'height': 32},
             'cliff-inner': {'columns': 8, 'rows': 2, 'width': 128, 'height': 256},
             'cliff-outer': {'columns': 8, 'rows': 2, 'width': 128, 'height': 256},
             'cliff-entrance': {'columns': 4, 'rows': 4, 'width': 128, 'height': 128},

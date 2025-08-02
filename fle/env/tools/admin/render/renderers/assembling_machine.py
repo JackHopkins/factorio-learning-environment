@@ -16,9 +16,7 @@ DIRECTIONS = {
 }
 
 
-def render(ent: EntityCore, grid, image_resolver: Callable) -> Optional[Image.Image]:
-    """Render arithmetic combinator with display"""
-    entity = ent.model_dump()
+def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
     """Render assembling machine with recipe icon"""
     base_image = image_resolver(entity['name'])
     if base_image is None:

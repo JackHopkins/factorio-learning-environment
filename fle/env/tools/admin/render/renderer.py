@@ -59,9 +59,6 @@ class Renderer:
         self.resources = self._normalize_positions(resources)
         self.water_tiles = self._normalize_positions(water_tiles)
 
-        self.resources = resources #data.get('resources', [])
-        self.water_tiles = water_tiles #data.get('water_tiles', [])
-
         self.entity_grid = entities_to_grid(self.entities)
         self.resource_grid = resources_to_grid(self.resources)
         
@@ -380,6 +377,14 @@ class Renderer:
             max_width = max(max_width, pos['x'] + 0.5)
             max_height = max(max_height, pos['y'] + 0.5)
 
+        # Check water tiles (they are 1x1)
+        for water_tile in self.water_tiles:
+            pos = water_tile
+            min_width = min(min_width, pos['x'] - 0.5)
+            min_height = min(min_height, pos['y'] - 0.5)
+            max_width = max(max_width, pos['x'] + 0.5)
+            max_height = max(max_height, pos['y'] + 0.5)
+
         return {
             'min_width': min_width,
             'min_height': min_height,
@@ -536,7 +541,14 @@ class Renderer:
                 self._paste_image(img, image, relative_x, relative_y, scaling)
     
     @profile_method()
-    def _render_tree_shadows(self, img: Image.Image, tree_entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:
+    def _render_tree_shadows(self,
+                             img: Image.Image,
+                             tree_entities,
+                             size: Dict,
+                             scaling: float,
+                             grid_view,
+                             image_resolver) -> None:
+
         """Render tree shadows."""
         for tree in tree_entities:
             pos = tree['position']
@@ -549,7 +561,10 @@ class Renderer:
             if renderer and hasattr(renderer, 'render_shadow'):
                 shadow_image = renderer.render_shadow(tree, grid_view, image_resolver)
                 if shadow_image:
-                    self._paste_image(img, shadow_image, relative_x, relative_y, scaling)
+                    shadow_offset_x = 20 # We need to offset tree shadows
+                    shadow_offset_y = 20 # We need to offset tree shadows
+                    self._paste_image(img, shadow_image, relative_x, relative_y, scaling,
+                                      shadow_offset_x, shadow_offset_y)
     
     @profile_method()
     def _render_trees(self, img: Image.Image, tree_entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:
@@ -666,10 +681,16 @@ class Renderer:
                 self._paste_image(img, image, relative_x, relative_y, scaling)
 
     @profile_method()
-    def _paste_image(self, img: Image.Image, sprite: Image.Image, relative_x: float, relative_y: float, scaling: float) -> None:
+    def _paste_image(self, img: Image.Image,
+                     sprite: Image.Image,
+                     relative_x: float,
+                     relative_y: float,
+                     scaling: float,
+                     offset_x: int = 0,
+                     offset_y: int = 0) -> None:
         """Paste a sprite image onto the main image at the specified position."""
-        start_x = int((relative_x * scaling + scaling / 2) - sprite.width / 2)
-        start_y = int((relative_y * scaling + scaling / 2) - sprite.height / 2)
+        start_x = int((relative_x * scaling + scaling / 2) - sprite.width / 2) + offset_x
+        start_y = int((relative_y * scaling + scaling / 2) - sprite.height / 2) + offset_y
         mask = sprite if sprite.mode == 'RGBA' else None
         img.paste(sprite, (start_x, start_y), mask)
 

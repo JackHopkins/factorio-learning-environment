@@ -20,18 +20,29 @@ class Render(Tool):
     @profile_method(include_args=True)
     def _get_map_entities(self, include_status, radius, compression_level):
         # Execute the Lua function with compression level
-        result, _, elapsed = self.execute(
-            self.player_index,
-            include_status,
-            radius,
-            compression_level,
-            return_elapsed=True
-        )
+        try:
+            result, _, elapsed = self.execute(
+                self.player_index,
+                include_status,
+                radius,
+                compression_level,
+                return_elapsed=True
+            )
 
-        # Decode the optimized format if necessary
-        decoded_result = self._decode_optimized_format(result)
 
-        return decoded_result
+            # Decode the optimized format if necessary
+            decoded_result = self._decode_optimized_format(result)
+
+            return decoded_result
+        except Exception as e:
+            result, _, elapsed = self.execute(
+                self.player_index,
+                include_status,
+                radius,
+                compression_level,
+                return_elapsed=True
+            )
+            pass
 
     @profile_method(include_args=True)
     def __call__(self,
@@ -65,7 +76,7 @@ class Render(Tool):
         if not blueprint:
             result = self._get_map_entities(include_status, radius, compression_level)
 
-            ent = self.get_entities(radius=20)
+            ent = self.get_entities(radius=32)
             # Parse the Lua dictionaries
             entities = self.parse_lua_dict(result['entities'])
 

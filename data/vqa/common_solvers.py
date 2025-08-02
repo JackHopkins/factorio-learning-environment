@@ -5,9 +5,13 @@ import re
 import random
 from inspect_ai.model import ChatMessageUser
 from inspect_ai.solver import Solver, solver, TaskState, Generate
+
+from data.vqa.blueprint_transforms import detect_direction_system
 from data.vqa.position_utils import normalize_position_references_in_qa
 from data.vqa.bounding_box_utils import calculate_blueprint_bounding_box
 from data.vqa.direction_utils import Direction
+from fle.agents.data.screenshots_from_run import create_factorio_instance
+from fle.commons.models.rendered_image import RenderedImage
 
 
 @solver
@@ -55,8 +59,11 @@ def validate_qa_answerability() -> Solver:
                 # Create validation prompt
                 validation_prompt = f"""You are validating a Visual Question Answering (VQA) pair for a Factorio blueprint analysis task.
                 
-Question: {question}
-Answer: {answer}
+Question: 
+```
+{question}
+```
+Answer: `{answer}`
 
 Please evaluate if this Q&A pair meets the following criteria:
 
@@ -73,6 +80,8 @@ Common issues to check for:
 - Questions that require game knowledge beyond what's visible
 
 If the Q&A pair has issues, provide a revised version that fixes them.
+
+If the question includes multiple choice - it is critical that you keep them!
 
 Return your response in this exact JSON format:
 ```json
@@ -246,6 +255,44 @@ def normalize_position_format() -> Solver:
 
 
 @solver
+def render_blueprint_image() -> Solver:
+    """
+    Solver that renders and saves the blueprint image once per task.
+    
+    This solver ensures that only one image is generated per blueprint,
+    preventing duplicate images when multiple solvers run on the same blueprint.
+    
+    Should be run early in the solver chain.
+    """
+    instance = create_factorio_instance()
+    
+    async def solve(state: TaskState, generate: Generate) -> TaskState:
+        # Check if image is already rendered
+        if "image" in state.metadata:
+            return state
+        
+        blueprint = state.metadata.get("blueprint", {})
+        if not blueprint:
+            return state
+        
+        # Render the image (use a copy to avoid modifying the original blueprint)
+        import copy
+        blueprint_copy = copy.deepcopy(blueprint) 
+        image: RenderedImage = instance.namespace._render(blueprint=blueprint_copy)
+        
+        # Save the image using the new folder structure
+        from data.vqa.image_utils import save_rendered_image
+        image_id = save_rendered_image(image, blueprint, state.metadata)
+        
+        # Store the image ID in metadata for other solvers to use
+        state.metadata["image"] = image_id
+        
+        return state
+    
+    return solve
+
+
+@solver
 def attach_bounding_box() -> Solver:
     """
     Solver that calculates and attaches the blueprint bounding box to metadata.
@@ -289,6 +336,7 @@ def generate_direction_questions(questions_per_blueprint: int = 2) -> Solver:
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         blueprint = state.metadata.get("blueprint", {})
         entities = blueprint.get("entities", [])
+        direction_system = detect_direction_system(blueprint)
         
         # Filter entities that have direction properties
         directional_entities = []
@@ -306,7 +354,7 @@ def generate_direction_questions(questions_per_blueprint: int = 2) -> Solver:
         for entity in directional_entities[:10]:  # Limit to first 10 for prompt length
             pos = entity.get("position", {})
             direction_val = entity.get("direction", 0)
-            direction_enum = Direction.from_value(direction_val)
+            direction_enum = Direction.from_value(direction_val, direction_system)
             entity_info.append({
                 "name": entity.get("name", "unknown"),
                 "position": f"Position(x={pos.get('x', 0)}, y={pos.get('y', 0)})",
@@ -365,7 +413,7 @@ Return your response as a JSON array of question-answer pairs:
                         answer = qa["answer"]
                         if not answer.startswith("Direction."):
                             # Try to convert numeric or string directions to Direction enum
-                            direction = Direction.from_value(answer)
+                            direction = Direction.from_value(answer, direction_system)
                             if direction:
                                 qa["answer"] = f"Direction.{direction.name}"
                         

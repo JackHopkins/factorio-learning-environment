@@ -51,7 +51,17 @@ def entity_removal_denoising(qa_pairs_per_blueprint: int = 5) -> Solver:
             entity_name = removed_entity.get("name", "unknown")
 
             # Generate a question about the missing entity using template
-            question = f"Name the missing entity at: Position(x={position['x']}, y={position['y']})"
+            question_prompt = Templates.denoising_question(
+                position=position,
+                entity_name=entity_name
+            )
+
+            state.messages = [ChatMessageUser(content=question_prompt)]
+            question_response = await generate(state)
+            question = question_response.output.completion.strip("\"")
+
+            if not question:
+                continue
 
             image: RenderedImage = instance.namespace._render(blueprint=modified_blueprint)
             from data.vqa.image_utils import save_rendered_image
@@ -78,6 +88,56 @@ def entity_removal_denoising(qa_pairs_per_blueprint: int = 5) -> Solver:
         # Store all QA pairs in metadata
         state.metadata["qa_pairs"] = qa_pairs
         state.metadata["num_qa_pairs"] = len(qa_pairs)
+
+        return state
+
+    return solve
+
+
+@solver
+def validate_denoising_qa() -> Solver:
+    """
+    Solver that validates if another model can answer the denoising questions correctly.
+    This should be run after entity_removal_denoising.
+    """
+
+    async def solve(state: TaskState, generate: Generate) -> TaskState:
+        qa_pairs = state.metadata.get("qa_pairs", [])
+        if not qa_pairs:
+            state.metadata["error"] = "No QA pairs found"
+            return state
+
+        validated_pairs = []
+
+        for qa_pair in qa_pairs:
+            # Prepare validation prompt using template
+            validation_prompt = Templates.denoising_validation(
+                modified_blueprint=qa_pair['modified_blueprint'],
+                question=qa_pair['question']
+            )
+
+            # Clear messages and ask the validation model
+            state.messages = [ChatMessageUser(content=validation_prompt)]
+
+            validation_response = await generate(state)
+            predicted_answer = validation_response.output.completion.strip().lower()
+
+            # Check if the answer is correct
+            correct_answer = qa_pair['answer'].lower()
+            is_correct = correct_answer in predicted_answer or predicted_answer in correct_answer
+
+            # Add validation result to QA pair
+            validated_qa = qa_pair.copy()
+            validated_qa["validation_result"] = {
+                "predicted": predicted_answer,
+                "correct": correct_answer,
+                "is_correct": is_correct
+            }
+
+            validated_pairs.append(validated_qa)
+
+        state.metadata["qa_pairs"] = validated_pairs
+        state.metadata["validation_complete"] = True
 
         return state
 

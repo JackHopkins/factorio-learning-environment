@@ -46,6 +46,9 @@ class VQAPairsSerializer:
             # Spatial reasoning tasks
             ("spatial_questions", self._normalize_spatial_qa),
 
+            # Spatial reasoning tasks
+            ("contrastive_alignment", self._contrastive_alignment),
+
             # State prediction tasks
             ("state_questions", self._normalize_state_qa),
             ("inventory_questions", self._normalize_inventory_qa),
@@ -77,7 +80,9 @@ class VQAPairsSerializer:
         return qa_pairs
 
     def _add_global_metadata(self, normalized: Dict[str, Any], metadata: Dict) -> None:
-        """Add global metadata (bounding box, blueprint center, etc.) to a normalized QA pair."""
+        """
+        Add global metadata (bounding box, blueprint center, rotation, etc.) to a normalized QA pair.
+        """
         
         # Add bounding box if present
         if "bounding_box" in metadata:
@@ -86,6 +91,16 @@ class VQAPairsSerializer:
         # Add blueprint center if present  
         if "blueprint_center" in metadata:
             normalized["blueprint_center"] = metadata["blueprint_center"]
+        
+        # Add rotation information if present
+        if "rotation" in metadata:
+            normalized["rotation"] = metadata["rotation"]
+            
+        if "rotation_degrees" in metadata:
+            normalized["rotation_degrees"] = metadata["rotation_degrees"]
+            
+        if "original_filename" in metadata:
+            normalized["original_filename"] = metadata["original_filename"]
 
     def _normalize_basic_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
         """Normalize basic QA pairs (entity name/position questions)."""
@@ -164,6 +179,20 @@ class VQAPairsSerializer:
             "nearby_entities": qa.get("nearby_entities", []),
         }
         
+        # Add global metadata
+        self._add_global_metadata(normalized, metadata)
+        return normalized
+
+    def _contrastive_alignment(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
+
+        normalized = {
+            "task_type": "contrastive_alignment",
+            "question": qa.get("question", ""),
+            "answer": qa.get("answer", ""),
+            "image_id": metadata.get("image", ""),
+            "blueprint_file": metadata.get("filename", ""),
+        }
+
         # Add global metadata
         self._add_global_metadata(normalized, metadata)
         return normalized
@@ -319,14 +348,15 @@ class VQAPairsSerializer:
         filename = f"{task_name}_{timestamp}.jsonl"
         filepath = self.output_dir / filename
 
-        with open(filepath, 'w') as f:
-            for qa_pair in qa_pairs:
-                # Add metadata
-                qa_pair["timestamp"] = timestamp
-                qa_pair["task_name"] = task_name
+        if qa_pairs:
+            with open(filepath, 'w') as f:
+                for qa_pair in qa_pairs:
+                    # Add metadata
+                    qa_pair["timestamp"] = timestamp
+                    qa_pair["task_name"] = task_name
 
-                # Write as JSONL
-                f.write(json.dumps(qa_pair) + '\n')
+                    # Write as JSONL
+                    f.write(json.dumps(qa_pair) + '\n')
 
         return filepath
 
@@ -434,13 +464,3 @@ class VQAPairsHook(Hooks):
         print(f"Statistics: {json.dumps(stats, indent=2)}")
 
         return log
-
-    # def __call__(self, log: EvalLog):
-    #     """Called after evaluation completes."""
-    #     filepath = self.serializer.save_from_eval_log(log)
-    #     stats = self.serializer.get_statistics(filepath)
-    #
-    #     print(f"\nVQA Pairs saved to: {filepath}")
-    #     print(f"Statistics: {json.dumps(stats, indent=2)}")
-    #
-    #     return log

@@ -41,19 +41,29 @@ def get_blueprint_name(blueprint: Dict[str, Any], metadata: Dict[str, Any]) -> s
     return clean_name
 
 
-def generate_variant_hash(blueprint: Dict[str, Any], modification_info: str = "") -> str:
+def generate_variant_hash(blueprint: Dict[str, Any], modification_info: str = "", 
+                         metadata: Dict[str, Any] = None) -> str:
     """
     Generate a hash representing this specific variant of the blueprint.
     
     Args:
         blueprint: Blueprint dictionary
         modification_info: Additional info about modifications (for denoising, etc.)
+        metadata: Metadata that may contain rotation info
         
     Returns:
         Short hash string for this variant
     """
     # Create a string representing this specific variant
-    variant_string = str(blueprint) + modification_info
+    variant_components = [str(blueprint), modification_info]
+    
+    # Include rotation information if present
+    if metadata:
+        rotation = metadata.get("rotation", "")
+        rotation_degrees = metadata.get("rotation_degrees", "")
+        variant_components.extend([rotation, str(rotation_degrees)])
+    
+    variant_string = "|".join(variant_components)
     
     # Generate a shorter, more readable hash
     hash_object = hashlib.md5(variant_string.encode())
@@ -77,16 +87,23 @@ def generate_image_path_and_id(blueprint: Dict[str, Any], metadata: Dict[str, An
         - image_id: ID to use in metadata (relative path from base_dir)
     """
     blueprint_name = get_blueprint_name(blueprint, metadata)
-    variant_hash = generate_variant_hash(blueprint, modification_info)
+    variant_hash = generate_variant_hash(blueprint, modification_info, metadata)
+    
+    # Add rotation prefix to filename
+
+    if "flip_suffix" in metadata:
+        flip_prefix = metadata["flip_suffix"]+"_"
+    else:
+        flip_prefix = ""
     
     # Create the folder structure
     folder_path = Path(base_dir) / blueprint_name
     
     # Create the image ID (relative path from base_dir for metadata)
-    image_id = f"{blueprint_name}/{variant_hash}"
+    image_id = f"{blueprint_name}/{flip_prefix}{variant_hash}"
     
-    # Create the full file path
-    file_path = folder_path / f"{variant_hash}.jpg"
+    # Create the full file path with rotation prefix
+    file_path = folder_path / f"{flip_prefix}{variant_hash}.jpg"
     
     return str(file_path), image_id
 

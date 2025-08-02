@@ -3,6 +3,8 @@
 import enum
 from typing import Union, Optional
 
+from data.vqa.blueprint_transforms import DirectionSystem
+
 
 class Direction(enum.Enum):
     """Direction enum matching Factorio's internal direction system."""
@@ -38,14 +40,25 @@ class Direction(enum.Enum):
         return cls(direction * 2)
     
     @classmethod
-    def from_value(cls, value: Union[int, str]) -> Optional['Direction']:
+    def from_value(cls, v: Union[int, str], direction_system: DirectionSystem) -> Optional['Direction']:
         """Convert a value (int or string) to Direction enum."""
+        value = v
+
         if isinstance(value, int):
-            # Handle both full values (0,2,4,6) and Factorio values (0,1,2,3)
-            if value in [0, 2, 4, 6]:
+            if direction_system == DirectionSystem.NEW_SYSTEM:
+                if v == 0:
+                    return cls.NORTH
+                elif v == 4:
+                    return cls.EAST
+                elif v == 8:
+                    return cls.SOUTH
+                else:
+                    return cls.WEST
+            elif value in [0, 2, 4, 6]:
                 return cls(value)
             elif value in [0, 1, 2, 3]:
                 return cls.from_factorio_direction(value)
+
         elif isinstance(value, str):
             # Handle string names
             value_upper = value.upper()
@@ -77,7 +90,7 @@ class Direction(enum.Enum):
             return "left"
 
 
-def convert_numeric_direction(direction_value: Union[int, float, str]) -> str:
+def convert_numeric_direction(direction_value: Union[int, float, str], direction_system) -> str:
     """
     Convert numeric direction to compass string.
     
@@ -88,7 +101,7 @@ def convert_numeric_direction(direction_value: Union[int, float, str]) -> str:
         Compass direction string (north/east/south/west)
     """
     if isinstance(direction_value, (int, float)):
-        direction = Direction.from_value(int(direction_value))
+        direction = Direction.from_value(int(direction_value), direction_system)
         if direction:
             return direction.to_compass_string()
     return str(direction_value)

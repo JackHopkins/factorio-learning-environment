@@ -9,7 +9,7 @@ from data.vqa.tasks.spatial_reasoning.solver import (
     generate_spatial_context_with_code
 )
 from inspect_ai.tool import bash, python
-from data.vqa.tasks.denoising.solver import entity_removal_denoising
+from data.vqa.tasks.denoising_qa.solver import entity_removal_denoising
 from inspect_ai.solver import use_tools
 from inspect_ai.util import sandbox
 from data.vqa.common_solvers import validate_qa_answerability, generate_direction_questions, normalize_position_format, attach_bounding_box
@@ -117,8 +117,8 @@ if __name__ == "__main__":
         tasks=spatial_reasoning_sandbox_task(questions_per_blueprint=20),
         #model=["anthropic/claude-opus-4-20250514"],  # or any other model
         model=["anthropic/claude-3-5-haiku-latest"],
-        limit=2,  # Process 3 blueprints for testing
-        log_dir="../../logs/spatial_sandbox",
+        limit=2,
+        log_dir="../../logs",
         hooks=[VQAPairsHook()]
     )
 
@@ -140,7 +140,7 @@ if __name__ == "__main__":
         tasks=spatial_context_sandbox_task(qa_pairs_per_blueprint=20),
         model=["anthropic/claude-3-5-haiku-latest"],
         limit=2,
-        log_dir="../../logs/spatial_context_sandbox",
+        log_dir="../../logs",
         hooks=[VQAPairsHook()]
     )
 

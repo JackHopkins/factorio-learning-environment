@@ -1,5 +1,9 @@
 -- Add this function to analyze cliff neighborhoods
 function analyze_cliff_orientation(entity, surface)
+    if not entity or not entity.valid then
+        return "west-to-east"
+    end
+
     local pos = entity.position
 
     -- Check for cliff neighbors in 8 directions
@@ -18,6 +22,9 @@ function analyze_cliff_orientation(entity, surface)
     -- Track which positions we've already confirmed as having cliffs
     local checked_positions = {}
 
+    -- Store the entity's unit number for comparison
+    local current_unit_number = entity.valid and entity.unit_number or nil
+
     for _, dir in ipairs(directions) do
         local check_pos = {x = pos.x + dir.dx*2, y = pos.y + dir.dy*2}
         local pos_key = check_pos.x .. "," .. check_pos.y
@@ -28,22 +35,36 @@ function analyze_cliff_orientation(entity, surface)
                 left_top = {x = check_pos.x - 0.1, y = check_pos.y - 0.1},
                 right_bottom = {x = check_pos.x + 0.1, y = check_pos.y + 0.1}
             }
-            local found_cliffs = surface.find_entities_filtered{
-                area = area,
-                type = "cliff"
-            }
 
-            -- Check if any of the found cliffs are NOT the current entity
-            local has_neighbor = false
-            for _, cliff in ipairs(found_cliffs) do
-                if cliff.unit_number ~= entity.unit_number then
-                    has_neighbor = true
-                    break
+            -- Use pcall to safely find entities
+            local find_success, found_cliffs = pcall(function()
+                return surface.find_entities_filtered{
+                    area = area,
+                    type = "cliff"
+                }
+            end)
+
+            if find_success and found_cliffs then
+                -- Check if any of the found cliffs are NOT the current entity
+                local has_neighbor = false
+                for _, cliff in ipairs(found_cliffs) do
+                    -- Use pcall to safely check validity and unit_number
+                    local check_success, is_different = pcall(function()
+                        return cliff.valid and cliff.unit_number ~= current_unit_number
+                    end)
+
+                    if check_success and is_different then
+                        has_neighbor = true
+                        break
+                    end
                 end
-            end
 
-            neighbors[dir.name] = has_neighbor
-            checked_positions[pos_key] = has_neighbor
+                neighbors[dir.name] = has_neighbor
+                checked_positions[pos_key] = has_neighbor
+            else
+                neighbors[dir.name] = false
+                checked_positions[pos_key] = false
+            end
         else
             -- Use the cached result
             neighbors[dir.name] = checked_positions[pos_key]
@@ -166,7 +187,13 @@ global.actions.render = function(player_index, include_status, radius, compressi
     }
 
     for _, entity in pairs(entities) do
-        if entity.valid and not resource_names[entity.name] then
+        -- Use pcall to safely access entity properties
+        local success, entity_data = pcall(function()
+            if not entity.valid then
+                return nil
+            end
+
+            -- Collect all data in one protected call
             local data = {
                 name = "\""..entity.name.."\"",
                 position = {
@@ -174,8 +201,15 @@ global.actions.render = function(player_index, include_status, radius, compressi
                     y = entity.position.y
                 },
                 direction = entity.direction or 0,
-                orientation = entity.orientation or 0
+                orientation = entity.orientation or 0,
+                -- Store validity check result
+                valid = entity.valid
             }
+
+            -- Only access other properties if still valid
+            if not entity.valid then
+                return nil
+            end
 
             if entity.type == 'underground-belt' then
                 if entity.belt_to_ground_type then
@@ -183,8 +217,8 @@ global.actions.render = function(player_index, include_status, radius, compressi
                 end
             end
 
-            -- Enhanced cliff handling
-            if entity.type == 'cliff' then
+            -- Enhanced cliff handling with validity check
+            if entity.type == 'cliff' and entity.valid then
                 -- First try to get the actual cliff orientation
                 if entity.cliff_orientation then
                     data.cliff_orientation = "\""..entity.cliff_orientation.."\""
@@ -196,11 +230,18 @@ global.actions.render = function(player_index, include_status, radius, compressi
                 end
             end
 
-            if include_status and entity.status then
+            if include_status and entity.status and entity.valid then
                 data.status = entity.status
             end
 
-            table.insert(entity_data, data)
+            return data
+        end)
+
+        -- Only add the entity data if the pcall succeeded and returned valid data
+        if success and entity_data and entity_data.valid then
+            -- Remove the temporary valid field
+            entity_data.valid = nil
+            table.insert(entity_data, entity_data)
         end
     end
 
@@ -303,8 +344,8 @@ global.actions.render = function(player_index, include_status, radius, compressi
 
         return {
             entities = entity_data,
-            water_binary = water_binary,  -- URL-safe Base64 encoded binary data
-            resources_binary = resources_binary,  -- URL-safe Base64 encoded binary data
+            water_binary = "\""..water_binary.."\"",  -- URL-safe Base64 encoded binary data
+            resources_binary = "\""..resources_binary.."\"",  -- URL-safe Base64 encoded binary data
             -- Include metadata for decoding
             meta = {
                 area = area,

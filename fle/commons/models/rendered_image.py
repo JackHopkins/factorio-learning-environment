@@ -10,9 +10,9 @@ class RenderedImage:
     def __init__(self, image: Image.Image):
         self.image = image
 
-    def show(self):
+    def show(self, *args, **kwargs):
         """Display the image (works in IDEs)"""
-        self.image.show()
+        self.image.show(*args, **kwargs)
 
     def save(self, path: str):
         """Save the image to a file"""

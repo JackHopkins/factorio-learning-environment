@@ -1,6 +1,6 @@
 services:
   factorio_0:
-    command: /opt/factorio/bin/x64/factorio --start-server-load-scenario default_lab_scenario
+    command: /opt/factorio/bin/x64/factorio --start-server-load-scenario open_world
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
       /opt/factorio/config/map-gen-settings.json --map-settings /opt/factorio/config/map-settings.json
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015

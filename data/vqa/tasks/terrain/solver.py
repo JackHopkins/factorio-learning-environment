@@ -17,16 +17,28 @@ def generate_terrain_questions(multiple_choice: bool = False) -> Solver:
         instance.rcon_client.send_command(request)
         instance.rcon_client.send_command(f'/c game.player.surface.force_generate_chunk_requests()')
         instance.namespace.move_to(Position(x=x*64, y=y*64))
-        nearest = instance.namespace.nearest(random.choice([Resource.IronOre,
-                                                            Resource.Water,
-                                                            Resource.Stone,
-                                                            Resource.CrudeOil,
-                                                            Resource.CopperOre,
-                                                            Resource.Coal,
-                                                            Resource.Wood]))
+        nearest = None
+        attempt = 0
+        bag = [Resource.IronOre,
+               Resource.Water,
+               Resource.Stone,
+               Resource.CrudeOil,
+               Resource.CopperOre,
+               Resource.Coal,
+               Resource.Wood]
+        bag = [Resource.Wood]
 
-        instance.namespace.move_to(nearest)
-        print("nearest:", nearest)
+        while nearest is None and bag:
+            choice = random.choice(bag)
+            try:
+                nearest = instance.namespace.nearest(choice)
+                instance.namespace.move_to(nearest)
+                print("nearest:", nearest)
+            except Exception as e:
+                attempt += 1
+                bag.remove(choice)
+                continue
+
 
         try:
             instance.namespace._render().show()

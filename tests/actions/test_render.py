@@ -4,6 +4,8 @@ from time import sleep
 
 import pytest
 
+from data.vqa.blueprint_transforms import flip_blueprint, FlipType
+from fle.env import Direction
 from fle.env.entities import Position, Layer
 from fle.env.game_types import Prototype
 from fle.env.tools.admin.render.performance_tools import start_profiling, stop_profiling_and_report
@@ -21,7 +23,7 @@ def game(instance):
         "pipe": 30,
         "transport-belt": 80,
         "underground-belt": 30,
-        'splitter': 1,
+        'splitter': 4,
         'lab': 1,
         'coal': 10,
         'iron-ore': 200,
@@ -40,6 +42,31 @@ def test_blueprint_render(game):
     json_files = list(blueprints_path.glob("*.json"))
 
     # Load the JSON file
+    for json_file in json_files:
+        with open(json_file, 'r') as f:
+            blueprint_data = json.load(f)
+
+            if 'label' in blueprint_data and blueprint_data['label'] == '11_10_balancer_red_blue':
+                #game._render(blueprint=rotate_blueprint(blueprint_data, rotation=Rotation.EAST)).show(title="east")
+                #game._render(blueprint=rotate_blueprint(blueprint_data, rotation=Rotation.WEST)).show(title="west")
+
+                game._render(blueprint=blueprint_data).show(title="north")
+
+                h_flipped = flip_blueprint(blueprint_data, FlipType.VERTICAL)
+                game._render(blueprint=h_flipped).show(title="north")
+
+                pass
+    pass
+
+def test_blueprint_render2(game):
+    #image = game._render(position=Position(x=0, y=5), layers=Layer.ALL)
+    #image.show()
+
+    # Find all JSON files
+    blueprints_path = Path("/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/.fle/blueprints")
+    json_files = list(blueprints_path.glob("*.json"))
+
+    # Load the JSON file
     with open(json_files[0], 'r') as f:
         blueprint_data = json.load(f)
 
@@ -47,8 +74,6 @@ def test_blueprint_render(game):
             image = game._render(blueprint=blueprint_data)
             image.show()
     pass
-
-
 
 def test_basic_render(game):
     # Start profiling
@@ -63,7 +88,10 @@ def test_basic_render(game):
     entity = game.place_entity(Prototype.BurnerInserter, position=chest.position.above())
     game.insert_item(Prototype.Coal, entity, 10)
 
-    game.place_entity(Prototype.Splitter, position=Position(x=5, y=0))
+    game.place_entity(Prototype.Splitter, direction=Direction.UP, position=Position(x=0, y=-5))
+    game.place_entity(Prototype.Splitter, direction=Direction.LEFT, position=Position(x=-5, y=0))
+    game.place_entity(Prototype.Splitter, direction=Direction.DOWN, position=Position(x=0, y=5))
+    game.place_entity(Prototype.Splitter, direction=Direction.RIGHT, position=Position(x=5, y=0))
 
     game.place_entity(Prototype.Lab, position=Position(x=10, y=0))
 

@@ -36,9 +36,9 @@ COMBINATOR_TO_NORMAL = {
 }
 
 
-def render(ent: EntityCore, grid, image_resolver: Callable) -> Optional[Image.Image]:
+def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
     """Render arithmetic combinator with display"""
-    entity = ent.model_dump()
+    #entity = ent.model_dump()
     direction = entity.get('direction', 0)
     base = image_resolver(f"{entity['name']}_{DIRECTIONS[direction]}")
 

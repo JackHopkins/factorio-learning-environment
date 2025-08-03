@@ -13,8 +13,14 @@ def character_localisation_question(multiple_choice: bool = False) -> Solver:
 
         if len(characters) == 1:
             if multiple_choice:
-                options = [ entity.position for i, entity in enumerate(random.sample(renderer.entities, k=3))]
-                options.append( characters[0].position )
+                if len(renderer.entities) >= 3:
+                    options = [ entity.position for i, entity in enumerate(random.sample(renderer.entities, k=3))]
+                else:
+                    options = [ entity.position for entity in renderer.entities ]
+
+                if characters[0].position not in options:
+                    options.append( characters[0].position )
+
                 random.shuffle(options)
                 correct_index = str(options.index(characters[0].position) + 1)
                 option_string = "\n".join([f"{i+1}) Position({str(option)})" for i, option in enumerate(options)])

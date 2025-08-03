@@ -12,7 +12,9 @@ from typing import Dict, List, Optional, Union, Any
 
 from fle.env import Entity, EntityCore, UndergroundBelt, EntityStatus
 from fle.env.tools.admin.render.constants import BACKGROUND_COLOR, GRID_LINE_WIDTH, GRID_COLOR, DEFAULT_ROCK_VARIANTS, \
-    OIL_RESOURCE_VARIANTS, RENDERERS, DEFAULT_SCALING, DEFAULT_RESOURCE_VARIANTS
+    OIL_RESOURCE_VARIANTS, RENDERERS, DEFAULT_SCALING, DEFAULT_RESOURCE_VARIANTS, \
+    GRID_LINE_WIDTH_THIN, GRID_LINE_WIDTH_MEDIUM, GRID_LINE_WIDTH_THICK, \
+    GRID_COLOR_THIN, GRID_COLOR_MEDIUM, GRID_COLOR_THICK
 from fle.env.tools.admin.render.utils import (
     entities_to_grid, resources_to_grid, get_resource_variant,
     get_resource_volume, is_tree_entity, find_fle_sprites_dir,
@@ -563,9 +565,9 @@ class Renderer:
         profiler.increment_counter('resources', len(self.resources))
         profiler.increment_counter('water_tiles', len(self.water_tiles))
 
-        # Render in order: resources -> tree shadows -> trees -> entity shadows -> rails -> entities
-        self._render_resources(img, size, scaling, image_resolver)
+        # Render in order: water -> resources -> tree shadows -> trees -> entity shadows -> rails -> entities
         self._render_water_tiles(img, size, scaling, image_resolver)
+        self._render_resources(img, size, scaling, image_resolver)
         self._render_tree_shadows(img, tree_entities, size, scaling, grid_view, image_resolver)
         self._render_trees(img, tree_entities, size, scaling, grid_view, image_resolver)
         self._render_decoratives(img, rock_entities, size, scaling, image_resolver)
@@ -603,16 +605,100 @@ class Renderer:
 
     @profile_method()
     def _draw_grid(self, img: Image.Image, size: Dict, scaling: float, width: int, height: int) -> None:
-        """Draw grid lines on the image."""
+        """Draw grid lines on the image with different thicknesses based on game positions."""
         draw = ImageDraw.Draw(img)
-        
-        for i in range(1, size['width'] + 1):
-            x = i * scaling - GRID_LINE_WIDTH / 2
-            draw.rectangle([x, 0, x + GRID_LINE_WIDTH, height], fill=GRID_COLOR)
 
-        for i in range(1, size['height'] + 1):
-            y = i * scaling - GRID_LINE_WIDTH / 2
-            draw.rectangle([0, y, width, y + GRID_LINE_WIDTH], fill=GRID_COLOR)
+        # Get the original game space offset that was used for normalization
+        # Round the offset to ensure we're aligned with integer game coordinates
+        game_offset_x = round(self.offset_x)
+        game_offset_y = round(self.offset_y)
+
+        # Calculate the visible range in actual game coordinates
+        # We want to draw lines at integer game positions only
+        min_game_x = int(math.floor(size['minX'] + game_offset_x))
+        max_game_x = int(math.ceil(size['maxX'] + game_offset_x))
+        min_game_y = int(math.floor(size['minY'] + game_offset_y))
+        max_game_y = int(math.ceil(size['maxY'] + game_offset_y))
+
+        # Draw vertical lines at integer game positions
+        for game_x in range(min_game_x, max_game_x + 1):
+            # Convert game position back to normalized coordinate for pixel calculation
+            norm_x = game_x - game_offset_x
+
+            # Calculate pixel position
+            pixel_x = (norm_x - size['minX']) * scaling
+
+            # Skip if line is outside visible area
+            if pixel_x < -5 or pixel_x > width + 5:
+                continue
+
+            # Determine line properties based on game coordinate
+            if game_x % 10 == 0:
+                line_width = GRID_LINE_WIDTH_THICK
+                line_color = GRID_COLOR_THICK
+            elif game_x % 5 == 0:
+                line_width = GRID_LINE_WIDTH_MEDIUM
+                line_color = GRID_COLOR_MEDIUM
+            else:
+                line_width = GRID_LINE_WIDTH_THIN
+                line_color = GRID_COLOR_THIN
+
+            # Draw line precisely at the integer position
+            x_center = int(pixel_x)
+            half_width = line_width // 2
+            x_start = x_center - half_width
+            x_end = x_center + half_width
+
+            # Ensure odd-width lines are symmetric
+            if line_width % 2 == 1:
+                x_end += 1
+
+            # Clip to image bounds
+            x_start = max(0, x_start)
+            x_end = min(width, x_end)
+
+            if x_end > x_start:
+                draw.rectangle([x_start, 0, x_end, height], fill=line_color)
+
+        # Draw horizontal lines at integer game positions
+        for game_y in range(min_game_y, max_game_y + 1):
+            # Convert game position back to normalized coordinate for pixel calculation
+            norm_y = game_y - game_offset_y
+
+            # Calculate pixel position
+            pixel_y = (norm_y - size['minY']) * scaling
+
+            # Skip if line is outside visible area
+            if pixel_y < -5 or pixel_y > height + 5:
+                continue
+
+            # Determine line properties based on game coordinate
+            if game_y % 10 == 0:
+                line_width = GRID_LINE_WIDTH_THICK
+                line_color = GRID_COLOR_THICK
+            elif game_y % 5 == 0:
+                line_width = GRID_LINE_WIDTH_MEDIUM
+                line_color = GRID_COLOR_MEDIUM
+            else:
+                line_width = GRID_LINE_WIDTH_THIN
+                line_color = GRID_COLOR_THIN
+
+            # Draw line precisely at the integer position
+            y_center = int(pixel_y)
+            half_width = line_width // 2
+            y_start = y_center - half_width
+            y_end = y_center + half_width
+
+            # Ensure odd-width lines are symmetric
+            if line_width % 2 == 1:
+                y_end += 1
+
+            # Clip to image bounds
+            y_start = max(0, y_start)
+            y_end = min(height, y_end)
+
+            if y_end > y_start:
+                draw.rectangle([0, y_start, width, y_end], fill=line_color)
     
     @profile_method()
     def _render_resources(self, img: Image.Image, size: Dict, scaling: float, image_resolver) -> None:

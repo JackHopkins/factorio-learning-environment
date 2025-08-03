@@ -70,7 +70,7 @@ def terrain_task(
         solvers.append(character_localisation_question(multiple_choice=multiple_choice))
 
     return Task(
-        name="terrain_task",
+        name="terrain_task" + ("_mc" if multiple_choice else ""),
         dataset=raw_position_dataset(pattern="concentric"),
         solver=solvers,
         scorer=None,

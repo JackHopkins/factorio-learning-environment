@@ -58,8 +58,14 @@ COMBINATOR_TO_NORMAL: Final[Dict[str, str]] = {
 # Rendering constants
 DEFAULT_SCALING: Final[int] = 32
 GRID_LINE_WIDTH: Final[int] = 2
+GRID_LINE_WIDTH_THIN: Final[int] = 1
+GRID_LINE_WIDTH_MEDIUM: Final[int] = 2
+GRID_LINE_WIDTH_THICK: Final[int] = 3
 BACKGROUND_COLOR: Final[str] = '#282828'
 GRID_COLOR: Final[str] = '#3c3c3c'
+GRID_COLOR_THIN: Final[str] = '#3c3c3c'
+GRID_COLOR_MEDIUM: Final[str] = '#4a4a4a'
+GRID_COLOR_THICK: Final[str] = '#5a5a5a'
 
 # Resource constants
 DEFAULT_MAX_RESOURCE_AMOUNT: Final[int] = 10000

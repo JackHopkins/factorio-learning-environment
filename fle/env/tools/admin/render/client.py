@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Union, List
+from typing import Dict, Optional, Union, List, Tuple
 from fle.commons.models.rendered_image import RenderedImage
 from fle.env import Position, Layer
 from fle.env.tools import Tool
@@ -47,11 +47,12 @@ class Render(Tool):
     @profile_method(include_args=True)
     def __call__(self,
                  include_status: bool = False,
-                 radius: int = 50,
+                 radius: int = 64,
                  position: Optional[Position] = None,
                  layers: Layer = Layer.ALL,
                  compression_level: str = 'binary',
-                 blueprint: Union[str, List[Dict]] = None) -> RenderedImage:
+                 blueprint: Union[str, List[Dict]] = None,
+                 return_renderer=False) -> Union[RenderedImage, Tuple[RenderedImage, Renderer]]:
         """
         Returns information about all entities, tiles, and resources within the specified radius of the player.
 
@@ -66,6 +67,7 @@ class Render(Tool):
                 - 'binary': Binary encoding with base64 transport
                 - 'maximum': Same as binary, reserved for future improvements
             blueprint: Either a Base64 encoded blueprint, or a decoded blueprint
+            return_renderer: Whether to return the renderer, which contains the entities that were renderered
 
         Returns:
             RenderedImage containing the visual representation of the area
@@ -74,36 +76,11 @@ class Render(Tool):
         assert isinstance(radius, (int, float)), "Radius must be a number"
 
         if not blueprint:
-            result = self._get_map_entities(include_status, radius, compression_level)
-
-            ent = self.get_entities(radius=32)
-            # Parse the Lua dictionaries
-            entities = self.parse_lua_dict(result['entities'])
-
-            ent.extend(entities)
-            water_tiles = result['water_tiles']
-            resources = result['resources']
-
             # Create renderer with decoded data
-            renderer = Renderer(
-                entities=ent,
-                water_tiles=water_tiles,
-                resources=resources
-            )
+            renderer = self.get_renderer_from_map(include_status, radius, compression_level)
         else:
-            if isinstance(blueprint, str):
-                entities = blueprint['entities']
-                renderer = Renderer(
-                   entities=entities
-                )
-            else:
-                if not 'entities' in blueprint:
-                    raise ValueError("Blueprint passed with no entities")
+            renderer = self.get_renderer_from_blueprint(blueprint)
 
-                entities = blueprint['entities']
-                renderer = Renderer(
-                    entities=entities
-                )
 
         # Calculate render size
         size = renderer.get_size()
@@ -116,7 +93,51 @@ class Render(Tool):
         # Render the blueprint
         image = renderer.render(width, height, self.image_resolver)
 
-        return RenderedImage(image)
+        if return_renderer:
+            return RenderedImage(image), renderer
+        else:
+            return RenderedImage(image)
+
+    def get_renderer_from_blueprint(self, blueprint):
+        if isinstance(blueprint, str):
+            raise NotImplementedError()
+            # entities = blueprint['entities']
+            # renderer = Renderer(
+            #     entities=entities
+            # )
+        else:
+            if not 'entities' in blueprint:
+                raise ValueError("Blueprint passed with no entities")
+
+            entities = blueprint['entities']
+            renderer = Renderer(
+                entities=entities
+            )
+        return renderer
+
+    def get_renderer_from_map(self,
+                             include_status: bool = False,
+                             radius: int = 64,
+                             compression_level: str = 'binary',
+                             ) -> Renderer:
+
+        result = self._get_map_entities(include_status, radius, compression_level)
+
+        ent = self.get_entities(radius=radius)
+        # Parse the Lua dictionaries
+        entities = self.parse_lua_dict(result['entities'])
+
+        ent.extend(entities)
+        water_tiles = result['water_tiles']
+        resources = result['resources']
+
+        # Create renderer with decoded data
+        renderer = Renderer(
+            entities=ent,
+            water_tiles=water_tiles,
+            resources=resources
+        )
+        return renderer
 
     def _decode_optimized_format(self, result: Dict) -> Dict:
         """

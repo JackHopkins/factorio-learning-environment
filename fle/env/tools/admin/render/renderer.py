@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Union, Any
 
 from fle.env import Entity, EntityCore, UndergroundBelt, EntityStatus
 from fle.env.tools.admin.render.constants import BACKGROUND_COLOR, GRID_LINE_WIDTH, GRID_COLOR, DEFAULT_ROCK_VARIANTS, \
-    OIL_RESOURCE_VARIANTS, RENDERERS, DEFAULT_SCALING
+    OIL_RESOURCE_VARIANTS, RENDERERS, DEFAULT_SCALING, DEFAULT_RESOURCE_VARIANTS
 from fle.env.tools.admin.render.utils import (
     entities_to_grid, resources_to_grid, get_resource_variant,
     get_resource_volume, is_tree_entity, find_fle_sprites_dir,
@@ -528,11 +528,12 @@ class Renderer:
         """Render water tiles."""
         for water in self.water_tiles:
             pos = water
+
             relative_x = pos['x'] + abs(size['minX']) + 0.5
             relative_y = pos['y'] + abs(size['minY']) + 0.5
 
             volume = 1
-            variant = get_resource_variant(pos['x'], pos['y'], max_variants=OIL_RESOURCE_VARIANTS)
+            variant = get_resource_variant(pos['x'], pos['y'], max_variants=DEFAULT_RESOURCE_VARIANTS)
 
             sprite_name = f"{water['name']}_{variant}_{volume}"
             image = image_resolver(sprite_name, False)
@@ -561,8 +562,8 @@ class Renderer:
             if renderer and hasattr(renderer, 'render_shadow'):
                 shadow_image = renderer.render_shadow(tree, grid_view, image_resolver)
                 if shadow_image:
-                    shadow_offset_x = 20 # We need to offset tree shadows
-                    shadow_offset_y = 20 # We need to offset tree shadows
+                    shadow_offset_x = 32 # We need to offset tree shadows
+                    shadow_offset_y = 32 # We need to offset tree shadows
                     self._paste_image(img, shadow_image, relative_x, relative_y, scaling,
                                       shadow_offset_x, shadow_offset_y)
     
@@ -605,7 +606,14 @@ class Renderer:
                 image = image_resolver(entity['name'], True)
 
             if image:
-                self._paste_image(img, image, relative_x, relative_y, scaling)
+                # Apply shadow offset for character entities
+                if entity['name'] == 'character':
+                    shadow_offset_x = 32  # Character shadows need less offset than trees
+                    shadow_offset_y = 20
+                    self._paste_image(img, image, relative_x, relative_y, scaling,
+                                      shadow_offset_x, shadow_offset_y)
+                else:
+                    self._paste_image(img, image, relative_x, relative_y, scaling)
 
     @profile_method()
     def _render_visible_inventories(self, img: Image.Image, entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:

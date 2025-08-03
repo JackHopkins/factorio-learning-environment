@@ -24,10 +24,10 @@ class TerrainSpriteExtractor:
 
         # Resource sprite sheet configurations
         self.resource_configs = {
-            'water': {'columns': 4, 'rows': 1, 'width': 64, 'height': 64},
-            'water-mud': {'columns': 4, 'rows': 1, 'width': 64, 'height': 64},
-            'water-green': {'columns': 4, 'rows': 1, 'width': 64, 'height': 64},
-            'water-shallow': {'columns': 4, 'rows': 1, 'width': 64, 'height': 64},
+            'water': {'columns': 8, 'rows': 1, 'width': 32, 'height': 32},
+            'water-mud': {'columns': 8, 'rows': 1, 'width': 32, 'height': 32},
+            'water-green': {'columns': 8, 'rows': 1, 'width': 32, 'height': 32},
+            'water-shallow': {'columns': 8, 'rows': 1, 'width': 32, 'height': 32},
             'deepwater': {'columns': 8, 'rows': 1, 'width': 32, 'height': 32},
             'cliff-inner': {'columns': 8, 'rows': 2, 'width': 128, 'height': 256},
             'cliff-outer': {'columns': 8, 'rows': 2, 'width': 128, 'height': 256},

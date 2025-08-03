@@ -9,6 +9,7 @@ from inspect_ai.hooks import Hooks, SampleEnd, TaskStart, hooks, TaskEnd
 
 from inspect_ai.log import EvalConfig, EvalLog, EvalSample
 
+
 class VQAPairsSerializer:
     """Serializer for VQA pairs that collects and saves QA data to JSONL files."""
 
@@ -64,6 +65,13 @@ class VQAPairsSerializer:
             ("throughput_questions", self._normalize_throughput_qa),
             ("bottleneck_questions", self._normalize_bottleneck_qa),
             ("optimization_questions", self._normalize_optimization_qa),
+
+            # Terrain tasks
+            ("nearest_questions", self._normalize_nearest_qa),
+            ("nearest_buildable_questions", self._normalize_nearest_buildable_qa),
+            ("nearest_buildable_resource_questions", self._normalize_nearest_buildable_resource_qa),
+            ("tile_count_questions", self._normalize_tile_count_qa),
+            ("character_localisation_question", self._normalize_character_localisation_qa),
         ]
 
         for field_name, normalizer in task_qa_fields:
@@ -73,7 +81,7 @@ class VQAPairsSerializer:
                     for qa in field_data:
                         normalized = normalizer(qa, metadata)
                         if 'image_id' not in normalized.keys():
-                            normalized['image_id'] = metadata['image']
+                            normalized['image_id'] = metadata.get('image', '')
                         if normalized:
                             qa_pairs.append(normalized)
 
@@ -83,22 +91,22 @@ class VQAPairsSerializer:
         """
         Add global metadata (bounding box, blueprint center, rotation, etc.) to a normalized QA pair.
         """
-        
+
         # Add bounding box if present
         if "bounding_box" in metadata:
             normalized["bounding_box"] = metadata["bounding_box"]
-        
-        # Add blueprint center if present  
+
+        # Add blueprint center if present
         if "blueprint_center" in metadata:
             normalized["blueprint_center"] = metadata["blueprint_center"]
-        
+
         # Add rotation information if present
         if "rotation" in metadata:
             normalized["rotation"] = metadata["rotation"]
-            
+
         if "rotation_degrees" in metadata:
             normalized["rotation_degrees"] = metadata["rotation_degrees"]
-            
+
         if "original_filename" in metadata:
             normalized["original_filename"] = metadata["original_filename"]
 
@@ -112,8 +120,14 @@ class VQAPairsSerializer:
             "blueprint_file": metadata.get("filename", ""),
             "entity_properties": qa.get("entity_properties", {}),
             "position": qa.get("position", {}),
+            "question_type": qa.get("question_type", "open_ended"),
         }
-        
+
+        # Add multiple choice options if present
+        if "options" in qa:
+            normalized["options"] = qa["options"]
+            normalized["answer_text"] = qa.get("answer_text", "")
+
         # Add global metadata
         self._add_global_metadata(normalized, metadata)
         return normalized
@@ -128,8 +142,14 @@ class VQAPairsSerializer:
             "blueprint_file": metadata.get("filename", ""),
             "entity": qa.get("entity", {}),
             "context": qa.get("context", {}),
+            "question_type": qa.get("question_type", "open_ended"),
         }
-        
+
+        # Add multiple choice options if present
+        if "options" in qa:
+            normalized["options"] = qa["options"]
+            normalized["answer_text"] = qa.get("answer_text", "")
+
         # Add global metadata
         self._add_global_metadata(normalized, metadata)
         return normalized
@@ -144,8 +164,14 @@ class VQAPairsSerializer:
             "blueprint_file": metadata.get("filename", ""),
             "explanation": qa.get("explanation", ""),
             "context": qa.get("context", {}),
+            "question_type": qa.get("question_type", "open_ended"),
         }
-        
+
+        # Add multiple choice options if present
+        if "options" in qa:
+            normalized["options"] = qa["options"]
+            normalized["answer_text"] = qa.get("answer_text", "")
+
         # Add global metadata
         self._add_global_metadata(normalized, metadata)
         return normalized
@@ -162,7 +188,7 @@ class VQAPairsSerializer:
             "direction_type": qa.get("direction_type", ""),
             "direction_enum": qa.get("direction_enum", ""),
         }
-        
+
         # Add global metadata
         self._add_global_metadata(normalized, metadata)
         return normalized
@@ -178,7 +204,7 @@ class VQAPairsSerializer:
             "metadata": qa.get("metadata", {}),
             "nearby_entities": qa.get("nearby_entities", []),
         }
-        
+
         # Add global metadata
         self._add_global_metadata(normalized, metadata)
         return normalized
@@ -207,7 +233,7 @@ class VQAPairsSerializer:
             "blueprint_file": metadata.get("filename", ""),
             "entity_type": qa.get("entity_type", ""),
         }
-        
+
         # Add global metadata
         self._add_global_metadata(normalized, metadata)
         return normalized
@@ -223,7 +249,7 @@ class VQAPairsSerializer:
             "item": qa.get("item", ""),
             "quantity": qa.get("quantity", 0),
         }
-        
+
         # Add global metadata
         self._add_global_metadata(normalized, metadata)
         return normalized
@@ -263,7 +289,7 @@ class VQAPairsSerializer:
             "previous_actions": [a.get("action", "") for a in qa.get("previous_actions", [])],
             "split_point": qa.get("split_point", 0),
         }
-        
+
         # Add global metadata
         self._add_global_metadata(normalized, metadata)
         return normalized
@@ -278,7 +304,7 @@ class VQAPairsSerializer:
             "blueprint_file": metadata.get("filename", ""),
             "entity_names": qa.get("entity_names", []),
         }
-        
+
         # Add global metadata
         self._add_global_metadata(normalized, metadata)
         return normalized
@@ -293,7 +319,7 @@ class VQAPairsSerializer:
             "blueprint_file": metadata.get("filename", ""),
             "calculated_throughput": qa.get("calculated_throughput", 0),
         }
-        
+
         # Add global metadata
         self._add_global_metadata(normalized, metadata)
         return normalized
@@ -308,7 +334,7 @@ class VQAPairsSerializer:
             "blueprint_file": metadata.get("filename", ""),
             "analysis_type": qa.get("analysis_type", ""),
         }
-        
+
         # Add global metadata
         self._add_global_metadata(normalized, metadata)
         return normalized
@@ -324,9 +350,107 @@ class VQAPairsSerializer:
             "entity_counts": qa.get("entity_counts", {}),
             "total_entities": qa.get("total_entities", 0),
         }
-        
+
         # Add global metadata
         self._add_global_metadata(normalized, metadata)
+        return normalized
+
+    # New terrain task normalizers
+    def _normalize_nearest_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
+        """Normalize nearest resource QA pairs."""
+        normalized = {
+            "task_type": "nearest_resource",
+            "question": qa.get("question", ""),
+            "answer": qa.get("answer", ""),
+            "image_id": metadata.get("image", ""),
+            "entity_properties": qa.get("entity_properties", ""),
+            "nearest": qa.get("nearest", {}),
+            "question_type": qa.get("question_type", "open_ended"),
+            "terrain_position": {"x": metadata.get("x", 0), "y": metadata.get("y", 0)},
+        }
+
+        # Add multiple choice options if present
+        if "options" in qa:
+            normalized["options"] = qa["options"]
+
+        return normalized
+
+    def _normalize_nearest_buildable_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
+        """Normalize nearest buildable position QA pairs."""
+        normalized = {
+            "task_type": "nearest_buildable",
+            "question": qa.get("question", ""),
+            "answer": qa.get("answer", ""),
+            "image_id": metadata.get("image", ""),
+            "prototype": qa.get("prototype", ""),
+            "building_box": qa.get("building_box", {}),
+            "center_position": qa.get("center_position", {}),
+            "buildable_area": qa.get("buildable_area", {}),
+            "question_type": qa.get("question_type", "open_ended"),
+            "terrain_position": {"x": metadata.get("x", 0), "y": metadata.get("y", 0)},
+        }
+
+        # Add multiple choice options if present
+        if "options" in qa:
+            normalized["options"] = qa["options"]
+            normalized["correct_index"] = qa.get("correct_index", -1)
+
+        return normalized
+
+    def _normalize_nearest_buildable_resource_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
+        """Normalize nearest buildable resource-dependent QA pairs."""
+        normalized = {
+            "task_type": "nearest_buildable_resource",
+            "question": qa.get("question", ""),
+            "answer": qa.get("answer", ""),
+            "image_id": metadata.get("image", ""),
+            "prototype": qa.get("prototype", ""),
+            "resource_type": qa.get("resource_type", ""),
+            "building_box": qa.get("building_box", {}),
+            "buildable_position": qa.get("buildable_position", {}),
+            "question_type": qa.get("question_type", "open_ended"),
+            "terrain_position": {"x": metadata.get("x", 0), "y": metadata.get("y", 0)},
+        }
+
+        # Add multiple choice options if present
+        if "options" in qa:
+            normalized["options"] = qa["options"]
+            normalized["correct_index"] = qa.get("correct_index", -1)
+
+        return normalized
+
+    def _normalize_tile_count_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
+        """Normalize tile count QA pairs."""
+        normalized = {
+            "task_type": "tile_count",
+            "question": qa.get("question", ""),
+            "answer": qa.get("answer", ""),
+            "image_id": metadata.get("image", ""),
+            "entity_properties": qa.get("entity_properties", ""),
+            "count": qa.get("count", 0),
+            "question_type": qa.get("question_type", "open_ended"),
+            "terrain_position": {"x": metadata.get("x", 0), "y": metadata.get("y", 0)},
+        }
+
+        # Add multiple choice options if present
+        if "options" in qa:
+            normalized["options"] = qa["options"]
+
+        return normalized
+
+    def _normalize_character_localisation_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
+        """Normalize character localisation QA pairs."""
+        normalized = {
+            "task_type": "character_localisation",
+            "question": qa.get("question", ""),
+            "answer": qa.get("answer", ""),
+            "image_id": metadata.get("image", ""),
+            "position": qa.get("position", {}),
+            "entity_properties": qa.get("entity_properties", {}),
+            "question_type": qa.get("question_type", "open_ended"),
+            "terrain_position": {"x": metadata.get("x", 0), "y": metadata.get("y", 0)},
+        }
+
         return normalized
 
     def save_qa_pairs(self, qa_pairs: List[Dict[str, Any]], task_name: str,
@@ -433,16 +557,29 @@ class VQAPairsSerializer:
         qa_pairs = self.load_qa_pairs(filepath)
 
         task_types = {}
+        question_types = {}
+
         for qa in qa_pairs:
+            # Count task types
             task_type = qa.get("task_type", "unknown")
             task_types[task_type] = task_types.get(task_type, 0) + 1
+
+            # Count question types (open_ended vs multiple_choice)
+            question_type = qa.get("question_type", "unknown")
+            question_types[question_type] = question_types.get(question_type, 0) + 1
 
         return {
             "total_qa_pairs": len(qa_pairs),
             "task_types": task_types,
+            "question_types": question_types,
             "unique_images": len(set(qa.get("image_id", "") for qa in qa_pairs)),
-            "unique_blueprints": len(set(qa.get("blueprint_file", "") for qa in qa_pairs)),
+            "unique_blueprints": len(set(qa.get("blueprint_file", "") for qa in qa_pairs if qa.get("blueprint_file"))),
+            "terrain_positions": len(set(
+                f"{qa.get('terrain_position', {}).get('x', 0)},{qa.get('terrain_position', {}).get('y', 0)}"
+                for qa in qa_pairs if qa.get("terrain_position")
+            )),
         }
+
 
 @hooks(
     name="vqa_pairs_hook",

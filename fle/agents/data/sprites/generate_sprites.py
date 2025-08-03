@@ -3,6 +3,7 @@ import os
 import sys
 from pathlib import Path
 
+from fle.agents.data.sprites.extractors.character import CharacterSpriteExtractor
 from fle.agents.data.sprites.extractors.decoratives import DecorativeSpriteExtractor
 from fle.agents.data.sprites.extractors.icons import IconSpriteExtractor
 from fle.agents.data.sprites.extractors.alerts import AlertSpriteExtractor
@@ -108,6 +109,16 @@ def main():
         terrain.create_all_icons()
     else:
         print(f"Warning: Terrain path not found: {terrain_path}")
+
+    character_path = base_input_path.parent / "character"  # Assuming character folder is at same level as __base__
+    if character_path.exists():
+        print("\n=== Extracting Character Sprites ===")
+        character = CharacterSpriteExtractor(str(character_path), str(output_dir))
+        character.extract_all_character_sprites()
+        character.extract_single_sprites()
+        character.create_character_mapping()
+    else:
+        print(f"Warning: Character path not found: {character_path}")
 
     print("\n=== Extraction Complete ===")
 

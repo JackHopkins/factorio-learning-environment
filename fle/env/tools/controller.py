@@ -86,6 +86,8 @@ class Controller:
         return cleaned_response
 
     def parse_lua_dict(self, d):
+        if isinstance(d, int):
+            return d
         if all(isinstance(k, int) for k in d.keys()):
             # Convert to list if all keys are numeric
             return [self.parse_lua_dict(d[k]) for k in sorted(d.keys())]
@@ -94,6 +96,8 @@ class Controller:
             new_dict = {}
             last_key = None
 
+            if isinstance(d, int):
+                pass
             for key in d.keys():
                 if isinstance(key, int):
                     if last_key is not None and isinstance(d[key], str):

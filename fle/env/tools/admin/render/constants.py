@@ -138,5 +138,6 @@ RENDERERS: Final[Dict[str, str]] = {
     "cliff-outer": "cliff",
     "cliff-entrance": "cliff",
     "cliff-sides": "cliff",
+    "character": "character"
     #"lab": "lab"
 }

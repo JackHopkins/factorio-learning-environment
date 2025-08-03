@@ -173,9 +173,12 @@ global.actions.render = function(player_index, include_status, radius, compressi
     }
 
     -- ENTITIES - Keep as is, they're already relatively efficient
-    local entities = surface.find_entities_filtered({ area=area, force = "neutral"})
+    local entities = surface.find_entities_filtered({ area=area, force='neutral' })
     local entity_data = {}
-
+    local characters = surface.find_entities_filtered({area=area, name='character'})
+    for _, entity in pairs(characters) do
+        table.insert(entities, entity)
+    end
     -- Define resource types to exclude from entities
     local resource_names = {
         ["iron-ore"] = true,
@@ -187,12 +190,7 @@ global.actions.render = function(player_index, include_status, radius, compressi
     }
 
     for _, entity in pairs(entities) do
-        -- Use pcall to safely access entity properties
-        local success, entity_data = pcall(function()
-            if not entity.valid then
-                return nil
-            end
-
+        if entity.valid then
             -- Collect all data in one protected call
             local data = {
                 name = "\""..entity.name.."\"",
@@ -201,16 +199,10 @@ global.actions.render = function(player_index, include_status, radius, compressi
                     y = entity.position.y
                 },
                 direction = entity.direction or 0,
-                orientation = entity.orientation or 0,
-                -- Store validity check result
-                valid = entity.valid
+                orientation = entity.orientation or 0
             }
 
-            -- Only access other properties if still valid
-            if not entity.valid then
-                return nil
-            end
-
+            -- Handle special entity types
             if entity.type == 'underground-belt' then
                 if entity.belt_to_ground_type then
                     data.type = entity.belt_to_ground_type
@@ -219,14 +211,74 @@ global.actions.render = function(player_index, include_status, radius, compressi
 
             -- Enhanced cliff handling with validity check
             if entity.type == 'cliff' and entity.valid then
-                -- First try to get the actual cliff orientation
                 if entity.cliff_orientation then
                     data.cliff_orientation = "\""..entity.cliff_orientation.."\""
                 else
-                    -- If not available, analyze neighbors to infer orientation
                     local inferred_orientation = analyze_cliff_orientation(entity, surface)
                     data.cliff_orientation = "\""..inferred_orientation.."\""
-                    data.cliff_inferred = true -- Mark as inferred
+                    data.cliff_inferred = true
+                end
+            end
+
+            -- Handle character entities
+            if entity.type == 'character' then
+                -- Add character-specific data
+                data.player_index = entity.player and entity.player.index or nil
+
+                -- Get character state
+                if entity.walking_state and entity.walking_state.walking then
+                    data.state = "\"running\""
+                    data.animation_frame = entity.walking_state.walking and
+                        math.floor((game.tick % 140) / 20) or 0  -- 7 frames for running
+                elseif entity.mining_state and entity.mining_state.mining then
+                    data.state = "\"mining\""
+                    data.animation_frame = math.floor((game.tick % 80) / 10)  -- 8 frames for mining
+                else
+                    data.state = "\"idle\""
+                    data.animation_frame = 0
+                end
+
+                -- Get armor level (1, 2, or 3 based on equipment)
+                data.level = 1  -- Default
+                if entity.get_inventory then
+                    local armor_inventory = entity.get_inventory(defines.inventory.character_armor)
+                    if armor_inventory and armor_inventory.valid then
+                        local armor = armor_inventory[1]
+                        if armor and armor.valid_for_read then
+                            if armor.name == "power-armor-mk2" then
+                                data.level = 3
+                            elseif armor.name == "power-armor" or armor.name == "modular-armor" then
+                                data.level = 2
+                            end
+                        end
+                    end
+                end
+
+                -- Check if character has a gun
+                data.has_gun = false
+                if entity.get_inventory then
+                    local gun_inventory = entity.get_inventory(defines.inventory.character_guns)
+                    if gun_inventory and gun_inventory.valid then
+                        for i = 1, #gun_inventory do
+                            if gun_inventory[i].valid_for_read then
+                                data.has_gun = true
+                                break
+                            end
+                        end
+                    end
+                end
+
+                -- Get player color if available
+                if entity.player then
+                    local color = entity.player.color
+                    data.color = {
+                        math.floor(color.r * 255),
+                        math.floor(color.g * 255),
+                        math.floor(color.b * 255)
+                    }
+                else
+                    -- Default orange for non-player characters
+                    data.color = {255, 165, 0}
                 end
             end
 
@@ -234,18 +286,50 @@ global.actions.render = function(player_index, include_status, radius, compressi
                 data.status = entity.status
             end
 
-            return data
-        end)
-
-        -- Only add the entity data if the pcall succeeded and returned valid data
-        if success and entity_data and entity_data.valid then
-            -- Remove the temporary valid field
-            entity_data.valid = nil
-            table.insert(entity_data, entity_data)
+            -- Add the entity to the list
+            table.insert(entity_data, data)
         end
     end
 
-    -- Rest of the function remains the same...
+    -- Also explicitly add all characters in the area (in case we missed any)
+    local characters = surface.find_entities_filtered({
+        area = area,
+        type = "character"
+    })
+
+    -- Create a lookup to avoid duplicates
+    local entity_positions = {}
+    for _, data in ipairs(entity_data) do
+        local key = data.position.x .. "," .. data.position.y
+        entity_positions[key] = true
+    end
+
+    -- Add any characters we might have missed
+    for _, character in pairs(characters) do
+        if character.valid then
+            local key = character.position.x .. "," .. character.position.y
+            if not entity_positions[key] then
+                -- Add character with full data (same as above)
+                local data = {
+                    name = "\"character\"",
+                    position = {
+                        x = character.position.x,
+                        y = character.position.y
+                    },
+                    direction = character.direction or 0,
+                    orientation = character.orientation or 0,
+                    player_index = character.player and character.player.index or nil,
+                    state = "\""..character.state.."\"", --"\"idle\"",
+                    animation_frame = 0,
+                    level = 1,
+                    has_gun = false,
+                    color = {255, 165, 0}
+                }
+                table.insert(entity_data, data)
+            end
+        end
+    end
+
     -- WATER TILES - Optimized using run-length encoding
     local water_runs = {}
     local min_x = math.floor(area.left_top.x)
@@ -443,7 +527,8 @@ function encode_resources_binary(resource_patches)
         ['coal'] = 3,
         ['stone'] = 4,
         ['uranium-ore'] = 5,
-        ['crude-oil'] = 6
+        ['crude-oil'] = 6,
+        ['tree-01'] = 7
     }
 
     local data = {}

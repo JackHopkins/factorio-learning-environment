@@ -118,7 +118,7 @@ if __name__ == "__main__":
             multiple_choice=True
         ),
         model=model,
-        limit=20,
+        limit=40,
         log_dir="../../logs/",
         hooks=[VQAPairsHook()]
     )

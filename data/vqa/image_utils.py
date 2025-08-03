@@ -154,7 +154,7 @@ def generate_image_path_and_id(content: Union[Dict[str, Any], None] = None,
     if is_map:
         name = get_map_name(metadata or {})
         # Add "maps" subdirectory to separate from blueprints
-        folder_path = Path(base_dir) / "maps" / name
+        folder_path = Path(base_dir) / "maps"# / name
     else:
         if not content:
             raise ValueError("Blueprint content required when is_map=False")
@@ -175,10 +175,10 @@ def generate_image_path_and_id(content: Union[Dict[str, Any], None] = None,
     if is_map:
         image_id = f"maps/{name}_{prefix}{variant_hash}"
     else:
-        image_id = f"{name}/{prefix}{variant_hash}"
+        image_id = f"{name}_{prefix}{variant_hash}"
 
     # Create the full file path
-    file_path = folder_path / f"{prefix}{variant_hash}.jpg"
+    file_path = folder_path / f"{name}_{prefix}{variant_hash}.jpg"
 
     return str(file_path), image_id
 

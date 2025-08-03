@@ -159,16 +159,16 @@ global.actions.render = function(player_index, include_status, radius, compressi
 
     local surface = player.surface
     local player_position = player.position
-
+    local MARGIN = 0
     -- Define search area around player
     local area = {
         left_top = {
-            x = player_position.x - radius,
-            y = player_position.y - radius
+            x = player_position.x - radius - MARGIN,
+            y = player_position.y - radius - MARGIN
         },
         right_bottom = {
-            x = player_position.x + radius,
-            y = player_position.y + radius
+            x = player_position.x + radius - MARGIN,
+            y = player_position.y + radius - MARGIN
         }
     }
 
@@ -332,10 +332,10 @@ global.actions.render = function(player_index, include_status, radius, compressi
 
     -- WATER TILES - Optimized using run-length encoding
     local water_runs = {}
-    local min_x = math.floor(area.left_top.x)
-    local max_x = math.ceil(area.right_bottom.x)
-    local min_y = math.floor(area.left_top.y)
-    local max_y = math.ceil(area.right_bottom.y)
+    local min_x = math.floor(area.left_top.x - MARGIN)
+    local max_x = math.ceil(area.right_bottom.x + MARGIN)
+    local min_y = math.floor(area.left_top.y - MARGIN)
+    local max_y = math.ceil(area.right_bottom.y + MARGIN)
 
     -- Scan row by row for water runs
     for y = min_y, max_y do

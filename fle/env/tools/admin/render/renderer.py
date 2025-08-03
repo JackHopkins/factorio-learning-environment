@@ -36,36 +36,149 @@ class Renderer:
                  entities: Union[List[Dict], List[Entity]] = [],
                  resources: List[Dict] = [],
                  water_tiles: List[Dict] = [],
-                 sprites_dir: Optional[Path] = None):
+                 sprites_dir: Optional[Path] = None,
+                 max_render_radius: Optional[float] = None,
+                 center_on_player: bool = True):
         """Initialize renderer with blueprint data.
-        
+
         Args:
-            data: Blueprint data containing entities, resources, and water tiles
+            entities: List of entities to render
+            resources: List of resources to render
+            water_tiles: List of water tiles to render
             sprites_dir: Optional directory path for sprite files
+            max_render_radius: Optional maximum radius to render (for trimming captured area)
+            center_on_player: Whether to center the rendering on the player position
         """
         self.icons = []
+        self.max_render_radius = max_render_radius
+        self.center_on_player = center_on_player
 
-        flattened_entities = list(flatten_entities(entities)) #data.get('entities', [])
+        flattened_entities = list(flatten_entities(entities))
 
-        # Find minimum coordinates across all items
-        min_x, min_y = self._find_min_coordinates(flattened_entities, resources, water_tiles)
+        # Find player position if centering on player
+        self.player_position = None
+        if center_on_player:
+            for entity in flattened_entities:
+                if isinstance(entity, dict) and entity.get('name') == 'character':
+                    pos = entity.get('position', {})
+                    self.player_position = {'x': pos.get('x', 0), 'y': pos.get('y', 0)}
+                    break
+                elif hasattr(entity, 'name') and entity.name == 'character':
+                    self.player_position = {'x': entity.position.x, 'y': entity.position.y}
+                    break
 
-        # Store the offset for normalization
-        self.offset_x = min_x
-        self.offset_y = min_y
+        # Determine normalization offset
+        if self.player_position and center_on_player:
+            # Center on player position
+            self.offset_x = self.player_position['x']
+            self.offset_y = self.player_position['y']
+        else:
+            # Original behavior: normalize to minimum coordinates
+            min_x, min_y = self._find_min_coordinates(flattened_entities, resources, water_tiles)
+            self.offset_x = min_x
+            self.offset_y = min_y
 
-        # Normalize all coordinates by subtracting the minimum
+        # Normalize all coordinates
         self.entities = self._normalize_positions(flattened_entities)
         self.resources = self._normalize_positions(resources)
         self.water_tiles = self._normalize_positions(water_tiles)
 
         self.entity_grid = entities_to_grid(self.entities)
         self.resource_grid = resources_to_grid(self.resources)
-        
+
         self.sprites_dir = self._resolve_sprites_dir(sprites_dir)
         self.available_trees = build_available_trees_index(self.sprites_dir)
         self.tree_variants = self._precompute_tree_variants()
         self._sort_entities_for_rendering()
+
+    @profile_method()
+    def get_size(self) -> Dict:
+        """Calculate blueprint bounds including resources and trees."""
+
+        if self.max_render_radius is not None:
+            # When using max_render_radius, create a square centered on (0,0)
+            # (which is the player position after normalization)
+            return {
+                'minX': -self.max_render_radius,
+                'minY': -self.max_render_radius,
+                'maxX': self.max_render_radius,
+                'maxY': self.max_render_radius,
+                'width': math.ceil(self.max_render_radius * 2),
+                'height': math.ceil(self.max_render_radius * 2)
+            }
+
+        # Original behavior for when max_render_radius is not specified
+        bounds = self._calculate_bounds()
+
+        # Calculate actual content dimensions
+        content_width = bounds['max_width'] - bounds['min_width']
+        content_height = bounds['max_height'] - bounds['min_height']
+
+        # Make dimensions square by using the maximum dimension
+        max_dimension = max(content_width, content_height)
+
+        # Calculate how much to expand on each direction
+        width_diff = max_dimension - content_width
+        height_diff = max_dimension - content_height
+
+        # Expand bounds to create a square area
+        adjusted_min_x = bounds['min_width'] - width_diff / 2
+        adjusted_max_x = bounds['max_width'] + width_diff / 2
+        adjusted_min_y = bounds['min_height'] - height_diff / 2
+        adjusted_max_y = bounds['max_height'] + height_diff / 2
+
+        return {
+            'minX': adjusted_min_x,
+            'minY': adjusted_min_y,
+            'maxX': adjusted_max_x,
+            'maxY': adjusted_max_y,
+            'width': math.ceil(max_dimension),
+            'height': math.ceil(max_dimension)
+        }
+
+    def _calculate_bounds(self) -> Dict:
+        """Calculate the bounding box for all entities and resources."""
+        min_width = min_height = float('inf')
+        max_width = max_height = float('-inf')
+
+        # Check entities
+        for entity in self.entities:
+            pos = entity.position
+            size = renderer_manager.get_entity_size(entity)
+            min_width = min(min_width, pos.x - size[0] / 2)
+            min_height = min(min_height, pos.y - size[1] / 2)
+            max_width = max(max_width, pos.x + size[0] / 2)
+            max_height = max(max_height, pos.y + size[1] / 2)
+
+        # Check resources (they are 1x1)
+        for resource in self.resources:
+            pos = resource['position']
+            min_width = min(min_width, pos['x'] - 0.5)
+            min_height = min(min_height, pos['y'] - 0.5)
+            max_width = max(max_width, pos['x'] + 0.5)
+            max_height = max(max_height, pos['y'] + 0.5)
+
+        # Check water tiles (they are 1x1)
+        for water_tile in self.water_tiles:
+            pos = water_tile
+            min_width = min(min_width, pos['x'] - 0.5)
+            min_height = min(min_height, pos['y'] - 0.5)
+            max_width = max(max_width, pos['x'] + 0.5)
+            max_height = max(max_height, pos['y'] + 0.5)
+
+        # If we have no content, default to a reasonable area around origin
+        if min_width == float('inf'):
+            min_width = -10
+            max_width = 10
+            min_height = -10
+            max_height = 10
+
+        return {
+            'min_width': min_width,
+            'min_height': min_height,
+            'max_width': max_width,
+            'max_height': max_height
+        }
 
     @profile_method()
     def _resolve_sprites_dir(self, sprites_dir: Optional[Path]) -> Path:
@@ -196,8 +309,8 @@ class Renderer:
 
             # Calculate position for alert overlay
             # Place alert in top-right corner of entity
-            relative_x = x + abs(size['minX']) + 0.5
-            relative_y = y + abs(size['minY']) + 0.5
+            relative_x = x + abs(size['minX'])
+            relative_y = y + abs(size['minY'])
 
             # Calculate pixel position
             # Offset to place icon in top-right of entity
@@ -248,23 +361,37 @@ class Renderer:
             e.position.x
         ))
 
-    @profile_method()
-    def get_size(self) -> Dict:
-        """Calculate blueprint bounds including resources and trees."""
-        bounds = self._calculate_bounds()
-
-        # Calculate actual content dimensions (not including origin distance)
-        content_width = bounds['max_width'] - bounds['min_width']
-        content_height = bounds['max_height'] - bounds['min_height']
-
-        return {
-            'minX': bounds['min_width'],
-            'minY': bounds['min_height'],
-            'maxX': bounds['max_width'],
-            'maxY': bounds['max_height'],
-            'width': math.ceil(content_width),
-            'height': math.ceil(content_height)
-        }
+    # @profile_method()
+    # def get_size(self) -> Dict:
+    #     """Calculate blueprint bounds including resources and trees."""
+    #     bounds = self._calculate_bounds()
+    #
+    #     # Calculate actual content dimensions (not including origin distance)
+    #     content_width = bounds['max_width'] - bounds['min_width']
+    #     content_height = bounds['max_height'] - bounds['min_height']
+    #
+    #     # Make dimensions square by using the minimum
+    #     min_dimension = min(content_width, content_height)
+    #
+    #     # Calculate how much to crop from each direction
+    #     width_diff = content_width - min_dimension
+    #     height_diff = content_height - min_dimension
+    #
+    #     # Crop bounds to create a square area
+    #     # Split the difference evenly on both sides
+    #     adjusted_min_x = bounds['min_width'] + width_diff / 2
+    #     adjusted_max_x = bounds['max_width'] - width_diff / 2
+    #     adjusted_min_y = bounds['min_height'] + height_diff / 2
+    #     adjusted_max_y = bounds['max_height'] - height_diff / 2
+    #
+    #     return {
+    #         'minX': adjusted_min_x,
+    #         'minY': adjusted_min_y,
+    #         'maxX': adjusted_max_x,
+    #         'maxY': adjusted_max_y,
+    #         'width': math.ceil(min_dimension),
+    #         'height': math.ceil(min_dimension)
+    #     }
 
     def _get_position(self, item: Any) -> Optional[Dict[str, float]]:
         """Extract position from an item, handling both dict and object formats.
@@ -355,42 +482,50 @@ class Renderer:
 
         return normalized
 
-    def _calculate_bounds(self) -> Dict:
-        """Calculate the bounding box for all entities and resources."""
-        min_width = min_height = 0
-        max_width = max_height = 0
-
-        # Check entities
-        for entity in self.entities:
-            pos = entity.position
-            size = renderer_manager.get_entity_size(entity)
-            min_width = min(min_width, pos.x - size[0] / 2)
-            min_height = min(min_height, pos.y - size[1] / 2)
-            max_width = max(max_width, pos.x + size[0] / 2)
-            max_height = max(max_height, pos.y + size[1] / 2)
-
-        # Check resources (they are 1x1)
-        for resource in self.resources:
-            pos = resource['position']
-            min_width = min(min_width, pos['x'] - 0.5)
-            min_height = min(min_height, pos['y'] - 0.5)
-            max_width = max(max_width, pos['x'] + 0.5)
-            max_height = max(max_height, pos['y'] + 0.5)
-
-        # Check water tiles (they are 1x1)
-        for water_tile in self.water_tiles:
-            pos = water_tile
-            min_width = min(min_width, pos['x'] - 0.5)
-            min_height = min(min_height, pos['y'] - 0.5)
-            max_width = max(max_width, pos['x'] + 0.5)
-            max_height = max(max_height, pos['y'] + 0.5)
-
-        return {
-            'min_width': min_width,
-            'min_height': min_height,
-            'max_width': max_width,
-            'max_height': max_height
-        }
+    # def _calculate_bounds(self) -> Dict:
+    #     """Calculate the bounding box for all entities and resources."""
+    #     min_width = min_height = 0
+    #     max_width = max_height = 0
+    #
+    #     # Check entities
+    #     for entity in self.entities:
+    #         pos = entity.position
+    #         size = renderer_manager.get_entity_size(entity)
+    #         min_width = min(min_width, pos.x - size[0] / 2)
+    #         min_height = min(min_height, pos.y - size[1] / 2)
+    #         max_width = max(max_width, pos.x + size[0] / 2)
+    #         max_height = max(max_height, pos.y + size[1] / 2)
+    #
+    #     # Check resources (they are 1x1)
+    #     for resource in self.resources:
+    #         pos = resource['position']
+    #         min_width = min(min_width, pos['x'] - 0.5)
+    #         min_height = min(min_height, pos['y'] - 0.5)
+    #         max_width = max(max_width, pos['x'] + 0.5)
+    #         max_height = max(max_height, pos['y'] + 0.5)
+    #
+    #     # Check water tiles (they are 1x1)
+    #     for water_tile in self.water_tiles:
+    #         pos = water_tile
+    #         min_width = min(min_width, pos['x'] - 0.5)
+    #         min_height = min(min_height, pos['y'] - 0.5)
+    #         max_width = max(max_width, pos['x'] + 0.5)
+    #         max_height = max(max_height, pos['y'] + 0.5)
+    #
+    #     # If max_render_radius is specified, limit the bounds
+    #     if self.max_render_radius is not None:
+    #         # Assume we're centered at (0, 0) after normalization
+    #         min_width = max(min_width, -self.max_render_radius)
+    #         min_height = max(min_height, -self.max_render_radius)
+    #         max_width = min(max_width, self.max_render_radius)
+    #         max_height = min(max_height, self.max_render_radius)
+    #
+    #     return {
+    #         'min_width': min_width,
+    #         'min_height': min_height,
+    #         'max_width': max_width,
+    #         'max_height': max_height
+    #     }
 
     @profile_method(include_args=True)
     def render(self, width: int, height: int, image_resolver) -> Image.Image:
@@ -405,7 +540,7 @@ class Renderer:
             Rendered PIL Image
         """
         size = self.get_size()
-        scaling = min(width / (size['width'] + 2), height / (size['height'] + 2))
+        scaling = min(width / size['width'], height / size['height'])
 
         img = self._create_base_image(width, height)
         self._draw_grid(img, size, scaling, width, height)
@@ -471,11 +606,11 @@ class Renderer:
         """Draw grid lines on the image."""
         draw = ImageDraw.Draw(img)
         
-        for i in range(1, size['width'] + 2):
+        for i in range(1, size['width'] + 1):
             x = i * scaling - GRID_LINE_WIDTH / 2
             draw.rectangle([x, 0, x + GRID_LINE_WIDTH, height], fill=GRID_COLOR)
 
-        for i in range(1, size['height'] + 2):
+        for i in range(1, size['height'] + 1):
             y = i * scaling - GRID_LINE_WIDTH / 2
             draw.rectangle([0, y, width, y + GRID_LINE_WIDTH], fill=GRID_COLOR)
     
@@ -484,8 +619,8 @@ class Renderer:
         """Render resource patches."""
         for resource in self.resources:
             pos = resource['position']
-            relative_x = pos['x'] + abs(size['minX']) + 0.5
-            relative_y = pos['y'] + abs(size['minY']) + 0.5
+            relative_x = pos['x'] + abs(size['minX'])
+            relative_y = pos['y'] + abs(size['minY'])
 
             if resource['name'] == 'crude-oil':
                 volume = 1
@@ -504,8 +639,8 @@ class Renderer:
         """Render decoratives."""
         for decorative in decoratives:
             pos = decorative['position']
-            relative_x = pos['x'] + abs(size['minX']) + 0.5
-            relative_y = pos['y'] + abs(size['minY']) + 0.5
+            relative_x = pos['x'] + abs(size['minX'])
+            relative_y = pos['y'] + abs(size['minY'])
 
             variant = get_resource_variant(pos['x'], pos['y'], max_variants=DEFAULT_ROCK_VARIANTS)
 
@@ -553,8 +688,8 @@ class Renderer:
         """Render tree shadows."""
         for tree in tree_entities:
             pos = tree['position']
-            relative_x = pos['x'] + abs(size['minX']) + 0.5
-            relative_y = pos['y'] + abs(size['minY']) + 0.5
+            relative_x = pos['x'] + abs(size['minX'])
+            relative_y = pos['y'] + abs(size['minY'])
 
             grid_view.set_center(pos['x'], pos['y'])
             renderer = renderer_manager.get_renderer(tree['name'])
@@ -572,8 +707,8 @@ class Renderer:
         """Render trees."""
         for tree in tree_entities:
             pos = tree['position']
-            relative_x = pos['x'] + abs(size['minX']) + 0.5
-            relative_y = pos['y'] + abs(size['minY']) + 0.5
+            relative_x = pos['x'] + abs(size['minX'])
+            relative_y = pos['y'] + abs(size['minY'])
 
             grid_view.set_center(pos['x'], pos['y'])
             renderer = renderer_manager.get_renderer(tree['name'])
@@ -589,8 +724,8 @@ class Renderer:
         for entity in non_tree_entities:
             entity = entity.model_dump() if hasattr(entity, 'model_dump') else entity
             pos = entity['position']
-            relative_x = pos['x'] + abs(size['minX']) + 0.5
-            relative_y = pos['y'] + abs(size['minY']) + 0.5
+            relative_x = pos['x'] + abs(size['minX'])
+            relative_y = pos['y'] + abs(size['minY'])
 
             grid_view.set_center(pos['x'], pos['y'])
             image = None
@@ -621,8 +756,8 @@ class Renderer:
         for entity in entities:
             entity = entity.model_dump() if hasattr(entity, 'model_dump') else entity
             pos = entity['position']
-            relative_x = pos['x'] + abs(size['minX']) + 0.5
-            relative_y = pos['y'] + abs(size['minY']) + 0.5
+            relative_x = pos['x'] + abs(size['minX'])
+            relative_y = pos['y'] + abs(size['minY'])
 
             grid_view.set_center(pos['x'], pos['y'])
             image = None
@@ -647,8 +782,8 @@ class Renderer:
                     continue
 
                 pos = entity['position']
-                relative_x = pos['x'] + abs(size['minX']) + 0.5
-                relative_y = pos['y'] + abs(size['minY']) + 0.5
+                relative_x = pos['x'] + abs(size['minX'])
+                relative_y = pos['y'] + abs(size['minY'])
                 direction = entity.get('direction', 0)
                 image = None
 
@@ -669,8 +804,8 @@ class Renderer:
                 continue
 
             pos = entity.position
-            relative_x = pos.x + abs(size['minX']) + 0.5
-            relative_y = pos.y + abs(size['minY']) + 0.5
+            relative_x = pos.x + abs(size['minX'])
+            relative_y = pos.y + abs(size['minY'])
 
             grid_view.set_center(pos.x, pos.y)
             image = None
@@ -713,8 +848,8 @@ def main():
 
     blueprint = Renderer(blueprint_json, sprites_dir)
     size = blueprint.get_size()
-    width = (size['width'] + 2) * DEFAULT_SCALING
-    height = (size['height'] + 2) * DEFAULT_SCALING
+    width = size['width'] * DEFAULT_SCALING
+    height = size['height'] * DEFAULT_SCALING
 
     image = blueprint.render(width, height, image_resolver)
     image.show()

@@ -52,7 +52,8 @@ class Render(Tool):
                  layers: Layer = Layer.ALL,
                  compression_level: str = 'binary',
                  blueprint: Union[str, List[Dict]] = None,
-                 return_renderer=False) -> Union[RenderedImage, Tuple[RenderedImage, Renderer]]:
+                 return_renderer=False,
+                 max_render_radius: Optional[float] = None) -> Union[RenderedImage, Tuple[RenderedImage, Renderer]]:
         """
         Returns information about all entities, tiles, and resources within the specified radius of the player.
 
@@ -77,7 +78,7 @@ class Render(Tool):
 
         if not blueprint:
             # Create renderer with decoded data
-            renderer = self.get_renderer_from_map(include_status, radius, compression_level)
+            renderer = self.get_renderer_from_map(include_status, radius, compression_level, max_render_radius)
         else:
             renderer = self.get_renderer_from_blueprint(blueprint)
 
@@ -87,8 +88,8 @@ class Render(Tool):
         if size['width'] == 0 or size['height'] == 0:
             raise Exception("Nothing to render.")
 
-        width = (size['width'] + 2) * DEFAULT_SCALING
-        height = (size['height'] + 2) * DEFAULT_SCALING
+        width = size['width'] * DEFAULT_SCALING
+        height = size['height'] * DEFAULT_SCALING
 
         # Render the blueprint
         image = renderer.render(width, height, self.image_resolver)
@@ -119,23 +120,32 @@ class Render(Tool):
                              include_status: bool = False,
                              radius: int = 64,
                              compression_level: str = 'binary',
+                             max_render_radius: Optional[float] = None,
                              ) -> Renderer:
 
         result = self._get_map_entities(include_status, radius, compression_level)
 
-        ent = self.get_entities(radius=radius)
+        #ent = self.get_entities(radius=radius)
+        #if ent:
+        #    pass
+
         # Parse the Lua dictionaries
         entities = self.parse_lua_dict(result['entities'])
 
-        ent.extend(entities)
+        character_position = [c['position'] for c in list(filter(lambda x:x['name']=='character', entities))]
+
+        #ent.extend(entities)
         water_tiles = result['water_tiles']
+
+
         resources = result['resources']
 
         # Create renderer with decoded data
         renderer = Renderer(
-            entities=ent,
+            entities=entities,
             water_tiles=water_tiles,
-            resources=resources
+            resources=resources,
+            max_render_radius=max_render_radius
         )
         return renderer
 

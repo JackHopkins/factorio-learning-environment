@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Dict, Any, List
 from fle.env import FactorioInstance
 from fle.env.entities import Direction, Position
-from fle.commons.cluster_ips import get_local_container_ips
 
 
 class TickScheduler:
@@ -186,14 +185,12 @@ def load_events(file_path: str) -> List[Dict[str, Any]]:
     return events
 
 
-def create_factorio_instance() -> FactorioInstance:
-    """Create and configure a Factorio instance."""
-    ips, udp_ports, tcp_ports = get_local_container_ips()
-
-    instance = FactorioInstance(
+def create_factorio_instance(max_concurrent_batches=1):
+    """Create and return a FactorioInstance with support for concurrent batch processing."""
+    return FactorioInstance(
         address="localhost",
         bounding_box=200,
-        tcp_port=tcp_ports[-1],
+        tcp_port=27000,
         cache_scripts=True,
         fast=True,
         regenerate="map",
@@ -202,9 +199,8 @@ def create_factorio_instance() -> FactorioInstance:
             "stone-furnace": 1,
             "burner-mining-drill": 1,
         },
+        max_concurrent_batches=max_concurrent_batches,
     )
-
-    return instance
 
 
 def convert_run_actions_args_to_tool_args(

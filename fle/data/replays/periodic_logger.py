@@ -6,7 +6,7 @@ import json
 from typing import Any, List, Optional
 from datetime import datetime
 
-from action_converter import ActionConverter
+from fle.data.replays.action_converter import ActionConverter
 
 
 class PeriodicLogger:
@@ -63,6 +63,38 @@ class PeriodicLogger:
                 except Exception as e:
                     print(
                         f"Error adding periodic logging at tick {current_log_tick}: {e}"
+                    )
+
+            current_log_tick += self.interval
+
+        return periodic_commands
+
+    def generate_periodic_commands(self, namespace, min_tick: int, max_tick: int):
+        """Generate periodic logging commands without modifying batch_info."""
+        if not self.enabled:
+            return []
+
+        periodic_commands = []
+        current_log_tick = self.last_logged_tick + self.interval
+
+        while current_log_tick <= max_tick:
+            if current_log_tick >= min_tick:
+                try:
+                    ActionConverter.execute_tool_call_in_batch(
+                        namespace, "inspect_inventory", {}, current_log_tick
+                    )
+                    periodic_commands.append(
+                        {
+                            "func_name": "inspect_inventory",
+                            "tick": current_log_tick,
+                            "args": {},
+                            "is_periodic": True,
+                            "periodic_type": "inventory",
+                        }
+                    )
+                except Exception as e:
+                    print(
+                        f"Error preparing periodic logging at tick {current_log_tick}: {e}"
                     )
 
             current_log_tick += self.interval

@@ -438,6 +438,8 @@ class PlaceholderEntity(BaseModel):
     name: str
     position: Position
     direction: Optional[Direction] = Direction.UP
+    recipe: Optional[str] = None  # For assembling machines
+    filter: Optional[str] = None  # For filter inserters
 
     def __init__(
         self,
@@ -452,7 +454,16 @@ class PlaceholderEntity(BaseModel):
         super().__init__(name=name, position=position, direction=direction, **kwargs)
 
     def __repr__(self):
-        return f"PlaceholderEntity(name='{self.name}', position={self.position}, direction={self.direction})"
+        base_repr = f"PlaceholderEntity(name='{self.name}', position={self.position}, direction={self.direction}"
+
+        # Add recipe or filter info if present
+        if self.recipe:
+            base_repr += f", recipe='{self.recipe}'"
+        if self.filter:
+            base_repr += f", filter='{self.filter}'"
+
+        base_repr += ")"
+        return base_repr
 
 
 class Entity(EntityCore):

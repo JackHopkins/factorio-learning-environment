@@ -304,6 +304,13 @@ class BatchManager:
 
         # Store the total number of commands for completion tracking
         total_commands = len(self.scheduled_commands)
+
+        # Store metadata before clearing for debugging purposes
+        self.last_batch_metadata = {
+            "commands": self.scheduled_commands.copy(),
+            "total_count": total_commands,
+        }
+
         # Submit the batch directly to the server
         import json
 

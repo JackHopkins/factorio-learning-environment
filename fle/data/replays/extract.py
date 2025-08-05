@@ -185,13 +185,28 @@ def handle_action_based_record(record: Dict[str, Any]) -> List[Dict[str, Any]]:
         timing = record.get("timing", {})
         crafting = record.get("crafting", {})
 
-        start_tick = timing.get("start_tick", 0)
-        end_tick = timing.get("end_tick", 0)
         recipe = crafting.get("recipe", "")
-        count = crafting.get("total_crafted", 0)
+        craft_timings = crafting.get("craft_timings", [])
 
-        call = f"craft_item(start_tick={start_tick}, end_tick={end_tick}, recipe='{recipe}', count={count})"
-        return [{"call": call, "sort_tick": start_tick}]
+        # If we have detailed craft timings, create individual calls for each completed item
+        if craft_timings:
+            calls = []
+            for craft_timing in craft_timings:
+                if craft_timing.get("status") == "completed":
+                    queue_tick = craft_timing.get("queue_tick", 0)
+                    completion_tick = craft_timing.get("completion_tick", 0)
+
+                    call = f"craft_item(start_tick={queue_tick}, end_tick={completion_tick}, recipe='{recipe}', count=1)"
+                    calls.append({"call": call, "sort_tick": queue_tick})
+            return calls
+        else:
+            # Fall back to the original behavior if craft_timings is not available
+            start_tick = timing.get("start_tick", 0)
+            end_tick = timing.get("end_tick", 0)
+            count = crafting.get("total_crafted", 0)
+
+            call = f"craft_item(start_tick={start_tick}, end_tick={end_tick}, recipe='{recipe}', count={count})"
+            return [{"call": call, "sort_tick": start_tick}]
 
     elif action == "move_to_direction":
         player = record.get("player", {})
@@ -605,7 +620,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Example usage
-    folder_path = "../factorio_replays/factorio_replay_20250723_110424"
+    folder_path = "/Users/neel/Desktop/Work/factorio-data-collector/factorio_replays/factorio_replay_20250723_110424"
     max_time = args.max_time
 
     # Read and combine all JSONL files

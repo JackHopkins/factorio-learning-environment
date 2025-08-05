@@ -9,18 +9,33 @@ Classes:
 
 import time
 from pathlib import Path
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
+from dataclasses import dataclass
 
-from run_actions_utils import (
+from fle.data.replays.run_actions_utils import (
     load_events,
     create_factorio_instance,
     parse_function_call,
-    initialize_logging,
-    cleanup_logging,
 )
-from action_converter import ActionConverter
-from periodic_logger import PeriodicLogger
-from processing_config import ProcessingConfig
+from fle.data.replays.action_converter import ActionConverter
+from fle.data.replays.periodic_logger import PeriodicLogger
+
+
+@dataclass
+class ProcessingConfig:
+    """Configuration for batch processing."""
+
+    events_file_path: str
+    enable_logging: bool = False
+    speed: float = 1.0
+    batch_size: int = 500
+    max_concurrent_batches: int = 1
+    enable_periodic_logging: Optional[bool] = None
+    periodic_log_interval: int = 0
+
+    def __post_init__(self):
+        if self.enable_periodic_logging is None:
+            self.enable_periodic_logging = self.periodic_log_interval > 0
 
 
 class BatchProcessor:
@@ -40,8 +55,9 @@ class BatchProcessor:
 
         # Setup logging
         if self.config.enable_logging:
-            initialize_logging()
-            print("Logging enabled - data will be saved to logs/")
+            print(
+                "Note: Global logging functions have been removed. Use PeriodicLogger instead."
+            )
         else:
             print("Logging disabled - no data will be saved")
 
@@ -90,9 +106,7 @@ class BatchProcessor:
         except Exception as e:
             print(f"Warning: Final cleanup failed: {e}")
 
-        if self.config.enable_logging:
-            cleanup_logging()
-        print("Instance and logging cleaned up")
+        print("Instance cleaned up")
 
     def load_and_prepare_events(self) -> List[Dict]:
         """Load events from file and prepare them for processing."""
@@ -121,19 +135,17 @@ class BatchProcessor:
         namespace = self.instance.namespace
         print(f"Processing batch of {len(batch)} actions starting at tick {start_tick}")
 
-        # Prepare batch
-        batch_info = []
         tool_execution_start = time.time()
 
-        # Add periodic logging commands
+        # Calculate tick range
         min_tick = batch[0]["tick"] if batch else start_tick
         max_tick = max(action["tick"] for action in batch) if batch else start_tick
-        periodic_commands = self.periodic_logger.add_periodic_commands(
-            batch_info, namespace, min_tick, max_tick
-        )
 
-        # Process regular batch actions
-        for i, action in enumerate(batch):
+        # Collect all commands (regular + periodic) first
+        all_commands = []
+
+        # Add regular commands
+        for action in batch:
             tick = action["tick"]
             func_name = action["func_name"]
             args = action["args"]
@@ -142,10 +154,8 @@ class BatchProcessor:
                 result = ActionConverter.execute_tool_call_in_batch(
                     namespace, func_name, args, tick
                 )
-                command_index = len(batch_info)
-                batch_info.append(
+                all_commands.append(
                     {
-                        "index": command_index,
                         "func_name": func_name,
                         "tick": tick,
                         "args": args,
@@ -154,11 +164,9 @@ class BatchProcessor:
                     }
                 )
             except Exception as e:
-                print(f"Error adding {func_name} to batch: {e}")
-                command_index = len(batch_info)
-                batch_info.append(
+                print(f"Error adding {func_name} to batch at tick {tick}: {e}")
+                all_commands.append(
                     {
-                        "index": command_index,
                         "func_name": func_name,
                         "tick": tick,
                         "args": args,
@@ -167,12 +175,33 @@ class BatchProcessor:
                     }
                 )
 
+        # Add periodic commands
+        periodic_commands = self.periodic_logger.generate_periodic_commands(
+            namespace, min_tick, max_tick
+        )
+        all_commands.extend(periodic_commands)
+
+        # Sort ALL commands by tick, then assign sequential indices
+        all_commands.sort(key=lambda x: x["tick"])
+
+        # Assign indices and create final batch_info
+        batch_info = []
+        periodic_indices = set()
+
+        for i, cmd in enumerate(all_commands):
+            cmd["index"] = i
+            batch_info.append(cmd)
+
+            if cmd["is_periodic"]:
+                periodic_indices.add(i)
+
         tool_execution_time = time.time() - tool_execution_start
 
         # Submit and stream results
         print(
-            f"Submitting batch of {len(batch)} actions + periodic logging commands..."
+            f"Submitting batch of {len(batch)} regular actions + {len(periodic_commands)} periodic commands = {len(batch_info)} total commands (sorted by tick)"
         )
+
         submission_start_time = time.time()
         results = []
         result_count = 0
@@ -188,8 +217,8 @@ class BatchProcessor:
             result_count += 1
             command_index = result["command_index"]
 
-            # Handle periodic logging
-            if command_index in periodic_commands:
+            # Handle periodic logging using the index set
+            if command_index in periodic_indices:
                 if result.get("success") and result.get("result"):
                     executed_tick = result["tick"]
                     success = self.periodic_logger.log_result(
@@ -201,9 +230,7 @@ class BatchProcessor:
 
             # Handle regular commands
             executed_tick = result["tick"]
-            planned_tick = result.get(
-                "planned_tick", "?"
-            )  # Get from Lua results instead of lookup
+            planned_tick = result.get("planned_tick", "?")
             success = result["success"]
 
             tick_info = (
@@ -218,6 +245,50 @@ class BatchProcessor:
                 print(f"    Error: {result['result']}")
 
             results.append(result)
+
+        # Debug: Check which commands are missing results
+        print(
+            f"    📊 Finished streaming results: received {result_count} results, expected {len(batch_info)} total commands"
+        )
+        regular_results = [
+            r for r in results if r["command_index"] not in periodic_indices
+        ]
+        print(
+            f"    📊 Regular command results: {len(regular_results)} out of {len(batch)} actions"
+        )
+
+        if len(regular_results) < len(batch):
+            received_indices = {r["command_index"] for r in regular_results}
+            expected_regular_indices = {
+                i for i in range(len(batch_info)) if i not in periodic_indices
+            }
+            missing_indices = expected_regular_indices - received_indices
+            print(
+                f"    ⚠️ Missing results for command indices: {sorted(missing_indices)}"
+            )
+
+            # Show which specific commands are missing (using batch_info which preserves order)
+            for idx in missing_indices:
+                if idx < len(batch_info):
+                    cmd = batch_info[idx]
+                    print(f"        Missing: {cmd['func_name']} at tick {cmd['tick']}")
+                else:
+                    # Fallback: try to get info from batch manager metadata
+                    if hasattr(self.instance.batch_manager, "last_batch_metadata"):
+                        metadata = self.instance.batch_manager.last_batch_metadata
+                        if idx < len(metadata["commands"]):
+                            cmd = metadata["commands"][idx]
+                            print(
+                                f"        Missing: {cmd['command']} at tick {cmd['tick']} (from batch metadata)"
+                            )
+                        else:
+                            print(
+                                f"        Missing: command index {idx} (no metadata available)"
+                            )
+                    else:
+                        print(
+                            f"        Missing: command index {idx} (no metadata available)"
+                        )
 
         return results, tool_execution_time
 
@@ -582,3 +653,8 @@ class PipelineProcessor(BatchProcessor):
             print("   ✅ Server cleanup completed")
         except Exception as e:
             print(f"   ⚠️ Warning: Failed to clear queued actions: {e}")
+
+        try:
+            self.instance.batch_manager.deactivate()
+        except:
+            pass

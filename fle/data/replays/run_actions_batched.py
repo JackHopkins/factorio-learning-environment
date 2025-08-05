@@ -6,8 +6,11 @@ Main entry point that uses the processor classes defined in separate modules.
 
 from pathlib import Path
 
-from processors import SequentialProcessor, PipelineProcessor
-from processing_config import ProcessingConfig
+from fle.data.replays.processors import (
+    SequentialProcessor,
+    PipelineProcessor,
+    ProcessingConfig,
+)
 
 
 def main():

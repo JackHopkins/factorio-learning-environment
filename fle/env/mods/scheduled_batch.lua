@@ -293,11 +293,12 @@ global.actions.submit_scheduled_batch = function(batch_json)
     if success then
         rcon.print(dump(result))
     else
-        global.last_error = tostring(result)
+        local error_msg = type(result) == "string" and result or tostring(result)
+        global.last_error = error_msg
         local error_result = {
-            error = tostring(result),
+            error = error_msg,
             submitted = 0,
-            message = "Batch submission failed: " .. tostring(result)
+            message = "Batch submission failed: " .. error_msg
         }
         rcon.print(dump(error_result))
     end
@@ -326,7 +327,7 @@ script.on_event(defines.events.on_tick, function(event)
             global.batch_results[scheduled_cmd.batch_id].commands[scheduled_cmd.command_index] = {
                 command = scheduled_cmd.command,
                 success = success,
-                result = success and result or tostring(result),
+                result = success and result or (type(result) == "string" and result or tostring(result)),
                 game_tick = event.tick,
                 was_immediate = scheduled_cmd.was_immediate or false,
                 planned_tick = scheduled_cmd.planned_tick  -- Include planned_tick in results

@@ -14,6 +14,29 @@ function global.actions.regenerate_map(player_index)
   end
   global.map_random_generator.re_seed(map_gen_seed)
 
+  local radius     = 10                      -- in *chunks*
+  local center_cx  = math.floor(player.position.x / 32)
+  local center_cy  = math.floor(player.position.y / 32)
+
+  local chunks = {}
+  for dx = -radius, radius do
+    for dy = -radius, radius do
+      table.insert(chunks, {x = center_cx + dx, y = center_cy + dy})
+    end
+  end
+
   ------------------------------------------- 3.  Rerun the map generator
-  surface.regenerate_entity({'rock-huge', 'rock-big'})       -- nil → "everything with autoplace"
+  local tree_names = {}
+  for name, proto in pairs(game.entity_prototypes) do
+      if proto.type == "tree" then
+          table.insert(tree_names, name)
+      end
+  end
+
+  -- Add rocks to the list
+  table.insert(tree_names, 'rock-huge')
+  table.insert(tree_names, 'rock-big')
+
+  -- Regenerate them
+  surface.regenerate_entity(tree_names, chunks)
 end

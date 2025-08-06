@@ -286,7 +286,7 @@ class FactorioInstance:
 
     def connect_to_server(self, address, tcp_port):
         try:
-            rcon_client = RCONClient(address, tcp_port, "factorio")  #'quai2eeha3Lae7v')
+            rcon_client = RCONClient(address, tcp_port, "factorio")
             address = address
         except ConnectionError as e:
             print(e)

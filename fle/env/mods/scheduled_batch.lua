@@ -1,63 +1,64 @@
 -- Batch processing system for scheduling commands at specific game ticks
 -- This script allows submitting multiple commands that will be executed at future ticks
--- Override global print to write to a file
-local function file_print(msg)
-    local str = tostring(msg)
-    -- Writes to script-output/server.log, append = true, server only (0)
-    if game then
-        game.write_file("/home/server.log", str .. "\n", true, 0)
-    else
-        -- fallback before game is created
-        log(str)
-    end
-end
-
--- Replace the global print function
-print = file_print
-
-game.print("[BATCH] Loading scheduled_batch.lua script...")
 
 -- Initialize storage for scheduled commands and results
 if not global.scheduled_commands then
     global.scheduled_commands = {}
-    game.print("[BATCH] Initialized global.scheduled_commands")
 end
 
 if not global.batch_results then
     global.batch_results = {}
-    game.print("[BATCH] Initialized global.batch_results")
 end
 
 if not global.last_error then
     global.last_error = nil
-    game.print("[BATCH] Initialized global.last_error")
 end
 
 -- Initialize sequence tracking
 if not global.sequence_start_tick then
     global.sequence_start_tick = nil
-    game.print("[BATCH] Initialized global.sequence_start_tick")
 end
 
 if not global.sequence_grace_period then
     global.sequence_grace_period = 0
-    game.print("[BATCH] Initialized global.sequence_grace_period")
 end
 
 if not global.current_sequence_id then
     global.current_sequence_id = nil
-    game.print("[BATCH] Initialized global.current_sequence_id")
 end
 
 if not global.batch_metadata then
     global.batch_metadata = {}
-    game.print("[BATCH] Initialized global.batch_metadata")
 end
 
 -- Helper function to generate unique batch IDs
 local function generate_batch_id()
     local batch_id = "batch_" .. game.tick .. "_" .. math.random(1000, 9999)
     return batch_id
+end
+
+-- Helper function to extract clean error message from Lua stack trace
+local function extract_clean_error(error_string)
+    if type(error_string) ~= "string" then
+        return tostring(error_string)
+    end
+    
+    -- Find all matches of the pattern "number:" in the string
+    local last_match_end = 0
+    for match_start, match_end in string.gmatch(error_string, "()%d+:()") do
+        last_match_end = match_end
+    end
+    
+    -- If we found at least one match, return everything after the final match
+    if last_match_end > 0 then
+        local clean_message = string.sub(error_string, last_match_end + 1)
+        -- Trim leading whitespace
+        clean_message = string.match(clean_message, "^%s*(.-)%s*$") or clean_message
+        return clean_message
+    end
+    
+    -- If no pattern found, return the original string
+    return error_string
 end
 
 -- Function to register a sequence start with optional grace period
@@ -69,7 +70,6 @@ global.actions.register_sequence_start = function(sequence_id, grace_period)
     
     -- Check if this is a new sequence ID (different from current)
     if global.current_sequence_id and global.current_sequence_id ~= sequence_id then
-        game.print("[BATCH] New sequence ID detected (" .. sequence_id .. " vs " .. global.current_sequence_id .. "), resetting sequence")
         -- Reset sequence for new sequence ID
         global.sequence_start_tick = nil
         global.sequence_grace_period = 0
@@ -82,7 +82,6 @@ global.actions.register_sequence_start = function(sequence_id, grace_period)
             cleared_commands = cleared_commands + #commands
         end
         global.scheduled_commands = {}
-        game.print("[BATCH] Auto-reset sequence. Cleared " .. cleared_commands .. " scheduled commands.")
     end
     
     if not global.sequence_start_tick then
@@ -165,7 +164,6 @@ global.actions.clear_sequence_commands = function(target_sequence_id)
             local batch_metadata = global.batch_metadata[cmd.batch_id]
             if batch_metadata and batch_metadata.sequence_id == target_sequence_id then
                 cleared_commands = cleared_commands + 1
-                game.print("[BATCH] Clearing command for sequence " .. target_sequence_id .. " at tick " .. tick)
             else
                 table.insert(remaining_commands, cmd)
             end
@@ -310,6 +308,8 @@ script.on_event(defines.events.on_tick, function(event)
     
     if global.scheduled_commands[current_game_tick] then
         for _, scheduled_cmd in ipairs(global.scheduled_commands[current_game_tick]) do
+            -- Print the sequence-level tick when executing command
+            
             -- Execute the command using the instance's command system
             local success, result = pcall(function()
                 if scheduled_cmd.raw then
@@ -319,6 +319,22 @@ script.on_event(defines.events.on_tick, function(event)
                 end
             end)
             
+            -- Store the result with explicit error handling
+            local final_result
+            if success then
+                final_result = result
+            else
+                -- Error case: preserve the original error message and add debugging
+                if type(result) == "string" then
+                    local clean_error = extract_clean_error(result)
+                    final_result = clean_error
+                    game.print("[BATCH ERROR] Command " .. scheduled_cmd.command .. " at tick " .. scheduled_cmd.sequence_tick .. " failed with string error: " .. clean_error)
+                else
+                    final_result = tostring(result)
+                    game.print("[BATCH ERROR] Command " .. scheduled_cmd.command .. " at tick " .. scheduled_cmd.sequence_tick .. " failed with non-string error (type: " .. type(result) .. "): " .. tostring(result))
+                end
+            end
+            
             -- Store the result
             if not global.batch_results[scheduled_cmd.batch_id] then
                 global.batch_results[scheduled_cmd.batch_id] = {commands = {}, completed = false}
@@ -327,11 +343,12 @@ script.on_event(defines.events.on_tick, function(event)
             global.batch_results[scheduled_cmd.batch_id].commands[scheduled_cmd.command_index] = {
                 command = scheduled_cmd.command,
                 success = success,
-                result = success and result or (type(result) == "string" and result or tostring(result)),
+                result = final_result,
                 game_tick = event.tick,
                 was_immediate = scheduled_cmd.was_immediate or false,
                 planned_tick = scheduled_cmd.planned_tick  -- Include planned_tick in results
             }
+            -- game.print("[BATCH] Executed command at " .. scheduled_cmd.sequence_tick .. " - " .. scheduled_cmd.command)
         end
         
         -- Clean up this tick's commands
@@ -354,10 +371,17 @@ global.actions.get_batch_results = function(batch_id)
         return
     end
     
-    -- Check if all commands have completed
+    local current_tick = game.tick
+    local tick_cutoff = current_tick - 600
+    
+    -- Filter results to only include those from the last 1800 ticks
+    local filtered_commands = {}
     local completed_count = 0
-    for _ in pairs(batch_results.commands) do
-        completed_count = completed_count + 1
+    for index, command_result in pairs(batch_results.commands) do
+        if command_result.game_tick and command_result.game_tick >= tick_cutoff then
+            filtered_commands[index] = command_result
+            completed_count = completed_count + 1
+        end
     end
     
     local is_complete = completed_count >= (batch_results.total_commands or 0)
@@ -365,13 +389,14 @@ global.actions.get_batch_results = function(batch_id)
     
     local result = {
         batch_id = batch_id or "unknown",
-        results = batch_results.commands or {},
+        results = filtered_commands,
         completed = is_complete or false,
         total_commands = batch_results.total_commands or 0,
         completed_commands = completed_count or 0,
         current_game_tick = game.tick or 0,
         sequence_start_tick = global.sequence_start_tick,
-        sequence_grace_period = global.sequence_grace_period
+        sequence_grace_period = global.sequence_grace_period,
+        tick_cutoff = tick_cutoff - global.sequence_start_tick
     }
     
     rcon.print(dump(result))
@@ -391,5 +416,3 @@ global.actions.clear_batch_results = function(batch_id)
     end
     rcon.print(dump(result))
 end
-
-game.print("[BATCH] scheduled_batch.lua script loaded successfully!")

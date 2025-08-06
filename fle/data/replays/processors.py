@@ -144,36 +144,20 @@ class BatchProcessor:
         # Collect all commands (regular + periodic) first
         all_commands = []
 
-        # Add regular commands
+        # Add regular commands (collect metadata first, don't execute yet)
         for action in batch:
             tick = action["tick"]
             func_name = action["func_name"]
             args = action["args"]
 
-            try:
-                result = ActionConverter.execute_tool_call_in_batch(
-                    namespace, func_name, args, tick
-                )
-                all_commands.append(
-                    {
-                        "func_name": func_name,
-                        "tick": tick,
-                        "args": args,
-                        "batch_result": result,
-                        "is_periodic": False,
-                    }
-                )
-            except Exception as e:
-                print(f"Error adding {func_name} to batch at tick {tick}: {e}")
-                all_commands.append(
-                    {
-                        "func_name": func_name,
-                        "tick": tick,
-                        "args": args,
-                        "error": str(e),
-                        "is_periodic": False,
-                    }
-                )
+            all_commands.append(
+                {
+                    "func_name": func_name,
+                    "tick": tick,
+                    "args": args,
+                    "is_periodic": False,
+                }
+            )
 
         # Add periodic commands
         periodic_commands = self.periodic_logger.generate_periodic_commands(
@@ -195,6 +179,23 @@ class BatchProcessor:
             if cmd["is_periodic"]:
                 periodic_indices.add(i)
 
+        # CRITICAL: Execute tools in sorted order to ensure batch manager receives commands
+        # in the same order as batch_info indices. This prevents command_index mismatches
+        # between Python (0-based batch_info indices) and Lua (1-based scheduled_commands indices).
+        for cmd in all_commands:
+            if not cmd["is_periodic"]:
+                # Execute the tool call to add it to batch manager in correct order
+                try:
+                    result = ActionConverter.execute_tool_call_in_batch(
+                        namespace, cmd["func_name"], cmd["args"], cmd["tick"]
+                    )
+                    cmd["batch_result"] = result
+                except Exception as e:
+                    print(
+                        f"Error adding {cmd['func_name']} to batch at tick {cmd['tick']}: {e}"
+                    )
+                    cmd["error"] = str(e)
+
         tool_execution_time = time.time() - tool_execution_start
 
         # Submit and stream results
@@ -207,7 +208,7 @@ class BatchProcessor:
         result_count = 0
 
         for result in self.instance.batch_manager.submit_batch_and_stream(
-            timeout_seconds=600, poll_interval=0.1
+            timeout_seconds=600, poll_interval=2
         ):
             # Measure time to first result if this is the first one
             if result_count == 0:
@@ -226,6 +227,8 @@ class BatchProcessor:
                     )
                     if success:
                         print(f"    📊 Periodic data logged at tick {executed_tick}")
+                # Add periodic results to results list for proper tracking
+                results.append(result)
                 continue
 
             # Handle regular commands
@@ -257,38 +260,76 @@ class BatchProcessor:
             f"    📊 Regular command results: {len(regular_results)} out of {len(batch)} actions"
         )
 
+        # Additional debug info
+        print(f"    📊 Periodic command indices: {sorted(periodic_indices)}")
+        print(
+            f"    📊 Total expected commands: {len(batch_info)} (regular: {len(batch_info) - len(periodic_indices)}, periodic: {len(periodic_indices)})"
+        )
+
         if len(regular_results) < len(batch):
-            received_indices = {r["command_index"] for r in regular_results}
+            # Get the indices of ALL received results (both periodic and regular)
+            all_received_indices = {r["command_index"] for r in results}
+
+            # Get the expected indices for regular commands only
             expected_regular_indices = {
                 i for i in range(len(batch_info)) if i not in periodic_indices
             }
-            missing_indices = expected_regular_indices - received_indices
+
+            # Find which regular command indices are missing from ALL received results
+            missing_indices = expected_regular_indices - all_received_indices
+
+            print(f"    📊 All received indices: {sorted(all_received_indices)}")
+            print(
+                f"    📊 Expected regular indices: {sorted(expected_regular_indices)}"
+            )
             print(
                 f"    ⚠️ Missing results for command indices: {sorted(missing_indices)}"
             )
 
-            # Show which specific commands are missing (using batch_info which preserves order)
-            for idx in missing_indices:
-                if idx < len(batch_info):
-                    cmd = batch_info[idx]
-                    print(f"        Missing: {cmd['func_name']} at tick {cmd['tick']}")
-                else:
-                    # Fallback: try to get info from batch manager metadata
-                    if hasattr(self.instance.batch_manager, "last_batch_metadata"):
-                        metadata = self.instance.batch_manager.last_batch_metadata
-                        if idx < len(metadata["commands"]):
-                            cmd = metadata["commands"][idx]
-                            print(
-                                f"        Missing: {cmd['command']} at tick {cmd['tick']} (from batch metadata)"
-                            )
+            if missing_indices:
+                # Show which specific commands are missing (using batch_info which preserves order)
+                for idx in missing_indices:
+                    if idx < len(batch_info):
+                        cmd = batch_info[idx]
+                        print(
+                            f"        Missing: {cmd['func_name']} at tick {cmd['tick']}"
+                        )
+                    else:
+                        # Fallback: try to get info from batch manager metadata
+                        if hasattr(self.instance.batch_manager, "last_batch_metadata"):
+                            metadata = self.instance.batch_manager.last_batch_metadata
+                            if idx < len(metadata["commands"]):
+                                cmd = metadata["commands"][idx]
+                                print(
+                                    f"        Missing: {cmd['command']} at tick {cmd['tick']} (from batch metadata)"
+                                )
+                            else:
+                                print(
+                                    f"        Missing: command index {idx} (no metadata available)"
+                                )
                         else:
                             print(
                                 f"        Missing: command index {idx} (no metadata available)"
                             )
-                    else:
-                        print(
-                            f"        Missing: command index {idx} (no metadata available)"
-                        )
+            else:
+                print("    ✅ All regular commands received successfully!")
+        else:
+            print("    ✅ All expected regular commands received!")
+
+        # Final verification
+        periodic_results = [
+            r for r in results if r["command_index"] in periodic_indices
+        ]
+        print(
+            f"    📊 Final count verification: {len(results)} total results ({len(regular_results)} regular + {len(periodic_results)} periodic)"
+        )
+
+        if len(results) != len(batch_info):
+            print(
+                f"    ⚠️ Total result count mismatch: expected {len(batch_info)}, got {len(results)}"
+            )
+        else:
+            print("    ✅ Total result count matches expected!")
 
         return results, tool_execution_time
 

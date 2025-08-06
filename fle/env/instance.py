@@ -311,6 +311,10 @@ class BatchManager:
             "total_count": total_commands,
         }
 
+        # CRITICAL: Sort commands by tick before submitting to ensure Lua indices
+        # match the expected sorted order from Python side
+        self.scheduled_commands.sort(key=lambda x: x["tick"])
+
         # Submit the batch directly to the server
         import json
 
@@ -455,7 +459,6 @@ class BatchManager:
         try:
             while time.time() - start_time < timeout_seconds:
                 poll_count += 1
-
                 # Check batch status using dedicated RCON connection
                 status_cmd = (
                     f'/sc global.actions.get_batch_results("{self.current_batch_id}")'
@@ -492,6 +495,7 @@ class BatchManager:
 
                         # Yield new results - handle both numeric and string keys
                         new_results_count = 0
+                        num_commands = 0
                         for cmd_index_key, cmd_result in batch_results_data.items():
                             try:
                                 # Convert key to integer (Lua arrays start at 1, Python at 0)
@@ -509,6 +513,7 @@ class BatchManager:
                                     )
                                     continue
 
+                                num_commands += 1
                                 if command_index not in yielded_results:
                                     yielded_results.add(command_index)
                                     new_results_count += 1
@@ -538,7 +543,9 @@ class BatchManager:
                                 print(
                                     f"❌ Manager {self.manager_id}: Failed to parse command index {cmd_index_key}: {e}"
                                 )
-
+                        print(
+                            f"POLL {poll_count} - num_commands: {num_commands}, new_results: {new_results_count}"
+                        )
                         # Check if batch is complete
                         if is_complete:
                             # Clean up using dedicated RCON connection
@@ -546,6 +553,7 @@ class BatchManager:
                                 rcon_client.send_command(
                                     f'/sc global.actions.clear_batch_results("{self.current_batch_id}")'
                                 )
+                                print(f"POLL {poll_count} - CLEANED UP")
                             except Exception as e:
                                 print(
                                     f"❌ Manager {self.manager_id}: Cleanup failed: {e}"
@@ -553,6 +561,12 @@ class BatchManager:
 
                             self.current_batch_id = None
                             return
+                    else:
+                        print(f"POLL {poll_count} - NO RESULTS, result: {result}")
+                else:
+                    print(
+                        f"POLL {poll_count} - NO RESULTS, type(result): {type(result)}, len(result): {len(result)}"
+                    )
 
                 time.sleep(poll_interval)
 

@@ -51,7 +51,7 @@ class ProductionFlows:
 
     def is_valid(self) -> bool:
         """Check if the production flows data is valid."""
-        return isinstance(self.input, dict) and "output" in self.__dict__
+        return isinstance(self.input, dict) and isinstance(self.output, dict)
 
     def get_new_flows(
         cls: "ProductionFlows", post: "ProductionFlows"

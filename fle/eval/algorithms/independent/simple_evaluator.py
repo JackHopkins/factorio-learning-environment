@@ -3,12 +3,12 @@ import copy
 from typing import List, Tuple, Union, Dict
 
 from fle.commons.db_client import DBClient
-from fle.commons.models.achievements import ProductionFlows
+from fle.commons.models.production_flows import ProductionFlows
 from fle.commons.models.game_state import GameState
 from fle.commons.models.program import Program
 from fle.env.entities import Entity, EntityGroup
 from fle.env import FactorioInstance
-from fle.env.utils.profits import get_achievements
+from fle.env.utils.achievement_calculator import AchievementTracker
 
 
 class SimpleFactorioEvaluator:
@@ -176,8 +176,8 @@ class SimpleFactorioEvaluator:
                 self.instance.first_namespace._get_production_stats()
             )
 
-            achievements = get_achievements(
-                start_production_flows.__dict__, post_production_flows.__dict__
+            achievements = AchievementTracker.calculate_achievements(
+                start_production_flows, post_production_flows
             )
             flows = start_production_flows.get_new_flows(post_production_flows)  #
 

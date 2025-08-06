@@ -1,7 +1,7 @@
 from typing import Dict, List, Tuple, Any
 from copy import deepcopy
 
-from fle.commons.models.achievements import ProductionFlows
+from fle.commons.models.production_flows import ProductionFlows
 
 
 class AchievementTracker:

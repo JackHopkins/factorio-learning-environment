@@ -10,8 +10,8 @@ import string
 from fle.env import FactorioInstance
 from fle.commons.models.game_state import GameState
 from fle.env.gym_env.action import Action
-from fle.commons.models.achievements import ProductionFlows
-from fle.env.utils.profits import get_achievements
+from fle.commons.models.production_flows import ProductionFlows
+from fle.env.utils.achievement_calculator import AchievementTracker
 from fle.agents import Response, TaskResponse
 from fle.env.gym_env.observation import (
     Observation,
@@ -404,8 +404,8 @@ class FactorioGymEnv(gym.Env):
 
         # Get post-execution flows and calculate achievements
         current_flows = ProductionFlows.from_dict(namespace._get_production_stats())
-        achievements = get_achievements(
-            start_production_flows.__dict__, current_flows.__dict__
+        achievements = AchievementTracker.calculate_achievements(
+            start_production_flows, current_flows
         )
         # Store for next step
         self._last_production_flows[agent_idx] = current_flows.__dict__

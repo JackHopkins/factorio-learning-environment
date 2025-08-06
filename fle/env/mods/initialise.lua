@@ -17,7 +17,7 @@ end
 
 
 -- Note: The debug_rendering.lua library will be loaded separately by the LuaScriptManager
---local player = game.players[arg1]
+local player = global.agent_characters[1]
 player.surface.always_day=true
 --game.players[1].character_collision_mask = "not-colliding-with-itself"
 player.force.character_build_distance_bonus = 100
@@ -452,7 +452,6 @@ function create_arrow_with_direction(player, direction, position)
         target_position = end_position,
         duration = 6000,
         force = 'neutral',
-        player = player
     }
 
     -- Calculate and create the two side beams for the arrowhead
@@ -475,7 +474,6 @@ function create_arrow_with_direction(player, direction, position)
         target_position = arrow_left,
         duration = 100000,
         force = 'neutral',
-        player = player
     }
 
     player.surface.create_entity{
@@ -485,7 +483,6 @@ function create_arrow_with_direction(player, direction, position)
         target_position = arrow_right,
         duration = 100000,
         force = 'neutral',
-        player = player
     }
 end
 

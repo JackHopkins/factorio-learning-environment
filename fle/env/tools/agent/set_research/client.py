@@ -14,10 +14,11 @@ class SetResearch(Tool):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
-    def __call__(self, technology: Technology) -> List[Ingredient]:
+    def __call__(self, technology: Technology, tick: int = None) -> List[Ingredient]:
         """
         Set the current research technology for the player's force.
         :param technology: Technology to research
+        :param tick: Game tick to execute this command at (for batch mode)
         :return: Required ingredients to research the technology.
         """
         if hasattr(technology, "value"):
@@ -25,7 +26,12 @@ class SetResearch(Tool):
         else:
             name = technology
 
-        success, elapsed = self.execute(self.player_index, name)
+        success, elapsed = self.execute_or_batch(tick, self.player_index, name)
+
+        # Check if we're in batch mode - if so, return early without processing response
+        if isinstance(success, dict) and success.get("batched"):
+            # In batch mode, return empty ingredients list as placeholder
+            return []
 
         if success != {} and isinstance(success, str):
             if success is None:

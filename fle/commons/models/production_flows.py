@@ -25,15 +25,20 @@ class ProductionFlows:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ProductionFlows":
         """Create ProductionFlows from a dictionary."""
+        # Handle None values from Lua nil
+        data = data or {}
+
         crafted = data.get("crafted", [])
-        if isinstance(crafted, dict):
+        if crafted is None:
+            crafted = []
+        elif isinstance(crafted, dict):
             crafted = list(crafted.values())
 
         return cls(
-            input=data.get("input", {}),
-            output=data.get("output", {}),
+            input=data.get("input") or {},
+            output=data.get("output") or {},
             crafted=crafted,
-            harvested=data.get("harvested", {}),
+            harvested=data.get("harvested") or {},
             price_list=data.get("price_list"),
             static_items=data.get("static_items"),
         )
@@ -48,10 +53,6 @@ class ProductionFlows:
             "price_list": self.price_list,
             "static_items": self.static_items,
         }
-
-    def is_valid(self) -> bool:
-        """Check if the production flows data is valid."""
-        return isinstance(self.input, dict) and isinstance(self.output, dict)
 
     def get_new_flows(
         cls: "ProductionFlows", post: "ProductionFlows"

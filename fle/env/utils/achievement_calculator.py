@@ -12,9 +12,6 @@ class AchievementTracker:
         pre: ProductionFlows, post: ProductionFlows
     ) -> Dict[str, Dict[str, float]]:
         """Calculate achievements between two production states."""
-        if not pre.is_valid() or not post.is_valid():
-            return {"static": {}, "dynamic": {}}
-
         post = deepcopy(post)
         post.static_items = AchievementTracker._get_static_items(pre, post)
 
@@ -29,8 +26,10 @@ class AchievementTracker:
         static_items = deepcopy(new_flows.harvested)
 
         for craft in new_flows.crafted:
-            for item, value in craft["outputs"].items():
-                static_items[item] = static_items.get(item, 0) + value
+            # Handle malformed crafted data gracefully
+            if isinstance(craft, dict) and "outputs" in craft:
+                for item, value in craft["outputs"].items():
+                    static_items[item] = static_items.get(item, 0) + value
 
         return static_items
 

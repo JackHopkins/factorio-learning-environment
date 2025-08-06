@@ -279,9 +279,12 @@ class FactorioGymEnv(gym.Env):
             speed=self.instance._speed,
         )
 
-        # Get flows
-        flows = namespace._get_production_stats()
-        flows_obs = ProductionFlows.from_dict(flows)
+        # Get flows - use flows from response if available (for consistency), otherwise get fresh
+        if response and hasattr(response, "flows"):
+            flows_obs = response.flows
+        else:
+            flows = namespace._get_production_stats()
+            flows_obs = ProductionFlows.from_dict(flows)
 
         # Get messages
         messages = namespace.get_messages()
@@ -418,7 +421,7 @@ class FactorioGymEnv(gym.Env):
             achievements=achievements,
             step=0,
             ticks=self.instance.get_elapsed_ticks(),
-            flows=start_production_flows.get_new_flows(current_flows),
+            flows=current_flows,
             response=task_response if task_response else result,
             task=task_success if task_success else TaskResponse(success=False, meta={}),
             error=error_occurred,
@@ -433,7 +436,10 @@ class FactorioGymEnv(gym.Env):
             "error_occurred": error_occurred,
             "result": result,
             "ticks": self.instance.get_elapsed_ticks(),
-            "flows": response.flows,
+            "flows": response.flows,  # Absolute flows (current totals)
+            "delta_flows": start_production_flows.get_new_flows(
+                current_flows
+            ),  # Delta flows (step changes)
             "agent_idx": agent_idx,
             "last_message_timestamp": self.last_message_timestamps[agent_idx],
             "task_verification": task_response,

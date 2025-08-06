@@ -2,16 +2,13 @@ from typing import Any, Dict, List, Optional
 from fle.env import Entity
 from fle.env import FactorioInstance
 from fle.eval.tasks import TaskABC
-from fle.eval.tasks import LAB_PLAY_POPULATED_STARTING_INVENTORY, CRAFTING_STATISTICS
+from fle.eval.tasks import (
+    LAB_PLAY_POPULATED_STARTING_INVENTORY,
+    CRAFTING_STATISTICS,
+    UNBOUNDED_INSTRUCTIONS,
+)
 from fle.env.utils.achievements import eval_program_with_achievements
 from fle.agents import TaskResponse
-
-
-INSTRUCTIONS = """
-You must create an AUTOMATIC factory that automatically creates a target entity by itself. You are given the entity for which you need to create a factory for. Create the largest factory as you can that automatically creates the target entity
-    
-After each step the throughput of the factory is evaluated during 60 seconds of worktime and the results are supplied to you in the response. Iteratively expand your factory, i.e first make a small factory step by step and then expand the factory in subsequent steps .
-"""
 
 
 class UnboundedThroughputTask(TaskABC):
@@ -29,7 +26,7 @@ class UnboundedThroughputTask(TaskABC):
         unlock_all_research=True,
         agent_instructions: Optional[List[str]] = None,
     ) -> None:
-        goal_description += f"\n{INSTRUCTIONS}"
+        goal_description += f"\n{UNBOUNDED_INSTRUCTIONS}"
         if include_stats:
             goal_description += "\n\n##Useful statistics\n" + CRAFTING_STATISTICS
         if show_number_of_steps_left_in_prompt:

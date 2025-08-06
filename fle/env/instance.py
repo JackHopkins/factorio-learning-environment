@@ -261,28 +261,43 @@ class FactorioInstance:
             return 0
         return int(response)
 
-    def get_system_prompt(self, agent_idx: int = 0) -> str:
+    def get_system_prompt(self, agent_idx: int = 0, use_legacy: bool = True) -> str:
         """
         Get the system prompt for the Factorio environment.
-        This includes all the available actions, objects, and entities that the agent can interact with.
-        We get the system prompt by loading the schema, definitions, and entity definitions from their source files.
-        These are converted to their signatures - leaving out the implementations.
-        :return:
+
+        Args:
+            agent_idx: Index of the agent (for multi-agent scenarios)
+            use_legacy: If True, uses the legacy system prompt generator.
+                       If False, returns just the API documentation for use with
+                       modular system prompt builders.
+
+        Returns:
+            System prompt string
         """
         execution_path = Path(os.path.dirname(os.path.realpath(__file__)))
         generator = SystemPromptGenerator(str(execution_path))
-        multiagent_str = ""
-        if self.num_agents > 1:
-            player_idx = agent_idx + 1
-            multiagent_str = (
-                f"## MULTIAGENT INSTRUCTIONS\n"
-                f"You are Agent {player_idx} out of {self.num_agents} agent(s) in the game. "
-                f"Follow your specific instructions given to you by the task."
-                f"Use the send_message() tool regularly to communicate with other agents about your current activities and any challenges you encounter. "
-                f"Start each program with a send_message() call to explain what you are doing. "
-                f"End each program with a send_message() call to confirm your actions. If your program errors out prior to send_message() being called, the message will not be sent. "
-            )
-        return generator.generate(multiagent_str)
+
+        if use_legacy:
+            # Legacy behavior for backward compatibility
+            multiagent_str = ""
+            if self.num_agents > 1:
+                player_idx = agent_idx + 1
+                multiagent_str = (
+                    f"## MULTIAGENT INSTRUCTIONS\n"
+                    f"You are Agent {player_idx} out of {self.num_agents} agent(s) in the game. "
+                    f"Follow your specific instructions given to you by the task."
+                    f"Use the send_message() tool regularly to communicate with other agents about your current activities and any challenges you encounter. "
+                    f"Start each program with a send_message() call to explain what you are doing. "
+                    f"End each program with a send_message() call to confirm your actions. If your program errors out prior to send_message() being called, the message will not be sent. "
+                )
+            return generator.generate(multiagent_str)
+        else:
+            # Return just the API documentation for modular builders
+            return generator.generate("")
+
+    def get_api_documentation(self) -> str:
+        """Get just the API method documentation without task-specific content."""
+        return self.get_system_prompt(use_legacy=False)
 
     def connect_to_server(self, address, tcp_port):
         try:

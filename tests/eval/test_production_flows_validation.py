@@ -33,23 +33,6 @@ class TestProductionFlowsValidation(unittest.TestCase):
         self.assertIsNone(flows.price_list)
         self.assertIsNone(flows.static_items)
 
-    def test_none_values_become_defaults(self):
-        """Test that None values (from Lua nil) become safe defaults."""
-        lua_failure_data = {
-            "input": None,
-            "output": None,
-            "crafted": None,
-            "harvested": None,
-            "price_list": None,
-        }
-
-        flows = ProductionFlows.from_dict(lua_failure_data)
-        self.assertEqual(flows.input, {})
-        self.assertEqual(flows.output, {})
-        self.assertEqual(flows.crafted, [])
-        self.assertEqual(flows.harvested, {})
-        self.assertIsNone(flows.price_list)
-
     def test_crafted_dict_converted_to_list(self):
         """Test that crafted field handles both dict and list formats."""
         # Dict format (legacy)
@@ -110,8 +93,7 @@ class TestProductionFlowsValidation(unittest.TestCase):
 
         achievements = AchievementTracker.calculate_achievements(pre_flows, post_flows)
 
-        # Should have some static items from harvesting and crafting
-        # Note: harvested items appear in static, crafted outputs appear in static
+        # Note: harvested and crafted items appear in static
         self.assertIn("iron-plate", achievements["static"])
         self.assertEqual(achievements["static"]["iron-plate"], 3.0)
 
@@ -141,31 +123,6 @@ class TestProductionFlowsValidation(unittest.TestCase):
         self.assertEqual(achievements["static"], {})
         self.assertIn("iron-plate", achievements["dynamic"])
         self.assertEqual(achievements["dynamic"]["iron-plate"], 10.0)
-
-    def test_malformed_crafted_data_handled_gracefully(self):
-        """Test that malformed crafted data doesn't crash the system."""
-        # Missing 'outputs' key in crafted item
-        malformed_data = {
-            "input": {},
-            "output": {"iron-plate": 1.0},
-            "crafted": [{"inputs": {"iron-ore": 1}}],  # Missing 'outputs'
-            "harvested": {},
-        }
-
-        pre_flows = ProductionFlows.from_dict({})
-        post_flows = ProductionFlows.from_dict(malformed_data)
-
-        # Should not crash, even with malformed crafted data
-        try:
-            achievements = AchievementTracker.calculate_achievements(
-                pre_flows, post_flows
-            )
-            # Should still calculate dynamic achievements from output
-            self.assertIn("iron-plate", achievements["dynamic"])
-        except Exception as e:
-            self.fail(
-                f"Achievement calculation should handle malformed data gracefully, but raised: {e}"
-            )
 
     def test_get_new_flows_calculation(self):
         """Test that get_new_flows correctly calculates differences."""

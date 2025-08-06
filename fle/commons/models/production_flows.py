@@ -4,14 +4,6 @@ from typing import Dict, List, Any, Optional
 
 
 @dataclass
-class ProfitConfig:
-    """Configuration for profit calculations."""
-
-    max_static_unit_profit_cap: float = 5.0
-    dynamic_profit_multiplier: float = 10.0
-
-
-@dataclass
 class ProductionFlows:
     """Represents production flow data."""
 
@@ -25,20 +17,15 @@ class ProductionFlows:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ProductionFlows":
         """Create ProductionFlows from a dictionary."""
-        # Handle None values from Lua nil
-        data = data or {}
-
         crafted = data.get("crafted", [])
-        if crafted is None:
-            crafted = []
-        elif isinstance(crafted, dict):
+        if isinstance(crafted, dict):
             crafted = list(crafted.values())
 
         return cls(
-            input=data.get("input") or {},
-            output=data.get("output") or {},
+            input=data.get("input", {}),
+            output=data.get("output", {}),
             crafted=crafted,
-            harvested=data.get("harvested") or {},
+            harvested=data.get("harvested", {}),
             price_list=data.get("price_list"),
             static_items=data.get("static_items"),
         )

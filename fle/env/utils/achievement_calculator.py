@@ -26,10 +26,8 @@ class AchievementTracker:
         static_items = deepcopy(new_flows.harvested)
 
         for craft in new_flows.crafted:
-            # Handle malformed crafted data gracefully
-            if isinstance(craft, dict) and "outputs" in craft:
-                for item, value in craft["outputs"].items():
-                    static_items[item] = static_items.get(item, 0) + value
+            for item, value in craft["outputs"].items():
+                static_items[item] = static_items.get(item, 0) + value
 
         return static_items
 

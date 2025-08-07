@@ -45,20 +45,6 @@ class APIFactory:
         },
     }
 
-    # Models that support image input
-    MODELS_WITH_IMAGE_SUPPORT = [
-        "claude-3-opus",
-        "claude-3-sonnet",
-        "claude-3-haiku",
-        "claude-3-5-sonnet",
-        "claude-3-7-sonnet",
-        "claude-3.7-sonnet",
-        "gpt-4-vision",
-        "gpt-4-turbo",
-        "gpt-4o",
-        "gpt-4-1106-vision-preview",
-    ]
-
     def __init__(self, model: str, beam: int = 1):
         self.model = model
         self.beam = beam
@@ -70,19 +56,13 @@ class APIFactory:
                 return config
         return self.PROVIDERS["openai"]  # default
 
-    def _is_model_image_compatible(self, model: str) -> bool:
-        """Check if model supports images"""
-        model_lower = model.lower()
-        return any(
-            supported in model_lower for supported in self.MODELS_WITH_IMAGE_SUPPORT
-        )
-
-    def _prepare_messages(self, messages: list) -> list:
-        """Prepare messages for API call"""
-        if not has_image_content(messages):
-            messages = remove_whitespace_blocks(messages)
-            messages = merge_contiguous_messages(messages)
-        return messages
+    def _get_reasoning_length(self, model: str) -> str:
+        """Get reasoning effort level for o1/o3 models"""
+        if "med" in model:
+            return "medium"
+        elif "high" in model:
+            return "high"
+        return "low"
 
     @track_timing_async("llm_api_call")
     @retry(wait=wait_exponential(multiplier=2, min=2, max=15))
@@ -102,8 +82,10 @@ class APIFactory:
         if "model_transform" in provider_config:
             model_to_use = provider_config["model_transform"](model_to_use)
 
-        # Prepare messages
-        messages = self._prepare_messages(messages)
+        # Prepare messages (inline the logic)
+        if not has_images:
+            messages = remove_whitespace_blocks(messages)
+            messages = merge_contiguous_messages(messages)
 
         # Create client
         client = AsyncOpenAI(
@@ -122,17 +104,11 @@ class APIFactory:
 
             kwargs.pop("max_tokens", None)  # Use max_completion_tokens instead
 
-            reasoning_length = "low"
-            if "med" in model_to_use:
-                reasoning_length = "medium"
-            elif "high" in model_to_use:
-                reasoning_length = "high"
-
             response = await client.chat.completions.create(
                 model="o3-mini" if "o3-mini" in model_to_use else "o1-mini",
                 messages=messages,
                 n=self.beam,
-                reasoning_effort=reasoning_length,
+                reasoning_effort=self._get_reasoning_length(model_to_use),
                 response_format={"type": "text"},
             )
         else:

@@ -70,7 +70,7 @@ class FactorioInstance:
 
     def __init__(
         self,
-        server_settings: ServerSettings,
+        client: FactorioClient,
         fast=False,
         inventory=None,
         all_technologies_researched=True,
@@ -78,10 +78,10 @@ class FactorioInstance:
         num_agents=1,
         **kwargs,
     ):
+        self.client = client
         self.id = str(uuid.uuid4())[:8]
         self.num_agents = num_agents
         self.persistent_vars = {}
-        self.tcp_port = tcp_port
         self.all_technologies_researched = all_technologies_researched
         self.fast = fast
         self._speed = 1

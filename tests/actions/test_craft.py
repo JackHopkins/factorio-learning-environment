@@ -4,7 +4,7 @@ from fle.env.game.game_types import Prototype, Resource
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     instance.reset()
     instance.set_inventory(
         {

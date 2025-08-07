@@ -1,82 +1,15 @@
-#!/usr/bin/env python3
-import os
-import platform
 import argparse
-from pathlib import Path
 import asyncio
 import aiodocker
 from aiodocker.exceptions import DockerError
 from typing import List
-import json
 
-from enum import Enum
-
-ROOT_DIR = Path(__file__).resolve().parent.parent
-
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-
-class Scenario(Enum):
-    OPEN_WORLD = "open_world"
-    DEFAULT_LAB_SCENARIO = "default_lab_scenario"
-
-
-class Mode(Enum):
-    SAVE_BASED = "save-based"
-    SCENARIO = "scenario"
-
-
-class ServerSettings:
-    def __init__(self):
-        self.arch = platform.machine()
-        self.address = "localhost"
-        self.os_name = platform.system()
-        self.saves_path = ROOT_DIR / ".fle" / "saves"
-        self.screenshots_dir = ROOT_DIR / "data" / "_screenshots"
-        self.mods_path = self._detect_mods_path()
-        self.image_name = "factoriotools/factorio:1.1.110"
-        self.rcon_port = 27015
-        self.udp_port = 34197
-        self.scenario_name = Scenario.DEFAULT_LAB_SCENARIO.value
-        self.scenario_dir = Path(__file__).parent.resolve() / "factorio" / "scenarios"
-        self.server_config_dir = Path(__file__).parent.resolve() / "factorio" / "config"
-        self.mode = Mode.SAVE_BASED.value
-        self.temp_playing_dir = "/opt/factorio/temp/currently-playing"
-        self.name_prefix = "factorio_"
-        with open(self.server_config_dir / "rconpw", "r") as f:
-            self.factorio_password = f.read().strip()
-
-    def _detect_mods_path(self) -> str:
-        if any(x in self.os_name for x in ("MINGW", "MSYS", "CYGWIN")):
-            path = os.getenv("APPDATA", "")
-            mods = Path(path) / "Factorio" / "mods"
-            if mods.exists():
-                return str(mods)
-            return str(
-                Path(os.getenv("USERPROFILE", ""))
-                / "AppData"
-                / "Roaming"
-                / "Factorio"
-                / "mods"
-            )
-        else:
-            return str(
-                Path.home()
-                / "Applications"
-                / "Factorio.app"
-                / "Contents"
-                / "Resources"
-                / "mods"
-            )
-
+from fle.services.docker.config import DockerConfig, Scenario, Mode
 
 class FactorioHeadlessClusterManager:
     def __init__(
         self,
-        config: ServerSettings,
+        config: DockerConfig,
         docker_platform: str,
         num_instances: int,
         dry_run: bool = False,
@@ -86,7 +19,7 @@ class FactorioHeadlessClusterManager:
         self.num = num_instances
         self.dry_run = dry_run
         self.docker = aiodocker.Docker()
-        self.docker_configs = {}
+        self.docker_configs_raw = {}
 
     async def _ensure_image(self):
         try:
@@ -133,6 +66,16 @@ class FactorioHeadlessClusterManager:
             }
         # HostConfig.Binds expects ["host:container:mode", ...]
         return [f"{host}:{b['bind']}:{b['mode']}" for host, b in vols.items()]
+    
+    def _make_save_latest(self, instance_index: int, save_name: str):
+        save_dir = self.config.saves_path / str(instance_index)
+        save_dir.mkdir(parents=True, exist_ok=True)
+        save_zips = list(save_dir.glob(f"{save_name}*.zip"))
+        if len(save_zips) > 0:
+            save_zips[0].touch(exist_ok=True)
+            
+        return save_zips[0]
+    
 
     def _get_environment(self) -> list:
         env = {
@@ -144,6 +87,7 @@ class FactorioHeadlessClusterManager:
             "SERVER_SCENARIO": self.config.scenario_name,
             "DLC_SPACE_AGE": "false",
             "MODE": self.config.mode,
+            # "SAVE_NAME": save_name,
         }
         if self.config.mode == Mode.SCENARIO.value:
             env["PRESET"] = "default"
@@ -251,6 +195,14 @@ class FactorioHeadlessClusterManager:
         tasks = [ctr.restart() for ctr in ctrs]
         await asyncio.gather(*tasks)
 
+    async def restart_with_save(self, instance_index: int, save_name: str):
+        ctr = await self.docker.containers.list(filters={"name": [f"/{self.config.name_prefix}{instance_index}"]})
+        if len(ctr) == 0:
+            raise ValueError(f"Container {self.config.name_prefix}{instance_index} not found")
+        ctr = ctr[0]
+        self._make_save_latest(instance_index, save_name)
+        await ctr.restart()
+
     async def hot_reload_scenario(self):
         # Sync scenario files into the server's temp directory for hot-reload
         containers = await self.docker.containers.list(filters={"name": [f"/{self.config.name_prefix}"]})
@@ -293,10 +245,10 @@ class FactorioHeadlessClusterManager:
         config_to_keep = ["Env", "Entrypoint", "Cmd", "WorkingDir"]
         network_to_keep = ["Ports", "IPAddress", "Gateway"]
         for container_info in container_infos:
-            self.docker_configs[container_info["Name"]] = {k: container_info[k] for k in info_to_keep}
-            self.docker_configs[container_info["Name"]]["Config"] = {k: container_info["Config"][k] for k in config_to_keep}
-            self.docker_configs[container_info["Name"]]["NetworkSettings"] = {k: container_info["NetworkSettings"][k] for k in network_to_keep}
-            self.docker_configs[container_info["Name"]]["HostConfig"] = {k: container_info["HostConfig"][k] for k in hostconfig_to_keep}
+            self.docker_configs_raw[container_info["Name"]] = {k: container_info[k] for k in info_to_keep}
+            self.docker_configs_raw[container_info["Name"]]["Config"] = {k: container_info["Config"][k] for k in config_to_keep}
+            self.docker_configs_raw[container_info["Name"]]["NetworkSettings"] = {k: container_info["NetworkSettings"][k] for k in network_to_keep}
+            self.docker_configs_raw[container_info["Name"]]["HostConfig"] = {k: container_info["HostConfig"][k] for k in hostconfig_to_keep}
 
     async def get_local_container_ips(self) -> tuple[List[str], List[int], List[int]]:
         """Get IP addresses of running Factorio containers in the local Docker setup."""
@@ -377,7 +329,7 @@ def parse_args():
 
 async def main():
     args = parse_args()
-    config = ServerSettings()
+    config = DockerConfig()
 
     docker_platform = (
         "linux/arm64" if config.arch in ("arm64", "aarch64") else "linux/amd64"

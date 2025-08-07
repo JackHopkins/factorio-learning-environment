@@ -5,7 +5,7 @@ from fle.env.game.game_types import Prototype, Resource
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     instance.initial_inventory = {
         "coal": 200,
         "burner-mining-drill": 10,

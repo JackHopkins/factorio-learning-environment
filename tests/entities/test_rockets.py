@@ -5,7 +5,7 @@ import pytest
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     instance.initial_inventory = {
         **instance.initial_inventory,
         "rocket-silo": 1,

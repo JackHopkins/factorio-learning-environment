@@ -1,11 +1,12 @@
 import argparse
-import sys
+import asyncio
+import importlib.resources
 import shutil
 import subprocess
+import sys
 from pathlib import Path
-import importlib.resources
-import asyncio
-from fle.env.gym_env.run_eval import main as run_eval
+
+from fle.run_eval import main as run_eval
 
 
 def fle_init():

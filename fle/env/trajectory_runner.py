@@ -5,9 +5,9 @@ from typing import List, Optional, Tuple
 from fle.agents import CompletionReason, CompletionResult
 from fle.agents.gym_agent import GymAgent
 from fle.commons.models.conversation import Conversation
-from fle.env.game.game_state import GameState
 from fle.commons.models.program import Program
 from fle.env.environment import FactorioGymEnv
+from fle.env.game.game_state import GameState
 from fle.env.gym_env.action import Action
 from fle.env.gym_env.config import GymEvalConfig
 from fle.env.gym_env.observation import Observation

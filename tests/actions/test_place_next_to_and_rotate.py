@@ -6,7 +6,7 @@ from fle.env.game import DirectionInternal
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     instance.initial_inventory = {
         "boiler": 1,
         "transport-belt": 1,

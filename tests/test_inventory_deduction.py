@@ -4,7 +4,7 @@ from fle.env.game.game_types import Prototype
 from fle.env.game.entities import Position, Direction
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     instance.initial_inventory = {
         'pipe': 10,
         'small-electric-pole': 5,

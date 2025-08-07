@@ -5,7 +5,7 @@ from fle.env.game.game_types import Prototype, RecipeName, prototype_by_name, Re
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     instance.initial_inventory = {
         **instance.initial_inventory,
         "pipe": 200,

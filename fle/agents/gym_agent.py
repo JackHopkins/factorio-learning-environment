@@ -1,21 +1,18 @@
 import copy
 from typing import Any, Optional
 
-from fle.env.gym_env.observation import Observation
-
-from fle.commons.models.conversation import Conversation
-from fle.commons.models.generation_parameters import GenerationParameters
-from fle.commons.models.program import Program
-from fle.env.gym_env.observation_formatter import BasicObservationFormatter
-from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
-from fle.env.tasks import TaskABC
-
-from fle.agents.models import CompletionResult
-from fle.agents.llm.parsing import Policy
 from fle.agents.agent_abc import AgentABC
 from fle.agents.formatters import RecursiveReportFormatter
 from fle.agents.llm.api_factory import APIFactory
-from fle.agents.llm.parsing import parse_response
+from fle.agents.llm.parsing import Policy, parse_response
+from fle.agents.models import CompletionResult
+from fle.commons.models.conversation import Conversation
+from fle.commons.models.generation_parameters import GenerationParameters
+from fle.commons.models.program import Program
+from fle.env.gym_env.observation import Observation
+from fle.env.gym_env.observation_formatter import BasicObservationFormatter
+from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
+from fle.env.tasks import TaskABC
 
 GYM_AGENT_INSTRUCTIONS = """
 # Factorio Gym Agent Instructions

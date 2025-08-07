@@ -493,9 +493,3 @@ def run_process(process_id: int, config: EvalConfig):
     asyncio.run(run_trajectory(process_id, config))
 
 
-async def get_next_version() -> int:
-    """Get next available version number"""
-    db_client = await create_db_client()
-    version = await db_client.get_largest_version()
-    await db_client.cleanup()
-    return version + 1

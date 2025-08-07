@@ -21,7 +21,6 @@ from .trajectory_runner import (
     EvalConfig,
     create_factorio_instance,
     run_process,
-    get_next_version,
 )
 
 from .value_calculator import (

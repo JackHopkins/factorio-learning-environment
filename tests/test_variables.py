@@ -2,7 +2,7 @@ import pytest
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     instance.initial_inventory = {
         "stone-furnace": 10,
         "burner-mining-drill": 10,

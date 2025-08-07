@@ -5,7 +5,7 @@ from fle.env.game.game_types import Prototype
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     game.initial_inventory = {"assembling-machine-1": 1}
     instance.reset()
     yield instance.namespace

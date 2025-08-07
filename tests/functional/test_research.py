@@ -8,7 +8,7 @@ from fle.env.game.game_state import GameState
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     initial_inventory = {
         "coal": 50,
         "copper-plate": 50,

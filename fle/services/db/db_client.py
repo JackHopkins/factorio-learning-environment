@@ -15,11 +15,12 @@ import psycopg2
 import tenacity
 from psycopg2.extras import DictCursor
 from psycopg2.pool import ThreadedConnectionPool
-from tenacity import retry_if_exception_type, wait_exponential, wait_random_exponential
+from tenacity import (retry_if_exception_type, wait_exponential,
+                      wait_random_exponential)
 
 from fle.commons.models.conversation import Conversation
-from fle.env.game.game_state import GameState
 from fle.commons.models.program import Program
+from fle.env.game.game_state import GameState
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -862,3 +863,11 @@ async def create_db_client(
         )
     else:
         raise Exception(f"Invalid database type: {db_type}")
+
+
+async def get_next_version() -> int:
+    """Get next available version number"""
+    db_client = await create_db_client()
+    version = await db_client.get_largest_version()
+    await db_client.cleanup()
+    return version + 1

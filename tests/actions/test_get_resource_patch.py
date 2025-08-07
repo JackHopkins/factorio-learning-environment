@@ -6,7 +6,7 @@ from fle.env.game.game_types import Resource
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     instance.reset()
     yield instance.namespace
     instance.reset()

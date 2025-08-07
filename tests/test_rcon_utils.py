@@ -4,7 +4,7 @@ from fle.services.rcon import _lua2python
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     instance.reset()
     yield instance.namespace
 

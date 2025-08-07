@@ -5,13 +5,13 @@ from fle.env.game.game_types import Prototype, Resource
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     instance.reset()
     yield instance.namespace
     instance.reset()
 
 
-def test_can_place(game):
+def test_can_place(instance):
     """
     Place a boiler at (0, 0)
     :param game:

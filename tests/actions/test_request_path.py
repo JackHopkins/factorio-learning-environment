@@ -4,7 +4,7 @@ from fle.env.game.entities import Position
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     instance.reset()
     yield instance.namespace
     instance.reset()

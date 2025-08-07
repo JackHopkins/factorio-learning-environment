@@ -1,4 +1,3 @@
-import asyncio
 import threading
 from contextlib import contextmanager
 from time import time as timer
@@ -9,7 +8,6 @@ from typing_extensions import Any, Dict, List, Tuple
 
 from fle.env.game.lua_manager import LuaScriptManager, ToolHookRegistry
 from fle.env.game.namespace import FactorioNamespace
-from fle.services.docker.docker_manager import ServerSettings
 from fle.services.rcon import _lua2python
 
 
@@ -68,18 +66,22 @@ class FactorioClient:
     """
     A class that represents a Factorio server and provides an interface for interacting with it.
     """
+
     rcon_client: RCONClient
-    server_config: ServerSettings
     cache_scripts: bool
     tool_hook_registry: ToolHookRegistry
     lua_script_manager: LuaScriptManager
     script_dict: Dict[str, str]
-    
+
     def __init__(
-        self, server_settings: ServerSettings, cache_scripts=True
+        self, rcon_port: int, address: str, rcon_password: str, cache_scripts=True
     ):
-        self.rcon_client = self.get_rcon_client()
+        self.address = address
+        self.rcon_port = rcon_port
+        self.rcon_password = rcon_password
         self.cache_scripts = cache_scripts
+
+        self.rcon_client = self.get_rcon_client()
         self.tool_hook_registry = ToolHookRegistry()
         self.lua_script_manager = LuaScriptManager(
             self.rcon_client, self.tool_hook_registry, cache_scripts
@@ -88,9 +90,6 @@ class FactorioClient:
             **self.lua_script_manager.lib_scripts,
             **self.lua_script_manager.tool_scripts,
         }
-        self.rcon_password = server_settings.rcon_password
-        self.rcon_port = server_settings.rcon_port
-        self.address = server_settings.address
 
     def get_rcon_client(self, address=None):
         return RCONClient(
@@ -125,9 +124,7 @@ class FactorioClient:
         except ConnectionError as e:
             print(e)
 
-        print(f"Connected to {self.address}"
-              f"client at tcp/{self.rcon_port}."
-              f"Password: {self.rcon_password}")
+        print(f"Connected to {self.address}" f"client at tcp/{self.rcon_port}.")
         return rcon_client
 
     def _get_command(self, command, parameters=[], measured=True):

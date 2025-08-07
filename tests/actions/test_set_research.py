@@ -6,7 +6,7 @@ from fle.commons.cluster_ips import get_local_container_ips
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     # game.initial_inventory = {'assembling-machine-1': 1}
     # from gym import FactorioInstance
     ips, udp_ports, tcp_ports = get_local_container_ips()

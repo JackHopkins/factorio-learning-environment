@@ -5,7 +5,7 @@ from fle.env.game.entities import Position, Direction
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     instance.initial_inventory = {
         "iron-chest": 1,
         "pipe": 10,

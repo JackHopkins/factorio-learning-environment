@@ -5,7 +5,7 @@ from game_types import Prototype
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     instance.reset()
     yield instance.namespace
     instance.reset()

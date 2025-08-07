@@ -4,7 +4,7 @@ from fle.env.game.entities import Position, Direction, Prototype, Resource
 
 
 @pytest.fixture()
-def game(instance):
+def game(instance: FactorioInstance):
     instance.initial_inventory = {
         **instance.initial_inventory,
         "coal": 5,

@@ -56,14 +56,6 @@ class APIFactory:
                 return config
         return self.PROVIDERS["openai"]  # default
 
-    def _get_reasoning_length(self, model: str) -> str:
-        """Get reasoning effort level for o1/o3 models"""
-        if "med" in model:
-            return "medium"
-        elif "high" in model:
-            return "high"
-        return "low"
-
     @track_timing_async("llm_api_call")
     @retry(wait=wait_exponential(multiplier=2, min=2, max=15))
     async def acall(self, *args, **kwargs):
@@ -104,11 +96,17 @@ class APIFactory:
 
             kwargs.pop("max_tokens", None)  # Use max_completion_tokens instead
 
+            reasoning_length = "low"
+            if "med" in model_to_use:
+                reasoning_length = "medium"
+            elif "high" in model_to_use:
+                reasoning_length = "high"
+
             response = await client.chat.completions.create(
                 model="o3-mini" if "o3-mini" in model_to_use else "o1-mini",
                 messages=messages,
                 n=self.beam,
-                reasoning_effort=self._get_reasoning_length(model_to_use),
+                reasoning_effort=reasoning_length,
                 response_format={"type": "text"},
             )
         else:

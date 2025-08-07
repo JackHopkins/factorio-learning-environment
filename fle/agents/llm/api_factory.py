@@ -82,7 +82,7 @@ class APIFactory:
         if "model_transform" in provider_config:
             model_to_use = provider_config["model_transform"](model_to_use)
 
-        # Prepare messages (inline the logic)
+        # Prepare messages
         if not has_images:
             messages = remove_whitespace_blocks(messages)
             messages = merge_contiguous_messages(messages)

@@ -14,16 +14,16 @@ from fle.agents.llm.utils import (
 class APIFactory:
     # Provider configurations
     PROVIDERS = {
-        "claude": {
-            "base_url": "https://api.anthropic.com/v1",
-            "api_key_env": "ANTHROPIC_API_KEY",
-            "supports_images": True,
-        },
         "open-router": {
             "base_url": "https://openrouter.ai/api/v1",
             "api_key_env": "OPEN_ROUTER_API_KEY",
             "supports_images": True,
             "model_transform": lambda m: m.replace("open-router", "").strip("-"),
+        },
+        "claude": {
+            "base_url": "https://api.anthropic.com/v1",
+            "api_key_env": "ANTHROPIC_API_KEY",
+            "supports_images": True,
         },
         "deepseek": {
             "base_url": "https://api.deepseek.com",
@@ -77,7 +77,7 @@ class APIFactory:
             supported in model_lower for supported in self.MODELS_WITH_IMAGE_SUPPORT
         )
 
-    def _prepare_messages(self, messages: list, provider_config: dict) -> list:
+    def _prepare_messages(self, messages: list) -> list:
         """Prepare messages for API call"""
         if not has_image_content(messages):
             messages = remove_whitespace_blocks(messages)
@@ -103,7 +103,7 @@ class APIFactory:
             model_to_use = provider_config["model_transform"](model_to_use)
 
         # Prepare messages
-        messages = self._prepare_messages(messages, provider_config)
+        messages = self._prepare_messages(messages)
 
         # Create client
         client = AsyncOpenAI(

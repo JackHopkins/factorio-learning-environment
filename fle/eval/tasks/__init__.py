@@ -1,3 +1,24 @@
+# Core task classes
+from .task_abc import TaskABC
+from .default_task import DefaultTask
+from .throughput_task import ThroughputTask
+from .unbounded_throughput_task import UnboundedThroughputTask
+
+# Task creation utilities
+from .task_factory import TaskFactory
+# Core task classes
+
+# Task creation utilities
+# Core task classes
+
+# Task creation utilities
+# Core task classes
+
+# Task creation utilities
+# Core task classes
+
+# Task creation utilities
+
 """
 Task definitions and evaluation framework for the Factorio Learning Environment.
 
@@ -25,13 +46,6 @@ Example usage:
         holdout_wait_period=60
     )
 """
-
-# Core task classes
-from .default_task import DefaultTask
-from .task_abc import TaskABC
-from .task_factory import TaskFactory
-from .throughput_task import ThroughputTask
-from .unbounded_throughput_task import UnboundedThroughputTask
 
 # Shared constants for throughput tasks
 LAB_PLAY_POPULATED_STARTING_INVENTORY = {
@@ -117,7 +131,6 @@ You must create an AUTOMATIC factory that automatically creates a target entity 
     
 After each step the throughput of the factory is evaluated during 60 seconds of worktime and the results are supplied to you in the response. Iteratively expand your factory, i.e first make a small factory step by step and then expand the factory in subsequent steps .
 """
-
 
 __all__ = [
     # Abstract base and core classes

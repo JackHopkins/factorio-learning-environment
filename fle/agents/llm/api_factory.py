@@ -18,7 +18,7 @@ class APIFactory:
             "base_url": "https://openrouter.ai/api/v1",
             "api_key_env": "OPEN_ROUTER_API_KEY",
             "supports_images": True,
-            "model_transform": lambda m: m.replace("open-router", "").strip("-"),
+            "model_transform": lambda m: m.replace("open-router-", ""),
         },
         "claude": {
             "base_url": "https://api.anthropic.com/v1",
@@ -54,11 +54,10 @@ class APIFactory:
         for provider, config in self.PROVIDERS.items():
             if provider in model:
                 return config
-        return self.PROVIDERS["openai"]  # default
 
     @track_timing_async("llm_api_call")
     @retry(wait=wait_exponential(multiplier=2, min=2, max=15))
-    async def acall(self, *args, **kwargs):
+    async def acall(self, **kwargs):
         model_to_use = kwargs.get("model", self.model)
         messages = kwargs.get("messages", [])
         has_images = has_image_content(messages)
@@ -84,8 +83,7 @@ class APIFactory:
 
         # Transform model name if needed
         if "model_transform" in provider_config:
-            model_to_use = provider_config["model_transform"](model_to_use)
-            client.provider = {"sort": "throughput"}
+            model_to_use = provider_config["model_transform"](model_to_use) + ":nitro"
 
         # Special handling for o1/o3 models
         if "o1-mini" in model_to_use or "o3-mini" in model_to_use:

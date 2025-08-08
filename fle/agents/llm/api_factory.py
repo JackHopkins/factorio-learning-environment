@@ -70,10 +70,6 @@ class APIFactory:
         if has_images and not provider_config.get("supports_images", False):
             raise ValueError(f"Model {model_to_use} doesn't support images")
 
-        # Transform model name if needed
-        if "model_transform" in provider_config:
-            model_to_use = provider_config["model_transform"](model_to_use)
-
         # Prepare messages
         if not has_images:
             messages = remove_whitespace_blocks(messages)
@@ -85,6 +81,11 @@ class APIFactory:
             api_key=os.getenv(provider_config["api_key_env"]),
             max_retries=0,
         )
+
+        # Transform model name if needed
+        if "model_transform" in provider_config:
+            model_to_use = provider_config["model_transform"](model_to_use)
+            client.provider = {"sort": "throughput"}
 
         # Special handling for o1/o3 models
         if "o1-mini" in model_to_use or "o3-mini" in model_to_use:

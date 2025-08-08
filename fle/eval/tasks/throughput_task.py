@@ -4,7 +4,6 @@ from fle.env import FactorioInstance
 from fle.eval.tasks import TaskABC
 from fle.env.utils.achievements import eval_program_with_achievements
 from fle.agents import TaskResponse
-from fle.env.system_prompt import SystemPromptBuilder
 
 
 class ThroughputTask(TaskABC):
@@ -18,27 +17,16 @@ class ThroughputTask(TaskABC):
         holdout_wait_period: int,
         pre_holdout_wait_period: int = 0,
         agent_instructions: Optional[List[str]] = None,
-        system_prompt_builder: Optional[SystemPromptBuilder] = None,
     ):
         # Import constants from the module to avoid circular imports
         from fle.eval.tasks import (
             LAB_PLAY_POPULATED_STARTING_INVENTORY,
             CRAFTING_STATISTICS,
+            BOUNDED_INSTRUCTIONS,
         )
 
-        # Store raw task description for flexible system prompt generation
-        self.base_goal_description = goal_description
-        self.statistics = CRAFTING_STATISTICS
-        self.system_prompt_builder = system_prompt_builder
-
-        # For backward compatibility, still create the old-style goal_description
-        # if no custom builder is provided
-        if system_prompt_builder is None:
-            from fle.eval.tasks import BOUNDED_INSTRUCTIONS
-
-            goal_description += f"\n{BOUNDED_INSTRUCTIONS}"
-            goal_description += "\n\n##Useful statistics\n" + CRAFTING_STATISTICS
-
+        goal_description += f"\n{BOUNDED_INSTRUCTIONS}"
+        goal_description += "\n\n##Useful statistics\n" + CRAFTING_STATISTICS
         super().__init__(
             trajectory_length,
             starting_inventory=LAB_PLAY_POPULATED_STARTING_INVENTORY,
@@ -102,25 +90,3 @@ class ThroughputTask(TaskABC):
             response += f"\n\nHere is the current throughput of your factory: {task_throughputs['dynamic']} created per 60 seconds"
 
         return response
-
-    def build_system_prompt(
-        self, agent_idx: Optional[int] = None, num_agents: int = 1
-    ) -> str:
-        """Generate a customized system prompt for this task."""
-        if self.system_prompt_builder is not None:
-            # Use custom builder if provided
-            builder = self.system_prompt_builder
-            if num_agents > 1 and agent_idx is not None:
-                builder = builder.with_multiagent(agent_idx, num_agents)
-            return builder.build()
-        else:
-            # Use default throughput task builder
-            builder = SystemPromptBuilder.for_throughput_task(
-                task_description=self.base_goal_description,
-                statistics=self.statistics,
-                quota=self.quota,
-                entity=self.throughput_entity,
-            )
-            if num_agents > 1 and agent_idx is not None:
-                builder = builder.with_multiagent(agent_idx, num_agents)
-            return builder.build()

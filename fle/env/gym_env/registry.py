@@ -1,5 +1,6 @@
 import gym
 import json
+import os
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
@@ -130,18 +131,33 @@ def make_factorio_env(env_spec: GymEnvironmentSpec) -> FactorioGymEnv:
     task = TaskFactory.create_task(env_spec.task_config_path)
 
     # Create Factorio instance
-    # Note: This assumes you have containers available
     try:
-        ips, udp_ports, tcp_ports = get_local_container_ips()
-        if len(tcp_ports) == 0:
-            raise RuntimeError("No Factorio containers available")
+        # Check for external server configuration via environment variables
+        external_address = os.getenv('FACTORIO_SERVER_ADDRESS')
+        external_port = os.getenv('FACTORIO_SERVER_PORT')
+        
+        if external_address and external_port:
+            # Use external server
+            instance = FactorioInstance(
+                address=external_address,
+                tcp_port=int(external_port),
+                num_agents=env_spec.num_agents,
+            )
+            print(f"Using external Factorio server at {external_address}:{external_port}")
+        else:
+            # Fall back to local containers
+            ips, udp_ports, tcp_ports = get_local_container_ips()
+            if len(tcp_ports) == 0:
+                raise RuntimeError("No Factorio containers available")
 
-        # Use the first available container
-        instance = FactorioInstance(
-            address=ips[0],
-            container_id=0,  # Use first container
-            num_agents=env_spec.num_agents,
-        )
+            # Use the first available container
+            instance = FactorioInstance(
+                address=ips[0],
+                tcp_port=tcp_ports[0],
+                num_agents=env_spec.num_agents,
+            )
+            print(f"Using local Factorio container at {ips[0]}:{tcp_ports[0]}")
+
         instance.speed(10)
 
         # Setup the task

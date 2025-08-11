@@ -62,7 +62,6 @@ Petroleum gas - 540 per 60 seconds with Basic oil processing, 660 per 60 seconds
 Raw resource extraction speeds
 Burner mining drill - Mines 15 resources per 60 seconds
 Electric mining drill - Mines 30 resources per 60 seconds
-Burner mining drill - Mines 15 resources per 60 seconds
 Pumpjack - Extracts 600 crude oil per 60 seconds
 
 Furnace smelting speed modifiers

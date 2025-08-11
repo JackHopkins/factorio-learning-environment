@@ -1,13 +1,14 @@
+import os
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
 import gym
 import json
-import os
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass
 
+from fle.commons.cluster_ips import get_local_container_ips
+from fle.env import FactorioInstance
 from fle.env.gym_env.environment import FactorioGymEnv
 from fle.eval.tasks import TaskFactory
-from fle.env import FactorioInstance
-from fle.commons.cluster_ips import get_local_container_ips
 
 
 @dataclass
@@ -133,9 +134,9 @@ def make_factorio_env(env_spec: GymEnvironmentSpec) -> FactorioGymEnv:
     # Create Factorio instance
     try:
         # Check for external server configuration via environment variables
-        external_address = os.getenv('FACTORIO_SERVER_ADDRESS')
-        external_port = os.getenv('FACTORIO_SERVER_PORT')
-        
+        external_address = os.getenv("FACTORIO_SERVER_ADDRESS")
+        external_port = os.getenv("FACTORIO_SERVER_PORT")
+
         if external_address and external_port:
             # Use external server
             instance = FactorioInstance(
@@ -143,7 +144,10 @@ def make_factorio_env(env_spec: GymEnvironmentSpec) -> FactorioGymEnv:
                 tcp_port=int(external_port),
                 num_agents=env_spec.num_agents,
             )
-            print(f"Using external Factorio server at {external_address}:{external_port}")
+            print(
+                f"Using external Factorio server at "
+                f"{external_address}:{external_port}"
+            )
         else:
             # Fall back to local containers
             ips, udp_ports, tcp_ports = get_local_container_ips()

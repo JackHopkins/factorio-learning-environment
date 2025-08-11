@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 from fle.env import Entity
 from fle.env import FactorioInstance
 from fle.eval.tasks import TaskABC
-from fle.eval.tasks import LAB_PLAY_POPULATED_STARTING_INVENTORY, CRAFTING_STATISTICS
+from fle.eval.tasks import LAB_PLAY_POPULATED_STARTING_INVENTORY
 from fle.env.utils.achievements import eval_program_with_achievements
 from fle.agents import TaskResponse
 
@@ -24,14 +24,11 @@ class UnboundedThroughputTask(TaskABC):
         holdout_wait_period: int,
         pre_holdout_wait_period: int = 0,
         show_number_of_steps_left_in_prompt=False,
-        include_stats=True,
         use_populated_inventory=True,
         unlock_all_research=True,
         agent_instructions: Optional[List[str]] = None,
     ) -> None:
         goal_description += f"\n{INSTRUCTIONS}"
-        if include_stats:
-            goal_description += "\n\n##Useful statistics\n" + CRAFTING_STATISTICS
         if show_number_of_steps_left_in_prompt:
             goal_description += (
                 f"\n\nIn total you have {trajectory_length} steps to build your factory"

@@ -98,7 +98,6 @@ class ThroughputTask(TaskABC):
         agent_instructions: Optional[List[str]] = None,
     ):
         goal_description += f"\n{INSTRUCTIONS}"
-        goal_description += "\n\n##Useful statistics\n" + CRAFTING_STATISTICS
         super().__init__(
             trajectory_length,
             starting_inventory=LAB_PLAY_POPULATED_STARTING_INVENTORY,

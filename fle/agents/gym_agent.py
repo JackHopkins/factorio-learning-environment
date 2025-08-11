@@ -18,8 +18,6 @@ from fle.agents.llm.api_factory import APIFactory
 from fle.agents.llm.parsing import parse_response
 
 GYM_AGENT_INSTRUCTIONS = """
-# Factorio Gym Agent Instructions
-
 ## Overview
 You are an AI agent designed to play Factorio through a gym environment, specializing in:
 - Long-horizon planning

@@ -145,8 +145,8 @@ def make_factorio_env(env_spec: GymEnvironmentSpec) -> FactorioGymEnv:
                 num_agents=env_spec.num_agents,
             )
             print(
-+                f"Using external Factorio server at {external_address}:{external_port}"
-+            )
+                f"Using external Factorio server at {external_address}:{external_port}"
+            )
         else:
             # Fall back to local containers
             ips, udp_ports, tcp_ports = get_local_container_ips()

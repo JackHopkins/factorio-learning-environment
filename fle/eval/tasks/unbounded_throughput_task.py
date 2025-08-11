@@ -7,11 +7,8 @@ from fle.env.utils.achievements import eval_program_with_achievements
 from fle.agents import TaskResponse
 
 
-INSTRUCTIONS = """
-You must create an AUTOMATIC factory that automatically creates a target entity by itself. You are given the entity for which you need to create a factory for. Create the largest factory as you can that automatically creates the target entity
-    
-After each step the throughput of the factory is evaluated during 60 seconds of worktime and the results are supplied to you in the response. Iteratively expand your factory, i.e first make a small factory step by step and then expand the factory in subsequent steps .
-"""
+INSTRUCTIONS = """You must create an AUTOMATIC factory that automatically creates a target entity by itself. You are given the entity for which you need to create a factory for. Create the largest factory as you can that automatically creates the target entity.
+After each step the throughput of the factory is evaluated during 60 seconds of worktime and the results are supplied to you in the response. Iteratively expand your factory, i.e first make a small factory step by step and then expand the factory in subsequent steps."""
 
 
 class UnboundedThroughputTask(TaskABC):

@@ -175,7 +175,9 @@ sorted_furnaces = sorted(
 - Its a lot easier to manually add coil to boilers rather than make a automated system for it. Prefer manual fueling
 """
 
-FINAL_INSTRUCTION = "\n\nALWAYS WRITE VALID PYTHON AND REMEMBER MAXIMUM 30 LINES OF CODE PER POLICY. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON."  # Annoying how effective this is
+FINAL_INSTRUCTION = (
+    "\n\nALWAYS WRITE VALID PYTHON AND REMEMBER MAXIMUM 30 LINES OF CODE PER POLICY."
+)
 
 
 class BasicAgent(AgentABC):

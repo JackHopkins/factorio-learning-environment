@@ -7,7 +7,7 @@ from fle.env.game.game_state import GameState
 @dataclass
 class Action:
     """Action for the Factorio gym environment"""
-
+    
     agent_idx: int
     code: str
     game_state: Optional[GameState]

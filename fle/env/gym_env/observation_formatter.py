@@ -3,7 +3,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from fle.env.gym_env.observation import Observation
+from fle.env.models.observation import Observation
 
 
 @dataclass

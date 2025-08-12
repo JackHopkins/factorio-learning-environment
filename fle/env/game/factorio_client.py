@@ -74,8 +74,14 @@ class FactorioClient:
     script_dict: Dict[str, str]
 
     def __init__(
-        self, rcon_port: int, address: str, rcon_password: str, cache_scripts=True
+        self,
+        instance_id: int,
+        rcon_port: int,
+        address: str,
+        rcon_password: str,
+        cache_scripts=True,
     ):
+        self.instance_id = instance_id
         self.address = address
         self.rcon_port = rcon_port
         self.rcon_password = rcon_password

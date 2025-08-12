@@ -6,6 +6,14 @@ from typing import List
 
 from fle.services.docker.config import DockerConfig, Scenario, Mode
 
+class FactorioHeadlessServer:
+    def __init__(self, config: DockerConfig, docker_platform: str, num_instances: int, dry_run: bool = False):
+        self.docker_platform = docker_platform
+        self.config = config
+        self.num = num_instances
+        self.dry_run = dry_run
+        self.docker = aiodocker.Docker()
+
 class FactorioHeadlessClusterManager:
     def __init__(
         self,

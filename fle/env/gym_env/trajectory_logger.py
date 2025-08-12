@@ -6,7 +6,7 @@ from typing import Optional
 from fle.agents.gym_agent import GymAgent
 from fle.commons.models.program import Program
 
-from fle.env.gym_env.observation import Observation
+from fle.env.models.observation import Observation
 
 
 class TrajectoryLogger:

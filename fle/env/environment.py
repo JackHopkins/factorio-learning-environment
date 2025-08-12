@@ -11,11 +11,18 @@ from gym import spaces
 from fle.agents import Response, TaskResponse
 from fle.commons.models.achievements import ProductionFlows
 from fle.env.game.game_state import GameState
-from fle.env.game import FactorioInstance
-from fle.env.gym_env.action import Action
-from fle.env.gym_env.observation import AgentMessage, GameInfo, Observation
+# from fle.env.game import FactorioInstance
+from fle.env.models.action import Action
+from fle.env.models.observation import (
+    AgentMessage,
+    GameInfo,
+    Observation,
+    ProductionFlows,
+    TaskResponse,
+)
 from fle.env.tasks import TaskABC
 from fle.env.utils.profits import get_achievements
+from fle.env.game_session import AgentSession, GameSession
 
 # need to do this since gym doesn't work with numpy>=2.0 otherwise.
 np.bool8 = np.dtype(np.bool)
@@ -196,14 +203,15 @@ class FactorioGymEnv(gym.Env):
 
     def __init__(
         self,
-        instance: FactorioInstance,
+        # instance: FactorioInstance,
+        game_session: GameSession,
         task: Optional[TaskABC] = None,
         value_accrual_time: int = 10,
         error_penalty: float = 10.0,
     ):
         super().__init__()
 
-        self.instance = instance
+        self.game_session = game_session
         self.task = task
         self.value_accrual_time = value_accrual_time
         self.error_penalty = error_penalty
@@ -212,7 +220,7 @@ class FactorioGymEnv(gym.Env):
         self.action_space = spaces.Dict(
             {
                 "agent_idx": spaces.Discrete(
-                    instance.num_agents
+                    game_session.num_agents
                 ),  # Index of the agent taking the action
                 "game_state": ObsSpaces.VERY_LONG_TEXT,  # The game state to reset to before running code (GameState.to_raw() str)
                 "code": ObsSpaces.LONG_TEXT,  # The Python code to execute
@@ -247,92 +255,6 @@ class FactorioGymEnv(gym.Env):
             }
         )
 
-        self.current_state = None
-        self.initial_score = 0
-        self.last_observation = None
-        # Track last message timestamp for each agent
-        self.last_message_timestamps = {i: 0.0 for i in range(instance.num_agents)}
-        self._last_production_flows = {}
-
-    def get_observation(
-        self, agent_idx: int = 0, response: Optional[Response] = None
-    ) -> Observation:
-        """Convert the current game state into a gym observation"""
-        namespace = self.instance.namespaces[agent_idx]
-        # Get entity observations
-        entities = namespace.get_entities()
-        entity_obs = [str(e) for e in entities]
-
-        # Get inventory observations
-        inventory_obs = namespace.inspect_inventory()
-
-        # Get research observations
-        research_obs = namespace._save_research_state()
-
-        # Get game info
-        game_info = GameInfo(
-            tick=self.instance.get_elapsed_ticks(),
-            time=self.instance.get_elapsed_ticks() / 60,
-            speed=self.instance._speed,
-        )
-
-        # Get flows
-        flows = namespace._get_production_stats()
-        flows_obs = ProductionFlows.from_dict(flows)
-
-        # Get messages
-        messages = namespace.get_messages()
-        messages_obs = []
-        latest_timestamp = self.last_message_timestamps[agent_idx]
-
-        for msg in messages:
-            if msg["timestamp"] > self.last_message_timestamps[agent_idx]:
-                messages_obs.append(
-                    AgentMessage(
-                        sender=msg["sender"],
-                        content=msg["message"],
-                        timestamp=msg["timestamp"],
-                    )
-                )
-                latest_timestamp = max(latest_timestamp, msg["timestamp"])
-
-        # Update last message timestamp
-        if messages_obs:
-            self.last_message_timestamps[agent_idx] = latest_timestamp
-
-        # Get task verification if available
-        task_verification = None
-        if response and hasattr(response, "task"):
-            task_verification = TaskResponse(
-                success=response.task.success,
-                meta=response.task.meta if hasattr(response.task, "meta") else {},
-            )
-
-        # Get serialized functions
-        serialized_functions = []
-        for func in namespace.get_functions():
-            serialized_functions.append(
-                {"name": func.name, "pickled_function": pickle.dumps(func).hex()}
-            )
-
-        observation = Observation(
-            raw_text=response.response if response else "",
-            entities=entity_obs,  # Convert entities to strings
-            inventory=inventory_obs,
-            research=research_obs,
-            game_info=game_info,
-            score=response.score if response else 0.0,
-            flows=flows_obs,
-            task_verification=task_verification,
-            messages=messages_obs,
-            serialized_functions=serialized_functions,
-        )
-
-        # Store observation for next step
-        self.last_observation = observation
-
-        return observation
-
     def step(
         self, action: Action
     ) -> Tuple[Dict[str, Any], float, bool, bool, Dict[str, Any]]:
@@ -350,40 +272,17 @@ class FactorioGymEnv(gym.Env):
             info: Additional information
         """
         assert isinstance(action, Action)
-        action = action.to_dict()
-        agent_idx = action["agent_idx"]
-        code = action["code"]
-        game_state_raw = action["game_state"]
-        if game_state_raw:
-            self.reset_instance(GameState.parse_raw(game_state_raw))
-
-        namespace = self.instance.namespaces[agent_idx]
-        # Use last post_production_flows as pre_production_flows if available
-        if self._last_production_flows.get(agent_idx) is not None:
-            start_production_flows = ProductionFlows.from_dict(
-                self._last_production_flows[agent_idx]
-            )
-        else:
-            start_production_flows = ProductionFlows.from_dict(
-                namespace._get_production_stats()
-            )
-        initial_score, _ = namespace.score()
-
-        # Execute the action
-        score, eval_time, result = self.instance.eval(
-            code, agent_idx=agent_idx, timeout=60
-        )
-
-        # Check for errors
-        error_occurred = "error" in result.lower() or "exception: " in result.lower()
+        agent_session = self.game_session.agent_sessions[action.agent_idx]
+        eval_results = agent_session.eval(code=action.code)
 
         # Calculate reward
-        if error_occurred:
+        if eval_results.error_occurred:
             reward = -self.error_penalty
         else:
             # Wait for value accrual
             time.sleep(self.value_accrual_time)
-            reward = score - initial_score
+            reward = eval_results.score - eval_results.initial_score
+
         reward = float(reward)  # Ensure reward is always a float
 
         # Get task verification if task exists
@@ -395,80 +294,47 @@ class FactorioGymEnv(gym.Env):
             task_success = self.task.verify(reward, self.instance, step_statistics={})
             # Then enhance the response with task output
             task_response = self.task.enhance_response_with_task_output(
-                result, task_success
+                eval_results.result, task_success
             )
             terminated = task_success.success
 
         # Get post-execution flows and calculate achievements
-        current_flows = ProductionFlows.from_dict(namespace._get_production_stats())
-        achievements = get_achievements(
-            start_production_flows.__dict__, current_flows.__dict__
-        )
+        current_flows = eval_results.current_flows
+        achievements = agent_session.get_achievements(eval_results)
         # Store for next step
-        self._last_production_flows[agent_idx] = current_flows.__dict__
+        self.agent_session.last_production_flows = current_flows.__dict__
 
         # Create response object for observation
         response = Response(
-            code=f"```python\n{code}\n```",
+            code=f"```python\n{action.code}\n```",
             created_at=datetime.datetime.now(),
             score=reward,
             achievements=achievements,
-            step=0,
+            step=agent_session.steps,
             ticks=self.instance.get_elapsed_ticks(),
-            flows=start_production_flows.get_new_flows(current_flows),
-            response=task_response if task_response else result,
+            flows=eval_results.start_production_flows.get_new_flows(current_flows),
+            response=task_response if task_response else eval_results.result,
             task=task_success if task_success else TaskResponse(success=False, meta={}),
-            error=error_occurred,
+            error=eval_results.error_occurred,
             program_id=None,
         )
 
         # Get observation for the acting agent
-        observation = self.get_observation(agent_idx, response)
+        observation = agent_session.get_observation(response)
 
         # Get additional info
         info = {
-            "error_occurred": error_occurred,
-            "result": result,
+            "error_occurred": eval_results.error_occurred,
+            "result": eval_results.result,
             "ticks": self.instance.get_elapsed_ticks(),
             "flows": response.flows,
-            "agent_idx": agent_idx,
-            "last_message_timestamp": self.last_message_timestamps[agent_idx],
+            "agent_idx": agent_session.agent_idx,
+            "last_message_timestamp": agent_session.last_message_timestamp,
             "task_verification": task_response,
             "output_game_state": output_game_state,
         }
 
         return observation.to_dict(), reward, terminated, truncated, info
-
-    def reset_instance(self, state: Optional[GameState] = None) -> None:
-        """Reset the Factorio instance to a given state or initial state.
-
-        Args:
-            state: Optional[GameState] to reset to. If None, resets to initial state.
-        """
-        self.instance.reset(state)
-        self._last_production_flows = {i: None for i in range(self.instance.num_agents)}
-
-    def reset(
-        self, options: Optional[Dict[str, Any]] = None, seed: Optional[int] = None
-    ) -> Dict[str, Any]:
-        """Reset the environment to initial state
-
-        Args:
-            options: dict containing 'game_state' key with Optional[GameState] value to reset to
-            seed: Not used
-        """
-        if options is None:
-            options = {}
-        game_state = options.get("game_state")
-        self.reset_instance(game_state)
-
-        self.initial_score, _ = self.instance.namespaces[0].score()
-        self.last_observation = None  # Reset last observation
-        # Reset message timestamps
-        self.last_message_timestamps = {i: 0.0 for i in range(self.instance.num_agents)}
-        # Convert observation to dictionary to match gym standards
-        observation = self.get_observation(0).to_dict()
-        return observation, {}  # Return observation for first agent
 
     def close(self):
         """Clean up resources"""

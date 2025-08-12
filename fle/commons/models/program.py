@@ -2,12 +2,11 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 import numpy as np
-from pydantic import ConfigDict, BaseModel, Field
-
-from fle.commons.models.timing_metrics import TimingMetrics
+from pydantic import BaseModel, ConfigDict, Field
 
 from fle.commons.models.achievements import ProductionFlows
 from fle.commons.models.conversation import Conversation
+from fle.commons.models.timing_metrics import TimingMetrics
 from fle.env.game.game_state import GameState
 
 
@@ -84,3 +83,59 @@ class Program(BaseModel):
             if row.get("timing_metrics_json")
             else [],
         )
+
+    @classmethod
+    async def from_policy(
+        cls,
+        policy,
+        agent_idx: int,
+        reward: float,
+        response: str,
+        error_occurred: bool,
+        game_state: GameState,
+        process_id: int,
+        model: str,
+        version: int,
+        version_description: str,
+        saved_program_id: Optional[int] = None,
+    ):
+        """Create a Program object from a Policy and environment results
+
+        Args:
+            policy: The Policy object to convert
+            agent_idx: Index of the agent in the multi-agent setup
+            reward: The reward from the environment step
+            response: The raw text response from the environment
+            error_occurred: Whether an error occurred during execution
+
+        Returns:
+            Program object with all necessary metadata and results
+        """
+        messages = policy.input_conversation.model_dump()["messages"]
+        depth = len(messages) - 2
+
+        # Create program from policy with environment results
+        program = cls(
+            code=policy.code,
+            conversation=policy.input_conversation,
+            response=response,
+            token_usage=policy.meta.total_tokens,
+            completion_token_usage=policy.meta.output_tokens,
+            prompt_token_usage=policy.meta.input_tokens,
+            version=version,
+            instance=agent_idx,
+            model=model,
+            version_description=version_description,
+            value=reward,
+            state=game_state,
+            meta={
+                "model": model,
+                "process_id": process_id,
+                "error_occurred": error_occurred,
+            },
+            depth=depth,
+        )
+        if saved_program_id is not None:
+            program.id = saved_program_id
+
+        return program

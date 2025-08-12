@@ -19,8 +19,9 @@ from fle.commons.models.research_state import ResearchState
 from fle.env.game.factorio_client import FactorioClient
 from fle.env.game.game_state import GameState
 from fle.env.game.namespace import FactorioNamespace
-from fle.env.utils.controller_loader.system_prompt_generator import \
-    SystemPromptGenerator
+from fle.env.utils.controller_loader.system_prompt_generator import (
+    SystemPromptGenerator,
+)
 from fle.services.rcon import _lua2python
 from fle.services.docker.docker_manager import ServerSettings
 
@@ -62,10 +63,110 @@ class DirectionInternal(enum.Enum):
         return direction.value * 2
 
 
+class AgentInstance:
+    agent_idx: int
+    namespace: FactorioNamespace
+    last_message_timestamp: float
+    # _last_production_flow: Optional[ProductionFlows]
+
+    def __init__(self, agent_idx: int):
+        self.agent_idx = agent_idx
+
+    @property
+    def color(self) -> str:
+        """Returns a unique color string based on agent_idx"""
+        if self.agent_idx == 1:
+            return "{r=0,g=1,b=0,a=1}"  # Green for agent 1
+        elif self.agent_idx == 2:
+            return "{r=0,g=0,b=1,a=1}"  # Blue for agent 2
+        else:
+            # For additional agents, generate colors deterministically
+            # Use agent_idx to seed the color components while keeping them in [0,1]
+            r = ((self.agent_idx * 167) % 255) / 255
+            g = ((self.agent_idx * 223) % 255) / 255
+            b = ((self.agent_idx * 89) % 255) / 255
+            return f"{{r={r:.3f},g={g:.3f},b={b:.3f},a=1}}"
+    
+    @property
+    def initial_position(self) -> str:
+        return f'{{x=0,y=({self.agent_idx-1})*2}}'
+
+    def get_system_prompt(self) -> str:
+        """
+        Get the system prompt for the Factorio environment.
+        This includes all the available actions, objects, and entities that the agent can interact with.
+        We get the system prompt by loading the schema, definitions, and entity definitions from their source files.
+        These are converted to their signatures - leaving out the implementations.
+        :return:
+        """
+        execution_path = Path(os.path.dirname(os.path.realpath(__file__)))
+        generator = SystemPromptGenerator(str(execution_path))
+        return generator.generate(self.num_agents, self.agent_idx)
+
+    def eval_with_error(self, expr, timeout=60):
+        """Evaluate an expression with a timeout, and return the result without error handling"""
+
+        def handler(signum, frame):
+            raise TimeoutError()
+
+        signal.signal(signal.SIGALRM, handler)
+        signal.alarm(timeout)
+
+        try:
+            return self.namespace.eval_with_timeout(expr)
+        finally:
+            signal.alarm(0)
+
+    def eval(self, expr, timeout=60):
+        "Evaluate several lines of input, returning the result of the last line with a timeout"
+        try:
+            return self.eval_with_error(expr, timeout)
+        except TimeoutError:
+            return -1, "", "Error: Evaluation timed out"
+        except Exception as e:
+            message = e.args[0].replace("\\n", "")
+            return -1, "", f"{message}".strip()
+
+    def set_inventory(self, client: FactorioClient, inventory: Dict[str, Any]):
+        with client.transaction() as t:
+            t.add_command("clear_inventory", self.agent_idx + 1)
+
+        with client.transaction() as t:
+            inventory_items = {k: v for k, v in inventory.items()}
+            inventory_items_json = json.dumps(inventory_items)
+            player_idx = self.agent_idx + 1
+            t.add_command(
+                f"/sc global.actions.initialise_inventory({player_idx}, '{inventory_items_json}')",
+                raw=True,
+            )
+
+    def _reset(self, client: FactorioClient, inventory: Dict[str, Any]):
+        with client.transaction() as t:
+            player_index = self.agent_idx + 1
+            t.add_command(
+                f"/sc global.actions.regenerate_resources({player_index})", raw=True
+            )
+            t.add_command(
+                f"/sc global.actions.clear_entities({player_index})", raw=True
+            )
+            inventory_items = {k: v for k, v in inventory.items()}
+            inventory_items_json = json.dumps(inventory_items)
+            t.add_command(
+                f"/sc global.actions.initialise_inventory({player_index}, '{inventory_items_json}')",
+                raw=True,
+            )
+
+    def _agent_character_command(self) -> List[str]:
+        idx = self.agent_idx + 1
+        return [
+            f'/sc global.agent_characters[{idx}] = game.surfaces[1].create_entity{{name="character",position={self.initial_position},force=game.forces.player}}',
+            f'/sc global.agent_characters[{idx}].color={self.color}'
+        ]
+
 class FactorioInstance:
     namespace_class = FactorioNamespace
     _cleanup_registered = False  # Only register cleanup once per process
-    namespaces: List[FactorioNamespace]
+    agent_instances: List[AgentInstance]
     client: FactorioClient
 
     def __init__(
@@ -89,10 +190,12 @@ class FactorioInstance:
         self._is_initialised = False
 
         self.peaceful = peaceful
-        self.namespaces = [self.namespace_class(self, i) for i in range(num_agents)]
+        self.agent_instances = [AgentInstance(i) for i in range(num_agents)]
 
         # Register controllers with the server
-        self.client.register_controllers(self.namespaces)
+        self.client.register_controllers(
+            [instance.namespace for instance in self.agent_instances]
+        )
 
         if inventory is None:
             inventory = {}
@@ -103,7 +206,10 @@ class FactorioInstance:
             self.first_namespace.score()
         except Exception:
             # Invalidate cache if there is an error
-            self.client.register_controllers(self.namespaces, invalidate_cache=True)
+            self.client.register_controllers(
+                [instance.namespace for instance in self.agent_instances],
+                invalidate_cache=True,
+            )
             self.initialise(fast)
 
         self.initial_score, goal = self.first_namespace.score()
@@ -114,8 +220,8 @@ class FactorioInstance:
 
     @property
     def namespace(self):
-        if len(self.namespaces) == 1:
-            return self.namespaces[0]
+        if len(self.agent_instances) == 1:
+            return self.agent_instances[0].namespace
         else:
             raise ValueError("Can only use .namespace for single-agent instances")
 
@@ -123,7 +229,7 @@ class FactorioInstance:
     def first_namespace(
         self,
     ) -> Optional[FactorioNamespace]:  # Add this property if used
-        return self.namespaces[0] if self.namespaces else None
+        return self.agent_instances[0].namespace if self.agent_instances else None
 
     @property
     def is_multiagent(self):
@@ -141,42 +247,6 @@ class FactorioInstance:
         if not response:
             return 0
         return int(response)
-
-    def get_system_prompt(self, agent_idx: int = 0) -> str:
-        """
-        Get the system prompt for the Factorio environment.
-        This includes all the available actions, objects, and entities that the agent can interact with.
-        We get the system prompt by loading the schema, definitions, and entity definitions from their source files.
-        These are converted to their signatures - leaving out the implementations.
-        :return:
-        """
-        execution_path = Path(os.path.dirname(os.path.realpath(__file__)))
-        generator = SystemPromptGenerator(str(execution_path))
-        return generator.generate(self.num_agents, agent_idx)
-
-    def eval_with_error(self, expr, agent_idx=0, timeout=60):
-        """Evaluate an expression with a timeout, and return the result without error handling"""
-
-        def handler(signum, frame):
-            raise TimeoutError()
-
-        signal.signal(signal.SIGALRM, handler)
-        signal.alarm(timeout)
-
-        try:
-            return self.namespaces[agent_idx].eval_with_timeout(expr)
-        finally:
-            signal.alarm(0)
-
-    def eval(self, expr, agent_idx=0, timeout=60):
-        "Evaluate several lines of input, returning the result of the last line with a timeout"
-        try:
-            return self.eval_with_error(expr, agent_idx, timeout)
-        except TimeoutError:
-            return -1, "", "Error: Evaluation timed out"
-        except Exception as e:
-            message = e.args[0].replace("\\n", "")
-            return -1, "", f"{message}".strip()
 
     def _reset_static_achievement_counters(self):
         """
@@ -200,33 +270,17 @@ class FactorioInstance:
                 "/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)",
                 raw=True,
             )
-            # self.server.add_command('/sc script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
-            for i in range(self.num_agents):
-                player_index = i + 1
-                t.add_command(
-                    f"/sc global.actions.regenerate_resources({player_index})", raw=True
-                )
-                # self.server.add_command('clear_inventory', player_index)
 
         with self.client.transaction() as t:
             t.add_command("/sc global.actions.clear_walking_queue()", raw=True)
-            for i in range(self.num_agents):
-                player_index = i + 1
-                t.add_command(
-                    f"/sc global.actions.clear_entities({player_index})", raw=True
-                )
-                inventory_items = {k: v for k, v in inventories[i].items()}
-                inventory_items_json = json.dumps(inventory_items)
-                t.add_command(
-                    f"/sc global.actions.initialise_inventory({player_index}, '{inventory_items_json}')",
-                    raw=True,
-                )
 
             if self.all_technologies_researched:
                 t.add_command(
                     "/sc global.agent_characters[1].force.research_all_technologies()",
                     raw=True,
                 )
+        for instance in self.agent_instances:
+            instance._reset(self.client, inventories[instance.agent_idx])
         # self.clear_entities()
         self._reset_static_achievement_counters()
         self._reset_elapsed_ticks()
@@ -237,8 +291,8 @@ class FactorioInstance:
             not game_state or len(game_state.inventories) == self.num_agents
         ), "Game state must have the same number of inventories as num_agents"
 
-        for namespace in self.namespaces:
-            namespace.reset()
+        for instance in self.agent_instances:
+            instance.namespace.reset()
 
         if not game_state:
             # Reset the game instance
@@ -271,14 +325,16 @@ class FactorioInstance:
             if game_state.agent_messages:
                 for i in range(self.num_agents):
                     if i < len(game_state.agent_messages):
-                        self.namespaces[i].load_messages(game_state.agent_messages[i])
+                        self.agent_instances[i].namespace.load_messages(
+                            game_state.agent_messages[i]
+                        )
 
             # Reset elapsed ticks
             self._reset_elapsed_ticks()
 
             # Load variables / functions from game state
             for i in range(self.num_agents):
-                self.namespaces[i].load(game_state.namespaces[i])
+                self.agent_instances[i].namespace.load(game_state.namespaces[i])
 
         try:
             self.initial_score, _ = self.first_namespace.score()
@@ -288,19 +344,6 @@ class FactorioInstance:
         # Clear renderings
         with self.client.transaction() as t:
             t.add_command("/sc rendering.clear()", raw=True)
-
-    def set_inventory(self, inventory: Dict[str, Any], agent_idx: int = 0):
-        with self.client.transaction() as t:
-            t.add_command("clear_inventory", agent_idx + 1)
-
-        with self.client.transaction() as t:
-            inventory_items = {k: v for k, v in inventory.items()}
-            inventory_items_json = json.dumps(inventory_items)
-            player_idx = agent_idx + 1
-            t.add_command(
-                f"/sc global.actions.initialise_inventory({player_idx}, '{inventory_items_json}')",
-                raw=True,
-            )
 
     def initialise(self, fast=True):
         with self.client.transaction() as t:
@@ -338,14 +381,13 @@ class FactorioInstance:
         """Create Factorio characters for all agents in the game."""
         # Create characters in Factorio
         with self.client.transaction() as t:
-            color_logic = ""
-            if self.num_agents > 1:
-                color_logic = "if i==1 then char.color={r=0,g=1,b=0,a=1} elseif i==2 then char.color={r=0,g=0,b=1,a=1} end;"
-
             t.add_command(
-                f'/sc global.agent_characters = {{}}; for _,c in pairs(game.surfaces[1].find_entities_filtered{{type="character"}}) do if c then c.destroy() end end; for i=1,{self.num_agents} do local char = game.surfaces[1].create_entity{{name="character",position={{x=0,y=(i-1)*2}},force=game.forces.player}}; {color_logic} global.agent_characters[i]=char end',
+                f'/sc global.agent_characters = {{}};',
                 raw=True,
             )
+            for instance in self.agent_instances:
+                for command in instance._agent_character_command():
+                    t.add_command(command, raw=True)
             t.add_command("/sc player = global.agent_characters[1]", raw=True)
 
     def get_warnings(self, seconds=10):

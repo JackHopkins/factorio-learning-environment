@@ -70,7 +70,6 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     runner = GymTrajectoryRunner(
         config=config,
         gym_env=gym_env,
-        db_client=db_client,
         log_dir=log_dir,
         process_id=run_idx,
     )

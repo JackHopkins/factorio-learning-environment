@@ -107,7 +107,7 @@ your_code_here
 
 ALWAYS WRITE VALID PYTHON AND REMEMBER MAXIMUM 30 LINES OF CODE PER POLICY. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON.
 
-{agent_instructions}""".rstrip()
+{agent_instructions}"""
 
 
 class GymAgent(AgentABC):
@@ -150,7 +150,7 @@ class GymAgent(AgentABC):
             goal_description=task.goal_description,
             agent_instructions=agent_instructions,
         )
-        return instructions
+        return instructions.rstrip()
 
     def reset(self, conversation: Conversation):
         self.conversation = copy.deepcopy(conversation)

@@ -25,7 +25,7 @@ class A2AFactorioInstance(FactorioInstance):
                 "Direct instantiation of A2AFactorioInstance is not allowed. "
                 "Please use A2AFactorioInstance.create() instead."
             )
-        return super().__new__(cls)
+        return super().__new__(cls, *args, **kwargs)
 
     @classmethod
     async def create(

@@ -107,6 +107,7 @@ class FactorioClient:
     def ensure_rcon_client(self):
         if not self.rcon_client:
             self.rcon_client = self.get_rcon_client()
+        self.rcon_client.connect()
         return self.rcon_client
 
     def run_rcon_print(self, command: str):

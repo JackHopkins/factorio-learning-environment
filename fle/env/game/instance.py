@@ -193,9 +193,6 @@ class FactorioInstance:
         self.agent_instances = [AgentInstance(i) for i in range(num_agents)]
 
         # Register controllers with the server
-        self.client.register_controllers(
-            [instance.namespace for instance in self.agent_instances]
-        )
 
         if inventory is None:
             inventory = {}
@@ -206,17 +203,16 @@ class FactorioInstance:
             self.first_namespace.score()
         except Exception:
             # Invalidate cache if there is an error
-            self.client.register_controllers(
-                [instance.namespace for instance in self.agent_instances],
-                invalidate_cache=True,
-            )
-            self.initialise(fast)
+            self.initialise(fast, invalidate_cache=True)
 
         self.initial_score, goal = self.first_namespace.score()
         # Register the cleanup method to be called on exit (only once per process)
         if not FactorioInstance._cleanup_registered:
             atexit.register(self.cleanup)
             FactorioInstance._cleanup_registered = True
+    
+    def reconnect_client(self):
+        self.client.ensure_rcon_client()
 
     @property
     def namespace(self):
@@ -230,6 +226,9 @@ class FactorioInstance:
         self,
     ) -> Optional[FactorioNamespace]:  # Add this property if used
         return self.agent_instances[0].namespace if self.agent_instances else None
+    
+    def save(self, save_name: str) -> None:
+        self.client.send_command(f"/save {save_name}")
 
     @property
     def is_multiagent(self):
@@ -345,7 +344,13 @@ class FactorioInstance:
         with self.client.transaction() as t:
             t.add_command("/sc rendering.clear()", raw=True)
 
-    def initialise(self, fast=True):
+    def initialise(self, fast=True, invalidate_cache=False):
+        self.reconnect_client()
+        self.client.register_controllers(
+            [instance.namespace for instance in self.agent_instances],
+            invalidate_cache=invalidate_cache,
+        )
+
         with self.client.transaction() as t:
             t.add_command("/sc global.alerts = {}", raw=True)
             t.add_command("/sc global.elapsed_ticks = 0", raw=True)

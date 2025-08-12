@@ -10,11 +10,11 @@ class Tool(Controller):
     def __init__(
         self,
         factorio_server: "FactorioClient",
-        game_state: "FactorioNamespace",
+        namespace: "FactorioNamespace",
         *args,
         **kwargs,
     ):
-        super().__init__(factorio_server, game_state)
+        super().__init__(factorio_server, namespace)
         self.load()
 
     def get_position(self, position_or_entity: Union[Tuple, Position, Entity]):

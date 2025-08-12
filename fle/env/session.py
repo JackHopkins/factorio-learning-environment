@@ -24,7 +24,10 @@ from fle.env.models.observation import (
 )
 from fle.env.utils.profits import get_achievements
 from fle.services.docker.config import DockerConfig
-from fle.services.docker.docker_manager import FactorioHeadlessClusterManager, FactorioHeadlessServer
+from fle.services.docker.docker_manager import (
+    FactorioHeadlessClusterManager,
+    FactorioHeadlessServer,
+)
 from fle.services.db.db_client import DBClient, create_db_client
 
 
@@ -42,7 +45,9 @@ class AgentSession:
     db_client: DBClient
 
     class EvalResults:
-        def __init__(self, result: str, initial_score: float, score: float, eval_time: float):
+        def __init__(
+            self, result: str, initial_score: float, score: float, eval_time: float
+        ):
             self.result = result
             self.initial_score = initial_score
             self.score = score
@@ -50,12 +55,13 @@ class AgentSession:
 
         @property
         def error_occurred(self) -> bool:
-            return "error" in self.result.lower() or "exception: " in self.result.lower()
-        
+            return (
+                "error" in self.result.lower() or "exception: " in self.result.lower()
+            )
+
         @property
         def current_flows(self) -> ProductionFlows:
             return ProductionFlows.from_dict(self.namespace._get_production_stats())
-
 
     def __init__(
         self, agent_idx: int, agent_instance: AgentInstance, db_client: DBClient
@@ -66,18 +72,16 @@ class AgentSession:
         self.namespace = agent_instance.namespace
         self.db_client = db_client
         self.reset()
-    
+
     @property
     def version(self) -> int:
         return self.db_client.get_largest_version()
-    
+
     @property
     def version_description(self) -> str:
         return self.db_client.get_version_description(self.version)
 
-    def get_observation(
-        self, response: Optional[Response] = None
-    ) -> Observation:
+    def get_observation(self, response: Optional[Response] = None) -> Observation:
         """Convert the current game state into an observation"""
         # Get entity observations
         entities = self.namespace.get_entities()
@@ -153,7 +157,9 @@ class AgentSession:
 
         return observation
 
-    async def _initialize_trajectory_state(self, version: int, process_id: int) -> Tuple[GameState, List[int]]:
+    async def _initialize_trajectory_state(
+        self, version: int, process_id: int
+    ) -> Tuple[GameState, List[int]]:
         """Initialize trajectory state, either from resume or fresh start
 
         Returns:
@@ -163,7 +169,7 @@ class AgentSession:
 
         if version and self.db_client is None:
             return None, 0
-        
+
         (
             current_state,
             agent_conversation,
@@ -181,28 +187,28 @@ class AgentSession:
             current_state = self.config.task.starting_game_state
 
         return current_state, agent_conversation
-    
+
     def action_from_code(self, code: str) -> Action:
         """Create an Action object from a Policy"""
         return Action(
+            agent_idx=self.agent_idx,
             code=code,
             game_state=self.last_observation.state,
         )
-    
+
     def eval(self, code: str) -> EvalResults:
         if self.last_observation.state:
             self.reset_instance(self.last_observation.state)
 
         # Use last post_production_flows as pre_production_flows if available
         start_production_flows = ProductionFlows.from_dict(
-            self._last_production_flows.get(self.agent_idx) or self.namespace._get_production_stats()
+            self._last_production_flows.get(self.agent_idx)
+            or self.namespace._get_production_stats()
         )
         initial_score, _ = self.namespace.score()
 
         # Execute the action
-        score, eval_time, result = self.agent_instance.eval(
-            code, timeout=60
-        )
+        score, eval_time, result = self.agent_instance.eval(code, timeout=60)
         # return result, initial_score, score, eval_time
         return self.EvalResults(result, initial_score, score, eval_time)
 
@@ -228,34 +234,50 @@ class GameSession:
 
     server: FactorioHeadlessServer
     instance: FactorioInstance | A2AFactorioInstance
-    agent_sessions: List[AgentSession]
+    agent_sessions: Dict[int, AgentSession]
     game_state: Optional[GameState]
 
     def __init__(
         self,
         instance_id: int,
+        instance: FactorioInstance,
         server: FactorioHeadlessServer,
     ):
         self.instance_id = instance_id
+        self.instance = instance
         self.server = server
-        self.agent_sessions = self.create_agent_sessions()
+        self.agent_sessions = self._make_agent_sessions()
         self.game_state = None
 
-    def set_speed(self, speed: int) -> None:
-        self.instance.set_speed(speed)
+    def _make_agent_sessions(self) -> Dict[int, AgentSession]:
+        return {
+            i: AgentSession(i, self.instance.agent_instances[i], self.db_client)
+            for i in range(self.instance.num_agents)
+        }
+    
+    def reinitialize_instance(self) -> None:
+        if isinstance(self.instance, A2AFactorioInstance):
+            self.instance: A2AFactorioInstance
+            self.instance.initialise()
+        else:
+            self.instance: FactorioInstance
+            self.instance.initialise()
+    
+    async def restart_from_latest_save(self) -> None:
+        await self.server.restart()
+        self.reinitialize_instance()
 
-    def save(self, save_name: str) -> None:
-        # Factorio console save command (no /sc)
-        self.client.send_command(f"/save {save_name}")
+    async def restart_from_save(self, save_name: str) -> None:
+        await self.server.restart(save_name)
+        self.reinitialize_instance()
+        
+    @property
+    def speed(self) -> int:
+        return self.instance.get_speed()
 
-    async def restart_with_save(self, save_name: str) -> None:
-        # Ensure the save exists and restart the bound container
-        await self._manager.server_manager.restart_with_save(
-            self.instance_id, save_name
-        )
-
-    def cleanup(self) -> None:
-        self.instance.cleanup()
+    @speed.setter 
+    def speed(self, value: int) -> None:
+        self.instance.set_speed(value)
 
     def reset_instance(self, state: Optional[GameState] = None) -> None:
         """Reset the Factorio instance to a given state or initial state.
@@ -288,86 +310,5 @@ class GameSession:
         observation = self.agent_sessions[0].get_observation().to_dict()
         return observation, {}  # Return observation for first agent
 
-
-class GameSessionManager:
-    """Creates and manages `GameSession`s and headless servers.
-
-    Responsibilities:
-    - Own the Docker-backed headless cluster lifecycle
-    - Construct `FactorioClient` endpoints for a given `instance_id`
-    - Create `FactorioInstance`/`A2AFactorioInstance` bound to that client
-    - Provide restart hooks for save-based flow
-    """
-
-    game_config: GameConfig
-    docker_config: DockerConfig
-    server_manager: FactorioHeadlessClusterManager
-
-    def __init__(
-        self,
-        game_config: GameConfig,
-        docker_config: DockerConfig,
-        server_manager: FactorioHeadlessClusterManager,
-    ):
-        self.game_config = game_config
-        self.docker_config = docker_config
-        self.server_manager = server_manager
-
-    def _make_client(self, instance_id: int) -> FactorioClient:
-        address = self.docker_config.address
-        rcon_port = self.docker_config.rcon_port + instance_id
-        rcon_password = self.docker_config.factorio_password
-        return FactorioClient(
-            instance_id=instance_id,
-            rcon_port=rcon_port,
-            address=address,
-            rcon_password=rcon_password,
-            cache_scripts=True,
-        )
-
-    async def start_cluster(self) -> None:
-        await self.server_manager.start()
-
-    async def stop_cluster(self) -> None:
-        await self.server_manager.stop()
-
-    async def restart_cluster(self) -> None:
-        await self.server_manager.restart()
-
-    async def create_session(
-        self,
-        instance_id: int,
-        num_agents: int = 1,
-        agent_cards: Optional[List[AgentCard]] = None,
-    ) -> GameSession:
-        client = self._make_client(instance_id)
-
-        common_kwargs = dict(
-            client=client,
-            fast=self.game_config.fast_mode,
-            all_technologies_researched=self.game_config.all_technologies_researched,
-            peaceful=self.game_config.peaceful,
-            num_agents=num_agents,
-        )
-
-        if num_agents > 1:
-            instance = await A2AFactorioInstance.create(
-                **common_kwargs, agent_cards=agent_cards
-            )
-        else:
-            instance = FactorioInstance(**common_kwargs)
-
-        # Default speed for evaluation
-        instance.set_speed(10)
-
-        return GameSession(
-            manager=self,
-            instance_id=instance_id,
-            instance=instance,
-            client=client,
-        )
-
-    async def restart_session_with_save(
-        self, session: GameSession, save_name: str
-    ) -> None:
-        await session.restart_with_save(save_name)
+    def cleanup(self) -> None:
+        self.instance.cleanup()

@@ -12,7 +12,8 @@ from fle.env.gym_env.config import GymEvalConfig
 from fle.env.gym_env.trajectory_logger import TrajectoryLogger
 from fle.env.models.action import Action
 from fle.env.models.observation import Observation
-from fle.env.game_session import GameSession, AgentSession
+from fle.env.session import GameSession, AgentSession
+from fle.env.session_manager import GameSessionManager
 
 
 class GymTrajectoryRunner:
@@ -20,14 +21,14 @@ class GymTrajectoryRunner:
     config: GymEvalConfig
     gym_env: FactorioGymEnv
     process_id: int
-    game_session: GameSession
+    session_manager: GameSessionManager
     
     def __init__(
         self,
         config: GymEvalConfig,
         gym_env: FactorioGymEnv,
         process_id: int,
-        game_session: GameSession,
+        session_manager: GameSessionManager,
         log_dir: Optional[str] = None,
     ):
         self.config = config
@@ -35,7 +36,7 @@ class GymTrajectoryRunner:
         self.gym_env = gym_env
         self.process_id = process_id
         self.start_time = time.time()
-        self.game_session = game_session
+        self.session_manager = session_manager
         self.logger = TrajectoryLogger(
             start_time=self.start_time,
             trajectory_length=self.config.task.trajectory_length,
@@ -102,7 +103,7 @@ class GymTrajectoryRunner:
 
         # Initialize state based on resume or fresh start
         max_steps = self.config.task.trajectory_length
-        await self._initialize_trajectory_state(self.game_session.agent_sessions[0])
+        await self._initialize_trajectory_state(self.session_manager.sessions[0].agent_sessions[0])
 
         # Save system prompts for all agents at the start
         for agent_idx, agent in enumerate(self.agents):
@@ -111,7 +112,7 @@ class GymTrajectoryRunner:
         # Run trajectory
         for _, agent_idx in product(range(max_steps), range(len(self.agents))):
             agent = self.agents[agent_idx]
-            agent_session = self.game_session.agent_sessions[agent_idx]
+            agent_session = self.session_manager.sessions[0].agent_sessions[agent_idx]
             iteration_start = time.time()
             agent_completed = False
             try:

@@ -2,17 +2,88 @@ import argparse
 import asyncio
 import aiodocker
 from aiodocker.exceptions import DockerError
-from typing import List
+from typing import List, Dict
 
 from fle.services.docker.config import DockerConfig, Scenario, Mode
 
+
 class FactorioHeadlessServer:
-    def __init__(self, config: DockerConfig, docker_platform: str, num_instances: int, dry_run: bool = False):
-        self.docker_platform = docker_platform
-        self.config = config
-        self.num = num_instances
-        self.dry_run = dry_run
+    instance_id: int
+    config: DockerConfig
+    docker: aiodocker.Docker
+
+    def __init__(
+        self,
+        instance_id: int,
+        docker_config: DockerConfig,
+    ):
+        self.instance_id = instance_id
+        self.config = docker_config
+    
+    @property
+    def rcon_port(self) -> int:
+        return self.config.rcon_port + self.instance_id
+    
+    @property
+    def udp_port(self) -> int:
+        return self.config.udp_port + self.instance_id
+    
+    @property
+    def address(self) -> str:
+        return self.config.address
+    
+    @property
+    def container_name(self) -> str:
+        return f"{self.config.name_prefix}{self.instance_id}"
+    
+    @property
+    def rcon_password(self) -> str:
+        return self.config.factorio_password
+
+    def connect(self):
         self.docker = aiodocker.Docker()
+
+    def _get_ports(self, instance_index: int) -> dict:
+        ports = {
+            f"{self.config.udp_port}/udp": [
+                {"HostPort": str(self.config.udp_port + instance_index)}
+            ],
+            f"{self.config.rcon_port}/tcp": [
+                {"HostPort": str(self.config.rcon_port + instance_index)}
+            ],
+        }
+        return ports
+    
+    def _get_save_volume(self) -> str:
+        return {
+            self.config.mods_path: {"bind": "/factorio/mods", "mode": "rw"},
+            str(self.config.saves_path / str(self.instance_id)): {
+                "bind": "/factorio/saves",
+                "mode": "rw",
+            },
+        }
+
+    async def restart(self, save_name: str = None):
+        ctr = await self.docker.containers.list(
+            filters={"name": [f"/{self.config.name_prefix}{self.instance_id}"]}
+        )
+        if len(ctr) == 0:
+            raise Exception(
+                f"Container {self.config.name_prefix}{self.instance_id} not found"
+            )
+        ctr = ctr[0]
+        if save_name:
+            self._make_save_latest(save_name)
+        await ctr.restart()
+
+    def _make_save_latest(self, save_name: str):
+        save_dir = self.config.saves_path / str(self.instance_id)
+        save_dir.mkdir(parents=True, exist_ok=True)
+        save_path = save_dir / f"{save_name}.zip"
+        if not save_path.exists():
+            raise Exception(f"Save {save_name} not found")
+        save_path.touch(exist_ok=True)
+
 
 class FactorioHeadlessClusterManager:
     def __init__(
@@ -29,6 +100,12 @@ class FactorioHeadlessClusterManager:
         self.docker = aiodocker.Docker()
         self.docker_configs_raw = {}
 
+    @property
+    def servers(self) -> Dict[int, FactorioHeadlessServer]:
+        if not hasattr(self, '_servers'):
+            self._servers = {i: FactorioHeadlessServer(i, self.config) for i in range(self.num)}
+        return self._servers
+    
     async def _ensure_image(self):
         try:
             await self.docker.images.inspect(self.config.image_name)
@@ -74,16 +151,6 @@ class FactorioHeadlessClusterManager:
             }
         # HostConfig.Binds expects ["host:container:mode", ...]
         return [f"{host}:{b['bind']}:{b['mode']}" for host, b in vols.items()]
-    
-    def _make_save_latest(self, instance_index: int, save_name: str):
-        save_dir = self.config.saves_path / str(instance_index)
-        save_dir.mkdir(parents=True, exist_ok=True)
-        save_zips = list(save_dir.glob(f"{save_name}*.zip"))
-        if len(save_zips) > 0:
-            save_zips[0].touch(exist_ok=True)
-            
-        return save_zips[0]
-    
 
     def _get_environment(self) -> list:
         env = {
@@ -192,76 +259,100 @@ class FactorioHeadlessClusterManager:
 
     async def stop(self):
         # Stop & remove any container whose name starts with "factorio_"
-        ctrs = await self.docker.containers.list(filters={"name": [f"/{self.config.name_prefix}"]})
+        ctrs = await self.docker.containers.list(
+            filters={"name": [f"/{self.config.name_prefix}"]}
+        )
         tasks_stop = [ctr.stop() for ctr in ctrs]
         tasks_delete = [ctr.delete() for ctr in ctrs]
         await asyncio.gather(*tasks_stop)
         await asyncio.gather(*tasks_delete)
 
     async def restart(self):
-        ctrs = await self.docker.containers.list(filters={"name": [f"/{self.config.name_prefix}"]})
+        ctrs = await self.docker.containers.list(
+            filters={"name": [f"/{self.config.name_prefix}"]}
+        )
         tasks = [ctr.restart() for ctr in ctrs]
         await asyncio.gather(*tasks)
 
-    async def restart_with_save(self, instance_index: int, save_name: str):
-        ctr = await self.docker.containers.list(filters={"name": [f"/{self.config.name_prefix}{instance_index}"]})
-        if len(ctr) == 0:
-            raise ValueError(f"Container {self.config.name_prefix}{instance_index} not found")
-        ctr = ctr[0]
-        self._make_save_latest(instance_index, save_name)
-        await ctr.restart()
-
     async def hot_reload_scenario(self):
         # Sync scenario files into the server's temp directory for hot-reload
-        containers = await self.docker.containers.list(filters={"name": [f"/{self.config.name_prefix}"]})
-        
+        containers = await self.docker.containers.list(
+            filters={"name": [f"/{self.config.name_prefix}"]}
+        )
+
         async def sync_container(ctr):
             cmd = (
                 f"docker exec -u root {ctr.id} sh -c "
                 f"'cp -a /factorio/scenarios/{self.config.scenario_name}/. {self.config.temp_playing_dir} && "
                 f"chown -R factorio:factorio {self.config.temp_playing_dir}'"
             )
-            
+
             proc = await asyncio.create_subprocess_shell(
-                cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
             stdout, stderr = await proc.communicate()
-            
+
             if stdout:
                 print(f"stdout: {stdout.decode()}")
             if stderr:
                 print(f"stderr: {stderr.decode()}")
             print(f"Container {ctr.id} sync complete (exit code: {proc.returncode})")
-        
+
         # Run all container syncs concurrently
         await asyncio.gather(*[sync_container(ctr) for ctr in containers])
         print("Hot-reload sync complete.")
-    
+
     async def attach_docker_configs(self):
         """Attach docker config to FactorioClusterManager"""
-        containers = await self.docker.containers.list(filters={"name": [f"/{self.config.name_prefix}"]})
+        containers = await self.docker.containers.list(
+            filters={"name": [f"/{self.config.name_prefix}"]}
+        )
         container_ids = [ctr.id for ctr in containers]
         if not container_ids or container_ids[0] == "":
             print("No running Factorio containers found")
             return
         tasks = [ctr.show() for ctr in containers]
         container_infos = await asyncio.gather(*tasks)
-        info_to_keep = ["Id", "Name", "State", "Image", "HostConfig", "Config", "LogPath", "RestartCount", "Mounts"]
-        hostconfig_to_keep = ["PortBindings", "Binds", "Memory", "RestartPolicy", "NetworkMode"]
+        info_to_keep = [
+            "Id",
+            "Name",
+            "State",
+            "Image",
+            "HostConfig",
+            "Config",
+            "LogPath",
+            "RestartCount",
+            "Mounts",
+        ]
+        hostconfig_to_keep = [
+            "PortBindings",
+            "Binds",
+            "Memory",
+            "RestartPolicy",
+            "NetworkMode",
+        ]
         config_to_keep = ["Env", "Entrypoint", "Cmd", "WorkingDir"]
         network_to_keep = ["Ports", "IPAddress", "Gateway"]
         for container_info in container_infos:
-            self.docker_configs_raw[container_info["Name"]] = {k: container_info[k] for k in info_to_keep}
-            self.docker_configs_raw[container_info["Name"]]["Config"] = {k: container_info["Config"][k] for k in config_to_keep}
-            self.docker_configs_raw[container_info["Name"]]["NetworkSettings"] = {k: container_info["NetworkSettings"][k] for k in network_to_keep}
-            self.docker_configs_raw[container_info["Name"]]["HostConfig"] = {k: container_info["HostConfig"][k] for k in hostconfig_to_keep}
+            self.docker_configs_raw[container_info["Name"]] = {
+                k: container_info[k] for k in info_to_keep
+            }
+            self.docker_configs_raw[container_info["Name"]]["Config"] = {
+                k: container_info["Config"][k] for k in config_to_keep
+            }
+            self.docker_configs_raw[container_info["Name"]]["NetworkSettings"] = {
+                k: container_info["NetworkSettings"][k] for k in network_to_keep
+            }
+            self.docker_configs_raw[container_info["Name"]]["HostConfig"] = {
+                k: container_info["HostConfig"][k] for k in hostconfig_to_keep
+            }
 
     async def get_local_container_ips(self) -> tuple[List[str], List[int], List[int]]:
         """Get IP addresses of running Factorio containers in the local Docker setup."""
         # Get container IDs for factorio containers
-        containers = await self.docker.containers.list(filters={"name": [f"/{self.config.name_prefix}"]})
+        containers = await self.docker.containers.list(
+            filters={"name": [f"/{self.config.name_prefix}"]}
+        )
         container_ids = [ctr.id for ctr in containers]
 
         if not container_ids or container_ids[0] == "":
@@ -273,7 +364,7 @@ class FactorioHeadlessClusterManager:
         tcp_ports = []
         tasks = [ctr.show() for ctr in containers]
         container_infos = await asyncio.gather(*tasks)
-        
+
         for container_info in container_infos:
             ports = container_info["NetworkSettings"]["Ports"]
 
@@ -369,7 +460,6 @@ async def main():
         print(ips, udp_ports, tcp_ports)
     await mgr.attach_docker_configs()
     await mgr.docker.close()
-
 
 
 if __name__ == "__main__":

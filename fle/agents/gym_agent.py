@@ -17,7 +17,7 @@ from fle.agents.formatters import RecursiveReportFormatter
 from fle.agents.llm.api_factory import APIFactory
 from fle.agents.llm.parsing import parse_response
 
-GYM_AGENT_INSTRUCTIONS = """{goal_description}
+GYM_AGENT_INSTRUCTIONS = """
 ## Overview
 You are an AI agent designed to play Factorio through a gym environment, specializing in:
 - Long-horizon planning
@@ -151,7 +151,6 @@ class GymAgent(AgentABC):
             goal_description=task.goal_description,
             agent_instructions=agent_instructions,
         )
-        print(task.goal_description)
         return instructions
 
     def reset(self, conversation: Conversation):

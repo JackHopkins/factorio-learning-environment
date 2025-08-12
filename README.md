@@ -8,8 +8,8 @@ An open source framework for developing and evaluating LLM agents in the game of
 </p>
 
 <p align="center">
-<img src="https://github.com/JackHopkins/factorio-learning-environment/raw/main/docs/assets/videos/compressed_527-cropped.webp" width="485" height="364" controls/>
-<img src="https://github.com/JackHopkins/factorio-learning-environment/raw/main/docs/assets/videos/compressed_1897-cropped.webp" width="485" height="364" controls/>
+<img src="docs/assets/videos/compressed_527-cropped.webp" width="485" height="364" controls/>
+<img src="docs/assets/videos/compressed_1897-cropped.webp" width="485" height="364" controls/>
 </p>
 <p align="center"><em>Claude 3.5 plays Factorio</em></p>
 
@@ -46,9 +46,9 @@ automation (e.g electronic-circuit manufacturing).
 ## Installation
 
 ### Prerequisites
+- [Factorio](https://www.factorio.com/) (version 1.1.110)
 - Docker 
 - Python 3.10+
-- [Factorio](https://www.factorio.com/) (version 1.1.110) (optional)
 
 ### Package Installation
 

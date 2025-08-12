@@ -36,7 +36,7 @@ class MoveTo(Tool):
 
         path_handle = self.request_path(
             start=Position(
-                x=self.game_state.player_location.x, y=self.game_state.player_location.y
+                x=self.namespace.player_location.x, y=self.namespace.player_location.y
             ),
             finish=nposition,
             allow_paths_through_own_entities=True,
@@ -66,21 +66,21 @@ class MoveTo(Tool):
                 raise Exception("Could not lay entity, perhaps a typo?")
 
             if response and isinstance(response, dict):
-                self.game_state.player_location = Position(
+                self.namespace.player_location = Position(
                     x=response["x"], y=response["y"]
                 )
 
             # If `fast` is turned off - we need to long poll the game state to ensure the player has moved
-            if not self.game_state.instance.fast:
-                remaining_steps = self.factorio_server.run_rcon_print(
+            if not self.namespace.instance.fast:
+                remaining_steps = self.factorio_client.run_rcon_print(
                     f"global.actions.get_walking_queue_length({self.player_index})"
                 )
                 while remaining_steps != "0":
                     sleep(0.5)
-                    remaining_steps = self.factorio_server.run_rcon_print(
+                    remaining_steps = self.factorio_client.run_rcon_print(
                         f"global.actions.get_walking_queue_length({self.player_index})"
                     )
-                self.game_state.player_location = Position(x=position.x, y=position.y)
+                self.namespace.player_location = Position(x=position.x, y=position.y)
 
             return Position(x=response["x"], y=response["y"])  # , execution_time
         except Exception as e:

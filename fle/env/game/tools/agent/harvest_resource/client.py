@@ -33,7 +33,7 @@ class HarvestResource(Tool):
         # If not fast mode, we need to identify what resource is at the x, y position
         # Because if the first pass of the harvest doesn't get the necessary
         resource_to_harvest = Resource.IronOre
-        if not self.game_state.instance.fast:
+        if not self.namespace.instance.fast:
             resource_to_harvest = self.get_resource_type_at_position(position)
 
         # Now we attempt to harvest.
@@ -45,15 +45,15 @@ class HarvestResource(Tool):
             raise Exception(f"Could not harvest. {msg}")
 
         # If `fast` is turned off - we need to long poll the game state to ensure the player has moved
-        if not self.game_state.instance.fast:
-            remaining_steps = self.factorio_server.run_rcon_print(
+        if not self.namespace.instance.fast:
+            remaining_steps = self.factorio_client.run_rcon_print(
                 f"global.actions.get_harvest_queue_length({self.player_index})"
             )
             attempt = 0
             max_attempts = 10
             while remaining_steps != "0" and attempt < max_attempts:
                 sleep(0.5)
-                remaining_steps = self.factorio_server.run_rcon_print(
+                remaining_steps = self.factorio_client.run_rcon_print(
                     f"global.actions.get_harvest_queue_length({self.player_index})"
                 )
 
@@ -62,7 +62,7 @@ class HarvestResource(Tool):
             while int(response) < quantity and attempt < max_attempts:
                 nearest_resource = self.nearest(resource_to_harvest)
 
-                if not nearest_resource.is_close(self.game_state.player_location, 2):
+                if not nearest_resource.is_close(self.namespace.player_location, 2):
                     self.move_to(nearest_resource)
 
                 try:
@@ -80,7 +80,7 @@ class HarvestResource(Tool):
 
     def get_resource_type_at_position(self, position: Position):
         x, y = self.get_position(position)
-        entity_at_position = self.factorio_server.run_rcon_print(
+        entity_at_position = self.factorio_client.run_rcon_print(
             f"global.actions.get_resource_name_at_position({self.player_index}, {x}, {y})"
         )
         if entity_at_position.startswith("tree"):

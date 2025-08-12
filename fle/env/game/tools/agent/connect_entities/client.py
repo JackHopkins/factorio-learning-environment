@@ -57,18 +57,18 @@ class ConnectEntities(Tool):
         self._setup_resolvers()
 
     def _setup_actions(self):
-        self.request_path = RequestPath(self.factorio_server, self.game_state)
-        self.get_path = GetPath(self.factorio_server, self.game_state)
-        self.rotate_entity = RotateEntity(self.factorio_server, self.game_state)
-        self.pickup_entity = PickupEntity(self.factorio_server, self.game_state)
-        self.inspect_inventory = InspectInventory(self.factorio_server, self.game_state)
-        self.get_entities = GetEntities(self.factorio_server, self.game_state)
-        self.get_entity = GetEntity(self.factorio_server, self.game_state)
+        self.request_path = RequestPath(self.factorio_client, self.namespace)
+        self.get_path = GetPath(self.factorio_client, self.namespace)
+        self.rotate_entity = RotateEntity(self.factorio_client, self.namespace)
+        self.pickup_entity = PickupEntity(self.factorio_client, self.namespace)
+        self.inspect_inventory = InspectInventory(self.factorio_client, self.namespace)
+        self.get_entities = GetEntities(self.factorio_client, self.namespace)
+        self.get_entity = GetEntity(self.factorio_client, self.namespace)
         self._extend_collision_boxes = ExtendCollisionBoxes(
-            self.factorio_server, self.game_state
+            self.factorio_client, self.namespace
         )
         self._clear_collision_boxes = ClearCollisionBoxes(
-            self.factorio_server, self.game_state
+            self.factorio_client, self.namespace
         )
 
     def _setup_resolvers(self):

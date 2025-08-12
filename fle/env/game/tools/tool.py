@@ -9,12 +9,12 @@ from fle.env.game.tools.controller import Controller
 class Tool(Controller):
     def __init__(
         self,
-        factorio_server: "FactorioClient",
+        factorio_client: "FactorioClient",
         namespace: "FactorioNamespace",
         *args,
         **kwargs,
     ):
-        super().__init__(factorio_server, namespace)
+        super().__init__(factorio_client, namespace)
         self.load()
 
     def get_position(self, position_or_entity: Union[Tuple, Position, Entity]):
@@ -43,4 +43,4 @@ class Tool(Controller):
             return response
 
     def load(self):
-        self.factorio_server.load_tool_into_game(self.name)
+        self.factorio_client.load_tool_into_game(self.name)

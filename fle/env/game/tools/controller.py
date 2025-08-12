@@ -16,16 +16,16 @@ COMMAND = "/silent-command"
 class Controller:
     def __init__(
         self,
-        factorio_server: "FactorioClient",
-        game_state: "FactorioNamespace",
+        factorio_client: "FactorioClient",
+        namespace: "FactorioNamespace",
         *args,
         **kwargs,
     ):
-        self.factorio_server = factorio_server
-        self.game_state = game_state
+        self.factorio_client = factorio_client
+        self.namespace = namespace
         self.name = self.camel_to_snake(self.__class__.__name__)
         self.player_index = (
-            game_state.agent_index + 1
+            namespace.agent_index + 1
         )  # +1 because Factorio is 1-indexed
 
     def clean_response(self, response):
@@ -136,7 +136,7 @@ class Controller:
             parameters = [lua.encode(arg) for arg in args]
             invocation = f"pcall(global.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
             wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
-            lua_response = self.factorio_server.send_command(wrapped)
+            lua_response = self.factorio_client.send_command(wrapped)
 
             parsed, elapsed = _lua2python(invocation, lua_response, start=start)
             if parsed is None:
@@ -165,7 +165,7 @@ class Controller:
             parameters = [lua.encode(arg) for arg in args]
             invocation = f"pcall(global.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
             wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
-            lua_response = self.factorio_server.rcon_client.send_command(wrapped)
+            lua_response = self.factorio_client.rcon_client.send_command(wrapped)
             parsed, elapsed = _lua2python(invocation, lua_response, start=start)
             if not parsed["a"] and "b" in parsed and isinstance(parsed["b"], str):
                 parts = lua_response.split('["b"] = ')
@@ -191,6 +191,6 @@ class Controller:
     def send(self, command, *parameters, trace=False) -> List[str]:
         start = timer()
         script = self._get_command(command, parameters=list(parameters), measured=False)
-        lua_response = self.factorio_server.send_command(script)
+        lua_response = self.factorio_client.send_command(script)
         # print(lua_response)
         return _lua2python(command, lua_response, start=start)

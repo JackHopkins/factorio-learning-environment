@@ -32,7 +32,7 @@ class SendMessage(Tool):
         :return: True if message was sent successfully, False otherwise (e.g. on timeout)
         """
 
-        if not self.game_state.instance.is_multiagent:
+        if not self.namespace.instance.is_multiagent:
             logging.info("SendMessage: Skipping message in single agent mode")
             return True
 

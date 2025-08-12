@@ -69,7 +69,7 @@ class PlaceObject(Tool):
                 raise Exception(f"Could not place {name} at ({x}, {y})", e)
 
         # If we are in `slow` mode, there is a delay between placing the entity and the entity being created
-        if not self.game_state.instance.fast:
+        if not self.namespace.instance.fast:
             sleep(1)
             return self.get_entity(entity, position)
         else:
@@ -90,7 +90,7 @@ class PlaceObject(Tool):
 
             try:
                 object = metaclass(
-                    prototype=entity.name, game=self.factorio_server, **cleaned_response
+                    prototype=entity.name, game=self.factorio_client, **cleaned_response
                 )
             except Exception as e:
                 raise Exception(

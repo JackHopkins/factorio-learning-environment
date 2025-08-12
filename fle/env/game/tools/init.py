@@ -14,4 +14,4 @@ class Init(Controller):
         self.load()
 
     def load(self):
-        self.factorio_server.load_init_into_game(self.name)
+        self.factorio_client.load_init_into_game(self.name)

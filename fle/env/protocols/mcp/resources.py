@@ -219,8 +219,7 @@ async def get_recipe(name: str) -> Dict:
 async def get_all_api_docs(method: str):
     """Get all API docs"""
 
-    pkg = importlib.resources.files("fle")
-    execution_path = pkg / "env"
+    execution_path = importlib.resources.files("fle") / "env"
     generator = SystemPromptGenerator(str(execution_path))
     return generator.manual(method)
 
@@ -230,8 +229,7 @@ async def get_all_api_docs(method: str):
 async def get_all_api_schema():
     """Get all API docs"""
 
-    pkg = importlib.resources.files("fle")
-    execution_path = pkg / "env"
+    execution_path = importlib.resources.files("fle") / "env"
     generator = SystemPromptGenerator(str(execution_path))
     schema = (
         generator.schema() + "\n\n" + generator.types() + "\n\n" + generator.entities()

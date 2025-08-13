@@ -3,9 +3,9 @@ Unix-like tools for code introspection in Factorio Learning Environment
 """
 
 import glob
-import os
 import re
 from pathlib import Path
+import importlib.resources
 
 from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
@@ -15,7 +15,7 @@ from fle.env.protocols.mcp import mcp
 
 def _get_tools_base_path() -> Path:
     """Get the base path to the tools directory"""
-    return Path(os.path.dirname(os.path.realpath(__file__))).parent.parent / "tools"
+    return importlib.resources.files("fle") / "env" / "tools"
 
 
 @mcp.tool()
@@ -500,9 +500,7 @@ async def man(command: str) -> str:
 
         # If no dedicated doc file, try to generate from the implementation
         try:
-            execution_path = Path(
-                os.path.dirname(os.path.realpath(__file__))
-            ).parent.parent
+            execution_path = importlib.resources.files("fle") / "env"
             generator = SystemPromptGenerator(str(execution_path))
             manual = generator.manual(command)
             if manual:

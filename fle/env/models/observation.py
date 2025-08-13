@@ -42,6 +42,10 @@ class Observation:
     task_verification: Optional[TaskResponse]
     messages: List[AgentMessage]
     serialized_functions: List[Dict[str, Any]]  # List of serialized functions
+    
+    @property
+    def last_message_timestamp(self) -> Optional[float]:
+        return self.messages[-1].timestamp if self.messages else None
 
     @classmethod
     def from_dict(cls, obs_dict: Dict[str, Any]) -> "Observation":

@@ -221,8 +221,6 @@ class AgentSession:
         )
 
     def eval_with_snapshot(self, code: str, value_accrual_time: float = 0) -> AgentResult:
-        if self.last_observation.state:
-            self.reset_instance(self.last_observation.state)
 
         initial_snapshot = self._snapshot()
 
@@ -298,6 +296,18 @@ class GameSession:
         @result.setter
         def result(self, value: str) -> None:
             self.agent_result.result = value
+            
+        @property
+        def score_delta(self) -> float:
+            return self.agent_result.score_delta
+        
+        @property
+        def error_occurred(self) -> bool:
+            return self.agent_result.error_occurred
+        
+        @property
+        def flows_delta(self) -> ProductionFlows:
+            return self.agent_result.flows_delta
 
     def __init__(
         self,
@@ -345,6 +355,9 @@ class GameSession:
         self, agent_idx: int, code: str, value_accrual_time: int
     ):
         agent_session = self.agent_sessions[agent_idx]
+        if agent_session.last_observation.state:
+            self.reset_instance(agent_session.last_observation.state)
+
         agent_eval_results = agent_session.eval_with_snapshot(
             code=code, value_accrual_time=value_accrual_time
         )
@@ -380,6 +393,7 @@ class GameSession:
 
     def reinitialize_instance(self) -> None:
         if isinstance(self.instance, A2AFactorioInstance):
+            # TODO: Add a2a specific reinitialization, if any
             self.instance: A2AFactorioInstance
             self.instance.initialise()
         else:

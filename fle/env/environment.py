@@ -300,12 +300,12 @@ class FactorioGymEnv(gym.Env):
 
         # Get additional info
         info = {
-            "error_occurred": game_result.agent_result.error_occurred,
-            "result": game_result.result,
-            "ticks": game_result.post.game_info.tick,
-            "flows": game_result.agent_result.flows_delta,
             "agent_idx": agent_idx,
-            "last_message_timestamp": observation.messages[-1].timestamp,
+            "ticks": game_result.post.game_info.tick,
+            "error_occurred": game_result.error_occurred,
+            "result": game_result.result,
+            "flows": game_result.flows_delta,
+            "last_message_timestamp": observation.last_message_timestamp,
             "task_verification": task_response,
             "output_game_state": game_result.post.game_state,
         }

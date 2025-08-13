@@ -51,6 +51,12 @@ def get_validated_run_configs(run_config_location: str) -> list[GymRunConfig]:
 
     # Check if we have enough containers
     ips, udp_ports, tcp_ports = get_local_container_ips()
+    print(f"🐳 CONTAINER DISCOVERY: Found {len(tcp_ports)} containers")
+    print("🔍 Container details:")
+    for i, (ip, tcp_port, udp_port) in enumerate(zip(ips, tcp_ports, udp_ports)):
+        print(f"  Container {i}: {ip}:{tcp_port} (UDP: {udp_port})")
+    print(f"📋 Running {len(run_configs)} configurations")
+
     if len(tcp_ports) < len(run_configs):
         raise ValueError(
             f"Not enough containers for {len(run_configs)} runs. Only {len(ips)} containers available."
@@ -66,9 +72,19 @@ def run_process(run_idx: int, config: GymEvalConfig):
 
 async def run_trajectory(run_idx: int, config: GymEvalConfig):
     """Run a single gym evaluation process"""
+    print(
+        f"🎯 SUBPROCESS {run_idx}: Creating gym environment with instance_id={config.instance_id}"
+    )
+
     db_client = await create_db_client()
 
     gym_env = gym.make(config.env_id, instance_id=config.instance_id)
+
+    # Get the actual instance details for verification
+    instance = gym_env.unwrapped.instance
+    print(
+        f"✅ SUBPROCESS {run_idx}: Connected to {instance.address}:{instance.tcp_port}"
+    )
 
     log_dir = os.path.join(".fle", "trajectory_logs", f"v{config.version}")
     runner = GymTrajectoryRunner(
@@ -153,6 +169,10 @@ async def main():
             agent_cards=agent_cards,
             env_id=run_config.env_id,
             instance_id=run_idx,
+        )
+
+        print(
+            f"🚀 MAIN PROCESS: Starting run_idx={run_idx} with instance_id={run_idx} for {run_config.env_id}"
         )
 
         # Ensure agent cards are properly set for a2a functionality

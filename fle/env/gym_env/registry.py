@@ -136,6 +136,11 @@ def make_factorio_env(env_spec: GymEnvironmentSpec, instance_id: int) -> Factori
         if len(tcp_ports) == 0:
             raise RuntimeError("No Factorio containers available")
 
+        print(f"🏭 REGISTRY: Creating FactorioInstance for instance_id={instance_id}")
+        print(
+            f"📡 REGISTRY: Selecting container {instance_id}: {ips[instance_id]}:{tcp_ports[instance_id]}"
+        )
+
         instance = FactorioInstance(
             address=ips[instance_id],
             tcp_port=tcp_ports[instance_id],

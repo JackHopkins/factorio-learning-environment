@@ -21,7 +21,6 @@ from fle.eval.tasks import TaskFactory
 from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )
-from pathlib import Path
 
 load_dotenv()
 
@@ -114,27 +113,19 @@ async def main():
         task = TaskFactory.create_task(env_info["task_config_path"])
 
         # Generate system prompt without creating instance
-        execution_path = Path(os.path.dirname(os.path.realpath(__file__))) / ".." / ".."
-        generator = SystemPromptGenerator(str(execution_path))
+        import os
+
+        execution_path = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "..", ".."
+        )
+        generator = SystemPromptGenerator(execution_path)
 
         # Create agents and their agent cards
         agents = []
         agent_cards = []
         for agent_idx in range(run_config.num_agents):
-            # Generate multiagent string if needed
-            multiagent_str = ""
-            if run_config.num_agents > 1:
-                player_idx = agent_idx + 1
-                multiagent_str = (
-                    f"## MULTIAGENT INSTRUCTIONS\n"
-                    f"You are Agent {player_idx} out of {run_config.num_agents} agent(s) in the game. "
-                    f"Follow your specific instructions given to you by the task."
-                    f"Use the send_message() tool regularly to communicate with other agents about your current activities and any challenges you encounter. "
-                    f"Start each program with a send_message() call to explain what you are doing. "
-                    f"End each program with a send_message() call to confirm your actions. If your program errors out prior to send_message() being called, the message will not be sent. "
-                )
-
-            system_prompt = generator.generate(multiagent_str)
+            # Generate basic system prompt - multiagent logic handled by instance.get_system_prompt()
+            system_prompt = generator.generate("")
             agent = GymAgent(
                 model=run_config.model,
                 system_prompt=system_prompt,

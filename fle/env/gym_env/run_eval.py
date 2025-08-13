@@ -93,18 +93,9 @@ async def main(run_config, offset):
         agents = []
         agent_cards = []
         for agent_idx in range(run_config.num_agents):
-            multiagent_str = ""
-            if run_config.num_agents > 1:
-                player_idx = agent_idx + 1
-                multiagent_str = (
-                    f"## MULTIAGENT INSTRUCTIONS\n"
-                    f"You are Agent {player_idx} out of {run_config.num_agents} agent(s) in the game. "
-                    f"Follow your specific instructions given to you by the task."
-                    f"Use the send_message() tool regularly to communicate with other agents about your current activities and any challenges you encounter. "
-                    f"Start each program with a send_message() call to explain what you are doing. "
-                    f"End each program with a send_message() call to confirm your actions. If your program errors out prior to send_message() being called, the message will not be sent. "
-                )
-            system_prompt = generator.generate(multiagent_str)
+            system_prompt = generator.generate_for_agent(
+                agent_idx=agent_idx, num_agents=run_config.num_agents
+            )
             agent = GymAgent(
                 model=run_config.model,
                 system_prompt=system_prompt,

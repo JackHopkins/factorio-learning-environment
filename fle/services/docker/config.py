@@ -51,6 +51,7 @@ class DockerConfig(BaseModel):
     arch: str = Field(default_factory=platform.machine)
     address: str = "localhost"
     os_name: str = Field(default_factory=platform.system)
+    num_instances: int = 1
 
     saves_path: Path = Field(default_factory=lambda: ROOT_DIR / ".fle" / "saves")
     screenshots_dir: Path = Field(
@@ -69,7 +70,7 @@ class DockerConfig(BaseModel):
         / "scenarios"
     )
     server_config_dir: Path = Field(
-        default_factory=lambda: Path(__file__).parent.resolve() / "factorio" / "config"
+        default_factory=lambda: ROOT_DIR / "env" / "game" / "factorio" / "config"
     )
 
     mode: str = Mode.SAVE_BASED.value
@@ -78,10 +79,14 @@ class DockerConfig(BaseModel):
 
     factorio_password: str = Field(
         default_factory=lambda: (
-            Path(__file__).parent.resolve() / "factorio" / "config" / "rconpw"
+            ROOT_DIR / "env" / "game" / "factorio" / "config" / "rconpw"
         )
         .read_text()
         .strip()
     )
 
     model_config = {"extra": "forbid", "frozen": True}
+
+config = DockerConfig()
+
+print(config.factorio_password)

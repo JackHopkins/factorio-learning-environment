@@ -14,7 +14,13 @@ from fle.env.gym_env.config import GymEvalConfig, GymRunConfig
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
 from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
 from fle.env.trajectory_runner import GymTrajectoryRunner
-from fle.env.registry import get_environment_info, list_available_environments
+from fle.env.registry import (
+    get_environment_info,
+    list_available_environments,
+    configure_registry,
+)
+from fle.env.game.config import GameConfig
+from fle.services.docker.config import DockerConfig
 from fle.services.db.db_client import create_db_client, get_next_version
 
 load_dotenv()
@@ -87,6 +93,13 @@ async def main():
 
     # Read and validate run configurations
     run_configs = get_validated_run_configs(args.run_config)
+
+    # Configure gym registry defaults for Game/Docker configs
+    # Note: We validated that all runs have the same num_agents above
+    num_agents = run_configs[0].num_agents if len(run_configs) > 0 else 1
+    game_config = GameConfig(num_agents=num_agents)
+    docker_config = DockerConfig()
+    configure_registry(game_config=game_config, docker_config=docker_config)
 
     # Get starting version number for new runs
     base_version = await get_next_version()

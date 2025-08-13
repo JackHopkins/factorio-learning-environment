@@ -4,10 +4,14 @@ from typing import Any, Dict, List, Optional
 
 import gym
 
-from fle.commons.cluster_ips import get_local_container_ips
-from fle.env.game import FactorioInstance
+from fle.env.session_manager import GameSessionManager
+from fle.env.session import GameSession
+from fle.env.game.config import GameConfig
+from fle.services.docker.config import DockerConfig
+
 from fle.env.environment import FactorioGymEnv
 from fle.env.tasks import TaskFactory
+from fle.services.docker.docker_manager import FactorioHeadlessClusterManager
 
 
 @dataclass
@@ -22,7 +26,9 @@ class GymEnvironmentSpec:
     model: str = "gpt-4"
     version: Optional[int] = None
     exit_on_task_success: bool = True
-
+    # Configs are populated by the registry defaults unless explicitly provided
+    game_config: Optional[GameConfig] = None
+    docker_config: Optional[DockerConfig] = None
 
 class FactorioGymRegistry:
     """Registry for Factorio gym environments"""
@@ -34,6 +40,25 @@ class FactorioGymRegistry:
 
         self._task_definitions_path = TASK_FOLDER
         self._discovered = False
+        # Defaults that can be overridden by callers (e.g., run_eval)
+        self._default_game_config: GameConfig = GameConfig()
+        self._default_docker_config: DockerConfig = DockerConfig()
+
+    def set_defaults(
+        self,
+        game_config: Optional[GameConfig] = None,
+        docker_config: Optional[DockerConfig] = None,
+    ) -> None:
+        if game_config is not None:
+            self._default_game_config = game_config
+        if docker_config is not None:
+            self._default_docker_config = docker_config
+        # Apply to already-registered specs that didn't customize
+        for spec in self._environments.values():
+            if spec.game_config is None:
+                spec.game_config = self._default_game_config
+            if spec.docker_config is None:
+                spec.docker_config = self._default_docker_config
 
     def discover_tasks(self) -> None:
         """Automatically discover all task definitions and register them as gym environments"""
@@ -81,6 +106,8 @@ class FactorioGymRegistry:
         model: str = "gpt-4",
         version: Optional[int] = None,
         exit_on_task_success: bool = True,
+        game_config: Optional[GameConfig] = None,
+        docker_config: Optional[DockerConfig] = None,
     ) -> None:
         """Register a new gym environment"""
 
@@ -93,6 +120,8 @@ class FactorioGymRegistry:
             model=model,
             version=version,
             exit_on_task_success=exit_on_task_success,
+            game_config=game_config or self._default_game_config,
+            docker_config=docker_config or self._default_docker_config,
         )
 
         self._environments[env_id] = spec
@@ -100,7 +129,7 @@ class FactorioGymRegistry:
         # Register with gym
         gym.register(
             id=env_id,
-            entry_point="fle.env.gym_env.registry:make_factorio_env",
+            entry_point="fle.env.registry:make_factorio_env",
             kwargs={"env_spec": spec},
         )
 
@@ -126,35 +155,34 @@ _registry = FactorioGymRegistry()
 
 def make_factorio_env(env_spec: GymEnvironmentSpec) -> FactorioGymEnv:
     """Factory function to create a Factorio gym environment"""
-
     # Create task from the task definition
     task = TaskFactory.create_task(env_spec.task_config_path)
 
-    # Create Factorio instance
-    # Note: This assumes you have containers available
-    try:
-        ips, udp_ports, tcp_ports = get_local_container_ips()
-        if len(tcp_ports) == 0:
-            raise RuntimeError("No Factorio containers available")
+    # Resolve configs from spec or defaults
+    game_config = env_spec.game_config or _registry._default_game_config
+    docker_config = env_spec.docker_config or _registry._default_docker_config
 
-        # Use the first available container
-        instance = FactorioInstance(
-            address=ips[0],
-            container_id=0,  # Use first container
-            num_agents=env_spec.num_agents,
-        )
-        instance.set_speed(10)
+    # Create a lightweight cluster manager pointing at expected ports/volumes
+    docker_platform = "linux/arm64" if docker_config.arch in ("arm64", "aarch64") else "linux/amd64"
+    cluster = FactorioHeadlessClusterManager(
+        config=docker_config,
+        docker_platform=docker_platform,
+        num_instances=docker_config.num_instances,
+        dry_run=False,
+    )
 
-        # Setup the task
-        task.setup(instance)
+    # Create session manager bound to configs/cluster
+    session_manager = GameSessionManager(
+        game_config=game_config,
+        docker_config=docker_config,
+        server_manager=cluster,
+    )
 
-        # Create and return the gym environment
-        env = FactorioGymEnv(instance=instance, task=task)
+    # Create a single GameSession targeting instance 0
+    game_session: GameSession = session_manager._make_session(instance_id=0, task=task)
 
-        return env
-
-    except Exception as e:
-        raise RuntimeError(f"Failed to create Factorio environment: {e}")
+    # Return the gym environment
+    return FactorioGymEnv(game_session=game_session)
 
 
 def register_all_environments() -> None:
@@ -193,6 +221,18 @@ register_all_environments()
 def make(env_id: str, **kwargs) -> FactorioGymEnv:
     """Create a gym environment by ID"""
     return gym.make(env_id, **kwargs)
+
+
+def configure_registry(
+    game_config: Optional[GameConfig] = None,
+    docker_config: Optional[DockerConfig] = None,
+) -> None:
+    """Configure default Game/Docker configs for all gym environments.
+
+    Call this early from entrypoints (e.g., run_eval) to set defaults that
+    will be attached to environments created via gym.make().
+    """
+    _registry.set_defaults(game_config=game_config, docker_config=docker_config)
 
 
 # Example usage and documentation

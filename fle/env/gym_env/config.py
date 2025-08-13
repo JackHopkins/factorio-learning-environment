@@ -1,4 +1,4 @@
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 from typing import Dict, List, Optional
 
 from fle.agents.gym_agent import GymAgent
@@ -9,6 +9,7 @@ from a2a.types import AgentCard
 
 class GymRunConfig(BaseModel):
     """Configuration for a single gym environment evaluation run"""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     env_id: str  # Gym environment ID from registry (e.g., "Factorio-iron_ore_throughput_16-v0")
     model: str
     version: Optional[int] = None
@@ -20,6 +21,7 @@ class GymRunConfig(BaseModel):
 class GymEvalConfig(BaseModel):
     """Configuration for gym evaluation"""
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     agents: Dict[int, GymAgent]
     version: int
     version_description: str

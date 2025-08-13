@@ -5,6 +5,7 @@ from fle.env.game.config import GameConfig
 from fle.env.game.factorio_client import FactorioClient
 from fle.env.game.instance import FactorioInstance
 from fle.env.session import AgentSession, GameSession
+from fle.env.tasks import TaskABC
 from fle.services.docker.config import DockerConfig
 from fle.services.docker.docker_manager import FactorioHeadlessClusterManager
 
@@ -75,12 +76,14 @@ class GameSessionManager:
                 fast=self.game_config.fast_mode,
             )
 
-    def _make_session(self, instance_id: int) -> GameSession:
+    def _make_session(self, instance_id: int, task: Optional[TaskABC] = None) -> GameSession:
         instance = self._make_instance(instance_id)
         return GameSession(
             instance_id=instance_id,
             instance=instance,
             server=self.server_manager.servers[instance_id],
+            config=self.game_config,
+            task=task,
         )
 
     async def start_cluster(self) -> None:

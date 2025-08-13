@@ -31,34 +31,64 @@ def fle_init():
 
 
 def fle_cluster(args):
-    script = Path(__file__).parent / "cluster" / "local" / "run-envs.sh"
-    if not script.exists():
-        print(f"Cluster script not found: {script}", file=sys.stderr)
-        sys.exit(1)
-    cmd = [str(script)]
-    if args:
-        if args.cluster_command:
-            cmd.append(args.cluster_command)
-        if args.n:
-            cmd.extend(["-n", str(args.n)])
-        if args.s:
-            cmd.extend(["-s", args.s])
+    """Manage local Factorio headless servers using the Docker manager API."""
+    from fle.services.docker.config import DockerConfig, Scenario, Mode
+    from fle.services.docker.docker_manager import FactorioHeadlessClusterManager
+
     try:
-        subprocess.run(cmd, check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Error running cluster script: {e}", file=sys.stderr)
-        sys.exit(e.returncode)
+        config = DockerConfig()
+        # Map args to config if provided
+        if args and args.s:
+            if args.s == "open_world":
+                config.scenario_name = Scenario.OPEN_WORLD.value
+            elif args.s == "default_lab_scenario":
+                config.scenario_name = Scenario.DEFAULT_LAB_SCENARIO.value
+        num = args.n if args and args.n else 1
+        docker_platform = "linux/arm64" if config.arch in ("arm64", "aarch64") else "linux/amd64"
+        mgr = FactorioHeadlessClusterManager(config, docker_platform, num)
+
+        async def run():
+            if args and args.cluster_command == "stop":
+                await mgr.stop()
+            elif args and args.cluster_command == "restart":
+                await mgr.restart()
+            else:
+                await mgr.start()
+            await mgr.attach_docker_configs()
+            await mgr.docker.close()
+
+        asyncio.run(run())
+    except Exception as e:
+        print(f"Error managing cluster: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def fle_eval(args, env):
     if not env:
         return
-    # Check if Factorio server is running on port 34197
-    probe = Path(__file__).parent / "cluster" / "docker" / "probe.sh"
-    result = subprocess.run(["sh", str(probe)])
-    if result.returncode != 0:
-        print("Server not running, starting cluster...")
-        fle_cluster(None)
+    # Ensure servers are started via Docker manager if not already running
+    # Attempt to start 1 instance as a convenience if containers are missing
+    try:
+        from fle.services.docker.docker_manager import FactorioHeadlessClusterManager
+        from fle.services.docker.config import DockerConfig
+
+        async def ensure_running():
+            # Instantiate inside loop to avoid 'no running event loop'
+            config = DockerConfig()
+            docker_platform = "linux/arm64" if config.arch in ("arm64", "aarch64") else "linux/amd64"
+            mgr = FactorioHeadlessClusterManager(config, docker_platform, 1)
+            # Try to get IPs; if none/invalid response, start cluster
+            ips, udp_ports, tcp_ports = await mgr.get_local_container_ips()
+            if not tcp_ports:
+                print("Server not running, starting cluster...")
+                await mgr.start()
+                ips, udp_ports, tcp_ports = await mgr.get_local_container_ips()
+            await mgr.attach_docker_configs()
+            await mgr.docker.close()
+
+        asyncio.run(ensure_running())
+    except Exception as e:
+        print(f"Warning: could not ensure cluster running automatically ({e}). Continuing...")
     config_path = Path(args.config)
     if not config_path.exists():
         print(f"Error: Config file '{args.config}' not found.", file=sys.stderr)
@@ -87,7 +117,7 @@ Examples:
     )
     subparsers = parser.add_subparsers(dest="command")
     parser_cluster = subparsers.add_parser(
-        "cluster", help="Setup Docker containers (run run-envs.sh)"
+        "cluster", help="Manage Docker containers for local Factorio servers"
     )
     parser_cluster.add_argument(
         "cluster_command",

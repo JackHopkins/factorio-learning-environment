@@ -357,7 +357,7 @@ class FactorioHeadlessClusterManager:
 
         if not container_ids or container_ids[0] == "":
             print("No running Factorio containers found")
-            return []
+            return ([], [], [])
 
         ips = []
         udp_ports = []

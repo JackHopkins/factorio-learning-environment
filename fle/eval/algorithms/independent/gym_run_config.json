@@ -1,6 +1,8 @@
 [
     {
-        "env_id": "Factorio-iron_ore_throughput_16-v0",
-        "model": "claude-3-5-sonnet-latest"
+        "env_id": "iron_ore_throughput",
+        "model": "claude-3-5-sonnet-latest",
+        "num_agents": 1,
+        "exit_on_task_success": true
     }
 ] 

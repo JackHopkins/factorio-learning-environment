@@ -9,7 +9,7 @@ from fle.agents.models import CompletionResult
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.generation_parameters import GenerationParameters
 from fle.commons.models.program import Program
-from fle.env.gym_env.observation import Observation
+from fle.env.models.observation import Observation
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
 from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
 from fle.env.tasks import TaskABC

@@ -1,4 +1,5 @@
 import datetime
+from dataclasses import dataclass
 import pickle
 import time
 from typing import Any, Dict, List, Optional, Tuple
@@ -23,16 +24,53 @@ from fle.env.models.observation import (
     TaskResponse,
 )
 from fle.env.utils.profits import get_achievements
-from fle.services.docker.config import DockerConfig
-from fle.services.docker.docker_manager import (
-    FactorioHeadlessClusterManager,
-    FactorioHeadlessServer,
-)
-from fle.services.db.db_client import DBClient, create_db_client
+from fle.services.docker.docker_manager import FactorioHeadlessServer
+from fle.services.db.db_client import DBClient
+from fle.env.tasks import TaskABC
 
 
 class AgentSession:
     """High-level facade over a single Factorio agent instance."""
+
+    @dataclass
+    class Snapshot:
+        score: float
+        flows: ProductionFlows
+        tick: int
+        timestamp: float
+        observation: Optional[Observation] = None
+
+    class AgentResult:
+        pre: "AgentSession.Snapshot"
+        post: Optional["AgentSession.Snapshot"]
+        result: str
+
+        def __init__(
+            self,
+            pre: "AgentSession.Snapshot",
+            post: Optional["AgentSession.Snapshot"],
+            result: str,
+        ):
+            self.pre = pre
+            self.post = post
+            self.result = result
+
+        def set_post(self, post: "AgentSession.Snapshot") -> None:
+            self.post = post
+
+        @property
+        def error_occurred(self) -> bool:
+            return (
+                "error" in self.result.lower() or "exception: " in self.result.lower()
+            )
+
+        @property
+        def score_delta(self) -> float:
+            return self.post.score - self.pre.score
+
+        @property
+        def flows_delta(self) -> ProductionFlows:
+            return self.post.flows.get_new_flows(self.pre.flows)
 
     steps: int
     namespace: FactorioNamespace | A2AFactorioNamespace
@@ -44,27 +82,11 @@ class AgentSession:
     version_description: str
     db_client: DBClient
 
-    class EvalResults:
-        def __init__(
-            self, result: str, initial_score: float, score: float, eval_time: float
-        ):
-            self.result = result
-            self.initial_score = initial_score
-            self.score = score
-            self.eval_time = eval_time
-
-        @property
-        def error_occurred(self) -> bool:
-            return (
-                "error" in self.result.lower() or "exception: " in self.result.lower()
-            )
-
-        @property
-        def current_flows(self) -> ProductionFlows:
-            return ProductionFlows.from_dict(self.namespace._get_production_stats())
-
     def __init__(
-        self, agent_idx: int, agent_instance: AgentInstance, db_client: DBClient
+        self,
+        agent_idx: int,
+        agent_instance: AgentInstance,
+        db_client: DBClient,
     ):
         self.agent_idx = agent_idx
         self.steps = 0
@@ -77,11 +99,10 @@ class AgentSession:
     def version(self) -> int:
         return self.db_client.get_largest_version()
 
-    @property
-    def version_description(self) -> str:
-        return self.db_client.get_version_description(self.version)
-
-    def get_observation(self, response: Optional[Response] = None) -> Observation:
+    def get_partial_observation(
+        self,
+        game_info: GameInfo,
+    ) -> Observation:
         """Convert the current game state into an observation"""
         # Get entity observations
         entities = self.namespace.get_entities()
@@ -92,13 +113,6 @@ class AgentSession:
 
         # Get research observations
         research_obs = self.namespace._save_research_state()
-
-        # Get game info
-        game_info = GameInfo(
-            tick=self.namespace.instance.get_elapsed_ticks(),
-            time=self.namespace.instance.get_elapsed_ticks() / 60,
-            speed=self.namespace.instance._speed,
-        )
 
         # Get flows
         flows = self.namespace._get_production_stats()
@@ -124,14 +138,6 @@ class AgentSession:
         if messages_obs:
             self.last_message_timestamp = latest_timestamp
 
-        # Get task verification if available
-        task_verification = None
-        if response and hasattr(response, "task"):
-            task_verification = TaskResponse(
-                success=response.task.success,
-                meta=response.task.meta if hasattr(response.task, "meta") else {},
-            )
-
         # Get serialized functions
         serialized_functions = []
         for func in self.namespace.get_functions():
@@ -140,14 +146,14 @@ class AgentSession:
             )
 
         observation = Observation(
-            raw_text=response.response if response else "",
+            raw_text="",
             entities=entity_obs,  # Convert entities to strings
             inventory=inventory_obs,
             research=research_obs,
             game_info=game_info,
-            score=response.score if response else 0.0,
+            score=0.0,
             flows=flows_obs,
-            task_verification=task_verification,
+            task_verification=None,
             messages=messages_obs,
             serialized_functions=serialized_functions,
         )
@@ -196,23 +202,49 @@ class AgentSession:
             game_state=self.last_observation.state,
         )
 
-    def eval(self, code: str) -> EvalResults:
+    @property
+    def current_score(self) -> float:
+        return self.namespace.score()[0]
+
+    @property
+    def current_production_flows(self) -> ProductionFlows:
+        """Get the current production flows"""
+        return ProductionFlows.from_dict(self.namespace._get_production_stats())
+
+    def _snapshot(self, observation: Optional[Observation] = None) -> Snapshot:
+        return self.Snapshot(
+            score=self.current_score,
+            flows=self.current_production_flows,
+            tick=self.namespace.instance.get_elapsed_ticks(),
+            timestamp=time.time(),
+            observation=observation,
+        )
+
+    def eval_with_snapshot(self, code: str, value_accrual_time: float = 0) -> AgentResult:
         if self.last_observation.state:
             self.reset_instance(self.last_observation.state)
 
-        # Use last post_production_flows as pre_production_flows if available
-        start_production_flows = ProductionFlows.from_dict(
-            self._last_production_flows.get(self.agent_idx)
-            or self.namespace._get_production_stats()
-        )
-        initial_score, _ = self.namespace.score()
+        initial_snapshot = self._snapshot()
 
         # Execute the action
         score, eval_time, result = self.agent_instance.eval(code, timeout=60)
-        # return result, initial_score, score, eval_time
-        return self.EvalResults(result, initial_score, score, eval_time)
 
-    def get_achievements(self, eval_results: EvalResults) -> List[str]:
+        eval_results = self.AgentResult(
+            pre=initial_snapshot,
+            result=result,
+        )
+
+        if eval_results.error_occurred:
+            eval_results.set_post(initial_snapshot)
+            return eval_results
+
+        time.sleep(value_accrual_time)
+
+        eval_results.set_post(self._snapshot())
+
+        return eval_results
+
+    def get_achievements(self, eval_results: AgentResult) -> List[str]:
         return get_achievements(
             self.start_production_flows.__dict__, eval_results.current_flows.__dict__
         )
@@ -221,7 +253,6 @@ class AgentSession:
         self.namespace.reset()
         self.last_observation = None
         self.last_message_timestamp = 0.0
-        self._last_production_flow = None
 
 
 class GameSession:
@@ -232,29 +263,121 @@ class GameSession:
     usage behind a consistent API suitable for gym runners and registries.
     """
 
+    config: GameConfig
     server: FactorioHeadlessServer
     instance: FactorioInstance | A2AFactorioInstance
     agent_sessions: Dict[int, AgentSession]
-    game_state: Optional[GameState]
+    current_game_state: Optional[GameState]
+    task: Optional[TaskABC]
+
+    @dataclass
+    class Snapshot:
+        game_state: GameState
+        game_info: GameInfo
+
+    @dataclass
+    class GameResult:
+        post: "GameSession.Snapshot"
+        agent_result: AgentSession.AgentResult
+        partial_observation: Observation
+
+        def __init__(
+            self,
+            post: "GameSession.Snapshot",
+            result: AgentSession.AgentResult,
+            partial_observation: Observation,
+        ):
+            self.post = post
+            self.agent_result = result
+            self.partial_observation = partial_observation
+
+        @property
+        def result(self) -> str:
+            return self.agent_result.result
+        
+        @result.setter
+        def result(self, value: str) -> None:
+            self.agent_result.result = value
 
     def __init__(
         self,
         instance_id: int,
         instance: FactorioInstance,
         server: FactorioHeadlessServer,
+        config: GameConfig,
+        task: Optional[TaskABC] = None,
     ):
         self.instance_id = instance_id
         self.instance = instance
         self.server = server
         self.agent_sessions = self._make_agent_sessions()
-        self.game_state = None
+        self.current_game_state = None
+        self.config = config
+        self.task = task
+
+    @property
+    def num_agents(self) -> int:
+        return self.config.num_agents
+
+    @property
+    def elapsed_ticks(self) -> int:
+        return self.instance.get_elapsed_ticks()
+
+    @property
+    def current_game_state(self) -> GameState:
+        return GameState.from_instance(self.instance)
+
+    @property
+    def current_game_info(self) -> GameInfo:
+        return GameInfo(
+            tick=self.elapsed_ticks,
+            time=self.elapsed_ticks / 60,
+            speed=self.speed,
+        )
+
+    def _snapshot(self) -> "GameSession.Snapshot":
+        return self.Snapshot(
+            self.current_game_state,
+            self.current_game_info,
+        )
+
+    def eval_agent_with_snapshot(
+        self, agent_idx: int, code: str, value_accrual_time: int
+    ):
+        agent_session = self.agent_sessions[agent_idx]
+        agent_eval_results = agent_session.eval_with_snapshot(
+            code=code, value_accrual_time=value_accrual_time
+        )
+        post_snapshot = self._snapshot()
+        partial_observation = agent_session.get_partial_observation(post_snapshot.game_info)
+
+        return self.GameResult(
+            post=post_snapshot,
+            agent_result=agent_eval_results,
+            partial_observation=partial_observation,
+        )
+
+    def verify_task(
+        self, reward: float, game_result: GameResult, step_statistics: Dict[str, Any] = {}
+    ) -> TaskResponse:
+        if not self.task:
+            print(f"[WARN] No task to verify, instance: {self.instance_id}")
+            return None
+        # First get the raw verification
+        task_success = self.task.verify(reward, self.instance, step_statistics)
+        # Then enhance the response with task output
+        task_response = self.task.enhance_response_with_task_output(
+            game_result.result, task_success
+        )
+        game_result.result = task_response
+        return game_result
 
     def _make_agent_sessions(self) -> Dict[int, AgentSession]:
         return {
             i: AgentSession(i, self.instance.agent_instances[i], self.db_client)
             for i in range(self.instance.num_agents)
         }
-    
+
     def reinitialize_instance(self) -> None:
         if isinstance(self.instance, A2AFactorioInstance):
             self.instance: A2AFactorioInstance
@@ -262,7 +385,7 @@ class GameSession:
         else:
             self.instance: FactorioInstance
             self.instance.initialise()
-    
+
     async def restart_from_latest_save(self) -> None:
         await self.server.restart()
         self.reinitialize_instance()
@@ -270,12 +393,12 @@ class GameSession:
     async def restart_from_save(self, save_name: str) -> None:
         await self.server.restart(save_name)
         self.reinitialize_instance()
-        
+
     @property
     def speed(self) -> int:
         return self.instance.get_speed()
 
-    @speed.setter 
+    @speed.setter
     def speed(self, value: int) -> None:
         self.instance.set_speed(value)
 
@@ -307,7 +430,7 @@ class GameSession:
             session.reset()
 
         # Convert observation to dictionary to match gym standards
-        observation = self.agent_sessions[0].get_observation().to_dict()
+        observation = self.agent_sessions[0].get_partial_observation().to_dict()
         return observation, {}  # Return observation for first agent
 
     def cleanup(self) -> None:

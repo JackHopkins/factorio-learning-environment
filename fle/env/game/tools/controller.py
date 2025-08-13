@@ -16,8 +16,8 @@ COMMAND = "/silent-command"
 class Controller:
     def __init__(
         self,
-        factorio_client: "FactorioClient",
-        namespace: "FactorioNamespace",
+        factorio_client: FactorioClient,
+        namespace: FactorioNamespace,
         *args,
         **kwargs,
     ):

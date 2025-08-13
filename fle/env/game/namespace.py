@@ -65,6 +65,7 @@ class FactorioNamespace:
         self.log_counter = 0
         self.player_location = ent.Position(x=0, y=0)
         self.agent_index = agent_index
+        assert agent_index >= 0, "Agent index must be non-negative"
         self.agent_id = str(agent_index)
         self.loop_context = LoopContext()
 

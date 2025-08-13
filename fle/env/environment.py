@@ -11,6 +11,7 @@ from gym import spaces
 from fle.agents import Response, TaskResponse
 from fle.commons.models.achievements import ProductionFlows
 from fle.env.game.game_state import GameState
+
 # from fle.env.game import FactorioInstance
 from fle.env.models.action import Action
 from fle.env.models.observation import (
@@ -22,7 +23,7 @@ from fle.env.models.observation import (
 )
 from fle.env.tasks import TaskABC
 from fle.env.utils.profits import get_achievements
-from fle.env.game_session import AgentSession, GameSession
+from fle.env.session import AgentSession, GameSession
 
 # need to do this since gym doesn't work with numpy>=2.0 otherwise.
 np.bool8 = np.dtype(np.bool)
@@ -203,16 +204,13 @@ class FactorioGymEnv(gym.Env):
 
     def __init__(
         self,
-        # instance: FactorioInstance,
         game_session: GameSession,
-        task: Optional[TaskABC] = None,
         value_accrual_time: int = 10,
         error_penalty: float = 10.0,
     ):
         super().__init__()
 
         self.game_session = game_session
-        self.task = task
         self.value_accrual_time = value_accrual_time
         self.error_penalty = error_penalty
 
@@ -272,70 +270,48 @@ class FactorioGymEnv(gym.Env):
             info: Additional information
         """
         assert isinstance(action, Action)
-        agent_session = self.game_session.agent_sessions[action.agent_idx]
-        eval_results = agent_session.eval(code=action.code)
+        agent_idx = action.agent_idx
+        game_result = self.game_session.eval_agent_with_snapshot(
+            agent_idx=agent_idx,
+            code=action.code,
+            value_accrual_time=self.value_accrual_time,
+        )
 
         # Calculate reward
-        if eval_results.error_occurred:
-            reward = -self.error_penalty
-        else:
-            # Wait for value accrual
-            time.sleep(self.value_accrual_time)
-            reward = eval_results.score - eval_results.initial_score
-
+        reward = (
+            -self.error_penalty
+            if game_result.error_occurred
+            else game_result.score_delta
+        )
         reward = float(reward)  # Ensure reward is always a float
 
         # Get task verification if task exists
-        task_response = task_success = None
+        task_response = None
         terminated = truncated = False
-        output_game_state = GameState.from_instance(self.instance)
-        if self.task:
-            # First get the raw verification
-            task_success = self.task.verify(reward, self.instance, step_statistics={})
-            # Then enhance the response with task output
-            task_response = self.task.enhance_response_with_task_output(
-                eval_results.result, task_success
-            )
-            terminated = task_success.success
 
-        # Get post-execution flows and calculate achievements
-        current_flows = eval_results.current_flows
-        achievements = agent_session.get_achievements(eval_results)
-        # Store for next step
-        self.agent_session.last_production_flows = current_flows.__dict__
-
-        # Create response object for observation
-        response = Response(
-            code=f"```python\n{action.code}\n```",
-            created_at=datetime.datetime.now(),
-            score=reward,
-            achievements=achievements,
-            step=agent_session.steps,
-            ticks=self.instance.get_elapsed_ticks(),
-            flows=eval_results.start_production_flows.get_new_flows(current_flows),
-            response=task_response if task_response else eval_results.result,
-            task=task_success if task_success else TaskResponse(success=False, meta={}),
-            error=eval_results.error_occurred,
-            program_id=None,
-        )
+        if self.game_session.task:
+            game_result = self.game_session.verify_task(reward, game_result)
+            terminated = task_response.success
 
         # Get observation for the acting agent
-        observation = agent_session.get_observation(response)
+        observation = game_result.partial_observation.add_response(
+            game_result.result, reward, task_response
+        )
 
         # Get additional info
         info = {
-            "error_occurred": eval_results.error_occurred,
-            "result": eval_results.result,
-            "ticks": self.instance.get_elapsed_ticks(),
-            "flows": response.flows,
-            "agent_idx": agent_session.agent_idx,
-            "last_message_timestamp": agent_session.last_message_timestamp,
+            "error_occurred": game_result.agent_result.error_occurred,
+            "result": game_result.result,
+            "ticks": game_result.post.game_info.tick,
+            "flows": game_result.agent_result.flows_delta,
+            "agent_idx": agent_idx,
+            "last_message_timestamp": observation.messages[-1].timestamp,
             "task_verification": task_response,
-            "output_game_state": output_game_state,
+            "output_game_state": game_result.post.game_state,
         }
 
         return observation.to_dict(), reward, terminated, truncated, info
 
     def close(self):
         """Clean up resources"""
-        self.instance.cleanup()
+        self.game_session.cleanup()

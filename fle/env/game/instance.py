@@ -91,7 +91,7 @@ class AgentInstance:
     def initial_position(self) -> str:
         return f'{{x=0,y=({self.agent_idx-1})*2}}'
 
-    def get_system_prompt(self) -> str:
+    def get_system_prompt(self, num_agents: int = 1) -> str:
         """
         Get the system prompt for the Factorio environment.
         This includes all the available actions, objects, and entities that the agent can interact with.
@@ -101,7 +101,7 @@ class AgentInstance:
         """
         execution_path = Path(os.path.dirname(os.path.realpath(__file__)))
         generator = SystemPromptGenerator(str(execution_path))
-        return generator.generate(self.num_agents, self.agent_idx)
+        return generator.generate(num_agents, self.agent_idx)
 
     def eval_with_error(self, expr, timeout=60):
         """Evaluate an expression with a timeout, and return the result without error handling"""

@@ -5,8 +5,9 @@ import json
 from fle.commons.models.technology_state import TechnologyState
 from fle.commons.models.research_state import ResearchState
 from fle.commons.models.achievements import ProductionFlows
-from fle.agents import TaskResponse
+from fle.agents import TaskResponse, Response
 from fle.env.game.entities import Inventory
+# from fle.env.game.response import Response
 
 
 @dataclass
@@ -231,3 +232,17 @@ class Observation:
             ],
             "serialized_functions": self.serialized_functions,
         }
+
+    def add_response(self, raw_text: str, score: float, task_verification: Optional[TaskResponse]) -> "Observation":
+        return Observation(
+            raw_text=raw_text,
+            entities=self.entities,
+            inventory=self.inventory,
+            research=self.research,
+            game_info=self.game_info,
+            score=score,
+            flows=self.flows,
+            task_verification=task_verification,
+            messages=self.messages,
+            serialized_functions=self.serialized_functions
+        )

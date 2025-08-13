@@ -64,11 +64,11 @@ def run_process(run_idx: int, config: GymEvalConfig):
 
 
 async def run_trajectory(run_idx: int, config: GymEvalConfig):
+    """Run a single gym evaluation process"""
     db_client = await create_db_client()
 
     gym_env = gym.make(config.env_id, instance_id=config.instance_id)
 
-    # Get the actual instance details for verification
     log_dir = os.path.join(".fle", "trajectory_logs", f"v{config.version}")
     runner = GymTrajectoryRunner(
         config=config,
@@ -81,7 +81,9 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     await db_client.cleanup()
 
 
-async def main(run_configs, offset):
+async def main(run_config, offset):
+    # Read and validate run configurations
+    run_config = get_validated_run_configs(run_config)
     pkg = importlib.resources.files("fle")
     # Get starting version number for new runs
     base_version = await get_next_version()
@@ -89,7 +91,7 @@ async def main(run_configs, offset):
 
     # Create and start processes
     processes = []
-    for run_idx, run_config in enumerate(run_configs):
+    for run_idx, run_config in enumerate(run_config):
         # Get environment info from registry
         env_info = get_environment_info(run_config.env_id)
         if env_info is None:

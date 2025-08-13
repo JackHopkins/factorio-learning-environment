@@ -86,7 +86,7 @@ Examples:
     parser_eval.add_argument(
         "--offset",
         type=int,
-        help="Offset to add to instance_id selection (supports multiple terminals)",
+        help="Offset to add to instance_id selection",
     )
     args = parser.parse_args()
     if args.command:

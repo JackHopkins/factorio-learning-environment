@@ -306,6 +306,7 @@ class FactorioInstance:
                 f"Could not connect to {address} at tcp/{tcp_port}: \n{e.args[0]}"
             )
 
+        print(f"Connected to {address} client at tcp/{tcp_port}.")
         return rcon_client, address
 
     def setup_tools(self, lua_script_manager):

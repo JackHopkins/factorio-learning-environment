@@ -1,4 +1,3 @@
-import argparse
 import asyncio
 import json
 import multiprocessing
@@ -98,26 +97,14 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     await db_client.cleanup()
 
 
-async def main():
-    parser = argparse.ArgumentParser()
+async def main(config_path=None, offset=0):
     pkg = importlib.resources.files("fle")
     default_config = pkg / "eval" / "algorithms" / "independent" / "gym_run_config.json"
-    parser.add_argument(
-        "--run_config",
-        type=str,
-        help="Path of the run config file",
-        default=str(default_config),
-    )
-    parser.add_argument(
-        "--instance_offset",
-        type=int,
-        default=int(os.environ.get("FLE_INSTANCE_OFFSET", "0")),
-        help="Offset to add to instance_id selection (supports multiple terminals)",
-    )
-    args = parser.parse_args()
+    if not config_path:
+        config_path = str(default_config)
 
     # Read and validate run configurations
-    run_configs = get_validated_run_configs(args.run_config)
+    run_configs = get_validated_run_configs(config_path)
 
     # Get starting version number for new runs
     base_version = await get_next_version()
@@ -174,11 +161,11 @@ async def main():
             task=task,
             agent_cards=agent_cards,
             env_id=run_config.env_id,
-            instance_id=run_idx + args.instance_offset,
+            instance_id=run_idx + offset,
         )
 
         print(
-            f"🚀 MAIN PROCESS: Starting run_idx={run_idx} with instance_id={config.instance_id} for {run_config.env_id} (offset={args.instance_offset})"
+            f"🚀 MAIN PROCESS: Starting run_idx={run_idx} with instance_id={config.instance_id} for {run_config.env_id} (offset={offset})"
         )
 
         # Ensure agent cards are properly set for a2a functionality
@@ -196,4 +183,5 @@ async def main():
 
 if __name__ == "__main__":
     multiprocessing.set_start_method("spawn")
+    # Defaults for direct invocation; CLI parsing is centralized in fle/run.py
     asyncio.run(main())

@@ -43,12 +43,17 @@ def fle_cluster(args):
 
 def fle_eval(args):
     try:
-        config_path = Path(args.config)
-        sys.argv = ["run_eval", "--run_config", str(config_path)]
+        config_path = str(Path(args.config)) if args.config else None
     except TypeError:
-        sys.argv = ["run_eval"]
+        config_path = None
     try:
-        asyncio.run(run_eval())
+        # Centralized argument handling; pass through to run_eval
+        offset = (
+            args.instance_offset
+            if hasattr(args, "instance_offset") and args.instance_offset is not None
+            else 0
+        )
+        asyncio.run(run_eval(config_path=config_path, offset=offset))
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -87,6 +92,12 @@ Examples:
     )
     parser_eval = subparsers.add_parser("eval", help="Run experiment")
     parser_eval.add_argument("--config", required=False, help="Path to run config JSON")
+    parser_eval.add_argument(
+        "--instance_offset",
+        type=int,
+        default=None,
+        help="Offset to add to instance_id selection (supports multiple terminals)",
+    )
     args = parser.parse_args()
     if args.command:
         fle_init()

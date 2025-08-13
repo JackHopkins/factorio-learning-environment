@@ -18,12 +18,13 @@ from fle.env.session_manager import GameSessionManager
 
 class GymTrajectoryRunner:
     """Handles program generation and evaluation for a single trajectory in the gym environment"""
+
     config: GymEvalConfig
     gym_env: FactorioGymEnv
     process_id: int
     session_manager: GameSessionManager
     agents: Dict[int, GymAgent]
-    
+
     def __init__(
         self,
         config: GymEvalConfig,
@@ -76,7 +77,7 @@ class GymTrajectoryRunner:
         self.logger.log_observation_and_program(
             agent, agent_idx, agent_step, observation, program
         )
- 
+
     async def _initialize_trajectory_state(self) -> Tuple[GameState, List[int]]:
         """Initialize trajectory state, either from resume or fresh start
 
@@ -85,7 +86,9 @@ class GymTrajectoryRunner:
         """
         game_session = self.gym_env.game_session
         first_idx = list(game_session.agent_sessions.keys())[0]
-        current_state, agent_conversation = await game_session.get_agent_session_resume_state(first_idx)
+        current_state, agent_conversation = (
+            await game_session.get_agent_session_resume_state(first_idx)
+        )
         if agent_conversation:
             self.agents[first_idx].reset(agent_conversation)
 
@@ -95,14 +98,16 @@ class GymTrajectoryRunner:
             agent = self.agents[agent_idx]
             agent_session = game_session.agent_sessions[agent_idx]
             conversation = Conversation()
-            initial_obs = agent_session.get_partial_observation(game_session.current_game_info)
+            initial_obs = agent_session.get_partial_observation(
+                game_session.current_game_info
+            )
             formatted_obs = agent.observation_formatter.format(initial_obs).raw_str
             conversation.add_user_message(formatted_obs)
             agent.reset(conversation)
 
         return current_state
-    
-    async def _run_trajectory_step(self, agent: GymAgent, agent_session: AgentSession):
+
+    async def _run_trajectory_step(self, agent: GymAgent, agent_session: AgentSession, current_state: GameState):
         iteration_start = time.time()
         agent_idx = agent_session.agent_idx
         # Loop while the agent is not completed yet
@@ -117,17 +122,14 @@ class GymTrajectoryRunner:
                 break
 
             # Execute step in the environment
-            action = agent_session.action_from_code(policy.code)
-            obs_dict, reward, terminated, truncated, info = self.gym_env.step(
-                action,
-                agent_session,
-            )
+            action = agent_session.action_from_code(policy.code, current_state)
+            obs_dict, reward, terminated, truncated, info = self.gym_env.step(action)
             observation = Observation.from_dict(obs_dict)
-            output_game_state = info["output_game_state"]
+            output_game_state: GameState = info["output_game_state"]
             done = terminated or truncated
 
             # Create program from policy with environment results
-            program = await Program.from_policy(
+            program = Program.from_policy(
                 agent_idx=agent_idx,
                 policy=policy,
                 reward=reward,
@@ -140,10 +142,10 @@ class GymTrajectoryRunner:
                 version_description=agent_session.version_description,
             )
 
+            program = await agent_session.save_program(program)
+
             # Update agent's conversation with the program and its results
-            await agent.update_conversation(
-                observation, previous_program=program
-            )
+            await agent.update_conversation(observation, previous_program=program)
 
             # Consolidate all trajectory logging operations
             self._log_trajectory_state(
@@ -171,13 +173,12 @@ class GymTrajectoryRunner:
                     await agent.end(completion_result)
                 return
 
-
     async def run(self):
         """Run a single trajectory"""
 
         # Initialize state based on resume or fresh start
         game_session = self.gym_env.game_session
-        await self._initialize_trajectory_state()
+        current_state, _ = await self._initialize_trajectory_state()
 
         # Save system prompts for all agents at the start
         for agent_idx, agent in enumerate(self.agents):
@@ -191,7 +192,7 @@ class GymTrajectoryRunner:
             try:
                 agent = self.agents[agent_idx]
                 agent_session = game_session.agent_sessions[agent_idx]
-                await self._run_trajectory_step(agent, agent_session)
+                await self._run_trajectory_step(agent, agent_session, current_state)
             except Exception as e:
                 print(
                     f"Error in trajectory runner iteration {agent_session.steps}: {e}"

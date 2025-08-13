@@ -85,7 +85,7 @@ class Program(BaseModel):
         )
 
     @classmethod
-    async def from_policy(
+    def from_policy(
         cls,
         policy,
         agent_idx: int,
@@ -97,7 +97,6 @@ class Program(BaseModel):
         model: str,
         version: int,
         version_description: str,
-        saved_program_id: Optional[int] = None,
     ):
         """Create a Program object from a Policy and environment results
 
@@ -135,7 +134,7 @@ class Program(BaseModel):
             },
             depth=depth,
         )
-        if saved_program_id is not None:
-            program.id = saved_program_id
-
         return program
+    
+    def update_program_id(self, program_id: int) -> None:
+        self.id = program_id

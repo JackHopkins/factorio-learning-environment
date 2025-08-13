@@ -163,6 +163,11 @@ class AgentSession:
         self.last_observation = observation
 
         return observation
+    
+    async def save_program(self, program: Program) -> Program:
+        program = await self.db_client.create_program(program)
+        program.update_program_id(program.id)
+        return program
 
     async def get_resume_state(self) -> Tuple[GameState, Conversation]:
         (
@@ -177,12 +182,12 @@ class AgentSession:
         )
         return current_state, agent_conversation, parent_id, depth
 
-    def action_from_code(self, code: str) -> Action:
+    def action_from_code(self, code: str, game_state: GameState) -> Action:
         """Create an Action object from a Policy"""
         return Action(
             agent_idx=self.agent_idx,
             code=code,
-            game_state=self.last_observation.state,
+            game_state=game_state,
         )
 
     @property
@@ -198,7 +203,6 @@ class AgentSession:
         return self.Snapshot(
             score=self.current_score,
             flows=self.current_production_flows,
-            tick=self.namespace.instance.get_elapsed_ticks(),
             timestamp=time.time(),
             observation=observation,
         )

@@ -2,10 +2,12 @@ import os
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+from fle.env.a2a_instance import A2AFactorioInstance
 import gym
 import json
 
 from fle.commons.cluster_ips import get_local_container_ips
+from fle.commons.asyncio_utils import run_async_safely
 from fle.env import FactorioInstance
 from fle.env.gym_env.environment import FactorioGymEnv
 from fle.eval.tasks import TaskFactory
@@ -52,11 +54,13 @@ class FactorioGymRegistry:
                 with open(task_file, "r") as f:
                     task_data = json.load(f)
 
-                task_key = task_data.get("config", {}).get("task_key", task_file.stem)
-                task_type = task_data.get("task_type", "default")
-                goal_description = task_data.get("config", {}).get(
+                task_config = task_data.get("config", {})
+                task_key = task_config.get("task_key", task_file.stem)
+                task_type = task_config.get("task_type", "default")
+                goal_description = task_config.get(
                     "goal_description", f"Task: {task_key}"
                 )
+                num_agents = task_config.get("num_agents", 1)
                 # Register the environment
                 self.register_environment(
                     env_id=task_key,
@@ -64,6 +68,7 @@ class FactorioGymRegistry:
                     task_config_path=str(task_file),
                     description=goal_description,
                     task_type=task_type,
+                    num_agents=num_agents,
                 )
 
             except Exception as e:
@@ -134,32 +139,30 @@ def make_factorio_env(env_spec: GymEnvironmentSpec) -> FactorioGymEnv:
     # Create Factorio instance
     try:
         # Check for external server configuration via environment variables
-        external_address = os.getenv("FACTORIO_SERVER_ADDRESS")
-        external_port = os.getenv("FACTORIO_SERVER_PORT")
+        address = os.getenv("FACTORIO_SERVER_ADDRESS")
+        tcp_port = os.getenv("FACTORIO_SERVER_PORT")
 
-        if external_address and external_port:
-            # Use external server
-            instance = FactorioInstance(
-                address=external_address,
-                tcp_port=int(external_port),
-                num_agents=env_spec.num_agents,
-            )
-            print(
-                f"Using external Factorio server at {external_address}:{external_port}"
-            )
-        else:
-            # Fall back to local containers
+        if not address and not tcp_port:
             ips, udp_ports, tcp_ports = get_local_container_ips()
             if len(tcp_ports) == 0:
                 raise RuntimeError("No Factorio containers available")
+            address, tcp_port = ips[0], tcp_ports[0]
 
-            # Use the first available container
-            instance = FactorioInstance(
-                address=ips[0],
-                tcp_port=tcp_ports[0],
-                num_agents=env_spec.num_agents,
-            )
-            print(f"Using local Factorio container at {ips[0]}:{tcp_ports[0]}")
+        common_kwargs = {
+            "address": address,
+            "tcp_port": int(tcp_port),
+            "num_agents": env_spec.num_agents,
+            "fast": True,
+            "cache_scripts": True,
+            "inventory": {},
+            "all_technologies_researched": True,
+        }
+
+        print(f"Using local Factorio container at {address}:{tcp_port}")
+        if env_spec.num_agents > 1:
+            instance = run_async_safely(A2AFactorioInstance.create(**common_kwargs))
+        else:
+            instance = FactorioInstance(**common_kwargs)
 
         instance.speed(10)
 

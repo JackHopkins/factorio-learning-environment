@@ -31,15 +31,6 @@ def get_validated_run_configs(run_config_location: str) -> list[GymRunConfig]:
         run_configs_raw = json.load(f)
         run_configs = [GymRunConfig(**config) for config in run_configs_raw]
 
-    # Validate config
-    num_agents_in_configs = [run_config.num_agents for run_config in run_configs]
-    if any(num_agents == 1 for num_agents in num_agents_in_configs) and any(
-        num_agents > 1 for num_agents in num_agents_in_configs
-    ):
-        raise ValueError(
-            "Cannot mix single agent and multi agent runs in the same run config file. Please split into separate files."
-        )
-
     # Validate that all environment IDs exist in the registry
     available_envs = list_available_environments()
     for run_config in run_configs:
@@ -96,18 +87,12 @@ async def main(run_config, offset):
         env_info = get_environment_info(run_config.env_id)
         if env_info is None:
             raise ValueError(f"Could not get environment info for {run_config.env_id}")
-
-        # Create task without instantiating Factorio instance
         task = TaskFactory.create_task(env_info["task_config_path"])
-
-        # Generate system prompt without creating instance
         generator = SystemPromptGenerator(str(pkg / "env"))
-
         # Create agents and their agent cards
         agents = []
         agent_cards = []
         for agent_idx in range(run_config.num_agents):
-            # Generate basic system prompt - multiagent logic handled by instance.get_system_prompt()
             system_prompt = generator.generate("")
             agent = GymAgent(
                 model=run_config.model,

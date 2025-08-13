@@ -65,7 +65,7 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     db_client = await create_db_client()
 
     # Create gym environment using gym.make()
-    gym_env = gym.make(config.env_id)
+    gym_env = gym.make(config.env_id, instance_id=config.instance_id or run_idx)
 
     log_dir = os.path.join(".fle", "trajectory_logs", f"v{config.version}")
     runner = GymTrajectoryRunner(
@@ -107,7 +107,7 @@ async def main():
             raise ValueError(f"Could not get environment info for {run_config.env_id}")
 
         # Create gym environment to get task and instance
-        gym_env = gym.make(run_config.env_id)
+        gym_env = gym.make(run_config.env_id, instance_id=run_idx)
         task = gym_env.unwrapped.task
         instance = gym_env.unwrapped.instance
 
@@ -147,6 +147,7 @@ async def main():
             task=task,
             agent_cards=agent_cards,
             env_id=run_config.env_id,
+            instance_id=run_idx,
         )
 
         # Ensure agent cards are properly set for a2a functionality

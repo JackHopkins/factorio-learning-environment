@@ -108,7 +108,7 @@ async def main():
         instance = gym_env.unwrapped.instance
 
         # Create agents and their agent cards
-        agents = []
+        agents = dict()
         agent_cards = []
         for agent_idx in range(run_config.num_agents):
             system_prompt = instance.get_system_prompt(agent_idx)
@@ -120,7 +120,7 @@ async def main():
                 observation_formatter=BasicObservationFormatter(include_research=False),
                 system_prompt_formatter=SystemPromptFormatter(),
             )
-            agents.append(agent)
+            agents[agent_idx] = agent
 
             # Create agent card for a2a support
             agent_card = agent.get_agent_card()

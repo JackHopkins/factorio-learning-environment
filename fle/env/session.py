@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from a2a.types import AgentCard
 
 from fle.agents.models import Response
+from fle.commons.models.conversation import Conversation
 from fle.commons.models.program import Program
 from fle.env.a2a_instance import A2AFactorioInstance
 from fle.env.a2a_namespace import A2AFactorioNamespace
@@ -163,36 +164,18 @@ class AgentSession:
 
         return observation
 
-    async def _initialize_trajectory_state(
-        self, version: int, process_id: int
-    ) -> Tuple[GameState, List[int]]:
-        """Initialize trajectory state, either from resume or fresh start
-
-        Returns:
-            Tuple of (current_state, agent_steps)
-        """
-        current_state = None
-
-        if version and self.db_client is None:
-            return None, 0
-
+    async def get_resume_state(self) -> Tuple[GameState, Conversation]:
         (
             current_state,
             agent_conversation,
             parent_id,
             depth,
         ) = await self.db_client.get_resume_state(
-            resume_version=version,
-            process_id=process_id,
+            resume_version=self.version,
+            process_id=self.process_id,
             agent_idx=self.agent_idx,
         )
-        if current_state:
-            self.steps = depth
-
-        if not current_state:
-            current_state = self.config.task.starting_game_state
-
-        return current_state, agent_conversation
+        return current_state, agent_conversation, parent_id, depth
 
     def action_from_code(self, code: str) -> Action:
         """Create an Action object from a Policy"""
@@ -350,6 +333,15 @@ class GameSession:
             self.current_game_state,
             self.current_game_info,
         )
+
+    async def get_agent_session_resume_state(self, agent_idx: int) -> Tuple[GameState, Conversation]:
+        agent_session = self.agent_sessions[agent_idx]
+        current_state, agent_conversation, parent_id, depth = await agent_session.get_resume_state()
+        if current_state:
+            agent_session.steps = depth
+        if not current_state and self.task:
+            current_state = self.task.starting_game_state
+        return current_state, agent_conversation
 
     def eval_agent_with_snapshot(
         self, agent_idx: int, code: str, value_accrual_time: int

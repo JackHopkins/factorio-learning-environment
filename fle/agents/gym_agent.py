@@ -113,6 +113,8 @@ ALWAYS WRITE VALID PYTHON AND REMEMBER MAXIMUM 30 LINES OF CODE PER POLICY. YOUR
 
 
 class GymAgent(AgentABC):
+    agent_completed: bool = False
+    
     def __init__(
         self,
         model: str,

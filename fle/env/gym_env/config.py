@@ -1,5 +1,5 @@
 from pydantic import BaseModel, model_validator
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from fle.agents.gym_agent import GymAgent
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
@@ -20,7 +20,7 @@ class GymRunConfig(BaseModel):
 class GymEvalConfig(BaseModel):
     """Configuration for gym evaluation"""
 
-    agents: List[GymAgent]
+    agents: Dict[int, GymAgent]
     version: int
     version_description: str
     exit_on_task_success: bool

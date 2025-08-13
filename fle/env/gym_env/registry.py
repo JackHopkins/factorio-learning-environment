@@ -136,19 +136,20 @@ def make_factorio_env(env_spec: GymEnvironmentSpec, instance_id: int) -> Factori
         if len(tcp_ports) == 0:
             raise RuntimeError("No Factorio containers available")
 
-        # Normalize instance_id across available containers to support multiple terminals
-        normalized_idx = instance_id % len(tcp_ports)
+        # Enforce explicit mapping: instance_id must be valid (no auto-normalization)
+        if instance_id < 0 or instance_id >= len(tcp_ports):
+            raise RuntimeError(
+                f"instance_id {instance_id} out of range. Available containers: {len(tcp_ports)}"
+            )
 
+        print(f"🏭 REGISTRY: Creating FactorioInstance for instance_id={instance_id}")
         print(
-            f"🏭 REGISTRY: Creating FactorioInstance for instance_id={instance_id} (normalized={normalized_idx})"
-        )
-        print(
-            f"📡 REGISTRY: Selecting container {normalized_idx}: {ips[normalized_idx]}:{tcp_ports[normalized_idx]}"
+            f"📡 REGISTRY: Selecting container {instance_id}: {ips[instance_id]}:{tcp_ports[instance_id]}"
         )
 
         instance = FactorioInstance(
-            address=ips[normalized_idx],
-            tcp_port=tcp_ports[normalized_idx],
+            address=ips[instance_id],
+            tcp_port=tcp_ports[instance_id],
             num_agents=env_spec.num_agents,
         )
         instance.speed(10)

@@ -92,9 +92,10 @@ async def main(run_config, offset):
         # Create agents and their agent cards
         agents = []
         agent_cards = []
-        for agent_idx in range(run_config.num_agents):
+        num_agents = env_info["num_agents"]
+        for agent_idx in range(num_agents):
             system_prompt = generator.generate_for_agent(
-                agent_idx=agent_idx, num_agents=run_config.num_agents
+                agent_idx=agent_idx, num_agents=num_agents
             )
             agent = GymAgent(
                 model=run_config.model,
@@ -122,7 +123,7 @@ async def main(run_config, offset):
         config = GymEvalConfig(
             agents=agents,
             version=version,
-            version_description=f"model:{run_config.model}\ntype:{task.task_key}\nnum_agents:{run_config.num_agents}",
+            version_description=f"model:{run_config.model}\ntype:{task.task_key}\nnum_agents:{num_agents}",
             exit_on_task_success=run_config.exit_on_task_success,
             task=task,
             agent_cards=agent_cards,

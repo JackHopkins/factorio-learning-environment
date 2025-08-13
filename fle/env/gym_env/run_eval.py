@@ -108,6 +108,12 @@ async def main():
         help="Path of the run config file",
         default=str(default_config),
     )
+    parser.add_argument(
+        "--instance_offset",
+        type=int,
+        default=int(os.environ.get("FLE_INSTANCE_OFFSET", "0")),
+        help="Offset to add to instance_id selection (supports multiple terminals)",
+    )
     args = parser.parse_args()
 
     # Read and validate run configurations
@@ -168,11 +174,11 @@ async def main():
             task=task,
             agent_cards=agent_cards,
             env_id=run_config.env_id,
-            instance_id=run_idx,
+            instance_id=run_idx + args.instance_offset,
         )
 
         print(
-            f"🚀 MAIN PROCESS: Starting run_idx={run_idx} with instance_id={run_idx} for {run_config.env_id}"
+            f"🚀 MAIN PROCESS: Starting run_idx={run_idx} with instance_id={config.instance_id} for {run_config.env_id} (offset={args.instance_offset})"
         )
 
         # Ensure agent cards are properly set for a2a functionality

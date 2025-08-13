@@ -15,12 +15,7 @@ from fle.env.protocols.mcp import mcp
 
 def _get_tools_base_path() -> Path:
     """Get the base path to the tools directory"""
-    return (
-        Path(os.path.dirname(os.path.realpath(__file__))).parent
-        / Path("env")
-        / Path("src")
-        / "tools"
-    )
+    return Path(os.path.dirname(os.path.realpath(__file__))).parent.parent / "tools"
 
 
 @mcp.tool()
@@ -505,11 +500,9 @@ async def man(command: str) -> str:
 
         # If no dedicated doc file, try to generate from the implementation
         try:
-            execution_path = (
-                Path(os.path.dirname(os.path.realpath(__file__))).parent
-                / Path("env")
-                / Path("src")
-            )
+            execution_path = Path(
+                os.path.dirname(os.path.realpath(__file__))
+            ).parent.parent
             generator = SystemPromptGenerator(str(execution_path))
             manual = generator.manual(command)
             if manual:

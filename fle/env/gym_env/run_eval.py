@@ -113,12 +113,7 @@ async def main():
         task = TaskFactory.create_task(env_info["task_config_path"])
 
         # Generate system prompt without creating instance
-        import os
-
-        execution_path = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "..", ".."
-        )
-        generator = SystemPromptGenerator(execution_path)
+        generator = SystemPromptGenerator(str(pkg / "env"))
 
         # Create agents and their agent cards
         agents = []

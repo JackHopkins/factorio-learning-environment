@@ -187,11 +187,7 @@ async def schema() -> str:
     """
     Get the full API object model for writing code so that you can interact with Factorio.
     """
-    execution_path = (
-        Path(os.path.dirname(os.path.realpath(__file__))).parent
-        / Path("env")
-        / Path("src")
-    )
+    execution_path = Path(os.path.dirname(os.path.realpath(__file__))).parent.parent
     # Generate the documentation
     generator = SystemPromptGenerator(str(execution_path))
     return f"\n\n{generator.types()}\n\n{generator.entities()}"
@@ -206,11 +202,7 @@ async def manual(name: str) -> str:
         name: Name of the method to get documentation for (must be a valid API method)
     """
     # Get the list of available agent tools by checking directories in the agent directory
-    execution_path = (
-        Path(os.path.dirname(os.path.realpath(__file__))).parent
-        / Path("env")
-        / Path("src")
-    )
+    execution_path = Path(os.path.dirname(os.path.realpath(__file__))).parent.parent
     agent_tools_path = execution_path / "tools" / "agent"
 
     # Verify the agent_tools_path exists

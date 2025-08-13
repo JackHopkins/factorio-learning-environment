@@ -28,15 +28,6 @@ def get_validated_run_configs(run_config_location: str) -> list[GymRunConfig]:
         run_configs_raw = json.load(f)
         run_configs = [GymRunConfig(**config) for config in run_configs_raw]
 
-    # Validate config
-    num_agents_in_configs = [run_config.num_agents for run_config in run_configs]
-    if any(num_agents == 1 for num_agents in num_agents_in_configs) and any(
-        num_agents > 1 for num_agents in num_agents_in_configs
-    ):
-        raise ValueError(
-            "Cannot mix single agent and multi agent runs in the same run config file. Please split into separate files."
-        )
-
     # Validate that all environment IDs exist in the registry
     available_envs = list_available_environments()
     for run_config in run_configs:
@@ -110,11 +101,10 @@ async def main():
         gym_env = gym.make(run_config.env_id)
         task = gym_env.unwrapped.task
         instance = gym_env.unwrapped.instance
-
         # Create agents and their agent cards
         agents = []
         agent_cards = []
-        for agent_idx in range(run_config.num_agents):
+        for agent_idx in range(instance.num_agents):
             system_prompt = instance.get_system_prompt(agent_idx)
             agent = GymAgent(
                 model=run_config.model,
@@ -142,7 +132,7 @@ async def main():
         config = GymEvalConfig(
             agents=agents,
             version=version,
-            version_description=f"model:{run_config.model}\ntype:{task.task_key}\nnum_agents:{run_config.num_agents}",
+            version_description=f"model:{run_config.model}\ntype:{task.task_key}\nnum_agents:{instance.num_agents}",
             exit_on_task_success=run_config.exit_on_task_success,
             task=task,
             agent_cards=agent_cards,

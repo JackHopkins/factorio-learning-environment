@@ -368,11 +368,11 @@ def transform_record_to_python_call(
         # Check if this is a standard Factorio resource
         if is_standard_factorio_resource(entity):
             call = f"harvest_resource(start_tick={start_tick}, end_tick={tick}, entity='{entity}', x={x}, y={y})"
+            return [{"call": call, "sort_tick": start_tick}]
         else:
             # For non-standard resources, treat as pickup_entity
             call = f"pickup_entity(tick={tick}, entity='{entity}', x={x}, y={y})"
-
-        return [{"call": call, "sort_tick": start_tick}]
+            return [{"call": call, "sort_tick": tick}]
 
     # Unknown file type, skip
     return []
@@ -540,6 +540,15 @@ def save_python_calls(
         else transform_record_to_python_call_no_decompose
     )
 
+    def get_function_priority(call_string: str) -> int:
+        """Get priority for function calls to ensure proper ordering on same tick."""
+        if call_string.startswith("pickup_entity("):
+            return 0  # Highest priority - execute first
+        elif call_string.startswith("place_entity("):
+            return 1  # Lower priority - execute after pickup
+        else:
+            return 2  # Default priority for other functions
+
     for record in records:
         source_file = record.get("_source_file", "")
         call_data_list = transform_func(record, source_file)
@@ -552,8 +561,8 @@ def save_python_calls(
         else:
             skipped_count += 1
 
-    # Sort by the sort_tick (which is start_tick when available, otherwise tick)
-    python_calls.sort(key=lambda x: x["tick"])
+    # Sort by tick first, then by function priority to ensure pickup_entity comes before place_entity
+    python_calls.sort(key=lambda x: (x["tick"], get_function_priority(x["call"])))
 
     # Create output directory if it doesn't exist
     output_path.parent.mkdir(parents=True, exist_ok=True)

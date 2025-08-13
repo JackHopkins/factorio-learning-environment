@@ -558,7 +558,7 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
     if total_yield < count then
         -- Try trees first
         local tree_entities = surface.find_entities_filtered{
-            position = {position.x + 0.5, position.y + 0.5},
+            position = {position.x, position.y},
             radius = radius,
             type = "tree"
         }
@@ -568,7 +568,7 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
     if total_yield < count then
         -- Then try simple entities (rocks, stumps, etc.)
         local simple_entities = surface.find_entities_filtered{
-            position = {position.x + 0.5, position.y + 0.5},
+            position = {position.x, position.y},
             radius = 5,
             type = "simple-entity"
         }

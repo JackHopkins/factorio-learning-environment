@@ -324,7 +324,15 @@ class ActionConverter:
     @staticmethod
     def _convert_pickup_entity(func, args: Dict[str, Any], tick: int):
         if "entity" in args and "x" in args and "y" in args:
-            entity = ActionConverter._get_prototype(args["entity"])
+            entity_name = args["entity"]
+            # Skip if entity is blank or empty
+            if not entity_name or not entity_name.strip():
+                print(
+                    f"Warning: Skipping pickup_entity with blank entity at tick {tick}"
+                )
+                return None
+
+            entity = ActionConverter._get_prototype(entity_name)
             position = Position(args["x"], args["y"])
             return func(entity=entity, position=position, tick=tick)
 

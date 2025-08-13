@@ -32,6 +32,7 @@ def create_factorio_instance(max_concurrent_batches=1):
             "burner-mining-drill": 1,
             "wood": 1,
             "iron-ore": 1,
+            "stone": 5,
         },
         max_concurrent_batches=max_concurrent_batches,
     )

@@ -19,7 +19,7 @@ local function find_offshore_pump_position(player, center_pos)
         {dx = -1, dy = 0, dir = defines.direction.east}
     }
 
-    for radius = 1, max_radius do
+    for radius = 0, max_radius do
         for y = -radius, radius do
             for x = -radius, radius do
                 if math.abs(x) == radius or math.abs(y) == radius then
@@ -104,7 +104,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
     -- Common validation functions
     local function validate_distance()
-        local max_distance = (player.reach_distance or player.build_distance) * 2
+        local max_distance = player.reach_distance or player.build_distance
         local dx = player.position.x - x
         local dy = player.position.y - y or 0
         local distance = math.sqrt(dx * dx + dy * dy)

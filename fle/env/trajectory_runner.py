@@ -122,7 +122,7 @@ class GymTrajectoryRunner:
                 break
 
             # Execute step in the environment
-            action = agent_session.action_from_code(policy.code, current_state)
+            action = Action(agent_idx=agent_idx, code=policy.code, game_state=current_state)
             obs_dict, reward, terminated, truncated, info = self.gym_env.step(action)
             observation = Observation.from_dict(obs_dict)
             output_game_state: GameState = info["output_game_state"]
@@ -173,8 +173,8 @@ class GymTrajectoryRunner:
                     await agent.end(completion_result)
                 return
 
-    async def run(self):
-        """Run a single trajectory"""
+    async def run_sequential(self):
+        """Run a single sequential trajectory"""
 
         # Initialize state based on resume or fresh start
         game_session = self.gym_env.game_session
@@ -188,6 +188,7 @@ class GymTrajectoryRunner:
         # Example: if max_steps=3 and self.agents has 2 agents (keys 0,1), this will run:
         # (step=0,agent=0), (step=0,agent=1), (step=1,agent=0), (step=1,agent=1), (step=2,agent=0), (step=2,agent=1)
         # Total iterations = max_steps * num_agents = 3 * 2 = 6 iterations
+        # Note: This leads to sequential execution of multiple agents. (Not parallel)
         for _, agent_idx in product(range(self.max_steps), self.agents.keys()):
             try:
                 agent = self.agents[agent_idx]

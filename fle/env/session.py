@@ -182,14 +182,6 @@ class AgentSession:
         )
         return current_state, agent_conversation, parent_id, depth
 
-    def action_from_code(self, code: str, game_state: GameState) -> Action:
-        """Create an Action object from a Policy"""
-        return Action(
-            agent_idx=self.agent_idx,
-            code=code,
-            game_state=game_state,
-        )
-
     @property
     def current_score(self) -> float:
         return self.namespace.score()[0]

@@ -61,7 +61,6 @@ def run_process(run_idx: int, config: GymEvalConfig):
 
 async def run_trajectory(run_idx: int, config: GymEvalConfig):
     """Run a single gym evaluation process"""
-    db_client = await create_db_client()
 
     # Create gym environment using gym.make()
     gym_env = gym.make(config.env_id)
@@ -73,8 +72,7 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
         log_dir=log_dir,
         process_id=run_idx,
     )
-    await runner.run()
-    await db_client.cleanup()
+    await runner.run_sequential()
 
 
 async def main():

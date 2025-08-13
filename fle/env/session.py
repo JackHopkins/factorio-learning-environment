@@ -355,7 +355,7 @@ class GameSession:
         self, agent_idx: int, code: str, value_accrual_time: int
     ):
         agent_session = self.agent_sessions[agent_idx]
-        if agent_session.last_observation.state:
+        if agent_session.last_observation:
             self.reset_instance(agent_session.last_observation.state)
 
         agent_eval_results = agent_session.eval_with_snapshot(

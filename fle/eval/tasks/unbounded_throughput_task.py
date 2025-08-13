@@ -71,9 +71,6 @@ class UnboundedThroughputTask(TaskABC):
             success=False,
             meta={
                 "achievements": max_achievements,
-                "nr_of_steps_left": self.trajectory_length
-                - step_statistics["current_step_id"]
-                - 1,
             },
         )
 

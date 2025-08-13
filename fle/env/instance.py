@@ -94,7 +94,7 @@ class FactorioInstance:
     def __init__(
         self,
         address=None,
-        fast=False,
+        fast=True,
         tcp_port=27000,
         inventory=None,
         cache_scripts=True,

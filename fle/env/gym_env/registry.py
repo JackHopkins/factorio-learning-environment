@@ -123,9 +123,7 @@ class FactorioGymRegistry:
 _registry = FactorioGymRegistry()
 
 
-def make_factorio_env(
-    env_spec: GymEnvironmentSpec, instance_id: int = 0
-) -> FactorioGymEnv:
+def make_factorio_env(env_spec: GymEnvironmentSpec, instance_id: int) -> FactorioGymEnv:
     """Factory function to create a Factorio gym environment"""
 
     # Create task from the task definition
@@ -138,7 +136,6 @@ def make_factorio_env(
         if len(tcp_ports) == 0:
             raise RuntimeError("No Factorio containers available")
 
-        # Use the same pattern as working trajectory_runner.py
         instance = FactorioInstance(
             address=ips[instance_id],
             tcp_port=tcp_ports[instance_id],

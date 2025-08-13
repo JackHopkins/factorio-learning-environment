@@ -17,6 +17,11 @@ from fle.agents.gym_agent import GymAgent
 from fle.commons.cluster_ips import get_local_container_ips
 from fle.commons.db_client import create_db_client
 from fle.eval.algorithms.independent import get_next_version
+from fle.eval.tasks import TaskFactory
+from fle.env.utils.controller_loader.system_prompt_generator import (
+    SystemPromptGenerator,
+)
+from pathlib import Path
 
 load_dotenv()
 
@@ -64,8 +69,7 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     """Run a single gym evaluation process"""
     db_client = await create_db_client()
 
-    # Create gym environment using gym.make()
-    gym_env = gym.make(config.env_id, instance_id=config.instance_id or run_idx)
+    gym_env = gym.make(config.env_id, instance_id=config.instance_id)
 
     log_dir = os.path.join(".fle", "trajectory_logs", f"v{config.version}")
     runner = GymTrajectoryRunner(
@@ -106,16 +110,31 @@ async def main():
         if env_info is None:
             raise ValueError(f"Could not get environment info for {run_config.env_id}")
 
-        # Create gym environment to get task and instance
-        gym_env = gym.make(run_config.env_id, instance_id=run_idx)
-        task = gym_env.unwrapped.task
-        instance = gym_env.unwrapped.instance
+        # Create task without instantiating Factorio instance
+        task = TaskFactory.create_task(env_info["task_config_path"])
+
+        # Generate system prompt without creating instance
+        execution_path = Path(os.path.dirname(os.path.realpath(__file__))) / ".." / ".."
+        generator = SystemPromptGenerator(str(execution_path))
 
         # Create agents and their agent cards
         agents = []
         agent_cards = []
         for agent_idx in range(run_config.num_agents):
-            system_prompt = instance.get_system_prompt(agent_idx)
+            # Generate multiagent string if needed
+            multiagent_str = ""
+            if run_config.num_agents > 1:
+                player_idx = agent_idx + 1
+                multiagent_str = (
+                    f"## MULTIAGENT INSTRUCTIONS\n"
+                    f"You are Agent {player_idx} out of {run_config.num_agents} agent(s) in the game. "
+                    f"Follow your specific instructions given to you by the task."
+                    f"Use the send_message() tool regularly to communicate with other agents about your current activities and any challenges you encounter. "
+                    f"Start each program with a send_message() call to explain what you are doing. "
+                    f"End each program with a send_message() call to confirm your actions. If your program errors out prior to send_message() being called, the message will not be sent. "
+                )
+
+            system_prompt = generator.generate(multiagent_str)
             agent = GymAgent(
                 model=run_config.model,
                 system_prompt=system_prompt,

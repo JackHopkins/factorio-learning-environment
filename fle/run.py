@@ -49,9 +49,7 @@ def fle_eval(args):
     try:
         # Centralized argument handling; pass through to run_eval
         offset = (
-            args.instance_offset
-            if hasattr(args, "instance_offset") and args.instance_offset is not None
-            else 0
+            args.offset if hasattr(args, "offset") and args.offset is not None else 0
         )
         asyncio.run(run_eval(config_path=config_path, offset=offset))
     except Exception as e:
@@ -93,9 +91,8 @@ Examples:
     parser_eval = subparsers.add_parser("eval", help="Run experiment")
     parser_eval.add_argument("--config", required=False, help="Path to run config JSON")
     parser_eval.add_argument(
-        "--instance_offset",
+        "--offset",
         type=int,
-        default=None,
         help="Offset to add to instance_id selection (supports multiple terminals)",
     )
     args = parser.parse_args()

@@ -43,7 +43,7 @@ def fle_cluster(args):
 
 def fle_eval(args):
     try:
-        config_path = str(Path(args.config)) if args.config else None
+        config_path = str(Path(args.config))
         asyncio.run(run_eval(config_path, args.offset))
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)

@@ -70,21 +70,11 @@ def run_process(run_idx: int, config: GymEvalConfig):
 
 
 async def run_trajectory(run_idx: int, config: GymEvalConfig):
-    """Run a single gym evaluation process"""
-    print(
-        f"🎯 SUBPROCESS {run_idx}: Creating gym environment with instance_id={config.instance_id}"
-    )
-
     db_client = await create_db_client()
 
     gym_env = gym.make(config.env_id, instance_id=config.instance_id)
 
     # Get the actual instance details for verification
-    instance = gym_env.unwrapped.instance
-    print(
-        f"✅ SUBPROCESS {run_idx}: Connected to {instance.address}:{instance.tcp_port}"
-    )
-
     log_dir = os.path.join(".fle", "trajectory_logs", f"v{config.version}")
     runner = GymTrajectoryRunner(
         config=config,
@@ -97,15 +87,8 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     await db_client.cleanup()
 
 
-async def main(config_path=None, offset=0):
+async def main(run_configs, offset):
     pkg = importlib.resources.files("fle")
-    default_config = pkg / "eval" / "algorithms" / "independent" / "gym_run_config.json"
-    if not config_path:
-        config_path = str(default_config)
-
-    # Read and validate run configurations
-    run_configs = get_validated_run_configs(config_path)
-
     # Get starting version number for new runs
     base_version = await get_next_version()
     version_offset = 0
@@ -163,11 +146,6 @@ async def main(config_path=None, offset=0):
             env_id=run_config.env_id,
             instance_id=run_idx + offset,
         )
-
-        print(
-            f"🚀 MAIN PROCESS: Starting run_idx={run_idx} with instance_id={config.instance_id} for {run_config.env_id} (offset={offset})"
-        )
-
         # Ensure agent cards are properly set for a2a functionality
         assert config.agent_cards is not None
 

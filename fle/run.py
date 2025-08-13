@@ -44,14 +44,7 @@ def fle_cluster(args):
 def fle_eval(args):
     try:
         config_path = str(Path(args.config)) if args.config else None
-    except TypeError:
-        config_path = None
-    try:
-        # Centralized argument handling; pass through to run_eval
-        offset = (
-            args.offset if hasattr(args, "offset") and args.offset is not None else 0
-        )
-        asyncio.run(run_eval(config_path=config_path, offset=offset))
+        asyncio.run(run_eval(config_path, args.offset))
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

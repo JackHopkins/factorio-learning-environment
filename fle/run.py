@@ -89,6 +89,7 @@ def fle_eval(args, env):
         asyncio.run(ensure_running())
     except Exception as e:
         print(f"Warning: could not ensure cluster running automatically ({e}). Continuing...")
+        raise e
     config_path = Path(args.config)
     if not config_path.exists():
         print(f"Error: Config file '{args.config}' not found.", file=sys.stderr)
@@ -100,6 +101,7 @@ def fle_eval(args, env):
         print("\nInterrupted by user.", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
+        raise e
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 

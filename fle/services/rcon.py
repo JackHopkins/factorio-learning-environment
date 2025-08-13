@@ -13,7 +13,6 @@ import io
 import contextlib
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-print(ROOT_DIR)
 
 
 def _load_script(filename):
@@ -34,13 +33,12 @@ def _load_scripts(scripts):
 def _get_mods_dir():
     # get local execution path
     path = (ROOT_DIR / "env" / "game" / "factorio" / "mods")
-    print(path, path.exists())
     return str(path)
 
 
 def _get_dir(name="tools"):
     # get local execution path
-    return str(ROOT_DIR / "env" / "game" / "factorio" / name)
+    return str(ROOT_DIR / "env" / "game" / name)
 
 
 def _get_tool_names(name="tools") -> List[str]:

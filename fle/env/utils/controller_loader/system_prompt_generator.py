@@ -33,6 +33,7 @@ class SystemPromptGenerator:
 
         # Load and process the manuals (agent.md files)
         manual_defs = ManualGenerator.generate_manual(str(self.base_path / "tools"))
+        multiagent_str = ""
 
         if num_agents > 1:
             player_idx = agent_idx + 1

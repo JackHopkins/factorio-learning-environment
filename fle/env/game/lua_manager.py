@@ -76,8 +76,9 @@ class LuaScriptManager:
         # self.action_directory = _get_action_dir()
 
         self.lib_directory = _get_mods_dir()
+        self.game_checksums = {}
         if cache_scripts:
-            self.init_action_checksums()
+            res = self.init_action_checksums()
             self.game_checksums = self._get_game_checksums()
 
         self.tool_scripts = self.get_tools_to_load()
@@ -152,7 +153,6 @@ class LuaScriptManager:
             print(f"{self.rcon_client.port}: Loading action {script_name} into game")
 
             self.rcon_client.send_command("/sc " + script)
-            pass
 
     def load_init_into_game(self, name):
         if name not in self.lib_scripts:
@@ -208,7 +208,6 @@ class LuaScriptManager:
             name, content = _load_script(filename)
             if self.cache_scripts:
                 checksum = self.calculate_checksum(content)
-
                 if (
                     name not in self.game_checksums
                     or self.game_checksums[name] != checksum

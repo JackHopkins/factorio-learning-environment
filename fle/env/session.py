@@ -28,6 +28,7 @@ from fle.env.utils.profits import get_achievements
 from fle.services.docker.docker_manager import FactorioHeadlessServer
 from fle.services.db.db_client import DBClient
 from fle.env.tasks import TaskABC
+from fle.services.db.db_client import create_db_client
 
 
 class AgentSession:
@@ -169,7 +170,7 @@ class AgentSession:
         program.update_program_id(program.id)
         return program
 
-    async def get_resume_state(self) -> Tuple[GameState, Conversation]:
+    async def get_resume_state(self, process_id: int) -> Tuple[GameState, Conversation]:
         (
             current_state,
             agent_conversation,
@@ -177,7 +178,7 @@ class AgentSession:
             depth,
         ) = await self.db_client.get_resume_state(
             resume_version=self.version,
-            process_id=self.process_id,
+            process_id=process_id,
             agent_idx=self.agent_idx,
         )
         return current_state, agent_conversation, parent_id, depth
@@ -295,14 +296,15 @@ class GameSession:
         server: FactorioHeadlessServer,
         config: GameConfig,
         task: Optional[TaskABC] = None,
-    ):
+    ) -> None:
         self.instance_id = instance_id
         self.instance = instance
         self.server = server
-        self.agent_sessions = self._make_agent_sessions()
-        self.current_game_state = None
         self.config = config
         self.task = task
+
+    async def initialise(self) -> None:
+        self.agent_sessions = await self._make_agent_sessions()
 
     @property
     def num_agents(self) -> int:
@@ -330,9 +332,9 @@ class GameSession:
             self.current_game_info,
         )
 
-    async def get_agent_session_resume_state(self, agent_idx: int) -> Tuple[GameState, Conversation]:
+    async def get_agent_session_resume_state(self, agent_idx: int, process_id: int) -> Tuple[GameState, Conversation]:
         agent_session = self.agent_sessions[agent_idx]
-        current_state, agent_conversation, parent_id, depth = await agent_session.get_resume_state()
+        current_state, agent_conversation, parent_id, depth = await agent_session.get_resume_state(process_id=process_id)
         if current_state:
             agent_session.steps = depth
         if not current_state and self.task:
@@ -372,10 +374,10 @@ class GameSession:
         )
         game_result.result = task_response
         return game_result
-
-    def _make_agent_sessions(self) -> Dict[int, AgentSession]:
+    
+    async def _make_agent_sessions(self) -> Dict[int, AgentSession]:
         return {
-            i: AgentSession(i, self.instance.agent_instances[i], self.db_client)
+            i: AgentSession(i, self.instance.agent_instances[i], await create_db_client())
             for i in range(self.instance.num_agents)
         }
 

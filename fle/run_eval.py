@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 from fle.agents.gym_agent import GymAgent
 from fle.commons.cluster_ips import get_local_container_ips
+from fle.env.environment import FactorioGymEnv
 from fle.env.gym_env.config import GymEvalConfig, GymRunConfig
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
 from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
@@ -114,15 +115,17 @@ async def main():
             raise ValueError(f"Could not get environment info for {run_config.env_id}")
 
         # Create gym environment to get task and instance
-        gym_env = gym.make(run_config.env_id)
-        task = gym_env.unwrapped.task
-        instance = gym_env.unwrapped.instance
+        gym_env: FactorioGymEnv = gym.make(run_config.env_id)
+        await gym_env.game_session.initialise()
+        task = gym_env.game_session.task
+        instance = gym_env.game_session.instance
 
         # Create agents and their agent cards
         agents = dict()
         agent_cards = []
-        for agent_idx in range(run_config.num_agents):
-            system_prompt = instance.get_system_prompt(agent_idx)
+        num_agents = run_config.num_agents
+        for agent_idx in range(num_agents):
+            system_prompt = instance.agent_instances[agent_idx].get_system_prompt(num_agents=num_agents)
             agent = GymAgent(
                 model=run_config.model,
                 system_prompt=system_prompt,

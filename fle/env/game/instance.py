@@ -68,8 +68,9 @@ class AgentInstance:
     last_message_timestamp: float
     # _last_production_flow: Optional[ProductionFlows]
 
-    def __init__(self, agent_idx: int):
+    def __init__(self, agent_idx: int, namespace: FactorioNamespace):
         self.agent_idx = agent_idx
+        self.namespace = namespace
 
     @property
     def color(self) -> str:
@@ -165,7 +166,7 @@ class AgentInstance:
 class FactorioInstance:
     namespace_class = FactorioNamespace
     _cleanup_registered = False  # Only register cleanup once per process
-    agent_instances: List[AgentInstance]
+    agent_instances: Dict[int, AgentInstance]
     client: FactorioClient
 
     def __init__(
@@ -189,7 +190,7 @@ class FactorioInstance:
         self._is_initialised = False
 
         self.peaceful = peaceful
-        self.agent_instances = [AgentInstance(i) for i in range(num_agents)]
+        self.agent_instances = {i: AgentInstance(i, FactorioNamespace(self, i)) for i in range(num_agents)}
 
         # Register controllers with the server
 
@@ -277,7 +278,7 @@ class FactorioInstance:
                     "/sc global.agent_characters[1].force.research_all_technologies()",
                     raw=True,
                 )
-        for instance in self.agent_instances:
+        for instance in self.agent_instances.values():
             instance._reset(self.client, inventories[instance.agent_idx])
         # self.clear_entities()
         self._reset_static_achievement_counters()
@@ -289,7 +290,7 @@ class FactorioInstance:
             not game_state or len(game_state.inventories) == self.num_agents
         ), "Game state must have the same number of inventories as num_agents"
 
-        for instance in self.agent_instances:
+        for instance in self.agent_instances.values():
             instance.namespace.reset()
 
         if not game_state:
@@ -323,7 +324,7 @@ class FactorioInstance:
             if game_state.agent_messages:
                 for i in range(self.num_agents):
                     if i < len(game_state.agent_messages):
-                        self.agent_instances[i].namespace.load_messages(
+                        self.agent_instances[i].namespace.load_messages( # type: ignore
                             game_state.agent_messages[i]
                         )
 
@@ -346,7 +347,7 @@ class FactorioInstance:
     def initialise(self, fast=True, invalidate_cache=False):
         self.reconnect_client()
         self.client.register_controllers(
-            [instance.namespace for instance in self.agent_instances],
+            [instance.namespace for instance in self.agent_instances.values()],
             invalidate_cache=invalidate_cache,
         )
 
@@ -389,7 +390,7 @@ class FactorioInstance:
                 f'/sc global.agent_characters = {{}};',
                 raw=True,
             )
-            for instance in self.agent_instances:
+            for instance in self.agent_instances.values():
                 for command in instance._agent_character_command():
                     t.add_command(command, raw=True)
             t.add_command("/sc player = global.agent_characters[1]", raw=True)

@@ -22,7 +22,6 @@ class GymTrajectoryRunner:
     config: GymEvalConfig
     gym_env: FactorioGymEnv
     process_id: int
-    session_manager: GameSessionManager
     agents: Dict[int, GymAgent]
 
     def __init__(
@@ -30,7 +29,6 @@ class GymTrajectoryRunner:
         config: GymEvalConfig,
         gym_env: FactorioGymEnv,
         process_id: int,
-        session_manager: GameSessionManager,
         log_dir: Optional[str] = None,
     ):
         self.config = config
@@ -38,7 +36,6 @@ class GymTrajectoryRunner:
         self.gym_env = gym_env
         self.process_id = process_id
         self.start_time = time.time()
-        self.session_manager = session_manager
         self.logger = TrajectoryLogger(
             start_time=self.start_time,
             trajectory_length=self.config.task.trajectory_length,
@@ -85,9 +82,10 @@ class GymTrajectoryRunner:
             Tuple of (current_state, agent_steps)
         """
         game_session = self.gym_env.game_session
+        await game_session.initialise()
         first_idx = list(game_session.agent_sessions.keys())[0]
         current_state, agent_conversation = (
-            await game_session.get_agent_session_resume_state(first_idx)
+            await game_session.get_agent_session_resume_state(first_idx, self.process_id)
         )
         if agent_conversation:
             self.agents[first_idx].reset(agent_conversation)
@@ -178,10 +176,10 @@ class GymTrajectoryRunner:
 
         # Initialize state based on resume or fresh start
         game_session = self.gym_env.game_session
-        current_state, _ = await self._initialize_trajectory_state()
+        current_state = await self._initialize_trajectory_state()
 
         # Save system prompts for all agents at the start
-        for agent_idx, agent in enumerate(self.agents):
+        for agent_idx, agent in self.agents.items():
             self.logger.save_system_prompt(agent, agent_idx)
 
         # Run trajectory

@@ -59,7 +59,7 @@ class FactorioNamespace:
         self.line_value = 0
         self.persistent_vars = {}
         self.instance = instance
-        self.tcp_port = instance.tcp_port
+        self.tcp_port = instance.client.rcon_port
         self.max_sequential_exception_count = 1
         self._sequential_exception_count = 0
         self.log_counter = 0

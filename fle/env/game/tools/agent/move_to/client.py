@@ -7,7 +7,7 @@ from fle.env.game.game_types import Prototype
 from fle.env.game.tools.admin.get_path.client import GetPath
 from fle.env.game.tools.admin.request_path.client import RequestPath
 from fle.env.game.tools import Tool
-from fle.env.lua_manager import LuaScriptManager
+from fle.env.game.lua_manager import LuaScriptManager
 
 
 class MoveTo(Tool):

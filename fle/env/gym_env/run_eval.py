@@ -50,12 +50,6 @@ def get_validated_run_configs(run_config_location: str) -> list[GymRunConfig]:
 
     # Check if we have enough containers
     ips, udp_ports, tcp_ports = get_local_container_ips()
-    print(f"🐳 CONTAINER DISCOVERY: Found {len(tcp_ports)} containers")
-    print("🔍 Container details:")
-    for i, (ip, tcp_port, udp_port) in enumerate(zip(ips, tcp_ports, udp_ports)):
-        print(f"  Container {i}: {ip}:{tcp_port} (UDP: {udp_port})")
-    print(f"📋 Running {len(run_configs)} configurations")
-
     if len(tcp_ports) < len(run_configs):
         raise ValueError(
             f"Not enough containers for {len(run_configs)} runs. Only {len(ips)} containers available."
@@ -161,5 +155,4 @@ async def main(run_configs, offset):
 
 if __name__ == "__main__":
     multiprocessing.set_start_method("spawn")
-    # Defaults for direct invocation; CLI parsing is centralized in fle/run.py
     asyncio.run(main())

@@ -14,7 +14,6 @@ class GymRunConfig:
     env_id: str  # Gym environment ID from registry (e.g., "Factorio-iron_ore_throughput_16-v0")
     model: str
     version: Optional[int] = None
-    num_agents: int = 1
     exit_on_task_success: bool = True
     observation_formatter: Optional[BasicObservationFormatter] = None
 
@@ -30,6 +29,7 @@ class GymEvalConfig:
     task: Optional[TaskABC] = None
     agent_cards: Optional[List[AgentCard]] = None
     env_id: Optional[str] = None  # Gym environment ID for registry-based creation
+    instance_id: Optional[int] = None  # Which container to use for this evaluation
 
     def __post_init__(self):
         if self.task is None and hasattr(self.agents[0], "task"):

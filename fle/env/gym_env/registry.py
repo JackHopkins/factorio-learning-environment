@@ -1,12 +1,16 @@
+import os
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
+from fle.env.a2a_instance import A2AFactorioInstance
 import gym
 import json
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass
 
+from fle.commons.cluster_ips import get_local_container_ips
+from fle.commons.asyncio_utils import run_async_safely
+from fle.env import FactorioInstance
 from fle.env.gym_env.environment import FactorioGymEnv
 from fle.eval.tasks import TaskFactory
-from fle.env import FactorioInstance
-from fle.commons.cluster_ips import get_local_container_ips
 
 
 @dataclass
@@ -50,11 +54,13 @@ class FactorioGymRegistry:
                 with open(task_file, "r") as f:
                     task_data = json.load(f)
 
-                task_key = task_data.get("config", {}).get("task_key", task_file.stem)
-                task_type = task_data.get("task_type", "default")
-                goal_description = task_data.get("config", {}).get(
+                task_config = task_data.get("config", {})
+                task_key = task_config.get("task_key", task_file.stem)
+                task_type = task_config.get("task_type", "default")
+                goal_description = task_config.get(
                     "goal_description", f"Task: {task_key}"
                 )
+                num_agents = task_config["num_agents"]
                 # Register the environment
                 self.register_environment(
                     env_id=task_key,
@@ -62,6 +68,7 @@ class FactorioGymRegistry:
                     task_config_path=str(task_file),
                     description=goal_description,
                     task_type=task_type,
+                    num_agents=num_agents,
                 )
 
             except Exception as e:
@@ -123,26 +130,42 @@ class FactorioGymRegistry:
 _registry = FactorioGymRegistry()
 
 
-def make_factorio_env(env_spec: GymEnvironmentSpec) -> FactorioGymEnv:
+def make_factorio_env(env_spec: GymEnvironmentSpec, instance_id: int) -> FactorioGymEnv:
     """Factory function to create a Factorio gym environment"""
 
     # Create task from the task definition
     task = TaskFactory.create_task(env_spec.task_config_path)
 
     # Create Factorio instance
-    # Note: This assumes you have containers available
     try:
-        ips, udp_ports, tcp_ports = get_local_container_ips()
-        if len(tcp_ports) == 0:
-            raise RuntimeError("No Factorio containers available")
+        # Check for external server configuration via environment variables
+        address = os.getenv("FACTORIO_SERVER_ADDRESS")
+        tcp_port = os.getenv("FACTORIO_SERVER_PORT")
 
-        # Use the first available container
-        instance = FactorioInstance(
-            address=ips[0],
-            container_id=0,  # Use first container
-            num_agents=env_spec.num_agents,
-        )
-        instance.set_speed(10)
+        if not address and not tcp_port:
+            ips, udp_ports, tcp_ports = get_local_container_ips()
+            if len(tcp_ports) == 0:
+                raise RuntimeError("No Factorio containers available")
+            address = ips[instance_id]
+            tcp_port = tcp_ports[instance_id]
+
+        common_kwargs = {
+            "address": address,
+            "tcp_port": int(tcp_port),
+            "num_agents": env_spec.num_agents,
+            "fast": True,
+            "cache_scripts": True,
+            "inventory": {},
+            "all_technologies_researched": True,
+        }
+
+        print(f"Using local Factorio container at {address}:{tcp_port}")
+        if env_spec.num_agents > 1:
+            instance = run_async_safely(A2AFactorioInstance.create(**common_kwargs))
+        else:
+            instance = FactorioInstance(**common_kwargs)
+
+        instance.speed(10)
 
         # Setup the task
         task.setup(instance)

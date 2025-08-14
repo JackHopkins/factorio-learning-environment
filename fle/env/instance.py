@@ -246,7 +246,7 @@ class FactorioInstance:
 
         self.execute_transaction()
 
-    def speed(self, speed):
+    def set_speed(self, speed):
         self.rcon_client.send_command(f"/sc game.speed = {speed}")
         self._speed = speed
 

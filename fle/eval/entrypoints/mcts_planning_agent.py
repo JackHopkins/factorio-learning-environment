@@ -184,7 +184,9 @@ async def main():
 
     instances = create_factorio_instances()
     for instance in instances:
-        instance.speed(10)  # Set the game speed to 10x normal speed for faster testing
+        instance.set_speed(
+            10
+        )  # Set the game speed to 10x normal speed for faster testing
 
     # Initialize FactorioEvaluator with the list of instances
 

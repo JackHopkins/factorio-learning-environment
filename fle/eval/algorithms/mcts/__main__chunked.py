@@ -258,7 +258,7 @@ async def main():
     # Set up Factorio instances
     instances = create_factorio_instances()
     for instance in instances:
-        instance.speed(10)
+        instance.set_speed(10)
 
     initial_state = GameState.from_instance(instances[0])
 

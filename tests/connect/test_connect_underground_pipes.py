@@ -20,10 +20,10 @@ def game(instance):
         "assembling-machine-1": 10,
         "pipe-to-ground": 4,
     }
-    instance.speed(10)
+    instance.set_speed(10)
     instance.reset()
     yield instance.namespace
-    instance.speed(10)
+    instance.set_speed(10)
     # instance.reset()
 
 

@@ -160,11 +160,11 @@ def get_environment_info(env_id: str) -> Optional[Dict[str, Any]]:
         return None
 
     # Return the task config with additional metadata
-    task_config = spec["task_data"]["config"]
+    task_data = spec["task_data"]
     return {
         "env_id": spec["env_id"],
         "task_config_path": spec["task_config_path"],
-        **task_config,  # Unpack all config fields
+        **task_data,  # Unpack all task data fields
     }
 
 

@@ -3,6 +3,7 @@ import asyncio
 import aiodocker
 from aiodocker.exceptions import DockerError
 from typing import List, Dict
+import shutil
 
 from fle.services.docker.config import DockerConfig, Scenario, Mode
 
@@ -77,12 +78,29 @@ class FactorioHeadlessServer:
         await ctr.restart()
 
     def _make_save_latest(self, save_name: str):
+        """
+        Make the given save the one that will be loaded on next restart.
+
+        - In SAVE_BASED mode (with fixed SAVE_NAME), overwrite the runtime save
+          `<scenario_name>_run.zip` with the chosen save.
+        - Otherwise (legacy/mtime workflows), touch the chosen save so it becomes latest.
+        """
         save_dir = self.config.saves_path / str(self.instance_id)
         save_dir.mkdir(parents=True, exist_ok=True)
-        save_path = save_dir / f"{save_name}.zip"
-        if not save_path.exists():
+        src = save_dir / f"{save_name}.zip"
+        if not src.exists():
             raise Exception(f"Save {save_name} not found")
-        save_path.touch(exist_ok=True)
+
+        # If we're in save-based mode, we always load the fixed runtime save name.
+        # So replace the runtime save with the selected source save.
+        if self.config.mode == Mode.SAVE_BASED.value:
+            runtime = save_dir / f"{self.config.scenario_name}_run.zip"
+            # Copy regardless of whether runtime exists, to guarantee switch.
+            shutil.copy2(src, runtime)
+            return
+
+        # Fallback: touch to bump mtime (for setups that still rely on LOAD_LATEST_SAVE)
+        src.touch(exist_ok=True)
 
 
 class FactorioHeadlessClusterManager:
@@ -154,18 +172,22 @@ class FactorioHeadlessClusterManager:
 
     def _get_environment(self) -> list:
         env = {
-            "LOAD_LATEST_SAVE": (
-                "true" if self.config.mode == Mode.SAVE_BASED.value else "false"
-            ),
             "PORT": str(self.config.udp_port),
             "RCON_PORT": str(self.config.rcon_port),
             "SERVER_SCENARIO": self.config.scenario_name,
             "DLC_SPACE_AGE": "false",
             "MODE": self.config.mode,
-            # "SAVE_NAME": save_name,
         }
-        if self.config.mode == Mode.SCENARIO.value:
+
+        # In save-based mode, pin to a fixed runtime save name and avoid mtime-based selection
+        if self.config.mode == Mode.SAVE_BASED.value:
+            env["LOAD_LATEST_SAVE"] = "false"
+            env["SAVE_NAME"] = f"{self.config.scenario_name}_run"
+        else:
+            # Scenario mode behavior unchanged
+            env["LOAD_LATEST_SAVE"] = "false"
             env["PRESET"] = "default"
+
         # Docker API wants ["KEY=VALUE", ...]
         return [f"{k}={v}" for k, v in env.items()]
 
@@ -251,6 +273,14 @@ class FactorioHeadlessClusterManager:
             )
             await asyncio.gather(*[item.wait() for item in scenario2map_ctrs])
             await asyncio.gather(*[item.delete() for item in scenario2map_ctrs])
+
+            # Ensure a separate runtime save exists (copy-once from baseline)
+            for i in range(self.num):
+                save_dir = self.config.saves_path / str(i)
+                baseline = save_dir / f"{self.config.scenario_name}.zip"
+                runtime = save_dir / f"{self.config.scenario_name}_run.zip"
+                if baseline.exists() and not runtime.exists():
+                    shutil.copy2(baseline, runtime)
 
         server_ctrs = await asyncio.gather(
             *[self.get_server_ctr(i) for i in range(self.num)]

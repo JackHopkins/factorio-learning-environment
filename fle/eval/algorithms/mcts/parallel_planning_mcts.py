@@ -30,7 +30,7 @@ from fle.eval.algorithms.mcts.planning_models import (
     TaskOutput,
 )
 from fle.eval.algorithms.mcts.planning_mcts import get_mining_setup
-from fle.eval.evaluator import Evaluator
+from fle.eval.algorithms.mcts.evaluator import Evaluator
 
 logger = logging.basicConfig(level=logging.INFO)
 

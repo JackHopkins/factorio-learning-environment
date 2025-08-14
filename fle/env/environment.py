@@ -291,7 +291,10 @@ class FactorioGymEnv(gym.Env):
 
         if self.game_session.task:
             game_result = self.game_session.verify_task(reward, game_result)
-            terminated = task_response.success
+            # verify_task mutates game_result.result to be a TaskResponse
+            if isinstance(game_result.result, TaskResponse):
+                task_response = game_result.result
+                terminated = bool(task_response.success)
 
         # Get observation for the acting agent
         observation = game_result.partial_observation.add_response(
@@ -311,6 +314,18 @@ class FactorioGymEnv(gym.Env):
         }
 
         return observation.to_dict(), reward, terminated, truncated, info
+
+    def reset(
+        self, *, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Gymnasium-compatible reset that delegates to the game session.
+
+        Returns (observation, info).
+        """
+        # Gym API requires calling super().reset(seed=seed)
+        super().reset(seed=seed)
+        obs, info = self.game_session.reset(options=options, seed=seed)
+        return obs, info
 
     def close(self):
         """Clean up resources"""

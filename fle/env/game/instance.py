@@ -227,8 +227,16 @@ class FactorioInstance:
     ) -> Optional[FactorioNamespace]:  # Add this property if used
         return self.agent_instances[0].namespace if self.agent_instances else None
     
+    @property
+    def namespaces(self) -> List[FactorioNamespace]:
+        return list([ai.namespace for ai in self.agent_instances.values()])
+    
     def save(self, save_name: str) -> None:
         self.client.send_command(f"/save {save_name}")
+    
+    def set_inventory(self, inventory: Dict[str, Any]):
+        for instance in self.agent_instances.values():
+            instance.set_inventory(self.client, inventory)
 
     @property
     def is_multiagent(self):
@@ -264,23 +272,32 @@ class FactorioInstance:
             t.add_command("/sc global.elapsed_ticks = 0", raw=True)
 
     def _reset(self, inventories: List[Dict[str, Any]]):
+        # Reset core game state and production stats
         with self.client.transaction() as t:
             t.add_command(
-                "/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)",
+                "/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats()",
                 raw=True,
             )
 
+        # Re-create agent characters; first remove any lingering ones
+        self._create_agent_game_characters()
+
+        # Clear movement queues (safe now that characters exist)
         with self.client.transaction() as t:
             t.add_command("/sc global.actions.clear_walking_queue()", raw=True)
 
-            if self.all_technologies_researched:
+        # Per-agent reset: resources, entities, inventories
+        for instance in self.agent_instances.values():
+            instance._reset(self.client, inventories[instance.agent_idx])
+
+        # Apply research after clear_entities (which calls player.force.reset)
+        if self.all_technologies_researched:
+            with self.client.transaction() as t:
                 t.add_command(
                     "/sc global.agent_characters[1].force.research_all_technologies()",
                     raw=True,
                 )
-        for instance in self.agent_instances.values():
-            instance._reset(self.client, inventories[instance.agent_idx])
-        # self.clear_entities()
+
         self._reset_static_achievement_counters()
         self._reset_elapsed_ticks()
 
@@ -384,8 +401,12 @@ class FactorioInstance:
 
     def _create_agent_game_characters(self):
         """Create Factorio characters for all agents in the game."""
-        # Create characters in Factorio
         with self.client.transaction() as t:
+            # Destroy any lingering character entities from prior runs
+            t.add_command(
+                "/sc for _,c in pairs(game.surfaces[1].find_entities_filtered{type='character'}) do if c and c.valid then c.destroy() end end",
+                raw=True,
+            )
             t.add_command(
                 f'/sc global.agent_characters = {{}};',
                 raw=True,

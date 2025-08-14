@@ -92,6 +92,7 @@ class FactorioGymRegistry:
 
             except Exception as e:
                 print(f"Warning: Failed to load task definition {task_file}: {e}")
+                raise e
 
         self._discovered = True
 

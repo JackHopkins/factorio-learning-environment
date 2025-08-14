@@ -65,9 +65,7 @@ class DockerConfig(BaseModel):
 
     scenario_name: str = Scenario.DEFAULT_LAB_SCENARIO.value
     scenario_dir: Path = Field(
-        default_factory=lambda: Path(__file__).parent.resolve()
-        / "factorio"
-        / "scenarios"
+        default_factory=lambda: ROOT_DIR / "env" / "game" / "factorio" / "scenarios"
     )
     server_config_dir: Path = Field(
         default_factory=lambda: ROOT_DIR / "env" / "game" / "factorio" / "config"
@@ -85,7 +83,7 @@ class DockerConfig(BaseModel):
         .strip()
     )
 
-    model_config = {"extra": "forbid", "frozen": True}
+    # model_config = {"extra": "forbid", "frozen": True}
 
 config = DockerConfig()
 

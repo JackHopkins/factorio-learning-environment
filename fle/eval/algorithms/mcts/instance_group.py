@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from fle.eval.evaluator import Evaluator
+from fle.eval.algorithms.mcts.evaluator import Evaluator
 from fle.eval.algorithms.mcts.mcts import MCTS
 from fle.env.game.instance import FactorioInstance
 

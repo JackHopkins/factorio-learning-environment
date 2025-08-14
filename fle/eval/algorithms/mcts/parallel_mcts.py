@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 from fle.eval.algorithms.mcts.grouped_logger import GroupedFactorioLogger
 from fle.eval.algorithms.mcts.instance_group import InstanceGroup
 from fle.eval.algorithms.mcts.parallel_mcts_config import ParallelMCTSConfig
-from fle.eval.evaluator import Evaluator
+from fle.eval.algorithms.mcts.evaluator import Evaluator
 from rich.console import Console
 
 from fle.services.db.db_client import DBClient

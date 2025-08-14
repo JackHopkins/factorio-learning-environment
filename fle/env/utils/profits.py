@@ -1,8 +1,12 @@
-def eval_program_with_profits(instance, program, profit_config):
-    pre_production_flows = instance.get_production_stats()
+from fle.commons.models.achievements import ProductionFlows
+from fle.env.game.namespace import FactorioNamespace
+
+
+def eval_program_with_profits(namespace: FactorioNamespace, program: str, profit_config: dict):
+    pre_production_flows = namespace._get_production_stats()
     # evaluate the step
     try:
-        score, goal, result = instance.eval_with_error(program, timeout=300)
+        score, goal, result = namespace.eval_with_error(program, timeout=300)
         error = False
     except Exception as e:
         result = e
@@ -11,7 +15,7 @@ def eval_program_with_profits(instance, program, profit_config):
         error = True
     # split result by newlines
     output_list = result.splitlines()
-    post_production_flows = instance.get_production_stats()
+    post_production_flows = namespace._get_production_stats()
     profits = get_profits(
         pre_production_flows, post_production_flows, profit_config=profit_config
     )
@@ -49,13 +53,13 @@ def get_profits(
     # merge the crafted and harvested dicts to one dict
     static_profits, new_production_flows = get_static_profits(
         new_production_flows,
-        pre_production_flows["price_list"],
+        pre_production_flows.get("price_list", {}),
         max_craft_cap=max_static_unit_profit_cap,
     )
     total_profits["static"] = static_profits
     dynamic_profits = get_dynamic_profits(
         new_production_flows,
-        pre_production_flows["price_list"],
+        pre_production_flows.get("price_list", {}),
         dynamic_profit_multiplier=dynamic_profit_multiplier,
     )
     total_profits["dynamic"] = dynamic_profits
@@ -148,11 +152,11 @@ def get_dynamic_profits(new_production_flows, price_list, dynamic_profit_multipl
     return dynamic_profits
 
 
-def eval_program_with_achievements(instance, program):
-    pre_production_flows = instance.get_production_stats()
+def eval_program_with_achievements(namespace: FactorioNamespace, program: str):
+    pre_production_flows = namespace._production_stats()
     # evaluate the step
     try:
-        score, goal, result = instance.eval_with_error(program, timeout=300)
+        score, goal, result = namespace.eval_with_error(program, timeout=300)
         error = False
     except Exception as e:
         result = e
@@ -161,7 +165,7 @@ def eval_program_with_achievements(instance, program):
         error = True
     # split result by newlines
     output_list = result.splitlines()
-    post_production_flows = instance.get_production_stats()
+    post_production_flows = namespace._production_stats()
     achievements = get_achievements(pre_production_flows, post_production_flows)
     return output_list, result, error, achievements
 

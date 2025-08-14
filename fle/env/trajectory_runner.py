@@ -85,7 +85,7 @@ class GymTrajectoryRunner:
         await game_session.initialise()
         first_idx = list(game_session.agent_sessions.keys())[0]
         current_state, agent_conversation = (
-            await game_session.get_agent_session_resume_state(first_idx, self.process_id)
+            await game_session.get_agent_session_resume_state(first_idx, self.config.version, self.process_id)
         )
         if agent_conversation:
             self.agents[first_idx].reset(agent_conversation)
@@ -96,9 +96,7 @@ class GymTrajectoryRunner:
             agent = self.agents[agent_idx]
             agent_session = game_session.agent_sessions[agent_idx]
             conversation = Conversation()
-            initial_obs = agent_session.get_partial_observation(
-                game_session.current_game_info
-            )
+            initial_obs = game_session.get_agent_observation(agent_idx)
             formatted_obs = agent.observation_formatter.format(initial_obs).raw_str
             conversation.add_user_message(formatted_obs)
             agent.reset(conversation)
@@ -140,7 +138,7 @@ class GymTrajectoryRunner:
                 version_description=agent_session.version_description,
             )
 
-            program = await agent_session.save_program(program)
+            program = await self.gym_env.game_session.save_program(program)
 
             # Update agent's conversation with the program and its results
             await agent.update_conversation(observation, previous_program=program)
@@ -196,4 +194,5 @@ class GymTrajectoryRunner:
                 print(
                     f"Error in trajectory runner iteration {agent_session.steps}: {e}"
                 )
-                continue
+                # continue
+                raise e

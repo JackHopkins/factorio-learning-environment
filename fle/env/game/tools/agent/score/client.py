@@ -21,7 +21,7 @@ class Reward(Tool):
         if isinstance(response, str):
             raise Exception("Could not get player score", response)
 
-        return response, goal
+        return response["player"], goal
 
 
 # if __name__ == "__main__":

@@ -38,24 +38,14 @@ class AgentSession:
     class Snapshot:
         score: float
         flows: ProductionFlows
-        tick: int
         timestamp: float
         observation: Optional[Observation] = None
 
+    @dataclass
     class AgentResult:
         pre: "AgentSession.Snapshot"
-        post: Optional["AgentSession.Snapshot"]
         result: str
-
-        def __init__(
-            self,
-            pre: "AgentSession.Snapshot",
-            post: Optional["AgentSession.Snapshot"],
-            result: str,
-        ):
-            self.pre = pre
-            self.post = post
-            self.result = result
+        post: Optional["AgentSession.Snapshot"] = None
 
         def set_post(self, post: "AgentSession.Snapshot") -> None:
             self.post = post
@@ -80,26 +70,25 @@ class AgentSession:
     last_message_timestamp: float
     last_observation: Optional[Observation]
     _last_production_flow: Optional[ProductionFlows]
-    version: int
+    _version: int
     version_description: str
-    db_client: DBClient
 
     def __init__(
         self,
         agent_idx: int,
         agent_instance: AgentInstance,
-        db_client: DBClient,
     ):
         self.agent_idx = agent_idx
         self.steps = 0
         self.agent_instance = agent_instance
         self.namespace = agent_instance.namespace
-        self.db_client = db_client
+        self._version = 0
+        self.version_description = ""
         self.reset()
 
     @property
     def version(self) -> int:
-        return self.db_client.get_largest_version()
+        return self._version
 
     def get_partial_observation(
         self,
@@ -164,24 +153,6 @@ class AgentSession:
         self.last_observation = observation
 
         return observation
-    
-    async def save_program(self, program: Program) -> Program:
-        program = await self.db_client.create_program(program)
-        program.update_program_id(program.id)
-        return program
-
-    async def get_resume_state(self, process_id: int) -> Tuple[GameState, Conversation]:
-        (
-            current_state,
-            agent_conversation,
-            parent_id,
-            depth,
-        ) = await self.db_client.get_resume_state(
-            resume_version=self.version,
-            process_id=process_id,
-            agent_idx=self.agent_idx,
-        )
-        return current_state, agent_conversation, parent_id, depth
 
     @property
     def current_score(self) -> float:
@@ -200,7 +171,9 @@ class AgentSession:
             observation=observation,
         )
 
-    def eval_with_snapshot(self, code: str, value_accrual_time: float = 0) -> AgentResult:
+    def eval_with_snapshot(
+        self, code: str, value_accrual_time: float = 0
+    ) -> AgentResult:
 
         initial_snapshot = self._snapshot()
 
@@ -259,32 +232,22 @@ class GameSession:
         agent_result: AgentSession.AgentResult
         partial_observation: Observation
 
-        def __init__(
-            self,
-            post: "GameSession.Snapshot",
-            result: AgentSession.AgentResult,
-            partial_observation: Observation,
-        ):
-            self.post = post
-            self.agent_result = result
-            self.partial_observation = partial_observation
-
         @property
         def result(self) -> str:
             return self.agent_result.result
-        
+
         @result.setter
         def result(self, value: str) -> None:
             self.agent_result.result = value
-            
+
         @property
         def score_delta(self) -> float:
             return self.agent_result.score_delta
-        
+
         @property
         def error_occurred(self) -> bool:
             return self.agent_result.error_occurred
-        
+
         @property
         def flows_delta(self) -> ProductionFlows:
             return self.agent_result.flows_delta
@@ -332,9 +295,17 @@ class GameSession:
             self.current_game_info,
         )
 
-    async def get_agent_session_resume_state(self, agent_idx: int, process_id: int) -> Tuple[GameState, Conversation]:
+    def get_agent_observation(self, agent_idx: int) -> Observation:
         agent_session = self.agent_sessions[agent_idx]
-        current_state, agent_conversation, parent_id, depth = await agent_session.get_resume_state(process_id=process_id)
+        return agent_session.get_partial_observation(self.current_game_info)
+
+    async def get_agent_session_resume_state(
+        self, agent_idx: int, version: int, process_id: int
+    ) -> Tuple[GameState, Conversation]:
+        agent_session = self.agent_sessions[agent_idx]
+        current_state, agent_conversation, parent_id, depth = (
+            await self.get_resume_state(agent_idx=agent_idx, version=version, process_id=process_id)
+        )
         if current_state:
             agent_session.steps = depth
         if not current_state and self.task:
@@ -345,14 +316,14 @@ class GameSession:
         self, agent_idx: int, code: str, value_accrual_time: int
     ):
         agent_session = self.agent_sessions[agent_idx]
-        if agent_session.last_observation:
-            self.reset_instance(agent_session.last_observation.state)
 
         agent_eval_results = agent_session.eval_with_snapshot(
             code=code, value_accrual_time=value_accrual_time
         )
         post_snapshot = self._snapshot()
-        partial_observation = agent_session.get_partial_observation(post_snapshot.game_info)
+        partial_observation = agent_session.get_partial_observation(
+            post_snapshot.game_info
+        )
 
         return self.GameResult(
             post=post_snapshot,
@@ -361,7 +332,10 @@ class GameSession:
         )
 
     def verify_task(
-        self, reward: float, game_result: GameResult, step_statistics: Dict[str, Any] = {}
+        self,
+        reward: float,
+        game_result: GameResult,
+        step_statistics: Dict[str, Any] = {},
     ) -> TaskResponse:
         if not self.task:
             print(f"[WARN] No task to verify, instance: {self.instance_id}")
@@ -374,12 +348,15 @@ class GameSession:
         )
         game_result.result = task_response
         return game_result
-    
+
     async def _make_agent_sessions(self) -> Dict[int, AgentSession]:
-        return {
-            i: AgentSession(i, self.instance.agent_instances[i], await create_db_client())
-            for i in range(self.instance.num_agents)
-        }
+        sessions: Dict[int, AgentSession] = {}
+        self.db_client = await create_db_client()
+        for i in range(self.instance.num_agents):
+            session = AgentSession(i, self.instance.agent_instances[i])
+            # await session.initialise()
+            sessions[i] = session
+        return sessions
 
     def reinitialize_instance(self) -> None:
         if isinstance(self.instance, A2AFactorioInstance):
@@ -413,7 +390,7 @@ class GameSession:
             state: Optional[GameState] to reset to. If None, resets to initial state.
         """
         self.instance.reset(state)
-        for session in self.agent_sessions:
+        for session in self.agent_sessions.values():
             session.reset()
 
     def reset(
@@ -430,12 +407,33 @@ class GameSession:
         game_state = options.get("game_state")
         self.reset_instance(game_state)
 
-        for session in self.agent_sessions:
+        for session in self.agent_sessions.values():
             session.reset()
 
         # Convert observation to dictionary to match gym standards
-        observation = self.agent_sessions[0].get_partial_observation().to_dict()
+        first_session = self.agent_sessions[0]
+        observation = first_session.get_partial_observation(
+            self.current_game_info
+        ).to_dict()
         return observation, {}  # Return observation for first agent
+
+    async def save_program(self, program: Program) -> Program:
+        program = await self.db_client.create_program(program)
+        program.update_program_id(program.id)
+        return program
+
+    async def get_resume_state(self, agent_idx: int, version: int, process_id: int) -> Tuple[GameState, Conversation]:
+        (
+            current_state,
+            agent_conversation,
+            parent_id,
+            depth,
+        ) = await self.db_client.get_resume_state(
+            resume_version=version,
+            process_id=process_id,
+            agent_idx=agent_idx,
+        )
+        return current_state, agent_conversation, parent_id, depth
 
     def cleanup(self) -> None:
         self.instance.cleanup()

@@ -1,4 +1,3 @@
-import argparse
 import asyncio
 import json
 import multiprocessing
@@ -17,6 +16,10 @@ from fle.agents.gym_agent import GymAgent
 from fle.commons.cluster_ips import get_local_container_ips
 from fle.commons.db_client import create_db_client
 from fle.eval.algorithms.independent import get_next_version
+from fle.eval.tasks import TaskFactory
+from fle.env.utils.controller_loader.system_prompt_generator import (
+    SystemPromptGenerator,
+)
 
 load_dotenv()
 
@@ -55,8 +58,7 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     """Run a single gym evaluation process"""
     db_client = await create_db_client()
 
-    # Create gym environment using gym.make()
-    gym_env = gym.make(config.env_id)
+    gym_env = gym.make(config.env_id, instance_id=config.instance_id)
 
     log_dir = os.path.join(".fle", "trajectory_logs", f"v{config.version}")
     runner = GymTrajectoryRunner(
@@ -70,42 +72,31 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     await db_client.cleanup()
 
 
-async def main():
-    parser = argparse.ArgumentParser()
-    pkg = importlib.resources.files("fle")
-    default_config = pkg / "eval" / "algorithms" / "independent" / "gym_run_config.json"
-    parser.add_argument(
-        "--run_config",
-        type=str,
-        help="Path of the run config file",
-        default=str(default_config),
-    )
-    args = parser.parse_args()
-
+async def main(run_config, offset):
     # Read and validate run configurations
-    run_configs = get_validated_run_configs(args.run_config)
-
+    run_config = get_validated_run_configs(run_config)
+    pkg = importlib.resources.files("fle")
     # Get starting version number for new runs
     base_version = await get_next_version()
     version_offset = 0
 
     # Create and start processes
     processes = []
-    for run_idx, run_config in enumerate(run_configs):
+    for run_idx, run_config in enumerate(run_config):
         # Get environment info from registry
         env_info = get_environment_info(run_config.env_id)
         if env_info is None:
             raise ValueError(f"Could not get environment info for {run_config.env_id}")
-
-        # Create gym environment to get task and instance
-        gym_env = gym.make(run_config.env_id)
-        task = gym_env.unwrapped.task
-        instance = gym_env.unwrapped.instance
+        task = TaskFactory.create_task(env_info["task_config_path"])
+        generator = SystemPromptGenerator(str(pkg / "env"))
         # Create agents and their agent cards
         agents = []
         agent_cards = []
-        for agent_idx in range(instance.num_agents):
-            system_prompt = instance.get_system_prompt(agent_idx)
+        num_agents = env_info["num_agents"]
+        for agent_idx in range(num_agents):
+            system_prompt = generator.generate_for_agent(
+                agent_idx=agent_idx, num_agents=num_agents
+            )
             agent = GymAgent(
                 model=run_config.model,
                 system_prompt=system_prompt,
@@ -132,13 +123,13 @@ async def main():
         config = GymEvalConfig(
             agents=agents,
             version=version,
-            version_description=f"model:{run_config.model}\ntype:{task.task_key}\nnum_agents:{instance.num_agents}",
+            version_description=f"model:{run_config.model}\ntype:{task.task_key}\nnum_agents:{num_agents}",
             exit_on_task_success=run_config.exit_on_task_success,
             task=task,
             agent_cards=agent_cards,
             env_id=run_config.env_id,
+            instance_id=run_idx + offset,
         )
-
         # Ensure agent cards are properly set for a2a functionality
         assert config.agent_cards is not None
 

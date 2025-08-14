@@ -25,9 +25,10 @@ class TaskFactory:
             "unbounded_throughput": UnboundedThroughputTask,
         }
         task_type = input_json["task_type"]
-        task_config = input_json["config"]
-        if "num_agents" in task_config:
-            del task_config["num_agents"]
+        # Create task_config by copying all fields except task_type and num_agents
+        task_config = {
+            k: v for k, v in input_json.items() if k not in ["task_type", "num_agents"]
+        }
         if task_type in task_type_mapping:
             task_class = task_type_mapping[task_type]
             return task_class(**task_config)

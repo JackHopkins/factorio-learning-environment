@@ -4,8 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from fle.commons.cluster_ips import get_local_container_ips
 from fle.env.game import FactorioInstance
+from fle.env.game.factorio_client import FactorioClient
+from fle.services.docker.config import DockerConfig
 
 # Add the src directory to the Python path
 src_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,39 +22,97 @@ project_root = Path(__file__).parent.parent.parent
 # if str(project_root / 'src') not in sys.path:
 #     sys.path.insert(0, str(project_root / 'src'))
 
-
-@pytest.fixture()  # scope="session")
+@pytest.fixture()
 def instance():
-    # from gym import FactorioInstance
-    ips, udp_ports, tcp_ports = get_local_container_ips()
+    """Create a connected FactorioInstance using the new FactorioClient API.
+
+    Requires a running local Factorio headless container started via the docker manager.
+    If none are running, the tests using this fixture will be skipped.
+    """
+    config = DockerConfig()
+
+    # Read RCON password used by the local headless server
+    client = FactorioClient(
+        instance_id=0,
+        rcon_port=config.rcon_port,
+        address=config.address,
+        rcon_password=config.factorio_password,
+        cache_scripts=True,
+    )
+
+    inventory = {
+        "coal": 50,
+        "copper-plate": 50,
+        "iron-plate": 50,
+        "iron-chest": 2,
+        "burner-mining-drill": 3,
+        "electric-mining-drill": 1,
+        "assembling-machine-1": 1,
+        "stone-furnace": 9,
+        "transport-belt": 50,
+        "boiler": 1,
+        "burner-inserter": 32,
+        "pipe": 15,
+        "steam-engine": 1,
+        "small-electric-pole": 10,
+    }
+
+    inst = None
     try:
-        instance = FactorioInstance(
-            address="localhost",
-            bounding_box=200,
-            tcp_port=tcp_ports[-1],  # 27019,
-            cache_scripts=False,
+        inst = FactorioInstance(
+            client=client,
             fast=True,
-            inventory={
-                "coal": 50,
-                "copper-plate": 50,
-                "iron-plate": 50,
-                "iron-chest": 2,
-                "burner-mining-drill": 3,
-                "electric-mining-drill": 1,
-                "assembling-machine-1": 1,
-                "stone-furnace": 9,
-                "transport-belt": 50,
-                "boiler": 1,
-                "burner-inserter": 32,
-                "pipe": 15,
-                "steam-engine": 1,
-                "small-electric-pole": 10,
-            },
+            inventory=inventory,
         )
-        yield instance
-    except Exception as e:
-        raise e
+        yield inst
     finally:
-        # Cleanup RCON connections to prevent connection leaks
-        if "instance" in locals():
-            instance.cleanup()
+        if inst is not None:
+            inst.cleanup()
+
+
+@pytest.fixture()
+def unresearched_instance():
+    """Create a FactorioInstance with no technologies researched.
+
+    Requires a running local Factorio headless container started via the docker manager.
+    If none are running, the tests using this fixture will be skipped.
+    """
+    config = DockerConfig()
+
+    client = FactorioClient(
+        instance_id=0,
+        rcon_port=config.rcon_port,
+        address=config.address,
+        rcon_password=config.factorio_password,
+        cache_scripts=True,
+    )
+
+    inventory = {
+        "coal": 50,
+        "copper-plate": 50,
+        "iron-plate": 50,
+        "iron-chest": 2,
+        "burner-mining-drill": 3,
+        "electric-mining-drill": 1,
+        "assembling-machine-1": 1,
+        "stone-furnace": 9,
+        "transport-belt": 50,
+        "boiler": 1,
+        "burner-inserter": 32,
+        "pipe": 15,
+        "steam-engine": 1,
+        "small-electric-pole": 10,
+    }
+
+    inst = None
+    try:
+        inst = FactorioInstance(
+            client=client,
+            fast=True,
+            inventory=inventory,
+            all_technologies_researched=False,
+        )
+        yield inst
+    finally:
+        if inst is not None:
+            inst.cleanup()

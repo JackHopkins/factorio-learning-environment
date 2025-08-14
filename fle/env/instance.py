@@ -94,7 +94,7 @@ class FactorioInstance:
     def __init__(
         self,
         address=None,
-        fast=True,
+        fast=False,
         tcp_port=27000,
         inventory=None,
         cache_scripts=True,
@@ -271,9 +271,18 @@ class FactorioInstance:
         """
         execution_path = Path(os.path.dirname(os.path.realpath(__file__)))
         generator = SystemPromptGenerator(str(execution_path))
-        return generator.generate_for_agent(
-            agent_idx=agent_idx, num_agents=self.num_agents
-        )
+        multiagent_str = ""
+        if self.num_agents > 1:
+            player_idx = agent_idx + 1
+            multiagent_str = (
+                f"## MULTIAGENT INSTRUCTIONS\n"
+                f"You are Agent {player_idx} out of {self.num_agents} agent(s) in the game. "
+                f"Follow your specific instructions given to you by the task."
+                f"Use the send_message() tool regularly to communicate with other agents about your current activities and any challenges you encounter. "
+                f"Start each program with a send_message() call to explain what you are doing. "
+                f"End each program with a send_message() call to confirm your actions. If your program errors out prior to send_message() being called, the message will not be sent. "
+            )
+        return generator.generate(multiagent_str)
 
     def connect_to_server(self, address, tcp_port):
         try:

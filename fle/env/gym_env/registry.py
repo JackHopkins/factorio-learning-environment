@@ -39,8 +39,7 @@ class FactorioGymRegistry:
                 with open(task_file, "r") as f:
                     task_data = json.load(f)
 
-                task_config = task_data["config"]
-                task_key = task_config["task_key"]
+                task_key = task_data["task_key"]
 
                 # Register the environment
                 self.register_environment(
@@ -96,8 +95,7 @@ def make_factorio_env(env_spec: Dict[str, Any], instance_id: int = 0) -> Factori
     """Create a Factorio gym environment from specification"""
     task_config_path = env_spec["task_config_path"]
     task_data = env_spec["task_data"]
-    task_config = task_data["config"]
-    num_agents = task_config["num_agents"]
+    num_agents = task_data["num_agents"]
 
     # Create task from the task definition
     task = TaskFactory.create_task(task_config_path)

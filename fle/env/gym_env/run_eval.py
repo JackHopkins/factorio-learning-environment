@@ -92,7 +92,6 @@ async def main(run_config, offset):
         # Create agents and their agent cards
         agents = []
         agent_cards = []
-        print(env_info)
         num_agents = env_info["num_agents"]
         for agent_idx in range(num_agents):
             system_prompt = generator.generate_for_agent(

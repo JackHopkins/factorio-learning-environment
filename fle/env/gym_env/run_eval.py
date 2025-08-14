@@ -4,6 +4,7 @@ import multiprocessing
 import os
 
 import gym
+import importlib.resources
 from dotenv import load_dotenv
 from fle.env.gym_env.config import GymEvalConfig, GymRunConfig
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
@@ -69,6 +70,7 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     )
     await runner.run()
     await db_client.cleanup()
+
 
 async def main(run_config, offset):
     # Read and validate run configurations

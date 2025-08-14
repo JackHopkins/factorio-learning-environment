@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 import pytest
 from fle.agents.basic_agent import BasicAgent
 from fle.env.tasks import UnboundedThroughputTask

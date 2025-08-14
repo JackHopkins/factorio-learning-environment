@@ -1,6 +1,6 @@
+import pytest
 import unittest
 
-from fle.commons.cluster_ips import get_local_container_ips
 from fle.env.game import FactorioInstance
 
 embedded_function = """
@@ -35,136 +35,84 @@ expected_result = "{'iron-chest': 2, 'transport-belt': 50, 'burner-inserter': 32
 #                            inventory=inventory)
 
 
-def test_nested_functions():
-    ips, udp_ports, tcp_ports = get_local_container_ips()
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=tcp_ports[-1],
-        fast=True,
-        # cache_scripts=False,
-        inventory={},
-    )
+@pytest.fixture()
+def game(instance: FactorioInstance):
+    instance.reset()
+    yield instance.agent_instances[0]
+    instance.reset()
 
-    score, goal, result = instance.eval_with_error("print(inspect_inventory())")
+
+def test_nested_functions(game: FactorioInstance):
+
+    score, goal, result = game.eval_with_error("print(inspect_inventory())")
 
     assert result[3:] == "(Inventory({}),)"
 
-    score, goal, result = instance.eval_with_error(embedded_function)
+    score, goal, result = game.eval_with_error(embedded_function)
 
     assert result[3:] == "(Inventory({}),)"
 
 
-def test_builtin_functions():
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=27000,
-        fast=True,
-        # cache_scripts=False,
-        inventory={},
-    )
+def test_builtin_functions(game: FactorioInstance):
 
-    score, goal, result = instance.eval_with_error("print(len('hello'))")
+    score, goal, result = game.eval_with_error("print(len('hello'))")
 
     assert result[4:-2] == "5"
 
-    score, goal, result = instance.eval_with_error("print(len([1,2,3,4,5]))")
+    score, goal, result = game.eval_with_error("print(len([1,2,3,4,5]))")
 
     assert result[4:-2] == "5"
 
-    score, goal, result = instance.eval_with_error(
-        "print(len({'a': 1, 'b': 2, 'c': 3}))"
-    )
+    score, goal, result = game.eval_with_error("print(len({'a': 1, 'b': 2, 'c': 3}))")
 
     assert result[4:-2] == "3"
 
-    score, goal, result = instance.eval_with_error("print(len((1,2,3,4,5)))")
+    score, goal, result = game.eval_with_error("print(len((1,2,3,4,5)))")
 
     assert result[4:-2] == "5"
 
-    score, goal, result = instance.eval_with_error("print(len({1,2,3,4,5}))")
+    score, goal, result = game.eval_with_error("print(len({1,2,3,4,5}))")
 
     assert result[4:-2] == "5"
 
 
-def test_math():
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=27000,
-        fast=True,
-        # cache_scripts=False,
-        inventory={},
-    )
+def test_math(game: FactorioInstance):
 
-    score, goal, result = instance.eval_with_error("print(sqrt(100))", timeout=60)
+    score, goal, result = game.eval_with_error("print(sqrt(100))", timeout=60)
     assert "10" in result
 
 
-def test_loop_print():
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=27000,
-        fast=True,
-        # cache_scripts=False,
-        inventory={},
-    )
+def test_loop_print(game: FactorioInstance):
 
-    score, goal, result = instance.eval_with_error(
+    score, goal, result = game.eval_with_error(
         "for i in range(3):\n\tprint(i)", timeout=60
     )
     assert "2: (0,)\n2: (1,)\n2: (2,)" in result
 
 
-def test_name_error():
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=27000,
-        fast=True,
-        # cache_scripts=False,
-        inventory={},
-    )
+def test_name_error(game: FactorioInstance):
 
-    score, goal, result = instance.eval_with_error(
+    score, goal, result = game.eval_with_error(
         "an_existing_variable=10\nprint(none_existing_variable)", timeout=60
     )
     assert "an_existing_variable" in result
 
 
-def test_sleep():
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=27000,
-        fast=True,
-        # cache_scripts=False,
-        inventory={},
-    )
+def test_sleep(game: FactorioInstance):
 
-    score, goal, result = instance.eval_with_error("time.sleep(10)", timeout=60)
+    score, goal, result = game.eval_with_error("time.sleep(10)", timeout=60)
     assert "10" in result
 
 
-def test_prototype_attribute_error():
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=27000,
-        fast=True,
-        # cache_scripts=False,
-        inventory={},
-    )
+def test_prototype_attribute_error(game: FactorioInstance):
 
-    score, goal, result = instance.eval_with_error(
+    score, goal, result = game.eval_with_error(
         "print(Prototype.AssemblingMachine)", timeout=60
     )
     assert "AssemblingMachine1" in result
 
 
-def test_exceptions():
+def test_exceptions(game: FactorioInstance):
     inventory = {
         "iron-plate": 50,
         "coal": 100,
@@ -182,15 +130,6 @@ def test_exceptions():
         "small-electric-pole": 10,
         "iron-ore": 10,
     }
-
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=27000,
-        fast=True,
-        # cache_scripts=False,
-        inventory=inventory,
-    )
 
     test_string = """
 # Check initial inventory
@@ -214,12 +153,12 @@ furnaces = get_entities({Prototype.StoneFurnace})
 print(furnaces)
 """
 
-    score, goal, result = instance.eval_with_error(test_string, timeout=60)
+    score, goal, result = game.eval_with_error(test_string, timeout=60)
 
     pass
 
 
-def test_chest_inventory():
+def test_chest_inventory(game: FactorioInstance):
     inventory = {
         "iron-plate": 50,
         "coal": 100,
@@ -238,14 +177,6 @@ def test_chest_inventory():
         "iron-ore": 10,
     }
 
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=27000,
-        fast=True,
-        # cache_scripts=False,
-        inventory=inventory,
-    )
     test_string = """
 # Check initial inventory
 iron_position = nearest(Resource.Stone)
@@ -259,12 +190,12 @@ insert_item(Prototype.Coal, chest, 5)
 chests = get_entities()
 print(chests)
 """
-    score, goal, result = instance.eval_with_error(test_string, timeout=60)
+    score, goal, result = game.eval_with_error(test_string, timeout=60)
 
     pass
 
 
-def test_try_catch():
+def test_try_catch(game: FactorioInstance):
     inventory = {
         "iron-plate": 50,
         "coal": 100,
@@ -283,14 +214,6 @@ def test_try_catch():
         "iron-ore": 10,
     }
 
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=27000,
-        fast=True,
-        # cache_scripts=False,
-        inventory=inventory,
-    )
     test_string = """
 try:
     if inspect_inventory().get(Prototype.AssemblingMachine1, 0) > 0:
@@ -302,15 +225,12 @@ try:
 except Exception as e:
     print(f"Failed placing Assembling Machine: {e}")
     """
-    score, goal, result = instance.eval_with_error(test_string, timeout=60)
+    score, goal, result = game.eval_with_error(test_string, timeout=60)
 
     pass
 
 
-def test_type_annotations_mixed_depth_prints():
-    instance = FactorioInstance(
-        address="localhost", bounding_box=200, tcp_port=27000, fast=True
-    )
+def test_type_annotations_mixed_depth_prints(game: FactorioInstance):
     # cache_scripts=False,
     test_string = """
 print("Re-evaluating precise point harvest attempts.")
@@ -329,12 +249,12 @@ for dx in [-1, 0, 1]:
             print(f"Failed at {trial_position}: {e}")
 
 """
-    score, goal, result = instance.eval_with_error(test_string, timeout=60)
+    score, goal, result = game.eval_with_error(test_string, timeout=60)
 
     pass
 
 
-def test_mixed_hard():
+def test_mixed_hard(game: FactorioInstance):
     inventory = {
         "iron-plate": 50,
         "coal": 100,
@@ -353,13 +273,6 @@ def test_mixed_hard():
         "iron-ore": 10,
     }
 
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=27000,
-        fast=True,
-        inventory=inventory,
-    )
     # cache_scripts=False,
     test_string = """
 # Move to the center of the valid stone patch
@@ -411,12 +324,12 @@ else:
 produced_iron_plates = extract_item(Prototype.IronPlate, furnace.position, quantity=10)
 assert produced_iron_plates == 10, f"Expected 10 iron plates, but got {produced_iron_plates}."
 """
-    score, goal, result = instance.eval_with_error(test_string, timeout=60)
+    score, goal, result = game.eval_with_error(test_string, timeout=60)
 
     pass
 
 
-def test_mixed_hard2():
+def test_mixed_hard2(game: FactorioInstance):
     inventory = {
         "iron-plate": 50,
         "coal": 100,
@@ -435,13 +348,6 @@ def test_mixed_hard2():
         "iron-ore": 10,
     }
 
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=27000,
-        fast=True,
-        inventory=inventory,
-    )
     # cache_scripts=False,
     test_string = """
 # Specify the drill drop position
@@ -483,7 +389,7 @@ try:
 except Exception as e_map_error:
     print(f"Error verifying map entities: {e_map_error}")
 """
-    score, goal, result = instance.eval_with_error(test_string, timeout=60)
+    score, goal, result = game.eval_with_error(test_string, timeout=60)
 
     pass
 

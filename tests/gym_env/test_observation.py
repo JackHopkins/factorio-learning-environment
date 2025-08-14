@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 from fle.env.gym_env.environment import FactorioGymEnv
 from fle.env.gym_env.action import Action
 

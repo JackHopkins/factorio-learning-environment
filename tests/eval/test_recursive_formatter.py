@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 import unittest
 import tempfile
 import shutil

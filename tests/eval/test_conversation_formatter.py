@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 import unittest
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message

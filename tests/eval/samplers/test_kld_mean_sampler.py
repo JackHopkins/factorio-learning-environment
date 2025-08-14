@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 import unittest
 from unittest.mock import Mock, patch
 from collections import Counter

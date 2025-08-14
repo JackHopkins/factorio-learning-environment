@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 from pydantic import BaseModel
 from fle.env.game import FactorioInstance
 from fle.env.game.game_state import GameState

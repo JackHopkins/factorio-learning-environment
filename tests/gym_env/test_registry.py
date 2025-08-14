@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 #!/usr/bin/env python3
 """
 Test script for the Factorio Gym Registry

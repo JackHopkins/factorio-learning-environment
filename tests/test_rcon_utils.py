@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 import pytest
 
 from fle.services.rcon import _lua2python

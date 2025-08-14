@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 import pytest
 
 from fle.commons.cluster_ips import get_local_container_ips
@@ -8,7 +9,7 @@ from fle.env.game.game_state import GameState
 
 
 @pytest.fixture()
-def game(instance: FactorioInstance):
+def game(unresearched_instance: FactorioInstance):
     initial_inventory = {
         "coal": 50,
         "copper-plate": 50,
@@ -27,17 +28,9 @@ def game(instance: FactorioInstance):
         "lab": 1,
         "automation-science-pack": 10,
     }
-    ips, udp_ports, tcp_ports = get_local_container_ips()
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=tcp_ports[-1],
-        fast=True,
-        all_technologies_researched=False,
-        inventory=initial_inventory,
-    )
-    instance.reset()
-    yield instance.namespace
+    unresearched_instance.reset()
+    unresearched_instance.set_inventory(initial_inventory)
+    yield unresearched_instance.namespace
 
 
 def test_craft_automation_packs_and_research(game):

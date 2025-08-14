@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 import unittest
 
 from fle.agents.llm.parsing import PythonParser

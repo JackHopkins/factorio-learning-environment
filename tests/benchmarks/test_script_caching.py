@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 import time
 from statistics import fmean
 import cProfile

@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 import pytest
 
 from fle.commons.cluster_ips import get_local_container_ips
@@ -18,16 +19,9 @@ from fle.env.game import FactorioInstance
 
 
 @pytest.fixture()
-def game():
-    ips, udp_ports, tcp_ports = get_local_container_ips()
-
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=tcp_ports[-1],
-        cache_scripts=False,
-        fast=True,
-        inventory={
+def game(instance: FactorioInstance):
+    instance.reset()
+    instance.set_inventory({
             "coal": 50,
             "copper-plate": 50,
             "iron-plate": 50,
@@ -58,7 +52,7 @@ def game():
     yield instance.namespace
 
 
-def test_nearest_buildable_simple(game):
+def test_nearest_buildable_simple(game: FactorioInstance):
     """
     Test finding a buildable position for a simple entity like a wooden chest
     without a bounding box.
@@ -75,7 +69,7 @@ def test_nearest_buildable_simple(game):
     assert can_build is True
 
 
-def test_nearest_buildable_near_water(game):
+def test_nearest_buildable_near_water(game: FactorioInstance):
     """
     Test finding a buildable position for a simple entity like a wooden chest
     without a bounding box.
@@ -100,7 +94,7 @@ def test_nearest_buildable_near_water(game):
     assert True, "The steam engine should be placeable due to the bounding box"
 
 
-def test_nearest_buildable_prototype_dimensions(game):
+def test_nearest_buildable_prototype_dimensions(game: FactorioInstance):
     """
     Test finding a buildable position for an entity with prototype dimensions.
     """
@@ -110,7 +104,7 @@ def test_nearest_buildable_prototype_dimensions(game):
     assert True
 
 
-def test_nearest_buildable_mining_drill(game):
+def test_nearest_buildable_mining_drill(game: FactorioInstance):
     """
     Test finding a buildable position for an electric mining drill with a bounding box
     over an ore patch.
@@ -152,7 +146,7 @@ def test_nearest_buildable_mining_drill(game):
     )
 
 
-def test_nearest_buildable_invalid_position(game):
+def test_nearest_buildable_invalid_position(game: FactorioInstance):
     """
     Test that nearest_buildable raises an exception when no valid position
     is found within search radius.
@@ -170,7 +164,7 @@ def test_nearest_buildable_invalid_position(game):
         assert "Could not find a buildable position" in str(exc_info.value)
 
 
-def test_nearest_buildable_multiple_entities(game):
+def test_nearest_buildable_multiple_entities(game: FactorioInstance):
     """
     Test finding buildable positions for multiple entities of the same type
     ensuring they don't overlap.
@@ -208,7 +202,7 @@ def test_nearest_buildable_multiple_entities(game):
         assert can_build is True
 
 
-def test_nearest_buildable_relative_to_player(game):
+def test_nearest_buildable_relative_to_player(game: FactorioInstance):
     """
     Test that nearest_buildable finds positions relative to player location.
     """
@@ -229,7 +223,7 @@ def test_nearest_buildable_relative_to_player(game):
     assert distance <= 50  # Within max search radius
 
 
-def test_nearest_buildable_with_obstacles(game):
+def test_nearest_buildable_with_obstacles(game: FactorioInstance):
     """
     Test finding buildable position when there are obstacles in the way.
     """
@@ -254,7 +248,7 @@ def test_nearest_buildable_with_obstacles(game):
         assert position is not obstacle_pos
 
 
-def test_drill_groups(game):
+def test_drill_groups(game: FactorioInstance):
     # Find iron ore patch
     iron_ore_pos = game.nearest(Resource.IronOre)
     print(f"Found iron ore patch at {iron_ore_pos}")
@@ -285,7 +279,7 @@ def test_drill_groups(game):
     assert len(entities) == 3
 
 
-def test_nearest_buildable_pumpjack(game):
+def test_nearest_buildable_pumpjack(game: FactorioInstance):
     # Find crude oil patch
     crude_oil_pos = game.nearest(Resource.CrudeOil)
     print(f"Found crude oil patch at {crude_oil_pos}")

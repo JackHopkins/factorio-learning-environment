@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 import pytest
 from time import sleep
 from fle.env.game.entities import Position, ResourcePatch, Direction

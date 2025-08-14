@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 import pytest
 
 from fle.env.game.entities import Position, Direction
@@ -11,7 +12,7 @@ def game(instance: FactorioInstance):
     instance.reset()
 
 
-def test_can_place(instance):
+def test_can_place(game):
     """
     Place a boiler at (0, 0)
     :param game:

@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 import unittest
 from dataclasses import dataclass
 from typing import Optional

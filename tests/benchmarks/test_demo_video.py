@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 # import json
 # import time
 

@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 from time import sleep
 
 import pytest

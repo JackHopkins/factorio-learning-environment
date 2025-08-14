@@ -1,3 +1,4 @@
+from fle.env.game import FactorioInstance
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
 from fle.env.gym_env.observation import Observation, GameInfo, AgentMessage
 from fle.commons.models.achievements import ProductionFlows

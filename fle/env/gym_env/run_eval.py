@@ -75,7 +75,6 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
 async def main(run_config, offset):
     # Read and validate run configurations
     run_config = get_validated_run_configs(run_config)
-    pkg = importlib.resources.files("fle")
     # Get starting version number for new runs
     base_version = await get_next_version()
     version_offset = 0
@@ -88,7 +87,7 @@ async def main(run_config, offset):
         if env_info is None:
             raise ValueError(f"Could not get environment info for {run_config.env_id}")
         task = TaskFactory.create_task(env_info["task_config_path"])
-        generator = SystemPromptGenerator(str(pkg / "env"))
+        generator = SystemPromptGenerator(str(importlib.resources.files("fle") / "env"))
         # Create agents and their agent cards
         agents = []
         agent_cards = []

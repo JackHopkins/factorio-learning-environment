@@ -1,11 +1,12 @@
 {
-  "task_type": "throughput",
-  "num_agents": 1,
-  "goal_description": "Create an automatic iron plate factory that produces 16 iron plate per 60 ingame seconds.",
-  "throughput_entity": "iron-plate",
-  "quota": 16,
-  "trajectory_length": 128,
-  "holdout_wait_period": 60,
-  "pre_holdout_wait_period": 60,
-  "task_key": "iron_plate_throughput"
+    "task_type": "throughput",
+    "config": {
+        "goal_description":"Create an automatic iron plate factory that produces 16 iron plate per 60 ingame seconds.",
+        "throughput_entity":"iron-plate",
+        "quota":16,
+        "trajectory_length": 128,
+        "holdout_wait_period": 60,
+        "pre_holdout_wait_period": 60,
+        "task_key": "iron_plate_throughput"
+    }
 }

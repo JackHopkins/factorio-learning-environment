@@ -1,11 +1,14 @@
-{
-  "task_type": "throughput",
-  "num_agents": 1,
-  "goal_description": "Create an automatic battery factory that produces 16 battery per 60 ingame seconds.",
-  "throughput_entity": "battery",
-  "quota": 16,
-  "trajectory_length": 128,
-  "holdout_wait_period": 60,
-  "pre_holdout_wait_period": 60,
-  "task_key": "battery_throughput"
+
+{                          
+    "task_type": "throughput",
+    "config":
+    {  
+        "goal_description":"Create an automatic battery factory that produces 16 battery per 60 ingame seconds.",
+        "throughput_entity":"battery",
+        "quota":16,
+        "trajectory_length": 128,
+        "holdout_wait_period": 60,
+        "pre_holdout_wait_period": 60,
+        "task_key": "battery_throughput"
+    }
 }

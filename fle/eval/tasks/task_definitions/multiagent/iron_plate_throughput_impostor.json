@@ -10,7 +10,8 @@
         "trajectory_length": 16,
         "holdout_wait_period": 60,
         "pre_holdout_wait_period": 60,
-        "task_key": "iron_plate_throughput_unbounded_steps_show_steps_false",
+        "task_key": "iron_plate_throughput_multiagent_impostor",
+        "num_agents": 2,
         "show_number_of_steps_left_in_prompt": false}
 
 }

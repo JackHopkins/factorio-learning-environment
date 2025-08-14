@@ -142,7 +142,7 @@ def make_factorio_env(env_spec: GymEnvironmentSpec) -> FactorioGymEnv:
             container_id=0,  # Use first container
             num_agents=env_spec.num_agents,
         )
-        instance.speed(10)
+        instance.set_speed(10)
 
         # Setup the task
         task.setup(instance)

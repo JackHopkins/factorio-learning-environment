@@ -301,4 +301,4 @@ Run the test suite to verify the registry is working correctly:
 python env/tests/gym_env/test_registry.py
 ```
 
-This registry system provides a clean, standardized interface for working with Factorio gym environments, making it easy to experiment with different tasks and integrate with existing gym-based frameworks. 
+This registry system provides a clean, standardized interface for working with Factorio gym environments, making it easy to experiment with different tasks and integrate with existing gym-based frameworks.

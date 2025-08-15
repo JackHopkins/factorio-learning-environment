@@ -1,5 +1,6 @@
 from __future__ import annotations
 import enum
+import json
 from difflib import get_close_matches
 from fle.env import entities as ent
 
@@ -78,6 +79,79 @@ class RecipeName(enum.Enum):
     EmptyPetroleumGasBarrel = "empty-petroleum-gas-barrel"
     EmptySulfuricAcidBarrel = "empty-sulfuric-acid-barrel"
     EmptyWaterBarrel = "empty-water-barrel"
+
+
+class PrototypeJSONEncoder(json.JSONEncoder):
+    """Custom JSON encoder for Prototype objects and Pydantic BaseModel instances."""
+
+    def default(self, obj):
+        # Import here to avoid circular imports
+        from pydantic import BaseModel
+
+        if isinstance(obj, Prototype):
+            return obj.to_dict()
+        elif isinstance(obj, BaseModel):
+            # Handle Pydantic BaseModel instances (like Position)
+            return {
+                "__pydantic__": True,
+                "model": obj.__class__.__name__,
+                "data": obj.model_dump(),
+            }
+        return super().default(obj)
+
+
+def prototype_json_hook(dct):
+    """JSON decode hook for Prototype objects and Pydantic BaseModel instances."""
+    if isinstance(dct, dict):
+        if dct.get("__prototype__"):
+            return Prototype.from_dict(dct)
+        elif dct.get("__pydantic__"):
+            # Handle Pydantic BaseModel instances
+            model_name = dct["model"]
+            data = dct["data"]
+
+            # Map model names to classes
+            if model_name == "Position":
+                return ent.Position(**data)
+            elif model_name == "BoundingBox":
+                return ent.BoundingBox(**data)
+            # Add more model mappings as needed
+            else:
+                # Fallback: return the data dict for unknown models
+                return data
+    return dct
+
+
+def encode_prototypes(obj):
+    """Encode objects containing Prototypes and Pydantic models to JSON string."""
+    return json.dumps(obj, cls=PrototypeJSONEncoder)
+
+
+def decode_prototypes(json_str):
+    """Decode JSON string back to objects with Prototypes and Pydantic models."""
+    return json.loads(json_str, object_hook=prototype_json_hook)
+
+
+def encode_prototypes_safe(obj):
+    """Safely encode objects that might contain Prototypes and Pydantic models."""
+    try:
+        return json.dumps(obj, cls=PrototypeJSONEncoder)
+    except (TypeError, ValueError):
+        # Fallback: convert complex objects to their string representation
+        from pydantic import BaseModel
+
+        def convert_objects(item):
+            if isinstance(item, Prototype):
+                return str(item)
+            elif isinstance(item, BaseModel):
+                return item.model_dump()
+            elif isinstance(item, dict):
+                return {k: convert_objects(v) for k, v in item.items()}
+            elif isinstance(item, (list, tuple)):
+                return type(item)(convert_objects(i) for i in item)
+            return item
+
+        return json.dumps(convert_objects(obj))
 
 
 class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
@@ -226,6 +300,19 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
         self.prototype_name = prototype_name
         self.entity_class = entity_class_name
 
+    def __reduce_ex__(self, protocol):
+        """Enable pickling/JSON serialization by returning the prototype name."""
+        return (self.__class__._prototype_reconstructor, (self.name,))
+
+    @classmethod
+    def _prototype_reconstructor(cls, name):
+        """Reconstruct a Prototype instance from its name."""
+        return getattr(cls, name)
+
+    def __str__(self):
+        """Return the prototype name for string representation."""
+        return self.prototype_name
+
     @property
     def WIDTH(self):
         return self.entity_class._width.default  # Access the class attribute directly
@@ -233,6 +320,42 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     @property
     def HEIGHT(self):
         return self.entity_class._height.default
+
+    def __json__(self):
+        """Custom JSON serialization method."""
+        return {
+            "__prototype__": True,
+            "name": self.name,
+            "prototype_name": self.prototype_name,
+        }
+
+    @classmethod
+    def from_json(cls, data):
+        """Create a Prototype instance from JSON data."""
+        if isinstance(data, dict) and data.get("__prototype__"):
+            prototype_name = data["name"]
+            # Look up the prototype by name
+            for prototype in cls:
+                if prototype.name == prototype_name:
+                    return prototype
+            raise ValueError(f"Unknown prototype name: {prototype_name}")
+        return data
+
+    def to_dict(self):
+        """Convert to a simple dictionary for JSON serialization."""
+        return {
+            "__prototype__": True,
+            "name": self.name,
+            "prototype_name": self.prototype_name,
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        """Create a Prototype instance from a dictionary."""
+        if isinstance(data, dict) and data.get("__prototype__"):
+            name = data["name"]
+            return getattr(cls, name)
+        return data
 
 
 prototype_by_name = {prototype.value[0]: prototype for prototype in Prototype}

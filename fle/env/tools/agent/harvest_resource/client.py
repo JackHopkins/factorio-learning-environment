@@ -15,11 +15,15 @@ class HarvestResource(Tool):
         self.nearest = Nearest(connection, game_state)
         self.get_entity = GetEntity(connection, game_state)
 
-    def __call__(self, position: Position, quantity=1, radius=10) -> int:
+    def __call__(
+        self, position: Position, quantity=1, radius=10, tick: int = None
+    ) -> int:
         """
         Harvest a resource at position (x, y) if it exists on the world.
         :param position: Position to harvest resource
         :param quantity: Quantity to harvest
+        :param radius: Radius to search for resources
+        :param tick: Game tick to execute this command at (for batch mode)
         :example harvest_resource(nearest(Resource.Coal), 5)
         :example harvest_resource(nearest(Resource.Stone), 5)
         :return: The quantity of the resource harvested
@@ -38,7 +42,14 @@ class HarvestResource(Tool):
 
         # Now we attempt to harvest.
         # In fast mode, this will always be successful (because we don't check if the resource is reachable)
-        response, elapsed = self.execute(self.player_index, x, y, quantity, radius)
+        response, elapsed = self.execute_or_batch(
+            tick, self.player_index, x, y, quantity, radius
+        )
+
+        # Check if we're in batch mode - if so, return early without processing response
+        if isinstance(response, dict) and response.get("batched"):
+            # In batch mode, return expected quantity as placeholder
+            return quantity
 
         if response != {} and response == 0 or isinstance(response, str):
             msg = response.split(":")[-1].strip()

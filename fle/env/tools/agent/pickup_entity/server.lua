@@ -144,7 +144,7 @@ global.actions.pickup_entity = function(player_index, x, y, entity)
 
     if not success then
         if #player_entities == 0 and #ground_items == 0 then
-            error("Couldn't find "..entity.." at position ("..x..", "..y..") to pick up.")
+            error("Could not find "..entity.." at position ("..x..", "..y..") to pick up.")
         else
             error("Could not pick up "..entity)
         end

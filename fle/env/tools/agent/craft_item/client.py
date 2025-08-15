@@ -10,11 +10,12 @@ class CraftItem(Tool):
         super().__init__(connection, game_state)
         self.inspect_inventory = InspectInventory(connection, game_state)
 
-    def __call__(self, entity: Prototype, quantity: int = 1) -> int:
+    def __call__(self, entity: Prototype, quantity: int = 1, tick: int = None) -> int:
         """
         Craft an item from a Prototype if the ingredients exist in your inventory.
         :param entity: Entity to craft
         :param quantity: Quantity to craft
+        :param tick: Game tick to execute this command at (for batch mode)
         :return: Number of items crafted
         """
 
@@ -27,7 +28,15 @@ class CraftItem(Tool):
         if not self.game_state.instance.fast:
             count_in_inventory = self.inspect_inventory()[entity]
 
-        success, elapsed = self.execute(self.player_index, name, quantity)
+        success, elapsed = self.execute_or_batch(
+            tick, self.player_index, name, quantity
+        )
+
+        # Check if we're in batch mode - if so, return early without processing response
+        if isinstance(success, dict) and success.get("batched"):
+            # In batch mode, return expected quantity as placeholder
+            return quantity
+
         if success != {} and isinstance(success, str):
             if success is None:
                 raise Exception(

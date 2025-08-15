@@ -121,6 +121,7 @@ class APIFactory:
                 presence_penalty=kwargs.get("presence_penalty"),
                 frequency_penalty=kwargs.get("frequency_penalty"),
                 stream=False,
+                usage={"include": True},
             )
 
         # Track reasoning tokens if available

@@ -39,8 +39,8 @@ def main():
     parser.add_argument(
         "--concurrency",
         type=int,
-        default=1,
-        help="Max number of runs to execute in parallel when --run is provided",
+        default=None,
+        help="Max number of runs to execute in parallel when --run is provided (default: detected container count)",
     )
     args = parser.parse_args()
 
@@ -51,6 +51,19 @@ def main():
 
     # Auto-load environment variables from the repo's .env
     load_dotenv(dotenv_path=repo_root / ".env")
+
+    # Detect number of running Factorio containers (for offset cycling and default concurrency)
+    num_containers = 1
+    try:
+        from fle.commons.cluster_ips import get_local_container_ips  # type: ignore
+
+        result = get_local_container_ips()
+        if isinstance(result, tuple) and len(result) == 3:
+            _, _, tcp_ports = result
+            if isinstance(tcp_ports, list) and len(tcp_ports) > 0:
+                num_containers = len(tcp_ports)
+    except Exception:
+        num_containers = 1
 
     # Discover planned runs (env_id, model) pairs from configs
     planned_counts: dict[tuple[str, str], int] = defaultdict(int)
@@ -185,7 +198,10 @@ def main():
         print(
             f"uv run -m fle.run eval --config '{cfg}' --offset 0  # repeat {rem} times"
         )
-        for job_idx in range(rem):
+        job_idx = 0
+        for _ in range(rem):
+            # Cycle offsets 0..(num_containers-1)
+            offset = job_idx % max(1, num_containers)
             cmd = [
                 "uv",
                 "run",
@@ -195,7 +211,7 @@ def main():
                 "--config",
                 cfg,
                 "--offset",
-                "0",
+                str(offset),
             ]
             # Per-job environment overrides (round-robin across available keys)
             env = os.environ.copy()
@@ -230,19 +246,21 @@ def main():
                     "log_path": str(log_path),
                 }
             )
+            job_idx += 1
 
     print(f"\nTotal remaining: {remaining}")
 
     if args.run and commands:
+        effective_concurrency = args.concurrency or max(1, num_containers)
         print(
-            f"\nExecuting {len(commands)} runs with concurrency={args.concurrency}..."
+            f"\nExecuting {len(commands)} runs with concurrency={effective_concurrency}..."
         )
         print(f"Logs: {resume_log_dir}")
         active: list[tuple[subprocess.Popen, object]] = []
         idx = 0
         while idx < len(commands) or active:
             # Start new processes up to concurrency limit
-            while idx < len(commands) and len(active) < max(1, args.concurrency):
+            while idx < len(commands) and len(active) < max(1, effective_concurrency):
                 job = commands[idx]
                 log_fh = open(job["log_path"], "ab")
                 proc = subprocess.Popen(

@@ -25,7 +25,7 @@ def parse_version_description(desc: str) -> dict:
 def main():
     repo_root = Path(__file__).resolve().parent
     print(repo_root)
-    cfg_glob = str(repo_root / ".fle" / "[1-7]" / "labplay*.json")
+    cfg_glob = str(repo_root / ".fle" / "*" / "labplay*.json")
     print(cfg_glob)
 
     # Discover planned runs (env_id, model) pairs from configs

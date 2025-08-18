@@ -140,7 +140,7 @@ Agents interact with **FLE** by code synthesis through a **REPL** (Read-Eval-Pri
 # 1. Get iron patch and place mining drill
 drill = place_entity(
     entity=Prototype.MiningDrill,
-    position=nearest(Prototype.IronOre)),
+    position=nearest(Resource.IronOre),
     direction=Direction.NORTH
 )
 # 2. Add output storage

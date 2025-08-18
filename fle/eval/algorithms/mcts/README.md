@@ -4,9 +4,10 @@ Monte Carlo Tree Search (MCTS) implementations for creating automated factories 
 
 ## Overview
 
-This implementation uses MCTS to explore the space of possible Factorio automation trajectories. 
+This implementation uses MCTS to explore the space of possible Factorio automation trajectories.
 
 Unlike traditional MCTS which explores discrete action spaces, this version:
+
 1. Uses LLMs to generate Python programs that execute against the game environment.
 2. Maintains dialogue between the LLM and game environment
 3. Evaluates programs in parallel across multiple Factorio instances
@@ -16,12 +17,14 @@ Unlike traditional MCTS which explores discrete action spaces, this version:
 ## Algorithm
 
 The core algorithm is structured as follows:
+
 1. **Initialization**: Set up the initial game state and LLM.
 2. **Tree Expansion**: Generate new programs using the LLM.
 3. **Simulation**: Execute each program in parallel and compute their values.
 4. **Selection**: Choose the best program based on its value.
 
 Programs are selected based on:
+
 - **Relative advantage** against a holdout instance during execution (i.e did they do a better job than a program that does nothing but wait)
 - **Diversity of game state**. We calculate the divergence between the current game state and the game state of successful programs. This is calculated by comparing the number of unique entities produced and consumed both statically (manually) and dynamically (automatically).
 
@@ -34,7 +37,9 @@ Programs are selected based on:
 ## Core Components
 
 ### GameState
+
 Handles serialization and deserialization of Factorio game state:
+
 ```python
 @dataclass
 class GameState:
@@ -44,7 +49,9 @@ class GameState:
 ```
 
 ### Conversation
+
 Manages dialogue context between LLM and environment:
+
 ```python
 @dataclass
 class Conversation:
@@ -52,7 +59,9 @@ class Conversation:
 ```
 
 ### Program
+
 Represents a candidate solution with its context:
+
 ```python
 @dataclass
 class Program:
@@ -64,10 +73,12 @@ class Program:
 ```
 
 ### FactorioEvaluator
+
 Handles parallel program evaluation:
+
 ```python
 class FactorioEvaluator:
-    def evaluate_programs(self, 
+    def evaluate_programs(self,
                          programs: List[Program],
                          timeout: int) -> Tuple[List[float], List[GameState], List[str]]
 ```
@@ -75,6 +86,7 @@ class FactorioEvaluator:
 ## Usage
 
 1. Initialize Factorio instances:
+
 ```python
 instances = [
     FactorioInstance(
@@ -89,6 +101,7 @@ instances = [
 ```
 
 2. Setup MCTS components:
+
 ```python
 llm = LLMFactory("anthropic/claude-3-opus-20240229")
 evaluator = FactorioEvaluator(instances)
@@ -97,6 +110,7 @@ mcts = MCTS(llm, evaluator, initial_state)
 ```
 
 3. Run search:
+
 ```python
 best_programs = await mcts.search(
     n_iterations=100,
@@ -108,21 +122,25 @@ best_programs = await mcts.search(
 ## Key Features
 
 ### Parallel Evaluation
+
 - Programs are evaluated across multiple Factorio instances
 - One instance is held out for computing relative advantages
 - Helps normalize rewards across different game states
 
 ### Dialogue Management
+
 - Maintains conversation history between LLM and environment
 - Includes game state updates and execution results
 - Helps LLM learn from previous attempts
 
 ### Program Selection
+
 - Uses softmax over rewards for parent selection
 - Balances exploration and exploitation
 - Maintains diversity in program population
 
 ### State Tracking
+
 - Serializes complete game state after each program
 - Tracks entity positions and properties
 - Maintains inventory state
@@ -137,19 +155,23 @@ best_programs = await mcts.search(
 ## Implementation Details
 
 ### LLM Integration
+
 - Supports multiple LLM providers (Anthropic, OpenAI, DeepSeek)
 - Handles different response formats
 - Manages conversation context and message formatting
 
 ### Program Execution
+
 ```python
 reward, result, response = instance.eval(program.code, timeout=timeout)
 ```
+
 - Returns reward (factory growth metric)
 - Captures execution output
 - Handles timeouts and errors
 
 ### State Management
+
 ```python
 @classmethod
 def from_instance(cls, instance: 'FactorioInstance') -> 'GameState':
@@ -158,6 +180,7 @@ def from_instance(cls, instance: 'FactorioInstance') -> 'GameState':
         inventory=instance.inspect_inventory()
     )
 ```
+
 - Captures complete game state
 - Handles serialization for storage/analysis
 - Maintains entity and inventory state

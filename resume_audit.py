@@ -6,6 +6,9 @@ from collections import defaultdict
 from typing import Dict, Tuple
 
 from dotenv import load_dotenv
+import argparse
+import subprocess
+import time
 
 try:
     import psycopg2  # type: ignore
@@ -25,6 +28,22 @@ def parse_version_description(desc: str) -> dict:
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Audit and optionally resume pending runs"
+    )
+    parser.add_argument(
+        "--run",
+        action="store_true",
+        help="Execute pending runs instead of only printing suggestions",
+    )
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=1,
+        help="Max number of runs to execute in parallel when --run is provided",
+    )
+    args = parser.parse_args()
+
     repo_root = Path(__file__).resolve().parent
     print(repo_root)
     cfg_glob = str(repo_root / ".fle" / "*" / "labplay*.json")
@@ -131,6 +150,7 @@ def main():
             print(f"- {env_id} | {model}: {done}/{planned} done, {rem} remaining")
 
     print("\nSuggested resume commands (aggregate counts):")
+    commands: list[list[str]] = []
     for key, planned in planned_counts.items():
         done = completed_counts.get(key, 0)
         rem = max(0, planned - done)
@@ -144,8 +164,45 @@ def main():
         print(
             f"uv run -m fle.run eval --config '{cfg}' --offset 0  # repeat {rem} times"
         )
+        for _ in range(rem):
+            commands.append(
+                [
+                    "uv",
+                    "run",
+                    "-m",
+                    "fle.run",
+                    "eval",
+                    "--config",
+                    cfg,
+                    "--offset",
+                    "0",
+                ]
+            )
 
     print(f"\nTotal remaining: {remaining}")
+
+    if args.run and commands:
+        print(
+            f"\nExecuting {len(commands)} runs with concurrency={args.concurrency}..."
+        )
+        active: list[subprocess.Popen] = []
+        idx = 0
+        while idx < len(commands) or active:
+            # Start new processes up to concurrency limit
+            while idx < len(commands) and len(active) < max(1, args.concurrency):
+                cmd = commands[idx]
+                proc = subprocess.Popen(cmd, cwd=str(repo_root))
+                active.append(proc)
+                idx += 1
+            # Poll and remove finished
+            still_active: list[subprocess.Popen] = []
+            for p in active:
+                ret = p.poll()
+                if ret is None:
+                    still_active.append(p)
+            active = still_active
+            if active:
+                time.sleep(1)
 
 
 if __name__ == "__main__":

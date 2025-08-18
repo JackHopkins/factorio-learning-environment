@@ -1,7 +1,6 @@
 import glob
 import json
 import os
-import re
 from collections import defaultdict
 from typing import Dict, Tuple
 
@@ -44,88 +43,57 @@ def main():
             if cfg_path not in config_map[key]:
                 config_map[key].append(cfg_path)
 
-    # Completed runs from DB (distinct versions)
+    # Completed runs from Postgres (distinct versions)
     completed_counts: Dict[Tuple[str, str], int] = defaultdict(int)
     versions: set[int] = set()
 
-    # Prefer Postgres if configured
-    use_pg = os.getenv("FLE_DB_TYPE", "sqlite").lower() == "postgres"
-    pg_vars = [
-        os.getenv("SKILLS_DB_HOST"),
-        os.getenv("SKILLS_DB_PORT"),
-        os.getenv("SKILLS_DB_NAME"),
-        os.getenv("SKILLS_DB_USER"),
-        os.getenv("SKILLS_DB_PASSWORD"),
+    # Require Postgres; no fallbacks
+    required = [
+        "SKILLS_DB_HOST",
+        "SKILLS_DB_PORT",
+        "SKILLS_DB_NAME",
+        "SKILLS_DB_USER",
+        "SKILLS_DB_PASSWORD",
     ]
-    if use_pg and all(pg_vars) and psycopg2 is not None:
-        try:
-            conn = psycopg2.connect(
-                host=os.getenv("SKILLS_DB_HOST"),
-                port=os.getenv("SKILLS_DB_PORT"),
-                dbname=os.getenv("SKILLS_DB_NAME"),
-                user=os.getenv("SKILLS_DB_USER"),
-                password=os.getenv("SKILLS_DB_PASSWORD"),
-            )
-            cur = conn.cursor()
-            cur.execute(
-                """
-                SELECT DISTINCT version, COALESCE(version_description, ''), COALESCE(model, '')
-                FROM programs
-                WHERE version IS NOT NULL
-                """
-            )
-            for version, version_description, model in cur.fetchall():
-                meta = parse_version_description(version_description)
-                task_key = meta.get("type")
-                if task_key:
-                    completed_counts[(task_key, model)] += 1
-                    versions.add(int(version))
-            cur.close()
-            conn.close()
-        except Exception:
-            pass
+    missing = [k for k in required if not os.getenv(k)]
+    if missing:
+        raise SystemExit(
+            f"Missing Postgres env vars: {', '.join(missing)}. Set them and re-run."
+        )
 
-    # Fallback: derive completed from log folders when DB is missing/unused
-    if not completed_counts:
-        logs_root = os.path.join(repo_root, ".fle", "trajectory_logs")
-        if os.path.isdir(logs_root):
-            for name in os.listdir(logs_root):
-                if not re.match(r"^v\d+$", name):
-                    continue
-                run_dir = os.path.join(logs_root, name)
-                prompt_path = os.path.join(run_dir, "agent0_system_prompt.txt")
-                if not os.path.exists(prompt_path):
-                    continue
-                try:
-                    with open(prompt_path, "r") as f:
-                        # Read a small header window
-                        head_lines = []
-                        for _ in range(20):
-                            line = f.readline()
-                            if not line:
-                                break
-                            head_lines.append(line)
-                        head = "".join(head_lines)
-                except Exception:
-                    continue
-                m = re.search(
-                    r"Create an automatic\s+([^\n]+?)\s+factory", head, re.IGNORECASE
-                )
-                if not m:
-                    continue
-                item = m.group(1).strip()
-                slug = item.lower().replace(" ", "-")
-                env_id = f"{slug}_throughput"
-                matched = False
-                for planned_env, model in list(planned_counts.keys()):
-                    if planned_env == env_id:
-                        completed_counts[(env_id, model)] += 1
-                        matched = True
-                if matched:
-                    try:
-                        versions.add(int(name[1:]))
-                    except Exception:
-                        pass
+    if psycopg2 is None:
+        raise SystemExit("psycopg2 not available. Install it to query Postgres.")
+
+    # Query Postgres for completions and max version
+    conn = psycopg2.connect(
+        host=os.getenv("SKILLS_DB_HOST"),
+        port=os.getenv("SKILLS_DB_PORT"),
+        dbname=os.getenv("SKILLS_DB_NAME"),
+        user=os.getenv("SKILLS_DB_USER"),
+        password=os.getenv("SKILLS_DB_PASSWORD"),
+    )
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT DISTINCT version, COALESCE(version_description, ''), COALESCE(model, '')
+        FROM programs
+        WHERE version IS NOT NULL
+        """
+    )
+    for version, version_description, model in cur.fetchall():
+        meta = parse_version_description(version_description)
+        task_key = meta.get("type")
+        if task_key:
+            completed_counts[(task_key, model)] += 1
+            versions.add(int(version))
+
+    cur.execute("SELECT MAX(version) FROM programs")
+    row = cur.fetchone()
+    max_version = int(row[0]) if row and row[0] is not None else 0
+    cur.close()
+    conn.close()
+
+    # No fallbacks: completed_counts is solely derived from Postgres
 
     total_planned = sum(planned_counts.values())
     total_completed = sum(
@@ -139,6 +107,7 @@ def main():
         print(
             f"Version range present: v{min(versions)}..v{max(versions)} (n={len(versions)})"
         )
+    print(f"Max version in DB: v{max_version}; next start: v{max_version + 1}")
 
     print("\nPer (env_id, model) remaining:")
     per_line = []

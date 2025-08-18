@@ -1,6 +1,7 @@
 import glob
 import json
 import os
+from pathlib import Path
 from collections import defaultdict
 from typing import Dict, Tuple
 
@@ -22,8 +23,10 @@ def parse_version_description(desc: str) -> dict:
 
 
 def main():
-    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-    cfg_glob = os.path.join(repo_root, ".fle", "[1-7]", "labplay*.json")
+    repo_root = Path(__file__).resolve().parent
+    print(repo_root)
+    cfg_glob = str(repo_root / ".fle" / "[1-7]" / "labplay*.json")
+    print(cfg_glob)
 
     # Discover planned runs (env_id, model) pairs from configs
     planned_counts: dict[tuple[str, str], int] = defaultdict(int)

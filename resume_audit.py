@@ -150,7 +150,28 @@ def main():
             print(f"- {env_id} | {model}: {done}/{planned} done, {rem} remaining")
 
     print("\nSuggested resume commands (aggregate counts):")
-    commands: list[list[str]] = []
+    # Prepare key pools for per-process env injection
+    openrouter_keys = [
+        os.getenv(f"OPEN_ROUTER_API_KEY{i}")
+        for i in range(1, 5)
+        if os.getenv(f"OPEN_ROUTER_API_KEY{i}")
+    ] or (
+        [os.getenv("OPEN_ROUTER_API_KEY")] if os.getenv("OPEN_ROUTER_API_KEY") else []
+    )
+    anthropic_keys = [
+        os.getenv(f"ANTHROPIC_API_KEY{i}")
+        for i in range(1, 4)
+        if os.getenv(f"ANTHROPIC_API_KEY{i}")
+    ] or ([os.getenv("ANTHROPIC_API_KEY")] if os.getenv("ANTHROPIC_API_KEY") else [])
+
+    # Build job list with per-run env and log path metadata
+    commands: list[dict] = []
+    resume_log_dir = (
+        repo_root / ".fle" / "logs" / "resume" / time.strftime("%Y%m%d-%H%M%S")
+    )
+    resume_log_dir.mkdir(parents=True, exist_ok=True)
+    openrouter_rr = 0
+    anthropic_rr = 0
     for key, planned in planned_counts.items():
         done = completed_counts.get(key, 0)
         rem = max(0, planned - done)
@@ -164,19 +185,50 @@ def main():
         print(
             f"uv run -m fle.run eval --config '{cfg}' --offset 0  # repeat {rem} times"
         )
-        for _ in range(rem):
-            commands.append(
-                [
-                    "uv",
-                    "run",
-                    "-m",
-                    "fle.run",
-                    "eval",
-                    "--config",
-                    cfg,
-                    "--offset",
-                    "0",
+        for job_idx in range(rem):
+            cmd = [
+                "uv",
+                "run",
+                "-m",
+                "fle.run",
+                "eval",
+                "--config",
+                cfg,
+                "--offset",
+                "0",
+            ]
+            # Per-job environment overrides (round-robin across available keys)
+            env = os.environ.copy()
+            safe_model = (key[1] or "").lower()
+            if "claude" in safe_model and anthropic_keys:
+                env["ANTHROPIC_API_KEY"] = anthropic_keys[
+                    anthropic_rr % len(anthropic_keys)
                 ]
+                anthropic_rr += 1
+            if (
+                "open-router" in safe_model
+                or "open_router" in safe_model
+                or "openrouter" in safe_model
+            ) and openrouter_keys:
+                env["OPEN_ROUTER_API_KEY"] = openrouter_keys[
+                    openrouter_rr % len(openrouter_keys)
+                ]
+                openrouter_rr += 1
+
+            # Per-job log file (headless)
+            cfg_name = Path(cfg).name
+            env_name = (key[0] or "unknown").replace("/", "_")
+            model_name = (key[1] or "unknown").replace("/", "_")
+            log_path = (
+                resume_log_dir / f"{env_name}__{model_name}__{cfg_name}__{job_idx}.log"
+            )
+
+            commands.append(
+                {
+                    "cmd": cmd,
+                    "env": env,
+                    "log_path": str(log_path),
+                }
             )
 
     print(f"\nTotal remaining: {remaining}")
@@ -185,21 +237,35 @@ def main():
         print(
             f"\nExecuting {len(commands)} runs with concurrency={args.concurrency}..."
         )
-        active: list[subprocess.Popen] = []
+        print(f"Logs: {resume_log_dir}")
+        active: list[tuple[subprocess.Popen, object]] = []
         idx = 0
         while idx < len(commands) or active:
             # Start new processes up to concurrency limit
             while idx < len(commands) and len(active) < max(1, args.concurrency):
-                cmd = commands[idx]
-                proc = subprocess.Popen(cmd, cwd=str(repo_root))
-                active.append(proc)
+                job = commands[idx]
+                log_fh = open(job["log_path"], "ab")
+                proc = subprocess.Popen(
+                    job["cmd"],
+                    cwd=str(repo_root),
+                    stdout=log_fh,
+                    stderr=subprocess.STDOUT,
+                    stdin=subprocess.DEVNULL,
+                    env=job.get("env"),
+                )
+                active.append((proc, log_fh))
                 idx += 1
             # Poll and remove finished
-            still_active: list[subprocess.Popen] = []
-            for p in active:
+            still_active: list[tuple[subprocess.Popen, object]] = []
+            for p, fh in active:
                 ret = p.poll()
                 if ret is None:
-                    still_active.append(p)
+                    still_active.append((p, fh))
+                else:
+                    try:
+                        fh.close()
+                    except Exception:
+                        pass
             active = still_active
             if active:
                 time.sleep(1)

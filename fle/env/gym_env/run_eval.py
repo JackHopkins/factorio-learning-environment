@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import json
 import multiprocessing
@@ -132,4 +133,15 @@ async def main(config_path):
 
 if __name__ == "__main__":
     multiprocessing.set_start_method("spawn")
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(
+        description="Run Factorio Learning Environment evaluation"
+    )
+    parser.add_argument(
+        "--run-config",
+        type=str,
+        required=True,
+        help="Path to run configuration JSON file",
+    )
+    parser.add_argument("--offset", type=int, default=0, help="Offset for instance IDs")
+    args = parser.parse_args()
+    asyncio.run(main(args.run_config, args.offset))

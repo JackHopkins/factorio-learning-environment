@@ -1,4 +1,4 @@
-import time
+import asyncio
 import gym
 import numpy as np
 from gym import spaces
@@ -9,6 +9,7 @@ import string
 
 from fle.env import FactorioInstance
 from fle.commons.models.game_state import GameState
+from fle.commons.asyncio_utils import run_async_safely
 from fle.env.gym_env.action import Action
 from fle.commons.models.achievements import ProductionFlows
 from fle.env.utils.profits import get_achievements
@@ -275,13 +276,16 @@ class FactorioGymEnv(gym.Env):
         # Get game info
         game_info = GameInfo(
             tick=self.instance.get_elapsed_ticks(),
-            time=self.instance.get_elapsed_ticks() / 60,
+            time=self.instance.get_elapsed_ticks() / 60 / self.instance._speed,
             speed=self.instance._speed,
         )
 
         # Get flows
-        flows = namespace._get_production_stats()
-        flows_obs = ProductionFlows.from_dict(flows)
+        if response:
+            flows_obs = response.flows
+        else:
+            flows = namespace._get_production_stats()
+            flows_obs = ProductionFlows.from_dict(flows)
 
         # Get messages
         messages = namespace.get_messages()
@@ -370,38 +374,37 @@ class FactorioGymEnv(gym.Env):
             start_production_flows = ProductionFlows.from_dict(
                 namespace._get_production_stats()
             )
-        initial_score, _ = namespace.score()
 
         # Execute the action
-        score, eval_time, result = self.instance.eval(
+        initial_score, eval_time, result = self.instance.eval(
             code, agent_idx=agent_idx, timeout=60
         )
-
         # Check for errors
         error_occurred = "error" in result.lower() or "exception: " in result.lower()
-
-        # Calculate reward
-        if error_occurred:
-            reward = -self.error_penalty
-        else:
-            # Wait for value accrual
-            time.sleep(self.value_accrual_time)
-            reward = score - initial_score
-        reward = float(reward)  # Ensure reward is always a float
-
         # Get task verification if task exists
         task_response = task_success = None
         terminated = truncated = False
-        output_game_state = GameState.from_instance(self.instance)
         if self.task:
             # First get the raw verification
-            task_success = self.task.verify(reward, self.instance, step_statistics={})
+            task_success = self.task.verify(
+                initial_score, self.instance, step_statistics={}
+            )
             # Then enhance the response with task output
             task_response = self.task.enhance_response_with_task_output(
                 result, task_success
             )
             terminated = task_success.success
 
+        # Calculate reward
+        if error_occurred:
+            reward = -self.error_penalty
+        else:
+            run_async_safely(asyncio.sleep(self.value_accrual_time))
+            score, _ = namespace.score()
+            reward = score - initial_score
+        reward = float(reward)
+
+        output_game_state = GameState.from_instance(self.instance)
         # Get post-execution flows and calculate achievements
         current_flows = ProductionFlows.from_dict(namespace._get_production_stats())
         achievements = get_achievements(

@@ -82,7 +82,7 @@ class ThroughputTask(TaskABC):
                 break
         return TaskResponse(
             success=max_achieved_throughput >= self.quota,
-            meta={"achievements": max_achievements},
+            meta={},
         )
 
     def _to_dict(self) -> Dict[str, Any]:

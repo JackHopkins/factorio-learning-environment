@@ -2,7 +2,6 @@ import glob
 import json
 import os
 import re
-import sqlite3
 from collections import defaultdict
 from typing import Dict, Tuple
 
@@ -25,7 +24,6 @@ def parse_version_description(desc: str) -> dict:
 
 def main():
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-    db_path = os.path.join(repo_root, ".fle", "data.db")
     cfg_glob = os.path.join(repo_root, ".fle", "[1-7]", "labplay*.json")
 
     # Discover planned runs (env_id, model) pairs from configs
@@ -84,29 +82,6 @@ def main():
                     versions.add(int(version))
             cur.close()
             conn.close()
-        except Exception:
-            pass
-
-    # Otherwise, attempt SQLite fallback
-    if not completed_counts:
-        try:
-            if os.path.exists(db_path):
-                conn = sqlite3.connect(db_path)
-                cur = conn.cursor()
-                cur.execute(
-                    """
-                    SELECT DISTINCT version, COALESCE(version_description, ''), COALESCE(model, '')
-                    FROM programs
-                    WHERE version IS NOT NULL
-                    """
-                )
-                for version, version_description, model in cur.fetchall():
-                    meta = parse_version_description(version_description)
-                    task_key = meta.get("type")
-                    if task_key:
-                        completed_counts[(task_key, model)] += 1
-                        versions.add(int(version))
-                conn.close()
         except Exception:
             pass
 

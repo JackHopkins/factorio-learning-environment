@@ -5,6 +5,8 @@ from pathlib import Path
 from collections import defaultdict
 from typing import Dict, Tuple
 
+from dotenv import load_dotenv
+
 try:
     import psycopg2  # type: ignore
 except Exception:
@@ -27,6 +29,9 @@ def main():
     print(repo_root)
     cfg_glob = str(repo_root / ".fle" / "*" / "labplay*.json")
     print(cfg_glob)
+
+    # Auto-load environment variables from the repo's .env
+    load_dotenv(dotenv_path=repo_root / ".env")
 
     # Discover planned runs (env_id, model) pairs from configs
     planned_counts: dict[tuple[str, str], int] = defaultdict(int)

@@ -24,12 +24,14 @@ The system deploys a fully managed Factorio server cluster with the following co
 ## Infrastructure Components
 
 ### Networking
+
 - VPC with CIDR block 10.0.0.0/16
 - Two public subnets across different availability zones
 - Internet Gateway for public access
 - Security groups for Factorio and EFS traffic
 
 ### Compute
+
 - ECS Fargate cluster
 - Task Definition:
   - 1 vCPU, 2GB memory
@@ -39,11 +41,13 @@ The system deploys a fully managed Factorio server cluster with the following co
   - TCP port 27015 for RCON
 
 ### Storage
+
 - EFS filesystem for shared scenario storage
 - EFS access points with appropriate permissions
 - Mount targets in both availability zones
 
 ### DNS Management
+
 - Automated Route53 record management
 - State machine for DNS updates
 - Event-driven updates based on container lifecycle
@@ -51,6 +55,7 @@ The system deploys a fully managed Factorio server cluster with the following co
 ## Setup and Usage
 
 ### Prerequisites
+
 1. AWS CLI configured with appropriate credentials
 2. Python 3.x with required packages:
    - boto3
@@ -60,6 +65,7 @@ The system deploys a fully managed Factorio server cluster with the following co
 ### Deployment
 
 1. Deploy the CloudFormation stack:
+
 ```bash
 aws cloudformation deploy \
   --template-file cluster.cloudformation.yaml \
@@ -68,6 +74,7 @@ aws cloudformation deploy \
 ```
 
 2. Create a `.env` file with:
+
 ```
 CLUSTER_NAME=FactorioCluster
 ```
@@ -75,11 +82,13 @@ CLUSTER_NAME=FactorioCluster
 ### Server Management
 
 To get IPs of running servers:
+
 ```bash
 python cluster_ips.py
 ```
 
 To initialize all servers:
+
 ```bash
 python factorio_server_login.py
 ```
@@ -98,6 +107,7 @@ The CloudFormation template accepts the following parameters:
 ## Security
 
 The infrastructure includes:
+
 - IAM roles with least privilege access
 - Security groups limiting inbound traffic to required ports
 - VPC with public subnets for server access
@@ -106,13 +116,17 @@ The infrastructure includes:
 ## Advanced Features
 
 ### Container Access
+
 To SSH into a running container:
+
 ```bash
 aws ecs execute-command --task <task-id> --cluster FactorioCluster --interactive --command /bin/bash
 ```
 
 ### Data Migration
+
 Use AWS DataSync to move scenario files from S3 to EFS:
+
 ```
 s3://factorio-scenarios → EFS filesystem
 ```
@@ -127,16 +141,19 @@ s3://factorio-scenarios → EFS filesystem
 ## Troubleshooting
 
 1. Check ECS task status:
+
 ```bash
 aws ecs list-tasks --cluster FactorioCluster
 ```
 
 2. View container logs:
+
 ```bash
 aws logs get-log-events --log-group factorio-ecs
 ```
 
 3. Verify DNS records:
+
 ```bash
 aws route53 list-resource-record-sets --hosted-zone-id <zone-id>
 ```

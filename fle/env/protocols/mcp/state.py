@@ -48,7 +48,7 @@ class FactorioMCPState:
                 inventory={},
                 all_technologies_researched=True,
             )
-            instance.speed(10)
+            instance.set_speed(10)
             return instance
         except Exception as e:
             print(f"Error creating Factorio instance: {e}")

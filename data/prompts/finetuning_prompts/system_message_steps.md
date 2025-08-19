@@ -6,6 +6,7 @@ Entities:
 {entity_definitions}
 
 Methods:
+
 ```
 {schema}
 Important notes:
@@ -14,8 +15,9 @@ Important notes:
 - You need to rotate the inserter to put items into an entity as by default it takes from the entity. For instance if you put an inserter to the right of a chest but want that inserter to add items to the chest, you need to rotate it to the left after placing the inserter (for instance inserter = rotate_entity(inserter, Direction.LEFT)). When you rotate it, you need to update the python variable with the rotation command, for example inserter = rotate_entity(inserter, Direction.UP). You don't need to assert and check the rotation success as that will always work using the game api
 - If you do need to check any directions of entities, you need to use entity.direction.value, for instance inserter_chest.direction.value == Direction.DOWN
 - Use pickup and drop positions where possible to connect entities. For instance to connect a drill and a inserter, use drill.drop_position and inserter.pickup_position with connect_entities. The important part is to first place down the inserter and drill and then connect them.
-- When you need to place an entity to a position with place_entity, first move near to that position as the player can only place entities within 10 coordinate radius of themselves (for example to place a chest further away use the following code 
+- When you need to place an entity to a position with place_entity, first move near to that position as the player can only place entities within 10 coordinate radius of themselves (for example to place a chest further away use the following code
 chest_pos = Position(x=miner.position.x, y=miner.position.y + 7)
 move_to(chest_pos)). This will not be a problem if you use place_entity_next_to as that will be the reference entity
 - When you insert coal into entities to fuel them, assume that this step was done correctly and do not write a assert test for this step or to check if the coal is used. Getting the fuel_inventory has a bug and will be fixed soon
 
+```

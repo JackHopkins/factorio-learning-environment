@@ -1,4 +1,3 @@
-import asyncio
 import gym
 import numpy as np
 from gym import spaces
@@ -9,7 +8,6 @@ import string
 
 from fle.env import FactorioInstance
 from fle.commons.models.game_state import GameState
-from fle.commons.asyncio_utils import run_async_safely
 from fle.env.gym_env.action import Action
 from fle.commons.models.achievements import ProductionFlows
 from fle.env.utils.profits import get_achievements
@@ -211,6 +209,7 @@ class FactorioGymEnv(gym.Env):
         self.task = task
         self.value_accrual_time = value_accrual_time
         self.error_penalty = error_penalty
+        self.instance_speed = instance._speed
 
         # Define action space - a dictionary containing agent index and code
         self.action_space = spaces.Dict(
@@ -360,9 +359,11 @@ class FactorioGymEnv(gym.Env):
         action = action.to_dict()
         agent_idx = action["agent_idx"]
         code = action["code"]
-        game_state_raw = action["game_state"]
-        if game_state_raw:
-            self.reset_instance(GameState.parse_raw(game_state_raw))
+        # game_state_raw = action["game_state"]
+
+        self.instance.set_speed(self.instance_speed)
+        # if game_state_raw:
+        #    self.reset_instance(GameState.parse_raw(game_state_raw))
 
         namespace = self.instance.namespaces[agent_idx]
         # Use last post_production_flows as pre_production_flows if available
@@ -399,7 +400,6 @@ class FactorioGymEnv(gym.Env):
         if error_occurred:
             reward = -self.error_penalty
         else:
-            run_async_safely(asyncio.sleep(self.value_accrual_time))
             score, _ = namespace.score()
             reward = score - initial_score
         reward = float(reward)
@@ -442,6 +442,8 @@ class FactorioGymEnv(gym.Env):
             "task_verification": task_response,
             "output_game_state": output_game_state,
         }
+        # pause the game until the next step
+        self.instance.set_speed(0)
 
         return observation.to_dict(), reward, terminated, truncated, info
 

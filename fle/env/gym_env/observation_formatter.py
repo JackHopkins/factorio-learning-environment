@@ -69,6 +69,14 @@ class FormattedObservation:
     ```
     Shows function names, parameter types, return types, and docstrings."""
 
+    game_info_str: str
+    """Formatted string showing game timing information.
+    Example:
+    ### Game Info
+    - Elapsed Time: 1:00:00
+    - Speed: 1.0x
+    Shows elapsed time in hours:minutes:seconds format and game speed."""
+
     raw_text_str: str
     """Formatted string showing the raw text output from the last action.
     Example:
@@ -101,6 +109,10 @@ class FormattedObservation:
     def find_idle_furnaces(entities: List[Entity]) -> List[Entity]
       \"\"\"Find all furnaces that are not currently working.\"\"\"
     ```
+
+    ### Game Info
+    - Elapsed Time: 1:00:00
+    - Speed: 1.0x
 
     ### Task Status
     ⏳ IN PROGRESS
@@ -136,6 +148,7 @@ class BasicObservationFormatter:
         include_state_changes: bool = True,
         include_raw_output: bool = True,
         include_research: bool = True,
+        include_game_info: bool = True,
     ):
         """Initialize the formatter with flags for which fields to include"""
         self.include_inventory = include_inventory
@@ -147,6 +160,7 @@ class BasicObservationFormatter:
         self.include_state_changes = include_state_changes
         self.include_raw_output = include_raw_output
         self.include_research = include_research
+        self.include_game_info = include_game_info
 
     @staticmethod
     def format_inventory(inventory: List[Dict[str, Any]]) -> str:
@@ -436,6 +450,28 @@ class BasicObservationFormatter:
         return research_str
 
     @staticmethod
+    def format_game_info(game_info: Dict[str, Any]) -> str:
+        """Format game timing information"""
+        if not game_info:
+            return "### Game Info\nNo game information available"
+
+        info_str = "### Game Info\n"
+
+        # Add elapsed time information in H:M:S format
+        if "time" in game_info:
+            total_seconds = int(game_info["time"])
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            seconds = total_seconds % 60
+            info_str += f"- Elapsed Time: {hours:d}:{minutes:02d}:{seconds:02d}\n"
+
+        # Add speed information
+        if "speed" in game_info:
+            info_str += f"- Speed: {game_info['speed']:.1f}x\n"
+
+        return info_str
+
+    @staticmethod
     def format_task(task: Optional[Dict[str, Any]]) -> str:
         """Format task verification information"""
         if not task:
@@ -542,6 +578,11 @@ class BasicObservationFormatter:
             research_str = self.format_research(obs_dict.get("research", {}))
             formatted_parts.append(research_str)
 
+        # Add game info
+        if self.include_game_info:
+            game_info_str = self.format_game_info(obs_dict.get("game_info", {}))
+            formatted_parts.append(game_info_str)
+
         # Add optional components if they exist and are enabled
         if self.include_task:
             task_str = self.format_task(obs_dict.get("task_verification"))
@@ -587,6 +628,9 @@ class BasicObservationFormatter:
                 obs_dict.get("serialized_functions", [])
             )
             if self.include_functions
+            else "",
+            game_info_str=self.format_game_info(obs_dict.get("game_info", {}))
+            if self.include_game_info
             else "",
             raw_text_str=self.format_raw_text(obs_dict.get("raw_text", ""))
             if self.include_raw_output

@@ -22,16 +22,18 @@ project_root = Path(__file__).parent.parent.parent
 #     sys.path.insert(0, str(project_root / 'src'))
 
 
-@pytest.fixture()  # scope="session")
+@pytest.fixture(scope="session")
 def instance():
     # from gym import FactorioInstance
     ips, udp_ports, tcp_ports = get_local_container_ips()
+    port_env = os.getenv("FACTORIO_RCON_PORT")
+    selected_port = int(port_env) if port_env else tcp_ports[-1]
     try:
         instance = FactorioInstance(
             address="localhost",
             bounding_box=200,
-            tcp_port=tcp_ports[-1],  # 27019,
-            cache_scripts=False,
+            tcp_port=selected_port,  # prefer env (CI) else last discovered
+            cache_scripts=True,
             fast=True,
             inventory={
                 "coal": 50,
@@ -50,6 +52,11 @@ def instance():
                 "small-electric-pole": 10,
             },
         )
+        # Keep a canonical copy of the default test inventory to restore between tests
+        try:
+            instance.default_initial_inventory = dict(instance.initial_inventory)
+        except Exception:
+            instance.default_initial_inventory = instance.initial_inventory
         yield instance
     except Exception as e:
         raise e
@@ -57,3 +64,19 @@ def instance():
         # Cleanup RCON connections to prevent connection leaks
         if "instance" in locals():
             instance.cleanup()
+
+
+# Reset state between tests without recreating the instance
+@pytest.fixture(autouse=True)
+def _reset_between_tests(instance):
+    """
+    Ensure clean state between tests without reloading Lua/scripts.
+    """
+    # Restore the default inventory in case a previous test changed it
+    if hasattr(instance, "default_initial_inventory"):
+        try:
+            instance.initial_inventory = dict(instance.default_initial_inventory)
+        except Exception:
+            instance.initial_inventory = instance.default_initial_inventory
+    instance.reset(reset_position=True)
+    yield

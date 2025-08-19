@@ -17,10 +17,7 @@ from fle.agents.formatters import RecursiveReportFormatter
 from fle.agents.llm.api_factory import APIFactory
 from fle.agents.llm.parsing import parse_response
 
-GYM_AGENT_INSTRUCTIONS = """
-# Factorio Gym Agent Instructions
-
-## Overview
+GYM_AGENT_INSTRUCTIONS = """## Overview
 You are an AI agent designed to play Factorio through a gym environment, specializing in:
 - Long-horizon planning
 - Spatial reasoning 
@@ -110,8 +107,6 @@ your_code_here
 
 ALWAYS WRITE VALID PYTHON AND REMEMBER MAXIMUM 30 LINES OF CODE PER POLICY. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON.
 
-{goal_description}
-
 {agent_instructions}"""
 
 
@@ -155,7 +150,7 @@ class GymAgent(AgentABC):
             goal_description=task.goal_description,
             agent_instructions=agent_instructions,
         )
-        return instructions
+        return instructions.rstrip()
 
     def reset(self, conversation: Conversation):
         self.conversation = copy.deepcopy(conversation)
@@ -193,12 +188,11 @@ class GymAgent(AgentABC):
                 max_tokens=self.generation_params.max_tokens,
                 model=self.generation_params.model,
             )
-            usage = model_response.json()["usage"]
             policy = parse_response(model_response)
             if not policy:
                 raise Exception("Policy not valid Python. Skipping.")
             policy.input_conversation = self.conversation
-            return policy, usage
+            return policy
 
         except Exception as e:
             print(f"Policy generation failed: {str(e)}")

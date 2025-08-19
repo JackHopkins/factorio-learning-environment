@@ -16,30 +16,30 @@ class APIFactory:
     PROVIDERS = {
         "open-router": {
             "base_url": "https://openrouter.ai/api/v1",
-            "api_key_env": "OPEN_ROUTER_API_KEY",
+            "api_key": "OPEN_ROUTER_API_KEY",
             "supports_images": True,
             "model_transform": lambda m: m.replace("open-router-", ""),
         },
         "claude": {
             "base_url": "https://api.anthropic.com/v1",
-            "api_key_env": "ANTHROPIC_API_KEY",
+            "api_key": "ANTHROPIC_API_KEY",
             "supports_images": True,
         },
         "deepseek": {
             "base_url": "https://api.deepseek.com",
-            "api_key_env": "DEEPSEEK_API_KEY",
+            "api_key": "DEEPSEEK_API_KEY",
         },
         "gemini": {
             "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
-            "api_key_env": "GEMINI_API_KEY",
+            "api_key": "GEMINI_API_KEY",
         },
         "together": {
             "base_url": "https://api.together.xyz/v1",
-            "api_key_env": "TOGETHER_API_KEY",
+            "api_key": "TOGETHER_API_KEY",
         },
         "openai": {
             "base_url": "https://api.openai.com/v1",
-            "api_key_env": "OPENAI_API_KEY",
+            "api_key": "OPENAI_API_KEY",
             "supports_images": True,
             "supports_reasoning": True,
         },
@@ -77,13 +77,9 @@ class APIFactory:
         # Create client
         client = AsyncOpenAI(
             base_url=provider_config["base_url"],
-            api_key=os.getenv(provider_config["api_key_env"]),
+            api_key=os.getenv(provider_config["api_key"]),
             max_retries=0,
         )
-
-        # Transform model name if needed
-        if "model_transform" in provider_config:
-            model_to_use = provider_config["model_transform"](model_to_use) + ":nitro"
 
         # Special handling for o1/o3 models
         if "o1-mini" in model_to_use or "o3-mini" in model_to_use:

@@ -50,7 +50,6 @@ class GymTrajectoryRunner:
         agent_step: int,
         program: Program,
         observation: Observation,
-        usage,
     ):
         """Consolidate all trajectory logging operations
 
@@ -74,8 +73,6 @@ class GymTrajectoryRunner:
         self.logger.log_observation_and_program(
             agent, agent_idx, agent_step, observation, program
         )
-        # Log usage
-        self.logger.log_usage(agent_idx, agent_step, usage)
 
     async def create_program_from_policy(
         self,
@@ -187,7 +184,7 @@ class GymTrajectoryRunner:
                 # Loop while the agent is not completed yet
                 while not agent_completed and agent_steps[agent_idx] < max_steps:
                     # Generate policy using agent's method
-                    policy, usage = await agent.generate_policy()
+                    policy = await agent.generate_policy()
                     agent_steps[agent_idx] += 1
                     if not policy:
                         print(
@@ -229,7 +226,6 @@ class GymTrajectoryRunner:
                         agent_steps[agent_idx],
                         program,
                         observation,
-                        usage,
                     )
 
                     # Get the agent_completed flag from the agent

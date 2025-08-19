@@ -74,23 +74,6 @@ class TrajectoryLogger:
             f"ETA: {eta}\033[0m"
         )
 
-    def log_usage(self, agent_idx: int, iteration: int, usage):
-        """Log observation and program to console and files
-
-        Args:
-            agent: The agent instance
-            agent_idx: Index of the agent
-            iteration: Current iteration number
-            observation: The observation to log
-            program: The program to log
-        """
-        if self.log_dir:
-            usage_file = os.path.join(
-                self.log_dir, f"agent{agent_idx}_iter{iteration}_usage.text"
-            )
-            with open(usage_file, "w") as f:
-                f.write(usage)
-
     def log_observation_and_program(
         self,
         agent: GymAgent,

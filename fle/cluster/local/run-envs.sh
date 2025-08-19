@@ -5,7 +5,7 @@ setup_platform() {
     ARCH=$(uname -m)
     OS=$(uname -s)
     if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
-        export DOCKER_PLATFORM="linux/arm64"
+        export DOCKER_PLATFORM="linux/amd64"
     else
         export DOCKER_PLATFORM="linux/amd64"
     fi
@@ -74,7 +74,7 @@ EOF
         
         cat >> docker-compose.yml << EOF
   factorio_${i}:
-    image: factorio
+    image: factoriotools/factorio:1.1.110
     platform: \${DOCKER_PLATFORM:-linux/amd64}
     command: /opt/factorio/bin/x64/factorio --start-server-load-scenario ${SCENARIO}
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
@@ -89,13 +89,6 @@ EOF
           cpus: '1'
           memory: 1024m
     entrypoint: []
-    environment:
-    - SAVES=/opt/factorio/saves
-    - CONFIG=/opt/factorio/config
-    - MODS=/opt/factorio/mods
-    - SCENARIOS=/opt/factorio/scenarios
-    - PORT=34197
-    - RCON_PORT=27015
     ports:
     - ${UDP_PORT}:34197/udp
     - ${TCP_PORT}:27015/tcp
@@ -103,17 +96,17 @@ EOF
     restart: unless-stopped
     user: factorio
     volumes:
-    - source: ../scenarios/default_lab_scenario
-      target: /opt/factorio/scenarios/default_lab_scenario
+    - source: ../scenarios
+      target: /opt/factorio/scenarios
       type: bind
-    - source: ../scenarios/open_world
-      target: /opt/factorio/scenarios/open_world
-      type: bind
-    - source: ${MODS_PATH}
-      target: /opt/factorio/mods
+    - source: ../docker/config
+      target: /opt/factorio/config
       type: bind
     - source: ../../data/_screenshots
       target: /opt/factorio/script-output
+      type: bind
+    - source: ../../../.fle/saves/0
+      target: /opt/factorio/saves
       type: bind
 
 EOF

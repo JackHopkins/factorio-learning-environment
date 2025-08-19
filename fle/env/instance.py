@@ -690,7 +690,6 @@ class FactorioInstance:
 
         init_scripts = [
             "initialise",
-            "clear_entities",
             "alerts",
             "util",
             "priority_queue",

@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from fle.env.a2a_instance import A2AFactorioInstance
@@ -12,11 +13,25 @@ from fle.env.gym_env.environment import FactorioGymEnv
 from fle.eval.tasks import TaskFactory
 
 
+@dataclass
+class GymEnvironmentSpec:
+    """Specification for a registered gym environment"""
+
+    env_id: str
+    task_key: str
+    task_config_path: str
+    description: str
+    num_agents: int
+    model: str
+    version: Optional[int]
+    exit_on_task_success: bool
+
+
 class FactorioGymRegistry:
     """Registry for Factorio gym environments"""
 
     def __init__(self):
-        self._environments: Dict[str, Dict[str, Any]] = {}
+        self._environments: Dict[str, GymEnvironmentSpec] = {}
         # Use the same path construction as TaskFactory for consistency
         from fle.eval.tasks.task_factory import TASK_FOLDER
 

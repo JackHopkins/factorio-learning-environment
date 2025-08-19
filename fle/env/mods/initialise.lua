@@ -8,6 +8,10 @@ if not global.utils then
     global.utils = {}
 end
 
+if not global.initial_score then
+    global.initial_score = {["player"] = 0}
+end
+
 -- Initialize debug flags
 if global.debug == nil then
     global.debug = {
@@ -55,7 +59,6 @@ global.interesting_entities = {
     ['water']=true,
     ['coal']=true
 }
-global.initial_score = {}
 
 -- Check if a player's inventory is empty
 local function check_player_inventory_empty(player)

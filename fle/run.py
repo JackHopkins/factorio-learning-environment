@@ -58,7 +58,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  fle eval --config configs/gym_run_config.json
+  fle eval --config configs/gym_run_config.json --offset n
   fle cluster [start|stop|restart|help] [-n N] [-s SCENARIO]
         """,
     )
@@ -69,24 +69,21 @@ Examples:
     parser_cluster.add_argument(
         "cluster_command",
         nargs="?",
-        default=None,
         choices=["start", "stop", "restart", "help"],
         help="Cluster command (start/stop/restart/help)",
     )
-    parser_cluster.add_argument(
-        "-n", type=int, default=None, help="Number of Factorio instances"
-    )
+    parser_cluster.add_argument("-n", type=int, help="Number of Factorio instances")
     parser_cluster.add_argument(
         "-s",
         type=str,
-        default=None,
         help="Scenario (open_world or default_lab_scenario)",
     )
     parser_eval = subparsers.add_parser("eval", help="Run experiment")
-    parser_eval.add_argument("--config", required=False, help="Path to run config JSON")
+    parser_eval.add_argument("--config", required=True, help="Path to run config JSON")
     parser_eval.add_argument(
         "--offset",
         type=int,
+        required=True,
         help="Offset to add to instance_id selection",
     )
     args = parser.parse_args()

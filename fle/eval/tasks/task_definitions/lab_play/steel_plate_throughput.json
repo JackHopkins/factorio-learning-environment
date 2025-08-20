@@ -1,14 +1,13 @@
-
-{       
-    "task_type": "throughput",
-    "config":
-    {                     
-        "goal_description":"Create an automatic steel plate factory that produces 16 steel plates per 60 ingame seconds.",
-        "throughput_entity":"steel-plate",
-        "quota":16,
-        "trajectory_length": 128,
-        "holdout_wait_period": 60,
-        "pre_holdout_wait_period": 60,
-        "task_key": "steel_plate_throughput"
-    }
+{
+  "task_type": "throughput",
+  "config": {
+    "goal_description": "Create an automatic steel plate factory that produces 16 steel plates per 60 ingame seconds.",
+    "throughput_entity": "steel-plate",
+    "quota": 16,
+    "trajectory_length": 128,
+    "holdout_wait_period": 60,
+    "pre_holdout_wait_period": 60,
+    "task_key": "steel_plate_throughput",
+    "num_agents": 1
+  }
 }

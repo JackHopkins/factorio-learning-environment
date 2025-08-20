@@ -106,13 +106,13 @@ EOF
     restart: unless-stopped
     user: factorio
     volumes:
-    - source: ../scenarios
+    - source: ./scenarios
       target: /opt/factorio/scenarios
       type: bind
     - source: ./config
       target: /opt/factorio/config
       type: bind
-    - source: ../../data/_screenshots
+    - source: ../../.fle/data/_screenshots
       target: /opt/factorio/script-output
       type: bind
 ${MODS_VOLUME}

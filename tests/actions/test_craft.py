@@ -130,9 +130,7 @@ def test_craft_uncraftable_entity(game):
 
 
 def test_craft_no_technology(game):
-    game.instance.all_technologies_researched = False
-    game.instance.reset()
-
+    game.instance.reset(all_technologies_researched=False)
     try:
         game.craft_item(Prototype.AssemblingMachine1, quantity=1)
     except:

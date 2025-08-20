@@ -11,7 +11,6 @@
     "holdout_wait_period": 60,
     "pre_holdout_wait_period": 60,
     "task_key": "iron_plate_throughput_multiagent_distrust",
-    "num_agents": 1,
     "show_number_of_steps_left_in_prompt": false
   }
 }

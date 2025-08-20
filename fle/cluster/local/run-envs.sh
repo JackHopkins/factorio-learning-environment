@@ -102,7 +102,7 @@ EOF
     ports:
     - ${UDP_PORT}:34197/udp
     - ${TCP_PORT}:27015/tcp
-    pull_policy: never
+    pull_policy: missing
     restart: unless-stopped
     user: factorio
     volumes:

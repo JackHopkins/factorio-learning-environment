@@ -1,14 +1,12 @@
-
-{    
-    "task_type": "throughput",
-    "config":
-    {                      
-        "goal_description":"Create an automatic crude oil factory that produces 250 crude oil per 60 ingame seconds.",
-        "throughput_entity":"crude-oil",
-        "quota":250,
-        "trajectory_length": 128,
-        "holdout_wait_period": 60,
-        "pre_holdout_wait_period": 60,
-        "task_key": "crude_oil_throughput"
-    }
+{
+  "task_type": "throughput",
+  "config": {
+    "goal_description": "Create an automatic crude oil factory that produces 250 crude oil per 60 ingame seconds.",
+    "throughput_entity": "crude-oil",
+    "quota": 250,
+    "trajectory_length": 128,
+    "holdout_wait_period": 60,
+    "pre_holdout_wait_period": 60,
+    "task_key": "crude_oil_throughput"
+  }
 }

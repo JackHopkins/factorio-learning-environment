@@ -902,8 +902,6 @@ factorio-learning-environment/
 │   │   ├── visual_agent.py         # Visual agent implementation
 │   │   └── gym_agent.py            # Gym-compatible agent
 │   ├── cluster/                    # Docker and deployment utilities
-│   │   ├── docker/                 # Docker configurations
-│   │   ├── local/                  # Local deployment scripts
 │   │   ├── remote/                 # Remote deployment utilities
 │   │   └── scenarios/              # Game scenario configurations
 │   ├── commons/                    # Shared utilities and constants

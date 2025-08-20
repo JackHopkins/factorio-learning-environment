@@ -144,15 +144,18 @@ class Controller:
                 return {}, lua_response  # elapsed
 
             if not parsed.get("a") and "b" in parsed and isinstance(parsed["b"], str):
-                if parsed["b"] == "string":
-                    error = (
-                        lua_response.split(":")[-1]
-                        .replace("}", "")
-                        .replace('"', "")
-                        .strip()
-                    )
-                    return error, lua_response  # elapsed
-                return parsed["b"], lua_response  # elapsed
+                # Extract the full error string from the RCON dump instead of truncating by colon
+                parts = lua_response.split('["b"] = ')
+                if len(parts) > 1:
+                    msg = parts[1]
+                    # Trim trailing table end and whitespace
+                    msg = msg.rstrip()
+                    if msg.endswith("}"):
+                        msg = msg[:-2] if len(msg) >= 2 else msg
+                    msg = msg.replace("!!", '"').strip()
+                    return msg, lua_response
+                # Fallback to the parsed string as-is
+                return parsed["b"], lua_response
 
             return parsed.get("b", {}), lua_response  # elapsed
 

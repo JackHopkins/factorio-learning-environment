@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from fle.env.a2a_instance import A2AFactorioInstance
-import gym
 import json
 
 from fle.commons.cluster_ips import get_local_container_ips
@@ -22,7 +21,6 @@ class GymEnvironmentSpec:
     task_config_path: str
     description: str
     num_agents: int
-    model: str
     version: Optional[int]
 
 
@@ -48,10 +46,13 @@ class FactorioGymRegistry:
             try:
                 with open(task_file, "r") as f:
                     task_data = json.load(f)
-                    print(task_data)
-                    print(task_file)
-                    exit()
-                    self.register_environment(task_data)
+                self.register_environment(
+                    task_key=task_data["task_key"],
+                    task_config_path=str(task_file),
+                    description=task_data["goal_description"],
+                    task_type=task_data["task_type"],
+                    num_agents=task_data["num_agents"],
+                )
             except Exception as e:
                 print(f"Warning: Failed to load task definition {task_file}: {e}")
 
@@ -61,6 +62,10 @@ class FactorioGymRegistry:
         self,
         env_id: str,
         task_config_path: str,
+        description: str,
+        task_type: str,
+        num_agents: int,
+        model: str,
         task_data: Dict[str, Any],
     ) -> None:
         """Register a new gym environment"""
@@ -71,12 +76,14 @@ class FactorioGymRegistry:
             "task_data": task_data,
         }
 
-        # Register with gym
-        gym.register(
-            id=env_id,
-            entry_point="fle.env.gym_env.registry:make_factorio_env",
-            kwargs={"env_spec": self._environments[env_id]},
-        )
+        # self._environments[env_id] = spec
+
+        # # Register with gym
+        # gym.register(
+        #     id=env_id,
+        #     entry_point="fle.env.gym_env.registry:make_factorio_env",
+        #     kwargs={"env_spec": spec},
+        # )
 
     def list_environments(self) -> List[str]:
         """List all registered environment IDs"""
@@ -170,13 +177,6 @@ def get_environment_info(env_id: str) -> Optional[Dict[str, Any]]:
 
 # Auto-register environments when module is imported
 register_all_environments()
-
-
-# Convenience functions for gym.make() compatibility
-def make(env_id: str, **kwargs) -> FactorioGymEnv:
-    """Create a gym environment by ID"""
-    return gym.make(env_id, **kwargs)
-
 
 # Example usage and documentation
 if __name__ == "__main__":

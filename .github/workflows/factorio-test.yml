@@ -17,13 +17,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          # Install the package with dev dependencies for testing
-          pip install -e ".[dev,agents,cluster,eval,all,mcp,env]"
-
+          
       - name: Verify scenario exists
         run: |
           # Check that the scenario directory exists
@@ -38,6 +32,12 @@ jobs:
         run: |
           cd fle/cluster/local
           bash run-envs.sh -n 1
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install the package with dev dependencies for testing
+          pip install -e ".[dev,agents,cluster,eval,all,mcp,env]"
 
       - name: Wait for server to start
         run: |

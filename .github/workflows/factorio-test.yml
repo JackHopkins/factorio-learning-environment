@@ -30,7 +30,7 @@ jobs:
 
       - name: Start Factorio server
         run: |
-          cd fle/cluster/local
+          cd fle/cluster
           bash run-envs.sh start -n 1
 
 
@@ -56,7 +56,7 @@ jobs:
 
       - name: Check server status
         run: |
-          cd fle/cluster/local
+          cd fle/cluster
           docker compose -f docker-compose.yml ps
           docker compose -f docker-compose.yml logs factorio_0
 
@@ -110,7 +110,7 @@ jobs:
       - name: Show test logs on failure
         if: failure()
         run: |
-          cd fle/cluster/local
+          cd fle/cluster
           echo "=== Factorio container logs ==="
           docker compose -f docker-compose.yml logs factorio_0
           
@@ -120,5 +120,5 @@ jobs:
       - name: Stop server
         if: always()
         run: |
-          cd fle/cluster/local
+          cd fle/cluster
           bash run-envs.sh stop

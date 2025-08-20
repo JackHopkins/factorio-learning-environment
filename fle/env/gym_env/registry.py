@@ -107,7 +107,7 @@ class FactorioGymRegistry:
         gym.register(
             id=env_id,
             entry_point="fle.env.gym_env.registry:make_factorio_env",
-            kwargs={"env_spec": spec},
+            # kwargs={"env_spec": spec, "run_idx": run_idx},
         )
 
     def list_environments(self) -> List[str]:
@@ -130,7 +130,7 @@ class FactorioGymRegistry:
 _registry = FactorioGymRegistry()
 
 
-def make_factorio_env(env_spec: GymEnvironmentSpec, instance_id: int) -> FactorioGymEnv:
+def make_factorio_env(env_spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
     """Factory function to create a Factorio gym environment"""
 
     # Create task from the task definition
@@ -146,8 +146,8 @@ def make_factorio_env(env_spec: GymEnvironmentSpec, instance_id: int) -> Factori
             ips, udp_ports, tcp_ports = get_local_container_ips()
             if len(tcp_ports) == 0:
                 raise RuntimeError("No Factorio containers available")
-            address = ips[instance_id]
-            tcp_port = tcp_ports[instance_id]
+            address = ips[run_idx]
+            tcp_port = tcp_ports[run_idx]
 
         common_kwargs = {
             "address": address,

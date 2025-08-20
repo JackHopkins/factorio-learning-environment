@@ -1,5 +1,5 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import Any, Dict, List, Optional
 
 from fle.env.a2a_instance import A2AFactorioInstance
@@ -17,7 +17,7 @@ from fle.eval.tasks import TaskFactory, TASK_FOLDER
 class GymEnvironmentSpec:
     """Specification for a registered gym environment"""
 
-    env_id: str
+    task_type: str
     task_key: str
     task_config_path: str
     description: str
@@ -81,7 +81,7 @@ class FactorioGymRegistry:
         gym.register(
             id=task_key,
             entry_point="fle.env.gym_env.registry:make_factorio_env",
-            kwargs={"env_spec": spec},
+            kwargs={"spec": spec},
         )
 
     def list_environments(self) -> List[str]:
@@ -118,7 +118,7 @@ def make_factorio_env(spec: GymEnvironmentSpec, instance_id: int) -> FactorioGym
         common_kwargs = {
             "address": address,
             "tcp_port": int(tcp_port),
-            "num_agents": spec["num_agents"],
+            "num_agents": spec.num_agents,
             "fast": True,
             "cache_scripts": True,
             "inventory": {},
@@ -126,7 +126,7 @@ def make_factorio_env(spec: GymEnvironmentSpec, instance_id: int) -> FactorioGym
         }
 
         print(f"Using local Factorio container at {address}:{tcp_port}")
-        if spec["num_agents"] > 1:
+        if spec.num_agents > 1:
             instance = run_async_safely(A2AFactorioInstance.create(**common_kwargs))
         else:
             instance = FactorioInstance(**common_kwargs)
@@ -160,7 +160,7 @@ def get_environment_info(task_key: str) -> Optional[Dict[str, Any]]:
     spec = _registry.get_environment_spec(task_key)
     if spec is None:
         return None
-    return spec.model_dump()
+    return asdict(spec)
 
 
 # Auto-register environments when module is imported

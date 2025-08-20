@@ -155,19 +155,12 @@ def list_available_environments() -> List[str]:
     return _registry.list_environments()
 
 
-def get_environment_info(env_id: str) -> Optional[Dict[str, Any]]:
+def get_environment_info(task_key: str) -> Optional[Dict[str, Any]]:
     """Get detailed information about a specific environment"""
-    spec = _registry.get_environment_spec(env_id)
+    spec = _registry.get_environment_spec(task_key)
     if spec is None:
         return None
-
-    # Return the task config with additional metadata
-    task_data = spec["task_data"]
-    return {
-        "env_id": spec["env_id"],
-        "task_config_path": spec["task_config_path"],
-        **task_data,  # Unpack all task data fields
-    }
+    return spec.model_dump()
 
 
 # Auto-register environments when module is imported

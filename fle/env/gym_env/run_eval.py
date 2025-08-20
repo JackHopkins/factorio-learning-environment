@@ -117,7 +117,6 @@ async def main(run_config, offset):
             else base_version + version_offset
         )
         version_offset += 1
-        print(run_idx)
         # Create eval config with agent cards for a2a support
         config = GymEvalConfig(
             agents=agents,

@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from fle.env.a2a_instance import A2AFactorioInstance
+import gym
 import json
 
 from fle.commons.cluster_ips import get_local_container_ips
@@ -21,7 +22,6 @@ class GymEnvironmentSpec:
     task_config_path: str
     description: str
     num_agents: int
-    version: Optional[int]
 
 
 class FactorioGymRegistry:
@@ -60,30 +60,29 @@ class FactorioGymRegistry:
 
     def register_environment(
         self,
-        env_id: str,
+        task_key: str,
         task_config_path: str,
         description: str,
         task_type: str,
         num_agents: int,
-        model: str,
-        task_data: Dict[str, Any],
     ) -> None:
         """Register a new gym environment"""
+        spec = GymEnvironmentSpec(
+            task_key=task_key,
+            task_config_path=task_config_path,
+            description=description,
+            task_type=task_type,
+            num_agents=num_agents,
+        )
 
-        self._environments[env_id] = {
-            "env_id": env_id,
-            "task_config_path": task_config_path,
-            "task_data": task_data,
-        }
+        self._environments[task_key] = spec
 
-        # self._environments[env_id] = spec
-
-        # # Register with gym
-        # gym.register(
-        #     id=env_id,
-        #     entry_point="fle.env.gym_env.registry:make_factorio_env",
-        #     kwargs={"env_spec": spec},
-        # )
+        # Register with gym
+        gym.register(
+            id=task_key,
+            entry_point="fle.env.gym_env.registry:make_factorio_env",
+            kwargs={"env_spec": spec},
+        )
 
     def list_environments(self) -> List[str]:
         """List all registered environment IDs"""

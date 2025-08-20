@@ -615,7 +615,7 @@ class FactorioInstance:
     ):
         self.begin_transaction()
         self.add_command(
-            "/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)",
+            "/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats();",
             raw=True,
         )
         # self.add_command('/sc script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers

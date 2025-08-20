@@ -1,35 +1,17 @@
 import pytest
 
-from fle.commons.cluster_ips import get_local_container_ips
 from fle.env.game_types import Prototype, Resource
 from fle.env.entities import Position, BuildingBox, Direction
-from fle.env import FactorioInstance
-
-# @pytest.fixture()
-# def game(instance):
-#     instance.reset()
-#     instance.set_inventory({
-#         'wooden-chest': 100,
-#         'electric-mining-drill': 10,
-#         'steam-engine': 1,
-#         'burner-mining-drill': 5
-#     })
-#     yield instance.namespace
-
 
 @pytest.fixture()
-def game(instance):
-    instance.reset()
-    instance.set_inventory(
-        {
+def game(configure_game):
+    return configure_game(inventory={
             "wooden-chest": 100,
             "electric-mining-drill": 10,
             "steam-engine": 1,
             "burner-mining-drill": 5,
             "pumpjack": 1,
-        }
-    )
-    yield instance.namespace
+        })
 
 
 def test_nearest_buildable_simple(game):

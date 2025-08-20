@@ -31,7 +31,7 @@ def instance():
     try:
         instance = FactorioInstance(
             address="localhost",
-            bounding_box=200,
+            all_technologies_researched=True,
             tcp_port=selected_port,  # prefer env (CI) else last discovered
             cache_scripts=True,
             fast=True,
@@ -52,6 +52,7 @@ def instance():
                 "small-electric-pole": 10,
             },
         )
+        instance.set_speed(10)
         # Keep a canonical copy of the default test inventory to restore between tests
         try:
             instance.default_initial_inventory = dict(instance.initial_inventory)
@@ -66,7 +67,7 @@ def instance():
             instance.cleanup()
 
 
-# Reset state between tests without recreating the instance
+# # Reset state between tests without recreating the instance
 @pytest.fixture(autouse=True)
 def _reset_between_tests(instance):
     """
@@ -80,3 +81,55 @@ def _reset_between_tests(instance):
             instance.initial_inventory = instance.default_initial_inventory
     instance.reset(reset_position=True)
     yield
+
+
+# Provide a lightweight fixture that yields the game namespace derived from the
+# already-maintained `instance`. Many tests only need `namespace` and not the
+# full `instance`.
+@pytest.fixture()
+def namespace(instance):
+    yield instance.namespace
+
+
+# Backwards-compatible alias used by many tests; simply yields `namespace`.
+@pytest.fixture()
+def game(namespace):
+    yield namespace
+
+
+# Flexible configuration fixture for tests that need to tweak flags like
+# `all_technologies_researched` and/or inventory in one step and receive a fresh namespace.
+@pytest.fixture()
+def configure_game(instance):
+    def _configure_game(
+        inventory: dict | None = None,
+        merge: bool = False,
+        persist_inventory: bool = False,
+        *,
+        reset_position: bool = True,
+        all_technologies_researched: bool = True,
+    ):
+
+        instance.reset(
+            reset_position=reset_position,
+            all_technologies_researched=all_technologies_researched,
+        )
+
+        # Apply inventory first, so the subsequent reset reflects desired items
+        if inventory is not None:
+            print(f"Setting inventory: {inventory}")
+            if merge:
+                try:
+                    updated = {**instance.initial_inventory, **inventory}
+                except Exception:
+                    updated = dict(instance.initial_inventory)
+                    updated.update(inventory)
+            else:
+                updated = dict(inventory)
+            if persist_inventory:
+                instance.initial_inventory = updated
+            instance.set_inventory(updated)
+
+        return instance.namespace
+
+    return _configure_game

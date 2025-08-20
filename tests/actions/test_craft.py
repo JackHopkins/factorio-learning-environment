@@ -4,19 +4,14 @@ from fle.env.game_types import Prototype, Resource
 
 
 @pytest.fixture()
-def game(instance):
-    instance.reset()
-    instance.set_inventory(
-        {
-            "iron-plate": 40,
-            "iron-gear-wheel": 1,
-            "electronic-circuit": 3,
-            "pipe": 1,
-            "copper-plate": 10,
-        }
-    )
-    yield instance.namespace
-    instance.reset()
+def game(configure_game):
+    return configure_game(inventory={
+        "iron-plate": 40,
+        "iron-gear-wheel": 1,
+        "electronic-circuit": 3,
+        "pipe": 1,
+        "copper-plate": 10,
+    })
 
 
 def test_fail_to_craft_item(game):

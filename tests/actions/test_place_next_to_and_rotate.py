@@ -6,8 +6,8 @@ from fle.env import DirectionInternal
 
 
 @pytest.fixture()
-def game(instance):
-    instance.initial_inventory = {
+def game(configure_game):
+    return configure_game(inventory={
         "boiler": 1,
         "transport-belt": 1,
         "stone-furnace": 1,
@@ -18,9 +18,7 @@ def game(instance):
         "steam-engine": 1,
         "pipe": 1,
         "offshore-pump": 1,
-    }
-    instance.reset()
-    yield instance.namespace
+    })
 
 
 def calculate_expected_position(

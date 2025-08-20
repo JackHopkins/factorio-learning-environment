@@ -6,8 +6,8 @@ from fle.env.game_types import Prototype, Resource
 
 
 @pytest.fixture()
-def game(instance):
-    instance.initial_inventory = {
+def game(configure_game):
+    return configure_game(inventory={
         "boiler": 3,
         "transport-belt": 1,
         "stone-furnace": 1,
@@ -19,10 +19,7 @@ def game(instance):
         "pipe": 1,
         "offshore-pump": 1,
         "wooden-chest": 3,
-    }
-    instance.reset()
-    yield instance.namespace
-    # instance.reset()
+    }, persist_inventory=True)
 
 
 @pytest.fixture

@@ -1,15 +1,5 @@
 import time
 
-import pytest
-
-
-@pytest.fixture()
-def game(instance):
-    instance.reset()
-    yield instance.namespace
-    instance.reset()
-
-
 def test_sleep(game):
     for i in range(10):
         game.instance.set_speed(i)

@@ -1,13 +1,6 @@
 import pytest
 
 
-@pytest.fixture()
-def game(instance):
-    instance.reset()
-    yield instance.namespace
-    instance.reset()
-
-
 def test_print_tuple(game):
     """
     Print a tuple

@@ -1,15 +1,15 @@
 import pytest
 
-from fle.env import FactorioInstance
 from fle.env.game_types import Technology
-from fle.commons.cluster_ips import get_local_container_ips
 
 
 @pytest.fixture()
-def game(instance):
-    instance.reset(all_technologies_researched=False)
-    instance.set_inventory({"assembling-machine-1": 1})
-    yield instance.namespace
+def game(configure_game):
+    return configure_game(
+        inventory={"assembling-machine-1": 1},
+        merge=True,
+        all_technologies_researched=False,
+    )
 
 
 def test_get_research_progress_automation(game):

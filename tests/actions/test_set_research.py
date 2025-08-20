@@ -4,11 +4,10 @@ from fle.env import FactorioInstance
 from fle.env.game_types import Technology
 
 
-
 @pytest.fixture()
-def game(instance: FactorioInstance):
-    instance.reset(all_technologies_researched=False)
-    yield instance.namespace
+def game(configure_game):
+    return configure_game(all_technologies_researched=False)
+
 
 def test_set_research(game):
     ingredients = game.set_research(Technology.Automation)

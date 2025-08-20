@@ -6,10 +6,12 @@ from fle.env.game_types import Prototype, Resource
 
 
 @pytest.fixture()
-def game(instance):
-    instance.reset()
-    yield instance.namespace
-    # instance.reset()
+def game(configure_game):
+    return configure_game(inventory={
+        "coal": 50,
+        "iron-chest": 1,
+        "iron-plate": 5,
+    })
 
 
 def test_move_to(game):

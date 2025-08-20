@@ -117,13 +117,12 @@ async def main(run_config, offset):
             else base_version + version_offset
         )
         version_offset += 1
-
+        print(run_idx)
         # Create eval config with agent cards for a2a support
         config = GymEvalConfig(
             agents=agents,
             version=version,
             version_description=f"model:{run_config.model}\ntype:{task.task_key}\nnum_agents:{num_agents}",
-            exit_on_task_success=run_config.exit_on_task_success,
             task=task,
             agent_cards=agent_cards,
             env_id=run_config.env_id,

@@ -51,7 +51,6 @@ def print_environment_list(env_ids: List[str], detailed: bool = False):
             print(f"     Config Path: {info['task_config_path']}")
             print(f"     Agents: {info['num_agents']}")
             print(f"     Model: {info['model']}")
-            print(f"     Exit on Success: {info['exit_on_task_success']}")
 
         print()
 

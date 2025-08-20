@@ -24,7 +24,6 @@ class GymEnvironmentSpec:
     num_agents: int = 1
     model: str = "gpt-4"
     version: Optional[int] = None
-    exit_on_task_success: bool = True
 
 
 class FactorioGymRegistry:
@@ -86,7 +85,6 @@ class FactorioGymRegistry:
         num_agents: int = 1,
         model: str = "gpt-4",
         version: Optional[int] = None,
-        exit_on_task_success: bool = True,
     ) -> None:
         """Register a new gym environment"""
 
@@ -98,7 +96,6 @@ class FactorioGymRegistry:
             num_agents=num_agents,
             model=model,
             version=version,
-            exit_on_task_success=exit_on_task_success,
         )
 
         self._environments[env_id] = spec
@@ -203,7 +200,6 @@ def get_environment_info(env_id: str) -> Optional[Dict[str, Any]]:
         "num_agents": spec.num_agents,
         "model": spec.model,
         "version": spec.version,
-        "exit_on_task_success": spec.exit_on_task_success,
     }
 
 

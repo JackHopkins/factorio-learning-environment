@@ -24,11 +24,6 @@ jobs:
           # Install the package with dev dependencies for testing
           pip install -e ".[dev,agents,cluster,eval,all,mcp,env]"
 
-      - name: Build Factorio Docker image
-        run: |
-          cd fle/cluster/docker
-          docker build -t factorio . --platform linux/amd64
-
       - name: Verify scenario exists
         run: |
           # Check that the scenario directory exists
@@ -38,13 +33,6 @@ jobs:
           fi
           echo "✓ Found scenario directory"
           ls -la ./fle/cluster/scenarios/default_lab_scenario
-
-      - name: Update docker-compose to use local image
-        run: |
-          # Update docker-compose.yml to use the locally built image
-          cd fle/cluster
-          sed -i "s|image: 'factoriotools/factorio:1.1.110'|image: 'factorio:latest'|g" docker-compose-linux.yml
-          sed -i '/image:.*factorio/a\    container_name: factorio_1' docker-compose-linux.yml
 
       - name: Start Factorio server
         run: |

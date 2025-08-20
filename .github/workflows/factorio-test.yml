@@ -2,7 +2,8 @@ name: Factorio Server Tests
 on:
   pull_request:
     paths:
-      - 'fle/**'
+      - 'fle/env/**'
+      - 'fle/cluster/**'
       - 'tests/actions/**'
       - '.github/workflows/factorio-test.yml'
   workflow_dispatch:

@@ -18,6 +18,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            **/requirements*.txt
+            **/pyproject.toml
+            **/setup.cfg
+            **/setup.py
 
       - name: Verify scenario exists
         run: |
@@ -34,12 +40,8 @@ jobs:
           cd fle/cluster
           bash run-envs.sh start -n 1
 
-
       - name: Wait for server to start
         run: |
-          echo "Waiting for Factorio server to initialize..."
-          sleep 15
-          
           echo "Waiting for RCON port 27000 to be ready..."
           for i in {1..30}; do
             if nc -z localhost 27000 2>/dev/null; then

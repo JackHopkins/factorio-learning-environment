@@ -862,3 +862,11 @@ async def create_db_client(
         )
     else:
         raise Exception(f"Invalid database type: {db_type}")
+    
+
+async def get_next_version() -> int:
+    """Get next available version number"""
+    db_client = await create_db_client()
+    version = await db_client.get_largest_version()
+    await db_client.cleanup()
+    return version + 1

@@ -72,16 +72,16 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     await db_client.cleanup()
 
 
-async def main(run_config, offset):
+async def main(config_path, offset):
     # Read and validate run configurations
-    run_config = get_validated_run_configs(run_config)
+    run_configs = get_validated_run_configs(config_path)
     # Get starting version number for new runs
     base_version = await get_next_version()
     version_offset = 0
 
     # Create and start processes
     processes = []
-    for run_idx, run_config in enumerate(run_config):
+    for run_idx, run_config in enumerate(run_configs):
         # Get environment info from registry
         env_info = get_environment_info(run_config.env_id)
         if env_info is None:

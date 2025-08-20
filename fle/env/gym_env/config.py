@@ -29,7 +29,7 @@ class GymEvalConfig:
     task: Optional[TaskABC] = None
     agent_cards: Optional[List[AgentCard]] = None
     env_id: Optional[str] = None  # Gym environment ID for registry-based creation
-    instance_id: Optional[int] = None  # Which container to use for this evaluation
+    port_offset: Optional[int] = None  # Port offset that gets added to the base port
 
     def __post_init__(self):
         if self.task is None and hasattr(self.agents[0], "task"):

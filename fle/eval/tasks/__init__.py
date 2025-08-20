@@ -37,7 +37,7 @@ from .throughput_task import (
 from .unbounded_throughput_task import UnboundedThroughputTask
 
 # Task creation utilities
-from .task_factory import TaskFactory
+from .task_factory import TaskFactory, TASK_FOLDER
 
 __all__ = [
     # Abstract base and core classes
@@ -48,6 +48,7 @@ __all__ = [
     "UnboundedThroughputTask",
     # Task creation utilities
     "TaskFactory",
+    "TASK_FOLDER",
     # Useful constants
     "LAB_PLAY_POPULATED_STARTING_INVENTORY",
     "CRAFTING_STATISTICS",

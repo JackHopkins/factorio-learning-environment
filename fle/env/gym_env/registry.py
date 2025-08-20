@@ -10,7 +10,7 @@ from fle.commons.cluster_ips import get_local_container_ips
 from fle.commons.asyncio_utils import run_async_safely
 from fle.env import FactorioInstance
 from fle.env.gym_env.environment import FactorioGymEnv
-from fle.eval.tasks import TaskFactory
+from fle.eval.tasks import TaskFactory, TASK_FOLDER
 
 
 @dataclass
@@ -24,7 +24,6 @@ class GymEnvironmentSpec:
     num_agents: int
     model: str
     version: Optional[int]
-    exit_on_task_success: bool
 
 
 class FactorioGymRegistry:
@@ -32,9 +31,6 @@ class FactorioGymRegistry:
 
     def __init__(self):
         self._environments: Dict[str, GymEnvironmentSpec] = {}
-        # Use the same path construction as TaskFactory for consistency
-        from fle.eval.tasks.task_factory import TASK_FOLDER
-
         self._task_definitions_path = TASK_FOLDER
         self._discovered = False
 
@@ -47,22 +43,15 @@ class FactorioGymRegistry:
             raise FileNotFoundError(
                 f"Task definitions path not found: {self._task_definitions_path}"
             )
-
         # Discover all JSON task definition files
         for task_file in self._task_definitions_path.rglob("*.json"):
             try:
                 with open(task_file, "r") as f:
                     task_data = json.load(f)
-
-                task_key = task_data["task_key"]
-
-                # Register the environment
-                self.register_environment(
-                    env_id=task_key,
-                    task_config_path=str(task_file),
-                    task_data=task_data,
-                )
-
+                    print(task_data)
+                    print(task_file)
+                    exit()
+                    self.register_environment(task_data)
             except Exception as e:
                 print(f"Warning: Failed to load task definition {task_file}: {e}")
 
@@ -96,10 +85,6 @@ class FactorioGymRegistry:
     def get_environment_spec(self, env_id: str) -> Optional[Dict[str, Any]]:
         """Get environment specification by ID"""
         return self._environments.get(env_id)
-
-    def get_all_specs(self) -> Dict[str, Dict[str, Any]]:
-        """Get all environment specifications"""
-        return self._environments.copy()
 
 
 # Global registry instance

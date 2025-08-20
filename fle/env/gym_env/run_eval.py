@@ -13,7 +13,6 @@ from fle.env.gym_env.registry import get_environment_info, list_available_enviro
 from fle.env.gym_env.trajectory_runner import GymTrajectoryRunner
 
 from fle.agents.gym_agent import GymAgent
-from fle.commons.cluster_ips import get_local_container_ips
 from fle.commons.db_client import create_db_client, get_next_version
 from fle.eval.tasks import TaskFactory
 from fle.env.utils.controller_loader.system_prompt_generator import (
@@ -37,13 +36,6 @@ def get_validated_run_configs(run_config_location: str) -> list[GymRunConfig]:
             raise ValueError(
                 f"Environment ID '{run_config.env_id}' not found in registry. Available environments: {available_envs}"
             )
-
-    # Check if we have enough containers
-    ips, udp_ports, tcp_ports = get_local_container_ips()
-    if len(tcp_ports) < len(run_configs):
-        raise ValueError(
-            f"Not enough containers for {len(run_configs)} runs. Only {len(tcp_ports)} containers available."
-        )
 
     return run_configs
 

@@ -24,6 +24,10 @@ setup_platform() {
         export OS_TYPE="unix"
         export MODS_PATH="~/Applications/Factorio.app/Contents/Resources/mods"
     fi
+    # Expand leading ~ in MODS_PATH so docker-compose gets an absolute path
+    if [[ "$MODS_PATH" == ~* ]]; then
+        MODS_PATH="${HOME}${MODS_PATH:1}"
+    fi
     echo "Detected architecture: $ARCH, using platform: $DOCKER_PLATFORM"
     echo "Using mods path: $MODS_PATH"
 }
@@ -42,6 +46,12 @@ setup_compose_cmd() {
 generate_compose_file() {
     NUM_INSTANCES=${1:-1}
     SCENARIO=${2:-"default_lab_scenario"}
+
+    # Build optional mods volume block based on ATTACH_MOD
+    MODS_VOLUME=""
+    if [ "$ATTACH_MOD" = true ]; then
+        MODS_VOLUME=$(printf "    - source: %s\n      target: /opt/factorio/mods\n      type: bind\n" "$MODS_PATH")
+    fi
     
     # Validate scenario
     if [ "$SCENARIO" != "open_world" ] && [ "$SCENARIO" != "default_lab_scenario" ]; then
@@ -92,20 +102,20 @@ EOF
     ports:
     - ${UDP_PORT}:34197/udp
     - ${TCP_PORT}:27015/tcp
-    pull_policy: never
+    pull_policy: missing
     restart: unless-stopped
     user: factorio
     volumes:
-    - source: ../scenarios
+    - source: ./scenarios
       target: /opt/factorio/scenarios
       type: bind
-    - source: ../docker/config
+    - source: ./config
       target: /opt/factorio/config
       type: bind
-    - source: ../../data/_screenshots
+    - source: ../../.fle/data/_screenshots
       target: /opt/factorio/script-output
       type: bind
-
+${MODS_VOLUME}
 EOF
     done
     
@@ -193,6 +203,7 @@ show_help() {
     echo "Options:"
     echo "  -n NUMBER     Number of Factorio instances to run (1-33, default: 1)"
     echo "  -s SCENARIO   Scenario to run (open_world or default_lab_scenario, default: default_lab_scenario)"
+    echo "  -m, --attach_mods Attach mods to the instances"
     echo ""
     echo "Examples:"
     echo "  $0                           Start 1 instance with default_lab_scenario"
@@ -208,46 +219,69 @@ COMMAND="start"
 NUM_INSTANCES=1
 SCENARIO="default_lab_scenario"
 
-# Check if first arg is a command
-if [[ "$1" == "start" || "$1" == "stop" || "$1" == "restart" || "$1" == "help" ]]; then
-    COMMAND="$1"
-    shift
-fi
+# Boolean: attach mods or not
+ATTACH_MOD=false
 
-# Parse options with getopts
-while getopts ":n:s:h" opt; do
-    case ${opt} in
-        n )
-            if ! [[ "$OPTARG" =~ ^[0-9]+$ ]]; then
-                echo "Error: Number of instances must be a positive integer."
-                exit 1
-            fi
-            NUM_INSTANCES=$OPTARG
-            ;;
-        s )
-            if [ "$OPTARG" != "open_world" ] && [ "$OPTARG" != "default_lab_scenario" ]; then
-                echo "Error: Scenario must be either 'open_world' or 'default_lab_scenario'."
-                exit 1
-            fi
-            SCENARIO=$OPTARG
-            ;;
-        h )
-            show_help
-            exit 0
-            ;;
-        \? )
-            echo "Error: Invalid option: -$OPTARG"
-            show_help
-            exit 1
-            ;;
-        : )
-            echo "Error: Option -$OPTARG requires an argument."
-            show_help
-            exit 1
-            ;;
-    esac
+# Parse args (supporting both short and long options)
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    start|stop|restart|help)
+      COMMAND="$1"
+      shift
+      ;;
+    -n|--number)
+      if [[ -z "$2" || "$2" == -* ]]; then
+        echo "Error: -n|--number requires an argument."
+        show_help
+        exit 1
+      fi
+      if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+        echo "Error: Number of instances must be a positive integer."
+        exit 1
+      fi
+      NUM_INSTANCES="$2"
+      shift 2
+      ;;
+    -s|--scenario)
+      if [[ -z "$2" || "$2" == -* ]]; then
+        echo "Error: -s|--scenario requires an argument."
+        show_help
+        exit 1
+      fi
+      case "$2" in
+        open_world|default_lab_scenario)
+          SCENARIO="$2"
+          ;;
+        *)
+          echo "Error: Scenario must be either 'open_world' or 'default_lab_scenario'."
+          exit 1
+          ;;
+      esac
+      shift 2
+      ;;
+    -m|--attach_mods)
+      ATTACH_MOD=true
+      shift
+      ;;
+    -h|--help)
+      show_help
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      echo "Error: Invalid option: $1"
+      show_help
+      exit 1
+      ;;
+    *)
+      # Unrecognized positional; ignore and continue
+      shift
+      ;;
+  esac
 done
-shift $((OPTIND -1))
 
 # Execute the appropriate command
 case "$COMMAND" in

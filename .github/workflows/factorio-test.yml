@@ -17,7 +17,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          
+
       - name: Verify scenario exists
         run: |
           # Check that the scenario directory exists
@@ -33,37 +33,38 @@ jobs:
           cd fle/cluster/local
           bash run-envs.sh -n 1
 
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          # Install the package with dev dependencies for testing
-          pip install -e ".[dev,agents,cluster,eval,all,mcp,env]"
 
       - name: Wait for server to start
         run: |
           echo "Waiting for Factorio server to initialize..."
           sleep 15
           
-          echo "Waiting for RCON port 27015 to be ready..."
+          echo "Waiting for RCON port 27000 to be ready..."
           for i in {1..30}; do
-            if nc -z localhost 27015 2>/dev/null; then
-              echo "✓ RCON port 27015 is open!"
+            if nc -z localhost 27000 2>/dev/null; then
+              echo "✓ RCON port 27000 is open!"
               break
             fi
             echo "Waiting... ($i/30)"
             sleep 2
           done
           
-          if ! nc -z localhost 27015 2>/dev/null; then
-            echo "❌ RCON port 27015 never became available"
+          if ! nc -z localhost 27000 2>/dev/null; then
+            echo "❌ RCON port 27000 never became available"
             exit 1
           fi
 
       - name: Check server status
         run: |
-          cd fle/cluster
-          docker compose -f docker-compose-linux.yml ps
-          docker compose -f docker-compose-linux.yml logs factorio
+          cd fle/cluster/local
+          docker compose -f docker-compose.yml ps
+          docker compose -f docker-compose.yml logs factorio_0
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install the package with dev dependencies for testing
+          pip install -e ".[dev,agents,cluster,eval,all,mcp,env]"
 
       - name: Debug container IPs and ports
         run: |
@@ -88,7 +89,7 @@ jobs:
           fi
           
           # Try common RCON ports
-          for port in 27015 27016 27017 27018 27019 27020; do
+          for port in 27000 27016 27017 27018 27019 27020; do
             echo -n "Testing port $port: "
             if nc -z -w 2 localhost $port 2>/dev/null; then
               echo "✓ Open"
@@ -103,15 +104,15 @@ jobs:
           python -m pytest -v -s --tb=short tests/actions/
         env:
           FACTORIO_HOST: localhost
-          FACTORIO_RCON_PORT: 27015
+          FACTORIO_RCON_PORT: 27000
           PYTHONUNBUFFERED: 1
 
       - name: Show test logs on failure
         if: failure()
         run: |
-          cd fle/cluster
+          cd fle/cluster/local
           echo "=== Factorio container logs ==="
-          docker compose -f docker-compose-linux.yml logs factorio
+          docker compose -f docker-compose.yml logs factorio_0
           
           echo -e "\n=== All container logs ==="
           docker compose -f docker-compose-linux.yml logs
@@ -119,5 +120,5 @@ jobs:
       - name: Stop server
         if: always()
         run: |
-          cd fle/cluster
-          docker compose -f docker-compose-linux.yml down
+          cd fle/cluster/local
+          bash run-envs.sh stop

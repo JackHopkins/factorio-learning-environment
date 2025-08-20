@@ -12,6 +12,8 @@ from fle.env import FactorioInstance
 from fle.env.gym_env.environment import FactorioGymEnv
 from fle.eval.tasks import TaskFactory
 
+PORT_OFFSET = int(os.getenv("PORT_OFFSET", "0"))
+
 
 @dataclass
 class GymEnvironmentSpec:
@@ -107,7 +109,7 @@ class FactorioGymRegistry:
         gym.register(
             id=env_id,
             entry_point="fle.env.gym_env.registry:make_factorio_env",
-            # kwargs={"env_spec": spec, "run_idx": run_idx},
+            kwargs={"env_spec": spec},
         )
 
     def list_environments(self) -> List[str]:
@@ -146,8 +148,16 @@ def make_factorio_env(env_spec: GymEnvironmentSpec, run_idx: int) -> FactorioGym
             ips, udp_ports, tcp_ports = get_local_container_ips()
             if len(tcp_ports) == 0:
                 raise RuntimeError("No Factorio containers available")
-            address = ips[run_idx]
-            tcp_port = tcp_ports[run_idx]
+
+            # Apply port offset for multiple terminal sessions
+            container_idx = PORT_OFFSET + run_idx
+            if container_idx >= len(tcp_ports):
+                raise RuntimeError(
+                    f"Container index {container_idx} (PORT_OFFSET={PORT_OFFSET} + run_idx={run_idx}) exceeds available containers ({len(tcp_ports)})"
+                )
+
+            address = ips[container_idx]
+            tcp_port = tcp_ports[container_idx]
 
         common_kwargs = {
             "address": address,

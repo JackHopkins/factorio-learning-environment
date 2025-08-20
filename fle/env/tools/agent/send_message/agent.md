@@ -23,12 +23,14 @@ The function returns `True` if the message was sent successfully.
 ## Examples
 
 ### Broadcasting to All Agents
+
 ```python
 # Announce a new resource discovery
 send_message("I found a large iron ore deposit at position (100, 200)")
 ```
 
 ### Requesting Resources
+
 ```python
 # Ask another agent for resources
 agent_id = 3
@@ -36,6 +38,7 @@ send_message("Can you provide 50 iron plates?", recipient=agent_id)
 ```
 
 ### Coordinating Construction
+
 ```python
 # Coordinate with another agent on construction
 agent_id = 2
@@ -55,6 +58,7 @@ send_message("I'm building a power plant at (50, 50), please avoid that area", r
 ## Best Practices
 
 1. **Structured Messages**
+
 ```python
 # Use a consistent message format for easier parsing
 resource_type = "iron_plate"
@@ -63,6 +67,7 @@ send_message(f"REQUEST:{resource_type}:{quantity}")
 ```
 
 2. **Response Handling**
+
 ```python
 # Send a request and wait for a response
 request_id = "req_123"
@@ -77,15 +82,16 @@ for msg in messages:
 ```
 
 3. **Periodic Status Updates**
+
 ```python
 # Send periodic status updates to all agents
 while True:
     # Get current status
     status = get_current_status()
-    
+
     # Broadcast status
     send_message(f"STATUS:{status}")
-    
+
     # Wait before next update
     sleep(60)
-``` 
+```

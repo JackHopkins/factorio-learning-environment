@@ -17,6 +17,7 @@ The function returns an Inventory object that can be queried using Prototype obj
 ### Return Value
 
 Returns an Inventory object that can be accessed in two ways:
+
 ```python
 inventory = inspect_inventory()
 # Using [] syntax
@@ -29,6 +30,7 @@ coal_count = inventory.get(Prototype.Coal, 0)  # Second argument is default valu
 ## Common Usage Patterns
 
 1. **Check Player Inventory**
+
 ```python
 # Check your own inventory
 inventory = inspect_inventory()
@@ -37,6 +39,7 @@ iron_plates = inventory[Prototype.IronPlate]
 ```
 
 2. **Check Entity Inventory**
+
 ```python
 # Check chest contents
 chest = place_entity(Prototype.IronChest, position=pos)
@@ -46,6 +49,7 @@ items_in_chest = chest_inventory[Prototype.IronPlate]
 ```
 
 ### 3. Labs
+
 ```python
 lab = place_entity(Prototype.Lab, position=pos)
 lab_inventory = inspect_inventory(entity=lab)
@@ -55,10 +59,11 @@ lab_inventory = inspect_inventory(entity=lab)
 ## Common Patterns
 
 1. **Fuel Monitoring Pattern**
-To monitor fuel for burner types, you need to use the .fuel attribute of burner types
+   To monitor fuel for burner types, you need to use the .fuel attribute of burner types
+
 ```python
 def check_furnace_fuel_levels(furnace: Entity) -> bool:
     """Monitor furnace fuel levels"""
     has_fuel = furnace.fuel[Prototype.Coal] > 0
-    return has_fuel 
+    return has_fuel
 ```

@@ -14,8 +14,7 @@ from fle.env.gym_env.trajectory_runner import GymTrajectoryRunner
 
 from fle.agents.gym_agent import GymAgent
 from fle.commons.cluster_ips import get_local_container_ips
-from fle.commons.db_client import create_db_client
-from fle.eval.algorithms.independent import get_next_version
+from fle.commons.db_client import create_db_client, get_next_version
 from fle.eval.tasks import TaskFactory
 from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
@@ -43,7 +42,7 @@ def get_validated_run_configs(run_config_location: str) -> list[GymRunConfig]:
     ips, udp_ports, tcp_ports = get_local_container_ips()
     if len(tcp_ports) < len(run_configs):
         raise ValueError(
-            f"Not enough containers for {len(run_configs)} runs. Only {len(ips)} containers available."
+            f"Not enough containers for {len(run_configs)} runs. Only {len(tcp_ports)} containers available."
         )
 
     return run_configs
@@ -75,7 +74,6 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
 async def main(run_config, offset):
     # Read and validate run configurations
     run_config = get_validated_run_configs(run_config)
-    pkg = importlib.resources.files("fle")
     # Get starting version number for new runs
     base_version = await get_next_version()
     version_offset = 0
@@ -88,7 +86,7 @@ async def main(run_config, offset):
         if env_info is None:
             raise ValueError(f"Could not get environment info for {run_config.env_id}")
         task = TaskFactory.create_task(env_info["task_config_path"])
-        generator = SystemPromptGenerator(str(pkg / "env"))
+        generator = SystemPromptGenerator(str(importlib.resources.files("fle") / "env"))
         # Create agents and their agent cards
         agents = []
         agent_cards = []

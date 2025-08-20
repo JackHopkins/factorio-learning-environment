@@ -466,7 +466,7 @@ async def create_factorio_instance(
     else:
         instance = FactorioInstance(**common_kwargs)
 
-    instance.speed(10)
+    instance.set_speed(10)
     return instance
 
 

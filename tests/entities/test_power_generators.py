@@ -13,7 +13,7 @@ def game(instance):
         "steam-engine": 3,
         "small-electric-pole": 4,
     }
-    instance.speed(10)
+    instance.set_speed(10)
     instance.reset()
     yield instance.namespace
 

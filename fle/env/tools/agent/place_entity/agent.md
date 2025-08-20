@@ -16,12 +16,14 @@ place_entity(
 Returns the placed Entity object.
 
 ### Parameters
+
 - `entity`: Prototype of entity to place
 - `direction`: Direction entity should face (default: UP)
 - `position`: Where to place entity (default: 0,0)
 - `exact`: Whether to require exact positioning (default: True)
 
 ### Examples
+
 ```python
 # first moveto target location
 move_to(Position(x=0, y=0))
@@ -49,6 +51,7 @@ print(f"Placed pump at {pump.position}to generate power")
 ```
 
 ### Mining Drills
+
 ```python
 # Place on resource patch
 ore_pos = nearest(Resource.IronOre)
@@ -63,12 +66,14 @@ print(f"Placed drill at {drill.position} to mine iron ore")
 ```
 
 ## Best Practices
+
 - Use nearest buildable to ensure safe placement
 
 ## Common Patterns
 
 1. **Mining Setup**
-You can put chests directly at the drop positions of drills to catch ore, thus creating automatic drilling lines
+   You can put chests directly at the drop positions of drills to catch ore, thus creating automatic drilling lines
+
 ```python
 def setup_mining(resource_pos: Position):
     move_to(resource_pos)

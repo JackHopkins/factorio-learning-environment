@@ -131,7 +131,7 @@ def make_factorio_env(spec: GymEnvironmentSpec, instance_id: int) -> FactorioGym
         else:
             instance = FactorioInstance(**common_kwargs)
 
-        instance.speed(10)
+        instance.set_speed(10)
 
         # Setup the task
         task.setup(instance)

@@ -105,18 +105,23 @@ python env/src/gym_env/example_usage.py --gym-format
 ### Registry Functions
 
 #### `list_available_environments() -> List[str]`
+
 Returns a list of all registered environment IDs.
 
 #### `get_environment_info(env_id: str) -> Optional[Dict[str, Any]]`
+
 Returns detailed information about a specific environment.
 
 #### `register_all_environments() -> None`
+
 Manually trigger environment discovery and registration.
 
 ### Environment Creation
 
 #### `gym.make(env_id: str, **kwargs) -> FactorioGymEnv`
+
 Creates a Factorio gym environment. The environment will:
+
 1. Load the task configuration from the JSON file
 2. Create a Factorio instance
 3. Set up the task environment
@@ -127,6 +132,7 @@ Creates a Factorio gym environment. The environment will:
 All environments follow the standard gym interface:
 
 ### Action Space
+
 ```python
 {
     'agent_idx': Discrete(instance.num_agents),  # Index of the agent taking the action
@@ -136,7 +142,9 @@ All environments follow the standard gym interface:
 ```
 
 ### Observation Space
+
 The observation space includes:
+
 - `raw_text`: Output from the last action
 - `entities`: List of entities on the map
 - `inventory`: Current inventory state
@@ -160,14 +168,14 @@ Task definitions are JSON files located in `eval/tasks/task_definitions/`. Each 
 
 ```json
 {
-    "task_type": "throughput",
-    "config": {
-        "goal_description": "Create an automatic iron ore factory...",
-        "throughput_entity": "iron-ore",
-        "quota": 16,
-        "trajectory_length": 128,
-        "task_key": "iron_ore_throughput_16"
-    }
+  "task_type": "throughput",
+  "config": {
+    "goal_description": "Create an automatic iron ore factory...",
+    "throughput_entity": "iron-ore",
+    "quota": 16,
+    "trajectory_length": 128,
+    "task_key": "iron_ore_throughput_16"
+  }
 }
 ```
 
@@ -215,7 +223,7 @@ for step in range(5):
     done = terminated or truncated
     current_state = info['output_game_state']
     print(f"Step {step}: Reward={reward}, Done={done}")
-    
+
     if done:
         break
 
@@ -232,6 +240,7 @@ env.close()
 ## Error Handling
 
 The registry includes error handling for:
+
 - Missing task definition files
 - Invalid JSON configurations
 - Missing Factorio containers
@@ -244,6 +253,7 @@ If an environment fails to load, a warning will be printed but the registry will
 ### Environment Creation Fails
 
 If `gym.make()` fails with connection errors:
+
 1. Ensure Factorio containers are running
 2. Check that the cluster setup is working
 3. Verify network connectivity
@@ -251,6 +261,7 @@ If `gym.make()` fails with connection errors:
 ### No Environments Found
 
 If no environments are listed:
+
 1. Check that the task definitions directory exists
 2. Verify JSON files are valid
 3. Check file permissions
@@ -258,6 +269,7 @@ If no environments are listed:
 ### Import Errors
 
 If you get import errors:
+
 1. Ensure you're running from the correct directory
 2. Check that all dependencies are installed
 3. Verify the Python path includes the project root

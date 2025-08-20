@@ -44,7 +44,7 @@ def fle_cluster(args):
 def fle_eval(args):
     try:
         config_path = str(Path(args.config))
-        asyncio.run(run_eval(config_path, args.offset))
+        asyncio.run(run_eval(config_path))
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -57,7 +57,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  fle eval --config configs/gym_run_config.json --offset n
+  fle eval --config configs/gym_run_config.json
   fle cluster [start|stop|restart|help] [-n N] [-s SCENARIO]
         """,
     )
@@ -79,12 +79,6 @@ Examples:
     )
     parser_eval = subparsers.add_parser("eval", help="Run experiment")
     parser_eval.add_argument("--config", required=True, help="Path to run config JSON")
-    parser_eval.add_argument(
-        "--offset",
-        type=int,
-        required=True,
-        help="Offset to add to instance_id selection",
-    )
     args = parser.parse_args()
     if args.command:
         fle_init()

@@ -58,7 +58,7 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     """Run a single gym evaluation process"""
     db_client = await create_db_client()
 
-    gym_env = gym.make(config.env_id, instance_id=config.instance_id)
+    gym_env = gym.make(config.env_id)
 
     log_dir = os.path.join(".fle", "trajectory_logs", f"v{config.version}")
     runner = GymTrajectoryRunner(
@@ -72,7 +72,7 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     await db_client.cleanup()
 
 
-async def main(config_path, offset):
+async def main(config_path):
     # Read and validate run configurations
     run_configs = get_validated_run_configs(config_path)
     # Get starting version number for new runs
@@ -127,7 +127,6 @@ async def main(config_path, offset):
             task=task,
             agent_cards=agent_cards,
             env_id=run_config.env_id,
-            instance_id=run_idx + offset,
         )
         # Ensure agent cards are properly set for a2a functionality
         assert config.agent_cards is not None

@@ -5,7 +5,7 @@ setup_platform() {
     ARCH=$(uname -m)
     OS=$(uname -s)
     if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
-        export DOCKER_PLATFORM="linux/amd64"
+        export DOCKER_PLATFORM="linux/arm64"
     else
         export DOCKER_PLATFORM="linux/amd64"
     fi

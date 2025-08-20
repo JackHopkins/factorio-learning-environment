@@ -73,9 +73,9 @@ class DirectionInternal(enum.Enum):
 
 class FactorioTransaction:
     def __init__(self):
-        self.commands: List[Tuple[str, List[Any], bool]] = (
-            []
-        )  # (command, parameters, is_raw)
+        self.commands: List[
+            Tuple[str, List[Any], bool]
+        ] = []  # (command, parameters, is_raw)
 
     def add_command(self, command: str, *parameters, raw=False):
         self.commands.append((command, list(parameters), raw))
@@ -175,9 +175,9 @@ class FactorioInstance:
 
     def reset(self, game_state: Optional[GameState] = None):
         # Reset the namespace (clear variables, functions etc)
-        assert (
-            not game_state or len(game_state.inventories) == self.num_agents
-        ), "Game state must have the same number of inventories as num_agents"
+        assert not game_state or len(game_state.inventories) == self.num_agents, (
+            "Game state must have the same number of inventories as num_agents"
+        )
 
         for namespace in self.namespaces:
             namespace.reset()

@@ -22,7 +22,8 @@ def fle_init():
 
 
 def fle_cluster(args):
-    script = Path(__file__).parent / "cluster" / "local" / "run-envs.sh"
+    cluster_path = Path(__file__).parent / "cluster"
+    script = cluster_path / "run-envs.sh"
     if not script.exists():
         print(f"Cluster script not found: {script}", file=sys.stderr)
         sys.exit(1)
@@ -35,7 +36,7 @@ def fle_cluster(args):
         if args.s:
             cmd.extend(["-s", args.s])
     try:
-        subprocess.run(cmd, check=True)
+        subprocess.run(cmd, cwd=str(cluster_path), check=True)
     except subprocess.CalledProcessError as e:
         print(f"Error running cluster script: {e}", file=sys.stderr)
         sys.exit(e.returncode)

@@ -88,7 +88,7 @@ class FactorioGymRegistry:
         """List all registered environment IDs"""
         return list(self._environments.keys())
 
-    def get_environment_spec(self, env_id: str) -> Optional[Dict[str, Any]]:
+    def get_environment_spec(self, env_id: str) -> Optional[GymEnvironmentSpec]:
         """Get environment specification by ID"""
         return self._environments.get(env_id)
 
@@ -97,14 +97,10 @@ class FactorioGymRegistry:
 _registry = FactorioGymRegistry()
 
 
-def make_factorio_env(env_spec: Dict[str, Any], instance_id: int = 0) -> FactorioGymEnv:
-    """Create a Factorio gym environment from specification"""
-    task_config_path = env_spec["task_config_path"]
-    task_data = env_spec["task_data"]
-    num_agents = task_data["num_agents"]
-
+def make_factorio_env(spec: GymEnvironmentSpec, instance_id: int) -> FactorioGymEnv:
+    """Factory function to create a Factorio gym environment"""
     # Create task from the task definition
-    task = TaskFactory.create_task(task_config_path)
+    task = TaskFactory.create_task(spec.task_config_path)
 
     # Create Factorio instance
     try:
@@ -122,7 +118,7 @@ def make_factorio_env(env_spec: Dict[str, Any], instance_id: int = 0) -> Factori
         common_kwargs = {
             "address": address,
             "tcp_port": int(tcp_port),
-            "num_agents": num_agents,
+            "num_agents": spec["num_agents"],
             "fast": True,
             "cache_scripts": True,
             "inventory": {},
@@ -130,7 +126,7 @@ def make_factorio_env(env_spec: Dict[str, Any], instance_id: int = 0) -> Factori
         }
 
         print(f"Using local Factorio container at {address}:{tcp_port}")
-        if num_agents > 1:
+        if spec["num_agents"] > 1:
             instance = run_async_safely(A2AFactorioInstance.create(**common_kwargs))
         else:
             instance = FactorioInstance(**common_kwargs)

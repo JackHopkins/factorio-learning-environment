@@ -36,8 +36,8 @@ jobs:
 
       - name: Start Factorio server
         run: |
-          cd fle/cluster
-          docker compose -f docker-compose-linux.yml up -d
+          cd fle/cluster/local
+          bash run-envs.sh -n 1
 
       - name: Wait for server to start
         run: |

@@ -108,7 +108,6 @@ class FactorioInstance:
         self.persistent_vars = {}
         self.tcp_port = tcp_port
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
-        self.all_technologies_researched = all_technologies_researched
         self.fast = fast
         self._speed = 1
         self._ticks_elapsed = 0
@@ -134,7 +133,7 @@ class FactorioInstance:
         if inventory is None:
             inventory = {}
         self.initial_inventory = inventory
-        self.initialise(fast)
+        self.initialise(fast, all_technologies_researched)
         self.initial_score = 0
         try:
             self.first_namespace.score()
@@ -148,7 +147,7 @@ class FactorioInstance:
                 **self.lua_script_manager.tool_scripts,
             }
             self.setup_tools(self.lua_script_manager)
-            self.initialise(fast)
+            self.initialise(fast, all_technologies_researched)
 
         self.initial_score, goal = self.first_namespace.score()
         # Register the cleanup method to be called on exit (only once per process)
@@ -173,7 +172,12 @@ class FactorioInstance:
     def is_multiagent(self):
         return self.num_agents > 1
 
-    def reset(self, game_state: Optional[GameState] = None, reset_position: bool = False):
+    def reset(
+        self,
+        game_state: Optional[GameState] = None,
+        reset_position: bool = False,
+        all_technologies_researched: bool = True,
+    ):
         # Reset the namespace (clear variables, functions etc)
         assert not game_state or len(game_state.inventories) == self.num_agents, (
             "Game state must have the same number of inventories as num_agents"
@@ -185,9 +189,9 @@ class FactorioInstance:
         if not game_state:
             # Reset the game instance
             inventories = [self.initial_inventory] * self.num_agents
-            self._reset(inventories, reset_position)
+            self._reset(inventories, reset_position, all_technologies_researched)
             # Reset the technologies
-            if not self.all_technologies_researched:
+            if not all_technologies_researched:
                 self.first_namespace._load_research_state(
                     ResearchState(
                         technologies={},
@@ -199,7 +203,11 @@ class FactorioInstance:
                 )
         else:
             # Reset the game instance with the correct player's inventory and messages if multiagent
-            self._reset(game_state.inventories, reset_position)
+            self._reset(
+                game_state.inventories,
+                reset_position,
+                all_technologies_researched,
+            )
 
             # Load entities into the game
             self.first_namespace._load_entity_state(
@@ -599,7 +607,12 @@ class FactorioInstance:
         # print(lua_response)
         return _lua2python(command, lua_response, start=start)
 
-    def _reset(self, inventories: List[Dict[str, Any]], reset_position: bool):
+    def _reset(
+        self,
+        inventories: List[Dict[str, Any]],
+        reset_position: bool,
+        all_technologies_researched: bool,
+    ):
         self.begin_transaction()
         self.add_command(
             "/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)",
@@ -622,7 +635,7 @@ class FactorioInstance:
             if reset_position:
                 # Ensure players are returned to a known spawn location between tests
                 self.add_command(
-                    f"/sc if global.agent_characters and global.agent_characters[{player_index}] then global.agent_characters[{player_index}].teleport{{x=0, y={(i)*2}}} end",
+                    f"/sc if global.agent_characters and global.agent_characters[{player_index}] then global.agent_characters[{player_index}].teleport{{x=0, y={(i) * 2}}} end",
                     raw=True,
                 )
             self.add_command(
@@ -635,11 +648,13 @@ class FactorioInstance:
                 raw=True,
             )
 
-        if self.all_technologies_researched:
+        if all_technologies_researched:
             self.add_command(
                 "/sc global.agent_characters[1].force.research_all_technologies()",
                 raw=True,
             )
+        else:
+            self.add_command("/sc global.agent_characters[1].force.reset()", raw=True)
         self.add_command("/sc global.elapsed_ticks = 0", raw=True)
         self.execute_transaction()
 
@@ -682,7 +697,7 @@ class FactorioInstance:
     def execute_transaction(self) -> Dict[str, Any]:
         return self._execute_transaction()
 
-    def initialise(self, fast=True):
+    def initialise(self, fast=True, all_technologies_researched=True):
         self.begin_transaction()
         self.add_command("/sc global.alerts = {}", raw=True)
         self.add_command("/sc global.elapsed_ticks = 0", raw=True)
@@ -710,7 +725,11 @@ class FactorioInstance:
             self.lua_script_manager.load_init_into_game(script_name)
 
         inventories = [self.initial_inventory] * self.num_agents
-        self._reset(inventories, reset_position=False)
+        self._reset(
+            inventories,
+            reset_position=False,
+            all_technologies_researched=all_technologies_researched,
+        )
         self.first_namespace._clear_collision_boxes()
 
     def _create_agent_game_characters(self):

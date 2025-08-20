@@ -53,23 +53,8 @@ class FactorioGymRegistry:
             try:
                 with open(task_file, "r") as f:
                     task_data = json.load(f)
-
-                task_config = task_data.get("config", {})
-                task_key = task_config.get("task_key", task_file.stem)
-                task_type = task_config.get("task_type", "default")
-                goal_description = task_config.get(
-                    "goal_description", f"Task: {task_key}"
-                )
-                num_agents = task_config["num_agents"]
                 # Register the environment
-                self.register_environment(
-                    env_id=task_key,
-                    task_key=task_key,
-                    task_config_path=str(task_file),
-                    description=goal_description,
-                    task_type=task_type,
-                    num_agents=num_agents,
-                )
+                self.register_environment(task_data)
 
             except Exception as e:
                 print(f"Warning: Failed to load task definition {task_file}: {e}")

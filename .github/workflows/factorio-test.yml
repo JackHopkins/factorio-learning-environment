@@ -113,9 +113,6 @@ jobs:
           cd fle/cluster
           echo "=== Factorio container logs ==="
           docker compose -f docker-compose.yml logs factorio_0
-          
-          echo -e "\n=== All container logs ==="
-          docker compose -f docker-compose-linux.yml logs
 
       - name: Stop server
         if: always()

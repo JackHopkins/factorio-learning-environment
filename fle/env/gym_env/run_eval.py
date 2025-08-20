@@ -13,7 +13,6 @@ from fle.env.gym_env.registry import get_environment_info, list_available_enviro
 from fle.env.gym_env.trajectory_runner import GymTrajectoryRunner
 
 from fle.agents.gym_agent import GymAgent
-from fle.commons.cluster_ips import get_local_container_ips
 from fle.commons.db_client import create_db_client, get_next_version
 from fle.eval.tasks import TaskFactory
 from fle.env.utils.controller_loader.system_prompt_generator import (
@@ -37,13 +36,6 @@ def get_validated_run_configs(run_config_location: str) -> list[GymRunConfig]:
             raise ValueError(
                 f"Environment ID '{run_config.env_id}' not found in registry. Available environments: {available_envs}"
             )
-
-    # Check if we have enough containers
-    ips, udp_ports, tcp_ports = get_local_container_ips()
-    if len(tcp_ports) < len(run_configs):
-        raise ValueError(
-            f"Not enough containers for {len(run_configs)} runs. Only {len(tcp_ports)} containers available."
-        )
 
     return run_configs
 
@@ -116,13 +108,11 @@ async def main(run_config, offset):
             else base_version + version_offset
         )
         version_offset += 1
-
         # Create eval config with agent cards for a2a support
         config = GymEvalConfig(
             agents=agents,
             version=version,
             version_description=f"model:{run_config.model}\ntype:{task.task_key}\nnum_agents:{num_agents}",
-            exit_on_task_success=run_config.exit_on_task_success,
             task=task,
             agent_cards=agent_cards,
             env_id=run_config.env_id,

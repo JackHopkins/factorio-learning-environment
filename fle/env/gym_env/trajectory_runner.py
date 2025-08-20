@@ -236,7 +236,7 @@ class GymTrajectoryRunner:
                         current_state = output_game_state
 
                     # Check if done and exit if configured
-                    if done and self.config.exit_on_task_success:
+                    if done:
                         completion_result = CompletionResult(
                             step=agent_steps[agent_idx], reason=CompletionReason.SUCCESS
                         )

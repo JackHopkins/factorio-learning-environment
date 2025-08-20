@@ -1,6 +1,6 @@
 from time import sleep
 
-from fle.env.entities import Position, Entity
+from fle.env.entities import Position, Entity, PlaceholderEntity
 from fle.env import DirectionInternal, Direction
 from fle.env.game_types import Prototype
 from fle.env.tools.agent.get_entity.client import GetEntity
@@ -22,6 +22,7 @@ class PlaceObject(Tool):
         direction: Direction = Direction.UP,
         position: Position = Position(x=0, y=0),
         exact: bool = True,
+        tick: int = None,
         # relative=False
     ) -> Entity:
         """
@@ -30,6 +31,7 @@ class PlaceObject(Tool):
         :param direction: Cardinal direction to place
         :param position: Position to place entity
         :param exact: If True, place entity at exact position, else place entity at nearest possible position
+        :param tick: Game tick to execute this command at (for batch mode)
         :return: Entity object
         """
 
@@ -57,10 +59,28 @@ class PlaceObject(Tool):
         factorio_direction = DirectionInternal.to_factorio_direction(direction)
 
         try:
-            # If we are in `fast` mode, this is synchronous
-            response, elapsed = self.execute(
-                self.player_index, name, factorio_direction, x, y, exact
+            response, elapsed = self.execute_or_batch(
+                tick,
+                self.player_index,
+                name,  # entity name
+                factorio_direction,  # direction
+                x,  # x position
+                y,  # y position
+                exact,  # exact placement flag
             )
+
+            # Check if we're in batch mode - if so, return early without processing response
+            if isinstance(response, dict) and response.get("batched"):
+                # In batch mode, return a PlaceholderEntity since we can't get actual result yet
+                # Use entity.value[0] to get the string name from the prototype tuple
+                entity_name = (
+                    entity.value[0]
+                    if isinstance(entity.value, tuple)
+                    else str(entity.value)
+                )
+
+                return PlaceholderEntity(entity_name, position, direction)
+
         except Exception as e:
             try:
                 msg = self.get_error_message(str(e))

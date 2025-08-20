@@ -13,11 +13,13 @@ class PickupEntity(Tool):
         self,
         entity: Union[ent.Entity, Prototype, ent.EntityGroup],
         position: Optional[ent.Position] = None,
+        tick: int = None,
     ) -> bool:
         """
         Pick up an entity if it exists on the world at a given position.
         :param entity: Entity prototype to pickup, e.g Prototype.IronPlate
         :param position: Position to pickup entity
+        :param tick: Game tick to execute this command at (for batch mode)
         :return: True if the entity was picked up successfully, False otherwise.
         """
         if not isinstance(entity, (Prototype, ent.Entity, ent.EntityGroup)):
@@ -36,14 +38,14 @@ class PickupEntity(Tool):
             if isinstance(entity, ent.BeltGroup):
                 belts = entity.belts
                 for belt in belts:
-                    resp = self.__call__(belt)
+                    resp = self.__call__(belt, tick=tick)
                     if not resp:
                         return False
                 return True
             elif isinstance(entity, ent.PipeGroup):
                 pipes = entity.pipes
                 for pipe in pipes:
-                    resp = self.__call__(pipe)
+                    resp = self.__call__(pipe, tick=tick)
                     if not resp:
                         return False
                 return True
@@ -51,30 +53,47 @@ class PickupEntity(Tool):
             elif isinstance(entity, ent.ElectricityGroup):
                 poles = entity.poles
                 for pole in poles:
-                    resp = self.__call__(pole)
+                    resp = self.__call__(pole, tick=tick)
                     if not resp:
                         return False
                 return True
 
         if position:
             x, y = position.x, position.y
-            response, elapsed = self.execute(self.player_index, x, y, name)
+            response, elapsed = self.execute_or_batch(
+                tick, self.player_index, x, y, name
+            )
         elif isinstance(entity, ent.UndergroundBelt):
             x, y = entity.position.x, entity.position.y
-            response, elapsed = self.execute(self.player_index, x, y, name)
+            response, elapsed = self.execute_or_batch(
+                tick, self.player_index, x, y, name
+            )
+
+            # Check if we're in batch mode - if so, return early
+            if isinstance(response, dict) and response.get("batched"):
+                return True
+
             if response != 1 and response != {}:
                 raise Exception(f"Could not pickup: {self.get_error_message(response)}")
 
             x, y = entity.output_position.x, entity.output_position.y
-            response, elapsed = self.execute(self.player_index, x, y, name)
+            response, elapsed = self.execute_or_batch(
+                tick, self.player_index, x, y, name
+            )
             if response != 1 and response != {}:
                 raise Exception(f"Could not pickup: {self.get_error_message(response)}")
 
         elif isinstance(entity, ent.Entity):
             x, y = entity.position.x, entity.position.y
-            response, elapsed = self.execute(self.player_index, x, y, name)
+            response, elapsed = self.execute_or_batch(
+                tick, self.player_index, x, y, name
+            )
         else:
             raise ValueError("The second argument must be a Position object")
+
+        # Check if we're in batch mode - if so, return early
+        if isinstance(response, dict) and response.get("batched"):
+            return True
 
         if response != 1 and response != {}:
             raise Exception(f"Could not pickup: {self.get_error_message(response)}")

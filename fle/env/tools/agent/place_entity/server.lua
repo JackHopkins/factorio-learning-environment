@@ -19,7 +19,7 @@ local function find_offshore_pump_position(player, center_pos)
         {dx = -1, dy = 0, dir = defines.direction.east}
     }
 
-    for radius = 1, max_radius do
+    for radius = 0, max_radius do
         for y = -radius, radius do
             for x = -radius, radius do
                 if math.abs(x) == radius or math.abs(y) == radius then

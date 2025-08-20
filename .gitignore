@@ -19,6 +19,7 @@ uv.lock
 
 # Misc
 trajectory_logs/
+/fle/data/replays/stdout_logs/
 **/.claude/settings.local.json
 *.mp4
 *.jsonl

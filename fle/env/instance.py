@@ -1,4 +1,5 @@
 import atexit
+import contextlib
 import enum
 import functools
 import importlib
@@ -32,6 +33,16 @@ from fle.commons.models.game_state import GameState
 from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )
+from fle.env.game_types import PrototypeJSONEncoder
+
+# Add Lua syntax validation
+try:
+    from luaparser import ast as lua_ast
+
+    LUAPARSER_AVAILABLE = True
+except ImportError:
+    LUAPARSER_AVAILABLE = False
+    print("WARNING: luaparser not available. Install with: pip install luaparser")
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000
@@ -87,6 +98,499 @@ class FactorioTransaction:
         return self.commands
 
 
+class BatchManager:
+    def __init__(self, instance, grace_period=5, rcon_connection=None, manager_id=0):
+        self.instance = instance
+        self.is_active = False
+        self.scheduled_commands = []
+        self.current_batch_id = None
+        self.grace_period = grace_period  # Default 5 tick grace period
+        self.rcon_connection = rcon_connection  # Store the RCON connection
+        self.manager_id = manager_id  # Store the manager ID
+
+        # Add connection validation
+        self.connection_healthy = False
+        self.last_error = None
+        self._validate_connection()
+
+        # Generate unique sequence ID per Python script run
+        import uuid
+
+        self.sequence_id = f"seq_{uuid.uuid4()}"
+
+    def _validate_connection(self):
+        """Validate that the RCON connection is working properly."""
+        if not self.rcon_connection:
+            self.connection_healthy = True
+            return
+
+        try:
+            # Test basic connectivity
+            self.rcon_connection.send_command(
+                "/sc rcon.print('health_check_" + str(self.manager_id) + "')"
+            )
+
+            # Test if we can access global actions
+            self.rcon_connection.send_command("/sc rcon.print(type(global.actions))")
+
+            # Test if we can create a sequence
+            self.rcon_connection.send_command(
+                f'/sc rcon.print("sequence_test_manager_{self.manager_id}")'
+            )
+
+            self.connection_healthy = True
+
+        except Exception as e:
+            self.connection_healthy = False
+            self.last_error = str(e)
+            print(
+                f"❌ BatchManager {self.manager_id}: Connection validation failed: {e}"
+            )
+
+    def get_health_status(self):
+        """Get the health status of this batch manager."""
+        return {
+            "manager_id": self.manager_id,
+            "connection_healthy": self.connection_healthy,
+            "last_error": self.last_error,
+            "is_active": self.is_active,
+            "current_batch_id": self.current_batch_id,
+            "has_dedicated_connection": self.rcon_connection is not None,
+        }
+
+    def activate(self):
+        """Enable batch mode for all tools."""
+        self.is_active = True
+        # Clear any existing commands
+        self.scheduled_commands.clear()
+        self.current_batch_id = None
+        # Set this batch manager on all tools
+        for namespace in self.instance.namespaces:
+            for tool_name in self.instance.controllers:
+                controller = self.instance.controllers[tool_name]
+                controller.set_batch_manager(self)
+
+    def deactivate(self):
+        """Disable batch mode."""
+        self.is_active = False
+        self.scheduled_commands.clear()
+        self.current_batch_id = None
+        for namespace in self.instance.namespaces:
+            for tool_name in self.instance.controllers:
+                controller = self.instance.controllers[tool_name]
+                controller.set_batch_manager(None)
+
+    def add_tool_command(self, tick: int, tool_name: str, player_index: int, *args):
+        """Add a processed tool command to the batch."""
+        if not self.is_active:
+            raise RuntimeError("BatchManager not activated - call activate() first")
+
+        # Store command with all necessary info for later submission
+        # Add player_index to front since Lua functions expect it as first parameter
+        parameters = [player_index] + list(args)
+        self.scheduled_commands.append(
+            {"tick": tick, "command": tool_name, "parameters": parameters, "raw": False}
+        )
+        return {"batched": True, "tick": tick, "tool": tool_name}
+
+    def reset_sequence(self, grace_period=None):
+        """Reset the batch sequence to start fresh timing with optional grace period."""
+        if grace_period is None:
+            grace_period = self.grace_period
+
+        self.instance.begin_transaction()
+        self.instance.add_command("/sc global.actions.reset_sequence()", raw=True)
+        result = self.instance.execute_transaction()
+
+        # Store the grace period for this sequence
+        self.grace_period = grace_period
+        return result
+
+    def emergency_cleanup(self):
+        """Emergency cleanup method to clear all server-side memory and queued actions.
+
+        This method is designed to be called during KeyboardInterrupt or error conditions
+        to ensure that no scheduled commands continue running on the server.
+        """
+        cleanup_results = {}
+        rcon_client = self.rcon_connection or self.instance.rcon_client
+
+        try:
+            # Clear local state first
+            self.scheduled_commands.clear()
+            old_batch_id = self.current_batch_id
+            self.current_batch_id = None
+
+            print(
+                f"   📝 Manager {self.manager_id}: Clearing local state (batch_id: {old_batch_id})"
+            )
+
+            # Reset the sequence to clear all scheduled commands for this manager's sequence
+            print(
+                f"   🔄 Manager {self.manager_id}: Resetting sequence {self.sequence_id}"
+            )
+            reset_cmd = (
+                f'/sc global.actions.register_sequence_start("{self.sequence_id}", 0)'
+            )
+            rcon_client.send_command(reset_cmd)
+
+            # Use the new clear_sequence_commands function to precisely clear this sequence's commands
+            clear_sequence_cmd = (
+                f'/sc global.actions.clear_sequence_commands("{self.sequence_id}")'
+            )
+            rcon_client.send_command(clear_sequence_cmd)
+
+            # Force reset sequence to clear any remaining scheduled commands
+            reset_sequence_cmd = "/sc global.actions.reset_sequence()"
+            rcon_client.send_command(reset_sequence_cmd)
+
+            cleanup_results["sequence_reset"] = "success"
+            print(f"   ✅ Manager {self.manager_id}: Sequence reset completed")
+
+        except Exception as e:
+            cleanup_results["sequence_reset"] = f"error: {str(e)}"
+            print(f"   ❌ Manager {self.manager_id}: Failed to reset sequence: {e}")
+
+        try:
+            # Clear batch results for this specific batch if it exists
+            if old_batch_id:
+                clear_specific_cmd = (
+                    f'/sc global.actions.clear_batch_results("{old_batch_id}")'
+                )
+                rcon_client.send_command(clear_specific_cmd)
+                print(
+                    f"   🗑️ Manager {self.manager_id}: Cleared results for batch {old_batch_id}"
+                )
+
+            # Clear all batch results to free server memory
+            clear_all_cmd = "/sc global.actions.clear_batch_results()"
+            rcon_client.send_command(clear_all_cmd)
+
+            cleanup_results["batch_results_cleared"] = "success"
+            print(f"   🧹 Manager {self.manager_id}: All batch results cleared")
+
+        except Exception as e:
+            cleanup_results["batch_results_cleared"] = f"error: {str(e)}"
+            print(
+                f"   ❌ Manager {self.manager_id}: Failed to clear batch results: {e}"
+            )
+
+        try:
+            # Deactivate batch mode to ensure tools don't add more commands
+            self.deactivate()
+            cleanup_results["deactivated"] = "success"
+            print(f"   🛑 Manager {self.manager_id}: Batch mode deactivated")
+
+        except Exception as e:
+            cleanup_results["deactivated"] = f"error: {str(e)}"
+            print(f"   ❌ Manager {self.manager_id}: Failed to deactivate: {e}")
+
+        return cleanup_results
+
+    def submit_batch(self):
+        """Submit all batched commands to the server and return batch info."""
+        if not self.scheduled_commands:
+            return {}
+
+        # Check connection health before submission
+        if not self.connection_healthy:
+            print(
+                f"❌ Manager {self.manager_id}: Refusing to submit - connection unhealthy: {self.last_error}"
+            )
+            return {"error": "Connection unhealthy", "last_error": self.last_error}
+
+        # Use the dedicated RCON connection for this batch manager
+        rcon_client = self.rcon_connection or self.instance.rcon_client
+
+        # Store the total number of commands for completion tracking
+        total_commands = len(self.scheduled_commands)
+
+        # Store metadata before clearing for debugging purposes
+        self.last_batch_metadata = {
+            "commands": self.scheduled_commands.copy(),
+            "total_count": total_commands,
+        }
+
+        # CRITICAL: Sort commands by tick before submitting to ensure Lua indices
+        # match the expected sorted order from Python side
+        self.scheduled_commands.sort(key=lambda x: x["tick"])
+
+        # Submit the batch directly to the server
+        import json
+
+        batch_json = json.dumps(self.scheduled_commands, cls=PrototypeJSONEncoder)
+
+        # Validate the JSON as a Lua string
+        escaped_batch_json = batch_json.replace('"', '\\"')
+
+        try:
+            # Register sequence start with grace period using our unique sequence ID
+            sequence_cmd = f'/sc global.actions.register_sequence_start("{self.sequence_id}", {self.grace_period})'
+            rcon_client.send_command(sequence_cmd)
+
+            # Submit the batch - let Lua generate the batch_id
+            lua_command = (
+                f'/sc global.actions.submit_scheduled_batch("{escaped_batch_json}")'
+            )
+            is_valid, validation_msg = validate_lua_syntax(lua_command)
+            if not is_valid:
+                print(
+                    f"❌ Manager {self.manager_id}: Lua validation failed: {validation_msg}"
+                )
+
+            submit_result_raw = rcon_client.send_command(lua_command)
+            submit_result = _lua2python("submit_batch", submit_result_raw)
+
+        except Exception as e:
+            print(f"❌ Manager {self.manager_id}: Exception during submission: {e}")
+            return {"error": str(e)}
+
+        # Extract batch_id from submission result
+        batch_id_from_result = None
+        if isinstance(submit_result, tuple) and len(submit_result) >= 1:
+            response_data = submit_result[0]
+            if isinstance(response_data, dict) and "batch_id" in response_data:
+                batch_id_from_result = response_data["batch_id"]
+            else:
+                print(
+                    f"❌ Manager {self.manager_id}: No batch_id found in response data"
+                )
+        else:
+            print(
+                f"❌ Manager {self.manager_id}: Unexpected result format: {type(submit_result)}"
+            )
+
+        if not batch_id_from_result:
+            print(f"❌ Manager {self.manager_id}: Failed to get batch_id from server")
+            return {"error": "Failed to get batch_id"}
+
+        self.current_batch_id = batch_id_from_result
+        self.expected_command_count = total_commands
+
+        # Clear the batch
+        self.scheduled_commands.clear()
+
+        return {"batch_id": batch_id_from_result, "submitted": True}
+
+    def wait_for_batch_completion(self, timeout_seconds=30):
+        """Wait for the batch to complete and return results."""
+        if not self.current_batch_id:
+            raise RuntimeError("No active batch to wait for")
+
+        import time
+
+        rcon_client = self.rcon_connection or self.instance.rcon_client
+
+        start_time = time.time()
+
+        while time.time() - start_time < timeout_seconds:
+            # Check batch status using dedicated RCON connection
+            result_raw = rcon_client.send_command(
+                f'/sc global.actions.get_batch_results("{self.current_batch_id}")'
+            )
+            result = _lua2python("get_batch_results", result_raw)
+
+            # Extract batch results
+            batch_results = None
+            if isinstance(result, tuple) and len(result) >= 1:
+                response_data = result[0]
+                if isinstance(response_data, dict) and "completed" in response_data:
+                    batch_results = response_data
+
+            if batch_results and batch_results.get("completed"):
+                # Clean up server-side results
+                rcon_client.send_command(
+                    f'/sc global.actions.clear_batch_results("{self.current_batch_id}")'
+                )
+
+                self.current_batch_id = None
+                return batch_results["results"]
+
+            time.sleep(0.1)  # Wait before checking again
+
+        raise TimeoutError(f"Batch did not complete within {timeout_seconds} seconds")
+
+    def submit_batch_and_wait(self, timeout_seconds=30):
+        """Submit batch and wait for completion, returning all results."""
+        self.submit_batch()
+        return self.wait_for_batch_completion(timeout_seconds)
+
+    def submit_batch_and_stream(self, timeout_seconds=30, poll_interval=0.1):
+        """Submit batch and yield results as they become available.
+
+        Args:
+            timeout_seconds: Maximum time to wait for batch completion
+            poll_interval: How often to check for new results (in seconds)
+
+        Yields:
+            dict: Individual command results as they complete
+
+        Each yielded result contains:
+        - command_index: The index of the command in the batch
+        - command: The command name
+        - success: Whether the command succeeded
+        - result: The command result or error message
+        - tick: The game tick when the command was executed
+        """
+        if not self.scheduled_commands:
+            return
+
+        # Submit the batch
+        submit_result = self.submit_batch()
+
+        if "error" in submit_result:
+            print(
+                f"❌ Manager {self.manager_id}: Batch submission failed: {submit_result}"
+            )
+            return
+
+        if not self.current_batch_id:
+            print(f"❌ Manager {self.manager_id}: No current batch ID after submission")
+            return
+
+        import time
+
+        rcon_client = self.rcon_connection or self.instance.rcon_client
+
+        start_time = time.time()
+        yielded_results = set()  # Track which results we've already yielded
+        poll_count = 0
+
+        try:
+            while time.time() - start_time < timeout_seconds:
+                poll_count += 1
+                # Check batch status using dedicated RCON connection
+                status_cmd = (
+                    f'/sc global.actions.get_batch_results("{self.current_batch_id}")'
+                )
+
+                try:
+                    result_raw = rcon_client.send_command(status_cmd)
+                    result = _lua2python("get_batch_results", result_raw)
+
+                except Exception as e:
+                    print(
+                        f"❌ Manager {self.manager_id}: Poll {poll_count} failed: {e}"
+                    )
+                    time.sleep(poll_interval)
+                    continue
+
+                # Process responses
+                if isinstance(result, tuple) and len(result) >= 1:
+                    response_data = result[0]
+
+                    # Handle proper Lua table response format
+                    if isinstance(response_data, dict):
+                        batch_id_from_response = response_data.get("batch_id")
+                        if batch_id_from_response != self.current_batch_id:
+                            time.sleep(poll_interval)
+                            continue
+
+                        # Process results
+                        batch_results_data = response_data.get("results", {})
+                        is_complete = response_data.get("completed", False)
+                        sequence_start_tick = response_data.get(
+                            "sequence_start_tick", 0
+                        )
+
+                        # Yield new results - handle both numeric and string keys
+                        new_results_count = 0
+                        num_commands = 0
+                        for cmd_index_key, cmd_result in batch_results_data.items():
+                            try:
+                                # Convert key to integer (Lua arrays start at 1, Python at 0)
+                                if isinstance(cmd_index_key, str):
+                                    command_index = (
+                                        int(cmd_index_key) - 1
+                                    )  # Convert 1-based to 0-based
+                                elif isinstance(cmd_index_key, int):
+                                    command_index = (
+                                        cmd_index_key - 1
+                                    )  # Convert 1-based to 0-based
+                                else:
+                                    print(
+                                        f"❌ Manager {self.manager_id}: Unexpected command index type: {type(cmd_index_key)}"
+                                    )
+                                    continue
+
+                                num_commands += 1
+                                if command_index not in yielded_results:
+                                    yielded_results.add(command_index)
+                                    new_results_count += 1
+
+                                    # Calculate sequence-relative tick: game_tick - sequence_start_tick
+                                    game_tick = cmd_result.get("game_tick", 0)
+                                    sequence_relative_tick = (
+                                        game_tick - sequence_start_tick
+                                        if sequence_start_tick > 0
+                                        else game_tick
+                                    )
+
+                                    result_dict = {
+                                        "command_index": command_index,
+                                        "command": cmd_result.get("command", "unknown"),
+                                        "success": cmd_result.get("success", False),
+                                        "result": cmd_result.get("result"),
+                                        "tick": sequence_relative_tick,
+                                        "planned_tick": cmd_result.get(
+                                            "planned_tick", "?"
+                                        ),  # Pass through planned_tick from Lua
+                                    }
+
+                                    yield result_dict
+
+                            except (ValueError, TypeError) as e:
+                                print(
+                                    f"❌ Manager {self.manager_id}: Failed to parse command index {cmd_index_key}: {e}"
+                                )
+                        print(
+                            f"POLL {poll_count} - num_commands: {num_commands}, new_results: {new_results_count}"
+                        )
+                        # Check if batch is complete
+                        if is_complete:
+                            # Clean up using dedicated RCON connection
+                            try:
+                                rcon_client.send_command(
+                                    f'/sc global.actions.clear_batch_results("{self.current_batch_id}")'
+                                )
+                                print(f"POLL {poll_count} - CLEANED UP")
+                            except Exception as e:
+                                print(
+                                    f"❌ Manager {self.manager_id}: Cleanup failed: {e}"
+                                )
+
+                            self.current_batch_id = None
+                            return
+                    else:
+                        print(f"POLL {poll_count} - NO RESULTS, result: {result}")
+                else:
+                    print(
+                        f"POLL {poll_count} - NO RESULTS, type(result): {type(result)}, len(result): {len(result)}"
+                    )
+
+                time.sleep(poll_interval)
+
+            print(
+                f"❌ Manager {self.manager_id}: Timeout after {timeout_seconds}s ({poll_count} polls)"
+            )
+            raise TimeoutError(
+                f"Batch did not complete within {timeout_seconds} seconds"
+            )
+
+        except Exception as e:
+            print(f"❌ Manager {self.manager_id}: Exception in streaming: {e}")
+            # Clean up on error
+            if self.current_batch_id:
+                try:
+                    rcon_client.send_command(
+                        f'/sc global.actions.clear_batch_results("{self.current_batch_id}")'
+                    )
+                except:
+                    pass  # Best effort cleanup
+                self.current_batch_id = None
+            raise
+
+
 class FactorioInstance:
     namespace_class = FactorioNamespace
     _cleanup_registered = False  # Only register cleanup once per process
@@ -101,18 +605,51 @@ class FactorioInstance:
         all_technologies_researched=True,
         peaceful=True,
         num_agents=1,
+        regenerate="map",
+        batch_grace_period=5,  # New parameter
+        max_concurrent_batches=1,  # New parameter for concurrency
         **kwargs,
     ):
         self.id = str(uuid.uuid4())[:8]
         self.num_agents = num_agents
         self.persistent_vars = {}
         self.tcp_port = tcp_port
+        self.max_concurrent_batches = max_concurrent_batches
+
+        # Create multiple RCON connections for concurrent batch processing
+        self.rcon_connections = []
+        self.batch_managers = []
+
+        # Primary connection for main operations
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
+        self.rcon_connections.append(self.rcon_client)
+
+        # Create additional connections for concurrent batch processing
+        for i in range(max_concurrent_batches - 1):
+            try:
+                additional_rcon = self.connect_to_server(address, tcp_port)[0]
+                self.rcon_connections.append(additional_rcon)
+            except Exception as e:
+                print(f"❌ Could not create additional RCON connection {i + 2}: {e}")
+                break
+
+        # Test all connections
+        for i, conn in enumerate(self.rcon_connections):
+            try:
+                conn.send_command("/sc rcon.print('test_connection_" + str(i) + "')")
+            except Exception as e:
+                print(f"❌ RCON connection {i} test failed: {e}")
+
+        print(
+            f"Created {len(self.rcon_connections)} RCON connection(s) for batch processing"
+        )
+
         self.all_technologies_researched = all_technologies_researched
         self.fast = fast
         self._speed = 1
         self._ticks_elapsed = 0
         self._is_initialised = False
+        self.regenerate = regenerate
 
         self.peaceful = peaceful
         self.namespaces = [self.namespace_class(self, i) for i in range(num_agents)]
@@ -130,6 +667,29 @@ class FactorioInstance:
         # Load the python controllers that correspond to the Lua scripts
         self.lua_script_manager.load_init_into_game("initialise")
         self.setup_tools(self.lua_script_manager)
+
+        # Initialize multiple batch managers - one per RCON connection
+        for i, rcon_conn in enumerate(self.rcon_connections):
+            batch_manager = BatchManager(
+                self, batch_grace_period, rcon_connection=rcon_conn, manager_id=i
+            )
+            self.batch_managers.append(batch_manager)
+
+        # Primary batch manager for backward compatibility
+        self.batch_manager = (
+            self.batch_managers[0]
+            if self.batch_managers
+            else BatchManager(self, batch_grace_period)
+        )
+
+        # Print health summary
+        print("Batch Manager Health Summary:")
+        for manager in self.batch_managers:
+            status = manager.get_health_status()
+            health_status = (
+                "✅ Healthy" if status["connection_healthy"] else "❌ Unhealthy"
+            )
+            print(f"   Manager {status['manager_id']}: {health_status}")
 
         if inventory is None:
             inventory = {}
@@ -601,17 +1161,18 @@ class FactorioInstance:
 
     def _reset(self, inventories: List[Dict[str, Any]]):
         self.begin_transaction()
+        if self.regenerate == "resources":
+            regenerate_func = "global.actions.regenerate_resources(1)"
+        elif self.regenerate == "map":
+            regenerate_func = "global.actions.regenerate_map(1)"
+        else:
+            raise ValueError(f"Invalid regenerate value: {self.regenerate}")
+
         self.add_command(
-            "/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)",
+            f"/sc global.alerts = {{}}; game.reset_game_state(); global.actions.reset_production_stats(); {regenerate_func}",
             raw=True,
         )
         # self.add_command('/sc script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
-        for i in range(self.num_agents):
-            player_index = i + 1
-            self.add_command(
-                f"/sc global.actions.regenerate_resources({player_index})", raw=True
-            )
-            # self.add_command('clear_inventory', player_index)
 
         self.execute_transaction()
 
@@ -697,6 +1258,7 @@ class FactorioInstance:
             "recipe_fluid_connection_mappings",
             "serialize",
             "initialise_inventory",
+            "scheduled_batch",  # Add the new batch scheduler
         ]
         if self.peaceful:
             init_scripts.append("enemies")
@@ -993,10 +1555,29 @@ class FactorioInstance:
                 except Exception as e:
                     print(f"Error in pre-tool hook for {tool_name}: {e}")
 
+    def get_available_batch_manager(self):
+        """Get an available batch manager for concurrent processing."""
+        # Find a batch manager that's not currently active
+        for manager in self.batch_managers:
+            if not manager.is_active or not manager.current_batch_id:
+                return manager
+
+        # If all are busy, return the first one (will queue)
+        return self.batch_managers[0] if self.batch_managers else self.batch_manager
+
     def cleanup(self):
-        # Close the RCON connection
+        # Close all RCON connections
         if hasattr(self, "rcon_client") and self.rcon_client:
             self.rcon_client.close()
+
+        # Close additional RCON connections
+        if hasattr(self, "rcon_connections"):
+            for rcon_conn in self.rcon_connections[1:]:  # Skip the primary one
+                try:
+                    if rcon_conn:
+                        rcon_conn.close()
+                except Exception as e:
+                    print(f"Error closing RCON connection: {e}")
 
         self.post_tool_hooks = {}
         self.pre_tool_hooks = {}
@@ -1012,3 +1593,17 @@ class FactorioInstance:
                     thread.join(timeout=5)  # Wait up to 5 seconds for each thread
                 except Exception as e:
                     print(f"Error joining thread {thread.name}: {e}")
+
+
+def validate_lua_syntax(lua_code: str) -> Tuple[bool, str]:
+    """Validate Lua syntax using luaparser if available"""
+    if not LUAPARSER_AVAILABLE:
+        return True, "luaparser not available - skipping validation"
+
+    try:
+        lua_code = lua_code.replace("/sc", "").replace("/c", "").strip()
+        with contextlib.redirect_stdout(None):
+            lua_ast.parse(lua_code)
+        return True, "Valid Lua syntax"
+    except Exception as e:
+        return False, f"Lua syntax error: {str(e)}"

@@ -862,7 +862,7 @@ async def create_db_client(
         )
     else:
         raise Exception(f"Invalid database type: {db_type}")
-    
+
 
 async def get_next_version() -> int:
     """Get next available version number"""

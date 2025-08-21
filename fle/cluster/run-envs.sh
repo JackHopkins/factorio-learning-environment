@@ -164,30 +164,9 @@ restart_cluster() {
         exit 1
     fi
     
-    echo "Extracting current configuration..."
-    
-    # Extract the number of instances
-    CURRENT_INSTANCES=$(grep -c "factorio_" docker-compose.yml)
-    
-    # Extract the scenario from the first instance
-    CURRENT_SCENARIO=$(grep -A1 "command:" docker-compose.yml | grep "start-server-load-scenario" | head -1 | sed -E 's/.*start-server-load-scenario ([^ ]+).*/\1/')
-    
-    if [ -z "$CURRENT_SCENARIO" ]; then
-        CURRENT_SCENARIO="default_lab_scenario"
-        echo "Warning: Could not determine current scenario, using default: $CURRENT_SCENARIO"
-    fi
-    
-    echo "Found cluster with $CURRENT_INSTANCES instances using scenario: $CURRENT_SCENARIO"
-    
-    # Stop the current cluster
-    echo "Stopping current cluster..."
-    $COMPOSE_CMD -f docker-compose.yml down
-    
-    # Start with the same configuration
-    echo "Restarting cluster..."
-    start_cluster "$CURRENT_INSTANCES" "$CURRENT_SCENARIO"
-    
-    echo "Factorio cluster restarted successfully."
+    echo "Restarting existing Factorio services without regenerating docker-compose..."
+    $COMPOSE_CMD -f docker-compose.yml restart
+    echo "Factorio services restarted."
 }
 
 # Show usage information

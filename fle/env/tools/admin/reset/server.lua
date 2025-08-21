@@ -18,7 +18,7 @@ local function get_inventory_for_index(inventories, index)
 	return inv
 end
 
-global.actions.reset = function(inventories_json, reset_position, all_technologies_researched)
+global.actions.reset = function(inventories_json, reset_position, all_technologies_researched, clear_entities)
 
 	-- Clear alerts, reset game state, and production stats
 	game.reset_game_state()
@@ -40,7 +40,9 @@ global.actions.reset = function(inventories_json, reset_position, all_technologi
 			end
 
 			-- Clear entities around each agent and reset inventories
-			global.actions.clear_entities(i)
+			if clear_entities then
+				global.actions.clear_entities(i)
+			end
 
 			local inv_table = get_inventory_for_index(inventories, i)
 			local inv_json = game.table_to_json(inv_table)

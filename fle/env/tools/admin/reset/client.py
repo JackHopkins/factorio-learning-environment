@@ -11,6 +11,7 @@ class Reset(Tool):
 		inventories=None,
 		reset_position=False,
 		all_technologies_researched=True,
+		clear_entities=True,
 	):
 		"""
 		Reset the Factorio game state via Lua action, mirroring FactorioInstance.reset/_reset.
@@ -28,11 +29,13 @@ class Reset(Tool):
 
 		reset_position = str(reset_position).lower()
 		all_technologies_researched = str(all_technologies_researched).lower()
+		clear_entities = str(clear_entities).lower()
 
 		response, _ = self.execute(
 			inventories_json,
 			reset_position,
 			all_technologies_researched,
+			clear_entities,
 		)
 		return response
 

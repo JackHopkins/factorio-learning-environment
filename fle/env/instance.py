@@ -82,6 +82,7 @@ class FactorioInstance:
         inventory=None,
         cache_scripts=True,
         all_technologies_researched=True,
+        clear_entities=True,
         peaceful=True,
         num_agents=1,
         **kwargs,
@@ -116,7 +117,7 @@ class FactorioInstance:
         if inventory is None:
             inventory = {}
         self.initial_inventory = inventory
-        self.initialise(fast, all_technologies_researched)
+        self.initialise(fast, all_technologies_researched, clear_entities)
         self.initial_score = 0
         try:
             self.first_namespace.score()
@@ -130,7 +131,7 @@ class FactorioInstance:
                 **self.lua_script_manager.tool_scripts,
             }
             self.setup_tools(self.lua_script_manager)
-            self.initialise(fast, all_technologies_researched)
+            self.initialise(fast, all_technologies_researched, clear_entities)
 
         self.initial_score, goal = self.first_namespace.score()
         # Register the cleanup method to be called on exit (only once per process)
@@ -160,6 +161,7 @@ class FactorioInstance:
         game_state: Optional[GameState] = None,
         reset_position: bool = False,
         all_technologies_researched: bool = True,
+        clear_entities: bool = True,
     ):
         # Reset the namespace (clear variables, functions etc)
         assert not game_state or len(game_state.inventories) == self.num_agents, (
@@ -172,7 +174,7 @@ class FactorioInstance:
         if not game_state:
             # Reset the game instance
             inventories = [self.initial_inventory] * self.num_agents
-            self.first_namespace._reset(inventories, reset_position, all_technologies_researched)
+            self.first_namespace._reset(inventories, reset_position, all_technologies_researched, clear_entities)
             # Reset the technologies
             if not all_technologies_researched:
                 self.first_namespace._load_research_state(
@@ -190,6 +192,7 @@ class FactorioInstance:
                 game_state.inventories,
                 reset_position,
                 all_technologies_researched,
+                clear_entities,
             )
 
             # Load entities into the game
@@ -395,7 +398,7 @@ class FactorioInstance:
             message = e.args[0].replace("\\n", "")
             return -1, "", f"{message}".strip()
 
-    def initialise(self, fast=True, all_technologies_researched=True):
+    def initialise(self, fast=True, all_technologies_researched=True, clear_entities=True):
         self.rcon_client.send_command(
             f"/sc global.fast = {str(fast).lower()}"
         )
@@ -419,6 +422,7 @@ class FactorioInstance:
             inventories,
             reset_position=False,
             all_technologies_researched=all_technologies_researched,
+            clear_entities=clear_entities,
         )
         self.first_namespace._clear_collision_boxes()
 

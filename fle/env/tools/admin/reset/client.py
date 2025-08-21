@@ -27,10 +27,6 @@ class Reset(Tool):
         # Encode to JSON string for Lua
         inventories_json = json.dumps(inventories)
 
-        reset_position = str(reset_position).lower()
-        all_technologies_researched = str(all_technologies_researched).lower()
-        clear_entities = str(clear_entities).lower()
-
         response, _ = self.execute(
             inventories_json,
             reset_position,

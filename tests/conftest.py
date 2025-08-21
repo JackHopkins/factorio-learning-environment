@@ -68,7 +68,9 @@ def instance(pytestconfig, worker_id):
             selected_port = int(port_env)
         else:
             if not ports_sorted:
-                raise pytest.UsageError("No Factorio TCP ports discovered. Did you start the headless server?")
+                raise pytest.UsageError(
+                    "No Factorio TCP ports discovered. Did you start the headless server?"
+                )
             selected_port = ports_sorted[-1]
     try:
         instance = FactorioInstance(
@@ -151,7 +153,6 @@ def configure_game(instance):
         reset_position: bool = True,
         all_technologies_researched: bool = True,
     ):
-
         instance.reset(
             reset_position=reset_position,
             all_technologies_researched=all_technologies_researched,

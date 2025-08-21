@@ -19,7 +19,6 @@ if global.debug == nil then
     }
 end
 
-
 -- Note: The debug_rendering.lua library will be loaded separately by the LuaScriptManager
 local player = global.agent_characters[1]
 player.surface.always_day=true
@@ -340,49 +339,6 @@ global.utils.avoid_entity = function(player_index, entity, position, direction)
     player.teleport(player_position)
     return false
 end
-
-
-
----- Define a function to be called every tick
---local function on_tick(event)
---    -- Run the check every 60 ticks (1 second)
---    if event.tick % 60 == 0 then
---        for _, player in pairs(game.connected_players) do
---            if check_player_inventory_empty(player) then
---                -- Perform an action or notify the player when their inventory is empty
---                player.print("Your inventory is empty!")
---            end
---        end
---    end
---end
---
----- Register the on_tick function to the on_tick event
---script.on_event(defines.events.on_tick, on_tick)
-
---script.on_nth_tick(3600, function(event)
---    game.take_screenshot{
---        surface=game.surfaces[1],
---        position={0,0},
---        resolution={2560, 1600},
---        zoom=0.2,
---        path="timelapse/" .. string.format("%06d", event.tick/event.nth_tick) .. ".jpg",
---        show_entity_info=true,
---        allow_in_replay=true,
---        daytime=1
---    }
---end)
-
-
-for _, ent in pairs(surface.find_entities_filtered({force="player", position=pp, radius=50})) do
-    if ent.name ~= "character" then
-        ent.destroy()
-    end
-end
-
-for key, entity in pairs(surface.find_entities_filtered({force="enemy", radius=250, position=pp })) do
-	cnt = cnt+1
-	entity.destroy()
- end
 
 global.crafting_queue = {}
 

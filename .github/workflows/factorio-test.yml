@@ -35,6 +35,21 @@ jobs:
           echo "✓ Found scenario directory"
           ls -la ./fle/cluster/scenarios/default_lab_scenario
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Warm the Factorio base image into the runner using GHA cache
+      - name: Warm Factorio image layers (cached)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./fle/cluster/Dockerfile.factorio-warm    # see below
+          tags: factorio:cache-proxy
+          load: true
+          pull: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Start Factorio server
         run: |
           cd fle/cluster

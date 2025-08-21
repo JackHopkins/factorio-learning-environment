@@ -5,16 +5,16 @@ from fle.env.game_types import Prototype
 
 
 @pytest.fixture()
-def game(instance):
-    instance.initial_inventory = {
-        **instance.initial_inventory,
-        "coal": 50,
-        "iron-chest": 1,
-        "iron-plate": 5,
-    }
-    instance.reset()
-    yield instance.namespace
-    instance.reset()
+def game(configure_game):
+    return configure_game(
+        inventory={
+            "coal": 50,
+            "iron-chest": 1,
+            "iron-plate": 5,
+        },
+        merge=True,
+        all_technologies_researched=False,
+    )
 
 
 def test_inspect_inventory(game):

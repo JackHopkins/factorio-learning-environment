@@ -1,23 +1,11 @@
 import time
-
 import pytest
 
 
-@pytest.fixture()
-def game(instance):
-    instance.reset()
-    yield instance.namespace
-    instance.reset()
-
-
-def test_sleep(game):
-    for i in range(10):
-        game.instance.set_speed(i)
-        speed = game.instance.get_speed()
-        start_time = time.time()
-        game.sleep(10)
-        end_time = time.time()
-        elapsed_seconds = end_time - start_time
-        assert elapsed_seconds * speed - 10 < 1, (
-            f"Sleep function did not work as expected for speed {i}"
-        )
+@pytest.mark.parametrize("speed", range(10))  # 10 independent items
+def test_sleep(game, speed):
+    game.instance.set_speed(speed)
+    start = time.time()
+    game.sleep(10)
+    elapsed = time.time() - start
+    assert elapsed * speed - 10 < 1, f"Sleep behaved unexpectedly at speed {speed}"

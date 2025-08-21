@@ -63,6 +63,7 @@ dev = [
     "isort>=5.12.0",
     "rich>=14.0.0",
     "questionary>=2.1.0",
+    "pytest-xdist>=3.8.0",
 ]
 agents = [
     "anthropic>=0.49.0",
@@ -141,8 +142,3 @@ publish-url = "https://upload.pypi.org/legacy/"
 name = "testpypi"
 url = "https://test.pypi.org/legacy/"
 publish-url = "https://test.pypi.org/legacy/"
-
-[dependency-groups]
-dev = [
-    "pytest-xdist>=3.8.0",
-]

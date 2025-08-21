@@ -7,21 +7,24 @@ from fle.env.game_types import Prototype, Resource
 
 @pytest.fixture()
 def game(configure_game):
-    return configure_game(inventory={
-        "coal": 5,
-        "iron-chest": 1,
-        "iron-plate": 50,
-        "iron-ore": 10,
-        "stone-furnace": 1,
-        "assembling-machine-1": 1,
-        "burner-mining-drill": 1,
-        "lab": 1,
-        "automation-science-pack": 1,
-        "gun-turret": 1,
-        "firearm-magazine": 5,
-        "boiler": 1,
-        "offshore-pump": 1,
-    }, merge=True)
+    return configure_game(
+        inventory={
+            "coal": 5,
+            "iron-chest": 1,
+            "iron-plate": 50,
+            "iron-ore": 10,
+            "stone-furnace": 1,
+            "assembling-machine-1": 1,
+            "burner-mining-drill": 1,
+            "lab": 1,
+            "automation-science-pack": 1,
+            "gun-turret": 1,
+            "firearm-magazine": 5,
+            "boiler": 1,
+            "offshore-pump": 1,
+        },
+        merge=True,
+    )
 
 
 def test_get_offshore_pump(game):

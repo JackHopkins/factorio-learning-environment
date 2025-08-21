@@ -6,22 +6,24 @@ from fle.env.game_types import Prototype, Resource
 
 @pytest.fixture()
 def game(configure_game):
-    return configure_game(inventory={
-        "stone-furnace": 1,
-        "boiler": 1,
-        "steam-engine": 1,
-        "offshore-pump": 4,
-        "pipe": 100,
-        "iron-plate": 50,
-        "copper-plate": 20,
-        "coal": 50,
-        "burner-inserter": 50,
-        "burner-mining-drill": 50,
-        "transport-belt": 50,
-        "stone-wall": 100,
-        "splitter": 4,
-        "wooden-chest": 1,
-    })
+    return configure_game(
+        inventory={
+            "stone-furnace": 1,
+            "boiler": 1,
+            "steam-engine": 1,
+            "offshore-pump": 4,
+            "pipe": 100,
+            "iron-plate": 50,
+            "copper-plate": 20,
+            "coal": 50,
+            "burner-inserter": 50,
+            "burner-mining-drill": 50,
+            "transport-belt": 50,
+            "stone-wall": 100,
+            "splitter": 4,
+            "wooden-chest": 1,
+        }
+    )
 
 
 def test_place(game):

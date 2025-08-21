@@ -1,6 +1,7 @@
 import time
 import pytest
 
+
 @pytest.mark.parametrize("speed", range(10))  # 10 independent items
 def test_sleep(game, speed):
     game.instance.set_speed(speed)

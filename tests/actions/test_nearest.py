@@ -3,6 +3,7 @@ import pytest
 from fle.env.entities import Position
 from fle.env.game_types import Resource
 
+
 def test_nearest_resource(game):
     """
     Test distance to the nearest coal resource.

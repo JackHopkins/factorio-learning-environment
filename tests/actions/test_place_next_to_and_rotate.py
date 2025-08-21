@@ -7,18 +7,20 @@ from fle.env import DirectionInternal
 
 @pytest.fixture()
 def game(configure_game):
-    return configure_game(inventory={
-        "boiler": 1,
-        "transport-belt": 1,
-        "stone-furnace": 1,
-        "burner-mining-drill": 1,
-        "burner-inserter": 2,
-        "electric-mining-drill": 1,
-        "assembling-machine-1": 1,
-        "steam-engine": 1,
-        "pipe": 1,
-        "offshore-pump": 1,
-    })
+    return configure_game(
+        inventory={
+            "boiler": 1,
+            "transport-belt": 1,
+            "stone-furnace": 1,
+            "burner-mining-drill": 1,
+            "burner-inserter": 2,
+            "electric-mining-drill": 1,
+            "assembling-machine-1": 1,
+            "steam-engine": 1,
+            "pipe": 1,
+            "offshore-pump": 1,
+        }
+    )
 
 
 def calculate_expected_position(

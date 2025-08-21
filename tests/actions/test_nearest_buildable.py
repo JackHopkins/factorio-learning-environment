@@ -3,15 +3,18 @@ import pytest
 from fle.env.game_types import Prototype, Resource
 from fle.env.entities import Position, BuildingBox, Direction
 
+
 @pytest.fixture()
 def game(configure_game):
-    return configure_game(inventory={
+    return configure_game(
+        inventory={
             "wooden-chest": 100,
             "electric-mining-drill": 10,
             "steam-engine": 1,
             "burner-mining-drill": 5,
             "pumpjack": 1,
-        })
+        }
+    )
 
 
 def test_nearest_buildable_simple(game):

@@ -3,9 +3,11 @@ import pytest
 from fle.env.entities import Position, Direction
 from fle.env.game_types import Prototype, Resource
 
+
 @pytest.fixture()
 def game(configure_game):
     return configure_game(reset_position=False)
+
 
 def test_can_place(game):
     """

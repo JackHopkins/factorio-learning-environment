@@ -19,7 +19,6 @@ PORT_OFFSET = int(os.environ["PORT_OFFSET"])
 class GymEnvironmentSpec:
     """Specification for a registered gym environment"""
 
-    task_type: str
     task_key: str
     task_config_path: str
     description: str
@@ -52,7 +51,6 @@ class FactorioGymRegistry:
                     task_key=task_data["task_key"],
                     task_config_path=str(task_file),
                     description=task_data["goal_description"],
-                    task_type=task_data["task_type"],
                     num_agents=task_data["num_agents"],
                 )
             except Exception as e:
@@ -65,7 +63,6 @@ class FactorioGymRegistry:
         task_key: str,
         task_config_path: str,
         description: str,
-        task_type: str,
         num_agents: int,
     ) -> None:
         """Register a new gym environment"""
@@ -73,7 +70,6 @@ class FactorioGymRegistry:
             task_key=task_key,
             task_config_path=task_config_path,
             description=description,
-            task_type=task_type,
             num_agents=num_agents,
         )
 

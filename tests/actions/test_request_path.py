@@ -1,4 +1,3 @@
-
 from fle.env.entities import Position
 
 

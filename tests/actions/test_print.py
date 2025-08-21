@@ -1,5 +1,3 @@
-
-
 def test_print_tuple(game):
     """
     Print a tuple

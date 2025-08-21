@@ -1,4 +1,3 @@
-
 from fle.env.entities import Position
 from fle.env.game_types import Resource, Prototype
 

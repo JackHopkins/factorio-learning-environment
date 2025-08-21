@@ -14,16 +14,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            **/requirements*.txt
-            **/pyproject.toml
-            **/setup.cfg
-            **/setup.py
 
       - name: Verify scenario exists
         run: |
@@ -78,9 +72,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip
-          # Install the package with dev dependencies for testing
-          pip install -e ".[dev,agents,cluster,eval,all,mcp,env]"
+          uv sync --all-extras --dev
 
       - name: Debug container IPs and ports
         run: |
@@ -116,7 +108,7 @@ jobs:
 
       - name: Run Python tests (2 workers)
         run: |
-          python -m pytest -n 2 --dist=load -v -s --tb=short tests/actions/
+          uv run pytest -n 2 --dist=load -v -s --tb=short tests/actions/
         env:
           FACTORIO_HOST: localhost
           PYTHONUNBUFFERED: 1

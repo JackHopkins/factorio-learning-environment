@@ -1,7 +1,6 @@
 import pytest
 
 from fle.env.entities import Position
-from fle.env import FactorioInstance
 from fle.env.game_types import Prototype, Resource
 
 

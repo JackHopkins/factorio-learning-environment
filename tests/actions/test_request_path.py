@@ -1,4 +1,3 @@
-import pytest
 
 from fle.env.entities import Position
 

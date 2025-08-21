@@ -1,6 +1,5 @@
 import pytest
 
-from fle.env import FactorioInstance
 from fle.env.game_types import Technology
 
 

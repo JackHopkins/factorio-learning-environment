@@ -50,19 +50,18 @@ class LuaScriptManager:
             return False, e.args[0]
 
     def load_tool_into_game(self, name):
-        # Find all scripts for this action by checking prefixes
+        # Select scripts by exact tool directory, not prefix
+        tool_dirs = {
+            f"agent/{name}",
+            f"admin/{name}",
+            f"agent\\{name}",
+            f"admin\\{name}",
+        }
         tool_scripts = [
             key
             for key in self.tool_scripts.keys()
-            if key.startswith(f"agent/{name}") or key.startswith(f"admin/{name}")
+            if os.path.dirname(key) in tool_dirs
         ]
-        # windows addition
-        if len(tool_scripts) == 0:
-            tool_scripts = [
-                key
-                for key in self.tool_scripts.keys()
-                if key.startswith(f"agent\\{name}") or key.startswith(f"admin\\{name}")
-            ]
         # Sort scripts so server.lua comes last
         tool_scripts.sort(key=lambda x: x.endswith("server.lua"))
 
@@ -81,6 +80,8 @@ class LuaScriptManager:
                 ):
                     continue
                 self.update_game_checksum(self.rcon_client, script_name, checksum)
+                # Keep local view in sync so later loads skip
+                self.game_checksums[script_name] = checksum
 
             correct, error = self.check_lua_syntax(script)
             if not correct:

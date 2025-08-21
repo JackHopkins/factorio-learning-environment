@@ -113,10 +113,15 @@ def instance(pytestconfig, worker_id):
 
 # # Reset state between tests without recreating the instance
 @pytest.fixture(autouse=True)
-def _reset_between_tests(instance):
+def _reset_between_tests(instance, request):
     """
     Ensure clean state between tests without reloading Lua/scripts.
     """
+    # If this test explicitly uses `configure_game`, let that fixture perform
+    # the reset to avoid double resets and allow per-test options.
+    if "configure_game" in getattr(request, "fixturenames", []):
+        yield
+        return
     # Restore the default inventory in case a previous test changed it
     if hasattr(instance, "default_initial_inventory"):
         try:
@@ -153,6 +158,14 @@ def configure_game(instance):
         reset_position: bool = True,
         all_technologies_researched: bool = True,
     ):
+        # Always start from the canonical default inventory to avoid leakage
+        # from previous tests when this fixture is used.
+        if hasattr(instance, "default_initial_inventory"):
+            try:
+                instance.initial_inventory = dict(instance.default_initial_inventory)
+            except Exception:
+                instance.initial_inventory = instance.default_initial_inventory
+
         instance.reset(
             reset_position=reset_position,
             all_technologies_researched=all_technologies_researched,

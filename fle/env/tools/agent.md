@@ -5,19 +5,20 @@
 ### 1. Resource Mining Systems
 
 #### Self-Fueling Coal Mining System
+
 ```python
 def build_self_fueling_coal_mining_system(coal_patch_position):
     # Define building area
     building_box = BuildingBox(width=Prototype.BurnerMiningDrill.WIDTH, height=Prototype.BurnerMiningDrill.HEIGHT + Prototype.BurnerInserter.HEIGHT + Prototype.TransportBelt.HEIGHT)  #  drill width, drill + inserter + belt height
     buildable_coords = nearest_buildable(Prototype.BurnerMiningDrill, building_box, coal_patch_position)
-    
+
     # Place drill
     move_to(buildable_coords.center)
-    drill = place_entity(Prototype.BurnerMiningDrill, 
+    drill = place_entity(Prototype.BurnerMiningDrill,
                             position=buildable_coords.center,
                             direction=Direction.DOWN)
     print(f"Placed BurnerMiningDrill to mine coal at {drill.position}")
-    
+
     # Place self-fueling inserter
     inserter = place_entity_next_to(Prototype.BurnerInserter,
                                         drill.position,
@@ -25,13 +26,13 @@ def build_self_fueling_coal_mining_system(coal_patch_position):
                                         spacing=0)
     inserter = rotate_entity(inserter, Direction.UP)
     print(f"Placed inserter at {inserter.position} to fuel the drill")
-    
+
     # Connect with belts
     belts = connect_entities(drill.drop_position,
                                 inserter.pickup_position,
                                 Prototype.TransportBelt)
     print(f"Connected drill to inserter with transport belt")
-    
+
     # Bootstrap system
     drill = insert_item(Prototype.Coal, drill, quantity=5)
     return drill, inserter, belts
@@ -48,6 +49,7 @@ Power typically involves:
 
 IMPORTANT: We also need to be very careful and check where we can place boiler and steam engine as they cannot be on water
 We will do this in 3 separate code examples
+
 ```python
 # log your general idea what you will do next
 print(f"I will create a power generation setup with a steam engine")
@@ -63,7 +65,7 @@ print(f"Placed offshore pump to get water at {offshore_pump.position}") # Placed
 
 # first get the width and height of a BurnerMiningDrill
 print(f"Boiler width: {Prototype.Boiler.WIDTH}, height: {Prototype.Boiler.HEIGHT}") # width 3, height 2
-# use the prototype width and height attributes 
+# use the prototype width and height attributes
 # add 4 to ensure no overlap
 building_box = BuildingBox(width = Prototype.Boiler.WIDTH + 4, height = Prototype.Boiler.HEIGHT + 4)
 
@@ -80,7 +82,7 @@ boiler = insert_item(Prototype.Coal, boiler, 10)
 ```python
 boiler = get_entity(Prototype.Boiler, Position(x = 10, y = 0))
 # Finally we need to place the steam engine close to the boiler
-# use the prototype width and height attributes 
+# use the prototype width and height attributes
 # add 4 to ensure no overlap
 building_box = BuildingBox(width = Prototype.SteamEngine.WIDTH + 4, height = Prototype.SteamEngine.HEIGHT + 4)
 
@@ -88,7 +90,7 @@ coords = nearest_buildable(Prototype.SteamEngine,bbox,boiler.position)
 # move to the centre coordinate
 move_to(coords.center)
 # place the steam engine on the centre coordinate
-steam_engine = place_entity(Prototype.SteamEngine, 
+steam_engine = place_entity(Prototype.SteamEngine,
                             position = coords.center,
                             direction = Direction.LEFT)
 
@@ -118,7 +120,9 @@ print(f"Steam engine at {steam_engine.position} is generating power!")
 ### 3. Automated Assembly Systems
 
 #### Basic Assembly Line
+
 Important: Each section of the mine should be atleast 20 spaces further away from the other and have enough room for connections
+
 ```python
 furnace_output_inserter = get_entity(Prototype.BurnerInserter, Position(x = 9, y = 0))
 solar_panel = get_entity(Prototype.SolarPanel, Position(x = 0, y = 0))
@@ -146,7 +150,7 @@ assembly_machine_input_inserter = place_entity_next_to(Prototype.BurnerInserter,
                                           assembler.position,
                                           direction=Direction.RIGHT,
                                           spacing=0)
-# rotate it to input items into the assembling machine                                          
+# rotate it to input items into the assembling machine
 assembly_machine_input_inserter = rotate_entity(assembly_machine_input_inserter, Direction.LEFT)
 
 # Add output inserter
@@ -167,7 +171,7 @@ print(f"Powered assembling machine at {assembler.position} with {poles}")
 # wait for 5 seconds to check power
 sleep(5)
 assembler = get_entity(Prototype.AssemblingMachine1, assembler.position)
-assert assembler.energy > 0, f"Assembling machine at {assembler.position} is not receiving power" 
+assert assembler.energy > 0, f"Assembling machine at {assembler.position} is not receiving power"
 # Connect input belt
 belts = connect_entities(furnace_output_inserter,
                      assembly_machine_input_inserter,
@@ -185,6 +189,7 @@ assert copper_cables_in_inventory > 0, f"No copper cables created"
 ### 4. Research Systems
 
 #### Basic Research Setup
+
 ```python
 def build_research_facility(power_source, lab):
     # Connect power
@@ -198,14 +203,14 @@ def build_research_facility(power_source, lab):
                                         lab.position,
                                         direction=Direction.LEFT,
                                         spacing=0)
-    # rotate it to input items into the lab                                          
+    # rotate it to input items into the lab
     inserter = rotate_entity(inserter, Direction.RIGHT)
     # Place input chest
     chest = place_entity(Prototype.WoodenChest,
                                      inserter.pickup_position,
                                      direction=Direction.LEFT)
     print(f"Placed chest at {chest.position} to input automation packs to lab at {lab.position}")
-    
+
     return lab, inserter, chest
 ```
 
@@ -214,6 +219,7 @@ def build_research_facility(power_source, lab):
 ## Error Handling and Recovery
 
 ### 1. Entity Status Monitoring
+
 ```python
 def monitor_entity_status(entity, expected_status):
     entity = get_entity(entity.prototype, entity.position)
@@ -223,9 +229,10 @@ def monitor_entity_status(entity, expected_status):
     return True
 ```
 
-
 ## Chemical plants
+
 Set recipe for chemical plant and connect to input and output storage tanks
+
 ```python
 # get the chemical plant
 chemical_plant = get_entity(Prototype.ChemicalPlant, position=Position(x=0, y=0))
@@ -251,7 +258,9 @@ print(f"Connected the output tank at {output_storage_tank.position} to chemical 
 ```
 
 ## Oil Refinery
+
 Set recipe for oil refinery to get petroleum gas
+
 ```python
 # get the pumpjack
 pumpjack = get_entity(Prototype.PumpJack, position=Position(x=-50, y=0))
@@ -268,10 +277,58 @@ print(f"Connected the pumpjack at {pumpjack.position} to oil refinery at {oil_re
 
 ```
 
+## Useful statistics
+
+Crafting speeds for solids
+Iron gear wheel - 120 per 60 seconds
+Copper Cable - 240 per 60 seconds
+Pipe - 120 per 60 seconds
+Steel plate - 3.75 per 60 seconds
+Engine unit - 6 per 60 seconds
+Electronic circuit - 120 per 60 seconds
+Electric Engine unit - 6 per 60 seconds
+Flying robot frame - 3 per 60 seconds
+Sulfur - 120 per 60 seconds. Can only be produced by a chemical plant
+Plastic bar - 120 per 60 seconds. Can only be produced by a chemical plant
+Advanced circuit - 10 per 60 seconds
+Processing unit - 6 per 60 seconds
+Low density structure - 4 per 60 seconds
+Copper plate - 18.75 per 60 seconds
+Iron plate - 18.75 per 60 seconds
+Stone brick - 18.75 per 60 seconds
+Automation science packs - 12 per 60 seconds
+Battery - 20 per 60 seconds. Can only be produced by a chemical plant
+
+Crafting speeds for liquids
+Sulfuric acid - 3000 per 60 seconds, can only be gotten with a chemical plant
+Lubricant - 600 per 60 seconds. Can only be produced by a chemical plant
+Heavy oil - 300 per 60 seconds with advanced oil processing, 1080 per 60 seconds with Coal liquefaction
+Light oil - 540 per 60 seconds with advanced oil processing, 240 per 60 seconds with Coal liquefaction, 900 per 60 seconds with Heavy oil cracking
+Petroleum gas - 540 per 60 seconds with Basic oil processing, 660 per 60 seconds with advanced oil processing, 120 per 60 seconds with Coal liquefaction
+
+Raw resource extraction speeds
+Burner mining drill - Mines 15 resources per 60 seconds
+Electric mining drill - Mines 30 resources per 60 seconds
+Pumpjack - Extracts 600 crude oil per 60 seconds
+
+Furnace smelting speed modifiers
+Stone furnace - 1 (Example: smelts 18.75 copper plates per 60 seconds)
+Electronic furnace - 2 (Example: smelts 37.5 copper plates per 60 seconds)
+Steel furnace - 2 (Example: smelts 37.5 copper plates per 60 seconds)
+
+Assembling machine crafting speed modifiers
+Assembling machine 1 - 0.5 (Example: Crafts 60 iron gear wheels per 60 seconds)
+Assembling machine 2 - 0.75 (Example: Crafts 90 iron gear wheels per 60 seconds)
+Assembling machine 3 - 1.25 (Example: Crafts 150 iron gear wheels per 60 seconds)
+
+Oil refinery & Chemical plant crafting speed modifiers
+Oil refinery - 1 (Example: Creates 540 petroleum gas per 60 seconds with Basic oil processing)
+Chemical plant - 1 (Example: Creates 600 Lubricant per 60 seconds)
 
 ## TIPS WHEN CREATING STRUCTURES
+
 - When a entity has status "WAITING_FOR_SPACE_IN_DESTINATION", it means the there is no space in the drop position. For instance, a mining drill will have status WAITING_FOR_SPACE_IN_DESTINATION when the entities it mines are not being properly collected by a furnace or a chest or transported away from drop position with transport belts
-- Make sure to always put 20+ fuel into all entities that require fuel. It's easy to mine more coal, so it's better to insert in abundance 
+- Make sure to always put 20+ fuel into all entities that require fuel. It's easy to mine more coal, so it's better to insert in abundance
 - Keep it simple! Only use transport belts if you need them. Use chests and furnaces to catch the ore directly from drills
 - Inserters put items into entities or take items away from entities. You need to add inserters when items need to be automatically put into entities like chests, assembling machines, furnaces, boilers etc. The only exception is you can put a chest directly at drills drop position, that catches the ore directly or a furnace with place_entity_next_to(drill.drop_position), where the furnace will be fed the ore
 - have at least 10 spaces between different factory sections

@@ -9,7 +9,7 @@ connect_entities
 inspect_inventory
 Position
 
-Please create the python code for the objective given to you. You have been given a reference implementation that you should analyse in step-by-step manner to understand how the API works. Put your python code between ```python and ``` tags like shon by the reference
+Please create the python code for the objective given to you. You have been given a reference implementation that you should analyse in step-by-step manner to understand how the API works. Put your python code between `python and ` tags like shon by the reference
 
 Here are the entities and objectives available in the Factorio API that you can use in your objective
 
@@ -49,6 +49,7 @@ Radar = "radar", Entity
 StoneWall = "stone-wall", Entity
 
 Notes on the api
+
 - You need inserters to add items from a belt to a furnace or a chest. To connect a drill to a furnace or a chest you first need to add a inserter to the furnace or chest, rotate the inserter and then connect the inserter pickup position to drills drop position
 - If you input coal to a furnace, the way to check it is furnace.fuel.get('Prototype.Coal') as the coal is fuel in the furnace. In a chest coal can be checked directly from the normal inspect_inventory()
 - You do not need inserters for drills as you can directly use the drill.drop_position as the start of the transport belts. This only works with drills

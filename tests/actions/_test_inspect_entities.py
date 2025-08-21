@@ -12,9 +12,7 @@ def game(instance):
         "iron-plate": 5,
         "iron-ore": 10,
     }
-    instance.reset()
     yield instance.namespace
-    instance.reset()
 
 
 def test_inspect_entities(game):

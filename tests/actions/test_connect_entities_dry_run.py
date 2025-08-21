@@ -5,12 +5,8 @@ from fle.env.game_types import Prototype
 
 
 @pytest.fixture()
-def game(instance):
-    instance.initial_inventory = {
-        "transport-belt": 12,
-    }
-    instance.reset()
-    yield instance.namespace
+def game(configure_game):
+    return configure_game(inventory={"transport-belt": 12})
 
 
 def test_dry_run(game):

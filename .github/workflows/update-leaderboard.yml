@@ -1,4 +1,4 @@
-name: Rename Leaderboard
+name: Update Leaderboard
 
 on:
   pull_request:

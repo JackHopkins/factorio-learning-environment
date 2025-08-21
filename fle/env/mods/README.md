@@ -1,1 +1,1 @@
-Miscellaneous scripts used in FactorioInstance. 
+Miscellaneous scripts used in FactorioInstance.

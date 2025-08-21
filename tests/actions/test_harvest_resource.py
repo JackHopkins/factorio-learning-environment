@@ -1,14 +1,5 @@
-import pytest
-
 from fle.env.entities import Position
 from fle.env.game_types import Resource, Prototype
-
-
-@pytest.fixture()
-def game(instance):
-    instance.reset()
-    yield instance.namespace
-    # instance.reset()
 
 
 def test_harvest_resource_with_full_inventory(game):

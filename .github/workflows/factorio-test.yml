@@ -14,10 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: '3.11'
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
 
       - name: Verify scenario exists
         run: |
@@ -29,31 +31,10 @@ jobs:
           echo "✓ Found scenario directory"
           ls -la ./fle/cluster/scenarios/default_lab_scenario
 
-      - name: Start Factorio server
+      - name: Start 4 Factorio servers
         run: |
           cd fle/cluster
-          bash run-envs.sh start -n 1
-
-
-      - name: Wait for server to start
-        run: |
-          echo "Waiting for Factorio server to initialize..."
-          sleep 15
-          
-          echo "Waiting for RCON port 27000 to be ready..."
-          for i in {1..30}; do
-            if nc -z localhost 27000 2>/dev/null; then
-              echo "✓ RCON port 27000 is open!"
-              break
-            fi
-            echo "Waiting... ($i/30)"
-            sleep 2
-          done
-          
-          if ! nc -z localhost 27000 2>/dev/null; then
-            echo "❌ RCON port 27000 never became available"
-            exit 1
-          fi
+          bash run-envs.sh start -n 4
 
       - name: Check server status
         run: |
@@ -63,9 +44,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip
-          # Install the package with dev dependencies for testing
-          pip install -e ".[dev,agents,cluster,eval,all,mcp,env]"
+          uv sync --all-extras --dev
 
       - name: Debug container IPs and ports
         run: |
@@ -99,13 +78,11 @@ jobs:
             fi
           done
 
-      - name: Run Python tests with debugging
+      - name: Run Python tests (4 workers)
         run: |
-          # Run tests with verbose output and show print statements
-          python -m pytest -v -s --tb=short tests/actions/
+          uv run pytest -n 4 --dist=load -v -s --tb=short tests/actions/
         env:
           FACTORIO_HOST: localhost
-          FACTORIO_RCON_PORT: 27000
           PYTHONUNBUFFERED: 1
 
       - name: Show test logs on failure

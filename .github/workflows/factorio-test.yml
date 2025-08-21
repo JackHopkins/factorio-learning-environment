@@ -31,25 +31,10 @@ jobs:
           echo "✓ Found scenario directory"
           ls -la ./fle/cluster/scenarios/default_lab_scenario
 
-      - name: Start Factorio server
+      - name: Start 4 Factorio servers
         run: |
           cd fle/cluster
           bash run-envs.sh start -n 4
-
-      - name: Wait for servers to start
-        run: |
-          for port in 27000 27001; do
-            echo "Waiting for RCON port $port..."
-            for i in {1..60}; do
-              if nc -z localhost "$port" 2>/dev/null; then
-                echo "✓ RCON port $port is open!"
-                break
-              fi
-              echo "Waiting... ($i/60)"
-              sleep 1
-            done
-            nc -z localhost "$port" 2>/dev/null || { echo "❌ RCON $port never became available"; exit 1; }
-          done
 
       - name: Check server status
         run: |
@@ -93,7 +78,7 @@ jobs:
             fi
           done
 
-      - name: Run Python tests (2 workers)
+      - name: Run Python tests (4 workers)
         run: |
           uv run pytest -n 4 --dist=load -v -s --tb=short tests/actions/
         env:

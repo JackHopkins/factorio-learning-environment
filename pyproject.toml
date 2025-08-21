@@ -141,3 +141,8 @@ publish-url = "https://upload.pypi.org/legacy/"
 name = "testpypi"
 url = "https://test.pypi.org/legacy/"
 publish-url = "https://test.pypi.org/legacy/"
+
+[dependency-groups]
+dev = [
+    "pytest-xdist>=3.8.0",
+]

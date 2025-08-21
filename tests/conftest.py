@@ -23,11 +23,53 @@ project_root = Path(__file__).parent.parent.parent
 
 
 @pytest.fixture(scope="session")
-def instance():
+def instance(pytestconfig, worker_id):
     # from gym import FactorioInstance
     ips, udp_ports, tcp_ports = get_local_container_ips()
-    port_env = os.getenv("FACTORIO_RCON_PORT")
-    selected_port = int(port_env) if port_env else tcp_ports[-1]
+    # --- Parallel mapping (pytest-xdist) ---
+    # Docs-backed approach:
+    # - Use the built-in `worker_id` fixture to identify the worker ("gw0", "gw1", or "master").  [xdist how-to]
+    # - Use PYTEST_XDIST_WORKER_COUNT for total workers when present.         [xdist how-to]
+    # Ref: https://pytest-xdist.readthedocs.io/en/stable/how-to.html#identifying-the-worker-process-during-a-test
+    xdist_count_env = os.environ.get("PYTEST_XDIST_WORKER_COUNT")
+    try:
+        opt_numproc = pytestconfig.getoption("numprocesses")
+    except Exception:
+        opt_numproc = None
+
+    if xdist_count_env and xdist_count_env.isdigit():
+        num_workers = int(xdist_count_env)
+    elif isinstance(opt_numproc, int) and opt_numproc > 0:
+        num_workers = opt_numproc
+    else:
+        num_workers = 1
+
+    # Determine the zero-based index for this worker.
+    if worker_id == "master":
+        worker_index = 0
+    elif worker_id.startswith("gw") and worker_id[2:].isdigit():
+        worker_index = int(worker_id[2:])
+    else:
+        worker_index = 0
+
+    ports_sorted = sorted(tcp_ports)
+
+    if num_workers > 1:
+        if len(ports_sorted) < num_workers:
+            raise pytest.UsageError(
+                f"pytest -n {num_workers} requested, but only {len(ports_sorted)} Factorio TCP ports were found: "
+                f"{ports_sorted}. Start {num_workers} servers, e.g. './run-envs.sh start -n {num_workers}'."
+            )
+        selected_port = ports_sorted[worker_index]
+    else:
+        # Single-process run: allow explicit override via env, else use last discovered port.
+        port_env = os.getenv("FACTORIO_RCON_PORT")
+        if port_env:
+            selected_port = int(port_env)
+        else:
+            if not ports_sorted:
+                raise pytest.UsageError("No Factorio TCP ports discovered. Did you start the headless server?")
+            selected_port = ports_sorted[-1]
     try:
         instance = FactorioInstance(
             address="localhost",

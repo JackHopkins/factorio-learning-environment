@@ -38,24 +38,22 @@ jobs:
       - name: Start Factorio server
         run: |
           cd fle/cluster
-          bash run-envs.sh start -n 1
+          bash run-envs.sh start -n 2
 
-      - name: Wait for server to start
+      - name: Wait for servers to start
         run: |
-          echo "Waiting for RCON port 27000 to be ready..."
-          for i in {1..30}; do
-            if nc -z localhost 27000 2>/dev/null; then
-              echo "✓ RCON port 27000 is open!"
-              break
-            fi
-            echo "Waiting... ($i/30)"
-            sleep 2
+          for port in 27000 27001; do
+            echo "Waiting for RCON port $port..."
+            for i in {1..60}; do
+              if nc -z localhost "$port" 2>/dev/null; then
+                echo "✓ RCON port $port is open!"
+                break
+              fi
+              echo "Waiting... ($i/60)"
+              sleep 1
+            done
+            nc -z localhost "$port" 2>/dev/null || { echo "❌ RCON $port never became available"; exit 1; }
           done
-          
-          if ! nc -z localhost 27000 2>/dev/null; then
-            echo "❌ RCON port 27000 never became available"
-            exit 1
-          fi
 
       - name: Check server status
         run: |
@@ -101,13 +99,11 @@ jobs:
             fi
           done
 
-      - name: Run Python tests with debugging
+      - name: Run Python tests (2 workers)
         run: |
-          # Run tests with verbose output and show print statements
-          python -m pytest -v -s --tb=short tests/actions/
+          python -m pytest -n 2 --dist=load -v -s --tb=short tests/actions/
         env:
           FACTORIO_HOST: localhost
-          FACTORIO_RCON_PORT: 27000
           PYTHONUNBUFFERED: 1
 
       - name: Show test logs on failure

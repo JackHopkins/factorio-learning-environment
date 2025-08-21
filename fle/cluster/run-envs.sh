@@ -48,11 +48,39 @@ setup_compose_cmd() {
 generate_compose_file() {
     NUM_INSTANCES=${1:-1}
     SCENARIO=${2:-"default_lab_scenario"}
+    COMMAND=${3:-"--start-server-load-scenario ${SCENARIO}"}
 
     # Build optional mods volume block based on ATTACH_MOD
     MODS_VOLUME=""
     if [ "$ATTACH_MOD" = true ]; then
         MODS_VOLUME=$(printf "    - source: %s\n      target: /opt/factorio/mods\n      type: bind\n" "$MODS_PATH")
+    fi
+
+    # Build optional save file volume block based on SAVE_ADDED
+    SAVE_VOLUME=""
+    if [ "$SAVE_ADDED" = true ]; then
+        # Check if SAVE_FILE is a .zip file
+        if [[ "$SAVE_FILE" != *.zip ]]; then
+            echo "Error: Save file must be a .zip file."
+            exit 1
+        fi
+        
+        # Create saves directory if it doesn't exist
+        mkdir -p ../../.fle/saves
+        
+        # Get the save file name (basename)
+        SAVE_FILE_NAME=$(basename "$SAVE_FILE")
+        
+        # Copy the save file to the local saves directory
+        cp "$SAVE_FILE" "../../.fle/saves/$SAVE_FILE_NAME"
+        
+        # Create variable for the container path
+        CONTAINER_SAVE_PATH="/opt/factorio/saves/$SAVE_FILE_NAME"
+        
+        SAVE_VOLUME="    - source: ../../.fle/saves
+      target: /opt/factorio/saves
+      type: bind"
+      COMMAND="--start-server ${SAVE_FILE_NAME}"
     fi
     
     # Validate scenario
@@ -88,7 +116,7 @@ EOF
   factorio_${i}:
     image: factoriotools/factorio:1.1.110
     platform: \${DOCKER_PLATFORM:-linux/amd64}
-    command: /opt/factorio/bin/x64/factorio --start-server-load-scenario ${SCENARIO}
+    command: /opt/factorio/bin/x64/factorio ${COMMAND}
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
       /opt/factorio/config/map-gen-settings.json --map-settings /opt/factorio/config/map-settings.json
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
@@ -117,6 +145,7 @@ EOF
     - source: ../../.fle/data/_screenshots
       target: /opt/factorio/script-output
       type: bind
+${SAVE_VOLUME}
 ${MODS_VOLUME}
 EOF
     done
@@ -184,6 +213,7 @@ show_help() {
     echo "Options:"
     echo "  -n NUMBER     Number of Factorio instances to run (1-33, default: 1)"
     echo "  -s SCENARIO   Scenario to run (open_world or default_lab_scenario, default: default_lab_scenario)"
+    echo "  -sv SAVE_FILE, --use_save SAVE_FILE Use a .zip save file from factorio"
     echo "  -m, --attach_mods Attach mods to the instances"
     echo "  -f86, --force_amd Force AMD platform"
     echo ""
@@ -200,10 +230,12 @@ show_help() {
 COMMAND="start"
 NUM_INSTANCES=1
 SCENARIO="default_lab_scenario"
+SAVE_FILE=""
 
 # Boolean: attach mods or not
 ATTACH_MOD=false
 FORCE_AMD=false
+SAVE_ADDED=false
 
 # Parse args (supporting both short and long options)
 while [[ $# -gt 0 ]]; do
@@ -240,6 +272,20 @@ while [[ $# -gt 0 ]]; do
           exit 1
           ;;
       esac
+      shift 2
+      ;;
+    -sv|--use_save)
+      if [[ -z "$2" || "$2" == -* ]]; then
+        echo "Error: -sv|--use_save requires an argument."
+        show_help
+        exit 1
+      fi
+      if [[ ! -f "$2" ]]; then
+        echo "Error: Save file '$2' does not exist."
+        exit 1
+      fi
+      SAVE_FILE="$2"
+      SAVE_ADDED=true
       shift 2
       ;;
     -m|--attach_mods)

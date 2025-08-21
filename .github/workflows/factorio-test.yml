@@ -34,7 +34,7 @@ jobs:
       - name: Start Factorio server
         run: |
           cd fle/cluster
-          bash run-envs.sh start -n 2
+          bash run-envs.sh start -n 4
 
       - name: Wait for servers to start
         run: |
@@ -95,7 +95,7 @@ jobs:
 
       - name: Run Python tests (2 workers)
         run: |
-          uv run pytest -n 2 --dist=load -v -s --tb=short tests/actions/
+          uv run pytest -n 4 --dist=load -v -s --tb=short tests/actions/
         env:
           FACTORIO_HOST: localhost
           PYTHONUNBUFFERED: 1

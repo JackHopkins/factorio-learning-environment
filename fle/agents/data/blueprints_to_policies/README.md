@@ -45,13 +45,15 @@ This module transforms Factorio blueprint JSON files into optimized Python code 
 
 1. Place blueprint JSON files in `blueprints/` subdirectories
 2. Use corresponding analyzer class for desired optimization:
+
 ```python
 analyzer = BlueprintAnalyzer(blueprint)  # Basic placement
-analyzer = BlueprintAnalyzerWithConnect(blueprint)  # With belt optimization 
+analyzer = BlueprintAnalyzerWithConnect(blueprint)  # With belt optimization
 analyzer = BlueprintAnalyzerWithPlaceNextTo(blueprint)  # With relative placement
 ```
 
 3. Generate and execute placement code:
+
 ```python
 code = analyzer.generate_program()
 instance.eval_with_error(code)
@@ -70,6 +72,7 @@ instance.eval_with_error(code)
 ### Metrics & Verification
 
 The system tracks:
+
 - Entity placement accuracy
 - Code optimization ratios
 - Build sequence efficiency

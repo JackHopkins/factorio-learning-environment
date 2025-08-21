@@ -5,6 +5,7 @@ The `get_research_progress` tool checks the progress of technology research in F
 ## Core Functionality
 
 The tool provides:
+
 - Remaining science pack requirements for a specific technology
 - Current research progress if no technology is specified
 - Status information about researched/unresearched technologies
@@ -28,6 +29,7 @@ current_progress = get_research_progress()  # Only works if research is active!
 ### Return Value
 
 Returns a List[Ingredient] where each Ingredient contains:
+
 - name: Name of the science pack
 - count: Number of packs still needed
 - type: Type of the ingredient (usually "item" for science packs)
@@ -35,6 +37,7 @@ Returns a List[Ingredient] where each Ingredient contains:
 ## Important Notes
 
 1. **Current Research Check**
+
    ```python
    try:
        progress = get_research_progress()
@@ -56,6 +59,7 @@ Returns a List[Ingredient] where each Ingredient contains:
 ## Common Use Cases
 
 ### 1. Monitor Current Research
+
 ```python
 def monitor_research_progress():
     try:
@@ -67,12 +71,13 @@ def monitor_research_progress():
 ```
 
 ### 2. Research Requirements Planning
+
 ```python
 def check_research_feasibility(technology):
     try:
         requirements = get_research_progress(technology)
         inventory = inspect_inventory()
-        
+
         for req in requirements:
             if inventory[req.name] < req.count:
                 print(f"Insufficient {req.name}: have {inventory[req.name]}, need {req.count}")
@@ -86,6 +91,7 @@ def check_research_feasibility(technology):
 ## Best Practices
 
 1. **Always Handle No Research Case**
+
 ```python
 def safe_get_progress():
     try:
@@ -98,6 +104,7 @@ def safe_get_progress():
 ### Common Errors
 
 1. **No Active Research**
+
 ```python
 try:
     progress = get_research_progress()
@@ -108,6 +115,7 @@ except Exception as e:
 ```
 
 2. **Invalid Technology**
+
 ```python
 try:
     progress = get_research_progress(technology)
@@ -118,6 +126,7 @@ except Exception as e:
 ```
 
 3. **Already Researched**
+
 ```python
 if not get_research_progress(technology):
     print("Technology already researched")

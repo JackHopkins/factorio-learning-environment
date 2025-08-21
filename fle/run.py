@@ -22,7 +22,8 @@ def fle_init():
 
 
 def fle_cluster(args):
-    script = Path(__file__).parent / "cluster" / "local" / "run-envs.sh"
+    cluster_path = Path(__file__).parent / "cluster"
+    script = cluster_path / "run-envs.sh"
     if not script.exists():
         print(f"Cluster script not found: {script}", file=sys.stderr)
         sys.exit(1)
@@ -35,7 +36,7 @@ def fle_cluster(args):
         if args.s:
             cmd.extend(["-s", args.s])
     try:
-        subprocess.run(cmd, check=True)
+        subprocess.run(cmd, cwd=str(cluster_path), check=True)
     except subprocess.CalledProcessError as e:
         print(f"Error running cluster script: {e}", file=sys.stderr)
         sys.exit(e.returncode)
@@ -43,12 +44,8 @@ def fle_cluster(args):
 
 def fle_eval(args):
     try:
-        config_path = Path(args.config)
-        sys.argv = ["run_eval", "--run_config", str(config_path)]
-    except TypeError:
-        sys.argv = ["run_eval"]
-    try:
-        asyncio.run(run_eval())
+        config_path = str(Path(args.config))
+        asyncio.run(run_eval(config_path))
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -72,21 +69,17 @@ Examples:
     parser_cluster.add_argument(
         "cluster_command",
         nargs="?",
-        default=None,
         choices=["start", "stop", "restart", "help"],
         help="Cluster command (start/stop/restart/help)",
     )
-    parser_cluster.add_argument(
-        "-n", type=int, default=None, help="Number of Factorio instances"
-    )
+    parser_cluster.add_argument("-n", type=int, help="Number of Factorio instances")
     parser_cluster.add_argument(
         "-s",
         type=str,
-        default=None,
         help="Scenario (open_world or default_lab_scenario)",
     )
     parser_eval = subparsers.add_parser("eval", help="Run experiment")
-    parser_eval.add_argument("--config", required=False, help="Path to run config JSON")
+    parser_eval.add_argument("--config", required=True, help="Path to run config JSON")
     args = parser.parse_args()
     if args.command:
         fle_init()

@@ -108,7 +108,6 @@ class FactorioInstance:
         self.persistent_vars = {}
         self.tcp_port = tcp_port
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
-        self.all_technologies_researched = all_technologies_researched
         self.fast = fast
         self._speed = 1
         self._ticks_elapsed = 0
@@ -128,16 +127,19 @@ class FactorioInstance:
         self.post_tool_hooks = {}
 
         # Load the python controllers that correspond to the Lua scripts
+        self.lua_script_manager.load_init_into_game("initialise")
         self.setup_tools(self.lua_script_manager)
 
         if inventory is None:
             inventory = {}
         self.initial_inventory = inventory
-        self.initialise(fast)
+        self.initialise(fast, all_technologies_researched)
         self.initial_score = 0
         try:
             self.first_namespace.score()
-        except Exception:
+            print("Initial score:", self.initial_score)
+        except Exception as e:
+            print(e)
             # Invalidate cache if there is an error
             self.lua_script_manager = LuaScriptManager(self.rcon_client, False)
             self.script_dict = {
@@ -145,7 +147,7 @@ class FactorioInstance:
                 **self.lua_script_manager.tool_scripts,
             }
             self.setup_tools(self.lua_script_manager)
-            self.initialise(fast)
+            self.initialise(fast, all_technologies_researched)
 
         self.initial_score, goal = self.first_namespace.score()
         # Register the cleanup method to be called on exit (only once per process)
@@ -170,7 +172,12 @@ class FactorioInstance:
     def is_multiagent(self):
         return self.num_agents > 1
 
-    def reset(self, game_state: Optional[GameState] = None):
+    def reset(
+        self,
+        game_state: Optional[GameState] = None,
+        reset_position: bool = False,
+        all_technologies_researched: bool = True,
+    ):
         # Reset the namespace (clear variables, functions etc)
         assert not game_state or len(game_state.inventories) == self.num_agents, (
             "Game state must have the same number of inventories as num_agents"
@@ -182,9 +189,9 @@ class FactorioInstance:
         if not game_state:
             # Reset the game instance
             inventories = [self.initial_inventory] * self.num_agents
-            self._reset(inventories)
+            self._reset(inventories, reset_position, all_technologies_researched)
             # Reset the technologies
-            if not self.all_technologies_researched:
+            if not all_technologies_researched:
                 self.first_namespace._load_research_state(
                     ResearchState(
                         technologies={},
@@ -196,7 +203,11 @@ class FactorioInstance:
                 )
         else:
             # Reset the game instance with the correct player's inventory and messages if multiagent
-            self._reset(game_state.inventories)
+            self._reset(
+                game_state.inventories,
+                reset_position,
+                all_technologies_researched,
+            )
 
             # Load entities into the game
             self.first_namespace._load_entity_state(
@@ -212,9 +223,6 @@ class FactorioInstance:
                     if i < len(game_state.agent_messages):
                         self.namespaces[i].load_messages(game_state.agent_messages[i])
 
-            # Reset elapsed ticks
-            self._reset_elapsed_ticks()
-
             # Load variables / functions from game state
             for i in range(self.num_agents):
                 self.namespaces[i].load(game_state.namespaces[i])
@@ -226,6 +234,7 @@ class FactorioInstance:
 
         # Clear renderings
         self.begin_transaction()
+        self.add_command("/sc global.elapsed_ticks = 0", raw=True)
         self.add_command("/sc rendering.clear()", raw=True)
         self.execute_transaction()
 
@@ -246,7 +255,7 @@ class FactorioInstance:
 
         self.execute_transaction()
 
-    def speed(self, speed):
+    def set_speed(self, speed):
         self.rcon_client.send_command(f"/sc game.speed = {speed}")
         self._speed = speed
 
@@ -271,18 +280,9 @@ class FactorioInstance:
         """
         execution_path = Path(os.path.dirname(os.path.realpath(__file__)))
         generator = SystemPromptGenerator(str(execution_path))
-        multiagent_str = ""
-        if self.num_agents > 1:
-            player_idx = agent_idx + 1
-            multiagent_str = (
-                f"## MULTIAGENT INSTRUCTIONS\n"
-                f"You are Agent {player_idx} out of {self.num_agents} agent(s) in the game. "
-                f"Follow your specific instructions given to you by the task."
-                f"Use the send_message() tool regularly to communicate with other agents about your current activities and any challenges you encounter. "
-                f"Start each program with a send_message() call to explain what you are doing. "
-                f"End each program with a send_message() call to confirm your actions. If your program errors out prior to send_message() being called, the message will not be sent. "
-            )
-        return generator.generate(multiagent_str)
+        return generator.generate_for_agent(
+            agent_idx=agent_idx, num_agents=self.num_agents
+        )
 
     def connect_to_server(self, address, tcp_port):
         try:
@@ -607,26 +607,15 @@ class FactorioInstance:
         # print(lua_response)
         return _lua2python(command, lua_response, start=start)
 
-    def _reset_static_achievement_counters(self):
-        """
-        This resets the cached production flows that we track for achievements and diversity sampling.
-        """
-        self.add_command(
-            "/sc global.crafted_items = {}; global.harvested_items = {}", raw=True
-        )
-        self.execute_transaction()
-
-    def _reset_elapsed_ticks(self):
-        """
-        This resets the cached production flows that we track for achievements and diversity sampling.
-        """
-        self.add_command("/sc global.elapsed_ticks = 0", raw=True)
-        self.execute_transaction()
-
-    def _reset(self, inventories: List[Dict[str, Any]]):
+    def _reset(
+        self,
+        inventories: List[Dict[str, Any]],
+        reset_position: bool,
+        all_technologies_researched: bool,
+    ):
         self.begin_transaction()
         self.add_command(
-            "/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats(); global.actions.regenerate_resources(1)",
+            "/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats();",
             raw=True,
         )
         # self.add_command('/sc script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
@@ -643,6 +632,12 @@ class FactorioInstance:
         self.add_command("/sc global.actions.clear_walking_queue()", raw=True)
         for i in range(self.num_agents):
             player_index = i + 1
+            if reset_position:
+                # Ensure players are returned to a known spawn location between tests
+                self.add_command(
+                    f"/sc if global.agent_characters and global.agent_characters[{player_index}] then global.agent_characters[{player_index}].teleport{{x=0, y={(i) * 2}}} end",
+                    raw=True,
+                )
             self.add_command(
                 f"/sc global.actions.clear_entities({player_index})", raw=True
             )
@@ -653,15 +648,15 @@ class FactorioInstance:
                 raw=True,
             )
 
-        if self.all_technologies_researched:
+        if all_technologies_researched:
             self.add_command(
                 "/sc global.agent_characters[1].force.research_all_technologies()",
                 raw=True,
             )
+        else:
+            self.add_command("/sc global.agent_characters[1].force.reset()", raw=True)
+        self.add_command("/sc global.elapsed_ticks = 0", raw=True)
         self.execute_transaction()
-        # self.clear_entities()
-        self._reset_static_achievement_counters()
-        self._reset_elapsed_ticks()
 
     def _execute_transaction(self) -> Dict[str, Any]:
         start = timer()
@@ -702,7 +697,7 @@ class FactorioInstance:
     def execute_transaction(self) -> Dict[str, Any]:
         return self._execute_transaction()
 
-    def initialise(self, fast=True):
+    def initialise(self, fast=True, all_technologies_researched=True):
         self.begin_transaction()
         self.add_command("/sc global.alerts = {}", raw=True)
         self.add_command("/sc global.elapsed_ticks = 0", raw=True)
@@ -716,14 +711,12 @@ class FactorioInstance:
 
         init_scripts = [
             "initialise",
-            "clear_entities",
             "alerts",
             "util",
             "priority_queue",
             "connection_points",
             "recipe_fluid_connection_mappings",
             "serialize",
-            "production_score",
             "initialise_inventory",
         ]
         if self.peaceful:
@@ -732,7 +725,11 @@ class FactorioInstance:
             self.lua_script_manager.load_init_into_game(script_name)
 
         inventories = [self.initial_inventory] * self.num_agents
-        self._reset(inventories)
+        self._reset(
+            inventories,
+            reset_position=False,
+            all_technologies_researched=all_technologies_researched,
+        )
         self.first_namespace._clear_collision_boxes()
 
     def _create_agent_game_characters(self):

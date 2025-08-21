@@ -9,7 +9,7 @@ USER INPUT
 LATEST FULL SCRIPT RUN
 {last_executed_policy}
 
-SCRIPT PART WITH ERROR 
+SCRIPT PART WITH ERROR
 {script_with_error}
 
 ERROR MESSAGE

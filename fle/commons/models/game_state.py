@@ -14,7 +14,7 @@ class GameState:
     """Serializable Factorio game state"""
 
     entities: str  # Serialized list of entities
-    inventories: List[Dict[str, int]]  # List of inventories for all players
+    inventories: List[Any]  # List of inventories for all players
     research: Optional[ResearchState] = field()
     timestamp: float = field(default_factory=time.time)
     namespaces: List[bytes] = field(default_factory=list)
@@ -167,7 +167,10 @@ class GameState:
         """Convert state to JSON string"""
         data = {
             "entities": self.entities,
-            "inventories": [inventory.__dict__ for inventory in self.inventories],
+            "inventories": [
+                inventory.__dict__ if hasattr(inventory, "__dict__") else inventory
+                for inventory in self.inventories
+            ],
             "timestamp": self.timestamp,
             "namespaces": [ns.hex() if ns else "" for ns in self.namespaces],
             "agent_messages": self.agent_messages,

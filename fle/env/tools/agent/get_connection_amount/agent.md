@@ -5,6 +5,7 @@ The `get_connection_amount` tool calculates how many entities would be needed to
 ## Core Functionality
 
 The tool determines the number of connecting entities (pipes, belts, or power poles) needed between:
+
 - Two positions
 - Two entities
 - Two entity groups
@@ -24,11 +25,13 @@ amount = get_connection_amount(source, target, connection_type=Prototype.X)
 3. `connection_type`: Type of connecting entity to use (default: Prototype.Pipe)
 
 ### Return Value
+
 Returns an integer representing the number of entities required for the connection.
 
 ## Common Use Cases
 
 ### 1. Planning Belt Lines
+
 ```python
 # Calculate belts needed between drill and furnace
 belt_count = get_connection_amount(
@@ -42,6 +45,7 @@ assert inspect_inventory()[Prototype.TransportBelt] >= belt_count, "Not enough b
 ```
 
 ### 2. Power Infrastructure Planning
+
 ```python
 # Check power pole requirements
 pole_count = get_connection_amount(

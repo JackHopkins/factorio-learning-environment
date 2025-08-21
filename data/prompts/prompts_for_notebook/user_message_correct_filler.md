@@ -23,4 +23,3 @@ ATTEMPT WITH ERROR
 
 ERROR MESSAGE
 {error_message}
-

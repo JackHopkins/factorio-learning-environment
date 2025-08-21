@@ -2,7 +2,8 @@ name: Factorio Server Tests
 on:
   pull_request:
     paths:
-      - 'fle/**'
+      - 'fle/env/**'
+      - 'fle/cluster/**'
       - 'tests/actions/**'
       - '.github/workflows/factorio-test.yml'
   workflow_dispatch:
@@ -13,21 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: '3.11'
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          # Install the package with dev dependencies for testing
-          pip install -e ".[dev,agents,cluster,eval,all,mcp,env]"
-
-      - name: Build Factorio Docker image
-        run: |
-          cd fle/cluster/docker
-          docker build -t factorio . --platform linux/amd64
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
 
       - name: Verify scenario exists
         run: |
@@ -39,43 +31,20 @@ jobs:
           echo "✓ Found scenario directory"
           ls -la ./fle/cluster/scenarios/default_lab_scenario
 
-      - name: Update docker-compose to use local image
-        run: |
-          # Update docker-compose.yml to use the locally built image
-          cd fle/cluster
-          sed -i "s|image: 'factoriotools/factorio:1.1.110'|image: 'factorio:latest'|g" docker-compose-linux.yml
-          sed -i '/image:.*factorio/a\    container_name: factorio_1' docker-compose-linux.yml
-
-      - name: Start Factorio server
+      - name: Start 4 Factorio servers
         run: |
           cd fle/cluster
-          docker compose -f docker-compose-linux.yml up -d
-
-      - name: Wait for server to start
-        run: |
-          echo "Waiting for Factorio server to initialize..."
-          sleep 15
-          
-          echo "Waiting for RCON port 27015 to be ready..."
-          for i in {1..30}; do
-            if nc -z localhost 27015 2>/dev/null; then
-              echo "✓ RCON port 27015 is open!"
-              break
-            fi
-            echo "Waiting... ($i/30)"
-            sleep 2
-          done
-          
-          if ! nc -z localhost 27015 2>/dev/null; then
-            echo "❌ RCON port 27015 never became available"
-            exit 1
-          fi
+          bash run-envs.sh start -n 4
 
       - name: Check server status
         run: |
           cd fle/cluster
-          docker compose -f docker-compose-linux.yml ps
-          docker compose -f docker-compose-linux.yml logs factorio
+          docker compose -f docker-compose.yml ps
+          docker compose -f docker-compose.yml logs factorio_0
+
+      - name: Install Python dependencies
+        run: |
+          uv sync --all-extras --dev
 
       - name: Debug container IPs and ports
         run: |
@@ -100,7 +69,7 @@ jobs:
           fi
           
           # Try common RCON ports
-          for port in 27015 27016 27017 27018 27019 27020; do
+          for port in 27000 27016 27017 27018 27019 27020; do
             echo -n "Testing port $port: "
             if nc -z -w 2 localhost $port 2>/dev/null; then
               echo "✓ Open"
@@ -109,13 +78,11 @@ jobs:
             fi
           done
 
-      - name: Run Python tests with debugging
+      - name: Run Python tests (4 workers)
         run: |
-          # Run tests with verbose output and show print statements
-          python -m pytest -v -s --tb=short tests/actions/
+          uv run pytest -n 4 --dist=load -v -s --tb=short tests/actions/
         env:
           FACTORIO_HOST: localhost
-          FACTORIO_RCON_PORT: 27015
           PYTHONUNBUFFERED: 1
 
       - name: Show test logs on failure
@@ -123,13 +90,10 @@ jobs:
         run: |
           cd fle/cluster
           echo "=== Factorio container logs ==="
-          docker compose -f docker-compose-linux.yml logs factorio
-          
-          echo -e "\n=== All container logs ==="
-          docker compose -f docker-compose-linux.yml logs
+          docker compose -f docker-compose.yml logs factorio_0
 
       - name: Stop server
         if: always()
         run: |
           cd fle/cluster
-          docker compose -f docker-compose-linux.yml down
+          bash run-envs.sh stop

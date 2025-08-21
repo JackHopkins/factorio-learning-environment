@@ -1,12 +1,12 @@
 RECIPES FOR FACTORIO ENTITIES
 AssemblingMachine 1 - Crafting requires 3 electronic circuits, 5 iron gear wheels, 9 iron plates. In total all ingredients require atleast 5 copper plates and 22 iron plates
 AssemblingMachine 2 - Crafting requires 1 assembling machine 1, 3 electronic circuits, 5 iron gear wheels and 2 steel plates. In total all ingredients require atleast 9 copper plates and 35 iron plates and 2 steel plates
-BurnerInserter -  Crafting requires 1 iron gear wheel, 1 iron plate. In total all ingredients require atleast 3 iron plates. 
+BurnerInserter - Crafting requires 1 iron gear wheel, 1 iron plate. In total all ingredients require atleast 3 iron plates.
 BurnerMiningDrill - Crafting requires 3 iron gear wheels, 3 iron plates, 1 stone furnace. In total all ingredients require atleast 9 iron plates and 5 stone
-ElectricMiningDrill -  Crafting requires 3 electronic circuits, 5 iron gear wheels, 10 iron plates. In total all ingredients require atleast 5 copper plates and 23 iron plates
+ElectricMiningDrill - Crafting requires 3 electronic circuits, 5 iron gear wheels, 10 iron plates. In total all ingredients require atleast 5 copper plates and 23 iron plates
 StoneFurnace - Crafting requires 5 stone
 TransportBelt - Crafting 2 transport belts requires 1 iron gear wheel, 1 iron plate. In total all ingredients require atlest 3 iron plates
-OffshorePump - Crafting requires 1 iron gear wheels, 2 electronic circuits, 1 pipe. In total all ingredients require atleast 3 copper plates and 5 iron plates 
+OffshorePump - Crafting requires 1 iron gear wheels, 2 electronic circuits, 1 pipe. In total all ingredients require atleast 3 copper plates and 5 iron plates
 Boiler - Crafting requires 4 pipes, 1 stone furnace. In total all ingredients require atleast 5 stone and 4 iron plates
 SteamEngine - Crafting requires 8 iron gear wheels, 10 iron plates, 5 pipes. In total all ingredients require atleast 31 iron plates
 Pipe - Crafting requires 1 iron plate

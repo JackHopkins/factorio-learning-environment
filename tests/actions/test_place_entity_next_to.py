@@ -98,66 +98,63 @@ def calculate_expected_position(
         )
 
 
-def test_place_entities_of_different_sizes(game):
-    entity_pairs = [
+@pytest.mark.parametrize(
+    "ref_proto,placed_proto",
+    [
         (Prototype.Boiler, Prototype.SteamEngine),
         (Prototype.ElectricMiningDrill, Prototype.Boiler),
         (Prototype.SteamEngine, Prototype.Pipe),
         (Prototype.AssemblingMachine1, Prototype.BurnerInserter),
         (Prototype.Boiler, Prototype.TransportBelt),
-    ]
+    ],
+)
+def test_place_entities_of_different_sizes(game, ref_proto, placed_proto):
+    if ref_proto != Prototype.OffshorePump:
+        starting_position = game.nearest(Resource.IronOre)
+    else:
+        starting_position = game.nearest(Resource.Water)
+    nearby_position = Position(x=starting_position.x + 1, y=starting_position.y - 1)
+    game.move_to(nearby_position)
 
-    for ref_proto, placed_proto in entity_pairs:
-        if ref_proto != Prototype.OffshorePump:
-            starting_position = game.nearest(Resource.IronOre)
-        else:
-            starting_position = game.nearest(Resource.Water)
-        nearby_position = Position(x=starting_position.x + 1, y=starting_position.y - 1)
-        game.move_to(nearby_position)
+    for spacing in range(3):
+        for direction in [
+            Direction.LEFT,
+            Direction.DOWN,
+            Direction.RIGHT,
+            Direction.UP,
+        ]:
+            ref_entity = game.place_entity(
+                ref_proto, direction=Direction.RIGHT, position=starting_position
+            )
+            game.move_to(Position(x=starting_position.x + 3, y=starting_position.y - 3))
+            placed_entity = game.place_entity_next_to(
+                placed_proto, ref_entity.position, direction, spacing
+            )
+            expected_position = calculate_expected_position(
+                ref_entity.position, direction, spacing, ref_entity, placed_entity
+            )
+            assert placed_entity.position.is_close(expected_position, tolerance=1), (
+                f"Misplacement: {ref_proto.value[0]} -> {placed_proto.value[0]}, "
+                f"Direction: {direction}, Spacing: {spacing}, "
+                f"Expected: {expected_position}, Got: {placed_entity.position}"
+            )
 
-        for spacing in range(3):
-            for direction in [
-                Direction.LEFT,
-                Direction.DOWN,
-                Direction.RIGHT,
-                Direction.UP,
-            ]:
-                ref_entity = game.place_entity(
-                    ref_proto, direction=Direction.RIGHT, position=starting_position
+            if placed_proto == Prototype.SteamEngine:
+                dir = placed_entity.direction.value in [
+                    direction.value,
+                    DirectionInternal.opposite(direction).value,
+                ]
+                assert dir, (
+                    f"Expected direction {direction}, got {placed_entity.direction}"
                 )
-                game.move_to(
-                    Position(x=starting_position.x + 3, y=starting_position.y - 3)
-                )
-                placed_entity = game.place_entity_next_to(
-                    placed_proto, ref_entity.position, direction, spacing
-                )
-                expected_position = calculate_expected_position(
-                    ref_entity.position, direction, spacing, ref_entity, placed_entity
-                )
-                assert placed_entity.position.is_close(
-                    expected_position, tolerance=1
-                ), (
-                    f"Misplacement: {ref_proto.value[0]} -> {placed_proto.value[0]}, "
-                    f"Direction: {direction}, Spacing: {spacing}, "
-                    f"Expected: {expected_position}, Got: {placed_entity.position}"
+            # Check direction unless we are dealing with a pipe, which has no direction
+            elif placed_proto != Prototype.Pipe:
+                assert placed_entity.direction.value == direction.value, (
+                    f"Expected direction {direction}, got {placed_entity.direction}"
                 )
 
-                if placed_proto == Prototype.SteamEngine:
-                    dir = placed_entity.direction.value in [
-                        direction.value,
-                        DirectionInternal.opposite(direction).value,
-                    ]
-                    assert dir, (
-                        f"Expected direction {direction}, got {placed_entity.direction}"
-                    )
-                # Check direction unless we are dealing with a pipe, which has no direction
-                elif placed_proto != Prototype.Pipe:
-                    assert placed_entity.direction.value == direction.value, (
-                        f"Expected direction {direction}, got {placed_entity.direction}"
-                    )
-
-                game.instance.reset()
-                game.move_to(nearby_position)
+            game.instance.reset()
+            game.move_to(nearby_position)
 
 
 def test_place_pipe_next_to_offshore_pump(game):

@@ -70,23 +70,6 @@ class DirectionInternal(enum.Enum):
     def from_factorio_direction(cls, direction):
         return direction.value * 2
 
-
-class FactorioTransaction:
-    def __init__(self):
-        self.commands: List[
-            Tuple[str, List[Any], bool]
-        ] = []  # (command, parameters, is_raw)
-
-    def add_command(self, command: str, *parameters, raw=False):
-        self.commands.append((command, list(parameters), raw))
-
-    def clear(self):
-        self.commands.clear()
-
-    def get_commands(self):
-        return self.commands
-
-
 class FactorioInstance:
     namespace_class = FactorioNamespace
     _cleanup_registered = False  # Only register cleanup once per process
@@ -189,7 +172,7 @@ class FactorioInstance:
         if not game_state:
             # Reset the game instance
             inventories = [self.initial_inventory] * self.num_agents
-            self._reset(inventories, reset_position, all_technologies_researched)
+            self.first_namespace._reset(inventories, reset_position, all_technologies_researched)
             # Reset the technologies
             if not all_technologies_researched:
                 self.first_namespace._load_research_state(
@@ -203,7 +186,7 @@ class FactorioInstance:
                 )
         else:
             # Reset the game instance with the correct player's inventory and messages if multiagent
-            self._reset(
+            self.first_namespace._reset(
                 game_state.inventories,
                 reset_position,
                 all_technologies_researched,
@@ -231,29 +214,6 @@ class FactorioInstance:
             self.initial_score, _ = self.first_namespace.score()
         except Exception:
             self.initial_score = 0
-
-        # Clear renderings
-        self.begin_transaction()
-        self.add_command("/sc global.elapsed_ticks = 0", raw=True)
-        self.add_command("/sc rendering.clear()", raw=True)
-        self.execute_transaction()
-
-    def set_inventory(self, inventory: Dict[str, Any], agent_idx: int = 0):
-        self.begin_transaction()
-        self.add_command("clear_inventory", agent_idx + 1)
-        self.execute_transaction()
-        # print("RCON output:", result)
-        self.begin_transaction()
-        # kwargs dict to json
-        inventory_items = {k: v for k, v in inventory.items()}
-        inventory_items_json = json.dumps(inventory_items)
-        player_idx = agent_idx + 1
-        self.add_command(
-            f"/sc global.actions.initialise_inventory({player_idx}, '{inventory_items_json}')",
-            raw=True,
-        )
-
-        self.execute_transaction()
 
     def set_speed(self, speed):
         self.rcon_client.send_command(f"/sc game.speed = {speed}")
@@ -435,289 +395,18 @@ class FactorioInstance:
             message = e.args[0].replace("\\n", "")
             return -1, "", f"{message}".strip()
 
-    def _get_command(self, command, parameters=[], measured=True):
-        prefix = "/sc " if not measured else "/command "
-        if command in self.script_dict:
-            script = prefix + self.script_dict[command]
-            for index in range(len(parameters)):
-                script = script.replace(
-                    f"arg{index + 1}", lua.encode(parameters[index])
-                )
-        else:
-            script = command
-        return script
-
-    def calculate_optimal_zoom(self, bounds: BoundingBox, resolution="1920x1080"):
-        """
-        Calculate the optimal zoom level to fit the factory in the screenshot.
-
-        Args:
-            bounds (BoundingBox): Factory bounds containing width and height
-            resolution (str): Screenshot resolution in format "WIDTHxHEIGHT"
-
-        Returns:
-            float: Optimal zoom level
-        """
-        if not bounds:
-            return 1
-
-        # Parse resolution
-        width, height = map(int, resolution.split("x"))
-        aspect_ratio = width / height
-
-        # Get factory dimensions
-        factory_width = bounds.width()
-        factory_height = bounds.height()
-
-        # Base tiles visible at zoom level 1
-        # These values are approximate for Factorio's zoom levels
-        BASE_VISIBLE_HEIGHT = 25  # tiles visible vertically at zoom 1
-        BASE_VISIBLE_WIDTH = BASE_VISIBLE_HEIGHT * aspect_ratio
-
-        # Calculate required zoom based on both dimensions
-        zoom_by_width = BASE_VISIBLE_WIDTH / factory_width
-        zoom_by_height = BASE_VISIBLE_HEIGHT / factory_height
-
-        # Use the smaller zoom to ensure entire factory is visible
-        optimal_zoom = min(zoom_by_width, zoom_by_height)
-
-        # Add padding (20% margin)
-        optimal_zoom *= 0.8
-
-        # Clamp zoom to reasonable values
-        # Factorio's min and max zoom levels
-        MIN_ZOOM = 0.1
-        MAX_ZOOM = 4.0
-
-        optimal_zoom = max(MIN_ZOOM, min(MAX_ZOOM, optimal_zoom))
-
-        return round(optimal_zoom, 2)
-
-    def screenshot(
-        self,
-        script_output_path,
-        resolution="1920x1080",
-        save_path=None,
-        zoom=None,
-        center_on_factory=False,
-    ):
-        """
-        Take a screenshot in game and optionally save it to a specific location.
-
-        This does nothing in headless mode.
-
-        Args:
-            resolution (str, optional): Screenshot resolution (e.g., "1920x1080")
-            save_path (str, optional): Path where to save the screenshot copy
-            zoom (float, optional): Zoom level for the screenshot (e.g., 0.5 for zoomed out, 2.0 for zoomed in)
-
-        Returns:
-            str: Path to the saved screenshot, or None if failed
-        """
-        # Clear rendering
-        camera: Camera = self.first_namespace._get_factory_centroid()
-        POS_STRING = ""
-        if camera:
-            centroid = camera.position
-            POS_STRING = (
-                ", position={x=" + str(centroid.x) + ", y=" + str(centroid.y) + "}"
-            )
-
-        self.rcon_client.send_command("/sc rendering.clear()")
-
-        # # Calculate optimal zoom if not specified
-        # if zoom is None:
-        #     zoom = self.calculate_optimal_zoom(bounds, resolution)
-
-        command = (
-            "/sc game.take_screenshot({player=1, zoom="
-            + str(camera.zoom)
-            + ", show_entity_info=true, hide_clouds=true, hide_fog=true "
-            + POS_STRING
-            + "})"
-        )
-        self.rcon_client.send_command(command)
-        time.sleep(1)
-        # if not response:
-        #     return None
-
-        # Wait for the screenshot file to appear and get its path
-        screenshot_path = self._get_latest_screenshot(
-            script_output_path=script_output_path
-        )
-        if not screenshot_path:
-            print("Screenshot file not found")
-            return None
-
-        # If save_path is provided, copy the screenshot there
-        if save_path:
-            try:
-                # Create directory if it doesn't exist
-                os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
-
-                # Copy the file
-                shutil.copy2(screenshot_path, save_path)
-                return save_path
-            except Exception as e:
-                print(f"Failed to copy screenshot: {e}")
-                return screenshot_path
-
-        return screenshot_path
-
-    def _get_latest_screenshot(self, script_output_path, max_wait=2):
-        """
-        Get the path to the latest screenshot in the script-output directory.
-        Waits up to max_wait seconds for the file to appear.
-        """
-        start_time = time.time()
-        while time.time() - start_time < max_wait:
-            try:
-                # Get list of screenshot files
-                screenshots = [
-                    f
-                    for f in os.listdir(script_output_path)
-                    if f.endswith(".png") and f.startswith("screenshot")
-                ]
-
-                if screenshots:
-                    # Sort by modification time to get the latest
-                    latest = max(
-                        screenshots,
-                        key=lambda x: os.path.getmtime(
-                            os.path.join(script_output_path, x)
-                        ),
-                    )
-                    return os.path.join(script_output_path, latest)
-            except Exception as e:
-                print(f"Error checking for screenshots: {e}")
-
-            time.sleep(0.5)  # Wait before checking again
-
-        return None
-
-    def _send(self, command, *parameters, trace=False) -> List[str]:
-        """
-        Send a Lua command to the underlying Factorio instance
-        """
-        start = timer()
-        script = self._get_command(command, parameters=list(parameters), measured=False)
-        lua_response = self.rcon_client.send_command(script)
-        # self.add_command(command, *parameters)
-        # response = self._execute_transaction()
-        # print(lua_response)
-        return _lua2python(command, lua_response, start=start)
-
-    def _reset(
-        self,
-        inventories: List[Dict[str, Any]],
-        reset_position: bool,
-        all_technologies_researched: bool,
-    ):
-        self.begin_transaction()
-        self.add_command(
-            "/sc global.alerts = {}; game.reset_game_state(); global.actions.reset_production_stats();",
-            raw=True,
-        )
-        # self.add_command('/sc script.on_nth_tick(nil)', raw=True) # Remove all dangling event handlers
-        for i in range(self.num_agents):
-            player_index = i + 1
-            self.add_command(
-                f"/sc global.actions.regenerate_resources({player_index})", raw=True
-            )
-            # self.add_command('clear_inventory', player_index)
-
-        self.execute_transaction()
-
-        self.begin_transaction()
-        self.add_command("/sc global.actions.clear_walking_queue()", raw=True)
-        for i in range(self.num_agents):
-            player_index = i + 1
-            if reset_position:
-                # Ensure players are returned to a known spawn location between tests
-                self.add_command(
-                    f"/sc if global.agent_characters and global.agent_characters[{player_index}] then global.agent_characters[{player_index}].teleport{{x=0, y={(i) * 2}}} end",
-                    raw=True,
-                )
-            self.add_command(
-                f"/sc global.actions.clear_entities({player_index})", raw=True
-            )
-            inventory_items = {k: v for k, v in inventories[i].items()}
-            inventory_items_json = json.dumps(inventory_items)
-            self.add_command(
-                f"/sc global.actions.initialise_inventory({player_index}, '{inventory_items_json}')",
-                raw=True,
-            )
-
-        if all_technologies_researched:
-            self.add_command(
-                "/sc global.agent_characters[1].force.research_all_technologies()",
-                raw=True,
-            )
-        else:
-            self.add_command("/sc global.agent_characters[1].force.reset()", raw=True)
-        self.add_command("/sc global.elapsed_ticks = 0", raw=True)
-        self.execute_transaction()
-
-    def _execute_transaction(self) -> Dict[str, Any]:
-        start = timer()
-        rcon_commands = {}
-        for idx, (command, parameters, is_raw) in enumerate(
-            self.current_transaction.get_commands()
-        ):
-            if is_raw:
-                rcon_commands[f"{idx}_{command}"] = command
-            else:
-                script = self._get_command(
-                    command, parameters=parameters, measured=False
-                )
-                rcon_commands[f"{idx}_{command}"] = script
-
-        lua_responses = self.rcon_client.send_commands(rcon_commands)
-
-        results = {}
-        for command, response in lua_responses.items():
-            results[command] = _lua2python(command, response, start=start)
-
-        self.current_transaction.clear()
-        return results
-
-    def begin_transaction(self):
-        if not hasattr(self, "current_transaction"):
-            self.current_transaction = FactorioTransaction()
-        elif self.current_transaction:
-            self.current_transaction.clear()
-        else:
-            self.current_transaction = FactorioTransaction()
-
-    def add_command(self, command: str, *parameters, raw=False):
-        if not hasattr(self, "current_transaction"):
-            self.begin_transaction()
-        self.current_transaction.add_command(command, *parameters, raw=raw)
-
-    def execute_transaction(self) -> Dict[str, Any]:
-        return self._execute_transaction()
-
     def initialise(self, fast=True, all_technologies_researched=True):
-        self.begin_transaction()
-        self.add_command("/sc global.alerts = {}", raw=True)
-        self.add_command("/sc global.elapsed_ticks = 0", raw=True)
-        self.add_command(
-            "/sc global.fast = {}".format("true" if fast else "false"), raw=True
+        self.rcon_client.send_command(
+            f"/sc global.fast = {str(fast).lower()}"
         )
-        self.execute_transaction()
-
-        # Create characters for all agents
-        self._create_agent_game_characters()
+        self.first_namespace._create_agent_characters(self.num_agents)
 
         init_scripts = [
-            "initialise",
             "alerts",
             "util",
-            "priority_queue",
             "connection_points",
             "recipe_fluid_connection_mappings",
             "serialize",
-            "initialise_inventory",
         ]
         if self.peaceful:
             init_scripts.append("enemies")
@@ -725,27 +414,13 @@ class FactorioInstance:
             self.lua_script_manager.load_init_into_game(script_name)
 
         inventories = [self.initial_inventory] * self.num_agents
-        self._reset(
+
+        self.first_namespace._reset(
             inventories,
             reset_position=False,
             all_technologies_researched=all_technologies_researched,
         )
         self.first_namespace._clear_collision_boxes()
-
-    def _create_agent_game_characters(self):
-        """Create Factorio characters for all agents in the game."""
-        # Create characters in Factorio
-        self.begin_transaction()
-        color_logic = ""
-        if self.num_agents > 1:
-            color_logic = "if i==1 then char.color={r=0,g=1,b=0,a=1} elseif i==2 then char.color={r=0,g=0,b=1,a=1} end;"
-
-        self.add_command(
-            f'/sc global.agent_characters = {{}}; for _,c in pairs(game.surfaces[1].find_entities_filtered{{type="character"}}) do if c then c.destroy() end end; for i=1,{self.num_agents} do local char = game.surfaces[1].create_entity{{name="character",position={{x=0,y=(i-1)*2}},force=game.forces.player}}; {color_logic} global.agent_characters[i]=char end',
-            raw=True,
-        )
-        self.add_command("/sc player = global.agent_characters[1]", raw=True)
-        self.execute_transaction()
 
     def get_warnings(self, seconds=10):
         """
@@ -754,8 +429,7 @@ class FactorioInstance:
         :return:
         """
         start = timer()
-        command = f"/silent-command rcon.print(dump(global.get_alerts({seconds})))"
-        lua_response = self.rcon_client.send_command(command)
+        lua_response = self.rcon_client.send_command(f"/sc rcon.print(dump(global.get_alerts({seconds})))")
         # print(lua_response)
         alert_dict, duration = _lua2python("alerts", lua_response, start=start)
         if isinstance(alert_dict, dict):

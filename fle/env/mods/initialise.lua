@@ -4,12 +4,29 @@
 if not global.actions then
     global.actions = {}
 end
+
 if not global.utils then
     global.utils = {}
 end
 
 if not global.initial_score then
     global.initial_score = {["player"] = 0}
+end
+
+if not global.alerts then
+    global.alerts = {}
+end
+
+if not global.elapsed_ticks then
+    global.elapsed_ticks = 0
+end
+
+if not global.fast then
+    global.fast = false
+end
+
+if not global.agent_characters then
+    global.agent_characters = {}
 end
 
 -- Initialize debug flags
@@ -19,18 +36,17 @@ if global.debug == nil then
     }
 end
 
--- Note: The debug_rendering.lua library will be loaded separately by the LuaScriptManager
-local player = global.agent_characters[1]
-player.surface.always_day=true
---game.players[1].character_collision_mask = "not-colliding-with-itself"
-player.force.character_build_distance_bonus = 100
-player.force.research_all_technologies()
+-- -- Note: The debug_rendering.lua library will be loaded separately by the LuaScriptManager
+-- local player = global.agent_characters[1]
+-- player.surface.always_day=true
+-- player.force.character_build_distance_bonus = 100
+-- player.force.research_all_technologies()
 
 
-local beam_duration = 9
-local surface=player.surface
-local pp = player.position
-local cnt = 0
+-- local beam_duration = 9
+-- local surface=player.surface
+-- local pp = player.position
+-- local cnt = 0
 local directions = {'north', 'northeast', 'east', 'southeast', 'south', 'southwest', 'west', 'northwest'}
 
 --Initialise.lua
@@ -1121,4 +1137,4 @@ function required_resource_present(entity, position, surface)
     end
 end
 
-rcon.print(1)
+-- rcon.print(1)

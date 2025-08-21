@@ -202,7 +202,7 @@ class GameState:
         # Set inventory for each player
         if self.inventories:
             for i in range(instance.num_agents):
-                instance.set_inventory(self.inventories[i], i)
+                instance.first_namespace._set_inventory(i+1, self.inventories[i])
 
         # Restore research state if present (only need to do this once)
         if self.research:  # Only do this for the first instance

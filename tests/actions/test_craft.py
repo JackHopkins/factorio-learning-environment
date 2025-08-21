@@ -33,7 +33,7 @@ def test_craft_with_full_inventory(game):
     """
     Test crafting when inventory is full
     """
-    game.instance.set_inventory({"iron-plate": 100, "coal": 10000})
+    game._set_inventory(1, {"iron-plate": 100, "coal": 10000})
     try:
         result = game.craft_item(Prototype.IronGearWheel, 1)
         assert False, (

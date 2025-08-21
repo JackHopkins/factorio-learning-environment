@@ -146,11 +146,7 @@ def test_rocket_launch(game):
             "low-density-structure": 112,
         }
         inventory_items_json = json.dumps(inventory_items)
-        game.instance.add_command(
-            f"/c global.actions.initialise_inventory({1}, '{inventory_items_json}')",
-            raw=True,
-        )
-        game.instance.execute_transaction()
+        game._set_inventory(1, inventory_items)
 
     # Verify initial state
     # assert silo.status == EntityStatus.NORMAL

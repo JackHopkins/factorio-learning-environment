@@ -32,11 +32,11 @@ def test_pickup_item_full_inventory(game):
     Uses existing inventory items but maximizes stacks to test true full inventory.
     """
     # Clear inventory completely first
-    game.instance.set_inventory({"wooden-chest": 1})
+    game._set_inventory(1, {"wooden-chest": 1})
     placement_position = Position(x=0, y=0)
     game.move_to(placement_position)
     chest = game.place_entity(Prototype.WoodenChest, position=placement_position)
-    game.instance.set_inventory({"coal": 10000})
+    game._set_inventory(1, {"coal": 10000})
     try:
         result = game.pickup_entity(chest)
         assert False, (

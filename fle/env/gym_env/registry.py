@@ -12,7 +12,7 @@ from fle.env import FactorioInstance
 from fle.env.gym_env.environment import FactorioGymEnv
 from fle.eval.tasks import TaskFactory
 
-PORT_OFFSET = int(os.getenv("PORT_OFFSET", "0"))
+PORT_OFFSET = int(os.environ["PORT_OFFSET"])
 
 
 @dataclass
@@ -62,7 +62,7 @@ class FactorioGymRegistry:
                 goal_description = task_config.get(
                     "goal_description", f"Task: {task_key}"
                 )
-                num_agents = task_config["num_agents"]
+                num_agents = 1
                 # Register the environment
                 self.register_environment(
                     env_id=task_key,

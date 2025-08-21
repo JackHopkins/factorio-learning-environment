@@ -70,6 +70,7 @@ class DirectionInternal(enum.Enum):
     def from_factorio_direction(cls, direction):
         return direction.value * 2
 
+
 class FactorioInstance:
     namespace_class = FactorioNamespace
     _cleanup_registered = False  # Only register cleanup once per process
@@ -174,7 +175,9 @@ class FactorioInstance:
         if not game_state:
             # Reset the game instance
             inventories = [self.initial_inventory] * self.num_agents
-            self.first_namespace._reset(inventories, reset_position, all_technologies_researched, clear_entities)
+            self.first_namespace._reset(
+                inventories, reset_position, all_technologies_researched, clear_entities
+            )
             # Reset the technologies
             if not all_technologies_researched:
                 self.first_namespace._load_research_state(
@@ -398,10 +401,10 @@ class FactorioInstance:
             message = e.args[0].replace("\\n", "")
             return -1, "", f"{message}".strip()
 
-    def initialise(self, fast=True, all_technologies_researched=True, clear_entities=True):
-        self.rcon_client.send_command(
-            f"/sc global.fast = {str(fast).lower()}"
-        )
+    def initialise(
+        self, fast=True, all_technologies_researched=True, clear_entities=True
+    ):
+        self.rcon_client.send_command(f"/sc global.fast = {str(fast).lower()}")
         self.first_namespace._create_agent_characters(self.num_agents)
 
         init_scripts = [
@@ -433,7 +436,9 @@ class FactorioInstance:
         :return:
         """
         start = timer()
-        lua_response = self.rcon_client.send_command(f"/sc rcon.print(dump(global.get_alerts({seconds})))")
+        lua_response = self.rcon_client.send_command(
+            f"/sc rcon.print(dump(global.get_alerts({seconds})))"
+        )
         # print(lua_response)
         alert_dict, duration = _lua2python("alerts", lua_response, start=start)
         if isinstance(alert_dict, dict):

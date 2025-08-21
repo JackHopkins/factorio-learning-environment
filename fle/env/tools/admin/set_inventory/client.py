@@ -4,7 +4,6 @@ from slpp import slpp as lua
 import json
 
 
-
 class SetInventory(Tool):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)

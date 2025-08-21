@@ -62,7 +62,7 @@ class FactorioGymRegistry:
                 goal_description = task_config.get(
                     "goal_description", f"Task: {task_key}"
                 )
-                num_agents = 1
+                num_agents = task_config["num_agents"]
                 # Register the environment
                 self.register_environment(
                     env_id=task_key,

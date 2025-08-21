@@ -355,6 +355,7 @@ global.utils.avoid_entity = function(player_index, entity, position, direction)
     player.teleport(player_position)
     return false
 end
+end
 
 global.crafting_queue = {}
 

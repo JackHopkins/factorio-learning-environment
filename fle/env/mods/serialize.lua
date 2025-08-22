@@ -835,16 +835,7 @@ global.utils.serialize_entity = function(entity)
         serialized.grid = global.utils.serialize_equipment_grid(entity.grid)
     end
     --game.print(serpent.line(entity.get_inventory(defines.inventory.turret_ammo)))
-    serialized.warnings = get_issues(entity)
-    --if entity.get_inventory then
-    --  for i = 1, #defines.inventory do
-    --      local inventory = entity.get_inventory(i)
-    --      if inventory and #inventory > 0 then
-    --          serialized["inventory_" .. i] = global.utils.serialize_inventory(inventory)
-    --      end
-    --  end
-    --end
-
+    serialized.warnings = global.utils.get_issues(entity)
 
     local inventory_types = {
         {name = "fuel", define = defines.inventory.fuel},
@@ -875,122 +866,8 @@ global.utils.serialize_entity = function(entity)
         width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x),
         height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y),
     }
-    --- Add specific check for gun turrets
-    --if entity.type == "ammo-turret" then
-    --    local ammo_inventory = entity.get_inventory(defines.inventory.turret_ammo)
-    --    if ammo_inventory and #ammo_inventory > 0 then
-    --        serialized.ammo_inventory = global.utils.serialize_inventory(ammo_inventory)
-    --    end
-    --end
     serialized.neighbours = serialize_neighbours(entity)
 
-
-    -- Add input and output locations if the entity is a transport belt
-    --if entity.type == "transport-belt" or entity.type == "underground-belt" then
-    --    -- input_position is the position upstream of the belt
-    --    --local direction = entity.direction
-    --
-    --    local x, y = entity.position.x, entity.position.y
-    --    if entity.direction == defines.direction.north then
-    --        y = y + 1
-    --    elseif entity.direction == defines.direction.south then
-    --        y = y - 1
-    --    elseif entity.direction == defines.direction.east then
-    --        x = x - 1
-    --    elseif entity.direction == defines.direction.west then
-    --        x = x + 1
-    --    elseif entity.direction == defines.direction.northeast then
-    --        game.print("NORTHEAST")
-    --        x = x - 1
-    --        y = y + 1
-    --    elseif entity.direction == defines.direction.southeast then
-    --        x = x - 1
-    --        y = y - 1
-    --    elseif entity.direction == defines.direction.northwest then
-    --        x = x + 1
-    --        y = y + 1
-    --    elseif entity.direction == defines.direction.southwest then
-    --        x = x + 1
-    --        y = y - 1
-    --    end
-    --
-    --    serialized.input_position = {x = x, y = y}
-    --
-    --    -- output_position is the position downstream of the belt
-    --    local x, y = entity.position.x, entity.position.y
-    --    if entity.direction == defines.direction.north then
-    --        y = y - 1
-    --    elseif entity.direction == defines.direction.south then
-    --        y = y + 1
-    --    elseif entity.direction == defines.direction.east then
-    --        x = x + 1
-    --    elseif entity.direction == defines.direction.west then
-    --        x = x - 1
-    --    elseif entity.direction == defines.direction.northeast then
-    --        x = x + 1
-    --        y = y - 1
-    --    elseif entity.direction == defines.direction.southeast then
-    --        x = x + 1
-    --        y = y + 1
-    --    elseif entity.direction == defines.direction.northwest then
-    --        x = x - 1
-    --        y = y - 1
-    --    elseif entity.direction == defines.direction.southwest then
-    --        x = x - 1
-    --        y = y + 1
-    --    end
-    --    --create_beam_point_with_direction(global.agent_characters[1], entity.direction , {x = x, y = y})
-    --    serialized.output_position = {x = x, y = y}
-    --    serialized.position = {x = entity.position.x, y = entity.position.y}
-    --    --serialized.inventory = entity.get_transport_line(1).get_contents()
-    --
-    --    -- Get contents from both lines
-    --    local line1 = entity.get_transport_line(1)
-    --    local line2 = entity.get_transport_line(2)
-    --
-    --    -- Calculate if belt is full at the end (can't insert more items)
-    --    local is_full = not line1.can_insert_at_back() and not line2.can_insert_at_back()
-    --
-    --    serialized.belt_status = {
-    --        status = is_full and "full_output" or "normal"
-    --    }
-    --
-    --    -- Get and merge contents from both lines
-    --    serialized.inventory = {}
-    --    local line1_contents = line1.get_contents()
-    --    local line2_contents = line2.get_contents()
-    --
-    --    serialized.is_terminus = #entity.belt_neighbours["outputs"] == 0
-    --    serialized.is_source = #entity.belt_neighbours["inputs"] == 0
-    --
-    --    for item_name, count in pairs(line1_contents) do
-    --        serialized.inventory[item_name] = (serialized.inventory[item_name] or 0) + count
-    --    end
-    --    for item_name, count in pairs(line2_contents) do
-    --        serialized.inventory[item_name] = (serialized.inventory[item_name] or 0) + count
-    --    end
-    --
-    --    -- Add warning if belt is full
-    --    if not serialized.warnings then
-    --        serialized.warnings = {}
-    --    end
-    --    if is_full then
-    --        table.insert(serialized.warnings, "Belt output is full")
-    --    end
-    --
-    --    if entity.type == "underground-belt" then
-    --        serialized.is_input = entity.belt_to_ground_type == "input"
-    --        if serialized.is_input then
-    --            serialized.is_terminus = entity.neighbours == nil
-    --        else
-    --            serialized.is_source = entity.neighbours == nil
-    --        end
-    --        if entity.neighbours ~= nil then
-    --            --game.print(serpent.block(entity.neighbours))
-    --            serialized.connected_to = entity.neighbours.unit_number
-    --        end
-    --    end
-    --end
     -- Add input and output locations if the entity is a transport belt
     if entity.type == "transport-belt" or entity.type == "underground-belt" then
         local x, y = entity.position.x, entity.position.y
@@ -1196,12 +1073,6 @@ global.utils.serialize_entity = function(entity)
         end
     end
 
-    -- Add input and output locations if the entity is a splitter
-    --if entity.type == "splitter" then
-    --  serialized.input_position = entity.input_position
-    --  serialized.output_position = entity.output_position
-    --end
-
     -- Add input and output locations if the entity is a pipe
     if entity.type == "pipe" then
         serialized.connections = {}
@@ -1275,96 +1146,6 @@ global.utils.serialize_entity = function(entity)
             serialized.input_connection_points = mappings.inputs
             serialized.output_connection_points = mappings.outputs
         end
-        --if entity.direction == defines.direction.north then
-        --    -- Two crude oil inputs at the bottom
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x + 1, y = y + 3
-        --            })
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x - 1, y = y + 3
-        --            })
-        --    -- Three outputs at the top (petroleum, light oil, heavy oil)
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x - 2, y = y - 3
-        --            })
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x, y = y - 3
-        --            })
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x + 2, y = y - 3
-        --            })
-        --elseif entity.direction == defines.direction.south then
-        --    -- Two crude oil inputs at the top
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x + 1, y = y - 3
-        --            })
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x - 1, y = y - 3
-        --            })
-        --    -- Three outputs at the bottom
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x - 2, y = y + 3
-        --            })
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x, y = y + 3
-        --            })
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x + 2, y = y + 3
-        --            })
-        --elseif entity.direction == defines.direction.east then
-        --    -- Two crude oil inputs on the left
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x - 3, y = y + 1
-        --            })
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x - 3, y = y - 1
-        --            })
-        --    -- Three outputs on the right
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x + 3, y = y - 2
-        --            })
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x + 3, y = y
-        --            })
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x + 3, y = y + 2
-        --            })
-        --elseif entity.direction == defines.direction.west then
-        --    -- Two crude oil inputs on the right
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x + 3, y = y + 1
-        --            })
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x + 3, y = y - 1
-        --            })
-        --    -- Three outputs on the left
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x - 3, y = y - 2
-        --            })
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x - 3, y = y
-        --            })
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x - 3, y = y + 2
-        --            })
-        --end
-
-        ---- Filter out any invalid connection points
-        --local filtered_input_points = {}
-        --for _, point in ipairs(serialized.input_connection_points) do
-        --    if global.utils.is_valid_connection_point(game.surfaces[1], point.position) then
-        --        table.insert(filtered_input_points, point.positio)
-        --    end
-        --end
-        --serialized.input_connection_points = filtered_input_points
-        --
-        --local filtered_output_points = {}
-        --for _, point in ipairs(serialized.output_connection_points) do
-        --    if global.utils.is_valid_connection_point(game.surfaces[1], point.position) then
-        --        table.insert(filtered_output_points, point.position)
-        --    end
-        --end
-        --serialized.output_connection_points = filtered_output_points
     end
 
     if entity.name == "chemical-plant" then
@@ -1378,68 +1159,6 @@ global.utils.serialize_entity = function(entity)
             serialized.input_connection_points = mappings.inputs
             serialized.output_connection_points = mappings.outputs
         end
-
-        --if direction == defines.direction.north then
-        --    -- Input pipes at the bottom
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x - 1, y = y + 1.5
-        --            })
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x + 1, y = y + 1.5
-        --            })
-        --    -- Output pipes at the top
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x - 1, y = y - 1.5
-        --            })
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x + 1, y = y - 1.5
-        --            })
-        --elseif direction == defines.direction.south then
-        --    -- Input pipes at the top
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x - 1, y = y - 1.5
-        --            })
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x + 1, y = y - 1.5
-        --            })
-        --    -- Output pipes at the bottom
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x - 1, y = y + 1.5
-        --            })
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x + 1, y = y + 1.5
-        --            })
-        --elseif direction == defines.direction.east then
-        --    -- Input pipes on the left
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x - 1.5, y = y - 1
-        --            })
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x - 1.5, y = y + 1,
-        --            })
-        --    -- Output pipes on the right
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x + 1.5, y = y - 1,
-        --            })
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x + 1.5, y = y + 1
-        --            })
-        --elseif direction == defines.direction.west then
-        --    -- Input pipes on the right
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x + 1.5, y = y - 1,
-        --            })
-        --    table.insert(serialized.input_connection_points,
-        --            {x = x + 1.5, y = y + 1
-        --            })
-        --    -- Output pipes on the left
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x - 1.5, y = y - 1
-        --            })
-        --    table.insert(serialized.output_connection_points,
-        --            {x = x - 1.5, y = y + 1
-        --            })
-        --end
 
         -- Filter out any invalid connection points
         local filtered_input_points = {}
@@ -1538,25 +1257,6 @@ global.utils.serialize_entity = function(entity)
         tile_width = prototype.tile_width,
         tile_height = prototype.tile_height,
     }
-
-    -- Add drop position if the entity is a mining drill
-    --game.print("Entity type: " .. entity.type)
-    --game.print("Entity has burner: " .. tostring(entity.burner ~= nil))
-    --game.print("Burner is burning: " .. tostring(entity.burner and entity.burner.currently_burning ~= nil))
-
-    --if entity.type == "mining-drill" then
-    --  serialized.drop_position = {
-    --      x = entity.drop_position.x,
-    --      y = entity.drop_position.y
-    --  }
-    --  serialized.drop_position.x = math.round(serialized.drop_position.x * 2 ) / 2
-    --  serialized.drop_position.y = math.round(serialized.drop_position.y * 2 ) / 2
-    --  game.print("Mining drill drop position: " .. serpent.line(serialized.drop_position))
-    --  local burner = entity.burner
-    --  if burner then
-    --      add_burner_inventory(serialized, burner)
-    --  end
-    --end
 
     if entity.type == "mining-drill" then
         serialized.drop_position = {
@@ -1667,24 +1367,6 @@ global.utils.serialize_entity = function(entity)
         serialized.rocket_parts = 0  -- Will be updated with actual count
         serialized.rocket_progress = 0.0  -- Will be updated with actual progress
         serialized.launch_count = entity.launch_count or 0
-
-        -- Get the current rocket details if one exists
-        --local rocket_inventory = entity.get_inventory(defines.inventory.rocket_silo_rocket)
-        --local rocket = entity.rocket or nil
-
-        --if rocket then
-        --    -- If there's a rocket, get its state
-        --    serialized.rocket = {
-        --        status = global.entity_status_names[rocket.status] or "normal",
-        --        launch_progress = rocket.launch_progress * 100.0  -- Convert to percentage
-        --    }
-        --
-        --    -- Check for payload
-        --    local payload_inventory = rocket.get_inventory(defines.inventory.cargo_unit)
-        --    if payload_inventory and not payload_inventory.is_empty() then
-        --        serialized.rocket.payload = payload_inventory.get_contents()
-        --    end
-        --end
 
         -- Get part construction progress
         local parts_inventory = entity.get_inventory(defines.inventory.rocket_silo_input)

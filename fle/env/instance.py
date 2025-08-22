@@ -409,15 +409,16 @@ class FactorioInstance:
 
         init_scripts = [
             "alerts",
-            "util",
             "connection_points",
             "recipe_fluid_connection_mappings",
             "serialize",
+            "remove_enemies"
         ]
-        if self.peaceful:
-            init_scripts.append("enemies")
         for script_name in init_scripts:
             self.lua_script_manager.load_init_into_game(script_name)
+
+        if self.peaceful:
+            self.rcon_client.send_command("/sc global.remove_enemies()")
 
         inventories = [self.initial_inventory] * self.num_agents
 

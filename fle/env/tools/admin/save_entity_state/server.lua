@@ -121,7 +121,7 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
             }
 
             -- Add any warnings
-            for _, warning in pairs(get_issues(entity) or {}) do
+            for _, warning in pairs(global.utils.get_issues(entity) or {}) do
                 table.insert(state.warnings, '"' .. warning .. '"')
             end
 

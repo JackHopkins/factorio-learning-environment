@@ -111,9 +111,11 @@ class GameState:
                 current_research=data["research"]["current_research"],
                 research_progress=data["research"]["research_progress"],
                 research_queue=data["research"]["research_queue"],
-                progress=data["research"]["progress"]
-                if "progress" in data["research"]
-                else {},
+                progress=(
+                    data["research"]["progress"]
+                    if "progress" in data["research"]
+                    else {}
+                ),
             )
 
         return cls(
@@ -149,9 +151,11 @@ class GameState:
                 current_research=data["research"]["current_research"],
                 research_progress=data["research"]["research_progress"],
                 research_queue=data["research"]["research_queue"],
-                progress=data["research"]["progress"]
-                if "progress" in data["research"]
-                else {},
+                progress=(
+                    data["research"]["progress"]
+                    if "progress" in data["research"]
+                    else {}
+                ),
             )
 
         return cls(
@@ -194,15 +198,15 @@ class GameState:
     def to_instance(self, instance):
         """Restore game state to a Factorio instance"""
         # Load entity state to all instances (since it's shared)
-        assert instance.num_agents == self.num_agents, (
-            f"GameState can only be restored to a multiagent instance with the same number of agents (num_agents={self.num_agents})"
-        )
+        assert (
+            instance.num_agents == self.num_agents
+        ), f"GameState can only be restored to a multiagent instance with the same number of agents (num_agents={self.num_agents})"
         instance.first_namespace._load_entity_state(self.entities, decompress=True)
 
         # Set inventory for each player
         if self.inventories:
             for i in range(instance.num_agents):
-                instance.first_namespace._set_inventory(i+1, self.inventories[i])
+                instance.first_namespace._set_inventory(i + 1, self.inventories[i])
 
         # Restore research state if present (only need to do this once)
         if self.research:  # Only do this for the first instance

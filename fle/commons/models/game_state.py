@@ -205,8 +205,8 @@ class GameState:
 
         # Set inventory for each player
         if self.inventories:
-            for namespace in instance.namespaces:
-                namespace._set_inventory(self.inventories[i])
+            for namespace, inventory in zip(instance.namespaces, self.inventories):
+                namespace._set_inventory(inventory)
 
         # Restore research state if present (only need to do this once)
         if self.research:  # Only do this for the first instance

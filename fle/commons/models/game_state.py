@@ -205,8 +205,8 @@ class GameState:
 
         # Set inventory for each player
         if self.inventories:
-            for i in range(instance.num_agents):
-                instance.first_namespace._set_inventory(i + 1, self.inventories[i])
+            for namespace in instance.namespaces:
+                namespace._set_inventory(self.inventories[i])
 
         # Restore research state if present (only need to do this once)
         if self.research:  # Only do this for the first instance
@@ -220,8 +220,7 @@ class GameState:
 
         # Merge pickled namespace with existing persistent_vars for each player
         if self.namespaces:
-            for i in range(instance.num_agents):
-                namespace = self.namespaces[i]
+            for namespace in instance.namespaces:
                 if namespace:
                     restored_vars = pickle.loads(namespace)
                 if (

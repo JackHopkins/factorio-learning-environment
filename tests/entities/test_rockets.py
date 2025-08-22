@@ -144,7 +144,7 @@ def test_rocket_launch(game):
             "rocket-fuel": 112,
             "low-density-structure": 112,
         }
-        game._set_inventory(1, inventory_items)
+        game._set_inventory(inventory_items)
 
     # Verify initial state
     # assert silo.status == EntityStatus.NORMAL

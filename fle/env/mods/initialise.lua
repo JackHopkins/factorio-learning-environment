@@ -34,6 +34,7 @@ if not global.fast then
 end
 
 if not global.agent_characters then
+    --- @type table<number, LuaEntity> Agent characters table mapping agent index to LuaEntity
     global.agent_characters = {}
 end
 

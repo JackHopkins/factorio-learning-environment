@@ -58,9 +58,7 @@ class LuaScriptManager:
             f"admin\\{name}",
         }
         tool_scripts = [
-            key
-            for key in self.tool_scripts.keys()
-            if os.path.dirname(key) in tool_dirs
+            key for key in self.tool_scripts.keys() if os.path.dirname(key) in tool_dirs
         ]
         # Sort scripts so server.lua comes last
         tool_scripts.sort(key=lambda x: x.endswith("server.lua"))

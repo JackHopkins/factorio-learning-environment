@@ -239,47 +239,6 @@ recursive_serialize.deserialize_equipment_grid = function(grid, serialized)
     end
 end
 
-global.utils.serialize_recipe = function(recipe)
-    local function serialize_number(num)
-        if num == math.huge then
-            return "inf"
-        elseif num == -math.huge then
-            return "-inf"
-        else
-            return tostring(num)
-        end
-    end
-    if not recipe then return nil end
-
-    local ingredients = {}
-    for _, ingredient in pairs(recipe.ingredients) do
-        table.insert(ingredients, {
-            name = '"' .. ingredient.name .. '"',
-            amount = serialize_number(ingredient.amount),
-            type = '"' .. ingredient.type .. '"'
-        })
-    end
-
-    local products = {}
-    for _, product in pairs(recipe.products) do
-        table.insert(products, {
-            name = '"' .. product.name .. '"',
-            amount = serialize_number(product.amount),
-            type = '"' .. product.type .. '"',
-            probability = product.probability and serialize_number(product.probability) or "1"
-        })
-    end
-
-    return {
-        name = '"' .. recipe.name .. '"',
-        category = '"' .. recipe.category .. '"',
-        enabled = recipe.enabled,
-        energy = serialize_number(recipe.energy),
-        ingredients = ingredients,
-        products = products
-    }
-end
-
 local function serialize_fluidbox(fluidbox)
     local serialized = {
         length = #fluidbox,
@@ -613,54 +572,64 @@ local function is_valid_connection_point(surface, position)
     return not invalid_tiles[tile.name]
 end
 
-global.entity_status_names = {
-    [defines.entity_status.working] = "working",
-    [defines.entity_status.normal] = "normal",
-    [defines.entity_status.no_power] = "no_power",
-    [defines.entity_status.low_power] = "low_power",
-    [defines.entity_status.no_fuel] = "no_fuel",
-    [defines.entity_status.disabled_by_control_behavior] = "disabled_by_control_behavior",
-    [defines.entity_status.opened_by_circuit_network] = "opened_by_circuit_network",
-    [defines.entity_status.closed_by_circuit_network] = "closed_by_circuit_network",
-    [defines.entity_status.disabled_by_script] = "disabled_by_script",
-    [defines.entity_status.marked_for_deconstruction] = "marked_for_deconstruction",
-    [defines.entity_status.not_plugged_in_electric_network] = "not_plugged_in_electric_network",
-    [defines.entity_status.networks_connected] = "networks_connected",
-    [defines.entity_status.networks_disconnected] = "networks_disconnected",
-    [defines.entity_status.charging] = "charging",
-    [defines.entity_status.discharging] = "discharging",
-    [defines.entity_status.fully_charged] = "fully_charged",
-    [defines.entity_status.out_of_logistic_network] = "out_of_logistic_network",
-    [defines.entity_status.no_recipe] = "no_recipe",
-    [defines.entity_status.no_ingredients] = "no_ingredients",
-    [defines.entity_status.no_input_fluid] = "no_input_fluid",
-    [defines.entity_status.no_research_in_progress] = "no_research_in_progress",
-    [defines.entity_status.no_minable_resources] = "no_minable_resources",
-    [defines.entity_status.low_input_fluid] = "low_input_fluid",
-    [defines.entity_status.fluid_ingredient_shortage] = "fluid_ingredient_shortage",
-    [defines.entity_status.full_output] = "full_output",
-    [defines.entity_status.full_burnt_result_output] = "full_burnt_result_output",
-    [defines.entity_status.item_ingredient_shortage] = "item_ingredient_shortage",
-    [defines.entity_status.missing_required_fluid] = "missing_required_fluid",
-    [defines.entity_status.missing_science_packs] = "missing_science_packs",
-    [defines.entity_status.waiting_for_source_items] = "waiting_for_source_items",
-    [defines.entity_status.waiting_for_space_in_destination] = "waiting_for_space_in_destination",
-    [defines.entity_status.preparing_rocket_for_launch] = "preparing_rocket_for_launch",
-    [defines.entity_status.waiting_to_launch_rocket] = "waiting_to_launch_rocket",
-    [defines.entity_status.launching_rocket] = "launching_rocket",
-    [defines.entity_status.no_modules_to_transmit] = "no_modules_to_transmit",
-    [defines.entity_status.recharging_after_power_outage] = "recharging_after_power_outage",
-    [defines.entity_status.waiting_for_target_to_be_built] = "waiting_for_target_to_be_built",
-    [defines.entity_status.waiting_for_train] = "waiting_for_train",
-    [defines.entity_status.no_ammo] = "no_ammo",
-    [defines.entity_status.low_temperature] = "low_temperature",
-    [defines.entity_status.disabled] = "disabled",
-    [defines.entity_status.turned_off_during_daytime] = "turned_off_during_daytime",
-    [defines.entity_status.not_connected_to_rail] = "not_connected_to_rail",
-    [defines.entity_status.cant_divide_segments] = "cant_divide_segments",
-}
+global.utils.entity_status_names = function(entity_status)
+    local s = entity_status
+    if not s then return '"normal"' end
+
+    -- try direct lookup
+    local name = defines.entity_status[s]
+    if name then return '"' .. name .. '"' end
+
+    -- fallback reverse lookup
+    for k, v in pairs(defines.entity_status) do
+        if v == s then return '"' .. k .. '"' end
+    end
+
+    return '"normal"'
+end
 
 global.utils.get_entity_direction = get_entity_direction
+
+global.utils.serialize_recipe = function(recipe)
+    local function serialize_number(num)
+        if num == math.huge then
+            return "inf"
+        elseif num == -math.huge then
+            return "-inf"
+        else
+            return tostring(num)
+        end
+    end
+    if not recipe then return nil end
+
+    local ingredients = {}
+    for _, ingredient in pairs(recipe.ingredients) do
+        table.insert(ingredients, {
+            name = '"' .. ingredient.name .. '"',
+            amount = serialize_number(ingredient.amount),
+            type = '"' .. ingredient.type .. '"'
+        })
+    end
+
+    local products = {}
+    for _, product in pairs(recipe.products) do
+        table.insert(products, {
+            name = '"' .. product.name .. '"',
+            amount = serialize_number(product.amount),
+            type = '"' .. product.type .. '"',
+            probability = product.probability and serialize_number(product.probability) or "1"
+        })
+    end
+
+    return {
+        name = '"' .. recipe.name .. '"',
+        category = '"' .. recipe.category .. '"',
+        enabled = recipe.enabled,
+        energy = serialize_number(recipe.energy),
+        ingredients = ingredients,
+        products = products
+    }
+end
 
 global.utils.serialize_entity = function(entity)
 
@@ -678,6 +647,17 @@ global.utils.serialize_entity = function(entity)
 
 
     --game.print("Serialized direction: ", {skip=defines.print_skip.never})
+    local s = entity.status  -- may be nil for some entities
+    local name = s and defines.entity_status[s]
+    
+    if not name and s then
+      -- robust reverse lookup
+      for k, v in pairs(defines.entity_status) do
+        if v == s then name = k; break end
+      end
+    end
+    
+    log(("status: %s (%s)"):format(name or "<unknown>", tostring(s)))
     local serialized = {
         name = "\""..entity.name.."\"",
         position = entity.position,
@@ -685,7 +665,7 @@ global.utils.serialize_entity = function(entity)
         health = entity.health,
         energy = entity.energy,
         type = "\""..entity.type.."\"",
-        status = global.entity_status_names[entity.status] or "\"normal\"",
+        status = global.utils.entity_status_names(entity.status)
     }
 
     if entity.grid then
@@ -1362,7 +1342,7 @@ global.utils.serialize_entity = function(entity)
             else
                 serialized.fluid = fluid_contents
             end
-            --serialized.fluidbox = global.utils.serialize_fluidbox(entity.fluidbox)
+            --serialized.fluidbox = serialize_fluidbox(entity.fluidbox)
         end
     end
 

@@ -83,7 +83,7 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
                 health = serialize_number(entity.health),
                 energy = serialize_number(entity.energy or 0),
                 active = entity.active,
-                status = '"' .. (global.entity_status_names[entity.status] or "normal") .. '"',
+                status = global.utils.entity_status_names(entity.status),
                 warnings = {},
                 inventories = {}
             }

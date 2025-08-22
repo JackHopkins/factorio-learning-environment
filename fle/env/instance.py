@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 from fle.env.lua_manager import LuaScriptManager
 from fle.env.namespace import FactorioNamespace
-from fle.env.utils.rcon import _lua2python, _get_dir
+from fle.env.utils.rcon import _lua2python
 from fle.commons.models.research_state import ResearchState
 from factorio_rcon import RCONClient
 from fle.commons.models.game_state import GameState

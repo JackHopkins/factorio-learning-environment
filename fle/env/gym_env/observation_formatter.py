@@ -178,7 +178,7 @@ class BasicObservationFormatter:
         def clean_entity_string(entity_str: str) -> str:
             """Clean and format an entity string for better readability"""
             # Remove class references and unnecessary information
-            entity_str = entity_str.replace("class 'env.src.entities.", "")
+            entity_str = entity_str.replace("class 'fle.env.entities.", "")
             entity_str = entity_str.replace("'>", "")
 
             # Split into key-value pairs, being careful with nested structures

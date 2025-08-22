@@ -54,19 +54,9 @@ local function is_fluid_handler(entity_type)
            --entity_type == "pipe-to-ground"
 end
 
+local recursive_serialize = {}
 
--- Equipment Grids are serialized into an array of equipment entries
--- where ench entry is a table with the following fields:
---   n: name
---   p: position (array of 2 numbers corresponding to x and y)
---   s: shield (optional)
---   e: energy (optional)
--- If the equipment is a burner the following is also present:
---   i: burner inventory
---   r: result inventory
---   b: curently burning (optional)
---   f: remaining_burning_fuel (optional)
-global.utils.serialize_equipment_grid = function(grid)
+local function serialize_equipment_grid(grid)
     local serialized = {}
     local processed = {}
     for y = 0, grid.height - 1 do
@@ -86,11 +76,11 @@ global.utils.serialize_equipment_grid = function(grid)
                     -- TODO: Test with Industrial Revolution
                     if equipment.burner then
                         local burner = equipment.burner
-                        entry.i = global.utils.serialize_inventory(burner.inventory)
-                        entry.r = global.utils.serialize_inventory(burner.burnt_result_inventory)
+                        entry.i = recursive_serialize.serialize_inventory(burner.inventory)
+                        entry.r = recursive_serialize.serialize_inventory(burner.burnt_result_inventory)
                         if burner.curently_burning then
                             entry.b = {}
-                            global.utils.serialize_item_stack(burner.curently_burning, entry.b)
+                            recursive_serialize.serialize_item_stack(burner.curently_burning, entry.b)
                             entry.f = burner.remaining_burning_fuel
                         end
                     end
@@ -102,42 +92,7 @@ global.utils.serialize_equipment_grid = function(grid)
     return serialized
 end
 
-global.utils.deserialize_equipment_grid = function(grid, serialized)
-    grid.clear()
-    for _, entry in ipairs(serialized) do
-        local equipment = grid.put({
-            name = entry.n,
-            position = entry.p,
-        })
-        if equipment then
-            if entry.s then equipment.shield = entry.s end
-            if entry.e then equipment.energy = entry.e end
-            if entry.i then
-                if entry.b then global.utils.deserialize_item_stack(burner.currently_burning, entry.b) end
-                if entry.f then burner.remaining_burning_fuel = entry.f end
-                global.utils.deserialize_inventory(burner.burnt_result_inventory, entry.r)
-                global.utils.deserialize_inventory(burner.inventory, entry.i)
-            end
-        end
-    end
-end
-
--- Item stacks are serialized into a table with the following fields:
---   n: name
---   c: count
---   h: health (optional)
---   d: durability (optional)
---   a: ammo count (optional)
---   l: label (optional)
---   g: equipment grid (optional)
---   i: item inventory (optional)
--- If the item stack is exportable it has the following property instead
---   e: export string
--- Label is a table with the following fields:
---   t: label text (optional)
---   c: color (optional)
---   a: allow manual label change
-global.utils.serialize_item_stack = function(slot, entry)
+recursive_serialize.serialize_item_stack = function(slot, entry)
     if
         slot.is_blueprint
         or slot.is_blueprint_book
@@ -169,16 +124,16 @@ global.utils.serialize_item_stack = function(slot, entry)
     end
 
     if slot.grid then
-        entry.g = global.utils.serialize_equipment_grid(slot.grid)
+        entry.g = serialize_equipment_grid(slot.grid)
     end
 
     if slot.is_item_with_inventory then
         local sub_inventory = slot.get_inventory(defines.inventory.item_main)
-        entry.i = global.utils.serialize_inventory(sub_inventory)
+        entry.i = recursive_serialize.serialize_inventory(sub_inventory)
     end
 end
 
-global.utils.deserialize_item_stack = function(slot, entry)
+recursive_serialize.deserialize_item_stack = function(slot, entry)
     if entry.e then
         local success = slot.import_stack(entry.e)
         if success == 1 then
@@ -215,87 +170,22 @@ global.utils.deserialize_item_stack = function(slot, entry)
         end
         if entry.g then
             if slot.grid then
-                global.utils.deserialize_equipment_grid(slot.grid, entry.g)
+                recursive_serialize.deserialize_equipment_grid(slot.grid, entry.g)
             elseif slot.type == "item-with-entity-data" and has_create_grid then
                 slot.create_grid()
-                global.utils.deserialize_equipment_grid(slot.grid, entry.g)
+                recursive_serialize.deserialize_equipment_grid(slot.grid, entry.g)
             else
                 print("Error: Attempt to deserialize equipment grid on an unsupported entity")
             end
         end
         if entry.i then
             local sub_inventory = slot.get_inventory(defines.inventory.item_main)
-            global.utils.deserialize_inventory(sub_inventory, entry.i)
+            recursive_serialize.deserialize_inventory(sub_inventory, entry.i)
         end
     end
 end
 
------ DEPRECATED
---global.utils.serialize_inventory = function(inventory)
---    local serialized = {}
---    for i = 1, #inventory do
---        local slot = inventory[i]
---        if slot.valid_for_read then
---            local item_name = "\"" .. slot.name .. "\""
---            if serialized[item_name] then
---                serialized[item_name] = serialized[item_name] + slot.count
---            else
---                serialized[item_name] = slot.count
---            end
---        end
---    end
---    return serialized
---end
-
------ DEPRECATED
---global.utils.serialize_inventory_old = function(inventory)
---  local serialized = {}
---  if inventory[supports_bar]() and inventory[get_bar]() <= #inventory then
---      serialized.b = inventory[get_bar]()
---  end
---
---  serialized.i = {}
---  local previous_index = 0
---  local previous_serialized = nil
---  for i = 1, #inventory do
---      local item = {}
---      local slot = inventory[i]
---      if inventory.supports_filters() then
---          item.f = inventory.get_filter(i)
---      end
---
---      if slot.valid_for_read then
---          global.utils.serialize_item_stack(slot, item)
---      end
---
---      if item.n or item.f or item.e then
---          local item_serialized = game.table_to_json(item)
---          if item_serialized == previous_serialized then
---              local previous_item = serialized.i[#serialized.i]
---              previous_item.r = (previous_item.r or 0) + 1
---              previous_index = i
---
---          else
---              if i ~= previous_index + 1 then
---                  item.s = i
---              end
---
---              previous_index = i
---              previous_serialized = item_serialized
---              table.insert(serialized.i, item)
---          end
---
---      else
---          -- Either an empty slot or serilization failed
---          previous_index = 0
---          previous_serialized = nil
---      end
---  end
---
---  return serialized
---end
-
-global.utils.deserialize_inventory = function(inventory, serialized)
+recursive_serialize.deserialize_inventory = function(inventory, serialized)
     if serialized.b and inventory[supports_bar]() then
         inventory[set_bar](serialized.b)
     end
@@ -320,49 +210,77 @@ global.utils.deserialize_inventory = function(inventory, serialized)
             end
 
             if entry.n or entry.e then
-                global.utils.deserialize_item_stack(slot, entry)
+                recursive_serialize.deserialize_item_stack(slot, entry)
             end
         end
         last_slot_index = base_index + repeat_count
     end
 end
 
-global.utils.serialize_recipe = function(recipe)
-    local serialized = {
-        name = "\"" .. recipe.name .. "\"",
-        category = "\"" .. recipe.category .. "\"",
-        enabled = recipe.enabled,
-        --hidden = recipe.hidden,
-        energy = recipe.energy,
-        --order = recipe.order,
-        --group = recipe.group and "\"" .recipe.group.name.. "\"" or nil,
-        --subgroup = recipe.subgroup and "\"" .recipe.subgroup.name.. "\"" or nil,
-        --force = recipe.force and recipe.force.name or nil,
-    }
 
-    -- Serialize ingredients
-    serialized.ingredients = {}
-    for _, ingredient in pairs(recipe.ingredients) do
-        table.insert(serialized.ingredients, {name = "\""..ingredient.name.."\"", type = "\""..ingredient.type.."\"", amount = ingredient.amount})
-    end
-
-    -- Serialize products
-    serialized.products = {}
-
-    -- First try normal products
-    local output_list = recipe.products
-    if output_list then
-        for _, product in pairs(output_list) do
-            local product_table = {name = "\""..product.name.."\"", type = "\""..product.type.."\"", amount = product.amount}
-            if product.probability then product_table.probability = product.probability end
-            table.insert(serialized.products, product_table)
+recursive_serialize.deserialize_equipment_grid = function(grid, serialized)
+    grid.clear()
+    for _, entry in ipairs(serialized) do
+        local equipment = grid.put({
+            name = entry.n,
+            position = entry.p,
+        })
+        if equipment then
+            if entry.s then equipment.shield = entry.s end
+            if entry.e then equipment.energy = entry.e end
+            if entry.i then
+                local burner = equipment.burner
+                if entry.b then recursive_serialize.deserialize_item_stack(burner.currently_burning, entry.b) end
+                if entry.f then burner.remaining_burning_fuel = entry.f end
+                recursive_serialize.deserialize_inventory(burner.burnt_result_inventory, entry.r)
+                recursive_serialize.deserialize_inventory(burner.inventory, entry.i)
+            end
         end
     end
-
-    return serialized
 end
 
-global.utils.serialize_fluidbox = function(fluidbox)
+global.utils.serialize_recipe = function(recipe)
+    local function serialize_number(num)
+        if num == math.huge then
+            return "inf"
+        elseif num == -math.huge then
+            return "-inf"
+        else
+            return tostring(num)
+        end
+    end
+    if not recipe then return nil end
+
+    local ingredients = {}
+    for _, ingredient in pairs(recipe.ingredients) do
+        table.insert(ingredients, {
+            name = '"' .. ingredient.name .. '"',
+            amount = serialize_number(ingredient.amount),
+            type = '"' .. ingredient.type .. '"'
+        })
+    end
+
+    local products = {}
+    for _, product in pairs(recipe.products) do
+        table.insert(products, {
+            name = '"' .. product.name .. '"',
+            amount = serialize_number(product.amount),
+            type = '"' .. product.type .. '"',
+            probability = product.probability and serialize_number(product.probability) or "1"
+        })
+    end
+
+    return {
+        name = '"' .. recipe.name .. '"',
+        category = '"' .. recipe.category .. '"',
+        enabled = recipe.enabled,
+        energy = serialize_number(recipe.energy),
+        ingredients = ingredients,
+        products = products
+    }
+end
+
+local function serialize_fluidbox(fluidbox)
     local serialized = {
         length = #fluidbox,
     }
@@ -413,7 +331,6 @@ global.utils.serialize_fluidbox = function(fluidbox)
 
     return serialized
 end
-
 
 -- Helper function to get relative direction of neighbor
 local function get_neighbor_direction(entity, neighbor)
@@ -486,7 +403,7 @@ local function serialize_neighbours(entity)
     return neighbours
 end
 
-function add_burner_inventory(serialized, burner)
+local function add_burner_inventory(serialized, burner)
     local fuel_inventory = burner.inventory
     if fuel_inventory and #fuel_inventory > 0 then
         serialized.fuel_inventory = {}
@@ -502,21 +419,18 @@ function add_burner_inventory(serialized, burner)
     end
 end
 
-function get_entity_direction(entity, direction)
+local function get_entity_direction(entity, direction)
 
     -- If direction is nil then return north
     if direction == nil then
         return defines.direction.north
     end
-    --game.print("Getting direction: " .. entity .. " with direction: " .. direction)
-
 
     local prototype = game.entity_prototypes[entity]
     -- if prototype is nil (e.g because the entity is a ghost or player character) then return the direction as is
     if prototype == nil then
         return direction
     end
-    --game.print(game.entity_prototypes[entity].name, {skip=defines.print_skip.never})
 
     local cardinals = {
         defines.direction.north,
@@ -642,9 +556,7 @@ function get_entity_direction(entity, direction)
     return direction
 end
 
-
-
-function get_inverse_entity_direction(entity, factorio_direction)
+local function get_inverse_entity_direction(entity, factorio_direction)
     local prototype = game.entity_prototypes[entity]
 
     if not factorio_direction then
@@ -683,7 +595,7 @@ function get_inverse_entity_direction(entity, factorio_direction)
 end
 
 -- Helper function to check if a position is valid (not colliding with water or other impassable tiles)
-global.utils.is_valid_connection_point = function(surface, position)
+local function is_valid_connection_point(surface, position)
     -- Get the tile at the position
     local tile = surface.get_tile(position.x, position.y)
 
@@ -700,61 +612,6 @@ global.utils.is_valid_connection_point = function(surface, position)
     -- Return false if the tile is invalid, true otherwise
     return not invalid_tiles[tile.name]
 end
-
--- Helper function to filter connection points
-local function filter_connection_points(entity, points)
-    if not points then return nil end
-
-    local filtered_points = {}
-    for _, point in ipairs(points) do
-        if global.utils.is_valid_connection_point(entity.surface, point) then
-            table.insert(filtered_points, point)
-        end
-    end
-
-    -- If all points were filtered out, return nil
-    if #filtered_points == 0 then
-        return nil
-    end
-
-    return filtered_points
-end
-
----- Modified pipe position functions to include filtering
---local function get_pipe_positions_filtered(entity)
---    local positions = global.utils.get_generator_connection_positions(entity)
---    return filter_connection_points(entity, positions)
---end
---
---local function get_pumpjack_pipe_position_filtered(entity)
---    local positions = global.utils.get_pumpjack_connection_points(entity)
---    return filter_connection_points(entity, positions)
---end
---
---local function get_boiler_pipe_positions_filtered(entity)
---    local positions = global.utils.get_boiler_connection_points(entity)
---
---    -- Special handling for boiler since it has a different structure
---    if not positions then return nil end
---
---    local filtered = {
---        water_inputs = filter_connection_points(entity, positions.water_inputs),
---        steam_output = positions.steam_output -- Usually steam output doesn't need filtering as it connects to pipes above ground
---    }
---
---    -- If all water inputs were filtered out, return nil
---    if not filtered.water_inputs or #filtered.water_inputs == 0 then
---        return nil
---    end
---
---    return filtered
---end
---
---local function get_offshore_pump_pipe_position_filtered(entity)
---    local positions = global.utils.get_offshore_pump_connection_points(entity)
---    return filter_connection_points(entity, positions)
---end
-
 
 global.entity_status_names = {
     [defines.entity_status.working] = "working",
@@ -832,7 +689,7 @@ global.utils.serialize_entity = function(entity)
     }
 
     if entity.grid then
-        serialized.grid = global.utils.serialize_equipment_grid(entity.grid)
+        serialized.grid = serialize_equipment_grid(entity.grid)
     end
     --game.print(serpent.line(entity.get_inventory(defines.inventory.turret_ammo)))
     serialized.warnings = global.utils.get_issues(entity)
@@ -1163,7 +1020,7 @@ global.utils.serialize_entity = function(entity)
         -- Filter out any invalid connection points
         local filtered_input_points = {}
         for _, point in ipairs(serialized.input_connection_points) do
-            if global.utils.is_valid_connection_point(game.surfaces[1], point) then
+            if is_valid_connection_point(game.surfaces[1], point) then
                 table.insert(filtered_input_points, point)
             end
         end
@@ -1172,7 +1029,7 @@ global.utils.serialize_entity = function(entity)
         -- Filter out any invalid connection points
         local filtered_output_points = {}
         for _, point in ipairs(serialized.output_connection_points) do
-            if global.utils.is_valid_connection_point(game.surfaces[1], point) then
+            if is_valid_connection_point(game.surfaces[1], point) then
                 table.insert(filtered_output_points, point)
             end
         end
@@ -1188,7 +1045,7 @@ global.utils.serialize_entity = function(entity)
 
         -- Filter out invalid connection points (e.g., those in water)
         for _, point in ipairs(connection_points) do
-            if global.utils.is_valid_connection_point(entity.surface, point) then
+            if is_valid_connection_point(entity.surface, point) then
                 table.insert(filtered_points, point)
             end
         end
@@ -1244,8 +1101,7 @@ global.utils.serialize_entity = function(entity)
         -- Filter out any invalid connection points
         local filtered_connection_points = {}
         for _, point in ipairs(serialized.connection_points) do
-            game.print(serpent.line(point))
-            if global.utils.is_valid_connection_point(game.surfaces[1], point) then
+            if is_valid_connection_point(game.surfaces[1], point) then
                 table.insert(filtered_connection_points, point)
             end
         end
@@ -1270,10 +1126,8 @@ global.utils.serialize_entity = function(entity)
         -- Get the mining area
         local prototype = game.entity_prototypes[entity.name]
         local mining_area = 1
-        if prototype["mining_drill_radius"] then
+        if prototype.mining_drill_radius then
             mining_area = prototype.mining_drill_radius * 2
-        elseif prototype["mining_drill_resource_searching_radius"] then
-            mining_area = prototype.mining_drill_resource_searching_radius * 2
         end
 
         local position = entity.position
@@ -1521,7 +1375,7 @@ global.utils.serialize_entity = function(entity)
     if serialized.connection_points then
         local filtered_points = {}
         for _, point in ipairs(serialized.connection_points) do
-            if global.utils.is_valid_connection_point(game.surfaces[1], point) then
+            if is_valid_connection_point(game.surfaces[1], point) then
                 table.insert(filtered_points, point)
             end
         end
@@ -1547,7 +1401,7 @@ global.utils.serialize_entity = function(entity)
 
     -- Handle special case for boilers which have separate steam output points
     if serialized.steam_output_point then
-        if not global.utils.is_valid_connection_point(game.surfaces[1], serialized.steam_output_point) then
+        if not is_valid_connection_point(game.surfaces[1], serialized.steam_output_point) then
             serialized.steam_output_point = nil
             if not serialized.warnings then
                 serialized.warnings = {}

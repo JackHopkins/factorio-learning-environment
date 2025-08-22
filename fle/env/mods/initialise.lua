@@ -2,7 +2,6 @@
 --- This file is used to initialise the global variables and functions.
 --- Ensure this is loaded first. Any variables or functions defined here will be available to all other scripts.
 
--- If the global actions table doesn't exist, create it
 if not global.actions then
     --- @type table Actions table
     global.actions = {}

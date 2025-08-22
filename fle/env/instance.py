@@ -408,11 +408,11 @@ class FactorioInstance:
         self.first_namespace._create_agent_characters(self.num_agents)
 
         init_scripts = [
+            "utils",
             "alerts",
             "connection_points",
             "recipe_fluid_connection_mappings",
             "serialize",
-            "remove_enemies"
         ]
         for script_name in init_scripts:
             self.lua_script_manager.load_init_into_game(script_name)

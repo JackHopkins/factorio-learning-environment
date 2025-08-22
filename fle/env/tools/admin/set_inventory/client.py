@@ -1,6 +1,5 @@
 from fle.env.tools import Tool
 from typing import Dict, Any
-from slpp import slpp as lua
 import json
 
 

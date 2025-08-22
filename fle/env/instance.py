@@ -3,25 +3,18 @@ import enum
 import functools
 import importlib
 import inspect
-import json
 import os
-import shutil
 import signal
 import threading
-import time
 import traceback
 import types
 from concurrent.futures import TimeoutError
 from pathlib import Path
 from timeit import default_timer as timer
-from typing_extensions import Optional, List, Dict, Any, Tuple
+from typing_extensions import Optional
 import uuid
 
 from dotenv import load_dotenv
-from slpp import slpp as lua
-
-from fle.env.entities import BoundingBox
-from fle.env.utils.camera import Camera
 
 from fle.env.lua_manager import LuaScriptManager
 from fle.env.namespace import FactorioNamespace

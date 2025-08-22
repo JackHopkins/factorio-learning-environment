@@ -74,6 +74,7 @@ class FactorioInstance:
         clear_entities=True,
         peaceful=True,
         num_agents=1,
+        reset_speed=None,
         **kwargs,
     ):
         self.id = str(uuid.uuid4())[:8]
@@ -86,6 +87,7 @@ class FactorioInstance:
         self._ticks_elapsed = 0
         self._is_initialised = False
         self.is_paused = False
+        self.reset_speed = reset_speed
 
         self.peaceful = peaceful
         self.namespaces = [self.namespace_class(self, i) for i in range(num_agents)]
@@ -205,6 +207,9 @@ class FactorioInstance:
             for i in range(self.num_agents):
                 self.namespaces[i].load(game_state.namespaces[i])
 
+        if self.reset_speed:
+            self.set_speed(self.reset_speed)
+
         try:
             self.initial_score, _ = self.first_namespace.score()
         except Exception:
@@ -214,14 +219,11 @@ class FactorioInstance:
         if speed < 0:
             raise ValueError("Speed must be greater than 0")
         self._speed = speed
-
         if speed == 0:
             self.rcon_client.send_command("/sc game.tick_paused = true")
-            self.is_paused = True
             return
-        elif speed > 0 and self.is_paused:
-            self.rcon_client.send_command("/sc game.tick_paused = false")
-            self.is_paused = False
+
+        self.rcon_client.send_command("/sc game.tick_paused = false")
         self.rcon_client.send_command(f"/sc game.speed = {speed}")
 
     def get_speed(self):

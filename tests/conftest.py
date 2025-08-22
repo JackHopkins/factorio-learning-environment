@@ -96,7 +96,7 @@ def instance(pytestconfig, worker_id):
                 "small-electric-pole": 10,
             },
         )
-        instance.set_speed(10)
+        instance.set_speed(10.0)
         # Keep a canonical copy of the default test inventory to restore between tests
         try:
             instance.default_initial_inventory = dict(instance.initial_inventory)

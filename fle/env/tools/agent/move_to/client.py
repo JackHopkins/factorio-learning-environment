@@ -43,6 +43,10 @@ class MoveTo(Tool):
             resolution=-1,
         )
         sleep(0.05)  # Let the pathing complete in the game.
+
+        # Track elapsed ticks for fast forward
+        ticks_before = self.game_state.instance.get_elapsed_ticks()
+
         try:
             if laying is not None:
                 entity_name = laying.value[0]
@@ -58,6 +62,19 @@ class MoveTo(Tool):
                 response, execution_time = self.execute(
                     self.player_index, path_handle, NONE, NONE
                 )
+
+            # Sleep for the appropriate real-world time based on elapsed ticks
+            ticks_after = self.game_state.instance.get_elapsed_ticks()
+            ticks_added = ticks_after - ticks_before
+            if ticks_added > 0:
+                game_speed = self.game_state.instance.get_speed()
+                real_world_sleep = (
+                    ticks_added / 60 / game_speed if game_speed > 0 else 0
+                )
+                print(
+                    f"move_to: Sleeping for {real_world_sleep:.3f} seconds ({ticks_added} ticks at speed {game_speed}x)"
+                )
+                sleep(real_world_sleep)
 
             if isinstance(response, int) and response == 0:
                 raise Exception("Could not move.")
@@ -82,6 +99,7 @@ class MoveTo(Tool):
                     )
                 self.game_state.player_location = Position(x=position.x, y=position.y)
 
+            print(response)
             return Position(x=response["x"], y=response["y"])  # , execution_time
         except Exception as e:
             raise Exception(f"Cannot move. {e}")

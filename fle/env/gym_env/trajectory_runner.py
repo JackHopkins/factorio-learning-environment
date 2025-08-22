@@ -194,7 +194,9 @@ class GymTrajectoryRunner:
 
                     # Execute step in the environment
                     action = Action(
-                        agent_idx=agent_idx, code=policy.code, game_state=current_state
+                        code=policy.code,
+                        agent_idx=agent_idx,
+                        game_state=current_state,
                     )
                     obs_dict, reward, terminated, truncated, info = self.gym_env.step(
                         action

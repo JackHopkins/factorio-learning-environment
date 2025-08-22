@@ -200,16 +200,16 @@ class FactorioGymEnv(gym.Env):
         self,
         instance: FactorioInstance,
         task: Optional[TaskABC] = None,
-        value_accrual_time: int = 10,
         error_penalty: float = 10.0,
+        pause_after_action: bool = True,
     ):
         super().__init__()
 
         self.instance = instance
         self.task = task
-        self.value_accrual_time = value_accrual_time
         self.error_penalty = error_penalty
         self.instance_speed = instance._speed
+        self.pause_after_action = pause_after_action
 
         # Define action space - a dictionary containing agent index and code
         self.action_space = spaces.Dict(
@@ -275,8 +275,8 @@ class FactorioGymEnv(gym.Env):
         # Get game info
         game_info = GameInfo(
             tick=self.instance.get_elapsed_ticks(),
-            time=self.instance.get_elapsed_ticks() / 60 / self.instance._speed,
-            speed=self.instance._speed,
+            time=self.instance.get_elapsed_ticks() / 60 / self.instance.get_speed(),
+            speed=self.instance.get_speed(),
         )
 
         # Get flows
@@ -356,29 +356,23 @@ class FactorioGymEnv(gym.Env):
             info: Additional information
         """
         assert isinstance(action, Action)
-        action = action.to_dict()
-        agent_idx = action["agent_idx"]
-        code = action["code"]
-        # game_state_raw = action["game_state"]
+        agent_idx = action.agent_idx
 
-        self.instance.set_speed(self.instance_speed)
-        # if game_state_raw:
-        #    self.reset_instance(GameState.parse_raw(game_state_raw))
+        self.instance.set_speed_and_unpause(self.instance_speed)
+        if action.game_state:
+            self.reset_instance(GameState.parse_raw(action.game_state.to_raw()))
 
         namespace = self.instance.namespaces[agent_idx]
         # Use last post_production_flows as pre_production_flows if available
         if self._last_production_flows.get(agent_idx) is not None:
-            start_production_flows = ProductionFlows.from_dict(
-                self._last_production_flows[agent_idx]
-            )
+            production_flows = self._last_production_flows[agent_idx]
         else:
-            start_production_flows = ProductionFlows.from_dict(
-                namespace._get_production_stats()
-            )
+            production_flows = namespace._get_production_stats()
+        start_production_flows = ProductionFlows.from_dict(production_flows)
 
         # Execute the action
         initial_score, eval_time, result = self.instance.eval(
-            code, agent_idx=agent_idx, timeout=60
+            action.code, agent_idx=agent_idx, timeout=60
         )
         # Check for errors
         error_occurred = "error" in result.lower() or "exception: " in result.lower()
@@ -415,7 +409,7 @@ class FactorioGymEnv(gym.Env):
 
         # Create response object for observation
         response = Response(
-            code=f"```python\n{code}\n```",
+            code=f"```python\n{action.code}\n```",
             created_at=datetime.datetime.now(),
             score=reward,
             achievements=achievements,
@@ -429,7 +423,7 @@ class FactorioGymEnv(gym.Env):
         )
 
         # Get observation for the acting agent
-        observation = self.get_observation(agent_idx, response)
+        observation = self.get_observation(action.agent_idx, response)
 
         # Get additional info
         info = {
@@ -442,8 +436,10 @@ class FactorioGymEnv(gym.Env):
             "task_verification": task_response,
             "output_game_state": output_game_state,
         }
-        # pause the game until the next step
-        self.instance.set_speed(0)
+
+        # pause the game until the next step if this is part of a trajectory
+        if self.pause_after_action:
+            self.instance.pause()
 
         return observation.to_dict(), reward, terminated, truncated, info
 

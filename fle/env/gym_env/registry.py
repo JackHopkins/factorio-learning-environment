@@ -137,7 +137,8 @@ def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
         else:
             instance = FactorioInstance(**common_kwargs)
 
-        instance.set_speed(10)
+        # Set initial speed and unpause
+        instance.set_speed_and_unpause(10)
 
         # Setup the task
         task.setup(instance)

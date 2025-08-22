@@ -7,7 +7,7 @@ from fle.env.game_types import Prototype, Resource
 
 
 def test_reset_observation(instance):
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     observation, info = env.reset()
     # validate_observation(observation, env.observation_space)
 
@@ -22,7 +22,7 @@ def test_inventory_observation(instance):
     }
     instance.reset()
 
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     observation, info = env.reset()
 
     # Verify initial inventory in observation
@@ -61,7 +61,7 @@ def test_entity_placement_observation(instance):
     instance.initial_inventory = {"stone-furnace": 1, "coal": 50, "iron-ore": 10}
     instance.reset()
 
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     observation, info = env.reset()
 
     # Verify initial state
@@ -94,7 +94,7 @@ def test_research_observation(instance):
     """Test that research state changes are reflected in observations."""
     # Set up initial state with a researchable technology
     instance.reset()
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     observation, info = env.reset()
     # Start a research via action (assuming 'automation' is a valid tech)
     action = Action(
@@ -121,7 +121,7 @@ def test_flows_observation(instance):
     # Give the agent resources to craft
     instance.initial_inventory = {"iron-ore": 10, "stone-furnace": 1, "coal": 10}
     instance.reset()
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     observation, info = env.reset()
     # Place a furnace and smelt iron-ore
     env.instance.namespace.place_entity(
@@ -143,7 +143,7 @@ def test_flows_observation(instance):
 def test_raw_text_observation(instance):
     """Test that raw_text is updated after an action that prints output."""
     instance.reset()
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     env.reset()
     action = Action(agent_idx=0, code='print("Hello world!")', game_state=None)
     observation, reward, terminated, truncated, info = env.step(action)
@@ -154,7 +154,7 @@ def test_raw_text_observation(instance):
 def test_serialized_functions_observation(instance):
     """Test that defining a function via action adds it to serialized_functions in observation."""
     instance.reset()
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     env.reset()
     # Define a function via action
     code = "def my_test_func():\n    return 42"
@@ -167,7 +167,7 @@ def test_serialized_functions_observation(instance):
 def test_messages_observation(instance):
     """Test that sending a message is reflected in the observation."""
     instance.reset()
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     env.reset()
     # Simulate sending a message if possible
     if hasattr(instance.namespace, "load_messages"):
@@ -194,7 +194,7 @@ def test_game_info_elapsed_ticks_sleep(instance):
     instance.reset()
     instance.set_speed(10.0)
 
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     observation, info = env.reset()
 
     # Get initial tick count
@@ -224,7 +224,7 @@ def test_game_info_elapsed_ticks_craft_item(instance):
     instance.reset()
     instance.set_speed(10.0)
 
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     observation, info = env.reset()
 
     initial_ticks = observation["game_info"]["tick"]
@@ -252,7 +252,7 @@ def test_game_info_elapsed_ticks_move_to(instance):
     instance.reset()
     instance.set_speed(10.0)
 
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     observation, info = env.reset()
 
     initial_ticks = observation["game_info"]["tick"]
@@ -281,7 +281,7 @@ def test_game_info_elapsed_ticks_harvest_resource(instance):
     instance.reset()
     instance.set_speed(10.0)
 
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     observation, info = env.reset()
     instance.rcon_client.send_command(
         "/sc game.player.character.reach_distance = 1000; game.player.character.mining_reach_distance = 1000"
@@ -313,7 +313,7 @@ def test_game_info_elapsed_ticks_multiple_actions(instance):
     instance.reset()
     instance.set_speed(10.0)
 
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     observation, info = env.reset()
 
     initial_ticks = observation["game_info"]["tick"]
@@ -354,7 +354,7 @@ def test_game_info_elapsed_ticks_with_game_speed(instance):
     # Test at 3x speed
     instance.set_speed(3.0)
 
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     observation, info = env.reset()
 
     initial_ticks = observation["game_info"]["tick"]
@@ -383,7 +383,7 @@ def test_game_info_tick_persistence(instance):
     instance.reset()
     instance.set_speed(1.0)
 
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     observation, info = env.reset()
 
     # Track ticks across multiple steps
@@ -417,7 +417,7 @@ def test_game_info_structure(instance):
     """Test that game_info contains all expected fields with correct types."""
     instance.reset()
 
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     observation, info = env.reset()
 
     # Verify game_info structure

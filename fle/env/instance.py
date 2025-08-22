@@ -1,4 +1,5 @@
 import atexit
+import datetime
 import enum
 import os
 import signal
@@ -74,7 +75,8 @@ class FactorioInstance:
         clear_entities=True,
         peaceful=True,
         num_agents=1,
-        reset_speed=None,
+        reset_speed=10,
+        reset_paused=False,
         **kwargs,
     ):
         self.id = str(uuid.uuid4())[:8]
@@ -83,11 +85,12 @@ class FactorioInstance:
         self.tcp_port = tcp_port
         self.rcon_client, self.address = self.connect_to_server(address, tcp_port)
         self.fast = fast
-        self._speed = 1
+        self._speed = 1.0
+        self._is_paused = False
         self._ticks_elapsed = 0
         self._is_initialised = False
-        self.is_paused = False
         self.reset_speed = reset_speed
+        self.reset_paused = reset_paused
 
         self.peaceful = peaceful
         self.namespaces = [self.namespace_class(self, i) for i in range(num_agents)]
@@ -207,27 +210,82 @@ class FactorioInstance:
             for i in range(self.num_agents):
                 self.namespaces[i].load(game_state.namespaces[i])
 
-        if self.reset_speed:
-            self.set_speed(self.reset_speed)
+        # Always restore to predictable state
+        self.set_speed(self.reset_speed)
+        if self.reset_paused:
+            self.pause()
+        else:
+            self.unpause()
 
         try:
             self.initial_score, _ = self.first_namespace.score()
         except Exception:
             self.initial_score = 0
 
-    def set_speed(self, speed):
-        if speed < 0:
+    def set_speed(self, speed: float):
+        """Set game speed (only affects speed when unpaused)"""
+        if speed <= 0:
             raise ValueError("Speed must be greater than 0")
         self._speed = speed
-        if speed == 0:
-            self.rcon_client.send_command("/sc game.tick_paused = true")
-            return
+        if not self._is_paused:  # Only apply if not paused
+            self.rcon_client.send_command(f"/sc game.speed = {speed}")
 
-        self.rcon_client.send_command("/sc game.tick_paused = false")
-        self.rcon_client.send_command(f"/sc game.speed = {speed}")
-
-    def get_speed(self):
+    def get_speed(self) -> float:
+        """Get current speed setting (regardless of pause state)"""
         return self._speed
+
+    # --- Separate Pause Control ---
+
+    def _render_pause_message(self, message: str):
+        """Safely render a pause/unpause message using render_message tool"""
+        try:
+            # Use the admin render_message tool (prefixed with underscore)
+            if hasattr(self.first_namespace, "_render_message"):
+                self.first_namespace._render_message(message)
+        except Exception as e:
+            # If render_message fails, fall back to console print
+            print(f"Could not render message '{message}': {e}")
+
+    def pause(self):
+        """Pause the game (preserves speed setting)"""
+        if not self._is_paused:
+            self._is_paused = True
+            self.rcon_client.send_command("/sc game.tick_paused = true")
+            timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+            self._render_pause_message(f"[{timestamp}] Game paused")
+
+    def unpause(self):
+        """Unpause the game (restores previous speed)"""
+        if self._is_paused:
+            self._is_paused = False
+            self.rcon_client.send_command("/sc game.tick_paused = false")
+            self.rcon_client.send_command(f"/sc game.speed = {self._speed}")
+            timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+            self._render_pause_message(
+                f"[{timestamp}] Game unpaused (speed: {self._speed}x)"
+            )
+
+    def is_paused(self) -> bool:
+        """Check if game is currently paused"""
+        return self._is_paused
+
+    def toggle_pause(self):
+        """Toggle pause state"""
+        if self._is_paused:
+            self.unpause()
+        else:
+            self.pause()
+
+    # --- Combined Convenience Methods ---
+    def set_speed_and_unpause(self, speed: float):
+        """Set speed and ensure game is unpaused - common use case"""
+        self.set_speed(speed)
+        self.unpause()
+
+    def pause_at_speed(self, speed: float):
+        """Set speed for when unpaused, but pause immediately"""
+        self.set_speed(speed)
+        self.pause()
 
     def get_elapsed_ticks(self):
         response = self.rcon_client.send_command(

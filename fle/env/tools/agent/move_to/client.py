@@ -99,7 +99,6 @@ class MoveTo(Tool):
                     )
                 self.game_state.player_location = Position(x=position.x, y=position.y)
 
-            print(response)
             return Position(x=response["x"], y=response["y"])  # , execution_time
         except Exception as e:
             raise Exception(f"Cannot move. {e}")

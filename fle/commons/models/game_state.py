@@ -198,9 +198,9 @@ class GameState:
     def to_instance(self, instance):
         """Restore game state to a Factorio instance"""
         # Load entity state to all instances (since it's shared)
-        assert (
-            instance.num_agents == self.num_agents
-        ), f"GameState can only be restored to a multiagent instance with the same number of agents (num_agents={self.num_agents})"
+        assert instance.num_agents == self.num_agents, (
+            f"GameState can only be restored to a multiagent instance with the same number of agents (num_agents={self.num_agents})"
+        )
         instance.first_namespace._load_entity_state(self.entities, decompress=True)
 
         # Set inventory for each player

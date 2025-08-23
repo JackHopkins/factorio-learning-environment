@@ -156,34 +156,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         -- Select the target position
         player.update_selected_entity(position)
 
-        -- Schedule the actual placement after delay
-        script.on_nth_tick(60, function(event)  -- 30 ticks = 0.5 seconds
-            script.on_nth_tick(60, nil)  -- Clear the scheduled event
- 
-            -- Verify conditions are still valid
-            validate_distance()
-            validate_inventory()
-
-            -- Avoid entity at target position
-            global.utils.avoid_entity(player_index, entity, position)
-
-            -- Perform the actual placement
-            local placed_entity = player.surface.create_entity{
-                name = entity,
-                force = "player",
-                position = position,
-                direction = entity_direction,
-            }
-
-            if placed_entity then
-                player.remove_item{name = entity, count = 1}
-                player.cursor_ghost = nil  -- Clear the ghost
-                return global.utils.serialize_entity(placed_entity)
-            else
-                error("\"Failed to place entity after delay\"")
-            end
-        end)
-
         return { pending = true }
     end
 
@@ -362,5 +334,35 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
     end
 end
 end
+
+-- -- Schedule the actual placement after delay
+-- script.on_nth_tick(60, function(event)         -- 30 ticks = 0.5 seconds
+--     if not global.fast then
+--         script.on_nth_tick(60, nil)            -- Clear the scheduled event
+
+--         -- Verify conditions are still valid
+--         validate_distance()
+--         validate_inventory()
+
+--         -- Avoid entity at target position
+--         global.utils.avoid_entity(player_index, entity, position)
+
+--         -- Perform the actual placement
+--         local placed_entity = player.surface.create_entity {
+--             name = entity,
+--             force = "player",
+--             position = position,
+--             direction = entity_direction,
+--         }
+
+--         if placed_entity then
+--             player.remove_item { name = entity, count = 1 }
+--             player.cursor_ghost = nil     -- Clear the ghost
+--             return global.utils.serialize_entity(placed_entity)
+--         else
+--             error("\"Failed to place entity after delay\"")
+--         end
+--     end
+-- end)
 
 return M

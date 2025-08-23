@@ -4,15 +4,6 @@ M.events = {}
 function M.initialize()
 -- move_to
 
--- Register the tick handler when the module is loaded
-if not global.fast then
-    script.on_nth_tick(5, function(event)
-        if global.walking_queues then
-            global.actions.update_walking_queues()
-        end
-    end)
-end
-
 --local function get_direction(from_pos, to_pos)
 --    local dx = to_pos.x - from_pos.x
 --    local dy = to_pos.y - from_pos.y
@@ -269,4 +260,18 @@ global.actions.get_walking_queue_length = function(player_index)
 end
 end
 
+-- Register the tick handler when the module is loaded
+local function on_nth_tick(event)
+    if not global.fast then
+        if global.walking_queues then
+            global.actions.update_walking_queues()
+        end
+    end
+end
+
+M.events = {
+    [defines.events.on_tick] = on_nth_tick
+}
+
 return M
+

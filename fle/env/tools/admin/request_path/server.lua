@@ -85,20 +85,9 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
     return request_id
 end
 
--- Modify the pathfinding finished handler to clean up entities
---script.on_event(defines.events.on_script_path_request_finished, function(event)
---    -- Clean up clearance entities
---    if global.clearance_entities[event.id] then
---        for _, entity in pairs(global.clearance_entities[event.id]) do
---            if entity.valid then
---                entity.destroy()
---            end
---        end
---        global.clearance_entities[event.id] = nil
---    end
---end)
+end
 
-script.on_event(defines.events.on_script_path_request_finished, function(event)
+local path_request_finished = function(event)
     local request_data = global.path_requests[event.id]
     if not request_data then
         return
@@ -119,7 +108,10 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
         global.paths[event.id] = "not_found"
         -- log("Path not found for request ID: " .. event.id)
     end
-end)
 end
+
+M.events = {
+    [defines.events.on_script_path_request_finished] = path_request_finished
+}
 
 return M

@@ -38,7 +38,8 @@ class LuaScriptManager:
         self.lua = LuaRuntime(unpack_returned_tuples=True)
 
     def sub_initialize(self, script):
-        return re.sub(r"(?m)^\s*return\s+M\s*$", "M.initialize()\nreturn M", script)
+        substitution_string = "M.initialize()\nfor e, f in pairs(M.events) do script.on_event(e, f) end\nreturn M"
+        return re.sub(r"(?m)^\s*return\s+M\s*$", substitution_string, script)
 
     def init_action_checksums(self):
         checksum_init_script = _load_mods("checksum")

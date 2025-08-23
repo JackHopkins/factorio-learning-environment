@@ -133,24 +133,6 @@ global.utils.avoid_entity = function(player_index, entity, position, direction)
     return false
 end
 
-global.crafting_queue = {}
-
-script.on_event(defines.events.on_tick, function(event)
-  -- Iterate over the crafting queue and update the remaining ticks
-  for i, task in ipairs(global.crafting_queue) do
-    task.remaining_ticks = task.remaining_ticks - 1
-
-    -- If the crafting is finished, consume the ingredients, insert the crafted entity, and remove the task from the queue
-    if task.remaining_ticks <= 0 then
-      for _, ingredient in pairs(task.recipe.ingredients) do
-        task.player.remove_item({name = ingredient.name, count = ingredient.amount * task.count})
-      end
-      task.player.insert({name = task.entity_name, count = task.count})
-      table.remove(global.crafting_queue, i)
-    end
-  end
-end)
-
 function dump(o)
    if type(o) == 'table' then
       local s = '{ '
@@ -262,5 +244,23 @@ function global.utils.inspect(player, radius, position)
     return entity_data
 end
 end
+
+-- global.crafting_queue = {}
+
+-- script.on_event(defines.events.on_tick, function(event)
+--   -- Iterate over the crafting queue and update the remaining ticks
+--   for i, task in ipairs(global.crafting_queue) do
+--     task.remaining_ticks = task.remaining_ticks - 1
+
+--     -- If the crafting is finished, consume the ingredients, insert the crafted entity, and remove the task from the queue
+--     if task.remaining_ticks <= 0 then
+--       for _, ingredient in pairs(task.recipe.ingredients) do
+--         task.player.remove_item({name = ingredient.name, count = ingredient.amount * task.count})
+--       end
+--       task.player.insert({name = task.entity_name, count = task.count})
+--       table.remove(global.crafting_queue, i)
+--     end
+--   end
+-- end)
 
 return M

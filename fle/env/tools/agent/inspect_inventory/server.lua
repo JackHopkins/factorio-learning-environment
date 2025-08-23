@@ -7,7 +7,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
     local player = global.agent_characters[player_index]
     local surface = player.surface
     local is_fast = global.fast
-    local automatic_close = True
+    local automatic_close = true
 
     local function get_player_inventory_items(player)
 
@@ -44,17 +44,9 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            error("No valid entity at given coordinates.")
        end
 
-       if not is_fast then
-           player.opened = closest_entity
-           script.on_nth_tick(60, function()
-               if automatic_close == True then
-                   if closest_entity and closest_entity.valid then
-                       player.opened = nil
-                   end
-                   automatic_close = False
-               end
-           end)
-       end
+        if not is_fast then
+            player.opened = closest_entity
+        end
 
        if closest_entity.type == "furnace" then
            if not closest_entity or not closest_entity.valid then
@@ -138,5 +130,17 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
     end
 end
 end
+
+
+-- script.on_nth_tick(60, function()
+--     if not global.fast then
+--         if automatic_close then
+--             if closest_entity and closest_entity.valid then
+--                 player.opened = nil
+--             end
+--             automatic_close = false
+--         end
+--     end
+-- end)
 
 return M

@@ -369,6 +369,22 @@ function round_to_half(number)
     return math.floor(number * 2 + 0.5) / 2
 end
 
+-- Define a function to get alerts older than the number of seconds
+global.get_alerts = function(seconds)
+    local current_tick = game.tick
+    local old_alerts = {}
+
+    for key, alert in pairs(global.alerts) do
+        if current_tick - alert.tick > 60*seconds then
+            table.insert(old_alerts, alert)
+            global.alerts[key] = nil
+        end
+    end
+
+    return old_alerts
+end
+
+end
 
 -- Define a function to be called every tick
 local function on_tick(event)
@@ -397,23 +413,9 @@ local function on_tick(event)
     end
 end
 
--- Define a function to get alerts older than the number of seconds
-global.get_alerts = function(seconds)
-    local current_tick = game.tick
-    local old_alerts = {}
-
-    for key, alert in pairs(global.alerts) do
-        if current_tick - alert.tick > 60*seconds then
-            table.insert(old_alerts, alert)
-            global.alerts[key] = nil
-        end
-    end
-
-    return old_alerts
-end
-
 -- Register the on_tick function to the on_tick event
-script.on_event(defines.events.on_tick, on_tick)
-end
+M.events = {
+    [defines.events.on_tick] = on_tick
+}
 
 return M

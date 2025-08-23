@@ -661,7 +661,6 @@ global.utils.serialize_entity = function(entity)
       end
     end
     
-    log(("status: %s (%s)"):format(name or "<unknown>", tostring(s)))
     local serialized = {
         name = "\""..entity.name.."\"",
         position = entity.position,

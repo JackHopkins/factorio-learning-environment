@@ -36,47 +36,9 @@ jobs:
           cd fle/cluster
           bash run-envs.sh start -n 4
 
-      - name: Check server status
-        run: |
-          cd fle/cluster
-          docker compose -f docker-compose.yml ps
-          docker compose -f docker-compose.yml logs factorio_0
-
       - name: Install Python dependencies
         run: |
           uv sync --all-extras --dev
-
-      - name: Debug container IPs and ports
-        run: |
-          echo "=== Docker containers ==="
-          docker ps -a
-          
-          echo -e "\n=== Container port mappings ==="
-          docker ps --format "table {{.Names}}\t{{.Ports}}"
-          
-          echo -e "\n=== Listening ports on host ==="
-          sudo netstat -tlnp | grep -E ':(270|34197)' || echo "No matching ports found"
-        
-
-      - name: Test RCON connectivity
-        run: |
-          echo "=== Testing RCON connectivity ==="
-          # First, let's see what port the container is actually exposing
-          CONTAINER_ID=$(docker ps -q -f name=factorio_1)
-          if [ -n "$CONTAINER_ID" ]; then
-            echo "Found container ID: $CONTAINER_ID"
-            docker inspect $CONTAINER_ID | grep -A 10 "Ports"
-          fi
-          
-          # Try common RCON ports
-          for port in 27000 27016 27017 27018 27019 27020; do
-            echo -n "Testing port $port: "
-            if nc -z -w 2 localhost $port 2>/dev/null; then
-              echo "✓ Open"
-            else
-              echo "✗ Closed"
-            fi
-          done
 
       - name: Run Python tests (4 workers)
         run: |

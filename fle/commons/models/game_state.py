@@ -111,9 +111,11 @@ class GameState:
                 current_research=data["research"]["current_research"],
                 research_progress=data["research"]["research_progress"],
                 research_queue=data["research"]["research_queue"],
-                progress=data["research"]["progress"]
-                if "progress" in data["research"]
-                else {},
+                progress=(
+                    data["research"]["progress"]
+                    if "progress" in data["research"]
+                    else {}
+                ),
             )
 
         return cls(
@@ -149,9 +151,11 @@ class GameState:
                 current_research=data["research"]["current_research"],
                 research_progress=data["research"]["research_progress"],
                 research_queue=data["research"]["research_queue"],
-                progress=data["research"]["progress"]
-                if "progress" in data["research"]
-                else {},
+                progress=(
+                    data["research"]["progress"]
+                    if "progress" in data["research"]
+                    else {}
+                ),
             )
 
         return cls(
@@ -201,8 +205,8 @@ class GameState:
 
         # Set inventory for each player
         if self.inventories:
-            for i in range(instance.num_agents):
-                instance.set_inventory(self.inventories[i], i)
+            for namespace, inventory in zip(instance.namespaces, self.inventories):
+                namespace._set_inventory(inventory)
 
         # Restore research state if present (only need to do this once)
         if self.research:  # Only do this for the first instance
@@ -216,8 +220,7 @@ class GameState:
 
         # Merge pickled namespace with existing persistent_vars for each player
         if self.namespaces:
-            for i in range(instance.num_agents):
-                namespace = self.namespaces[i]
+            for namespace in instance.namespaces:
                 if namespace:
                     restored_vars = pickle.loads(namespace)
                 if (

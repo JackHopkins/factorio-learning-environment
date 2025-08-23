@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 
 global.actions.inspect_entities = function(player_index, radius, position_x, position_y)
     local player = global.agent_characters[player_index]
@@ -69,7 +73,7 @@ global.actions.inspect_entities = function(player_index, radius, position_x, pos
         return path_ends
     end
 
-    local entity_data = inspect(player, radius, position)
+    local entity_data = global.utils.inspect(player, radius, position)
 
     local result = {}
 
@@ -121,3 +125,6 @@ global.actions.inspect_entities = function(player_index, radius, position_x, pos
 
     return dump(result)
 end
+end
+
+return M

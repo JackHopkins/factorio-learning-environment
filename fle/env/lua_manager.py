@@ -38,7 +38,14 @@ class LuaScriptManager:
         self.lua = LuaRuntime(unpack_returned_tuples=True)
 
     def sub_initialize(self, script):
-        substitution_string = "M.initialize()\nfor e, f in pairs(M.events) do script.on_event(e, f) end\nreturn M"
+        substitution_lines = [
+            "M.initialize()",
+            "for e, f in pairs(M.events) do script.on_event(e, f) end",
+            "script.on_load(M.initialize)",
+            "script.on_load(function() for e, f in pairs(M.events) do script.on_event(e, f) end end)",
+            "return M",
+        ]
+        substitution_string = "\n".join(substitution_lines)
         return re.sub(r"(?m)^\s*return\s+M\s*$", substitution_string, script)
 
     def init_action_checksums(self):
@@ -58,6 +65,7 @@ class LuaScriptManager:
             return False, e.args[0]
 
     def load_tool_into_game(self, name):
+        return
         # Select scripts by exact tool directory, not prefix
         tool_dirs = {
             f"agent/{name}",
@@ -98,6 +106,7 @@ class LuaScriptManager:
             pass
 
     def load_init_into_game(self, name):
+        return
         if name not in self.lib_scripts:
             # attempt to load the script from the filesystem
             script = _load_mods(name)

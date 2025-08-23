@@ -69,4 +69,4 @@ global.actions.clear_entities = function(player_index)
 end
 end
 
-M.initialize()
+return M

@@ -65,4 +65,4 @@ global.actions.save_blueprint = function(player_index)
 end
 end
 
-M.initialize()
+return M

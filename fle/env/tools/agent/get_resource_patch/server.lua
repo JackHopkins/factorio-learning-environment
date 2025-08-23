@@ -109,4 +109,4 @@ global.actions.get_resource_patch = function(player_index, resource, x, y, radiu
 end
 end
 
-M.initialize()
+return M

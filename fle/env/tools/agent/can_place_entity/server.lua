@@ -84,4 +84,4 @@ function get_entity_direction(entity, direction)
 end
 end
 
-M.initialize()
+return M

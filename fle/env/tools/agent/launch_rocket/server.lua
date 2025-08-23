@@ -48,4 +48,4 @@ global.actions.launch_rocket = function(x, y)
 end
 end
 
-M.initialize()
+return M

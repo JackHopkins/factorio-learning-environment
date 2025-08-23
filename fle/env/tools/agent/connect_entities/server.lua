@@ -1311,4 +1311,4 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
 end
 end
 
-M.initialize()
+return M

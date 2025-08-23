@@ -139,4 +139,4 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
 end
 end
 
-M.initialize()
+return M

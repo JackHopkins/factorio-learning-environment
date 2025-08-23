@@ -5,4 +5,4 @@ function M.initialize()
 -- Left blank intentionally - this functionality is handled by the A2A protocol
 end
 
-M.initialize()
+return M

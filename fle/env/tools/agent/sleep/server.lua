@@ -10,4 +10,4 @@ global.actions.sleep = function(ticks_elapsed)
 end
 end
 
-M.initialize()
+return M

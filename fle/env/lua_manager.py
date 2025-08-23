@@ -3,6 +3,7 @@ import json
 
 import importlib
 import os
+import re
 from pathlib import Path
 
 from lupa.lua54 import LuaRuntime
@@ -36,8 +37,12 @@ class LuaScriptManager:
         self.lib_scripts = self.get_libs_to_load()
         self.lua = LuaRuntime(unpack_returned_tuples=True)
 
+    def sub_initialize(self, script):
+        return re.sub(r"(?m)^\s*return\s+M\s*$", "M.initialize()\nreturn M", script)
+
     def init_action_checksums(self):
         checksum_init_script = _load_mods("checksum")
+        checksum_init_script = self.sub_initialize(checksum_init_script)
         response = self.rcon_client.send_command("/sc " + checksum_init_script)
         return response
 
@@ -123,6 +128,7 @@ class LuaScriptManager:
 
             # Load the lua script content
             _, content = _load_script(lua_file)
+            content = self.sub_initialize(content)
 
             # Create a unique key combining tool and script name
             script_key = f"{tool_name}/{script_name}" if tool_name else script_name
@@ -143,6 +149,7 @@ class LuaScriptManager:
         scripts_to_load = {}
         for filename in _get_lib_names():
             name, content = _load_script(filename)
+            content = self.sub_initialize(content)
             if self.cache_scripts:
                 checksum = self.calculate_checksum(content)
 

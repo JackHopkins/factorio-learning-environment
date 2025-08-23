@@ -5,4 +5,4 @@ function M.initialize()
 
 end
 
-M.initialize()
+return M

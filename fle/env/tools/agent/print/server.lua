@@ -8,4 +8,4 @@ global.actions.print = function(message)
 end
 end
 
-M.initialize()
+return M

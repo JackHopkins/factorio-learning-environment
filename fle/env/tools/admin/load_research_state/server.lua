@@ -52,4 +52,4 @@ global.actions.load_research_state = function(player_index, research_state)
 end
 end
 
-M.initialize()
+return M

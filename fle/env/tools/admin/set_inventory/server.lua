@@ -15,4 +15,4 @@ global.actions.set_inventory = function(player_index, item_names_and_counts_json
 end
 end
 
-M.initialize()
+return M

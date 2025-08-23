@@ -248,4 +248,4 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
 end
 end
 
-M.initialize()
+return M

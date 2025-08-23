@@ -205,4 +205,4 @@ global.actions.extend_collision_boxes = function(player_index, start_x, start_y,
 end
 end
 
-M.initialize()
+return M

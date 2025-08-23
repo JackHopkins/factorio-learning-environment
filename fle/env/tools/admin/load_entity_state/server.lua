@@ -293,4 +293,4 @@ global.actions.load_entity_state = function(player, stored_json_data)
 end
 end
 
-M.initialize()
+return M

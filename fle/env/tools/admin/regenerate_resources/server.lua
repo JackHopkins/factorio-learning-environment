@@ -41,4 +41,4 @@ global.actions.regenerate_resources2 = function(player_index)
 end
 end
 
-M.initialize()
+return M

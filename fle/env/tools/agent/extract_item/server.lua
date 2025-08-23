@@ -199,4 +199,4 @@ global.actions.extract_item = function(player_index, extract_item, count, x, y, 
 end
 end
 
-M.initialize()
+return M

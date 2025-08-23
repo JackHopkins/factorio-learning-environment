@@ -269,4 +269,4 @@ global.actions.get_walking_queue_length = function(player_index)
 end
 end
 
-M.initialize()
+return M

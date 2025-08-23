@@ -66,4 +66,4 @@ global.actions.save_research_state = function(player_index)
 end
 end
 
-M.initialize()
+return M

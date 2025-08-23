@@ -127,4 +127,4 @@ global.actions.inspect_entities = function(player_index, radius, position_x, pos
 end
 end
 
-M.initialize()
+return M

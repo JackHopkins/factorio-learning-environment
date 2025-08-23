@@ -46,4 +46,4 @@ global.actions.clear_collision_boxes = function(player_index)
 end
 end
 
-M.initialize()
+return M

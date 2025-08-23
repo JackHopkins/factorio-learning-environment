@@ -68,4 +68,4 @@ global.actions.create_agent_characters = function(num_agents)
 end
 end
 
-M.initialize()
+return M

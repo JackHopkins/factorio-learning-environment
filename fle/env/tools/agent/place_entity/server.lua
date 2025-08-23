@@ -363,4 +363,4 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 end
 end
 
-M.initialize()
+return M

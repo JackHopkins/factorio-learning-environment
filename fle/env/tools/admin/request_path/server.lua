@@ -122,4 +122,4 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
 end)
 end
 
-M.initialize()
+return M

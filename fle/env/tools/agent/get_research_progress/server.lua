@@ -51,4 +51,4 @@ global.actions.get_research_progress = function(player_index, technology_name)
 end
 end
 
-M.initialize()
+return M

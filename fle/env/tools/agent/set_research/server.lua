@@ -78,4 +78,4 @@ global.actions.set_research = function(player_index, technology_name)
 end
 end
 
-M.initialize()
+return M

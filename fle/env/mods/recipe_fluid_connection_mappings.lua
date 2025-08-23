@@ -178,4 +178,4 @@ global.utils.get_chemical_plant_fluid_mappings = function(entity, recipe)
 end
 end
 
-M.initialize()
+return M

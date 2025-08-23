@@ -299,4 +299,4 @@ global.utils.get_refinery_connection_points = function(refinery)
 end
 end
 
-M.initialize()
+return M

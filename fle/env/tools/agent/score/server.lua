@@ -375,4 +375,4 @@ global.actions.score = function()
 end
 end
 
-M.initialize()
+return M

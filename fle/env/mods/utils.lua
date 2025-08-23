@@ -263,4 +263,4 @@ function global.utils.inspect(player, radius, position)
 end
 end
 
-M.initialize()
+return M

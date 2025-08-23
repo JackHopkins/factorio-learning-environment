@@ -41,4 +41,4 @@ global.actions.get_path = function(request_id)
 end
 end
 
-M.initialize()
+return M

@@ -19,4 +19,4 @@ global.clear_lua_script_checksums = function()
 end
 end
 
-M.initialize()
+return M

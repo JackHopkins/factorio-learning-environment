@@ -365,4 +365,4 @@ end
 
 end
 
-M.initialize()
+return M

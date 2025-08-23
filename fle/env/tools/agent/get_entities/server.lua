@@ -41,4 +41,4 @@ global.actions.get_entities = function(player_index, radius, entity_names_json, 
 end
 end
 
-M.initialize()
+return M

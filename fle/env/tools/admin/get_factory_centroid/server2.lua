@@ -121,4 +121,4 @@ global.actions.get_factory_centroid = function(player)
 end
 end
 
-M.initialize()
+return M

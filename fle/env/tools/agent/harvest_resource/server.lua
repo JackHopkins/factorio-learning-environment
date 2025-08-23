@@ -626,4 +626,4 @@ global.actions.get_resource_name_at_position = function(player_index, x, y)
 end
 end
 
-M.initialize()
+return M

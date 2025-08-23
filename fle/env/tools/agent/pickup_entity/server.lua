@@ -158,4 +158,4 @@ global.actions.pickup_entity = function(player_index, x, y, entity)
 end
 end
 
-M.initialize()
+return M

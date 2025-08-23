@@ -68,4 +68,4 @@ global.actions.rotate_entity = function(player_index, x, y, direction, entity)
 end
 end
 
-M.initialize()
+return M

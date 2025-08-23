@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- This is primarily used to get the connection points of entities for the purpose of blocking them during pathing.
 -- This is to prevent bad cases where connections are blocked by belts / pipes etc.
 
@@ -293,3 +297,6 @@ global.utils.get_refinery_connection_points = function(refinery)
 
     return positions
 end
+end
+
+M.initialize()

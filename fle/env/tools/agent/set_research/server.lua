@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.set_research = function(player_index, technology_name)
     local player = global.agent_characters[player_index]
     local force = player.force
@@ -72,3 +76,6 @@ global.actions.set_research = function(player_index, technology_name)
 
     return ingredients
 end
+end
+
+M.initialize()

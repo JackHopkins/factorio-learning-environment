@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.craft_item = function(player_index, entity, count)
     local player = global.agent_characters[player_index]
 
@@ -211,3 +215,7 @@ global.actions.craft_item = function(player_index, entity, count)
             count, entity, final_error))
     end
 end
+
+end
+
+M.initialize()

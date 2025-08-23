@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- Initialize global camera tracking variables in your script's initialization
 -- Put this in your script's on_init or when you initialize your global table
 function initialize_camera_tracking(initial_position)
@@ -196,3 +200,7 @@ function update_camera_position()
     local dz = global.camera.target_zoom - global.camera.zoom
     global.camera.zoom = global.camera.zoom + dz * global.camera.zoom_smoothing
 end
+
+end
+
+M.initialize()

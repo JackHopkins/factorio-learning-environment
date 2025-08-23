@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- Helper to convert surface direction to entity direction
 local function surface_to_entity_direction(surface_dir)
     -- In Factorio, offshore pumps face opposite to placement direction
@@ -357,3 +361,6 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         return result
     end
 end
+end
+
+M.initialize()

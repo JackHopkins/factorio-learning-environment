@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.clear_entities = function(player_index)
     local function clear_area_of_entities(player, area, force_filter)
         local surface = player.surface
@@ -63,3 +67,6 @@ global.actions.clear_entities = function(player_index)
     player.force.reset()
     return 1
 end
+end
+
+M.initialize()

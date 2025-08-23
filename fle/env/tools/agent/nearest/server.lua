@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.nearest = function(player_index, resource)
     local player = global.agent_characters[player_index]
 
@@ -69,3 +73,7 @@ global.actions.nearest = function(player_index, resource)
 
     return find_nearest(player, normalized_resource)
 end
+
+end
+
+M.initialize()

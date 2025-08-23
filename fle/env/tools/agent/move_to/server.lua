@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- move_to
 
 -- Register the tick handler when the module is loaded
@@ -263,3 +267,6 @@ global.actions.get_walking_queue_length = function(player_index)
     end
     return 0
 end
+end
+
+M.initialize()

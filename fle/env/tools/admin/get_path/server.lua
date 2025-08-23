@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- Function to get the path as a JSON object
 global.actions.get_path = function(request_id)
     local request_data = global.path_requests[request_id]
@@ -35,3 +39,6 @@ global.actions.get_path = function(request_id)
         })
     end
 end
+end
+
+M.initialize()

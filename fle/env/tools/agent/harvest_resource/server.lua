@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 --- global.actions.harvest_resource(player_index, x, y, count, radius)
 local function calculate_mining_ticks(entity)
     local mining_time = entity.prototype.mineable_properties.mining_time or 1
@@ -620,3 +624,6 @@ global.actions.get_resource_name_at_position = function(player_index, x, y)
     end
     return entity_name
 end
+end
+
+M.initialize()

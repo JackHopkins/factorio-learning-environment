@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- Helper to ensure all numbers are serializable
 local function serialize_number(num)
     if num == math.huge then
@@ -349,3 +353,7 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
     end
     return entity_array
 end
+
+end
+
+M.initialize()

@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 if not global.__lua_script_checksums then
     global.__lua_script_checksums = {}
 end
@@ -13,3 +17,6 @@ end
 global.clear_lua_script_checksums = function()
     global.__lua_script_checksums = {}
 end
+end
+
+M.initialize()

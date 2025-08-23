@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- Function to find a rocket silo at the given position
 local function find_rocket_silo(surface, position)
     local silo = surface.find_entities_filtered{
@@ -42,3 +46,6 @@ global.actions.launch_rocket = function(x, y)
     game.print("Rocket launched successfully!")
     return true
 end
+end
+
+M.initialize()

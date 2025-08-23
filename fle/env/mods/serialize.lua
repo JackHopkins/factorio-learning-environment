@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- Library for serializing items in Factorio
 -- Based on code from playerManager and trainTeleports
 
@@ -1392,3 +1396,7 @@ global.utils.serialize_entity = function(entity)
 
     return serialized
 end
+
+end
+
+M.initialize()

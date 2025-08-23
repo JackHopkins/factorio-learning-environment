@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.set_inventory = function(player_index, item_names_and_counts_json)
     local player = global.agent_characters[player_index]
     player.clear_items_inside()
@@ -9,3 +13,6 @@ global.actions.set_inventory = function(player_index, item_names_and_counts_json
         player.get_main_inventory().insert{name=item, count=count}
     end
 end
+end
+
+M.initialize()

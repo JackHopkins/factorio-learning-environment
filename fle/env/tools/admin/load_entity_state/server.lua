@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- Helper function to unquote strings
 local function unquote_string(str)
     if not str then return nil end
@@ -287,3 +291,6 @@ global.actions.load_entity_state = function(player, stored_json_data)
 
     return true
 end
+end
+
+M.initialize()

@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- Helper function to calculate factory bounds
 function calculate_factory_bounds(force)
     local min_x = math.huge
@@ -115,3 +119,6 @@ global.actions.get_factory_centroid = function(player)
 
     return stats
 end
+end
+
+M.initialize()

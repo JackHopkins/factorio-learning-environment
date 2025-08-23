@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.set_entity_recipe = function(player_index, recipe_name, x, y)
     local player = global.agent_characters[player_index]
     local surface = player.surface
@@ -46,3 +50,7 @@ global.actions.set_entity_recipe = function(player_index, recipe_name, x, y)
     end
 end
 
+
+end
+
+M.initialize()

@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.utils.remove_enemies = function ()
     game.forces["enemy"].kill_all_units()  -- Removes all biters
     game.map_settings.enemy_expansion.enabled = false  -- Stops biters from expanding
@@ -257,3 +261,6 @@ function global.utils.inspect(player, radius, position)
 
     return entity_data
 end
+end
+
+M.initialize()

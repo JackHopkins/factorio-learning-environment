@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- Function to get inventory fullness information
 local function get_inventory_info(entity)
     if entity.get_inventory then
@@ -242,3 +246,6 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
         error(error_msg)
     end
 end
+end
+
+M.initialize()

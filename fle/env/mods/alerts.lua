@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.alerts = {}
 
 -- Define a function to check if the transport belt is blocked
@@ -410,3 +414,6 @@ end
 
 -- Register the on_tick function to the on_tick event
 script.on_event(defines.events.on_tick, on_tick)
+end
+
+M.initialize()

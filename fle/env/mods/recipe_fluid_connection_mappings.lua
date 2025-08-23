@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- Helper function to get fluid type from ingredient/product
 local function get_fluid_type(item)
     if item.type == "fluid" then
@@ -172,3 +176,6 @@ global.utils.get_chemical_plant_fluid_mappings = function(entity, recipe)
         outputs = output_points
     }
 end
+end
+
+M.initialize()

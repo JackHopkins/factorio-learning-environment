@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.get_entities = function(player_index, radius, entity_names_json, position_x, position_y)
     local player = global.agent_characters[player_index]
     local position
@@ -35,3 +39,6 @@ global.actions.get_entities = function(player_index, radius, entity_names_json, 
     end
     return dump(result)
 end
+end
+
+M.initialize()

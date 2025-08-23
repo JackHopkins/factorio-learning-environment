@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.regenerate_resources = function(player_index)
     local player = global.agent_characters[player_index]
     local surface = player.surface
@@ -35,3 +39,6 @@ global.actions.regenerate_resources2 = function(player_index)
     end
     return 1
 end
+end
+
+M.initialize()

@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 --- initialise.lua
 --- This file is used to initialise the global variables and functions.
 --- Ensure this is loaded first. Any variables or functions defined here will be available to all other scripts.
@@ -43,3 +47,7 @@ if global.debug == nil then
         rendering = false -- Flag to toggle debug rendering of polygons and shapes
     }
 end
+
+end
+
+M.initialize()

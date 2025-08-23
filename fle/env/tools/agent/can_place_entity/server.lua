@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.can_place_entity = function(player_index, entity, direction, x, y)
     local player = global.agent_characters[player_index]
     local position = {x = x, y = y}
@@ -78,3 +82,6 @@ function get_entity_direction(entity, direction)
         return cardinals[direction % 4]
     end
 end
+end
+
+M.initialize()

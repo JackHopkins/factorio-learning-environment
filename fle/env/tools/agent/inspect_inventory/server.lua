@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.inspect_inventory = function(player_index, is_character_inventory, x, y, entity, all_players)
     local position = {x=x, y=y}
     local player = global.agent_characters[player_index]
@@ -133,3 +137,6 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
        end
     end
 end
+end
+
+M.initialize()

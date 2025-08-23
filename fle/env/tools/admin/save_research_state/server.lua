@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.save_research_state = function(player_index)
     local player = global.agent_characters[player_index]
     local force = player.force
@@ -60,3 +64,6 @@ global.actions.save_research_state = function(player_index)
     end
     return research_state
 end
+end
+
+M.initialize()

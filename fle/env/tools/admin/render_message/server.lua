@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.render_message = function(player_index, message)
     -- Get color based on player index
     local color = {r = 1, g = 1, b = 1} -- Default white
@@ -16,3 +20,7 @@ global.actions.render_message = function(player_index, message)
     game.print(message, color)
     return true
 end
+
+end
+
+M.initialize()

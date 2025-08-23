@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 local function validate_mining_drill_placement(surface, position, entity_name)
     -- Check if the entity is a mining drill
     local prototype = game.entity_prototypes[entity_name]
@@ -358,3 +362,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         error("Not enough items in inventory.")
     end
 end
+
+end
+
+M.initialize()

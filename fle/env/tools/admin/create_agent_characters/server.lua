@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 
 -- Function to convert HSV to RGB
 local function hsv_to_rgb(h, s, v)
@@ -62,3 +66,6 @@ global.actions.create_agent_characters = function(num_agents)
     player = global.agent_characters[1]
     player.surface.always_day=true
 end
+end
+
+M.initialize()

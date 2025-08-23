@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.get_entity = function(player_index, entity, x, y)
     local player = global.agent_characters[player_index]
     local position = {x=x, y=y}
@@ -46,3 +50,7 @@ global.actions.get_entity = function(player_index, entity, x, y)
         error("\"No entity of type " .. entity .. " found at the specified position.\"")
     end
 end
+
+end
+
+M.initialize()

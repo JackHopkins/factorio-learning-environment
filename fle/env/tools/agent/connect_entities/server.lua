@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- connect_entities
 
 local MAX_SERIALIZATION_ITERATIONS = 1000  -- Maximum iterations for serializing belt groups
@@ -1305,3 +1309,6 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
 
     return result
 end
+end
+
+M.initialize()

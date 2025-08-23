@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 local function safe_json_to_table(json)
 	if not json or json == '' then return {} end
 	local ok, result = pcall(function()
@@ -60,3 +64,7 @@ global.actions.reset = function(inventories_json, reset_position, all_technologi
 	return 1
 end
 
+
+end
+
+M.initialize()

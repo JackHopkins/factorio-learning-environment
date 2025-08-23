@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.production_stats = function(player)
     local production_diff = {}
     local consumption_diff = {}
@@ -46,3 +50,7 @@ global.actions.reset_production_stats = function(player)
     global.crafted_items = {}
 end
 
+
+end
+
+M.initialize()

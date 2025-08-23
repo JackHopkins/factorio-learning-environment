@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.get_resource_patch = function(player_index, resource, x, y, radius)
     local player = global.agent_characters[player_index]
     local position = {x = x, y = y}
@@ -103,3 +107,6 @@ global.actions.get_resource_patch = function(player_index, resource, x, y, radiu
         return {bounding_box = bounding_box, size = total_resource}
     end
 end
+end
+
+M.initialize()

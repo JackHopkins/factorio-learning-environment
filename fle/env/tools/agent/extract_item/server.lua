@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- Helper function to check all possible inventories of an entity
 local function get_entity_item_count(entity, item_name)
     local inventory_types = {
@@ -193,3 +197,6 @@ global.actions.extract_item = function(player_index, extract_item, count, x, y, 
         error("\"Failed to extract " .. extract_item .. "\"")
     end
 end
+end
+
+M.initialize()

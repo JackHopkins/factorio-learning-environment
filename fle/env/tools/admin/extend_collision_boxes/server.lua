@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- Helper function for pumpjack fluid positions
 --local function get_pumpjack_connection_positions(pumpjack)
 --    local positions = {}
@@ -199,3 +203,6 @@ global.actions.extend_collision_boxes = function(player_index, start_x, start_y,
 
     return true
 end
+end
+
+M.initialize()

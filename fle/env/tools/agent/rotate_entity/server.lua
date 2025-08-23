@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.rotate_entity = function(player_index, x, y, direction, entity)
     local player = global.agent_characters[player_index]
     local position = {x=x, y=y}  -- Round to nearest tile
@@ -62,3 +66,6 @@ global.actions.rotate_entity = function(player_index, x, y, direction, entity)
     local serialized = global.utils.serialize_entity(closest_entity)
     return serialized
 end
+end
+
+M.initialize()

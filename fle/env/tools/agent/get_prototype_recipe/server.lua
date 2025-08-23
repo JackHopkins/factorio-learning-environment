@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.get_prototype_recipe = function(player_index, recipe_name)
     local player = global.agent_characters[player_index]
     local recipe = player.force.recipes[recipe_name]
@@ -8,3 +12,7 @@ global.actions.get_prototype_recipe = function(player_index, recipe_name)
     return serialized
 end
 
+
+end
+
+M.initialize()

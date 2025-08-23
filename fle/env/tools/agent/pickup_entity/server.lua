@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 global.actions.pickup_entity = function(player_index, x, y, entity)
     local player = global.agent_characters[player_index]
     local position = {x=x, y=y}
@@ -152,3 +156,6 @@ global.actions.pickup_entity = function(player_index, x, y, entity)
 
     return {}
 end
+end
+
+M.initialize()

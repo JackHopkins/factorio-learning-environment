@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- Store created entities globally
 if not global.clearance_entities then
     global.clearance_entities = {}
@@ -116,3 +120,6 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
         -- log("Path not found for request ID: " .. event.id)
     end
 end)
+end
+
+M.initialize()

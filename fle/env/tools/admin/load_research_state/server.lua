@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- Load research state
 global.actions.load_research_state = function(player_index, research_state)
     local player = global.agent_characters[player_index]
@@ -46,3 +50,6 @@ global.actions.load_research_state = function(player_index, research_state)
 
     return true
 end
+end
+
+M.initialize()

@@ -1,3 +1,7 @@
+local M = {}
+M.events = {}
+
+function M.initialize()
 -- Cache math functions
 local floor = math.floor
 local ceil = math.ceil
@@ -187,3 +191,7 @@ global.actions.nearest_buildable = function(player_index, entity_name, bounding_
 
     return spiral_search()
 end
+
+end
+
+M.initialize()

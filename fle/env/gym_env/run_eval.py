@@ -142,6 +142,5 @@ if __name__ == "__main__":
         required=True,
         help="Path to run configuration JSON file",
     )
-    parser.add_argument("--offset", type=int, default=0, help="Offset for instance IDs")
     args = parser.parse_args()
-    asyncio.run(main(args.run_config, args.offset))
+    asyncio.run(main(args.run_config))

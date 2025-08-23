@@ -19,6 +19,7 @@ from fle.env.utils.rcon import (
 
 ROOT_DIR = Path(__file__).parent.parent.parent
 
+
 def get_control_lua(lib_names, admin_tool_names, agent_tool_names):
     # Ensure 'libs.initialise' is at the top if present
     lib_names = "',\n    '".join(lib_names)
@@ -123,8 +124,14 @@ script.on_configuration_changed(function()
 end)
 """
 
+
 class LuaModuleManager:
-    def __init__(self, rcon_client: RCONClient, cache_scripts: bool = False, start_fresh: bool = False):
+    def __init__(
+        self,
+        rcon_client: RCONClient,
+        cache_scripts: bool = False,
+        start_fresh: bool = False,
+    ):
         self.rcon_client = rcon_client
         self.cache_scripts = cache_scripts
         # if not cache_scripts:
@@ -176,7 +183,6 @@ class LuaModuleManager:
         with open(control_lua, "w") as f:
             f.write(get_control_lua(lib_names, admin_tool_names, agent_tool_names))
 
-    
     def init_action_checksums(self):
         checksum_init_script = _load_mods("checksum")
         response = self.rcon_client.send_command("/sc " + checksum_init_script)

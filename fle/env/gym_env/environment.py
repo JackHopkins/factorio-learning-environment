@@ -208,7 +208,7 @@ class FactorioGymEnv(gym.Env):
         self.instance = instance
         self.task = task
         self.error_penalty = error_penalty
-        self.instance_speed = instance._speed
+        self.instance_speed = instance.get_speed()
         self.pause_after_action = pause_after_action
 
         # Define action space - a dictionary containing agent index and code
@@ -275,7 +275,7 @@ class FactorioGymEnv(gym.Env):
         # Get game info
         game_info = GameInfo(
             tick=self.instance.get_elapsed_ticks(),
-            time=self.instance.get_elapsed_ticks() / 60 / self.instance.get_speed(),
+            time=self.instance.get_elapsed_ticks() / 60,
             speed=self.instance.get_speed(),
         )
 

@@ -12,7 +12,7 @@ from fle.env import FactorioInstance
 from fle.env.gym_env.environment import FactorioGymEnv
 from fle.eval.tasks import TaskFactory, TASK_FOLDER
 
-PORT_OFFSET = int(os.environ["PORT_OFFSET"])
+PORT_OFFSET = int(os.environ.get("PORT_OFFSET", 0))
 
 
 @dataclass

@@ -74,8 +74,8 @@ class FormattedObservation:
     Example:
     ### Game Info
     - Elapsed Time: 1:00:00
-    - Speed: 1.0x
-    Shows elapsed time in hours:minutes:seconds format and game speed."""
+    - Ticks: 3600
+    Shows elapsed time in hours:minutes:seconds format and current game tick count."""
 
     raw_text_str: str
     """Formatted string showing the raw text output from the last action.
@@ -112,7 +112,7 @@ class FormattedObservation:
 
     ### Game Info
     - Elapsed Time: 1:00:00
-    - Speed: 1.0x
+    - Ticks: 3600
 
     ### Task Status
     ⏳ IN PROGRESS
@@ -465,9 +465,9 @@ class BasicObservationFormatter:
             seconds = total_seconds % 60
             info_str += f"- Elapsed Time: {hours:d}:{minutes:02d}:{seconds:02d}\n"
 
-        # Add speed information
-        if "speed" in game_info:
-            info_str += f"- Speed: {game_info['speed']:.1f}x\n"
+        # Add tick information
+        if "tick" in game_info:
+            info_str += f"- Ticks: {game_info['tick']}\n"
 
         return info_str
 

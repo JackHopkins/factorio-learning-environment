@@ -17,38 +17,6 @@ local function serialize_position(pos)
     }
 end
 
-local function serialize_recipe_info(recipe)
-    if not recipe then return nil end
-
-    local ingredients = {}
-    for _, ingredient in pairs(recipe.ingredients) do
-        table.insert(ingredients, {
-            name = '"' .. ingredient.name .. '"',
-            amount = serialize_number(ingredient.amount),
-            type = '"' .. ingredient.type .. '"'
-        })
-    end
-
-    local products = {}
-    for _, product in pairs(recipe.products) do
-        table.insert(products, {
-            name = '"' .. product.name .. '"',
-            amount = serialize_number(product.amount),
-            type = '"' .. product.type .. '"',
-            probability = product.probability and serialize_number(product.probability) or "1"
-        })
-    end
-
-    return {
-        name = '"' .. recipe.name .. '"',
-        category = '"' .. recipe.category .. '"',
-        enabled = recipe.enabled,
-        energy = serialize_number(recipe.energy),
-        ingredients = ingredients,
-        products = products
-    }
-end
-
 -- Main serialization function
 global.actions.save_entity_state = function(player_index, distance, player_entities, resource_entities, items_on_ground)
     local surface = global.agent_characters[player_index].surface
@@ -115,13 +83,13 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
                 health = serialize_number(entity.health),
                 energy = serialize_number(entity.energy or 0),
                 active = entity.active,
-                status = '"' .. (global.entity_status_names[entity.status] or "normal") .. '"',
+                status = global.utils.entity_status_names(entity.status),
                 warnings = {},
                 inventories = {}
             }
 
             -- Add any warnings
-            for _, warning in pairs(get_issues(entity) or {}) do
+            for _, warning in pairs(global.utils.get_issues(entity) or {}) do
                 table.insert(state.warnings, '"' .. warning .. '"')
             end
 
@@ -200,7 +168,7 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
                     entity.get_recipe then
                 local recipe = entity.get_recipe()
                 if recipe then
-                    state.recipe = serialize_recipe_info(recipe)
+                    state.recipe = global.utils.serialize_recipe(recipe)
                 end
             end
 

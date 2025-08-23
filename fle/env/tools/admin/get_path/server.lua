@@ -29,7 +29,6 @@ global.actions.get_path = function(request_id)
         -- create a beam bounding box at the start and end of the path
         local start = path[1].position
         local finish = path[#path].position
-        --create_beam_bounding_box(player, surface, 1, {x = start.x - 0.5, y = start.y - 0.5}, {x = finish.x + 0.5, y = finish.y + 0.5})
         return game.table_to_json({
             status = "\"success\"",
             waypoints = waypoints

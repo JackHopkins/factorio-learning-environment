@@ -184,7 +184,7 @@ def configure_game(instance):
                 updated = dict(inventory)
             if persist_inventory:
                 instance.initial_inventory = updated
-            instance.set_inventory(updated)
+            instance.first_namespace._set_inventory(updated)
 
         return instance.namespace
 

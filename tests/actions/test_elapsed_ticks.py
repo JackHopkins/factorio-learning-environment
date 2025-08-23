@@ -103,6 +103,7 @@ def test_move_to_elapsed_ticks_and_timing(game):
 
     # Get initial position and ticks
     initial_pos = Position(x=0, y=0)
+    game.move_to(initial_pos)
     initial_ticks = game.instance.get_elapsed_ticks()
 
     # Move to a position 5 tiles away

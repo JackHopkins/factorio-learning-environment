@@ -34,7 +34,7 @@ def test_game_state():
         # cache_scripts=False,
         inventory={},
     )
-    instance.speed(10)
+    instance.set_speed(10)
     instance.reset(game_state)
     pass
 

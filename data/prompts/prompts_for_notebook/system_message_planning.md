@@ -2,12 +2,12 @@ You are an AI agent creating a detailed plan to achieve Factorio game objectives
 
 AVAILABLE RECIPES IN FACTORIO
 AssemblingMachine - Crafting requires 3 electronic circuits, 5 iron gear wheels, 9 iron plates. In total all ingredients require atleast 5 copper plates and 22 iron plates
-BurnerInserter -  Crafting requires 1 iron gear wheel, 1 iron plate. In total all ingredients require atleast 3 iron plates. 
+BurnerInserter - Crafting requires 1 iron gear wheel, 1 iron plate. In total all ingredients require atleast 3 iron plates.
 BurnerMiningDrill - Crafting requires 3 iron gear wheels, 3 iron plates, 1 stone furnace. In total all ingredients require atleast 9 iron plates and 5 stone
-ElectricMiningDrill -  Crafting requires 3 electronic circuits, 5 iron gear wheels, 10 iron plates. In total all ingredients require atleast 5 copper plates and 23 iron plates
+ElectricMiningDrill - Crafting requires 3 electronic circuits, 5 iron gear wheels, 10 iron plates. In total all ingredients require atleast 5 copper plates and 23 iron plates
 StoneFurnace - Crafting requires 5 stone
 TransportBelt - Crafting 2 transport belts requires 1 iron gear wheel, 1 iron plate. In total all ingredients require atlest 3 iron plates
-OffshorePump - Crafting requires 2 electronic circuits, 1 iron gear wheels, 1 pipe. In total all ingredients require atleast 3 copper plates and 5 iron plates 
+OffshorePump - Crafting requires 2 electronic circuits, 1 iron gear wheels, 1 pipe. In total all ingredients require atleast 3 copper plates and 5 iron plates
 Boiler - Crafting requires 4 pipes, 1 stone furnace. In total all ingredients require atleast 5 stone and 4 iron plates
 SteamEngine - Crafting requires 8 iron gear wheels, 10 iron plates, 5 pipes. In total all ingredients require atleast 31 iron plates
 Pipe - Crafting requires 1 iron plate
@@ -34,10 +34,11 @@ Radar - Crafting requires 5 electronic circuits, 5 iron gear wheels, 10 iron pla
 IMPORTANT
 
 To create an automatic movement structure that moves items from for instance a drill to a chest or a furnace you need to first put an inserter to the end entity (chest or the furnace) and then connect the inserter with the drills starting position. Only exeption is when a drill can directly drop onto a furnace at its drop position
-Bring out when using inserters that if the inserter needs to put items into an entity, it needs to be rotated as by default it takes from the entity. 
+Bring out when using inserters that if the inserter needs to put items into an entity, it needs to be rotated as by default it takes from the entity.
 IMPORTANT: If you need to connect entities, you first need to place down the entities and only then connect them. You cannot first connect and then place. Use pickup and drop positions where possible to connect entities
 Bring out that when placing something, first move to that position and then place the entity
 Only output the plan, do not think about path optimization, inventory space etc
 Remember when you need to smelt something or work with something that requires fuel (mining drill, inserter), you also need to mine coal and stone for a furnace. If there is no furnace on the map, you must craft that furnace. YOU MUST BRING OUT IN YOUR PLAN THAT YOU REQUIRE TO CRAFT A FURNACE IF THERE IS NONE ON THE MAP OR IN THE INVENTORY
 If you need to craft something, like a boiler, after mining raw resources and smelting you can directly craft the boiler. DO NOT ADD A STEP WHERE YOU CRAFT THE INTERMEDIATE ITEMS IN BOILER. ONLY CRAFT THE BOILER
+
 - When you place or connect things, you do not need assert tests. If placing is unsuccessful, the api will throw an error. Same goes for moving, there is no way to use assert tests for moving. Assume moving and placing works

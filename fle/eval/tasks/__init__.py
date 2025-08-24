@@ -29,15 +29,11 @@ Example usage:
 # Core task classes
 from .task_abc import TaskABC
 from .default_task import DefaultTask
-from .throughput_task import (
-    ThroughputTask,
-    LAB_PLAY_POPULATED_STARTING_INVENTORY,
-    CRAFTING_STATISTICS,
-)
+from .throughput_task import ThroughputTask, LAB_PLAY_POPULATED_STARTING_INVENTORY
 from .unbounded_throughput_task import UnboundedThroughputTask
 
 # Task creation utilities
-from .task_factory import TaskFactory
+from .task_factory import TaskFactory, TASK_FOLDER
 
 __all__ = [
     # Abstract base and core classes
@@ -48,7 +44,7 @@ __all__ = [
     "UnboundedThroughputTask",
     # Task creation utilities
     "TaskFactory",
+    "TASK_FOLDER",
     # Useful constants
     "LAB_PLAY_POPULATED_STARTING_INVENTORY",
-    "CRAFTING_STATISTICS",
 ]

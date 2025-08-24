@@ -1,14 +1,5 @@
-import pytest
-
 from fle.env.entities import Position, Direction
 from fle.env.game_types import Prototype, Resource
-
-
-@pytest.fixture()
-def game(instance):
-    instance.reset()
-    yield instance.namespace
-    instance.reset()
 
 
 def test_can_place(game):
@@ -43,4 +34,3 @@ def test_can_place_over_player_large(game):
     game.place_entity(
         Prototype.SteamEngine, position=Position(x=0, y=0), direction=Direction.UP
     )
-    pass

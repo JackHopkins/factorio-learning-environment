@@ -11,7 +11,8 @@ Entities:
 {entity_definitions}
 
 Methods:
-```
+
+````
 {schema}
 Only write python in ``` blocks.
 Ensure the script raises an uncaught exception if something goes wrong at runtime.
@@ -26,7 +27,8 @@ Remember you need to rotate the inserter to put items into an entity as by defau
 If you do need to check any directions of entities, you need to use entity.direction.value, for instance inserter_chest.direction.value == Direction.DOWN
 Use pickup and drop positions where possible to connect entities
 When you insert coal into entities to fuel them, assume that this step was done correctly and do not write a assert test for this step. Getting the fuel_inventory has a bug and will be fixed soon
-- When you need to place an entity to a position with place_entity, first move near to that position as the player can only place entities within 10 coordinate radius of themselves (for example to place a chest further away use the following code 
+- When you need to place an entity to a position with place_entity, first move near to that position as the player can only place entities within 10 coordinate radius of themselves (for example to place a chest further away use the following code
 chest_pos = Position(x=miner.position.x, y=miner.position.y + 7)
 move_to(chest_pos)). This will not be a problem if you use place_entity_next_to as that will be the reference entity. The same goes to inserting things into entities. you need to first move close to them.
 Connecting entities when they are far works and is not a problem. If the objective asks to connect entities that are far away, do not move them closer to each other as that is against the obective
+````

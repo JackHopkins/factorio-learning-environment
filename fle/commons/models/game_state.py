@@ -14,11 +14,13 @@ class GameState:
     """Serializable Factorio game state"""
 
     entities: str  # Serialized list of entities
-    inventories: List[Dict[str, int]]  # List of inventories for all players
+    inventories: List[Any]  # List of inventories for all players
     research: Optional[ResearchState] = field()
     timestamp: float = field(default_factory=time.time)
     namespaces: List[bytes] = field(default_factory=list)
-    agent_messages: List[Dict[str, Any]] = field(default_factory=list)
+    agent_messages: List[Any] = field(
+        default_factory=list
+    )  # Can be List[Dict] or List[List[Dict]]
 
     @property
     def is_multiagent(self) -> bool:
@@ -28,24 +30,24 @@ class GameState:
     def num_agents(self) -> int:
         return len(self.inventories)
 
-    def parse_agent_messages(data: dict) -> List[Dict[str, Any]]:
+    def parse_agent_messages(data: dict) -> List[Any]:
         agent_messages = data.get("agent_messages", [])
         if not isinstance(agent_messages, list):
             raise ValueError("agent_messages must be a list")
-        if agent_messages and not all(isinstance(msg, dict) for msg in agent_messages):
+        if agent_messages and not all(
+            isinstance(msg, (dict, list)) for msg in agent_messages
+        ):
             for idx, message in enumerate(agent_messages):
                 if isinstance(message, dict):
                     continue
                 elif isinstance(message, list):
+                    # Keep the list as-is, but validate its contents
                     if len(message) > 0:
-                        if isinstance(message[0], dict):
-                            agent_messages[idx] = message[0]
-                        else:
+                        if not all(isinstance(msg, dict) for msg in message):
                             raise ValueError(
-                                f"agent_messages[{idx}] must be a dictionary or a list of dictionaries, but got {type(message[0])}"
+                                f"agent_messages[{idx}] contains non-dictionary elements"
                             )
-                    else:
-                        agent_messages[idx] = {}
+                    # Leave the list unchanged - don't convert to single dict
                 else:
                     raise ValueError(
                         f"agent_messages[{idx}] must be a dictionary or a list of dictionaries, but got {type(message)}"
@@ -109,9 +111,11 @@ class GameState:
                 current_research=data["research"]["current_research"],
                 research_progress=data["research"]["research_progress"],
                 research_queue=data["research"]["research_queue"],
-                progress=data["research"]["progress"]
-                if "progress" in data["research"]
-                else {},
+                progress=(
+                    data["research"]["progress"]
+                    if "progress" in data["research"]
+                    else {}
+                ),
             )
 
         return cls(
@@ -147,9 +151,11 @@ class GameState:
                 current_research=data["research"]["current_research"],
                 research_progress=data["research"]["research_progress"],
                 research_queue=data["research"]["research_queue"],
-                progress=data["research"]["progress"]
-                if "progress" in data["research"]
-                else {},
+                progress=(
+                    data["research"]["progress"]
+                    if "progress" in data["research"]
+                    else {}
+                ),
             )
 
         return cls(
@@ -165,7 +171,10 @@ class GameState:
         """Convert state to JSON string"""
         data = {
             "entities": self.entities,
-            "inventories": [inventory.__dict__ for inventory in self.inventories],
+            "inventories": [
+                inventory.__dict__ if hasattr(inventory, "__dict__") else inventory
+                for inventory in self.inventories
+            ],
             "timestamp": self.timestamp,
             "namespaces": [ns.hex() if ns else "" for ns in self.namespaces],
             "agent_messages": self.agent_messages,
@@ -196,8 +205,8 @@ class GameState:
 
         # Set inventory for each player
         if self.inventories:
-            for i in range(instance.num_agents):
-                instance.set_inventory(self.inventories[i], i)
+            for namespace, inventory in zip(instance.namespaces, self.inventories):
+                namespace._set_inventory(inventory)
 
         # Restore research state if present (only need to do this once)
         if self.research:  # Only do this for the first instance
@@ -211,8 +220,7 @@ class GameState:
 
         # Merge pickled namespace with existing persistent_vars for each player
         if self.namespaces:
-            for i in range(instance.num_agents):
-                namespace = self.namespaces[i]
+            for namespace in instance.namespaces:
                 if namespace:
                     restored_vars = pickle.loads(namespace)
                 if (

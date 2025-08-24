@@ -37,7 +37,7 @@ async def evaluate_program_trace(version: int = 330) -> None:
                 fast=True,
                 inventory={},
             )
-            instance.speed(20)
+            instance.set_speed(20)
             return instance
         except Exception as e:
             raise e

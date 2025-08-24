@@ -9,6 +9,7 @@ Only use two #PLANNING tags in your answer and they should exactly be before and
 {recipes}
 
 Remember some important aspects
+
 - When you check the inventory of something you need to refresh the entity with inspect_entity
 - Always print out the recipes of the things you need to craft as the first steps. This is for logging purposes
 - When extracting items, do the initial sleep and then also do the loop with additional sleep as shown in the reference

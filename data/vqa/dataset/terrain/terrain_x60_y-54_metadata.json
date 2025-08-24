@@ -1,0 +1,16 @@
+{
+  "x": -1,
+  "y": 0,
+  "position": {
+    "x": 60,
+    "y": -54
+  },
+  "character_position": {
+    "x": 60.5,
+    "y": -54.5
+  },
+  "image_id": "terrain_x60_y-54",
+  "image_type": "terrain",
+  "image_filename": "terrain_x60_y-54.png",
+  "image_path": "terrain/terrain_x60_y-54.png"
+}

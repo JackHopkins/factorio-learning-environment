@@ -274,10 +274,10 @@ def augmented_blueprint_dataset_with_chunks() -> MemoryDataset:
     Create an augmented blueprint dataset with both rotations and subchunks.
     """
     base_dataset = raw_blueprint_dataset()
-    base_dataset.samples = [base_dataset.samples[0]]
+    #base_dataset.samples = base_dataset.samples[0]]
     # Define chunk configurations
     chunk_configs = [
-        SubchunkConfig((10, 10), (5, 5), min_entities=5),
+        #SubchunkConfig((10, 10), (5, 5), min_entities=5),
         #SubchunkConfig((15, 15), (7, 7), min_entities=8),
         SubchunkConfig((20, 20), (10, 10), min_entities=10)
     ]

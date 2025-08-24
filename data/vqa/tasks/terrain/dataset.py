@@ -144,7 +144,7 @@ def raw_position_dataset(pattern: str = "concentric", limit: int = None) -> Memo
         )
         samples.append(sample)
 
-    dataset = MemoryDataset(samples=samples)
+    dataset = MemoryDataset(samples=samples[:10])
     return dataset
 
 

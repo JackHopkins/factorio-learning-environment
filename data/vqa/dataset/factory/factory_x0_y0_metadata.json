@@ -1,0 +1,20 @@
+{
+  "x": 0,
+  "y": 0,
+  "center_position": {
+    "x": 0,
+    "y": 0
+  },
+  "position": {
+    "x": 0,
+    "y": 0
+  },
+  "character_position": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "image_id": "factory_x0_y0",
+  "image_type": "factory",
+  "image_filename": "factory_x0_y0.png",
+  "image_path": "factory/factory_x0_y0.png"
+}

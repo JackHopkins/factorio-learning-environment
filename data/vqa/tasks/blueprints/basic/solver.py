@@ -11,7 +11,9 @@ from data.vqa.blueprint_transforms import detect_direction_system
 from data.vqa.direction_utils import convert_numeric_direction
 from data.vqa.position_utils import format_position
 from fle.agents.data.screenshots_from_run import create_factorio_instance
+from dotenv import load_dotenv
 
+load_dotenv()
 
 @solver
 def generate_entity_name_questions(questions_per_blueprint: int = 3, multiple_choice: bool = False) -> Solver:
@@ -22,7 +24,7 @@ def generate_entity_name_questions(questions_per_blueprint: int = 3, multiple_ch
         questions_per_blueprint: Number of questions to generate per blueprint
         multiple_choice: If True, generate multiple choice questions with distractor options
     """
-    instance = create_factorio_instance()
+    #instance = create_factorio_instance()
 
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         blueprint = state.metadata.get("blueprint", {})

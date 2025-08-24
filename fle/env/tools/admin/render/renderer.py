@@ -7,27 +7,25 @@ import copy
 import json
 import math
 from pathlib import Path
-from PIL import Image, ImageDraw
 from typing import Dict, List, Optional, Union, Any
 
-from fle.env import Entity, EntityCore, UndergroundBelt, EntityStatus
-from fle.env.tools.admin.render.constants import BACKGROUND_COLOR, GRID_LINE_WIDTH, GRID_COLOR, DEFAULT_ROCK_VARIANTS, \
+from PIL import Image, ImageDraw
+
+from fle.env import Entity, UndergroundBelt, EntityStatus
+from fle.env.tools.admin.render.constants import BACKGROUND_COLOR, DEFAULT_ROCK_VARIANTS, \
     OIL_RESOURCE_VARIANTS, RENDERERS, DEFAULT_SCALING, DEFAULT_RESOURCE_VARIANTS, \
     GRID_LINE_WIDTH_THIN, GRID_LINE_WIDTH_MEDIUM, GRID_LINE_WIDTH_THICK, \
-    GRID_COLOR_THIN, GRID_COLOR_MEDIUM, GRID_COLOR_THICK
+    GRID_COLOR_THIN, GRID_COLOR_MEDIUM, GRID_COLOR_THICK, SHADOW_INTENSITY
+from fle.env.tools.admin.render.entity_grid import EntityGridView
+from fle.env.tools.admin.render.image_resolver import ImageResolver
+from fle.env.tools.admin.render.profiler import profiler, profile_method
+from fle.env.tools.admin.render.renderer_manager import renderer_manager
+from fle.env.tools.admin.render.renderers.tree import build_available_trees_index, get_tree_variant
 from fle.env.tools.admin.render.utils import (
     entities_to_grid, resources_to_grid, get_resource_variant,
     get_resource_volume, is_tree_entity, find_fle_sprites_dir,
     is_rock_entity, flatten_entities
 )
-from fle.env.tools.admin.render.entity_grid import EntityGridView
-from fle.env.tools.admin.render.image_resolver import ImageResolver
-from fle.env.tools.admin.render.renderer_manager import renderer_manager
-from fle.env.tools.admin.render.renderers.tree import build_available_trees_index, get_tree_variant
-from fle.env.tools.admin.render.profiler import profiler, profile_method
-
-
-
 
 
 class Renderer:
@@ -291,8 +289,11 @@ class Renderer:
             else:
                 entity_size = renderer_manager.get_entity_size(entity)
 
-            # Scale the alert icon to 2x its original size
-            scale_factor = 0.5 if entity_size[0] + entity_size[1] > 2 else 0.25
+            # Scale the alert icon based on entity size and current scaling
+            base_scale_factor = 0.5 if entity_size[0] + entity_size[1] > 2 else 0.25
+            # Apply the current scaling ratio to the alert size
+            scale_ratio = scaling / DEFAULT_SCALING
+            scale_factor = base_scale_factor * scale_ratio
             new_width = int(alert_icon.width * scale_factor)
             new_height = int(alert_icon.height * scale_factor)
             alert_icon = alert_icon.resize((new_width, new_height), Image.Resampling.LANCZOS)
@@ -633,14 +634,16 @@ class Renderer:
                 continue
 
             # Determine line properties based on game coordinate
+            # Scale line widths based on the current scaling factor
+            #scale_ratio = scaling / DEFAULT_SCALING
             if game_x % 10 == 0:
-                line_width = GRID_LINE_WIDTH_THICK
+                line_width = 2  # or whatever fixed width you want
                 line_color = GRID_COLOR_THICK
             elif game_x % 5 == 0:
-                line_width = GRID_LINE_WIDTH_MEDIUM
+                line_width = 1
                 line_color = GRID_COLOR_MEDIUM
             else:
-                line_width = GRID_LINE_WIDTH_THIN
+                line_width = 1
                 line_color = GRID_COLOR_THIN
 
             # Draw line precisely at the integer position
@@ -658,7 +661,12 @@ class Renderer:
             x_end = min(width, x_end)
 
             if x_end > x_start:
-                draw.rectangle([x_start, 0, x_end, height], fill=line_color)
+                #draw.rectangle([x_start, 0, x_end, height], fill=line_color)
+                if line_width == 1:
+                    draw.line([x_center, 0, x_center, height], fill=line_color, width=1)
+                else:
+                    # Use rectangle for thicker lines
+                    draw.rectangle([x_start, 0, x_end - 1, height - 1], fill=line_color)
 
         # Draw horizontal lines at integer game positions
         for game_y in range(min_game_y, max_game_y + 1):
@@ -673,14 +681,16 @@ class Renderer:
                 continue
 
             # Determine line properties based on game coordinate
+            # Scale line widths based on the current scaling factor
+            scale_ratio = scaling / DEFAULT_SCALING
             if game_y % 10 == 0:
-                line_width = GRID_LINE_WIDTH_THICK
+                line_width = max(1, int(GRID_LINE_WIDTH_THICK * scale_ratio))
                 line_color = GRID_COLOR_THICK
             elif game_y % 5 == 0:
-                line_width = GRID_LINE_WIDTH_MEDIUM
+                line_width = max(1, int(GRID_LINE_WIDTH_MEDIUM * scale_ratio))
                 line_color = GRID_COLOR_MEDIUM
             else:
-                line_width = GRID_LINE_WIDTH_THIN
+                line_width = max(1, int(GRID_LINE_WIDTH_THIN * scale_ratio))
                 line_color = GRID_COLOR_THIN
 
             # Draw line precisely at the integer position
@@ -698,7 +708,13 @@ class Renderer:
             y_end = min(height, y_end)
 
             if y_end > y_start:
-                draw.rectangle([0, y_start, width, y_end], fill=line_color)
+                # draw.rectangle([x_start, 0, x_end, height], fill=line_color)
+                if line_width == 1:
+                    draw.line([0, y_center, width, y_center], fill=line_color, width=1)
+                else:
+                    # Use rectangle for thicker lines
+                    draw.rectangle([0, y_start, width-1, y_end-1], fill=line_color)
+
     
     @profile_method()
     def _render_resources(self, img: Image.Image, size: Dict, scaling: float, image_resolver) -> None:
@@ -786,7 +802,7 @@ class Renderer:
                     shadow_offset_x = 32 # We need to offset tree shadows
                     shadow_offset_y = 32 # We need to offset tree shadows
                     self._paste_image(img, shadow_image, relative_x, relative_y, scaling,
-                                      shadow_offset_x, shadow_offset_y)
+                                      shadow_offset_x, shadow_offset_y, is_shadow=True)
     
     @profile_method()
     def _render_trees(self, img: Image.Image, tree_entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:
@@ -832,9 +848,9 @@ class Renderer:
                     shadow_offset_x = 32  # Character shadows need less offset than trees
                     shadow_offset_y = 20
                     self._paste_image(img, image, relative_x, relative_y, scaling,
-                                      shadow_offset_x, shadow_offset_y)
+                                      shadow_offset_x, shadow_offset_y, is_shadow=True)
                 else:
-                    self._paste_image(img, image, relative_x, relative_y, scaling)
+                    self._paste_image(img, image, relative_x, relative_y, scaling, is_shadow=True)
 
     @profile_method()
     def _render_visible_inventories(self, img: Image.Image, entities, size: Dict, scaling: float, grid_view, image_resolver) -> None:
@@ -916,8 +932,47 @@ class Renderer:
                      relative_y: float,
                      scaling: float,
                      offset_x: int = 0,
-                     offset_y: int = 0) -> None:
-        """Paste a sprite image onto the main image at the specified position."""
+                     offset_y: int = 0,
+                     is_shadow: bool = False) -> None:
+        """Paste a sprite image onto the main image at the specified position.
+
+        Args:
+            img: Target image to paste onto
+            sprite: Sprite image to paste
+            relative_x: X position relative to origin
+            relative_y: Y position relative to origin
+            scaling: Current scaling factor
+            offset_x: Additional X offset in pixels
+            offset_y: Additional Y offset in pixels
+            is_shadow: Whether this sprite is a shadow (will apply transparency)
+        """
+        # Scale the sprite based on the scaling factor relative to DEFAULT_SCALING
+        scale_ratio = scaling / DEFAULT_SCALING
+        if scale_ratio != 1.0:
+            new_width = max(1, int(sprite.width * scale_ratio))
+            new_height = max(1, int(sprite.height * scale_ratio))
+            sprite = sprite.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            # Scale offsets proportionally
+            offset_x = int(offset_x * scale_ratio)
+            offset_y = int(offset_y * scale_ratio)
+
+        # Apply shadow intensity if this is a shadow
+        if is_shadow and SHADOW_INTENSITY < 1.0:
+            # Create a copy to avoid modifying the cached image
+            sprite = sprite.copy()
+
+            # Convert to RGBA if not already
+            if sprite.mode != 'RGBA':
+                sprite = sprite.convert('RGBA')
+
+            # Adjust the alpha channel
+            pixels = sprite.load()
+            for y in range(sprite.height):
+                for x in range(sprite.width):
+                    r, g, b, a = pixels[x, y]
+                    # Reduce alpha by the shadow intensity factor
+                    pixels[x, y] = (r, g, b, int(a * SHADOW_INTENSITY))
+
         start_x = int((relative_x * scaling + scaling / 2) - sprite.width / 2) + offset_x
         start_y = int((relative_y * scaling + scaling / 2) - sprite.height / 2) + offset_y
         mask = sprite if sprite.mode == 'RGBA' else None

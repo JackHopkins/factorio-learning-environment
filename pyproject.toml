@@ -113,6 +113,13 @@ data = [
     "inspect-ai>=0.3.80",
 ]
 
+viewer = [
+    "nicegui>=1.4.0",
+    # Image handling (if not already installed)
+    "Pillow>=10.0.0",
+    # Optional: for better performance
+    "uvicorn>=0.24.0"
+]
 [project.scripts]
 fle = "fle.run:main"
 

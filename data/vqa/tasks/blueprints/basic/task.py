@@ -1,3 +1,5 @@
+import os
+
 from data.vqa.dataset import augmented_blueprint_dataset_with_chunks
 
 # task.py - Refactored into separate task files
@@ -20,6 +22,7 @@ from data.vqa.tasks.blueprints.basic.solver import (
     generate_position_questions,
     generate_counting_questions
 )
+from data.vqa.hook import *
 
 
 # task.py - Refactored into separate task files
@@ -194,7 +197,9 @@ def direction_mc_task(questions_per_blueprint: int = 10) -> Task:
 
 if __name__ == "__main__":
     from inspect_ai import eval
-
+    from dotenv import load_dotenv
+    load_dotenv()
+    key=os.getenv("ANTHROPIC_API_KEY")
     model = ["anthropic/claude-sonnet-4-20250514"]
 
     # Example 1: Run open-ended questions
@@ -207,10 +212,10 @@ if __name__ == "__main__":
 
     # Example 2: Run multiple choice questions
     multiple_choice_tasks = [
-        entity_name_mc_task(questions_per_blueprint=2),
-        position_mc_task(questions_per_blueprint=2),
-        counting_mc_task(questions_per_blueprint=10),
-        direction_mc_task(questions_per_blueprint=10),  # When implemented
+        entity_name_mc_task(questions_per_blueprint=10),
+        #position_mc_task(questions_per_blueprint=10),
+        #counting_mc_task(questions_per_blueprint=10),
+        #direction_mc_task(questions_per_blueprint=10),
     ]
 
     # Example 3: Mix and match

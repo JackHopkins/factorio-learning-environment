@@ -3,7 +3,7 @@ from inspect_ai.solver import system_message
 
 from data.vqa.common_solvers import attach_bounding_box
 from data.vqa.dataset import augmented_blueprint_dataset
-from data.vqa.tasks.denoising.solver import entity_removal_denoising
+from data.vqa.tasks.blueprints.denoising.solver import entity_removal_denoising
 
 
 @task

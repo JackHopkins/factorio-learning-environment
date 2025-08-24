@@ -1,0 +1,16 @@
+{
+  "x": 0,
+  "y": 0,
+  "position": {
+    "x": -9,
+    "y": 25
+  },
+  "character_position": {
+    "x": -9.5,
+    "y": 24.5
+  },
+  "image_id": "terrain_x-9_y25",
+  "image_type": "terrain",
+  "image_filename": "terrain_x-9_y25.png",
+  "image_path": "terrain/terrain_x-9_y25.png"
+}

@@ -9,6 +9,9 @@ def character_localisation_question(multiple_choice: bool = False) -> Solver:
 
         renderer = state.metadata['renderer']
 
+        if not renderer:
+            return state
+
         characters = list(filter(lambda x:x.name == 'character', renderer.entities))
 
         if len(characters) == 1:

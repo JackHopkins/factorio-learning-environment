@@ -1,0 +1,20 @@
+{
+  "x": -2,
+  "y": 2,
+  "center_position": {
+    "x": -64,
+    "y": 64
+  },
+  "position": {
+    "x": -64,
+    "y": 64
+  },
+  "character_position": {
+    "x": -58.5,
+    "y": 31.5
+  },
+  "image_id": "factory_x-64_y64",
+  "image_type": "factory",
+  "image_filename": "factory_x-64_y64.png",
+  "image_path": "factory/factory_x-64_y64.png"
+}

@@ -58,9 +58,9 @@ COMBINATOR_TO_NORMAL: Final[Dict[str, str]] = {
 # Rendering constants
 DEFAULT_SCALING: Final[int] = 32
 GRID_LINE_WIDTH: Final[int] = 2
-GRID_LINE_WIDTH_THIN: Final[int] = 1
-GRID_LINE_WIDTH_MEDIUM: Final[int] = 2
-GRID_LINE_WIDTH_THICK: Final[int] = 3
+GRID_LINE_WIDTH_THIN: Final[float] = 0.25
+GRID_LINE_WIDTH_MEDIUM: Final[float] = 1.0
+GRID_LINE_WIDTH_THICK: Final[float] = 1.5
 BACKGROUND_COLOR: Final[str] = '#282828'
 GRID_COLOR: Final[str] = '#3c3c3c'
 GRID_COLOR_THIN: Final[str] = '#3c3c3c'
@@ -79,6 +79,8 @@ OIL_RESOURCE_VARIANTS: Final[int] = 4
 TREE_VARIATIONS: Final[list[str]] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l']
 TREE_FOLIAGE_STATES: Final[list[str]] = ['full', 'medium', 'minimal', 'trunk_only']
 TREE_FILES_PER_VARIATION: Final[int] = 5
+
+SHADOW_INTENSITY: Final[float] = 0.4
 
 # Renderer mappings
 RENDERERS: Final[Dict[str, str]] = {

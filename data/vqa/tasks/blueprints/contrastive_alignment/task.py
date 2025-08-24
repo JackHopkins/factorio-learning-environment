@@ -164,7 +164,7 @@ def contrastive_alignment_dataset(*args,
                     s.metadata['blueprint'],
                     {**s.metadata, 'variation_idx': variation_idx},
                     f"contrastive_v{variation_idx}",
-                    "../../images"
+                    os.getenv('VQA_DATASET_DIR')
                 )
                 files = {"image": image_id}
             except Exception as e:

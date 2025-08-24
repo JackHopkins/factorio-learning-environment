@@ -24,7 +24,6 @@ def entity_removal_denoising(qa_pairs_per_blueprint: int = 5) -> Solver:
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         blueprint = state.metadata.get("blueprint", {})
 
-
         # Initialize QA pairs list
         qa_pairs = []
 

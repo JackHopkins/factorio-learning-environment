@@ -31,7 +31,7 @@ def get_validated_run_configs(run_config_location: str) -> list[GymRunConfig]:
     # Validate config
     num_agents_in_configs = [run_config.num_agents for run_config in run_configs]
     if any(num_agents == 1 for num_agents in num_agents_in_configs) and any(
-        num_agents > 1 for num_agents in num_agents_in_configs
+            num_agents > 1 for num_agents in num_agents_in_configs
     ):
         raise ValueError(
             "Cannot mix single agent and multi agent runs in the same run config file. Please split into separate files."
@@ -79,16 +79,49 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     await db_client.cleanup()
 
 
+def launch_visual_viewer(run_config_path: str = None):
+    """Launch the visual viewer with NiceGUI."""
+    print("Launching visual viewer...")
+
+    # Import the visual runner module
+    try:
+        from fle.viewer import main as visual_main
+
+        # If a run config is provided, we could pass it to the viewer
+        # For now, the viewer will use its own interface to select tasks
+        visual_main()
+
+    except ImportError as e:
+        print(f"Error: Could not import visual runner. Make sure NiceGUI is installed: {e}")
+        print("Install with: pip install nicegui")
+        return
+    except Exception as e:
+        print(f"Error launching visual viewer: {e}")
+        return
+
+
 async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--run_config",
         type=str,
         help="Path of the run config file",
-        default=Path("eval", "open", "independent_runs", "gym_run_config.json"),
+        default=Path("configs", "gym_run_config.json"),
     )
+    parser.add_argument(
+        "--view",
+        action="store_true",
+        help="Launch visual viewer with NiceGUI to watch agent play"
+    )
+
     args = parser.parse_args()
 
+    # If --view flag is set, launch the visual viewer instead
+    if args.view:
+        launch_visual_viewer(args.run_config)
+        return
+
+    # Otherwise, run the normal evaluation
     # Read and validate run configurations
     run_configs = get_validated_run_configs(args.run_config)
 

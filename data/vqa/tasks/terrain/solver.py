@@ -1,25 +1,26 @@
 import random
-from asyncio import sleep
 
 from inspect_ai.solver import Solver, solver, TaskState, Generate
 
 from data.vqa.image_utils import save_rendered_image
-from fle.agents.data.screenshots_from_run import create_factorio_instance
-from fle.env import Position, Resource, Prototype
+from fle.env import Position, Resource
 
 
 @solver
-def render_terrain() -> Solver:
-
-    instance = create_factorio_instance()
+def render_terrain(instance) -> Solver:
 
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         x,y = state.metadata['x'], state.metadata['y']
         step = 32
         request = f'/c game.surfaces[0].request_to_generate_chunks({{{x*step}, {y*step}}}, 16)'
-        instance.rcon_client.send_command(request)
-        instance.rcon_client.send_command(f'/c game.player.surface.force_generate_chunk_requests()')
-        instance.namespace.move_to(Position(x=x*step, y=y*step))
+        r = instance.rcon_client.send_command(request)
+        r1 = instance.rcon_client.send_command(f'/c game.player.surface.force_generate_chunk_requests()')
+        try:
+            instance.namespace.move_to(Position(x=x*step, y=y*step))
+        except Exception as e:
+            state.metadata['instance'] = instance
+            state.metadata['renderer'] = None
+            return state
 
         nearest = None
         attempt = 0
@@ -46,7 +47,11 @@ def render_terrain() -> Solver:
 
         visible_radius = 32  # The actual visible area we want to render
         
-        # For now, use the visible radius directly since max_render_radius centers at (0,0) in normalized space
+        # Get the player's current position
+        player_position = instance.namespace.player_location
+        character_position = {'x': player_position.x, 'y': player_position.y}
+        
+        # For   now, use the visible radius directly since max_render_radius centers at (0,0) in normalized space
         # TODO: Update renderer to support centering the trim area at player position
         image, renderer = instance.namespace._render(radius=visible_radius,
                                                      position=nearest,
@@ -59,6 +64,9 @@ def render_terrain() -> Solver:
         else:
             # Fallback to original position if no resource was found
             state.metadata['position'] = {'x': int(x * step), 'y': int(y * step)}
+        
+        # Add character position to metadata for ground truth
+        state.metadata['character_position'] = character_position
             
         image_id = save_rendered_image(image, metadata=state.metadata, is_map=True)
         entities = instance.namespace.get_entities(radius=visible_radius, position=nearest)

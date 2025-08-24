@@ -45,3 +45,5 @@ trajectory_logs/
 /data/vqa/tasks/basic/logs/
 /data/vqa/tasks/contrastive_alignment/logs/
 /data/vqa/tasks/contrastive_alignment/logs/
+/data/logs/
+/data/logs/

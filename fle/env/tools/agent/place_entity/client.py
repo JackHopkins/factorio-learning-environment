@@ -41,7 +41,7 @@ class PlaceObject(Tool):
             position = Position(x=position[0], y=position[1])
 
         if not isinstance(position, Position):
-            raise ValueError("The first argument must be a Prototype object")
+            raise ValueError("The position argument must be a Position object")
 
         if not isinstance(direction, (DirectionInternal, Direction)):
             raise ValueError("The second argument must be a Direction object")

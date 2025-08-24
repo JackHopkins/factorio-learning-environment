@@ -12,7 +12,9 @@ from data.vqa.bounding_box_utils import calculate_blueprint_bounding_box
 from data.vqa.direction_utils import Direction
 from fle.agents.data.screenshots_from_run import create_factorio_instance
 from fle.commons.models.rendered_image import RenderedImage
+from dotenv import load_dotenv
 
+load_dotenv()
 
 @solver
 def validate_qa_answerability() -> Solver:

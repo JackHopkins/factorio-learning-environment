@@ -1,13 +1,14 @@
 from typing import Dict, Optional, Union, List, Tuple
+
 from fle.commons.models.rendered_image import RenderedImage
 from fle.env import Position, Layer
 from fle.env.tools import Tool
 from fle.env.tools.admin.render.constants import DEFAULT_SCALING
 from fle.env.tools.admin.render.decoder import Decoder
 from fle.env.tools.admin.render.image_resolver import ImageResolver
+from fle.env.tools.admin.render.profiler import profile_method
 from fle.env.tools.admin.render.renderer import Renderer
 from fle.env.tools.agent.get_entities.client import GetEntities
-from fle.env.tools.admin.render.profiler import profiler, profile_method
 
 
 class Render(Tool):
@@ -88,10 +89,27 @@ class Render(Tool):
         if size['width'] == 0 or size['height'] == 0:
             raise Exception("Nothing to render.")
 
+        # Calculate the ideal dimensions
         width = size['width'] * DEFAULT_SCALING
         height = size['height'] * DEFAULT_SCALING
+        
+        # Cap the resolution at 1024x1024
+        max_dimension = 1024
+        if width > max_dimension or height > max_dimension:
+            # Calculate new dimensions while maintaining aspect ratio
+            aspect_ratio = width / height
+            if width > height:
+                width = max_dimension
+                height = int(max_dimension / aspect_ratio)
+            else:
+                height = max_dimension
+                width = int(max_dimension * aspect_ratio)
+        
+        # Ensure dimensions are at least 1
+        width = max(1, width)
+        height = max(1, height)
 
-        # Render the blueprint
+        # Render the blueprint - the renderer will calculate the appropriate scaling
         image = renderer.render(width, height, self.image_resolver)
 
         if return_renderer:
@@ -125,20 +143,25 @@ class Render(Tool):
 
         result = self._get_map_entities(include_status, radius, compression_level)
 
-        #ent = self.get_entities(radius=radius)
-        #if ent:
-        #    pass
+
 
         # Parse the Lua dictionaries
         entities = self.parse_lua_dict(result['entities'])
 
         character_position = [c['position'] for c in list(filter(lambda x:x['name']=='character', entities))]
 
+        char_pos = Position(character_position[0]['x'], character_position[0]['y'])
+        ent = self.get_entities(position=char_pos, radius=radius)
+        if ent:
+            entities.extend(ent)
+            pass
+
         #ent.extend(entities)
         water_tiles = result['water_tiles']
 
 
         resources = result['resources']
+
 
         # Create renderer with decoded data
         renderer = Renderer(

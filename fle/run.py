@@ -63,7 +63,7 @@ def fle_eval(args, env):
         print(f"Error: Config file '{args.config}' not found.", file=sys.stderr)
         sys.exit(1)
     try:
-        sys.argv = ["run_eval", "--run_config", str(config_path)]
+        sys.argv = ["run_eval", "--run_config", str(config_path)] + ["--view"]
         asyncio.run(run_eval())
     except KeyboardInterrupt:
         print("\nInterrupted by user.", file=sys.stderr)
@@ -250,7 +250,7 @@ if __name__ == "__main__":
         description="Factorio Learning Environment CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--config", default="eval/algorithms/independent/rebuttals_run_config.json", help="Path to run config JSON")
+    parser.add_argument("--config", default="configs/gym_run_config.json", help="Path to run config JSON")
     args = parser.parse_args()
     fle_eval(args, True)
     #main()

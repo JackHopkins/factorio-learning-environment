@@ -72,9 +72,12 @@ def nearest_buildable_questions(
         instance = state.metadata.get('instance')
         renderer = state.metadata.get('renderer')
 
-        if not instance:
+        if not instance or not renderer:
             state.metadata["error"] = "No instance found"
             state.metadata["nearest_buildable_questions"] = []
+            return state
+
+        if not renderer:
             return state
 
         characters = list(filter(lambda x: x.name == 'character', renderer.entities))
@@ -227,13 +230,14 @@ def nearest_buildable_with_resources_questions(
         instance = state.metadata.get('instance')
         renderer = state.metadata.get('renderer')
 
-        if not instance:
+        if not instance or not renderer:
             state.metadata["error"] = "No instance found"
             state.metadata["nearest_buildable_resource_questions"] = []
             return state
 
         questions = []
-
+        if not renderer:
+            return state
         characters = list(filter(lambda x: x.name == 'character', renderer.entities))
         player_position = None
         if len(characters) == 1:

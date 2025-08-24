@@ -16,12 +16,14 @@ place_entity_next_to(
 Returns the placed Entity object.
 
 ### Parameters
+
 - `entity`: Prototype of entity to place
 - `reference_position`: Position of reference entity/point
 - `direction`: Which direction to place from reference (UP/DOWN/LEFT/RIGHT)
 - `spacing`: Additional tiles of space between entities (0 or more)
 
 ### Examples
+
 ```python
 
 # Place inserter next to a furnace to input items into the furnace
@@ -34,7 +36,9 @@ inserter = place_entity_next_to(
 ```
 
 ## Common Entity Combinations
+
 ### 1. Getting items from a chemical plant
+
 ```python
 def create_assembly_line(chemical_plant):
     # Place inserter next to machine to take items from it
@@ -55,20 +59,23 @@ def create_assembly_line(chemical_plant):
     print(f"Placed chest at {output_chest.position} to get items from a chemical_plant at {chemical_plant.position}. Inserter that puts items into the chest is at {output_inserter.position}")
 ```
 
-
 ## Best Practices
 
 1. **Spacing Guidelines**
+
 # Use 0 spacing for:
+
 - Inserters
 - Adjacent belts
 - Direct connections
 
 # Use 1+ spacing for:
+
 - Leaving room for inserters
 - Future expansion
 - Entity access
 
 # Use 3+ spacing for:
+
 - Room for pipe connections
 - Major factory sections

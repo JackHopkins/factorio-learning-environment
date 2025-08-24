@@ -20,14 +20,15 @@ The function returns the number of items successfully extracted. The extracted i
 - `source`: Either a Position or Entity to extract from (required)
 - `quantity`: Number of items to extract (default=5)
 
-
 **Quantity Handling**
-   - If requested quantity exceeds available items, it extracts all available items
-   - Returns actual number of items extracted
+
+- If requested quantity exceeds available items, it extracts all available items
+- Returns actual number of items extracted
 
 ## Examples
 
 ### Extracting from a Chest
+
 ```python
 # Place a chest and insert items
 chest = place_entity(Prototype.IronChest, position=Position(x=0, y=0))
@@ -55,7 +56,8 @@ count = extract_item(Prototype.IronPlate, chest, quantity=5)
 ## Best Practices
 
 1. **Inventory Verification**
-Example - Safe smelting ore into plates
+   Example - Safe smelting ore into plates
+
 ```python
 # move to the position to place the entity
 move_to(position)
@@ -79,4 +81,4 @@ else:
 iron_plates_in_furnace = inspect_inventory(furnace)[Prototype.IronPlate]
 assert iron_plates_in_furnace>=10, "Not enough iron plates in furnace"
 print(f"Smelted 10 iron plates")
-   ```
+```

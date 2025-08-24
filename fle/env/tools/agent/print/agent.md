@@ -11,9 +11,11 @@ print(*args) -> str
 Returns a string representation of the printed message.
 
 ### Parameters
+
 - `*args`: Variable number of objects to print
 
 ### Supported Types
+
 - Entity objects
 - Inventory objects
 - Dictionaries
@@ -27,6 +29,7 @@ Returns a string representation of the printed message.
 ## Common Use Cases
 
 ### 1. Entity Information
+
 ```python
 # Print entity details
 drill = place_entity(Prototype.BurnerMiningDrill, position=pos)
@@ -38,6 +41,7 @@ print(f"Put a burner mining drill at {drill.position} and a furnace at {furnace.
 ```
 
 ### 2. Inventory Monitoring
+
 ```python
 # Check player inventory
 inventory = inspect_inventory()
@@ -50,6 +54,7 @@ print(f"Chest inventory {chest_inventory}")  # Shows chest contents
 ```
 
 ### 3. Position Tracking
+
 ```python
 # Print positions
 resource_pos = nearest(Resource.Coal)
@@ -59,6 +64,7 @@ print(f"Coal position {resource_pos}")  # Shows x, y coordinates
 ## Best Practices
 
 1. **Operation Verification**
+
 ```python
 def verify_placement(entity: Entity, pos: Position):
     print(f"Attempting to place {entity} at {pos}")
@@ -70,40 +76,43 @@ def verify_placement(entity: Entity, pos: Position):
         print(f"Placement failed: {e}")
         return None
 ```
+
 ## Common Patterns
 
 1. **Operation Logging**
+
 ```python
 def setup_mining_operation():
     # Log each step
     print("Starting mining setup...")
-    
+
     drill = place_entity(Prototype.BurnerMiningDrill, position=pos)
     print(f"Placed drill at {drill.position}")
-    
+
     chest = place_entity_next_to(
         Prototype.WoodenChest,
         drill.drop_position,
         direction=Direction.DOWN
     )
     print(f"Added output chest at {chest.position}")
-    
+
     print("Mining setup complete")
 ```
 
 2. **Validation Checks**
+
 ```python
 def validate_entity(entity: Entity):
     if not entity:
         print("Entity is None")
         return False
-        
+
     print("Validating entity:", entity)
     if entity.status == EntityStatus.NO_POWER:
         print("Entity has no power")
     elif entity.status == EntityStatus.NO_FUEL:
         print("Entity needs fuel")
-        
+
     return entity.status == EntityStatus.WORKING
 ```
 

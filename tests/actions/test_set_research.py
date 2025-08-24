@@ -1,26 +1,11 @@
 import pytest
 
-from fle.env import FactorioInstance
 from fle.env.game_types import Technology
-from fle.commons.cluster_ips import get_local_container_ips
 
 
 @pytest.fixture()
-def game(instance):
-    # game.initial_inventory = {'assembling-machine-1': 1}
-    # from gym import FactorioInstance
-    ips, udp_ports, tcp_ports = get_local_container_ips()
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=tcp_ports[-1],  # 27019,
-        all_technologies_researched=False,
-        fast=True,
-        inventory={},
-    )
-    instance.reset()
-    yield instance.namespace
-    instance.reset()
+def game(configure_game):
+    return configure_game(all_technologies_researched=False)
 
 
 def test_set_research(game):

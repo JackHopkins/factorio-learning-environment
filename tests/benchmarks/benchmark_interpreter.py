@@ -20,7 +20,7 @@ def run_string_benchmark(game: FactorioInstance, num_iterations: int = 100):
 
     results = {}
 
-    game.speed(10)
+    game.set_speed(10)
     for name, func in benchmarks.items():
         start_time = time.time()
         count = func(game, num_iterations)

@@ -137,7 +137,7 @@ async def main():
     try:
         instances = create_factorio_instances()
         for instance in instances:
-            instance.speed(10)  # Speed up the game for faster evaluation
+            instance.set_speed(10)  # Speed up the game for faster evaluation
     except Exception:
         print(
             "\033[91mError initialising Factorio instances. Are the docker containers running, and have they been activated?\033[91m"

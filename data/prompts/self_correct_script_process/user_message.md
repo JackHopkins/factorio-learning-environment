@@ -7,15 +7,15 @@ In general to craft copper plates, we need to craft a furnace, mine copper ore a
 
 STEPS
 To smelt copper plates the plan is as follows
-1) As the copper plate requires stone furnace to smelt, first we need to mine 5 stone and 
-2) Craft stone furnace
-3) Mine coal for stone furnace
-4) Move to copper ore
-5) Place down stone furnace
-6) Mine copper ore
-7) Place coal and copper ore to stone furnace
-8) Smelt copper ore for copper plates
 
+1. As the copper plate requires stone furnace to smelt, first we need to mine 5 stone and
+2. Craft stone furnace
+3. Mine coal for stone furnace
+4. Move to copper ore
+5. Place down stone furnace
+6. Mine copper ore
+7. Place coal and copper ore to stone furnace
+8. Smelt copper ore for copper plates
 
 EXAMPLE OUTPUT
 
@@ -85,7 +85,7 @@ if number_of_copper_plates < 5:
         break
 # make final test whether we have 5 copper plates
 number_of_copper_plates = inspect_inventory()[Prototype.CopperPlate]
-assert number_of_copper_plates >= 5, f"Inventory has less than 5 copper plates, it has {{number_of_copper_plates}}" 
+assert number_of_copper_plates >= 5, f"Inventory has less than 5 copper plates, it has {{number_of_copper_plates}}"
 
 
 ```

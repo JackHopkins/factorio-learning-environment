@@ -10,6 +10,17 @@ local function surface_to_entity_direction(surface_dir)
     return direction_map[surface_dir]
 end
 
+
+-- Helper to check if a tile is water
+local function is_water_tile(tile_name)
+    return tile_name == "water" or
+           tile_name == "deepwater" or
+           tile_name == "water-green" or
+           tile_name == "deepwater-green" or
+           tile_name == "water-shallow" or
+           tile_name == "water-mud"
+end
+
 local function find_offshore_pump_position(player, center_pos)
     local max_radius = 20
     local search_positions = {

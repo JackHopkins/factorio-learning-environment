@@ -24,7 +24,6 @@ class RunConfig:
     model: str
     version: int = None
     num_agents: int = 1
-    exit_on_task_success: bool = True
 
 
 async def main():
@@ -87,7 +86,6 @@ async def main():
             agents=agents,
             version=version,
             version_description=f"model:{run_config.model}\ntype:{task.task_key}\nnum_agents:{run_config.num_agents}",
-            exit_on_task_success=run_config.exit_on_task_success,
         )
 
         p = multiprocessing.Process(target=run_process, args=(run_idx, config))

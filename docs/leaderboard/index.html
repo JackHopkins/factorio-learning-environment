@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factorio Learning Environment Leaderboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="../" class="back-link">← Back to Documentation</a>
+            <h1>Factorio Learning Environment</h1>
+            <p>Leaderboard - Performance Metrics for LLM Agents</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="total-models">6</div>
+                <div class="stat-label">Models Tested</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-score">0</div>
+                <div class="stat-label">Avg Production Score</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="top-score">0</div>
+                <div class="stat-label">Highest Score</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-milestones">0</div>
+                <div class="stat-label">Avg Milestones</div>
+            </div>
+        </div>
+
+        <div class="leaderboard-table">
+            <div class="table-header">
+                <div>Rank</div>
+                <div>Model</div>
+                <div>Production Score</div>
+                <div>Milestones</div>
+                <div>Automation</div>
+                <div>Lab Success %</div>
+                <div>Complex Item</div>
+                <div>Submitted By</div>
+                <div>Date</div>
+            </div>
+            <div id="leaderboard-rows">
+                <!-- Data will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Last updated: <span id="last-updated"></span></p>
+            <p>Data is automatically updated from model evaluation results</p>
+        </div>
+    </div>
+
+    <script>
+        // Load leaderboard data from combined results
+        async function loadLeaderboardData() {
+            try {
+                const response = await fetch('./processed/combined-results.json');
+                const leaderboardData = await response.json();
+                renderLeaderboard(leaderboardData);
+            } catch (error) {
+                console.error('Failed to load leaderboard data:', error);
+            }
+        }
+
+        function renderLeaderboard(leaderboardData) {
+            // Sort by production score (descending)
+            leaderboardData.sort((a, b) => b.productionScore - a.productionScore);
+
+            // Calculate stats
+            const totalModels = leaderboardData.length;
+            const avgScore = leaderboardData.reduce((sum, model) => sum + model.productionScore, 0) / totalModels;
+            const topScore = Math.max(...leaderboardData.map(model => model.productionScore));
+            const avgMilestones = leaderboardData.reduce((sum, model) => sum + model.milestones, 0) / totalModels;
+
+            // Update stats
+            document.getElementById('total-models').textContent = totalModels;
+            document.getElementById('avg-score').textContent = avgScore;
+            document.getElementById('top-score').textContent = topScore;
+            document.getElementById('avg-milestones').textContent = avgMilestones;
+
+            // Populate leaderboard
+            const leaderboardRows = document.getElementById('leaderboard-rows');
+            leaderboardRows.innerHTML = '';
+            
+            leaderboardData.forEach((model, index) => {
+                const row = document.createElement('div');
+                row.className = 'table-row data-cell';
+                row.innerHTML = `
+                    <div class="rank">${index + 1}</div>
+                    <div class="name">${model.name}</div>
+                    <div>${model.productionScore}</div>
+                    <div>${model.milestones}</div>
+                    <div>${model.automationMilestones}</div>
+                    <div>${model.labTasksSuccessRate}%</div>
+                    <div>${model.mostComplexItem}</div>
+                    <div>${model.submittedBy}</div>
+                    <div>${model.submissionDate}</div>
+                `;
+                leaderboardRows.appendChild(row);
+            });
+
+            document.getElementById('last-updated').textContent = new Date().toISOString().split('T')[0];
+        }
+
+        // Load data when page loads
+        loadLeaderboardData();
+    </script>
+</body>
+</html> 

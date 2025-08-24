@@ -1,14 +1,5 @@
-import pytest
-
 from fle.env.entities import Position
 from fle.env.game_types import Resource, Prototype
-
-
-@pytest.fixture()
-def game(instance):
-    instance.reset()
-    yield instance.namespace
-    # instance.reset()
 
 
 def test_harvest_resource_with_full_inventory(game):
@@ -78,8 +69,7 @@ game.surfaces[1].create_entity({
 def test_harvest_stump(game):
     instance = game.instance
 
-    instance.add_command(f"/c {create_stump}", raw=True)
-    instance.execute_transaction()
+    instance.rcon_client.send_command(f"/c {create_stump}")
     harvested = game.harvest_resource(Position(x=0, y=0), quantity=1)
 
     assert harvested == 2
@@ -96,8 +86,7 @@ game.surfaces[1].create_entity({
 def test_harvest_rock(game):
     instance = game.instance
 
-    instance.add_command(f"/c {create_rock}", raw=True)
-    instance.execute_transaction()
+    instance.rcon_client.send_command(f"/c {create_rock}")
     harvested = game.harvest_resource(Position(x=0, y=0), quantity=1)
 
     assert harvested == 20
@@ -277,14 +266,14 @@ def test_harvest_provides_score(game):
     stone_position = game.nearest(Resource.Stone)
     game.move_to(stone_position)
 
-    stats = game._production_stats()  # noqa
+    stats = game._get_production_stats()  # noqa
     reward, _ = game.score()
     # Mine 5 stone (enough for one furnace)
     stone_needed = 5
     stone_mined = game.harvest_resource(stone_position, stone_needed)
     print(f"Mined {stone_mined} stone")
 
-    nstats = game._production_stats()  # noqa
+    nstats = game._get_production_stats()  # noqa
     nreward, _ = game.score()
 
     assert nreward > reward

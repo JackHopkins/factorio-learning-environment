@@ -1,0 +1,23 @@
+name: Update Leaderboard
+
+on:
+  pull_request:
+    types: [closed]
+    paths: ['docs/leaderboard/results/**']
+  push:
+    branches:
+      - leaderboard
+  workflow_dispatch:
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Process and build
+        run: |
+          node .github/scripts/process-results.js

@@ -28,4 +28,3 @@ ERROR MESSAGE
 
 MINING SETUP DURING ERROR
 {mining_setup_during_error}
-

@@ -17,10 +17,10 @@ def game(instance):
         "burner-mining-drill": 5,
     }
     instance.reset()
-    instance.speed(10)
+    instance.set_speed(10)
     yield instance.namespace
     instance.reset()
-    instance.speed(1)
+    instance.set_speed(1)
 
 
 def test_defence(game):

@@ -5,28 +5,27 @@ from fle.env.game_types import Prototype, Resource
 
 
 @pytest.fixture()
-def game(instance):
-    instance.initial_inventory = {
-        **instance.initial_inventory,
-        "coal": 10,
-        "iron-chest": 1,
-        "iron-plate": 50,
-        "iron-ore": 10,
-        "stone-furnace": 1,
-        "offshore-pump": 1,
-        "assembly-machine-1": 1,
-        "burner-mining-drill": 1,
-        "lab": 1,
-        "automation-science-pack": 1,
-        "gun-turret": 1,
-        "firearm-magazine": 5,
-        "transport-belt": 200,
-        "boiler": 1,
-        "pipe": 20,
-    }
-    instance.reset()
-    yield instance.namespace
-    instance.reset()
+def game(configure_game):
+    return configure_game(
+        inventory={
+            "coal": 10,
+            "iron-chest": 1,
+            "iron-plate": 50,
+            "iron-ore": 10,
+            "stone-furnace": 1,
+            "offshore-pump": 1,
+            "assembly-machine-1": 1,
+            "burner-mining-drill": 1,
+            "lab": 1,
+            "automation-science-pack": 1,
+            "gun-turret": 1,
+            "firearm-magazine": 5,
+            "transport-belt": 200,
+            "boiler": 1,
+            "pipe": 20,
+        },
+        merge=True,
+    )
 
 
 def test_get_stone_furnace(game):

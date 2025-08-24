@@ -5,11 +5,11 @@ The second step is ERROR CORRECTION. In error correction you need to create a wo
 
 SPECS
 You have the following api schema available to you {api_schema}
-Only write in python in ``` blocks.
+Only write in python in ```blocks.
 Ensure the script raises an uncaught exception if something goes wrong at runtime.
 Do not use try-catch as it will hide the error message.
 Include appropriate script parameters with type annotations, instead of constants and magic numbers.
-Import: `from factorio_instance import *`
+Import:`from factorio_instance import \*`
 IMPORTANT
 Make sure it is a script and not a function. it must be a script that can be directly run and not a function definition
 Also add assert tests during the script to check that intermediate steps are done right. For instance if something is harvested, crafted or extracted, you can inspect the inventory to check the outcome. Asserts should also have informative error messages if the assert fails

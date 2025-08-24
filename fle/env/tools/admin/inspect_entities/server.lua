@@ -69,7 +69,7 @@ global.actions.inspect_entities = function(player_index, radius, position_x, pos
         return path_ends
     end
 
-    local entity_data = inspect(player, radius, position)
+    local entity_data = global.utils.inspect(player, radius, position)
 
     local result = {}
 

@@ -39,7 +39,6 @@ class EvalConfig:
     agents: list[AgentABC]
     version: int
     version_description: str
-    exit_on_task_success: bool
     task: Optional[TaskABC] = None
     agent_cards: Optional[List[AgentCard]] = None
 
@@ -422,10 +421,7 @@ class TrajectoryRunner:
                             program.conversation.messages[-2:]
                         )
 
-                    if (
-                        task_verification_response.success
-                        and self.config.exit_on_task_success
-                    ):
+                    if task_verification_response.success:
                         print(
                             f"Task verification success: {task_verification_response.success}"
                         )
@@ -467,7 +463,7 @@ async def create_factorio_instance(
     else:
         instance = FactorioInstance(**common_kwargs)
 
-    instance.speed(10)
+    instance.set_speed(10)
     return instance
 
 

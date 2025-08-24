@@ -4,10 +4,9 @@ from fle.env.game_types import Prototype, Resource
 
 
 @pytest.fixture()
-def game(instance):
-    instance.reset()
-    instance.set_inventory(
-        {
+def game(configure_game):
+    return configure_game(
+        inventory={
             "iron-plate": 40,
             "iron-gear-wheel": 1,
             "electronic-circuit": 3,
@@ -15,8 +14,6 @@ def game(instance):
             "copper-plate": 10,
         }
     )
-    yield instance.namespace
-    instance.reset()
 
 
 def test_fail_to_craft_item(game):
@@ -36,7 +33,7 @@ def test_craft_with_full_inventory(game):
     """
     Test crafting when inventory is full
     """
-    game.instance.set_inventory({"iron-plate": 100, "coal": 10000})
+    game._set_inventory({"iron-plate": 100, "coal": 10000})
     try:
         result = game.craft_item(Prototype.IronGearWheel, 1)
         assert False, (
@@ -130,9 +127,7 @@ def test_craft_uncraftable_entity(game):
 
 
 def test_craft_no_technology(game):
-    game.instance.all_technologies_researched = False
-    game.instance.reset()
-
+    game.instance.reset(all_technologies_researched=False)
     try:
         game.craft_item(Prototype.AssemblingMachine1, quantity=1)
     except:

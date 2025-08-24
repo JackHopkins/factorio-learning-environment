@@ -6,10 +6,8 @@ from fle.env.game_types import Resource
 
 
 @pytest.fixture()
-def game(instance):
-    instance.reset()
-    yield instance.namespace
-    instance.reset()
+def game(configure_game):
+    return configure_game(inventory={"iron-chest": 1})
 
 
 def test_get_resource_patch(game: FactorioInstance):

@@ -5,20 +5,19 @@ from fle.env.entities import Position, Direction
 
 
 @pytest.fixture()
-def game(instance):
-    instance.initial_inventory = {
-        "iron-chest": 1,
-        "pipe": 10,
-        "assembling-machine-2": 2,
-        "transport-belt": 10,
-        "burner-inserter": 10,
-        "iron-plate": 10,
-        "assembling-machine-1": 1,
-        "copper-cable": 3,
-    }
-    instance.reset()
-    yield instance.namespace
-    instance.reset()
+def game(configure_game):
+    return configure_game(
+        inventory={
+            "iron-chest": 1,
+            "pipe": 10,
+            "assembling-machine-2": 2,
+            "transport-belt": 10,
+            "burner-inserter": 10,
+            "iron-plate": 10,
+            "assembling-machine-1": 1,
+            "copper-cable": 3,
+        }
+    )
 
 
 def test_rotate_assembling_machine_2(game):

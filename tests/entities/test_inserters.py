@@ -18,7 +18,7 @@ def game(instance):
         "copper-plate": 100,
         "electronic-circuit": 100,
     }
-    instance.speed(10)
+    instance.set_speed(10)
     instance.reset()
     yield instance.namespace
 

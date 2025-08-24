@@ -1,8 +1,9 @@
-
 # can_place_entity
 
 ## Overview
+
 `can_place_entity` is a utility function that checks whether an entity can be placed at a specific position in Factorio. It verifies various placement conditions including:
+
 - Player reach distance
 - Entity existence in inventory
 - Collision with other entities
@@ -23,6 +24,7 @@ can_place = can_place_entity(
 ## Examples
 
 1. Basic placement check:
+
 ```python
 # Check before attempting to place large entities
 target_pos = Position(x=10, y=10)
@@ -36,13 +38,16 @@ else:
 ## Important Considerations
 
 1. Player Distance
+
 - Checks fail if the target position is beyond the player's reach
 - Always move close enough before checking placement
 
 2. Entity Collisions
+
 - Checks for existing entities in the target area
 - Returns False if there would be a collision
 
 3. Special Cases
+
 - Offshore pumps require water tiles
 - Some entities have specific placement requirements

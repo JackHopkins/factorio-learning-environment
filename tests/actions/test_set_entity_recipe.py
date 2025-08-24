@@ -5,11 +5,8 @@ from fle.env.game_types import Prototype
 
 
 @pytest.fixture()
-def game(instance):
-    game.initial_inventory = {"assembling-machine-1": 1}
-    instance.reset()
-    yield instance.namespace
-    instance.reset()
+def game(configure_game):
+    return configure_game(inventory={"assembling-machine-1": 1})
 
 
 def test_set_entity_recipe(game):

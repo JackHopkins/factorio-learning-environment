@@ -24,7 +24,7 @@ Initial inventory
 Steps
 Step 1 - #STEP Calculate all the ingredients and print out all the recipes required to craft for 5 offshore pumps. Do not craft anything, only print out the requirements #STEP
 Step 2 - #STEP Get the 10 iron plates from the chest at Position(x = 0, y = 1)#STEP
-Step 3 - #STEP Gather 25 iron ore and smelt 25 iron plates#STEP 
+Step 3 - #STEP Gather 25 iron ore and smelt 25 iron plates#STEP
 Step 3 - #STEP Craft for 5 offshore pumps #STEP
 #OUTPUT 5 offshore pumps have been created #OUTPUT
 
@@ -50,16 +50,15 @@ The following entities are on the map [{{"name": "wooden-chest", "inventory": [(
 Initial inventory
 {{}}
 Steps
-Step 1 - #STEP Get the burner inserters and transport belts from the chest at Position(x = 0, y =  1). #STEP
+Step 1 - #STEP Get the burner inserters and transport belts from the chest at Position(x = 0, y = 1). #STEP
 Step 2 - #STEP Calculate the distance between Position(x = 0, y = 1) and Position(x = 12, y = 1) using get_connection_amount function. Print out if there are enough transport belts to make the connection #STEP
 Step 2 - #STEP Create a connection that moves iron ore from chest at Position(x=0, y=1) to the furnace at Position(x=12, y=1). Check the connection by looking if the furnace has smelted iron plates in it #STEP
 #OUTPUT Connection that moves items from chest at Position(x=0, y=1) to furnace at Position(x=12, y=1) has been created #OUTPUT
 
-
 Global objective
 Put down a powered electric mining drill on a copper ore
 Map setup
-The following entities are on the map [Generator(name='steam-engine', position=Position(x=-43.5, y=-31.5),  type='generator', prototype=<Prototype.SteamEngine: ('steam-engine', <class 'factorio_entities.Generator'>)>, health=400.0, warnings=['not connected to power network'], status=<EntityStatus.NOT_PLUGGED_IN_ELECTRIC_NETWORK: 'not_plugged_in_electric_network'>]
+The following entities are on the map [Generator(name='steam-engine', position=Position(x=-43.5, y=-31.5), type='generator', prototype=<Prototype.SteamEngine: ('steam-engine', <class 'factorio_entities.Generator'>)>, health=400.0, warnings=['not connected to power network'], status=<EntityStatus.NOT_PLUGGED_IN_ELECTRIC_NETWORK: 'not_plugged_in_electric_network'>]
 Initial inventory
 {{"electric-mining-drill": 1, "small-power-pole": 100}}
 Steps
@@ -80,7 +79,6 @@ Step 2 - #STEP Put down a offshore pump at the nearest water source and a boiler
 Step 3 - #STEP Put down a steam engine 4 tiles away from the boiler at Position(x = 11, y = 12). Connect the steam engine to the boiler with pipes. Print the position of the steam engine #STEP
 Step 4 - #STEP Power the boiler at Position(x = 11, y = 11) with coal and check that the steam engine at Position(x = 15, y = 11) is generating power. #STEP
 #OUTPUT An electricity generator has been created with a offshore pump at Position(x = 7, y = 12), boiler at Position(x = 11, y = 12) and steam engine at at Position(x = 15, y = 11) #OUTPUT
-
 
 Generate the next step for the following objective
 {objective}

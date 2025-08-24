@@ -1,53 +1,13 @@
 import pytest
 
-from fle.commons.cluster_ips import get_local_container_ips
 from fle.env.game_types import Prototype, Resource
 from fle.env.entities import Position, BuildingBox, Direction
-from fle.env import FactorioInstance
-
-# @pytest.fixture()
-# def game(instance):
-#     instance.reset()
-#     instance.set_inventory({
-#         'wooden-chest': 100,
-#         'electric-mining-drill': 10,
-#         'steam-engine': 1,
-#         'burner-mining-drill': 5
-#     })
-#     yield instance.namespace
 
 
 @pytest.fixture()
-def game():
-    ips, udp_ports, tcp_ports = get_local_container_ips()
-
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=tcp_ports[-1],
-        cache_scripts=False,
-        fast=True,
+def game(configure_game):
+    return configure_game(
         inventory={
-            "coal": 50,
-            "copper-plate": 50,
-            "iron-plate": 50,
-            "iron-chest": 2,
-            "burner-mining-drill": 3,
-            "electric-mining-drill": 1,
-            "assembling-machine-1": 1,
-            "stone-furnace": 9,
-            "transport-belt": 50,
-            "boiler": 1,
-            "burner-inserter": 32,
-            "pipe": 15,
-            "steam-engine": 1,
-            "small-electric-pole": 10,
-            "pumpjack": 1,
-        },
-    )
-    instance.reset()
-    instance.set_inventory(
-        {
             "wooden-chest": 100,
             "electric-mining-drill": 10,
             "steam-engine": 1,
@@ -55,7 +15,6 @@ def game():
             "pumpjack": 1,
         }
     )
-    yield instance.namespace
 
 
 def test_nearest_buildable_simple(game):

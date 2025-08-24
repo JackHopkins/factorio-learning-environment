@@ -25,7 +25,7 @@ move_to(coal_pos)
 harvested = harvest_resource(coal_pos, quantity=10)
 
 # Harvest 5 iron ore
-iron_pos = nearest(Resource.IronOre) 
+iron_pos = nearest(Resource.IronOre)
 move_to(iron_pos)
 harvested = harvest_resource(iron_pos, quantity=5)
 ```
@@ -33,6 +33,7 @@ harvested = harvest_resource(iron_pos, quantity=5)
 ## Important Rules
 
 1. You **must move to the resource** before harvesting:
+
 ```python
 # Wrong - will fail
 harvest_resource(nearest(Resource.Coal), 10)
@@ -48,15 +49,18 @@ harvest_resource(coal_pos, 10)
 The tool can harvest:
 
 1. Basic Resources
+
 - Coal (Resource.Coal)
 - Iron Ore (Resource.IronOre)
-- Copper Ore (Resource.CopperOre) 
+- Copper Ore (Resource.CopperOre)
 - Stone (Resource.Stone)
 
 2. Trees (Resource.Wood)
+
 - Harvesting trees yields wood
 - Creates stumps that can be harvested again
 
 3. Rocks and Stumps
+
 - Rock harvesting yields stone
 - Stump harvesting yields additional wood

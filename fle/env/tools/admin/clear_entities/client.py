@@ -1,7 +1,7 @@
-from fle.env.tools.init import Init
+from fle.env.tools import Tool
 
 
-class ClearEntities(Init):
+class ClearEntities(Tool):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 

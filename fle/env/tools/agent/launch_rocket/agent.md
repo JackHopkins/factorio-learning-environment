@@ -11,6 +11,7 @@ launch_rocket(silo: Union[Position, RocketSilo]) -> RocketSilo
 The function returns the updated RocketSilo entity.
 
 ### Parameters
+
 - `silo`: Either a Position object or RocketSilo entity indicating where to launch from
 
 ## Complete Rocket Launch Process
@@ -18,6 +19,7 @@ The function returns the updated RocketSilo entity.
 ### 1. Setting Up the Rocket Silo
 
 First, place the silo:
+
 ```python
 # Place rocket silo
 silo = place_entity_next_to(Prototype.RocketSilo, engine.position, Direction.RIGHT, spacing=5)
@@ -26,14 +28,15 @@ silo = place_entity_next_to(Prototype.RocketSilo, engine.position, Direction.RIG
 ## Required Components
 
 For each rocket launch you need:
+
 1. 100 Rocket Fuel
 2. 100 Rocket Control Units
 3. 100 Low Density Structures
 
-
 ### 2. Monitoring Rocket Construction
 
 Track the silo's status during construction:
+
 ```python
 # Check initial state
 assert silo.rocket_parts == 0
@@ -59,6 +62,7 @@ assert silo.status == EntityStatus.WAITING_TO_LAUNCH_ROCKET
 ### 5. Launching the Rocket
 
 Finally, launch the rocket:
+
 ```python
 # Launch
 silo = launch_rocket(silo)

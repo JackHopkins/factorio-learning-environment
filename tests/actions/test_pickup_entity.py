@@ -5,27 +5,25 @@ from fle.env.game_types import Prototype, Resource
 
 
 @pytest.fixture()
-def game(instance):
-    instance.initial_inventory = {
-        "stone-furnace": 1,
-        "boiler": 1,
-        "steam-engine": 1,
-        "offshore-pump": 4,
-        "pipe": 100,
-        "iron-plate": 50,
-        "copper-plate": 20,
-        "coal": 50,
-        "burner-inserter": 50,
-        "burner-mining-drill": 50,
-        "transport-belt": 50,
-        "stone-wall": 100,
-        "splitter": 4,
-        "wooden-chest": 1,
-    }
-
-    instance.reset()
-    yield instance.namespace
-    instance.reset()
+def game(configure_game):
+    return configure_game(
+        inventory={
+            "stone-furnace": 1,
+            "boiler": 1,
+            "steam-engine": 1,
+            "offshore-pump": 4,
+            "pipe": 100,
+            "iron-plate": 50,
+            "copper-plate": 20,
+            "coal": 50,
+            "burner-inserter": 50,
+            "burner-mining-drill": 50,
+            "transport-belt": 50,
+            "stone-wall": 100,
+            "splitter": 4,
+            "wooden-chest": 1,
+        }
+    )
 
 
 def test_pickup_item_full_inventory(game):
@@ -34,11 +32,11 @@ def test_pickup_item_full_inventory(game):
     Uses existing inventory items but maximizes stacks to test true full inventory.
     """
     # Clear inventory completely first
-    game.instance.set_inventory({"wooden-chest": 1})
+    game._set_inventory({"wooden-chest": 1})
     placement_position = Position(x=0, y=0)
     game.move_to(placement_position)
     chest = game.place_entity(Prototype.WoodenChest, position=placement_position)
-    game.instance.set_inventory({"coal": 10000})
+    game._set_inventory({"coal": 10000})
     try:
         result = game.pickup_entity(chest)
         assert False, (

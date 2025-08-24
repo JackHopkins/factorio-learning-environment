@@ -209,7 +209,7 @@ local default_rounding = function(number)
   return number
 end
 
-production_score = {}
+local production_score = {}
 
 production_score.generate_price_list = function(param)
 
@@ -343,6 +343,12 @@ function dump(o)
 end
 
 global.goal = nil
+
+local scores = production_score.get_production_scores()
+if scores then
+    global.initial_score = scores
+end
+
 global.actions.score = function()
     local production_score = production_score.get_production_scores()
     production_score["player"] = production_score["player"] - global.initial_score["player"]

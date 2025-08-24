@@ -1,7 +1,7 @@
 global.alerts = {}
 
 -- Define a function to check if the transport belt is blocked
-function is_transport_belt_blocked(entity)
+local function is_transport_belt_blocked(entity)
     if entity.type == "transport-belt" then
         local line_1 = entity.get_transport_line(1)
         local line_2 = entity.get_transport_line(2)
@@ -41,7 +41,7 @@ function is_transport_belt_blocked(entity)
 end
 
 -- Define a function to check if an entity is full
-function is_full(entity)
+local function is_full(entity)
     -- Map inventory types to string names
     local inventory_names = {
         [defines.inventory.rocket_silo_rocket] = "rocket",
@@ -116,7 +116,7 @@ function is_full(entity)
     return full_inventories
 end
 
-function can_mine(entity)
+local function can_mine(entity)
     if entity.type == "mining-drill" then
         -- Check if there's no resource under the drill
         if entity.mining_target == nil then
@@ -126,7 +126,7 @@ function can_mine(entity)
     return true
 end
 -- Define a function to check if the entity is a burner and has fuel
-function has_fuel(entity)
+local function has_fuel(entity)
     if entity.burner then
         if not entity.burner.currently_burning then
             local fuel_inventory = entity.get_inventory(defines.inventory.fuel)
@@ -145,34 +145,14 @@ function has_fuel(entity)
 end
 
 -- Define a function to check if the entity (furnace) has ingredients
-function has_ingredients(entity)
+local function has_ingredients(entity)
     if entity.type == "furnace" and entity.get_recipe() == nil then
         return false
     end
     return true
 end
--- Define a function to check if the entity is a drill and has space to output
---function has_output_space(entity)
---    if entity.type == "mining-drill" and entity.mining_target then
---        local output_inventory = entity.get_output_inventory()
---        if output_inventory and output_inventory.is_full() then
---            return false
---        end
---    end
---    if entity.type == "mining-drill" then
---        local resource = entity.surface.find_entities_filtered{position = entity.position, type = "resource"}[1]
---        local output_inventory = entity.get_output_inventory()
---        local drop_position = entity.drop_position
---        local items_on_ground = entity.surface.find_entities_filtered{area = {{drop_position.x - 0.5, drop_position.y - 0.5}, {drop_position.x + 0.5, drop_position.y + 0.5}}, type = "item-entity"}
---
---        if #items_on_ground >= 1 or (resource and output_inventory and not output_inventory.is_empty() and output_inventory and output_inventory.can_insert(resource.prototype.mined_item) == false) then
---            return false
---        end
---    end
---    return true
---end
 
-function has_output_space(entity)
+local function has_output_space(entity)
     if entity.status == defines.entity_status.waiting_for_space_in_destination then
         return false
     end
@@ -213,16 +193,7 @@ function has_output_space(entity)
     return true
 end
 
---function has_electricity(entity)
---    if entity.prototype.electric_energy_source_prototype then
---        if entity.electric_drain <= 0 then
---            return false
---        end
---    end
---    return true
---end
-
-function has_electricity(entity)
+local function has_electricity(entity)
     if entity.prototype.electric_energy_source_prototype then
         -- Check if the entity is connected to an electric network
         if entity.electric_network_id then
@@ -239,7 +210,7 @@ function has_electricity(entity)
 end
 
 -- Define a function to check if the entity (boiler) has necessary input liquid
-function has_input_liquid(entity)
+local function has_input_liquid(entity)
     if entity.type == "boiler" then
         local fluid_box = entity.fluidbox[1]
         if fluid_box == nil or fluid_box.amount <= 0 then
@@ -256,7 +227,7 @@ function has_input_liquid(entity)
     return true
 end
 
-function is_inserter_waiting_for_source(entity)
+local function is_inserter_waiting_for_source(entity)
     if entity.type == "inserter" then
         local pickup_target = entity.pickup_target
         if pickup_target and pickup_target.valid then
@@ -270,7 +241,7 @@ function is_inserter_waiting_for_source(entity)
 end
 
 
-function get_issues(entity)
+function global.utils.get_issues(entity)
     local issues = {}
 
     if not can_mine(entity) then
@@ -402,7 +373,7 @@ local function on_tick(event)
         for _, surface in pairs(game.surfaces) do
             local entities = surface.find_entities_filtered({force = "player"})
             for _, entity in pairs(entities) do
-                local issues = get_issues(entity)
+                local issues = global.utils.get_issues(entity)
 
                 if #issues > 0 then
                     local position = entity.position

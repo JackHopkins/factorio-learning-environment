@@ -45,7 +45,7 @@ class TestProductionStats(unittest.TestCase):
 
     def test_lua2python(self):
         result = _lua2python(
-            "pcall(global.actions.production_stats, 1)",
+            "pcall(global.actions.get_production_stats, 1)",
             '{ ["a"] = true,["b"] = {\n ["iron-ore"] = 10\n},}',
         )
         assert result

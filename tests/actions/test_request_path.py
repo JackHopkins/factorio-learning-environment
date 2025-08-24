@@ -1,13 +1,4 @@
-import pytest
-
 from fle.env.entities import Position
-
-
-@pytest.fixture()
-def game(instance):
-    instance.reset()
-    yield instance.namespace
-    instance.reset()
 
 
 def test_path(game):

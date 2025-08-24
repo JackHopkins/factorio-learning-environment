@@ -24,7 +24,6 @@ class RunConfig:
     model: str
     version: int = None
     num_agents: int = 1
-    exit_on_task_success: bool = True
 
 
 async def main():
@@ -98,7 +97,6 @@ async def main():
             agents=current_run_agents,
             version=version,
             version_description=f"model:{run_config_item.model}\ntype:{task.task_key}\nnum_agents:{run_config_item.num_agents}",
-            exit_on_task_success=run_config_item.exit_on_task_success,
             task=task,
             agent_cards=current_run_agent_cards,
         )

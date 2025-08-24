@@ -68,7 +68,6 @@ def mock_config(multi_instance):
     config.agents = agents
     config.version = 0
     config.version_description = "test"
-    config.exit_on_task_success = False
     config.task = task
 
     return config

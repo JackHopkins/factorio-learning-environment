@@ -16,6 +16,7 @@ from fle.env.gym_env.observation import (
     Observation,
     GameInfo,
     AgentMessage,
+    TaskInfo,
 )
 from fle.eval.tasks import TaskABC
 
@@ -192,6 +193,16 @@ class ObsSpaces:
         }
     )
 
+    # Task information structure
+    TASK_INFO = spaces.Dict(
+        {
+            "goal_description": LONG_TEXT,
+            "agent_instructions": LONG_TEXT,  # Can be None, but gym spaces don't handle Optional well
+            "task_key": SHORT_TEXT,
+            "trajectory_length": POSITIVE_INT,
+        }
+    )
+
 
 class FactorioGymEnv(gym.Env):
     """OpenAI Gym environment for Factorio"""
@@ -247,6 +258,8 @@ class FactorioGymEnv(gym.Env):
                 "messages": spaces.Sequence(ObsSpaces.MESSAGE),
                 # Serialized functions
                 "serialized_functions": spaces.Sequence(ObsSpaces.SERIALIZED_FUNCTION),
+                # Task information and objectives
+                "task_info": ObsSpaces.TASK_INFO,
             }
         )
 
@@ -321,6 +334,24 @@ class FactorioGymEnv(gym.Env):
                 {"name": func.name, "pickled_function": pickle.dumps(func).hex()}
             )
 
+        # Get task information
+        task_info = None
+        if self.task:
+            agent_instructions = None
+            if self.task.agent_instructions:
+                # Get instructions for this specific agent
+                try:
+                    agent_instructions = self.task.get_agent_instructions(agent_idx)
+                except (IndexError, AttributeError):
+                    agent_instructions = None
+
+            task_info = TaskInfo(
+                goal_description=self.task.goal_description,
+                agent_instructions=agent_instructions,
+                task_key=self.task.task_key,
+                trajectory_length=self.task.trajectory_length,
+            )
+
         observation = Observation(
             raw_text=response.response if response else "",
             entities=entity_obs,  # Convert entities to strings
@@ -332,6 +363,7 @@ class FactorioGymEnv(gym.Env):
             task_verification=task_verification,
             messages=messages_obs,
             serialized_functions=serialized_functions,
+            task_info=task_info,
         )
 
         # Store observation for next step

@@ -26,6 +26,7 @@ class GymTrajectoryRunner:
         process_id: int,
         db_client: Optional[DBClient],
         log_dir: Optional[str] = None,
+        reset_states: bool = False,
     ):
         self.config = config
         self.agents = config.agents
@@ -34,6 +35,7 @@ class GymTrajectoryRunner:
         self.db_client = db_client
         self.process_id = process_id
         self.start_time = time.time()
+        self.reset_states = reset_states  # Whether to reset the state after each step
 
         # Initialize trajectory logger
         self.logger = TrajectoryLogger(
@@ -196,7 +198,7 @@ class GymTrajectoryRunner:
                     action = Action(
                         code=policy.code,
                         agent_idx=agent_idx,
-                        game_state=current_state,
+                        game_state=current_state if self.reset_states else None,
                     )
                     obs_dict, reward, terminated, truncated, info = self.gym_env.step(
                         action
@@ -231,11 +233,12 @@ class GymTrajectoryRunner:
                     )
 
                     # Get the agent_completed flag from the agent
-                    agent_completed, update_state = agent.check_step_completion(
-                        observation
-                    )
-                    if update_state:
-                        current_state = output_game_state
+                    if self.reset_states:
+                        agent_completed, update_state = agent.check_step_completion(
+                            observation
+                        )
+                        if update_state:
+                            current_state = output_game_state
 
                     # Check if done and exit if configured
                     if done:

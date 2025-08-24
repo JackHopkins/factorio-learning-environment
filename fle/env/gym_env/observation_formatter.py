@@ -51,6 +51,14 @@ class FormattedObservation:
     - ❌ Produce 100 iron plates
     Empty string if no task is being tracked."""
 
+    task_info_str: str
+    """Formatted string showing task information and objectives.
+    Example:
+    ### Task Information
+    **Goal:** Create automatic iron ore factory
+    **Agent Instructions:** You are the mining specialist
+    **Task Key:** iron_ore_automation"""
+
     messages_str: str
     """Formatted string showing messages received from other agents.
     Example:
@@ -491,6 +499,28 @@ class BasicObservationFormatter:
         return task_str
 
     @staticmethod
+    def format_task_info(task_info: Optional[Dict[str, Any]]) -> str:
+        """Format task information"""
+        if not task_info:
+            return ""
+
+        info_str = "### Task Information\n"
+
+        if task_info.get("goal_description"):
+            info_str += f"**Goal:** {task_info['goal_description']}\n"
+
+        if task_info.get("agent_instructions"):
+            info_str += f"**Agent Instructions:** {task_info['agent_instructions']}\n"
+
+        if task_info.get("task_key"):
+            info_str += f"**Task Key:** {task_info['task_key']}\n"
+
+        if task_info.get("trajectory_length"):
+            info_str += f"**Trajectory Length:** {task_info['trajectory_length']}\n"
+
+        return info_str
+
+    @staticmethod
     def format_messages(
         messages: List[Dict[str, Any]], last_timestamp: float = 0.0
     ) -> str:
@@ -589,6 +619,10 @@ class BasicObservationFormatter:
             if task_str:
                 formatted_parts.append(task_str)
 
+            task_info_str = self.format_task_info(obs_dict.get("task_info"))
+            if task_info_str:
+                formatted_parts.append(task_info_str)
+
         if self.include_messages:
             messages_str = self.format_messages(
                 obs_dict.get("messages", []), last_message_timestamp
@@ -617,6 +651,9 @@ class BasicObservationFormatter:
             if self.include_flows
             else "",
             task_str=self.format_task(obs_dict.get("task_verification"))
+            if self.include_task
+            else "",
+            task_info_str=self.format_task_info(obs_dict.get("task_info"))
             if self.include_task
             else "",
             messages_str=self.format_messages(

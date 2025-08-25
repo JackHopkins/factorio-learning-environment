@@ -13,18 +13,21 @@ class Sleep(Tool):
         :param seconds: Number of seconds to sleep.
         :return: True if sleep was successful.
         """
-        # Get initial tick
-        ticks_elapsed = 0
-        start_tick, _ = self.execute(-1)
-        target_ticks = seconds * 60  # Convert seconds to ticks (60 ticks = 1 second)
+        # Track elapsed ticks for appropriate sleep calculation
+        ticks_before = self.game_state.instance.get_elapsed_ticks()
 
-        while True:
-            current_tick, _ = self.execute(ticks_elapsed)
-            ticks_elapsed = current_tick - start_tick
+        # Update elapsed ticks on server
+        _, _ = self.execute(seconds)
 
-            if ticks_elapsed >= target_ticks:
-                return True
+        # Sleep for the appropriate real-world time based on elapsed ticks
+        ticks_after = self.game_state.instance.get_elapsed_ticks()
+        ticks_added = ticks_after - ticks_before
+        if ticks_added > 0:
+            game_speed = self.game_state.instance.get_speed()
+            real_world_sleep = ticks_added / 60 / game_speed if game_speed > 0 else 0
+            print(
+                f"sleep: Sleeping for {real_world_sleep:.3f} seconds ({ticks_added} ticks at speed {game_speed}x)"
+            )
+            sleep(real_world_sleep)
 
-            # Sleep for a small interval to prevent excessive polling
-            # Using 0.05 seconds (50ms) as a reasonable polling interval
-            sleep(0.05)
+        return True

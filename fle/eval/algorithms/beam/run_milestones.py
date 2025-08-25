@@ -154,7 +154,8 @@ def create_factorio_instance(instance_id: int) -> FactorioInstance:
         inventory={},
         all_technologies_researched=True,
     )
-    instance.set_speed(10)
+    # Set initial speed and unpause
+    instance.set_speed_and_unpause(10)
     return instance
 
 

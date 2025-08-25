@@ -7,7 +7,7 @@ from fle.env.gym_env.action import Action
 
 @pytest.fixture
 def env(instance):
-    env = FactorioGymEnv(instance)
+    env = FactorioGymEnv(instance, pause_after_action=False)
     yield env
     env.close()
 

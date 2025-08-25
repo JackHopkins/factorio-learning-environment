@@ -79,3 +79,18 @@ def create_assembly_line(chemical_plant):
 
 - Room for pipe connections
 - Major factory sections
+
+## Smart Placement Feedback
+
+The tool provides feedback about placement decisions:
+
+```python
+inserter = place_entity_next_to(Prototype.BurnerInserter, assembler.position, Direction.LEFT)
+
+# Check if placement was optimal
+if hasattr(inserter, '_placement_feedback'):
+    feedback = inserter._placement_feedback
+    print(f"Placement: {feedback['reason']}")
+    if feedback['auto_oriented']:
+        print("Inserter was auto-oriented for optimal flow")
+```

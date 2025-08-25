@@ -5,7 +5,10 @@ import subprocess
 from pathlib import Path
 import importlib.resources
 import asyncio
+import signal
 from fle.env.gym_env.run_eval import main as run_eval
+
+signal.signal(signal.SIGINT, lambda sig, frame: sys.exit(0))
 
 
 def fle_init():

@@ -17,7 +17,7 @@ LAB_PLAY_POPULATED_STARTING_INVENTORY = {
     "offshore-pump": 2,
     "steam-engine": 2,
     "electric-mining-drill": 50,
-    "small-electric-pole": 500,
+    "medium-electric-pole": 500,
     "pipe": 500,
     "assembling-machine-2": 10,
     "electric-furnace": 10,

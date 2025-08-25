@@ -181,6 +181,15 @@ class FactorioInstance:
         self.peaceful = peaceful
         self.namespaces = [self.namespace_class(self, i) for i in range(num_agents)]
 
+        # Create GameControl instance with render_message tool
+        render_message_tool = None
+        if hasattr(self.first_namespace, "_render_message"):
+            render_message_tool = self.first_namespace._render_message
+        self.game_control = GameControl(
+            self.rcon_client, render_message_tool, reset_speed, reset_paused
+        )
+        self.game_control.reset_to_defaults()
+
         self.lua_script_manager = LuaScriptManager(self.rcon_client, cache_scripts)
         self.script_dict = {
             **self.lua_script_manager.lib_scripts,
@@ -194,14 +203,6 @@ class FactorioInstance:
         # Load the python controllers that correspond to the Lua scripts
         self.lua_script_manager.load_init_into_game("initialise")
         self.lua_script_manager.setup_tools(self)
-
-        # Create GameControl instance with render_message tool
-        render_message_tool = None
-        if hasattr(self.first_namespace, "_render_message"):
-            render_message_tool = self.first_namespace._render_message
-        self.game_control = GameControl(
-            self.rcon_client, render_message_tool, reset_speed, reset_paused
-        )
 
         if inventory is None:
             inventory = {}

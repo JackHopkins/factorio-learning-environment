@@ -6,7 +6,7 @@ from pydantic import ConfigDict, BaseModel, Field
 
 from fle.commons.models.timing_metrics import TimingMetrics
 
-from fle.commons.models.achievements import ProductionFlows
+from fle.commons.models.production_flows import ProductionFlows
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.game_state import GameState
 

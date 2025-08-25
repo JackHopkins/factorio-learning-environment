@@ -4,14 +4,6 @@ from typing import Dict, List, Any, Optional
 
 
 @dataclass
-class ProfitConfig:
-    """Configuration for profit calculations."""
-
-    max_static_unit_profit_cap: float = 5.0
-    dynamic_profit_multiplier: float = 10.0
-
-
-@dataclass
 class ProductionFlows:
     """Represents production flow data."""
 
@@ -48,10 +40,6 @@ class ProductionFlows:
             "price_list": self.price_list,
             "static_items": self.static_items,
         }
-
-    def is_valid(self) -> bool:
-        """Check if the production flows data is valid."""
-        return isinstance(self.input, dict) and "output" in self.__dict__
 
     def get_new_flows(
         cls: "ProductionFlows", post: "ProductionFlows"

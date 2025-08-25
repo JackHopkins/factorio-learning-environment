@@ -4,7 +4,7 @@ import numpy as np
 import json
 from fle.commons.models.technology_state import TechnologyState
 from fle.commons.models.research_state import ResearchState
-from fle.commons.models.achievements import ProductionFlows
+from fle.commons.models.production_flows import ProductionFlows
 from fle.agents import TaskResponse
 from fle.env.entities import Inventory
 

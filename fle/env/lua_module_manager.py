@@ -1,9 +1,8 @@
 import hashlib
 import json
-
+import shutil
 import importlib
 import os
-import re
 from pathlib import Path
 
 from lupa.lua54 import LuaRuntime
@@ -18,39 +17,96 @@ from fle.env.utils.rcon import (
     _load_script,
 )
 
+ROOT_DIR = Path(__file__).parent.parent.parent
 
-class LuaScriptManager:
-    def __init__(self, rcon_client: RCONClient, cache_scripts: bool = False):
+
+def get_control_lua(lib_names, admin_tool_names, agent_tool_names):
+    # Ensure 'libs.initialise' is at the top if present
+    lib_names = "',\n    '".join(lib_names)
+    admin_tool_names = "',\n    '".join(admin_tool_names)
+    agent_tool_names = "',\n    '".join(agent_tool_names)
+
+    with open(ROOT_DIR / "fle" / "env" / "control-template.lua", "r") as f:
+        template = f.read()
+    template = template.replace("{lib_names}", lib_names)
+    template = template.replace("{admin_tool_names}", admin_tool_names)
+    template = template.replace("{agent_tool_names}", agent_tool_names)
+    return template
+
+
+class LuaModuleManager:
+    def __init__(
+        self,
+        rcon_client: RCONClient,
+        cache_scripts: bool = False,
+        start_fresh: bool = False,
+    ):
         self.rcon_client = rcon_client
         self.cache_scripts = cache_scripts
-        if not cache_scripts:
-            self._clear_game_checksums(rcon_client)
+        # if not cache_scripts:
+        #     self._clear_game_checksums(rcon_client)
         # self.action_directory = _get_action_dir()
 
         self.lib_directory = _get_mods_dir()
-        if cache_scripts:
-            self.init_action_checksums()
-            self.game_checksums = self._get_game_checksums(rcon_client)
+        # if cache_scripts:
+        #     self.init_action_checksums()
+        #     self.game_checksums = self._get_game_checksums(rcon_client)
 
-        self.tool_scripts = self.get_tools_to_load()
-
-        self.lib_scripts = self.get_libs_to_load()
+        # self.tool_scripts = self.get_tools_to_load()
+        # self.lib_scripts = self.get_libs_to_load()
         self.lua = LuaRuntime(unpack_returned_tuples=True)
+        self.module_dir = ROOT_DIR / ".fle" / "fle-mod"
+        if start_fresh:
+            shutil.rmtree(self.module_dir)
 
-    def sub_initialize(self, script):
-        substitution_lines = [
-            "M.initialize()",
-            "for e, f in pairs(M.events) do script.on_event(e, f) end",
-            "script.on_load(M.initialize)",
-            "script.on_load(function() for e, f in pairs(M.events) do script.on_event(e, f) end end)",
-            "return M",
-        ]
-        substitution_string = "\n".join(substitution_lines)
-        return re.sub(r"(?m)^\s*return\s+M\s*$", substitution_string, script)
+    def build_module(self):
+        print(f"Building module to {self.module_dir}")
+        self.module_dir.mkdir(parents=True, exist_ok=True)
+        tools_dir = self.module_dir / "tools"
+        (tools_dir / "agent").mkdir(parents=True, exist_ok=True)
+        (tools_dir / "admin").mkdir(parents=True, exist_ok=True)
+        libs_dir = self.module_dir / "libs"
+        libs_dir.mkdir(parents=True, exist_ok=True)
+        control_lua = self.module_dir / "control.lua"
+        lib_names = []
+        admin_tool_names = []
+        agent_tool_names = []
+        for lib in _get_lib_names():
+            lib = Path(lib)
+            lib_name = lib.stem
+            shutil.copy(lib, libs_dir / f"{lib_name}.lua")
+            if lib_name == "initialise":
+                lib_names.insert(0, f"libs.{lib_name}")
+            else:
+                lib_names.append(f"libs.{lib_name}")
+
+        for tool in _get_tool_names():
+            tool_type = "agent" if "agent" in tool else "admin"
+            tool = Path(tool)
+            tool_name = tool.parts[-2]
+            shutil.copy(tool, tools_dir / tool_type / f"{tool_name}.lua")
+            if tool_type == "admin":
+                admin_tool_names.append(f"tools.admin.{tool_name}")
+            else:
+                agent_tool_names.append(f"tools.agent.{tool_name}")
+
+        with open(control_lua, "w") as f:
+            f.write(get_control_lua(lib_names, admin_tool_names, agent_tool_names))
+
+    def prepare_scenario(self, scenario_name: str):
+        scenario_dir = ROOT_DIR / "fle" / "cluster" / "scenarios" / scenario_name
+        final_dir = ROOT_DIR / ".fle" / "scenarios" / scenario_name
+        final_dir.mkdir(parents=True, exist_ok=True)
+        if not scenario_dir.exists():
+            raise ValueError(f"Scenario directory does not exist: {scenario_dir}")
+        print(f"Copying scenario to {final_dir}")
+        shutil.copytree(scenario_dir, final_dir, dirs_exist_ok=True)
+        print(f"Copying module to {final_dir}")
+        shutil.copytree(self.module_dir, final_dir, dirs_exist_ok=True)
+        print(f"Scenario {scenario_name} prepared")
 
     def init_action_checksums(self):
         checksum_init_script = _load_mods("checksum")
-        checksum_init_script = self.sub_initialize(checksum_init_script)
         response = self.rcon_client.send_command("/sc " + checksum_init_script)
         return response
 
@@ -65,7 +121,6 @@ class LuaScriptManager:
             return False, e.args[0]
 
     def load_tool_into_game(self, name):
-        return
         # Select scripts by exact tool directory, not prefix
         tool_dirs = {
             f"agent/{name}",
@@ -106,7 +161,6 @@ class LuaScriptManager:
             pass
 
     def load_init_into_game(self, name):
-        return
         if name not in self.lib_scripts:
             # attempt to load the script from the filesystem
             script = _load_mods(name)
@@ -138,7 +192,6 @@ class LuaScriptManager:
 
             # Load the lua script content
             _, content = _load_script(lua_file)
-            content = self.sub_initialize(content)
 
             # Create a unique key combining tool and script name
             script_key = f"{tool_name}/{script_name}" if tool_name else script_name
@@ -159,7 +212,6 @@ class LuaScriptManager:
         scripts_to_load = {}
         for filename in _get_lib_names():
             name, content = _load_script(filename)
-            content = self.sub_initialize(content)
             if self.cache_scripts:
                 checksum = self.calculate_checksum(content)
 
@@ -426,3 +478,10 @@ class LuaScriptManager:
                     callback(tool_instance, *args, **kwargs)
                 except Exception as e:
                     print(f"Error in pre-tool hook for {tool_name}: {e}")
+
+
+if __name__ == "__main__":
+    manager = LuaModuleManager(rcon_client=None, cache_scripts=False, start_fresh=True)
+    # print(manager.get_tools_to_load())
+    manager.build_module()
+    manager.prepare_scenario("default_lab_scenario")

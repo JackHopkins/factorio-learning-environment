@@ -136,7 +136,7 @@ EOF
     restart: unless-stopped
     user: factorio
     volumes:
-    - source: ./scenarios
+    - source: ../../.fle/scenarios
       target: /opt/factorio/scenarios
       type: bind
     - source: ./config

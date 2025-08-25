@@ -37,6 +37,31 @@ if not global.agent_characters then
     global.agent_characters = {}
 end
 
+if not global.paths then
+    --- @type table<number, table<string, any>> Paths table mapping agent index to path data
+    global.paths = {}
+end
+
+if not global.path_requests then
+    global.path_requests = {}
+end
+
+if not global.harvested_items then
+    global.harvested_items = {}
+end
+
+if not global.crafted_items then
+    global.crafted_items = {}
+end
+
+if not global.walking_queues then
+    global.walking_queues = {}
+end
+
+if not global.goal then
+    global.goal = nil
+end
+
 -- Initialize debug flags
 if global.debug == nil then
     global.debug = {

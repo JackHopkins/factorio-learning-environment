@@ -7,9 +7,9 @@ if not global.actions then
     global.actions = {}
 end
 
-if not global.utils then
+if not utils then
     --- @type table Utils table
-    global.utils = {}
+    utils = {}
 end
 
 if not global.initial_score then

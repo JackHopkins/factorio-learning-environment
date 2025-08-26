@@ -1,4 +1,10 @@
-global.actions.clear_collision_boxes = function(player_index)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.clear_collision_boxes = function(player_index)
     local player = global.agent_characters[player_index]
     if not player then return end
 
@@ -40,3 +46,5 @@ global.actions.clear_collision_boxes = function(player_index)
         end
     end
 end
+
+return M

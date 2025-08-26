@@ -1,4 +1,10 @@
-global.actions.nearest = function(player_index, resource)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.nearest = function(player_index, resource)
     local player = global.agent_characters[player_index]
 
     local function normalize_resource_name(resource)
@@ -69,3 +75,5 @@ global.actions.nearest = function(player_index, resource)
 
     return find_nearest(player, normalized_resource)
 end
+
+return M

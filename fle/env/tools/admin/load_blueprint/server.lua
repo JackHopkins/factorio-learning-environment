@@ -1,4 +1,10 @@
-global.actions.load_blueprint = function(player_index, bp, offset_x, offset_y)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.load_blueprint = function(player_index, bp, offset_x, offset_y)
     --- https://forums.factorio.com/viewtopic.php?t=111437
     --- by CharacterOverflow @ Wed Feb 21, 2024 2:34 pm
 
@@ -62,3 +68,5 @@ global.actions.load_blueprint = function(player_index, bp, offset_x, offset_y)
     return stack_id
 
 end
+
+return M

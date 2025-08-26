@@ -1,4 +1,10 @@
-global.actions.production_stats = function(player)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.production_stats = function(player)
     local production_diff = {}
     local consumption_diff = {}
     local harvested_items = global.harvested_items
@@ -34,7 +40,7 @@ global.actions.production_stats = function(player)
     }
 end
 
-global.actions.reset_production_stats = function(player)
+M.actions.reset_production_stats = function(player)
     local force = game.forces.player
     -- Reset item statistics
     force.item_production_statistics.clear()
@@ -46,3 +52,4 @@ global.actions.reset_production_stats = function(player)
     global.crafted_items = {}
 end
 
+return M

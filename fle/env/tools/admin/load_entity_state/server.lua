@@ -1,3 +1,9 @@
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
 -- Helper function to unquote strings
 local function unquote_string(str)
     if not str then return nil end
@@ -5,7 +11,7 @@ local function unquote_string(str)
 end
 
 -- Main deserialization function
-global.actions.load_entity_state = function(player, stored_json_data)
+M.actions.load_entity_state = function(player, stored_json_data)
     local player_entity = global.agent_characters[player]
     local surface = player_entity.surface
     local created_entities = {}
@@ -287,3 +293,5 @@ global.actions.load_entity_state = function(player, stored_json_data)
 
     return true
 end
+
+return M

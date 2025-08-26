@@ -1,4 +1,10 @@
-global.actions.pickup_entity = function(player_index, x, y, entity)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.pickup_entity = function(player_index, x, y, entity)
     local player = global.agent_characters[player_index]
     local position = {x=x, y=y}
     local surface = player.surface
@@ -152,3 +158,5 @@ global.actions.pickup_entity = function(player_index, x, y, entity)
 
     return {}
 end
+
+return M

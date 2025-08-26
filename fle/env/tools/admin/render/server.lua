@@ -1,4 +1,10 @@
-global.actions.render = function(player_index, method, arg1, arg2, arg3, arg4)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.render = function(player_index, method, arg1, arg2, arg3, arg4)
     local player = global.agent_characters[player_index]
     local position, bounding_box, radius
 
@@ -155,3 +161,5 @@ global.actions.render = function(player_index, method, arg1, arg2, arg3, arg4)
 
     return dump(render_data)
 end
+
+return M

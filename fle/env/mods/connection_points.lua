@@ -2,7 +2,7 @@
 -- This is to prevent bad cases where connections are blocked by belts / pipes etc.
 
 -- Function to get connection points for storage tanks based on their direction
-global.utils.get_storage_tank_connection_points = function(entity)
+utils.get_storage_tank_connection_points = function(entity)
     local x, y = entity.position.x, entity.position.y
     local connection_points = {}
 
@@ -32,7 +32,7 @@ global.utils.get_storage_tank_connection_points = function(entity)
     return connection_points
 end
 
-global.utils.get_chemical_plant_connection_points = function(plant)
+utils.get_chemical_plant_connection_points = function(plant)
     local positions = {}
     local x, y = plant.position.x, plant.position.y
 
@@ -70,7 +70,7 @@ global.utils.get_chemical_plant_connection_points = function(plant)
 end
 
 
-global.utils.get_generator_connection_positions = function(entity)
+utils.get_generator_connection_positions = function(entity)
     local x, y = entity.position.x, entity.position.y
     local orientation = entity.orientation
     local entity_prototype = game.entity_prototypes[entity.name]
@@ -115,7 +115,7 @@ global.utils.get_generator_connection_positions = function(entity)
     return pipe_positions
 end
 
-global.utils.get_pumpjack_connection_points = function(entity)
+utils.get_pumpjack_connection_points = function(entity)
     local x, y = entity.position.x, entity.position.y
     local orientation = entity.orientation
 
@@ -135,7 +135,7 @@ global.utils.get_pumpjack_connection_points = function(entity)
     return pipe_position
 end
 
-global.utils.get_boiler_connection_points = function(entity)
+utils.get_boiler_connection_points = function(entity)
     local x, y = entity.position.x, entity.position.y
     local orientation = entity.orientation * 8
 
@@ -197,7 +197,7 @@ global.utils.get_boiler_connection_points = function(entity)
     --return pipe_positions
 end
 
-global.utils.get_offshore_pump_connection_points = function(entity)
+utils.get_offshore_pump_connection_points = function(entity)
     local x, y = entity.position.x, entity.position.y
     local orientation = entity.orientation * 8
 
@@ -219,7 +219,7 @@ global.utils.get_offshore_pump_connection_points = function(entity)
     return { {x = x + dx, y = y + dy} }
 end
 
-global.utils.get_refinery_connection_points = function(refinery)
+utils.get_refinery_connection_points = function(refinery)
     -- Block the middle input point also
     local positions = {}
     local x, y = refinery.position.x, refinery.position.y

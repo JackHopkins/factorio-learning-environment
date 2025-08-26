@@ -1,4 +1,10 @@
-global.actions.save_blueprint = function(player_index)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.save_blueprint = function(player_index)
     local player = global.agent_characters[player_index]
     local force = player.force
     if not force then
@@ -59,3 +65,5 @@ global.actions.save_blueprint = function(player_index)
 
     return dump({blueprint='\"'..stack_string..'\"', center_x=center_x, center_y=center_y})
 end
+
+return M

@@ -1,4 +1,4 @@
-global.utils.remove_enemies = function ()
+utils.remove_enemies = function ()
     game.forces["enemy"].kill_all_units()  -- Removes all biters
     game.map_settings.enemy_expansion.enabled = false  -- Stops biters from expanding
     game.map_settings.enemy_evolution.enabled = false  -- Stops biters from evolving
@@ -10,7 +10,7 @@ end
 
 local directions = {'north', 'northeast', 'east', 'southeast', 'south', 'southwest', 'west', 'northwest'}
 
-global.utils.get_direction = function(from_position, to_position)
+utils.get_direction = function(from_position, to_position)
     local dx = to_position.x - from_position.x
     local dy = to_position.y - from_position.y
     local adx = math.abs(dx)
@@ -32,7 +32,7 @@ global.utils.get_direction = function(from_position, to_position)
     end
 end
 
-global.utils.get_direction_with_diagonals = function(from_pos, to_pos)
+utils.get_direction_with_diagonals = function(from_pos, to_pos)
     local dx = to_pos.x - from_pos.x
     local dy = to_pos.y - from_pos.y
 
@@ -57,7 +57,7 @@ global.utils.get_direction_with_diagonals = function(from_pos, to_pos)
 end
 
 
-global.utils.get_closest_entity = function(player, position)
+utils.get_closest_entity = function(player, position)
     local closest_distance = math.huge
     local closest_entity = nil
     local entities = player.surface.find_entities_filtered{
@@ -79,7 +79,7 @@ global.utils.get_closest_entity = function(player, position)
     return closest_entity
 end
 
-global.utils.calculate_movement_ticks = function(player, from_pos, to_pos)
+utils.calculate_movement_ticks = function(player, from_pos, to_pos)
     -- Calculate distance between points
     local dx = to_pos.x - from_pos.x
     local dy = to_pos.y - from_pos.y
@@ -99,7 +99,7 @@ end
 -- Wrapper around LuaSurface.can_place_entity that replicates all checks LuaPlayer.can_place_entity performs.
 -- This allows our code to validate placement without relying on an actual LuaPlayer instance.
 -- extra_params can be provided by callers to pass additional flags (e.g. fast_replace) if needed.
-global.utils.can_place_entity = function(player, entity_name, position, direction, extra_params)
+utils.can_place_entity = function(player, entity_name, position, direction, extra_params)
     local params = extra_params or {}
     params.name = entity_name
     params.position = position
@@ -110,7 +110,7 @@ global.utils.can_place_entity = function(player, entity_name, position, directio
     return player.surface.can_place_entity(params)
 end
 
-global.utils.avoid_entity = function(player_index, entity, position, direction)
+utils.avoid_entity = function(player_index, entity, position, direction)
     local player = global.agent_characters[player_index]
     local player_position = player.position
     for i=0, 10 do
@@ -118,7 +118,7 @@ global.utils.avoid_entity = function(player_index, entity, position, direction)
             name = entity,
             force = "player",
             position = position,
-            direction = global.utils.get_entity_direction(entity, direction)
+            direction = utils.get_entity_direction(entity, direction)
         }
         if can_place then
             return true
@@ -129,23 +129,23 @@ global.utils.avoid_entity = function(player_index, entity, position, direction)
     return false
 end
 
-global.crafting_queue = {}
+-- global.crafting_queue = {}
 
-script.on_event(defines.events.on_tick, function(event)
-  -- Iterate over the crafting queue and update the remaining ticks
-  for i, task in ipairs(global.crafting_queue) do
-    task.remaining_ticks = task.remaining_ticks - 1
+-- script.on_event(defines.events.on_tick, function(event)
+--   -- Iterate over the crafting queue and update the remaining ticks
+--   for i, task in ipairs(global.crafting_queue) do
+--     task.remaining_ticks = task.remaining_ticks - 1
 
-    -- If the crafting is finished, consume the ingredients, insert the crafted entity, and remove the task from the queue
-    if task.remaining_ticks <= 0 then
-      for _, ingredient in pairs(task.recipe.ingredients) do
-        task.player.remove_item({name = ingredient.name, count = ingredient.amount * task.count})
-      end
-      task.player.insert({name = task.entity_name, count = task.count})
-      table.remove(global.crafting_queue, i)
-    end
-  end
-end)
+--     -- If the crafting is finished, consume the ingredients, insert the crafted entity, and remove the task from the queue
+--     if task.remaining_ticks <= 0 then
+--       for _, ingredient in pairs(task.recipe.ingredients) do
+--         task.player.remove_item({name = ingredient.name, count = ingredient.amount * task.count})
+--       end
+--       task.player.insert({name = task.entity_name, count = task.count})
+--       table.remove(global.crafting_queue, i)
+--     end
+--   end
+-- end)
 
 function dump(o)
    if type(o) == 'table' then
@@ -160,7 +160,7 @@ function dump(o)
    end
 end
 
-function global.utils.inspect(player, radius, position)
+utils.inspect = function(player, radius, position)
     local surface = player.surface
     local bounding_box = {
         left_top = {x = position.x - radius, y = position.y - radius},
@@ -189,7 +189,8 @@ function global.utils.inspect(player, radius, position)
                 data.contents = inventory
             end
 
-            data.warnings = global.utils.get_issues(entity)
+            -- data.warnings = global.get_issues(entity)
+            data.warnings = remote.call("alerts", "get_issues", entity)
 
             -- Get entity orientation if it has an orientation attribute
             if entity.type == "train-stop" or entity.type == "car" or entity.type == "locomotive" then

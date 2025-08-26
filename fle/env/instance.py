@@ -89,18 +89,26 @@ class FactorioInstance:
         self.peaceful = peaceful
         self.namespaces = [self.namespace_class(self, i) for i in range(num_agents)]
 
-        self.lua_script_manager = LuaScriptManager(self.rcon_client, cache_scripts)
-        self.script_dict = {
-            **self.lua_script_manager.lib_scripts,
-            **self.lua_script_manager.tool_scripts,
-        }
+        self.lua_script_manager = LuaScriptManager(
+            self.rcon_client, cache_scripts, verbose=True
+        )
 
         # Initialize hooks as dictionaries to organize callbacks by tool name
         self.pre_tool_hooks = {}
         self.post_tool_hooks = {}
 
         # Load the python controllers that correspond to the Lua scripts
-        self.lua_script_manager.load_init_into_game("initialise")
+        init_scripts = [
+            "initialise",
+            "utils",
+            "alerts",
+            "connection_points",
+            "recipe_fluid_connection_mappings",
+            "serialize",
+        ]
+        for script_name in init_scripts:
+            self.lua_script_manager.load_init_into_game(script_name)
+
         self.lua_script_manager.setup_tools(self)
 
         if inventory is None:
@@ -112,13 +120,10 @@ class FactorioInstance:
             self.first_namespace.score()
             print("Initial score:", self.initial_score)
         except Exception as e:
+            raise e
             print(e)
             # Invalidate cache if there is an error
             self.lua_script_manager = LuaScriptManager(self.rcon_client, False)
-            self.script_dict = {
-                **self.lua_script_manager.lib_scripts,
-                **self.lua_script_manager.tool_scripts,
-            }
             self.lua_script_manager.setup_tools(self)
             self.initialise(fast, all_technologies_researched, clear_entities)
 
@@ -291,17 +296,10 @@ class FactorioInstance:
         self, fast=True, all_technologies_researched=True, clear_entities=True
     ):
         self.rcon_client.send_command(f"/sc global.fast = {str(fast).lower()}")
-        self.first_namespace._create_agent_characters(self.num_agents)
 
-        init_scripts = [
-            "utils",
-            "alerts",
-            "connection_points",
-            "recipe_fluid_connection_mappings",
-            "serialize",
-        ]
-        for script_name in init_scripts:
-            self.lua_script_manager.load_init_into_game(script_name)
+        self.lua_script_manager.finalise_actions_table()
+
+        self.first_namespace._create_agent_characters(self.num_agents)
 
         if self.peaceful:
             self.rcon_client.send_command("/sc global.remove_enemies()")

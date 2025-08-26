@@ -1,4 +1,3 @@
--- Helper function to get fluid type from ingredient/product
 local function get_fluid_type(item)
     if item.type == "fluid" then
         return item.name
@@ -86,7 +85,7 @@ local function rotate_coordinates(x_offset, y_offset, direction)
     end
 end
 
-global.utils.get_refinery_fluid_mappings = function(entity, recipe)
+utils.get_refinery_fluid_mappings = function(entity, recipe)
     if not entity or not recipe then return nil end
     if not entity.position then return nil end
 
@@ -127,7 +126,7 @@ global.utils.get_refinery_fluid_mappings = function(entity, recipe)
 end
 
 -- Helper function to map connection points to fluid types for chemical plant
-global.utils.get_chemical_plant_fluid_mappings = function(entity, recipe)
+utils.get_chemical_plant_fluid_mappings = function(entity, recipe)
     if not entity or not recipe then return nil end
     if not entity.position then return nil end
 

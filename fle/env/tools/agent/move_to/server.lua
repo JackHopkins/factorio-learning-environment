@@ -1,13 +1,20 @@
--- move_to
+local M = {}
 
+M.events = {}
+
+M.actions = {}
+
+-- move_to
 -- Register the tick handler when the module is loaded
-if not global.fast then
-    script.on_nth_tick(5, function(event)
-        if global.walking_queues then
-            global.actions.update_walking_queues()
+M.nth = {
+    {5, function(event)
+        if not global.fast then
+            if global.walking_queues then
+                remote.call("actions", "update_walking_queues")
+            end
         end
-    end)
-end
+    end}
+}
 
 --local function get_direction(from_pos, to_pos)
 --    local dx = to_pos.x - from_pos.x
@@ -21,8 +28,7 @@ end
 --    end
 --end
 
-
-global.actions.move_to = function(player_index, path_handle, trailing_entity, is_trailing)
+M.actions.move_to = function(player_index, path_handle, trailing_entity, is_trailing)
     --local player = global.agent_characters[player_index]
     local player = global.agent_characters[player_index]
     local path = global.paths[path_handle]
@@ -66,7 +72,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
             global.walking_queues[player_index].current_target = target
             player.walking_state = {
                 walking = true,
-                direction = global.utils.get_direction(player.position, target)
+                direction = utils.get_direction(player.position, target)
             }
         end
 
@@ -89,7 +95,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
     end
 
     local function place(place_position, direction)
-        if global.utils.can_place_entity(player, trailing_entity, place_position, direction) then
+        if utils.can_place_entity(player, trailing_entity, place_position, direction) then
             if player.get_item_count(trailing_entity) > 0 then
                 local created = surface.create_entity{name=trailing_entity, position=place_position, direction=direction, force='player', player=player, build_check_type=defines.build_check_type.manual, fast_replace=true}
                 if created then
@@ -163,10 +169,9 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
         local target_position = path[i].position
 
         -- Calculate and accumulate movement ticks before teleporting
-        global.elapsed_ticks = global.elapsed_ticks + global.utils.calculate_movement_ticks(player, prev_pos, target_position)
+        global.elapsed_ticks = global.elapsed_ticks + utils.calculate_movement_ticks(player, prev_pos, target_position)
 
-
-        local direction = global.utils.get_direction(prev_pos, target_position)
+        local direction = utils.get_direction(prev_pos, target_position)
 
         if not direction then
             goto continue
@@ -181,7 +186,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
                 --game.print("Placing at direction: " .. direction .. " Current position: " .. serpent.line(prev_pos) .. " Target position: " .. serpent.line(target_position))
                 new_belt = place(prev_pos, direction)
                 if prev_belt then
-                    rotate_entity(prev_belt, global.utils.get_direction(prev_belt.position, prev_pos))
+                    rotate_entity(prev_belt, utils.get_direction(prev_belt.position, prev_pos))
                 end
             end
             player.teleport(target_position)
@@ -195,7 +200,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
                 new_direction = opposite_direction[direction/2+1]
                 new_belt = place(target_position, new_direction)
                 if prev_belt then
-                    rotate_entity(prev_belt, global.utils.get_direction(prev_belt.position, current_position))
+                    rotate_entity(prev_belt, utils.get_direction(prev_belt.position, current_position))
                 end
             end
             player.teleport(target_position)
@@ -212,7 +217,7 @@ end
 
 -- Add this new function to handle the walking queue updates
 -- This should be called on every tick
-global.actions.update_walking_queues = function()
+M.actions.update_walking_queues = function()
     if not global.walking_queues then return end
 
     for player_index, queue in pairs(global.walking_queues) do
@@ -232,7 +237,7 @@ global.actions.update_walking_queues = function()
                 queue.current_target = queue.positions[1]
                 player.walking_state = {
                     walking = true,
-                    direction = global.utils.get_direction_with_diagonals(player.position, queue.current_target)
+                    direction = utils.get_direction_with_diagonals(player.position, queue.current_target)
                 }
             else
                 -- Queue is empty, stop walking
@@ -243,7 +248,7 @@ global.actions.update_walking_queues = function()
             -- Update walking direction to current target
             player.walking_state = {
                 walking = true,
-                direction = global.utils.get_direction_with_diagonals(player.position, queue.current_target)
+                direction = utils.get_direction_with_diagonals(player.position, queue.current_target)
             }
         end
 
@@ -251,15 +256,17 @@ global.actions.update_walking_queues = function()
     end
 end
 
-global.actions.clear_walking_queue = function(player_index)
+M.actions.clear_walking_queue = function(player_index)
     if global.walking_queues and global.walking_queues[player_index] then
         global.walking_queues[player_index] = nil
     end
 end
 
-global.actions.get_walking_queue_length = function(player_index)
+M.actions.get_walking_queue_length = function(player_index)
     if global.walking_queues and global.walking_queues[player_index] then
         return #global.walking_queues[player_index].positions
     end
     return 0
 end
+
+return M

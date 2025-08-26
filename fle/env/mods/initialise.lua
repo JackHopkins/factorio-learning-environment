@@ -2,14 +2,14 @@
 --- This file is used to initialise the global variables and functions.
 --- Ensure this is loaded first. Any variables or functions defined here will be available to all other scripts.
 
-if not global.actions then
+if not actions then
     --- @type table Actions table
-    global.actions = {}
+   actions = {}
 end
 
-if not global.utils then
+if not utils then
     --- @type table Utils table
-    global.utils = {}
+    utils = {}
 end
 
 if not global.initial_score then

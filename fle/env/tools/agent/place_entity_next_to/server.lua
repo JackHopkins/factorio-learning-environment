@@ -1,3 +1,9 @@
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
 local function validate_mining_drill_placement(surface, position, entity_name)
     -- Check if the entity is a mining drill
     local prototype = game.entity_prototypes[entity_name]
@@ -22,8 +28,7 @@ local function validate_mining_drill_placement(surface, position, entity_name)
     return #resources > 0
 end
 
-
-global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_y, direction, gap)
+M.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_y, direction, gap)
     local player = global.agent_characters[player_index]
     local ref_position = {x = ref_x, y = ref_y}
 
@@ -54,7 +59,6 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
                entity_name == "fast-transport-belt" or
                entity_name == "express-transport-belt"
     end
-
 
     local function calculate_position(direction, ref_pos, ref_entity, gap, is_belt, entity_to_place)
         local new_pos = {x = ref_pos.x, y = ref_pos.y}
@@ -201,7 +205,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         end
     end
 
-    local orientation = global.utils.get_entity_direction(entity, direction)
+    local orientation = utils.get_entity_direction(entity, direction)
 
     if ref_entity then
         local prototype = game.entity_prototypes[ref_entity.name]
@@ -230,7 +234,6 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         entity_height = math.abs(entity_box.right_bottom.x - entity_box.left_top.x)
         entity_width = math.abs(entity_box.right_bottom.y - entity_box.left_top.y)
     end
-
 
     local target_area = {
         {new_position.x - entity_width / 2, new_position.y - entity_height / 2},
@@ -286,7 +289,6 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         time_to_live = 60000
     })
 
-
     local items = player.surface.find_entities_filtered{
         area = area,
         type = "item-on-ground"
@@ -295,7 +297,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         item.destroy()
     end
 
-    global.utils.avoid_entity(player_index, entity, new_position, direction)
+    utils.avoid_entity(player_index, entity, new_position, direction)
 
     local can_build = player.surface.can_place_entity({
         name = entity,
@@ -353,8 +355,10 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     local item_stack = {name = entity, count = 1}
     if player.get_main_inventory().can_insert(item_stack) then
         player.get_main_inventory().remove(item_stack)
-        return global.utils.serialize_entity(new_entity)
+        return utils.serialize_entity(new_entity)
     else
         error("Not enough items in inventory.")
     end
 end
+
+return M

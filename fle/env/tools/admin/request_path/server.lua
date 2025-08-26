@@ -1,9 +1,15 @@
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
 -- Store created entities globally
 if not global.clearance_entities then
     global.clearance_entities = {}
 end
 
-global.actions.request_path = function(player_index, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities, entity_size)
+M.actions.request_path = function(player_index, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities, entity_size)
     local player = global.agent_characters[player_index]
     if not player then return nil end
     local size = entity_size/2 - 0.01
@@ -27,7 +33,7 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
 
     -- Add temporary collision entities
     local clearance_entities = {}
-    global.utils.avoid_entity(player_index, "iron-chest", {y = goal_y, x = goal_x})
+    utils.avoid_entity(player_index, "iron-chest", {y = goal_y, x = goal_x})
     
     local goal_position = player.surface.find_non_colliding_position(
         "iron-chest",
@@ -94,7 +100,7 @@ end
 --    end
 --end)
 
-script.on_event(defines.events.on_script_path_request_finished, function(event)
+M.events[defines.events.on_script_path_request_finished] = function(event)
     local request_data = global.path_requests[event.id]
     if not request_data then
         return
@@ -115,4 +121,6 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
         global.paths[event.id] = "not_found"
         -- log("Path not found for request ID: " .. event.id)
     end
-end)
+end
+
+return M

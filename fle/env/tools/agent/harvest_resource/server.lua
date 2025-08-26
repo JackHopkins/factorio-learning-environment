@@ -1,4 +1,10 @@
---- global.actions.harvest_resource(player_index, x, y, count, radius)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+--- remote.call("actions", "harvest_resource", player_index, x, y, count, radius)
 local function calculate_mining_ticks(entity)
     local mining_time = entity.prototype.mineable_properties.mining_time or 1
     -- Convert mining time (in seconds) to ticks (60 ticks per second)
@@ -57,7 +63,6 @@ local function start_mining_entity(player, entity)
             }
         end
 
-
         -- Calculate expected yield
         local expected_yield = 0
         local products = entity.prototype.mineable_properties.products
@@ -73,7 +78,6 @@ local function start_mining_entity(player, entity)
     end
     return nil
 end
-
 
 local function add_entities_to_queue(queue, entities, count)
     local expected_yield = 0
@@ -102,7 +106,9 @@ local function add_entities_to_queue(queue, entities, count)
     return expected_yield
 end
 
-script.on_nth_tick(15, function(event)
+
+M.nth = {
+    15, function(event)
     -- If no queues at all, just return
     if not global.harvest_queues then return end
 
@@ -202,8 +208,8 @@ script.on_nth_tick(15, function(event)
         end
         ::continue::
     end
-end)
-
+end
+}
 
 local function check_inventory_space(player, entity, count)
     -- Get player's main inventory
@@ -237,7 +243,6 @@ local function check_inventory_space(player, entity, count)
 
     return true
 end
-
 
 local function find_entity_type_at_position(surface, position)
     local exact_entities = surface.find_entities_filtered{
@@ -277,7 +282,6 @@ local function harvest_specific_resources(player, surface, position, count, targ
     end
 end
 
-
 local function find_entities_at_position(surface, position, entity_types, exact)
     local radius = exact and 0.1 or nil  -- Use tiny radius for exact position check
     return surface.find_entities_filtered{
@@ -313,7 +317,6 @@ local function initialize_harvest_queue(player_index, position, target_yield)
 
    return global.harvest_queues[player_index]
 end
-
 
 local function harvest_resource_slow(player, player_index, surface, position, count)
    local exact_entities = find_entities_at_position(surface, position, {"tree", "resource"}, true)
@@ -353,7 +356,6 @@ function harvest(entities, count, from_position, player)
     if reference_entity then
         check_inventory_space(player, reference_entity, count)
     end
-
 
     entities = sort_entities_by_distance(entities, from_position)
 
@@ -453,8 +455,7 @@ local function harvest_simple_entities(entities, count, from_position, player)
     return yield
 end
 
-
-global.actions.harvest_resource = function(player_index, x, y, count, radius)
+M.actions.harvest_resource = function(player_index, x, y, count, radius)
     local player = global.agent_characters[player_index]
     if not player then
         error("Player not found")
@@ -527,7 +528,7 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
     end
 end
 --
---global.actions.harvest_resource2 = function(player_index, x, y, count, radius)
+--M.actions.harvest_resource2 = function(player_index, x, y, count, radius)
 --    local player = global.agent_characters[player_index]
 --    if not player then
 --        error("Player not found")
@@ -585,21 +586,20 @@ end
 --    end
 --end
 
-
-global.actions.clear_harvest_queue = function(player_index)
+M.actions.clear_harvest_queue = function(player_index)
     if global.harvest_queues and global.harvest_queues[player_index] then
         global.harvest_queues[player_index] = nil
     end
 end
 
-global.actions.get_harvest_queue_length = function(player_index)
+M.actions.get_harvest_queue_length = function(player_index)
     if global.harvest_queues and global.harvest_queues[player_index] then
         return #global.harvest_queues[player_index].entities
     end
     return 0
 end
 
-global.actions.get_resource_name_at_position = function(player_index, x, y)
+M.actions.get_resource_name_at_position = function(player_index, x, y)
     local player = global.agent_characters[player_index]
     if not player then
         error("Player not found")
@@ -620,3 +620,5 @@ global.actions.get_resource_name_at_position = function(player_index, x, y)
     end
     return entity_name
 end
+
+return M

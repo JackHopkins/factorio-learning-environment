@@ -1,4 +1,14 @@
+local M = {}
+
+M.events = {}
+M.nth = {}
+
 global.alerts = {}
+
+-- Define a helper function to round a number to the nearest 0.5
+local function round_to_half(number)
+    return math.floor(number * 2 + 0.5) / 2
+end
 
 -- Define a function to check if the transport belt is blocked
 local function is_transport_belt_blocked(entity)
@@ -240,8 +250,48 @@ local function is_inserter_waiting_for_source(entity)
     return false
 end
 
+local function is_not_fluid(name)
+    local items = { "crude-oil", "petroleum-gas", "sulfuric-acid", "water", "steam", "light-oil", "heavy-oil", "lubricant" }
+    for _,v in pairs(items) do
+      if v == name then
+        return false
+      end
+    end
+    return true
+end
 
-function global.utils.get_issues(entity)
+-- Define a function to check if the entity is an assembler machine and lacks resources
+local function lacks_assembler_resources(entity)
+    if entity.type == "assembling-machine" then
+        local recipe = entity.get_recipe()
+        if recipe then
+            local ingredients = recipe.ingredients
+            local input_inventory = entity.get_inventory(defines.inventory.assembling_machine_input)
+            local missing_resources = {}
+
+            for _, ingredient in pairs(ingredients) do
+                -- don't perform a check in the case of liquids like crude-oil, water etc.
+                if is_not_fluid(ingredient.name) then
+                    if game.item_prototypes[ingredient.name].type ~= "fluid" then
+                        local available_amount = input_inventory.get_item_count(ingredient.name)
+                        local missing_amount = ingredient.amount - available_amount
+                        if missing_amount > 0 then
+                            table.insert(missing_resources, ingredient.name .. " (" .. tostring(missing_amount) .. ")")
+                        end
+                    end
+                end
+            end
+
+            if #missing_resources > 0 then
+                return "\'cannot create " .. recipe.name .. " due to missing resources: " .. table.concat(missing_resources, ",_").."\'"
+
+            end
+        end
+    end
+    return false
+end
+
+utils.get_issues = function(entity)
     local issues = {}
 
     if not can_mine(entity) then
@@ -320,51 +370,6 @@ function global.utils.get_issues(entity)
     end
     return issues
 end
-function is_not_fluid(name)
-    local items = { "crude-oil", "petroleum-gas", "sulfuric-acid", "water", "steam", "light-oil", "heavy-oil", "lubricant" }
-    for _,v in pairs(items) do
-      if v == name then
-        return false
-      end
-    end
-    return true
-end
--- Define a function to check if the entity is an assembler machine and lacks resources
-function lacks_assembler_resources(entity)
-    if entity.type == "assembling-machine" then
-        local recipe = entity.get_recipe()
-        if recipe then
-            local ingredients = recipe.ingredients
-            local input_inventory = entity.get_inventory(defines.inventory.assembling_machine_input)
-            local missing_resources = {}
-
-            for _, ingredient in pairs(ingredients) do
-                -- don't perform a check in the case of liquids like crude-oil, water etc.
-                if is_not_fluid(ingredient.name) then
-                    if game.item_prototypes[ingredient.name].type ~= "fluid" then
-                        local available_amount = input_inventory.get_item_count(ingredient.name)
-                        local missing_amount = ingredient.amount - available_amount
-                        if missing_amount > 0 then
-                            table.insert(missing_resources, ingredient.name .. " (" .. tostring(missing_amount) .. ")")
-                        end
-                    end
-                end
-            end
-
-            if #missing_resources > 0 then
-                return "\'cannot create " .. recipe.name .. " due to missing resources: " .. table.concat(missing_resources, ",_").."\'"
-
-            end
-        end
-    end
-    return false
-end
-
--- Define a helper function to round a number to the nearest 0.5
-function round_to_half(number)
-    return math.floor(number * 2 + 0.5) / 2
-end
-
 
 -- Define a function to be called every tick
 local function on_tick(event)
@@ -373,7 +378,7 @@ local function on_tick(event)
         for _, surface in pairs(game.surfaces) do
             local entities = surface.find_entities_filtered({force = "player"})
             for _, entity in pairs(entities) do
-                local issues = global.utils.get_issues(entity)
+                local issues = remote.call("alerts", "get_issues", entity)
 
                 if #issues > 0 then
                     local position = entity.position
@@ -393,8 +398,10 @@ local function on_tick(event)
     end
 end
 
+M.events[defines.events.on_tick] = on_tick
+
 -- Define a function to get alerts older than the number of seconds
-global.get_alerts = function(seconds)
+M.get_alerts = function(seconds)
     local current_tick = game.tick
     local old_alerts = {}
 
@@ -408,5 +415,6 @@ global.get_alerts = function(seconds)
     return old_alerts
 end
 
--- Register the on_tick function to the on_tick event
-script.on_event(defines.events.on_tick, on_tick)
+remote.add_interface("alerts", {get_issues = utils.get_issues, get_alerts = M.get_alerts})
+
+return M

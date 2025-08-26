@@ -1,3 +1,9 @@
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
 -- connect_entities
 
 local MAX_SERIALIZATION_ITERATIONS = 1000  -- Maximum iterations for serializing belt groups
@@ -91,7 +97,6 @@ local function is_position_saturated(position, reach)
     return true -- All corners are covered
 end
 
-
 function get_step_size(connection_type)
     return wire_reach[connection_type] or 1
 end
@@ -146,7 +151,6 @@ local function split_section_into_underground_segments(section, path, range, max
     local iteration_count = 0
     local MAX_ITERATIONS = math.min(section.length * 2, MAX_UNDERGROUND_SEGMENTS) -- Prevent excessive iterations
 
-
     while current_start + 1 < effective_end and segment_count < max_segments do
         iteration_count = iteration_count + 1
         if iteration_count > MAX_ITERATIONS then
@@ -173,7 +177,6 @@ local function split_section_into_underground_segments(section, path, range, max
             current_start = current_start + 1
         end
     end
-
 
     return segments
 end
@@ -295,7 +298,7 @@ local function serialize_belt_group(entity)
         end
 
         seen[belt.unit_number] = true
-        local belt_data = global.utils.serialize_entity(belt)
+        local belt_data = utils.serialize_entity(belt)
         table.insert(serialized, belt_data)
 
         -- Get connected belt entities
@@ -313,7 +316,6 @@ local function serialize_belt_group(entity)
 
     return serialized
 end
-
 
 local function are_poles_connected(entity1, entity2)
     if not (entity1 and entity2) then return false end
@@ -369,7 +371,6 @@ local function find_placeable_neighbor(pos, previous_pos)
     end
     return nil
 end
-
 
 local function interpolate_manhattan(pos1, pos2)
     local interpolated = {}
@@ -443,8 +444,6 @@ local function interpolate_manhattan(pos1, pos2)
     return interpolated
 end
 
-
-
 local function place_at_position(player, connection_type, current_position, dir, serialized_entities, dry_run, counter_state, is_underground_exit)
 
     local is_electric_pole = wire_reach[connection_type] ~= nil
@@ -507,11 +506,11 @@ local function place_at_position(player, connection_type, current_position, dir,
         -- Update or add to serialized list
         for i, serialized in ipairs(serialized_entities) do
             if serialized.position.x == current_position.x and serialized.position.y == current_position.y then
-                serialized_entities[i] = global.utils.serialize_entity(existing_entity)
+                serialized_entities[i] = utils.serialize_entity(existing_entity)
                 return existing_entity
             end
         end
-        table.insert(serialized_entities, global.utils.serialize_entity(existing_entity))
+        table.insert(serialized_entities, utils.serialize_entity(existing_entity))
         return existing_entity
 
     else
@@ -536,19 +535,19 @@ local function place_at_position(player, connection_type, current_position, dir,
                 force = player.force
             })
         else
-            can_place = global.utils.can_place_entity(player, connection_type, placement_position, dir)
+            can_place = utils.can_place_entity(player, connection_type, placement_position, dir)
         end
 
-        --local can_place = global.utils.avoid_entity(1, connection_type, placement_position, dir)
+        --local can_place = utils.avoid_entity(1, connection_type, placement_position, dir)
         --if not can_build then
         --    error("Cannot place the entity at the specified position: x="..position.x..", y="..position.y)
         --end
         --local player_position = player.position
        -- player.teleport({placement_position.x, placement_position.y})
-        --local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)
+        --local can_place = remote.call("actions", "can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity", entity_variant)
         --player.teleport(player_position)
 
-        --local can_place = global.utils.avoid_entity(1, connection_type, placement_position, dir)
+        --local can_place = utils.avoid_entity(1, connection_type, placement_position, dir)
         rendering.draw_circle{only_in_alt_mode=true, width = 0.25, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.5, filled = false, target = placement_position, time_to_live = 12000}
 
         if dry_run and can_place == false then
@@ -567,16 +566,15 @@ local function place_at_position(player, connection_type, current_position, dir,
             error("Cannot connect due to placement blockage 1.")
         end
 
-
         -- Place entity
         if can_place and not dry_run then
-            --global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
+            --utils.avoid_entity(player.index, connection_type, placement_position, dir)
 
             local placed_entity = game.surfaces[1].create_entity(entity_variant)
             if placed_entity then
                 player.remove_item({name = connection_type, count = 1})
                 counter_state.place_counter = counter_state.place_counter + 1
-                table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
+                table.insert(serialized_entities, utils.serialize_entity(placed_entity))
                 return placed_entity
             end
         
@@ -586,7 +584,7 @@ local function place_at_position(player, connection_type, current_position, dir,
 
         else
             -- game.print("Avoiding entity at " .. placement_position.x.. ", " .. placement_position.y)
-            -- global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
+            -- utils.avoid_entity(player.index, connection_type, placement_position, dir)
 
             -- error("Cannot place entity")
             --local entities = player.surface.find_entities_filtered{position=placement_position, radius=0.5, type = {"beam", "resource", "player"}, invert=true}
@@ -609,7 +607,7 @@ local function place_at_position(player, connection_type, current_position, dir,
             --    if placed_entity then
             --        player.remove_item({name = connection_type, count = 1})
             --        counter_state.place_counter = counter_state.place_counter + 1
-            --        table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
+            --        table.insert(serialized_entities, utils.serialize_entity(placed_entity))
             --        return placed_entity
             --    end
             --
@@ -644,14 +642,14 @@ local function place_at_position(player, connection_type, current_position, dir,
             force = player.force
         })
     else
-        can_place = global.utils.can_place_entity(player, connection_type, placement_position, dir)
+        can_place = utils.can_place_entity(player, connection_type, placement_position, dir)
     end
     --local player_position = player.position
     --player.teleport({placement_position.x, placement_position.y})
-    --local can_place = global.actions.can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity(entity_variant)
+    --local can_place = remote.call("actions", "can_place_entity(1, connection_type, dir, placement_position.x, placement_position.y)--game.surfaces[1].can_place_entity", entity_variant)
     --player.teleport(player_position)
 
-    --local can_place = global.utils.avoid_entity(1, connection_type, placement_position, dir)
+    --local can_place = utils.avoid_entity(1, connection_type, placement_position, dir)
     rendering.draw_circle{only_in_alt_mode=true, width = 0.25, color = {r = 0, g = 1, b = 0}, surface = player.surface, radius = 0.5, filled = false, target = placement_position, time_to_live = 12000}
 
     if dry_run and can_place == false then
@@ -669,10 +667,9 @@ local function place_at_position(player, connection_type, current_position, dir,
         error("Cannot connect due to placement blockage.")
     end
 
-
     -- Place entity
     if can_place and not dry_run then
-        --global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
+        --utils.avoid_entity(player.index, connection_type, placement_position, dir)
 
         local placed_entity = game.surfaces[1].create_entity({
             name = connection_type,
@@ -685,7 +682,7 @@ local function place_at_position(player, connection_type, current_position, dir,
         if placed_entity then
             player.remove_item({name = connection_type, count = 1})
             counter_state.place_counter = counter_state.place_counter + 1
-            table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
+            table.insert(serialized_entities, utils.serialize_entity(placed_entity))
             return placed_entity
         end
     
@@ -695,7 +692,7 @@ local function place_at_position(player, connection_type, current_position, dir,
 
     else
         -- game.print("Avoiding entity at " .. placement_position.x.. ", " .. placement_position.y)
-        -- global.utils.avoid_entity(player.index, connection_type, placement_position, dir)
+        -- utils.avoid_entity(player.index, connection_type, placement_position, dir)
 
         -- error("Cannot place entity")
         --local entities = player.surface.find_entities_filtered{position=placement_position, radius=0.5, type = {"beam", "resource", "player"}, invert=true}
@@ -718,7 +715,7 @@ local function place_at_position(player, connection_type, current_position, dir,
         --    if placed_entity then
         --        player.remove_item({name = connection_type, count = 1})
         --        counter_state.place_counter = counter_state.place_counter + 1
-        --        table.insert(serialized_entities, global.utils.serialize_entity(placed_entity))
+        --        table.insert(serialized_entities, utils.serialize_entity(placed_entity))
         --        return placed_entity
         --    end
         --
@@ -743,7 +740,6 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
     local start_position = {x = math.floor(source_x*2)/2, y = math.floor(source_y*2)/2}
     local end_position = {x = target_x, y = target_y}
 
-
     local raw_path = global.paths[path_handle]
     -- game.print("Path length "..#raw_path)
     -- game.print(serpent.line(start_position).." - "..serpent.line(end_position))
@@ -753,7 +749,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
     end
 
     -- game.print("Normalising", {print_skip=defines.print_skip.never})
-    local path = global.utils.normalise_path(raw_path, start_position, end_position)
+    local path = utils.normalise_path(raw_path, start_position, end_position)
 
     -- Get default and underground connection types
     local default_connection_type = default_connect_types[connection_types[1]] or connection_types[1]
@@ -777,29 +773,26 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         rendering.draw_line{only_in_alt_mode=true, surface = player.surface, from = raw_path[i].position, to =  raw_path[i + 1].position, color = {1, 1, 0}, width = 0,  dash_length=0.2, gap_length = 0.2}
     end
 
-
     local last_position = start_position
     local step_size = wire_reach[default_connection_type] or 1
     local is_electric_pole = wire_reach[default_connection_type] ~= nil
 
-
     for i = 1, #path-1, step_size do
-        global.elapsed_ticks = global.elapsed_ticks + global.utils.calculate_movement_ticks(player, last_position, path[i].position)
+        global.elapsed_ticks = global.elapsed_ticks + utils.calculate_movement_ticks(player, last_position, path[i].position)
         last_position = path[i].position
     end
 
     local serialized_entities = {}
 
     -- Get source and target entities
-    local source_entity = global.utils.get_closest_entity(player, {x = source_x, y = source_y})
-    local target_entity = global.utils.get_closest_entity(player, {x = target_x, y = target_y})
-
+    local source_entity = utils.get_closest_entity(player, {x = source_x, y = source_y})
+    local target_entity = utils.get_closest_entity(player, {x = target_x, y = target_y})
 
     if #connection_types == 1 and connection_types[1] == 'pipe-to-ground' then
         
         -- Calculate the direction from start to end.
-        local dir = global.utils.get_direction(start_position, end_position)
-        local entrance_dir = global.utils.get_entity_direction(underground_type, dir / 2)
+        local dir = utils.get_direction(start_position, end_position)
+        local entrance_dir = utils.get_entity_direction(underground_type, dir / 2)
         
         -- Place the underground entrance at the start position.
         place_at_position(player, underground_type, start_position, entrance_dir,
@@ -808,9 +801,9 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         local exit_dir
         if underground_type == "pipe-to-ground" then
           -- For pipe-to-ground, rotate the direction 180° for the exit.
-          exit_dir = global.utils.get_entity_direction(underground_type, (dir / 2 + 2) % 4)
+          exit_dir = utils.get_entity_direction(underground_type, (dir / 2 + 2) % 4)
         else
-          exit_dir = global.utils.get_entity_direction(underground_type, dir / 2)
+          exit_dir = utils.get_entity_direction(underground_type, dir / 2)
         end
         
         -- Place the underground exit at the end position.
@@ -824,7 +817,6 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         }
     end
 
-
     if underground_type then
         -- Calculate maximum possible underground sections based on inventory
         local max_underground_sections = calculate_max_underground_sections(player, underground_type)
@@ -835,9 +827,6 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
         -- Track remaining underground sections we can create
         local remaining_sections = max_underground_sections
-
-
-
 
         local current_index = 1
         for _, section in ipairs(straight_sections) do
@@ -851,9 +840,9 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
             while current_index < section.start_index do
                 local current_pos = path[current_index].position
                 local next_pos = path[current_index + 1].position
-                local dir = global.utils.get_direction(current_pos, next_pos)
+                local dir = utils.get_direction(current_pos, next_pos)
                 place_at_position(player, default_connection_type, current_pos,
-                        global.utils.get_entity_direction(default_connection_type, dir/2),
+                        utils.get_entity_direction(default_connection_type, dir/2),
                         serialized_entities, dry_run, counter_state, false)
                 current_index = current_index + 1
                 if current_index > MAX_INDEX_PLACEMENT then
@@ -864,9 +853,9 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
             -- Place initial surface entity for direction change
             local margin_pos = path[section.start_index].position
             local margin_next_pos = path[section.start_index + 1].position
-            local margin_dir = global.utils.get_direction(margin_pos, margin_next_pos)
+            local margin_dir = utils.get_direction(margin_pos, margin_next_pos)
             place_at_position(player, default_connection_type, margin_pos,
-                    global.utils.get_entity_direction(default_connection_type, margin_dir/2),
+                    utils.get_entity_direction(default_connection_type, margin_dir/2),
                     serialized_entities, dry_run, counter_state, false)
 
             -- Split the section into multiple underground segments, limited by remaining_sections
@@ -879,9 +868,9 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
                 -- Place underground entrance
                 local entrance_pos = path[segment.entrance_index].position
                 local exit_pos = path[segment.exit_index].position
-                local dir = global.utils.get_direction(entrance_pos, exit_pos)
+                local dir = utils.get_direction(entrance_pos, exit_pos)
 
-                local entity_dir = global.utils.get_entity_direction(underground_type, dir/2)
+                local entity_dir = utils.get_entity_direction(underground_type, dir/2)
 
                 place_at_position(player, underground_type, entrance_pos,
                         entity_dir,
@@ -889,7 +878,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
                 -- Adjust direction for pipe-to-ground exit and place exit pipe
                 if underground_type == 'pipe-to-ground' then
-                    entity_dir = global.utils.get_entity_direction(underground_type, (dir/2 + 2)%4)
+                    entity_dir = utils.get_entity_direction(underground_type, (dir/2 + 2)%4)
                 end
 
                 place_at_position(player, underground_type, exit_pos,
@@ -903,9 +892,9 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
             if #segments > 0 then
                 local final_margin_pos = path[section.end_index].position
                 local final_prev_pos = path[section.end_index - 1].position
-                local final_dir = global.utils.get_direction(final_prev_pos, final_margin_pos)
+                local final_dir = utils.get_direction(final_prev_pos, final_margin_pos)
                 place_at_position(player, default_connection_type, final_margin_pos,
-                        global.utils.get_entity_direction(default_connection_type, final_dir/2),
+                        utils.get_entity_direction(default_connection_type, final_dir/2),
                         serialized_entities, dry_run, counter_state, false)
             end
 
@@ -920,9 +909,9 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         while current_index < #path do
             local current_pos = path[current_index].position
             local next_pos = path[current_index + 1].position
-            local dir = global.utils.get_direction(current_pos, next_pos)
+            local dir = utils.get_direction(current_pos, next_pos)
             place_at_position(player, default_connection_type, current_pos,
-                    global.utils.get_entity_direction(default_connection_type, dir/2),
+                    utils.get_entity_direction(default_connection_type, dir/2),
                     serialized_entities, dry_run, counter_state, false)
             current_index = current_index + 1
         end
@@ -931,9 +920,9 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         if current_index == #path and not path[#path].has_entity then
             local final_pos = path[#path].position
             local prev_pos = path[#path-1].position
-            local dir = global.utils.get_direction(prev_pos, final_pos)
+            local dir = utils.get_direction(prev_pos, final_pos)
             place_at_position(player, default_connection_type, final_pos,
-                    global.utils.get_entity_direction(default_connection_type, dir/2),
+                    utils.get_entity_direction(default_connection_type, dir/2),
                     serialized_entities, dry_run, counter_state, false)
         end
     else
@@ -948,14 +937,14 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
             if #entities > 0 and #path > 1 then
                 -- Calculate initial direction based on first two points in path
-                local initial_dir = global.utils.get_direction(path[1].position, path[2].position)
-                --local entity_dir = global.utils.get_entity_direction('pipe', initial_dir/2)
+                local initial_dir = utils.get_direction(path[1].position, path[2].position)
+                --local entity_dir = utils.get_entity_direction('pipe', initial_dir/2)
 
                 -- Update source belt direction if needed
                 local source_belt = entities[1]
                 if source_belt and source_belt.valid and source_belt.direction ~= initial_dir then
                     source_belt.direction = initial_dir
-                    table.insert(serialized_entities, global.utils.serialize_entity(source_belt))
+                    table.insert(serialized_entities, utils.serialize_entity(source_belt))
                 end
             end
         end
@@ -966,15 +955,15 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
             for i = 1, #path, step_size do
                 local current_pos = path[i].position
-                local dir = global.utils.get_direction(current_pos, path[math.min(i + step_size, #path)].position)
-                local entity_dir = global.utils.get_entity_direction(default_connection_type, dir/2)
+                local dir = utils.get_direction(current_pos, path[math.min(i + step_size, #path)].position)
+                local entity_dir = utils.get_entity_direction(default_connection_type, dir/2)
 
                 -- Place the pole
                 local placed_entity = place_at_position(player, default_connection_type, current_pos, entity_dir, serialized_entities, dry_run, counter_state)
 
                 if not dry_run then
                     -- Get the newly placed pole
-                    local current_pole = placed_entity or global.utils.get_closest_entity(player, current_pos)
+                    local current_pole = placed_entity or utils.get_closest_entity(player, current_pos)
 
                     -- Check if we've achieved connectivity to the target
                     if are_poles_connected(current_pole, target_entity) then
@@ -987,10 +976,10 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
             -- If we haven't achieved connectivity yet, place one final pole at the target
             if not dry_run and last_pole and target_entity and not are_poles_connected(last_pole, target_entity) then
-                local final_dir = global.utils.get_direction(path[#path].position, end_position)
+                local final_dir = utils.get_direction(path[#path].position, end_position)
                 -- game.print("Placing final pole at "..serpent.line(end_position))
                 place_at_position(player, default_connection_type, end_position,
-                        global.utils.get_entity_direction(default_connection_type, final_dir/2),
+                        utils.get_entity_direction(default_connection_type, final_dir/2),
                         serialized_entities, dry_run, counter_state)
             end
         else
@@ -999,9 +988,9 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
             end
 
             for i = 1, #path-1, step_size do
-                local dir = global.utils.get_direction(path[i].position, path[math.min(i + step_size, #path)].position)
+                local dir = utils.get_direction(path[i].position, path[math.min(i + step_size, #path)].position)
                 local placed = place_at_position(player, default_connection_type, path[i].position,
-                        global.utils.get_entity_direction(default_connection_type, dir/2),
+                        utils.get_entity_direction(default_connection_type, dir/2),
                         serialized_entities, dry_run, counter_state)
                 if placed then
                     last_placed_entity = placed
@@ -1017,26 +1006,26 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
                 -- Place intermediate and final pipes
                 place_at_position(player, 'pipe', path[#path].position,
-                        global.utils.get_direction(path[#path].position, preemptive_target),
+                        utils.get_direction(path[#path].position, preemptive_target),
                         serialized_entities, dry_run, counter_state)
 
                 place_at_position(player, 'pipe', preemptive_target,
-                        global.utils.get_direction(path[#path].position, preemptive_target),
+                        utils.get_direction(path[#path].position, preemptive_target),
                         serialized_entities, dry_run, counter_state)
 
                 place_at_position(player, 'pipe', end_position,
-                        global.utils.get_direction(preemptive_target, end_position),
+                        utils.get_direction(preemptive_target, end_position),
                         serialized_entities, dry_run, counter_state)
             else
                 local last_path_index = #path
                 local second_to_last_index = math.max(1, last_path_index - 1)
-                local final_dir = global.utils.get_direction(
+                local final_dir = utils.get_direction(
                         path[second_to_last_index].position,
                         path[last_path_index].position
                 )
 
                 local final_entity = place_at_position(player, default_connection_type, end_position,
-                        global.utils.get_entity_direction(default_connection_type, final_dir/2),
+                        utils.get_entity_direction(default_connection_type, final_dir/2),
                         serialized_entities, dry_run, counter_state)
 
                 if final_entity then
@@ -1072,7 +1061,6 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
     -- game.print("Connection status: " .. tostring(is_connected))
 
-
     return {
         entities = serialized_entities,
         connected = is_connected,
@@ -1080,7 +1068,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
     }
 end
 
-global.utils.normalise_path = function(original_path, start_position, end_position)
+utils.normalise_path = function(original_path, start_position, end_position)
     local path = {}
     local seen = {}  -- To track seen positions
     if original_path == nil or #original_path < 1 or original_path == "not_found" then
@@ -1188,7 +1176,7 @@ local function are_belt_directions_compatible(dir1, dir2, pos1, pos2)
     -- This is a simplified check - you may need to adjust based on your specific needs
     if dir1 == dir2 then
         -- Same direction - check if it matches position delta
-        local expected_dir = global.utils.get_direction(pos1, pos2)
+        local expected_dir = utils.get_direction(pos1, pos2)
         return dir1 == expected_dir
     else
         -- Different directions - check if they form a valid turn
@@ -1196,7 +1184,6 @@ local function are_belt_directions_compatible(dir1, dir2, pos1, pos2)
         return are_positions_adjacent(pos1, pos2)
     end
 end
-
 
 -- Function to validate belt connectivity
 local function validate_belt_connectivity(path)
@@ -1216,9 +1203,9 @@ local function validate_belt_connectivity(path)
         end
 
         -- Calculate directions for current and next position
-        local current_dir = global.utils.get_direction(current_pos, next_pos)
+        local current_dir = utils.get_direction(current_pos, next_pos)
         local next_dir = i < #path - 1 and
-                        global.utils.get_direction(next_pos, path[i + 2].position) or
+                        utils.get_direction(next_pos, path[i + 2].position) or
                         current_dir
 
         -- Check direction compatibility
@@ -1262,7 +1249,7 @@ local function connect_entities_with_validation(player_index, source_x, source_y
             --break
         elseif connection_type:find("belt") then
             -- Normalize path first
-            local normalized_path = global.utils.normalise_path(path,
+            local normalized_path = utils.normalise_path(path,
                     {x = source_x, y = source_y},
                     {x = target_x, y = target_y})
 
@@ -1280,9 +1267,8 @@ local function connect_entities_with_validation(player_index, source_x, source_y
                           path_handle, connection_types, dry_run)
 end
 
-
 -- Using the new shortest_path function.
-global.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type_string, dry_run, number_of_connection_entities)
+M.actions.connect_entities = function(player_index, source_x, source_y, target_x, target_y, path_handle, connection_type_string, dry_run, number_of_connection_entities)
 
     local connection_types = {}
     for item in string.gmatch(connection_type_string, "([^,]+)") do
@@ -1305,3 +1291,5 @@ global.actions.connect_entities = function(player_index, source_x, source_y, tar
 
     return result
 end
+
+return M

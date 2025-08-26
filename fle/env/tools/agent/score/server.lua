@@ -1,3 +1,9 @@
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
 local function get_total_production_counts(production_statistics)
   local produced = production_statistics.input_counts
   local consumed = production_statistics.output_counts
@@ -349,7 +355,7 @@ if scores then
     global.initial_score = scores
 end
 
-global.actions.score = function()
+M.actions.score = function()
     local production_score = production_score.get_production_scores()
     production_score["player"] = production_score["player"] - global.initial_score["player"]
     
@@ -369,3 +375,5 @@ global.actions.score = function()
     end
     return dump(production_score)
 end
+
+return M

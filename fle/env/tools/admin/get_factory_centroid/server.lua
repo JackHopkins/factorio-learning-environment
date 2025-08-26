@@ -1,3 +1,9 @@
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
 -- Initialize global camera tracking variables in your script's initialization
 -- Put this in your script's on_init or when you initialize your global table
 function initialize_camera_tracking(initial_position)
@@ -73,7 +79,7 @@ function calculate_factory_bounds(force)
 end
 
 -- Updated function to get factory centroid and update camera smoothly
-global.actions.get_factory_centroid = function(player)
+M.actions.get_factory_centroid = function(player)
     -- Default to player force if none specified
     local force = "player"
 
@@ -196,3 +202,5 @@ function update_camera_position()
     local dz = global.camera.target_zoom - global.camera.zoom
     global.camera.zoom = global.camera.zoom + dz * global.camera.zoom_smoothing
 end
+
+return M

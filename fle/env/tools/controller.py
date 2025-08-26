@@ -1,8 +1,9 @@
+import re
 import time
 from timeit import default_timer as timer
 from typing import List, Tuple, Dict, Any
 
-from slpp import slpp as lua, ParseError
+from slpp import slpp as lua
 
 from fle.env.entities import Direction
 from fle.env.lua_manager import LuaScriptManager
@@ -12,11 +13,35 @@ from fle.env.utils.rcon import _lua2python
 COMMAND = "/silent-command"
 
 
+def parse_lua_table(text):
+    a = re.search(r'\["a"\]\s*=\s*(true|false)', text)
+    b = re.search(r'\["b"\]\s*=\s*(.*?)(?=,\s*})', text, re.DOTALL)
+
+    if not b:
+        return {"a": a.group(1) == "true" if a else None, "b": None}
+
+    interim = b.group(1).strip()
+    func = re.search(r"interface function\s+([^:]+):", interim)
+    error = re.search(r":\d+:\s*(.*?)(?=\s*stack traceback:)", interim, re.DOTALL)
+    stack = re.search(r"stack traceback:\s*(.*)", interim, re.DOTALL)
+    if not func and not error:
+        return interim + " }"
+
+    return {
+        "a": a.group(1) == "true" if a else None,
+        "b": lua.decode(interim),
+        "function_name": func.group(1).strip() if func else None,
+        "error_string": error.group(1).strip() if error else None,
+        "stack_traceback": stack.group(1).strip() if stack else None,
+    }
+
+
 class Controller:
     def __init__(
         self,
         lua_script_manager: "LuaScriptManager",
         game_state: "FactorioNamespace",
+        verbose: bool = True,
         *args,
         **kwargs,
     ):
@@ -28,6 +53,7 @@ class Controller:
         self.player_index = (
             game_state.agent_index + 1
         )  # +1 because Factorio is 1-indexed
+        self.verbose = verbose
 
     def clean_response(self, response):
         def is_lua_list(d):
@@ -131,66 +157,92 @@ class Controller:
             script = command
         return script
 
+    def get_error_message(self, response):
+        try:
+            s = str(response)
+
+            # Trim stacktrace early to avoid picking quoted script fragments from the traceback
+            if "stack traceback" in s:
+                s = s.split("stack traceback", 1)[0]
+
+            # Prefer the last double-quoted substring if present (Factorio often wraps messages in quotes)
+            quoted = re.findall(r'"([^"]+)"', s)
+            if quoted:
+                return quoted[-1].strip()
+
+            # Fallback: take the segment after the last ':' but avoid common noise like 'in main chunk'
+            parts = s.split(":")
+            if parts:
+                candidate = (
+                    parts[-1]
+                    .replace('"', "")
+                    .replace("\\'", "")
+                    .replace("'", "")
+                    .strip()
+                )
+                if candidate.lower().startswith("in main chunk") and len(parts) > 1:
+                    candidate = (
+                        parts[-2]
+                        .replace('"', "")
+                        .replace("\\'", "")
+                        .replace("'", "")
+                        .strip()
+                    )
+                return candidate
+
+            return s
+        except Exception:
+            return str(response)
+
     def execute(self, *args) -> Tuple[Dict, Any]:
         try:
             start = time.time()
+            if self.verbose:
+                print(f"{self.name} -- Python Args: {args}")
             parameters = [lua.encode(arg) for arg in args]
-            invocation = f"pcall(global.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
+            # parameters = [item for item in parameters if item != '"nil"']
+            if self.verbose:
+                print(f"Lua Parameters: {parameters}")
+            response = self.connection.rcon_client.send_command(
+                f"/sc rcon.print(remote.interfaces['actions']['{self.name}'])"
+            )
+            if response == "false":
+                print(f"No action found for {self.name}: {response}")
+                return {}, "Action not found"
+            if parameters:
+                parameters_str = ", ".join(parameters)
+                invocation = (
+                    f"pcall(remote.call, 'actions', '{self.name}', {parameters_str})"
+                )
+            else:
+                invocation = f"pcall(remote.call, 'actions', '{self.name}')"
             wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
+            if self.verbose:
+                print(f"Wrapped command: {wrapped}")
             lua_response = self.connection.rcon_client.send_command(wrapped)
-
-            parsed, elapsed = _lua2python(invocation, lua_response, start=start)
+            if self.verbose:
+                print(f"Lua response: {lua_response}")
+                print("Lua response type: ", type(lua_response))
+                print("Lua custom decoded: ")
+                print(parse_lua_table(lua_response))
+                # print("Lua decoded: ", lua.decode(lua_response))
+            if "running interface function" in lua_response:
+                parsed = parse_lua_table(lua_response)
+            else:
+                parsed, elapsed = _lua2python(invocation, lua_response, start=start)
             if parsed is None:
                 return {}, lua_response  # elapsed
 
             if not parsed.get("a") and "b" in parsed and isinstance(parsed["b"], str):
-                # Extract the full error string from the RCON dump instead of truncating by colon
-                parts = lua_response.split('["b"] = ')
-                if len(parts) > 1:
-                    msg = parts[1]
-                    # Trim trailing table end and whitespace
-                    msg = msg.rstrip()
-                    if msg.endswith("}"):
-                        msg = msg[:-2] if len(msg) >= 2 else msg
-                    msg = msg.replace("!!", '"').strip()
-                    return msg, lua_response
-                # Fallback to the parsed string as-is
-                return parsed["b"], lua_response
+                # Return the raw Lua error; callers can extract a precise message if needed
+                # if self.verbose:
+                #     print(f"Lua error: {self.get_error_message(lua_response)}")
+                return parsed["error_string"], lua_response
 
             return parsed.get("b", {}), lua_response  # elapsed
 
         except Exception:
             return {}, -1
-
-    def execute2(self, *args) -> Tuple[Dict, Any]:
-        lua_response = ""
-        try:
-            start = time.time()
-            parameters = [lua.encode(arg) for arg in args]
-            invocation = f"pcall(global.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
-            wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
-            lua_response = self.connection.rcon_client.send_command(wrapped)
-            parsed, elapsed = _lua2python(invocation, lua_response, start=start)
-            if not parsed["a"] and "b" in parsed and isinstance(parsed["b"], str):
-                parts = lua_response.split('["b"] = ')
-                parts[1] = f"{parts[1][:-2]}" if parts[1][-1] == "}" else parts[1]
-                parsed["b"] = parts[1].replace("!!", '"')
-            if "b" not in parsed:
-                return {}, elapsed
-        except ParseError as e:
-            # If a non-string gets passed back from the Lua script, it will raise a ParseError
-            # Split by `["b"] = ` and take the second part, which is the returned value
-            try:
-                parts = lua_response.split('["b"] = ')
-                return parts[1][:-2], -1
-            except IndexError:
-                return e.args[0], -1
-            return lua_response, -1
-        except TypeError:
-            return lua_response, -1
-        except Exception:
-            return lua_response, -1
-        return parsed["b"], elapsed
 
     def send(self, command, *parameters, trace=False) -> List[str]:
         start = timer()

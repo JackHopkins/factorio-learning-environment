@@ -24,14 +24,28 @@ class SerializableFunction:
             # Store parameters with their annotations
             self.parameters = []
             for name, param in sig.parameters.items():
-                annotation = annotations["args"].get(name, None)
+                annotation = None
+                # Check if this is a custom FLE function with structured annotations
+                if "args" in annotations and isinstance(annotations["args"], dict):
+                    annotation = annotations["args"].get(name, None)
+                else:
+                    # Standard Python function annotations
+                    annotation = annotations.get(name, None)
+
                 annotation_str = None
                 if annotation:
                     annotation_str = getattr(annotation, "__name__", str(annotation))
                 self.parameters.append((name, str(param), annotation_str))
 
             # Store return annotation
-            self.return_annotation = annotations["args"].get("return", None)
+            self.return_annotation = None
+            if "args" in annotations and isinstance(annotations["args"], dict):
+                # Custom FLE function annotation structure
+                self.return_annotation = annotations["args"].get("return", None)
+            else:
+                # Standard Python function annotation
+                self.return_annotation = annotations.get("return", None)
+
             if self.return_annotation:
                 self.return_annotation = getattr(
                     self.return_annotation, "__name__", str(self.return_annotation)

@@ -49,6 +49,8 @@ def fle_eval(args):
     try:
         config_path = str(Path(args.config))
         asyncio.run(run_eval(config_path))
+    except KeyboardInterrupt:
+        sys.exit(0)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -96,4 +98,7 @@ Examples:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit(0)

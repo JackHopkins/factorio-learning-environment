@@ -367,7 +367,7 @@ local function add_burner_inventory(serialized, burner)
             local item = fuel_inventory[i]
             if item and item.valid_for_read then
 
-                table.insert(serialized.fuel_inventory, {name = "\""..iteutils.name.."\"", count = item.count})
+                table.insert(serialized.fuel_inventory, {name = "\""..item.name.."\"", count = item.count})
                 serialized.remaining_fuel = serialized.remaining_fuel + item.count
             end
         end
@@ -1276,7 +1276,7 @@ utils.serialize_entity = function(entity)
             for i = 1, #input_inventory do
                 local item = input_inventory[i]
                 if item and item.valid_for_read then
-                    table.insert(serialized.input_inventory, {name = "\""..iteutils.name.."\"", count = item.count})
+                    table.insert(serialized.input_inventory, {name = "\""..item.name.."\"", count = item.count})
                 end
             end
         end

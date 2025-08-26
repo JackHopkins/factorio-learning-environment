@@ -136,7 +136,12 @@ class Controller:
     def execute(self, *args) -> Tuple[Dict, Any]:
         try:
             start = time.time()
+            if self.verbose:
+                print(f"{self.name} -- Python Args: {args}")
             parameters = [lua.encode(arg) for arg in args]
+            # parameters = [item for item in parameters if item != '"nil"']
+            if self.verbose:
+                print(f"Lua Parameters: {parameters}")
             response = self.connection.rcon_client.send_command(
                 f"/sc rcon.print(remote.interfaces['actions']['{self.name}'])"
             )
@@ -144,7 +149,8 @@ class Controller:
                 print(f"No action found for {self.name}: {response}")
                 return {}, "Action not found"
             if parameters:
-                invocation = f"pcall(remote.call, 'actions', '{self.name}', {', '.join(parameters)})"
+                parameters_str = ", ".join(parameters)
+                invocation = f"pcall(remote.call, 'actions', '{self.name}', {parameters_str})"
             else:
                 invocation = f"pcall(remote.call, 'actions', '{self.name}')"
             wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
@@ -175,36 +181,6 @@ class Controller:
 
         except Exception:
             return {}, -1
-
-    def execute2(self, *args) -> Tuple[Dict, Any]:
-        lua_response = ""
-        try:
-            start = time.time()
-            parameters = [lua.encode(arg) for arg in args]
-            invocation = f"pcall(global.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
-            wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
-            lua_response = self.connection.rcon_client.send_command(wrapped)
-            parsed, elapsed = _lua2python(invocation, lua_response, start=start)
-            if not parsed["a"] and "b" in parsed and isinstance(parsed["b"], str):
-                parts = lua_response.split('["b"] = ')
-                parts[1] = f"{parts[1][:-2]}" if parts[1][-1] == "}" else parts[1]
-                parsed["b"] = parts[1].replace("!!", '"')
-            if "b" not in parsed:
-                return {}, elapsed
-        except ParseError as e:
-            # If a non-string gets passed back from the Lua script, it will raise a ParseError
-            # Split by `["b"] = ` and take the second part, which is the returned value
-            try:
-                parts = lua_response.split('["b"] = ')
-                return parts[1][:-2], -1
-            except IndexError:
-                return e.args[0], -1
-            return lua_response, -1
-        except TypeError:
-            return lua_response, -1
-        except Exception:
-            return lua_response, -1
-        return parsed["b"], elapsed
 
     def send(self, command, *parameters, trace=False) -> List[str]:
         start = timer()

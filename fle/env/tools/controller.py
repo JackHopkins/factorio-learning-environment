@@ -2,7 +2,7 @@ import time
 from timeit import default_timer as timer
 from typing import List, Tuple, Dict, Any
 
-from slpp import slpp as lua, ParseError
+from slpp import slpp as lua
 
 from fle.env.entities import Direction
 from fle.env.lua_manager import LuaScriptManager
@@ -150,7 +150,9 @@ class Controller:
                 return {}, "Action not found"
             if parameters:
                 parameters_str = ", ".join(parameters)
-                invocation = f"pcall(remote.call, 'actions', '{self.name}', {parameters_str})"
+                invocation = (
+                    f"pcall(remote.call, 'actions', '{self.name}', {parameters_str})"
+                )
             else:
                 invocation = f"pcall(remote.call, 'actions', '{self.name}')"
             wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"

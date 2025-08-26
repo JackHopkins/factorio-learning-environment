@@ -47,6 +47,11 @@ M.actions.create_agent_characters = function(num_agents)
         global.agent_characters = {}
     end
     
+    -- Remove connected player characters and make them viewers only
+    for _, player in pairs(game.connected_players) do
+        player.set_controller({type = defines.controllers.spectator})
+    end
+    
     -- Create new characters for each agent
     for i = 1, num_agents do
         local char = game.surfaces[1].create_entity{

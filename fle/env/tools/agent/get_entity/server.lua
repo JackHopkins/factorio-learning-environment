@@ -1,4 +1,10 @@
-global.actions.get_entity = function(player_index, entity, x, y)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.get_entity = function(player_index, entity, x, y)
     local player = global.agent_characters[player_index]
     local position = {x=x, y=y}
 
@@ -39,10 +45,12 @@ global.actions.get_entity = function(player_index, entity, x, y)
 
     if closest_entity ~= nil then
         local entity = closest_entity  -- get the first entity of the specified type in the area
-        local serialized = global.utils.serialize_entity(entity)
+        local serialized = utils.serialize_entity(entity)
         --local entity_json = game.table_to_json(serialized)-- game.table_to_json(entity
         return serialized
     else
         error("\"No entity of type " .. entity .. " found at the specified position.\"")
     end
 end
+
+return M

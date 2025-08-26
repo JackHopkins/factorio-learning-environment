@@ -1,3 +1,9 @@
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
 -- Helper to convert surface direction to entity direction
 local function surface_to_entity_direction(surface_dir)
     -- In Factorio, offshore pumps face opposite to placement direction
@@ -9,7 +15,6 @@ local function surface_to_entity_direction(surface_dir)
     }
     return direction_map[surface_dir]
 end
-
 
 -- Helper to check if a tile is water
 local function is_water_tile(tile_name)
@@ -103,7 +108,7 @@ local function find_offshore_pump_position(player, center_pos)
     return nil
 end
 
-global.actions.place_entity = function(player_index, entity, direction, x, y, exact)
+M.actions.place_entity = function(player_index, entity, direction, x, y, exact)
     local player = global.agent_characters[player_index]
     local position = {x = x, y = y}
 
@@ -111,7 +116,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         direction = 0
     end
 
-    local entity_direction = global.utils.get_entity_direction(entity, direction)
+    local entity_direction = utils.get_entity_direction(entity, direction)
 
     -- Common validation functions
     local function validate_distance()
@@ -153,32 +158,32 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         player.update_selected_entity(position)
 
         -- Schedule the actual placement after delay
-        script.on_nth_tick(60, function(event)  -- 30 ticks = 0.5 seconds
-            script.on_nth_tick(60, nil)  -- Clear the scheduled event
+        -- script.on_nth_tick(60, function(event)  -- 30 ticks = 0.5 seconds
+        --     script.on_nth_tick(60, nil)  -- Clear the scheduled event
  
-            -- Verify conditions are still valid
-            validate_distance()
-            validate_inventory()
+        --     -- Verify conditions are still valid
+        --     validate_distance()
+        --     validate_inventory()
 
-            -- Avoid entity at target position
-            global.utils.avoid_entity(player_index, entity, position)
+        --     -- Avoid entity at target position
+        --     utils.avoid_entity(player_index, entity, position)
 
-            -- Perform the actual placement
-            local placed_entity = player.surface.create_entity{
-                name = entity,
-                force = "player",
-                position = position,
-                direction = entity_direction,
-            }
+        --     -- Perform the actual placement
+        --     local placed_entity = player.surface.create_entity{
+        --         name = entity,
+        --         force = "player",
+        --         position = position,
+        --         direction = entity_direction,
+        --     }
 
-            if placed_entity then
-                player.remove_item{name = entity, count = 1}
-                player.cursor_ghost = nil  -- Clear the ghost
-                return global.utils.serialize_entity(placed_entity)
-            else
-                error("\"Failed to place entity after delay\"")
-            end
-        end)
+        --     if placed_entity then
+        --         player.remove_item{name = entity, count = 1}
+        --         player.cursor_ghost = nil  -- Clear the ghost
+        --         return utils.serialize_entity(placed_entity)
+        --     else
+        --         error("\"Failed to place entity after delay\"")
+        --     end
+        -- end)
 
         return { pending = true }
     end
@@ -218,9 +223,9 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 end
             end
         end
-        global.utils.avoid_entity(player_index, entity, position, direction)
+        utils.avoid_entity(player_index, entity, position, direction)
         -- Use surface based validation equivalent to LuaPlayer.can_place_entity
-        local can_build = global.utils.can_place_entity(player, entity, position, entity_direction)
+        local can_build = utils.can_place_entity(player, entity, position, entity_direction)
 
         if not can_build then
             if not exact then
@@ -230,7 +235,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 -- special logic for orienting offshore pumps correctly.
                 if entity == 'offshore-pump' then
                     local pos_dir = find_offshore_pump_position(player, position)
-                    entity_direction = global.utils.get_entity_direction(entity, pos_dir['direction']/2)
+                    entity_direction = utils.get_entity_direction(entity, pos_dir['direction']/2)
                     new_position = pos_dir['position']
                     found_position = true
                 else
@@ -243,8 +248,8 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                             for dy = -radius, radius do
                                 if dx == -radius or dx == radius or dy == -radius or dy == radius then
                                     new_position = {x = position.x + dx, y = position.y + dy}
-                                    global.utils.avoid_entity(player_index, entity, position, direction)
-                                    can_build = global.utils.can_place_entity(player, entity, new_position, entity_direction)
+                                    utils.avoid_entity(player_index, entity, position, direction)
+                                    can_build = utils.can_place_entity(player, entity, new_position, entity_direction)
                                     if can_build then
                                         found_position = true
                                         break
@@ -267,7 +272,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                     if have_built then
                         player.remove_item{name = entity, count = 1}
                         -- game.print("Placed " .. entity .. " at " .. new_position.x .. ", " .. new_position.y)
-                        return global.actions.get_entity(player_index, entity, new_position.x, new_position.y)
+                        return remote.call("actions", "get_entity", player_index, entity, new_position.x, new_position.y)
                     end
                 else
                     error("\"Could not find a suitable position to place " .. entity .. " near the target location.\"")
@@ -285,9 +290,9 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 end
             end
 
-            global.utils.avoid_entity(player_index, entity, position, direction)
+            utils.avoid_entity(player_index, entity, position, direction)
 
-            can_build = global.utils.can_place_entity(player, entity, position, entity_direction)
+            can_build = utils.can_place_entity(player, entity, position, entity_direction)
 
             if not can_build then
                 local entity_prototype = game.entity_prototypes[entity]
@@ -337,7 +342,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             local entities = player.surface.find_entities_filtered{area = target_area, name = entity}
 
             if #entities > 0 then
-                return global.utils.serialize_entity(entities[1])
+                return utils.serialize_entity(entities[1])
             end
             error("\"Could not find placed entity\"")
         end
@@ -347,7 +352,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
     validate_distance()
     validate_entity()
     validate_inventory()
-    global.utils.avoid_entity(player_index, entity, position)
+    utils.avoid_entity(player_index, entity, position)
 
     -- Choose placement method based on global.fast setting
     if global.fast then
@@ -357,3 +362,5 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         return result
     end
 end
+
+return M

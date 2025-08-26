@@ -1,4 +1,10 @@
-global.actions.set_inventory = function(player_index, item_names_and_counts_json)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.set_inventory = function(player_index, item_names_and_counts_json)
     local player = global.agent_characters[player_index]
     player.clear_items_inside()
     local item_names_and_counts = game.json_to_table(item_names_and_counts_json) or {}
@@ -9,3 +15,5 @@ global.actions.set_inventory = function(player_index, item_names_and_counts_json
         player.get_main_inventory().insert{name=item, count=count}
     end
 end
+
+return M

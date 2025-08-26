@@ -1,4 +1,10 @@
-global.actions.rotate_entity = function(player_index, x, y, direction, entity)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.rotate_entity = function(player_index, x, y, direction, entity)
     local player = global.agent_characters[player_index]
     local position = {x=x, y=y}  -- Round to nearest tile
     local surface = player.surface
@@ -39,10 +45,10 @@ global.actions.rotate_entity = function(player_index, x, y, direction, entity)
     end
 
     --  game.print("Direction "..direction.. ", "..closest_entity.name..", "..closest_entity.direction)
-    -- game.print(global.utils.get_entity_direction(closest_entity.name, closest_entity.direction))
+    -- game.print(utils.get_entity_direction(closest_entity.name, closest_entity.direction))
 
     -- Rotate the entity
-    closest_entity.direction = global.utils.get_entity_direction(closest_entity.name, direction)
+    closest_entity.direction = utils.get_entity_direction(closest_entity.name, direction)
 
     -- Ensure the entity is properly aligned to the grid
     local entity_position = closest_entity.position
@@ -59,6 +65,8 @@ global.actions.rotate_entity = function(player_index, x, y, direction, entity)
 
     -- game.print("Rotated " .. closest_entity.name .. " to " .. closest_entity.direction)
 
-    local serialized = global.utils.serialize_entity(closest_entity)
+    local serialized = utils.serialize_entity(closest_entity)
     return serialized
 end
+
+return M

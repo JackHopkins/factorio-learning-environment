@@ -1,4 +1,10 @@
-global.actions.get_entities = function(player_index, radius, entity_names_json, position_x, position_y)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.get_entities = function(player_index, radius, entity_names_json, position_x, position_y)
     local player = global.agent_characters[player_index]
     local position
     if position_x and position_y then
@@ -29,9 +35,11 @@ global.actions.get_entities = function(player_index, radius, entity_names_json, 
     local result = {}
     for _, entity in ipairs(entities) do
         if entity.name ~= 'character' then
-            local serialized = global.utils.serialize_entity(entity)
+            local serialized = utils.serialize_entity(entity)
             table.insert(result, serialized)
         end
     end
     return dump(result)
 end
+
+return M

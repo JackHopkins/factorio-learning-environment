@@ -1,3 +1,9 @@
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
 -- Helper to ensure all numbers are serializable
 local function serialize_number(num)
     if num == math.huge then
@@ -18,7 +24,7 @@ local function serialize_position(pos)
 end
 
 -- Main serialization function
-global.actions.save_entity_state = function(player_index, distance, player_entities, resource_entities, items_on_ground)
+M.actions.save_entity_state = function(player_index, distance, player_entities, resource_entities, items_on_ground)
     local surface = global.agent_characters[player_index].surface
     if player_entities then
         entities = surface.find_entities_filtered({area={{-distance, -distance}, {distance, distance}}, force=global.agent_characters[player_index].force})
@@ -83,13 +89,13 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
                 health = serialize_number(entity.health),
                 energy = serialize_number(entity.energy or 0),
                 active = entity.active,
-                status = global.utils.entity_status_names(entity.status),
+                status = utils.entity_status_names(entity.status),
                 warnings = {},
                 inventories = {}
             }
 
             -- Add any warnings
-            for _, warning in pairs(global.utils.get_issues(entity) or {}) do
+            for _, warning in pairs(utils.get_issues(entity) or {}) do
                 table.insert(state.warnings, '"' .. warning .. '"')
             end
 
@@ -168,7 +174,7 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
                     entity.get_recipe then
                 local recipe = entity.get_recipe()
                 if recipe then
-                    state.recipe = global.utils.serialize_recipe(recipe)
+                    state.recipe = utils.serialize_recipe(recipe)
                 end
             end
 
@@ -349,3 +355,5 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
     end
     return entity_array
 end
+
+return M

@@ -1,3 +1,9 @@
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
 -- Function to get inventory fullness information
 local function get_inventory_info(entity)
     if entity.get_inventory then
@@ -25,7 +31,7 @@ local function get_inventory_info(entity)
     return ""
 end
 
-global.actions.insert_item = function(player_index, insert_item, count, x, y, target_name)
+M.actions.insert_item = function(player_index, insert_item, count, x, y, target_name)
     local player = global.agent_characters[player_index]
     local position = {x=x, y=y}
     local surface = player.surface
@@ -225,7 +231,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
         -- Only remove successfully inserted items from player
         player.remove_item{name=insert_item, count=inserted}
         -- game.print("Successfully inserted " .. inserted .. " items.")
-        return global.utils.serialize_entity(closest_entity)
+        return utils.serialize_entity(closest_entity)
     else
         local inventory_info = get_inventory_info(closest_entity)
         local error_msg = string.format(
@@ -242,3 +248,5 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
         error(error_msg)
     end
 end
+
+return M

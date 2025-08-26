@@ -1,3 +1,8 @@
+local M = {}
+
+M.events = {}
+
+M.actions = {}
 
 -- Function to convert HSV to RGB
 local function hsv_to_rgb(h, s, v)
@@ -30,7 +35,7 @@ local function generate_agent_color(index, total_agents)
 end
 
 -- Create agent characters script
-global.actions.create_agent_characters = function(num_agents)
+M.actions.create_agent_characters = function(num_agents)
     -- Initialize agent characters table
     -- Destroy existing agent characters if they exist
     if global.agent_characters then
@@ -62,3 +67,5 @@ global.actions.create_agent_characters = function(num_agents)
     player = global.agent_characters[1]
     player.surface.always_day=true
 end
+
+return M

@@ -1,4 +1,10 @@
-global.actions.set_entity_recipe = function(player_index, recipe_name, x, y)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.set_entity_recipe = function(player_index, recipe_name, x, y)
     local player = global.agent_characters[player_index]
     local surface = player.surface
     --local position = player.position
@@ -27,7 +33,7 @@ global.actions.set_entity_recipe = function(player_index, recipe_name, x, y)
             -- For filter inserters, set the filter
             if closest_building.name == "filter-inserter" or closest_building.name == "stack-filter-inserter" then
                 closest_building.set_filter(1, recipe_name)  -- Set first filter slot
-                serialized = global.utils.serialize_entity(closest_building)
+                serialized = utils.serialize_entity(closest_building)
             end
         else
             -- Original assembling machine logic
@@ -35,7 +41,7 @@ global.actions.set_entity_recipe = function(player_index, recipe_name, x, y)
             if recipe and closest_building.get_recipe() ~= recipe then
                 closest_building.set_recipe(recipe_name)
             end
-            serialized = global.utils.serialize_entity(closest_building)
+            serialized = utils.serialize_entity(closest_building)
         end
 
         local entity_json = game.table_to_json(serialized)
@@ -46,3 +52,4 @@ global.actions.set_entity_recipe = function(player_index, recipe_name, x, y)
     end
 end
 
+return M

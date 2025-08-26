@@ -1,4 +1,10 @@
-global.actions.get_resource_patch = function(player_index, resource, x, y, radius)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.get_resource_patch = function(player_index, resource, x, y, radius)
     local player = global.agent_characters[player_index]
     local position = {x = x, y = y}
     local surface = player.surface
@@ -20,7 +26,6 @@ global.actions.get_resource_patch = function(player_index, resource, x, y, radiu
         box.left_top.y = math.min(box.left_top.y, pos.y)
         box.right_bottom.x = math.max(box.right_bottom.x, pos.x)
         box.right_bottom.y = math.max(box.right_bottom.y, pos.y)
-
 
     end
 
@@ -103,3 +108,5 @@ global.actions.get_resource_patch = function(player_index, resource, x, y, radiu
         return {bounding_box = bounding_box, size = total_resource}
     end
 end
+
+return M

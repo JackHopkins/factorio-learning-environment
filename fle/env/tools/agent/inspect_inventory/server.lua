@@ -1,4 +1,10 @@
-global.actions.inspect_inventory = function(player_index, is_character_inventory, x, y, entity, all_players)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.inspect_inventory = function(player_index, is_character_inventory, x, y, entity, all_players)
     local position = {x=x, y=y}
     local player = global.agent_characters[player_index]
     local surface = player.surface
@@ -42,14 +48,14 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
 
        if not is_fast then
            player.opened = closest_entity
-           script.on_nth_tick(60, function()
-               if automatic_close == True then
-                   if closest_entity and closest_entity.valid then
-                       player.opened = nil
-                   end
-                   automatic_close = False
-               end
-           end)
+        --    script.on_nth_tick(60, function()
+        --        if automatic_close == True then
+        --            if closest_entity and closest_entity.valid then
+        --                player.opened = nil
+        --            end
+        --            automatic_close = False
+        --        end
+        --    end)
        end
 
        if closest_entity.type == "furnace" then
@@ -133,3 +139,5 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
        end
     end
 end
+
+return M

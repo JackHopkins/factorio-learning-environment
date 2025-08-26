@@ -1,3 +1,9 @@
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
 local function safe_json_to_table(json)
 	if not json or json == '' then return {} end
 	local ok, result = pcall(function()
@@ -18,12 +24,12 @@ local function get_inventory_for_index(inventories, index)
 	return inv
 end
 
-global.actions.reset = function(inventories_json, reset_position, all_technologies_researched, clear_entities)
+M.actions.reset = function(inventories_json, reset_position, all_technologies_researched, clear_entities)
 
 	-- Clear alerts, reset game state, and production stats
 	game.reset_game_state()
 	global.alerts = {}
-	global.actions.reset_production_stats()
+	remote.call("actions", "reset_production_stats")
 	global.elapsed_ticks = 0
 
 	local inventories = safe_json_to_table(inventories_json)
@@ -31,8 +37,8 @@ global.actions.reset = function(inventories_json, reset_position, all_technologi
 	-- Re-generate resources per agent (mirrors instance _reset)
 	if global.agent_characters then
 		for i, character in pairs(global.agent_characters) do
-			global.actions.regenerate_resources(i)
-			global.actions.clear_walking_queue(i)
+			remote.call("actions", "regenerate_resources", i)
+			remote.call("actions", "clear_walking_queue", i)
 
 			if reset_position and character and character.valid then
 				local y_offset = (tonumber(i) or 1) - 1
@@ -41,12 +47,12 @@ global.actions.reset = function(inventories_json, reset_position, all_technologi
 
 			-- Clear entities around each agent and reset inventories
 			if clear_entities then
-				global.actions.clear_entities(i)
+				remote.call("actions", "clear_entities", i)
 			end
 
 			local inv_table = get_inventory_for_index(inventories, i)
 			local inv_json = game.table_to_json(inv_table)
-			global.actions.set_inventory(i, inv_json)
+			remote.call("actions", "set_inventory", i, inv_json)
 		end
 	end
 
@@ -60,3 +66,4 @@ global.actions.reset = function(inventories_json, reset_position, all_technologi
 	return 1
 end
 
+return M

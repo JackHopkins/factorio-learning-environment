@@ -1,4 +1,10 @@
-global.actions.craft_item = function(player_index, entity, count)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.craft_item = function(player_index, entity, count)
     local player = global.agent_characters[player_index]
 
     local function calculate_crafting_ticks(recipe, crafts_count)
@@ -43,7 +49,6 @@ global.actions.craft_item = function(player_index, entity, count)
 
         return true
     end
-
 
     local function get_missing_ingredients(player, recipe, count)
         local missing_ingredients = {}
@@ -138,7 +143,6 @@ global.actions.craft_item = function(player_index, entity, count)
         -- Calculate total ticks needed for this craft
         local crafting_ticks = calculate_crafting_ticks(recipe, crafts_needed)
 
-
         -- After potentially crafting intermediates, check if we can now craft the original item
         if global.fast then
             -- Only add ticks in fast mode since in slow mode they are added naturally
@@ -211,3 +215,5 @@ global.actions.craft_item = function(player_index, entity, count)
             count, entity, final_error))
     end
 end
+
+return M

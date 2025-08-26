@@ -1,10 +1,16 @@
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
 -- Cache math functions
 local floor = math.floor
 local ceil = math.ceil
 local max = math.max
 local abs = math.abs
 
-global.actions.nearest_buildable = function(player_index, entity_name, bounding_box, center_position)
+M.actions.nearest_buildable = function(player_index, entity_name, bounding_box, center_position)
     local player = global.agent_characters[player_index]
     local surface = player.surface
     local entity_prototype = game.entity_prototypes[entity_name]
@@ -187,3 +193,5 @@ global.actions.nearest_buildable = function(player_index, entity_name, bounding_
 
     return spiral_search()
 end
+
+return M

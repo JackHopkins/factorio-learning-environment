@@ -1,5 +1,11 @@
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
 -- Function to get the path as a JSON object
-global.actions.get_path = function(request_id)
+M.actions.get_path = function(request_id)
     local request_data = global.path_requests[request_id]
     if not request_data then
         return game.table_to_json({status = "\"invalid_request\""})
@@ -35,3 +41,5 @@ global.actions.get_path = function(request_id)
         })
     end
 end
+
+return M

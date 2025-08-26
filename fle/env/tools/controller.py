@@ -17,6 +17,7 @@ class Controller:
         self,
         lua_script_manager: "LuaScriptManager",
         game_state: "FactorioNamespace",
+        verbose: bool = True,
         *args,
         **kwargs,
     ):
@@ -28,6 +29,7 @@ class Controller:
         self.player_index = (
             game_state.agent_index + 1
         )  # +1 because Factorio is 1-indexed
+        self.verbose = verbose
 
     def clean_response(self, response):
         def is_lua_list(d):
@@ -135,10 +137,22 @@ class Controller:
         try:
             start = time.time()
             parameters = [lua.encode(arg) for arg in args]
-            invocation = f"pcall(global.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
+            response = self.connection.rcon_client.send_command(
+                f"/sc rcon.print(remote.interfaces['actions']['{self.name}'])"
+            )
+            if response == "false":
+                print(f"No action found for {self.name}: {response}")
+                return {}, "Action not found"
+            if parameters:
+                invocation = f"pcall(remote.call, 'actions', '{self.name}', {', '.join(parameters)})"
+            else:
+                invocation = f"pcall(remote.call, 'actions', '{self.name}')"
             wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
+            if self.verbose:
+                print(f"Wrapped command: {wrapped}")
             lua_response = self.connection.rcon_client.send_command(wrapped)
-
+            if self.verbose:
+                print(f"Lua response: {lua_response}")
             parsed, elapsed = _lua2python(invocation, lua_response, start=start)
             if parsed is None:
                 return {}, lua_response  # elapsed

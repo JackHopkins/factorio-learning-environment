@@ -1,3 +1,9 @@
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
 -- Helper function to check all possible inventories of an entity
 local function get_entity_item_count(entity, item_name)
     local inventory_types = {
@@ -96,7 +102,7 @@ local function remove_items_from_entity(entity, stack)
     return total_removed
 end
 
-global.actions.extract_item = function(player_index, extract_item, count, x, y, source_name)
+M.actions.extract_item = function(player_index, extract_item, count, x, y, source_name)
     local player = global.agent_characters[player_index]
     local position = {x=x, y=y}
     local surface = player.surface
@@ -193,3 +199,5 @@ global.actions.extract_item = function(player_index, extract_item, count, x, y, 
         error("\"Failed to extract " .. extract_item .. "\"")
     end
 end
+
+return M

@@ -1,4 +1,10 @@
-global.actions.can_place_entity = function(player_index, entity, direction, x, y)
+local M = {}
+
+M.events = {}
+
+M.actions = {}
+
+M.actions.can_place_entity = function(player_index, entity, direction, x, y)
     local player = global.agent_characters[player_index]
     local position = {x = x, y = y}
     
@@ -59,7 +65,7 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
 
     ---- Check if the entity can be placed
     ---  if placement fails, it tries 11 different positions (i=0 to 10) by moving the player diagonally
-    local can_build = global.utils.avoid_entity(player_index, entity, position, direction)
+    local can_build = utils.avoid_entity(player_index, entity, position, direction)
     if not can_build then
         error("Cannot place the entity at the specified position: x="..position.x..", y="..position.y)
     end
@@ -78,3 +84,5 @@ function get_entity_direction(entity, direction)
         return cardinals[direction % 4]
     end
 end
+
+return M

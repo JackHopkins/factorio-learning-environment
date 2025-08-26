@@ -20,7 +20,12 @@ from fle.env.utils.rcon import (
 
 
 class LuaScriptManager:
-    def __init__(self, rcon_client: RCONClient, cache_scripts: bool = False, verbose: bool = False):
+    def __init__(
+        self,
+        rcon_client: RCONClient,
+        cache_scripts: bool = False,
+        verbose: bool = False,
+    ):
         self.rcon_client = rcon_client
         self.cache_scripts = cache_scripts
         if not cache_scripts:
@@ -37,20 +42,28 @@ class LuaScriptManager:
         self.lib_scripts = self.get_libs_to_load()
         self.lua = LuaRuntime(unpack_returned_tuples=True)
         self.initialise_actions_table()
-    
+
     def initialise_actions_table(self):
         self.rcon_client.send_command("/sc actions = actions or {};")
         self.rcon_client.send_command("/sc nth = nth or {};")
         self.rcon_client.send_command("/sc events = events or {};")
-    
+
     def finalise_actions_table(self):
-        response = self.rcon_client.send_command("/sc local n=0; for _ in pairs(actions) do n=n+1 end; rcon.print('actions count = '..n)")
+        response = self.rcon_client.send_command(
+            "/sc local n=0; for _ in pairs(actions) do n=n+1 end; rcon.print('actions count = '..n)"
+        )
         if self.verbose:
             print(response)
         self.rcon_client.send_command("/sc remote.add_interface('actions', actions);")
-        self.rcon_client.send_command("/sc script.on_nth_tick(function() for i, fn in pairs(nth) do fn() end end)")
-        self.rcon_client.send_command("/sc script.on_event(function(e) for e, fn in pairs(events) do fn(e) end end)")
-        response = self.rcon_client.send_command('/c rcon.print(game.table_to_json(remote.interfaces["actions"]))')
+        self.rcon_client.send_command(
+            "/sc script.on_nth_tick(function() for i, fn in pairs(nth) do fn() end end)"
+        )
+        self.rcon_client.send_command(
+            "/sc for event_type, handlers in pairs(events) do script.on_event(event_type, function(e) for _, fn in pairs(handlers) do fn(e) end end) end"
+        )
+        response = self.rcon_client.send_command(
+            '/c rcon.print(game.table_to_json(remote.interfaces["actions"]))'
+        )
         if self.verbose:
             response = json.loads(response)
             print(f"Actions table: {json.dumps(response, indent=4)}")
@@ -59,11 +72,12 @@ class LuaScriptManager:
         substitution_lines = [
             "if M.actions then for name, action in pairs(M.actions) do rcon.print('action found: ' .. name); actions[name] = action end end",
             "if M.nth then for i, fn in pairs(M.nth) do rcon.print('nth tick event found: ' .. i); nth[i] = fn end end",
-            "if M.events then for e, fn in pairs(M.events) do rcon.print('event found: ' .. e); events[e] = fn end end",
+            "if M.events then for e, fn in pairs(M.events) do rcon.print('event found: ' .. e); if not events[e] then events[e] = {} end end end",
+            "if M.events then for e, fn in pairs(M.events) do table.insert(events[e], fn) end end",
         ]
         substitution_string = "\n".join(substitution_lines)
         return re.sub(r"(?m)^\s*return\s+M\s*$", substitution_string, script)
-    
+
     def setup_lib(self, script):
         substitution_lines = [
             "if M.initialise then rcon.print('initialising lib'); M.initialise() end",
@@ -124,7 +138,9 @@ class LuaScriptManager:
             if not correct:
                 raise Exception(f"Syntax error in: {script_name}: {error}")
             if self.verbose:
-                print(f"{self.rcon_client.port}: Loading action {script_name} into game")
+                print(
+                    f"{self.rcon_client.port}: Loading action {script_name} into game"
+                )
 
             response = self.rcon_client.send_command("/sc " + script)
             if self.verbose:

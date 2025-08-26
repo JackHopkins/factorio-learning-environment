@@ -89,7 +89,9 @@ class FactorioInstance:
         self.peaceful = peaceful
         self.namespaces = [self.namespace_class(self, i) for i in range(num_agents)]
 
-        self.lua_script_manager = LuaScriptManager(self.rcon_client, cache_scripts, verbose=True)
+        self.lua_script_manager = LuaScriptManager(
+            self.rcon_client, cache_scripts, verbose=True
+        )
 
         # Initialize hooks as dictionaries to organize callbacks by tool name
         self.pre_tool_hooks = {}
@@ -124,7 +126,6 @@ class FactorioInstance:
             self.lua_script_manager = LuaScriptManager(self.rcon_client, False)
             self.lua_script_manager.setup_tools(self)
             self.initialise(fast, all_technologies_researched, clear_entities)
-        
 
         self.initial_score, goal = self.first_namespace.score()
         # Register the cleanup method to be called on exit (only once per process)

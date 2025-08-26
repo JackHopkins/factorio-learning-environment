@@ -1,6 +1,6 @@
 [
     {
-        "env_id": "iron_ore_throughput",
-        "model": "claude-3-5-sonnet-latest"
+        "env_id": "steel_plate_throughput",
+        "model": "claude-4-opus-20250514"
     }
 ] 

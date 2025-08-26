@@ -164,9 +164,6 @@ class ConnectEntities(Tool):
                 real_world_sleep = (
                     ticks_added / 60 / game_speed if game_speed > 0 else 0
                 )
-                print(
-                    f"connect_entities: Sleeping for {real_world_sleep:.3f} seconds ({ticks_added} ticks at speed {game_speed}x)"
-                )
                 sleep(real_world_sleep)
 
         if dry_run:

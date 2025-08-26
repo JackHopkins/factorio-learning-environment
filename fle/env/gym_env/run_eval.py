@@ -1,4 +1,3 @@
-import argparse
 import asyncio
 import json
 import multiprocessing
@@ -129,18 +128,3 @@ async def main(config_path):
     # Wait for all processes to complete
     for p in processes:
         p.join()
-
-
-if __name__ == "__main__":
-    multiprocessing.set_start_method("spawn")
-    parser = argparse.ArgumentParser(
-        description="Run Factorio Learning Environment evaluation"
-    )
-    parser.add_argument(
-        "--run-config",
-        type=str,
-        required=True,
-        help="Path to run configuration JSON file",
-    )
-    args = parser.parse_args()
-    asyncio.run(main(args.run_config))

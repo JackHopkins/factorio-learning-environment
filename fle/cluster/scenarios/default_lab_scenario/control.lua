@@ -1,1 +1,3 @@
 util = require("util")
+
+actions = {}

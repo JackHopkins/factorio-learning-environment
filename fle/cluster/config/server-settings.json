@@ -46,6 +46,6 @@
   "_comment_segment_sizes": "Long network messages are split into segments that are sent over multiple ticks. Their size depends on the number of peers currently connected. Increasing the segment size will increase upload bandwidth requirement for the server and download bandwidth requirement for clients. This setting only affects server outbound messages. Changing these settings can have a negative impact on connection stability for some clients.",
   "minimum_segment_size": 25,
   "minimum_segment_size_peer_count": 20,
-  "maximum_segment_size": 100,
+  "maximum_segment_size": 1000,
   "maximum_segment_size_peer_count": 10
 }

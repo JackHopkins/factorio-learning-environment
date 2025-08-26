@@ -1,3 +1,4 @@
+import re
 import time
 from timeit import default_timer as timer
 from typing import List, Tuple, Dict, Any
@@ -10,6 +11,29 @@ from fle.env.namespace import FactorioNamespace
 from fle.env.utils.rcon import _lua2python
 
 COMMAND = "/silent-command"
+
+
+def parse_lua_table(text):
+    a = re.search(r'\["a"\]\s*=\s*(true|false)', text)
+    b = re.search(r'\["b"\]\s*=\s*(.*?)(?=,\s*})', text, re.DOTALL)
+
+    if not b:
+        return {"a": a.group(1) == "true" if a else None, "b": None}
+
+    interim = b.group(1).strip()
+    func = re.search(r"interface function\s+([^:]+):", interim)
+    error = re.search(r":\d+:\s*(.*?)(?=\s*stack traceback:)", interim, re.DOTALL)
+    stack = re.search(r"stack traceback:\s*(.*)", interim, re.DOTALL)
+    if not func and not error:
+        return interim + " }"
+
+    return {
+        "a": a.group(1) == "true" if a else None,
+        "b": lua.decode(interim),
+        "function_name": func.group(1).strip() if func else None,
+        "error_string": error.group(1).strip() if error else None,
+        "stack_traceback": stack.group(1).strip() if stack else None,
+    }
 
 
 class Controller:
@@ -133,6 +157,43 @@ class Controller:
             script = command
         return script
 
+    def get_error_message(self, response):
+        try:
+            s = str(response)
+
+            # Trim stacktrace early to avoid picking quoted script fragments from the traceback
+            if "stack traceback" in s:
+                s = s.split("stack traceback", 1)[0]
+
+            # Prefer the last double-quoted substring if present (Factorio often wraps messages in quotes)
+            quoted = re.findall(r'"([^"]+)"', s)
+            if quoted:
+                return quoted[-1].strip()
+
+            # Fallback: take the segment after the last ':' but avoid common noise like 'in main chunk'
+            parts = s.split(":")
+            if parts:
+                candidate = (
+                    parts[-1]
+                    .replace('"', "")
+                    .replace("\\'", "")
+                    .replace("'", "")
+                    .strip()
+                )
+                if candidate.lower().startswith("in main chunk") and len(parts) > 1:
+                    candidate = (
+                        parts[-2]
+                        .replace('"', "")
+                        .replace("\\'", "")
+                        .replace("'", "")
+                        .strip()
+                    )
+                return candidate
+
+            return s
+        except Exception:
+            return str(response)
+
     def execute(self, *args) -> Tuple[Dict, Any]:
         try:
             start = time.time()
@@ -161,23 +222,22 @@ class Controller:
             lua_response = self.connection.rcon_client.send_command(wrapped)
             if self.verbose:
                 print(f"Lua response: {lua_response}")
-            parsed, elapsed = _lua2python(invocation, lua_response, start=start)
+                print("Lua response type: ", type(lua_response))
+                print("Lua custom decoded: ")
+                print(parse_lua_table(lua_response))
+                # print("Lua decoded: ", lua.decode(lua_response))
+            if "running interface function" in lua_response:
+                parsed = parse_lua_table(lua_response)
+            else:
+                parsed, elapsed = _lua2python(invocation, lua_response, start=start)
             if parsed is None:
                 return {}, lua_response  # elapsed
 
             if not parsed.get("a") and "b" in parsed and isinstance(parsed["b"], str):
-                # Extract the full error string from the RCON dump instead of truncating by colon
-                parts = lua_response.split('["b"] = ')
-                if len(parts) > 1:
-                    msg = parts[1]
-                    # Trim trailing table end and whitespace
-                    msg = msg.rstrip()
-                    if msg.endswith("}"):
-                        msg = msg[:-2] if len(msg) >= 2 else msg
-                    msg = msg.replace("!!", '"').strip()
-                    return msg, lua_response
-                # Fallback to the parsed string as-is
-                return parsed["b"], lua_response
+                # Return the raw Lua error; callers can extract a precise message if needed
+                # if self.verbose:
+                #     print(f"Lua error: {self.get_error_message(lua_response)}")
+                return parsed["error_string"], lua_response
 
             return parsed.get("b", {}), lua_response  # elapsed
 

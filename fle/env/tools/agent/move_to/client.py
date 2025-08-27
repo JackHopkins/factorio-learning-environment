@@ -13,7 +13,6 @@ from fle.env.lua_manager import LuaScriptManager
 class MoveTo(Tool):
     def __init__(self, connection: LuaScriptManager, game_state):
         super().__init__(connection, game_state)
-        # self.observe = ObserveAll(connection, game_state)
         self.request_path = RequestPath(connection, game_state)
         self.get_path = GetPath(connection, game_state)
 
@@ -26,7 +25,7 @@ class MoveTo(Tool):
         :return: Your final position
         """
 
-        X_OFFSET, Y_OFFSET = 0, 0  # 0.5, 0
+        X_OFFSET, Y_OFFSET = 0, 0
 
         x, y = (
             math.floor(position.x * 4) / 4 + X_OFFSET,

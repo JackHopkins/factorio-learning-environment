@@ -20,7 +20,7 @@ from fle.commons.models.program import Program
 from fle.commons.models.serializable_function import SerializableFunction
 
 # Achievement and production models
-from fle.commons.models.achievements import ProfitConfig, ProductionFlows
+from fle.commons.models.production_flows import ProductionFlows
 
 # Generation and configuration models
 from fle.commons.models.generation_parameters import GenerationParameters
@@ -41,7 +41,6 @@ __all__ = [
     "Program",
     "SerializableFunction",
     # Achievements and production
-    "ProfitConfig",
     "ProductionFlows",
     # Generation and configuration
     "GenerationParameters",

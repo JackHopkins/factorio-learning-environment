@@ -1,7 +1,7 @@
 import unittest
 
 from fle.env import FactorioInstance
-from fle.env.utils.profits import eval_program_with_achievements
+from fle.env.utils.achievement_calculator import eval_program_with_achievements
 
 test_string = """
 pos = nearest(Resource.Stone)

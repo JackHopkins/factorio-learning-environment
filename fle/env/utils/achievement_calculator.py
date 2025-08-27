@@ -1,7 +1,7 @@
 from typing import Dict, List, Tuple, Any
 from copy import deepcopy
 
-from fle.commons.models.achievements import ProductionFlows
+from fle.commons.models.production_flows import ProductionFlows
 
 
 class AchievementTracker:
@@ -12,9 +12,6 @@ class AchievementTracker:
         pre: ProductionFlows, post: ProductionFlows
     ) -> Dict[str, Dict[str, float]]:
         """Calculate achievements between two production states."""
-        if not pre.is_valid() or not post.is_valid():
-            return {"static": {}, "dynamic": {}}
-
         post = deepcopy(post)
         post.static_items = AchievementTracker._get_static_items(pre, post)
 

@@ -2,7 +2,8 @@ import asyncio
 import copy
 from typing import Dict, List, Tuple, Union
 
-from fle.env.utils.profits import get_achievements
+from fle.env.utils.achievement_calculator import AchievementTracker
+from fle.commons.models.production_flows import ProductionFlows
 
 from fle.commons.db_client import DBClient
 from fle.commons.models.game_state import GameState
@@ -162,8 +163,10 @@ class Evaluator:
         # Executing code
         reward, time, result = instance.eval(code, timeout=120)
         post_production_flows = instance.namespace._get_production_stats()
-        achievements = get_achievements(
-            start_production_flows, copy.deepcopy(post_production_flows)
+        start_flows = ProductionFlows.from_dict(start_production_flows)
+        post_flows = ProductionFlows.from_dict(copy.deepcopy(post_production_flows))
+        achievements = AchievementTracker.calculate_achievements(
+            start_flows, post_flows
         )
 
         return result, achievements, post_production_flows
@@ -251,8 +254,10 @@ class Evaluator:
             ticks = instance.get_elapsed_ticks()
 
             post_production_flows = instance.namespace._get_production_stats()
-            achievements = get_achievements(
-                start_production_flows, post_production_flows
+            start_flows = ProductionFlows.from_dict(start_production_flows)
+            post_flows = ProductionFlows.from_dict(post_production_flows)
+            achievements = AchievementTracker.calculate_achievements(
+                start_flows, post_flows
             )
 
             group_id = self.port_to_group[tcp_port]

@@ -3,7 +3,7 @@ from fle.env import Entity
 from fle.env import FactorioInstance
 from fle.eval.tasks import TaskABC
 from fle.eval.tasks import LAB_PLAY_POPULATED_STARTING_INVENTORY
-from fle.env.utils.achievements import eval_program_with_achievements
+from fle.env.utils.achievement_calculator import eval_program_with_achievements
 from fle.agents import TaskResponse
 
 

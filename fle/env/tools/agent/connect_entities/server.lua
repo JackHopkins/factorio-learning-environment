@@ -748,8 +748,16 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
     -- game.print("Path length "..#raw_path)
     -- game.print(serpent.line(start_position).." - "..serpent.line(end_position))
 
-    if not raw_path or type(raw_path) ~= "table" or #raw_path == 0 then
-        error("Invalid path: " .. serpent.line(path))
+    if not raw_path then
+        error("No path found for handle " .. path_handle .. ". Pathfinding may have failed.")
+    elseif raw_path == "not_found" then
+        error("Pathfinding failed: no valid path exists between source and target positions.")
+    elseif raw_path == "busy" then
+        error("Pathfinder is busy, try again later.")
+    elseif type(raw_path) ~= "table" then
+        error("Invalid path type: " .. type(raw_path) .. " (value: " .. serpent.line(raw_path) .. ")")
+    elseif #raw_path == 0 then
+        error("Empty path returned from pathfinder.")
     end
 
     -- game.print("Normalising", {print_skip=defines.print_skip.never})
@@ -793,6 +801,14 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
     -- Get source and target entities
     local source_entity = global.utils.get_closest_entity(player, {x = source_x, y = source_y})
     local target_entity = global.utils.get_closest_entity(player, {x = target_x, y = target_y})
+    
+    -- Validate that entities were found
+    if not source_entity then
+        error("No entity found at source position x=" .. source_x .. " y=" .. source_y .. " within radius 3")
+    end
+    if not target_entity then
+        error("No entity found at target position x=" .. target_x .. " y=" .. target_y .. " within radius 3")
+    end
 
 
     if #connection_types == 1 and connection_types[1] == 'pipe-to-ground' then

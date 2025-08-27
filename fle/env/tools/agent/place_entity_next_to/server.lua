@@ -289,7 +289,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
 
     local items = player.surface.find_entities_filtered{
         area = area,
-        type = "item-on-ground"
+        name = "item-on-ground"
     }
     for _, item in ipairs(items) do
         item.destroy()

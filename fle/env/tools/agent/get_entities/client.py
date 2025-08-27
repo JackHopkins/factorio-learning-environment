@@ -78,8 +78,10 @@ class GetEntities(Tool):
                     )
                     continue
 
-                if matching_prototype not in entities and entities:
+                # Apply standard filtering
+                if entities and matching_prototype not in entities:
                     continue
+
                 metaclass = matching_prototype.value[1]
                 while isinstance(metaclass, tuple):
                     metaclass = metaclass[1]
@@ -89,7 +91,7 @@ class GetEntities(Tool):
                     if isinstance(value, dict):
                         entity_data[key] = self.process_nested_dict(value)
 
-                entity_data["prototype"] = prototype
+                entity_data["prototype"] = matching_prototype
 
                 # remove all empty values from the entity_data dictionary
                 entity_data = {
@@ -102,58 +104,99 @@ class GetEntities(Tool):
                 except Exception as e1:
                     print(f"Could not create {entity_data['name']} object: {e1}")
 
-            # get all pipes into a list
-            pipes = [
-                entity
-                for entity in entities_list
-                if hasattr(entity, "prototype")
-                and entity.prototype in (Prototype.Pipe, Prototype.UndergroundPipe)
-            ]
-            group = agglomerate_groupable_entities(pipes)
-            [entities_list.remove(pipe) for pipe in pipes]
-            entities_list.extend(group)
-
-            poles = [
-                entity
-                for entity in entities_list
-                if hasattr(entity, "prototype")
-                and entity.prototype
-                in (
-                    Prototype.SmallElectricPole,
-                    Prototype.BigElectricPole,
-                    Prototype.MediumElectricPole,
-                )
-            ]
-            group = agglomerate_groupable_entities(poles)
-            [entities_list.remove(pole) for pole in poles]
-            entities_list.extend(group)
-
-            walls = [
-                entity
-                for entity in entities_list
-                if hasattr(entity, "prototype")
-                and entity.prototype == Prototype.StoneWall
-            ]
-            group = agglomerate_groupable_entities(walls)
-            [entities_list.remove(wall) for wall in walls]
-            entities_list.extend(group)
-
-            belt_types = (
-                Prototype.TransportBelt,
-                Prototype.FastTransportBelt,
-                Prototype.ExpressTransportBelt,
-                Prototype.UndergroundBelt,
-                Prototype.FastUndergroundBelt,
-                Prototype.ExpressUndergroundBelt,
+            # Only group entities if user is looking for group types or no specific filter
+            should_group = not entities or any(
+                proto
+                in {
+                    Prototype.ElectricityGroup,
+                    Prototype.PipeGroup,
+                    Prototype.BeltGroup,
+                }
+                for proto in entities
             )
-            belts = [
-                entity
-                for entity in entities_list
-                if hasattr(entity, "prototype") and entity.prototype in belt_types
-            ]
-            group = agglomerate_groupable_entities(belts)
-            [entities_list.remove(belt) for belt in belts]
-            entities_list.extend(group)
+
+            if should_group:
+                # get all pipes into a list
+                pipes = [
+                    entity
+                    for entity in entities_list
+                    if hasattr(entity, "prototype")
+                    and entity.prototype in (Prototype.Pipe, Prototype.UndergroundPipe)
+                ]
+                group = agglomerate_groupable_entities(pipes)
+                [entities_list.remove(pipe) for pipe in pipes]
+                entities_list.extend(group)
+
+                poles = [
+                    entity
+                    for entity in entities_list
+                    if hasattr(entity, "prototype")
+                    and entity.prototype
+                    in (
+                        Prototype.SmallElectricPole,
+                        Prototype.BigElectricPole,
+                        Prototype.MediumElectricPole,
+                    )
+                ]
+                group = agglomerate_groupable_entities(poles)
+                [entities_list.remove(pole) for pole in poles]
+                entities_list.extend(group)
+
+                walls = [
+                    entity
+                    for entity in entities_list
+                    if hasattr(entity, "prototype")
+                    and entity.prototype == Prototype.StoneWall
+                ]
+                group = agglomerate_groupable_entities(walls)
+                [entities_list.remove(wall) for wall in walls]
+                entities_list.extend(group)
+
+                belt_types = (
+                    Prototype.TransportBelt,
+                    Prototype.FastTransportBelt,
+                    Prototype.ExpressTransportBelt,
+                    Prototype.UndergroundBelt,
+                    Prototype.FastUndergroundBelt,
+                    Prototype.ExpressUndergroundBelt,
+                )
+                belts = [
+                    entity
+                    for entity in entities_list
+                    if hasattr(entity, "prototype") and entity.prototype in belt_types
+                ]
+                group = agglomerate_groupable_entities(belts)
+                [entities_list.remove(belt) for belt in belts]
+                entities_list.extend(group)
+
+            # Final filtering after grouping is complete
+            if entities:
+                filtered_entities = []
+                for entity in entities_list:
+                    # Check entity prototype or group type
+                    if hasattr(entity, "prototype") and entity.prototype in entities:
+                        filtered_entities.append(entity)
+                    elif hasattr(entity, "__class__"):
+                        # Check for group types
+                        if (
+                            entity.__class__.__name__ == "ElectricityGroup"
+                            and Prototype.ElectricityGroup in entities
+                        ):
+                            filtered_entities.append(entity)
+                        elif (
+                            entity.__class__.__name__ == "PipeGroup"
+                            and Prototype.PipeGroup in entities
+                        ):
+                            filtered_entities.append(entity)
+                        elif (
+                            entity.__class__.__name__ == "BeltGroup"
+                            and Prototype.BeltGroup in entities
+                        ):
+                            filtered_entities.append(entity)
+                        elif entity.__class__.__name__ == "WallGroup":
+                            # WallGroup doesn't have a corresponding Prototype, but include if present
+                            filtered_entities.append(entity)
+                entities_list = filtered_entities
 
             return entities_list
 

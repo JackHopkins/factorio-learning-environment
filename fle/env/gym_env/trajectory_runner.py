@@ -1,6 +1,6 @@
 import time
 from itertools import product
-from typing import List, Optional, Tuple
+from typing import Any, List, Dict, Optional, Tuple
 
 from fle.agents import CompletionReason, CompletionResult
 from fle.agents.gym_agent import GymAgent
@@ -67,11 +67,8 @@ class GymTrajectoryRunner:
         iteration_time = time.time() - iteration_start
         self.logger.add_iteration_time(iteration_time)
 
-        # Log progress every 10 steps
-        if agent_step % 10 == 0:
-            self.logger.log_progress(agent, agent_step, program.value)
-
-        # Log observation and program
+        # Log progress, observation and program
+        self.logger.log_progress(agent, agent_step, program.value)
         self.logger.log_observation_and_program(
             agent, agent_idx, agent_step, observation, program
         )
@@ -83,6 +80,7 @@ class GymTrajectoryRunner:
         reward: float,
         response: str,
         error_occurred: bool,
+        achievements: Dict[str, Any],
         game_state: GameState,
     ) -> Program:
         """Create a Program object from a Policy and environment results
@@ -114,6 +112,7 @@ class GymTrajectoryRunner:
             version_description=self.config.version_description,
             value=reward,
             state=game_state,
+            achievements=achievements,
             meta={
                 "model": self.agents[agent_idx].model,
                 "process_id": self.process_id,
@@ -214,6 +213,7 @@ class GymTrajectoryRunner:
                         reward=reward,
                         response=obs_dict["raw_text"],
                         error_occurred=info["error_occurred"],
+                        achievements=info["achievements"],
                         game_state=output_game_state,
                     )
 

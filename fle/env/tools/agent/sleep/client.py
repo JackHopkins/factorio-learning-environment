@@ -25,9 +25,6 @@ class Sleep(Tool):
         if ticks_added > 0:
             game_speed = self.game_state.instance.get_speed()
             real_world_sleep = ticks_added / 60 / game_speed if game_speed > 0 else 0
-            print(
-                f"sleep: Sleeping for {real_world_sleep:.3f} seconds ({ticks_added} ticks at speed {game_speed}x)"
-            )
             sleep(real_world_sleep)
 
         return True

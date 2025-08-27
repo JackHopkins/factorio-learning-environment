@@ -10,7 +10,7 @@ from fle.env import FactorioInstance
 from fle.commons.models.game_state import GameState
 from fle.env.gym_env.action import Action
 from fle.commons.models.achievements import ProductionFlows
-from fle.env.utils.profits import get_achievements
+from fle.env.utils.achievements import calculate_achievements
 from fle.agents import Response, TaskResponse
 from fle.env.gym_env.observation import (
     Observation,
@@ -433,9 +433,7 @@ class FactorioGymEnv(gym.Env):
         output_game_state = GameState.from_instance(self.instance)
         # Get post-execution flows and calculate achievements
         current_flows = ProductionFlows.from_dict(namespace._get_production_stats())
-        achievements = get_achievements(
-            start_production_flows.__dict__, current_flows.__dict__
-        )
+        achievements = calculate_achievements(start_production_flows, current_flows)
         # Store for next step
         self._last_production_flows[agent_idx] = current_flows.__dict__
 
@@ -467,6 +465,7 @@ class FactorioGymEnv(gym.Env):
             "last_message_timestamp": self.last_message_timestamps[agent_idx],
             "task_verification": task_response,
             "output_game_state": output_game_state,
+            "achievements": achievements,
         }
 
         # pause the game until the next step if this is part of a trajectory

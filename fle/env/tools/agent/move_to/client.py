@@ -71,9 +71,6 @@ class MoveTo(Tool):
                 real_world_sleep = (
                     ticks_added / 60 / game_speed if game_speed > 0 else 0
                 )
-                print(
-                    f"move_to: Sleeping for {real_world_sleep:.3f} seconds ({ticks_added} ticks at speed {game_speed}x)"
-                )
                 sleep(real_world_sleep)
 
             if isinstance(response, int) and response == 0:

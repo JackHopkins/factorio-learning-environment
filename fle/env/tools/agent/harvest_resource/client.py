@@ -50,9 +50,6 @@ class HarvestResource(Tool):
         if ticks_added > 0:
             game_speed = self.game_state.instance.get_speed()
             real_world_sleep = ticks_added / 60 / game_speed if game_speed > 0 else 0
-            print(
-                f"harvest_resource: Sleeping for {real_world_sleep:.3f} seconds ({ticks_added} ticks at speed {game_speed}x)"
-            )
             sleep(real_world_sleep)
 
         if response != {} and response == 0 or isinstance(response, str):

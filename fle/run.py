@@ -6,6 +6,9 @@ from pathlib import Path
 import importlib.resources
 import asyncio
 from fle.env.gym_env.run_eval import main as run_eval
+import signal
+
+signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
 
 
 def fle_init():

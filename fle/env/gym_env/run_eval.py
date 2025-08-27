@@ -128,8 +128,3 @@ async def main(config_path):
     # Wait for all processes to complete
     for p in processes:
         p.join()
-
-
-if __name__ == "__main__":
-    multiprocessing.set_start_method("spawn")
-    asyncio.run(main())

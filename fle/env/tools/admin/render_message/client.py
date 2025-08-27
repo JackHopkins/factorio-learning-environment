@@ -10,7 +10,7 @@ class RenderMessage(Tool):
 
     def __call__(self, message: str) -> bool:
         """
-        Render a message above the agent's head.
+        Render a message in the game chat.
         :param message: The message text to display
         :return: True if successful, raises exception if not
         """

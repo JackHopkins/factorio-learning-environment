@@ -7,7 +7,13 @@ setup_platform() {
     if [ "$FORCE_AMD" = true ]; then
         export DOCKER_PLATFORM="linux/amd64"
     elif [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
-        export DOCKER_PLATFORM="linux/arm64"
+        # On macOS ARM64, automatically use AMD64 emulation since Factorio image lacks ARM64 support
+        if [ "$OS" = "Darwin" ]; then
+            export DOCKER_PLATFORM="linux/amd64"
+            echo "Note: Using AMD64 emulation on macOS ARM64 (Factorio image lacks native ARM64 support)"
+        else
+            export DOCKER_PLATFORM="linux/arm64"
+        fi
     else
         export DOCKER_PLATFORM="linux/amd64"
     fi

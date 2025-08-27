@@ -17,7 +17,7 @@ LAB_PLAY_POPULATED_STARTING_INVENTORY = {
     "offshore-pump": 2,
     "steam-engine": 2,
     "electric-mining-drill": 50,
-    "small-electric-pole": 500,
+    "medium-electric-pole": 500,
     "pipe": 500,
     "assembling-machine-2": 10,
     "electric-furnace": 10,
@@ -82,7 +82,9 @@ class ThroughputTask(TaskABC):
                 break
         return TaskResponse(
             success=max_achieved_throughput >= self.quota,
-            meta={"achievements": max_achievements},
+            meta={
+                f"{self.throughput_entity}_achieved_throughput": max_achieved_throughput,
+            },
         )
 
     def _to_dict(self) -> Dict[str, Any]:

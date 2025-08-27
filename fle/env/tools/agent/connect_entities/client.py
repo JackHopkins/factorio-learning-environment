@@ -136,6 +136,12 @@ class ConnectEntities(Tool):
         assert len(waypoints) > 1, "Need more than one waypoint"
         connection = waypoints[0]
         dry_run = kwargs.get("dry_run", False)
+
+        # Track elapsed ticks for fast forward (only for non-dry runs)
+        ticks_before = (
+            self.game_state.instance.get_elapsed_ticks() if not dry_run else 0
+        )
+
         # this is a bit hacky and we should rethink how to do dry runs
         # right now the type of the connection output changes if its a dry run
         if dry_run:
@@ -148,6 +154,18 @@ class ConnectEntities(Tool):
                 total_required_entities += connection["number_of_entities_required"]
                 entities_available = connection["number_of_entities_available"]
             # sleep(0.01) # Sleep for 250ms to ensure that the game updates
+
+        # Sleep for the appropriate real-world time based on elapsed ticks (only for non-dry runs)
+        if not dry_run:
+            ticks_after = self.game_state.instance.get_elapsed_ticks()
+            ticks_added = ticks_after - ticks_before
+            if ticks_added > 0:
+                game_speed = self.game_state.instance.get_speed()
+                real_world_sleep = (
+                    ticks_added / 60 / game_speed if game_speed > 0 else 0
+                )
+                sleep(real_world_sleep)
+
         if dry_run:
             return {
                 "number_of_entities_required": total_required_entities,

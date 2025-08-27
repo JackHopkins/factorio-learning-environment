@@ -12,7 +12,7 @@ from fle.env import FactorioInstance
 from fle.env.gym_env.environment import FactorioGymEnv
 from fle.eval.tasks import TaskFactory, TASK_FOLDER
 
-PORT_OFFSET = int(os.environ["PORT_OFFSET"])
+PORT_OFFSET = int(os.environ.get("PORT_OFFSET", 0))
 
 
 @dataclass
@@ -51,7 +51,7 @@ class FactorioGymRegistry:
                     task_key=task_data["task_key"],
                     task_config_path=str(task_file),
                     description=task_data["goal_description"],
-                    num_agents=task_data["num_agents"],
+                    num_agents=task_data.get("num_agents", 1),
                 )
             except Exception as e:
                 print(f"Warning: Failed to load task definition {task_file}: {e}")
@@ -137,7 +137,8 @@ def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
         else:
             instance = FactorioInstance(**common_kwargs)
 
-        instance.set_speed(10)
+        # Set initial speed and unpause
+        instance.set_speed_and_unpause(10)
 
         # Setup the task
         task.setup(instance)

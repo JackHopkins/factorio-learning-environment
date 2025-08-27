@@ -27,7 +27,11 @@ class CraftItem(Tool):
         if not self.game_state.instance.fast:
             count_in_inventory = self.inspect_inventory()[entity]
 
+        # Track elapsed ticks for fast forward
+        ticks_before = self.game_state.instance.get_elapsed_ticks()
+
         success, elapsed = self.execute(self.player_index, name, quantity)
+
         if success != {} and isinstance(success, str):
             if success is None:
                 raise Exception(
@@ -36,6 +40,14 @@ class CraftItem(Tool):
             else:
                 result = self.get_error_message(success)
                 raise Exception(result)
+
+        # Sleep for the appropriate real-world time based on elapsed ticks
+        ticks_after = self.game_state.instance.get_elapsed_ticks()
+        ticks_added = ticks_after - ticks_before
+        if ticks_added > 0:
+            game_speed = self.game_state.instance.get_speed()
+            real_world_sleep = ticks_added / 60 / game_speed if game_speed > 0 else 0
+            sleep(real_world_sleep)
 
         if not self.game_state.instance.fast:
             sleep(0.5)

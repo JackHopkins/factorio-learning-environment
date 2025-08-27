@@ -58,6 +58,153 @@ local function are_positions_in_same_network(pos1, pos2)
     return network1 and network2 and network1 == network2
 end
 
+local function is_large_entity(entity)
+    if not entity then return false end
+    
+    -- Check by size (3x3 or larger)
+    local prototype = game.entity_prototypes[entity.name]
+    if prototype then
+        local collision_box = prototype.collision_box
+        local width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
+        local height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y)
+        return width >= 2.6 and height >= 2.6  -- 3x3 entities have collision box ~2.8x2.8
+    end
+    
+    return false
+end
+
+local function get_reserved_positions_around_entity(entity)
+    if not is_large_entity(entity) then
+        return {}
+    end
+    
+    local pos = entity.position
+    local reserved = {}
+    
+    -- Middle adjacent positions (reserved for inserters, chests, etc.)
+    local middle_adjacent = {
+        {x = pos.x, y = pos.y - 2},      -- North (middle)
+        {x = pos.x + 2, y = pos.y},      -- East (middle)
+        {x = pos.x, y = pos.y + 2},      -- South (middle)
+        {x = pos.x - 2, y = pos.y}       -- West (middle)
+    }
+    
+    for _, reserved_pos in pairs(middle_adjacent) do
+        table.insert(reserved, reserved_pos)
+    end
+    
+    return reserved
+end
+
+local function get_corner_positions_around_entity(entity)
+    if not is_large_entity(entity) then
+        return {}
+    end
+    
+    local pos = entity.position
+    local corners = {
+        {x = pos.x - 2, y = pos.y - 2},  -- Northwest corner
+        {x = pos.x + 2, y = pos.y - 2},  -- Northeast corner
+        {x = pos.x + 2, y = pos.y + 2},  -- Southeast corner
+        {x = pos.x - 2, y = pos.y + 2}   -- Southwest corner
+    }
+    
+    return corners
+end
+
+local function is_position_reserved_for_poles(position)
+    -- Find large entities within reasonable range
+    local nearby_entities = game.surfaces[1].find_entities_filtered{
+        position = position,
+        radius = 4,  -- Search within 4 tiles
+        force = "player"
+    }
+    
+    for _, entity in pairs(nearby_entities) do
+        if is_large_entity(entity) then
+            local reserved_positions = get_reserved_positions_around_entity(entity)
+            
+            -- Check if current position is in reserved list
+            for _, reserved_pos in pairs(reserved_positions) do
+                local distance = math.sqrt(
+                    (position.x - reserved_pos.x)^2 + (position.y - reserved_pos.y)^2
+                )
+                if distance < 0.5 then  -- Within half a tile
+                    return true, entity  -- Position is reserved
+                end
+            end
+        end
+    end
+    
+    return false, nil
+end
+
+local function find_alternative_pole_position(ideal_position, connection_type)
+    local search_radius = wire_reach[connection_type] or 4
+    local wire_reach_distance = wire_reach[connection_type] or 4
+    
+    -- First, try corner positions of nearby large entities
+    local nearby_entities = game.surfaces[1].find_entities_filtered{
+        position = ideal_position,
+        radius = search_radius,
+        force = "player"
+    }
+    
+    for _, entity in pairs(nearby_entities) do
+        if is_large_entity(entity) then
+            local corners = get_corner_positions_around_entity(entity)
+            
+            for _, corner_pos in pairs(corners) do
+                local distance_to_ideal = math.sqrt(
+                    (corner_pos.x - ideal_position.x)^2 + (corner_pos.y - ideal_position.y)^2
+                )
+                
+                -- Check if corner is within wire reach of ideal position
+                if distance_to_ideal <= wire_reach_distance then
+                    local can_place = game.surfaces[1].can_place_entity({
+                        name = connection_type,
+                        position = corner_pos,
+                        force = "player"
+                    })
+                    
+                    if can_place then
+                        return corner_pos
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Fallback: try positions in expanding circles, avoiding reserved areas
+    for radius = 1, search_radius, 0.5 do
+        for angle = 0, 7 do  -- 8 directions
+            local test_pos = {
+                x = ideal_position.x + radius * math.cos(angle * math.pi / 4),
+                y = ideal_position.y + radius * math.sin(angle * math.pi / 4)
+            }
+            
+            -- Round to grid
+            test_pos.x = math.floor(test_pos.x * 2) / 2
+            test_pos.y = math.floor(test_pos.y * 2) / 2
+            
+            local is_reserved, blocking_entity = is_position_reserved_for_poles(test_pos)
+            if not is_reserved then
+                local can_place = game.surfaces[1].can_place_entity({
+                    name = connection_type,
+                    position = test_pos,
+                    force = "player"
+                })
+                
+                if can_place then
+                    return test_pos
+                end
+            end
+        end
+    end
+    
+    return nil  -- No suitable position found
+end
+
 local function is_position_saturated(position, reach)
     -- Get nearby poles
     local nearby_poles = game.surfaces[1].find_entities_filtered{
@@ -459,13 +606,43 @@ local function place_at_position(player, connection_type, current_position, dir,
 
     if is_electric_pole then
         if is_position_saturated(current_position, wire_reach[connection_type]) then
-
             return -- No need to place another pole
         end
 
-        placement_position = game.surfaces[1].find_non_colliding_position(connection_type, current_position, 2, 0.1)
-        if not placement_position then
-            error("Cannot find suitable position to place " .. connection_type)
+        -- Check if the position is reserved for non-pole entities
+        local is_reserved, blocking_entity = is_position_reserved_for_poles(current_position)
+        if is_reserved then
+            -- Try to find an alternative position (preferably at corners)
+            placement_position = find_alternative_pole_position(current_position, connection_type)
+            if not placement_position then
+                -- Fallback to original method but avoid reserved areas
+                local attempts = 0
+                local max_attempts = 10
+                
+                repeat
+                    placement_position = game.surfaces[1].find_non_colliding_position(connection_type, current_position, 2 + attempts * 0.5, 0.1)
+                    attempts = attempts + 1
+                    
+                    if placement_position then
+                        local still_reserved, _ = is_position_reserved_for_poles(placement_position)
+                        if not still_reserved then
+                            break  -- Found a good position
+                        else
+                            placement_position = nil  -- Keep searching
+                        end
+                    end
+                until placement_position or attempts >= max_attempts
+                
+                if not placement_position then
+                    error("Cannot find suitable position to place " .. connection_type .. " without blocking important adjacent slots around large entities")
+                end
+            end
+        else
+            -- Original logic for non-reserved positions
+            placement_position = game.surfaces[1].find_non_colliding_position(connection_type, current_position, 2, 0.1)
+            if not placement_position then
+                error("Cannot find suitable position to place " .. connection_type)
+            end
         end
     else
         local entities = game.surfaces[1].find_entities_filtered{

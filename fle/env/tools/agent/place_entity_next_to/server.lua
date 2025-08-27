@@ -1,3 +1,224 @@
+local function is_large_entity(entity)
+    if not entity then return false end
+    
+    -- Check by size (3x3 or larger)
+    local prototype = game.entity_prototypes[entity.name]
+    if prototype then
+        local collision_box = prototype.collision_box
+        local width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
+        local height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y)
+        return width >= 2.6 and height >= 2.6  -- 3x3 entities have collision box ~2.8x2.8
+    end
+    
+    return false
+end
+
+local function get_reserved_positions_around_entity(entity)
+    if not is_large_entity(entity) then
+        return {}
+    end
+    
+    local pos = entity.position
+    local reserved = {}
+    
+    -- Middle adjacent positions (reserved for inserters, chests, etc.)
+    local middle_adjacent = {
+        {x = pos.x, y = pos.y - 2, side = "north"},      -- North (middle)
+        {x = pos.x + 2, y = pos.y, side = "east"},       -- East (middle)
+        {x = pos.x, y = pos.y + 2, side = "south"},      -- South (middle)
+        {x = pos.x - 2, y = pos.y, side = "west"}        -- West (middle)
+    }
+    
+    for _, reserved_pos in pairs(middle_adjacent) do
+        table.insert(reserved, reserved_pos)
+    end
+    
+    return reserved
+end
+
+local function get_factory_pattern_info(ref_entity, entity_to_place)
+    if not ref_entity then return nil end
+    
+    local patterns = {
+        -- Assembling machine patterns
+        ["assembling-machine"] = {
+            input_sides = {"west", "north"},  -- Typical input sides
+            output_sides = {"east", "south"}, -- Typical output sides
+            preferred_belt_distance = 2,
+            preferred_chest_distance = 2
+        },
+        -- Mining drill patterns  
+        ["mining-drill"] = {
+            input_sides = {},  -- No inputs for mining drills
+            output_sides = {"east", "south", "west", "north"}, -- Can output in any direction
+            preferred_belt_distance = 2,
+            preferred_chest_distance = 2
+        },
+        -- Furnace patterns
+        ["furnace"] = {
+            input_sides = {"west", "north"},
+            output_sides = {"east", "south"},
+            preferred_belt_distance = 2,
+            preferred_chest_distance = 2
+        },
+        -- Chemical plant patterns
+        ["chemical-plant"] = {
+            input_sides = {"west", "north"},
+            output_sides = {"east", "south"},
+            preferred_belt_distance = 2,
+            preferred_chest_distance = 2
+        }
+    }
+    
+    return patterns[ref_entity.type]
+end
+
+local function get_optimal_inserter_placement(ref_entity, direction, entity_to_place)
+    if not ref_entity or entity_to_place ~= "inserter" and not entity_to_place:find("inserter") then
+        return nil
+    end
+    
+    local pattern_info = get_factory_pattern_info(ref_entity)
+    if not pattern_info then return nil end
+    
+    local direction_to_side = {
+        [0] = "north",   -- 0: North
+        [1] = "east",    -- 1: East
+        [2] = "south",   -- 2: South
+        [3] = "west"     -- 3: West
+    }
+    
+    local side = direction_to_side[direction]
+    if not side then return nil end
+    
+    local recommendations = {
+        optimal = false,
+        reason = "",
+        suggested_direction = direction,
+        insertion_direction = nil
+    }
+    
+    -- Check if this is an optimal side for input/output
+    if pattern_info.input_sides then
+        for _, input_side in pairs(pattern_info.input_sides) do
+            if side == input_side then
+                recommendations.optimal = true
+                recommendations.reason = "Optimal position for input inserter"
+                -- Inserter should face towards the machine
+                recommendations.insertion_direction = (direction + 2) % 4  -- Opposite direction
+                break
+            end
+        end
+    end
+    
+    if pattern_info.output_sides and not recommendations.optimal then
+        for _, output_side in pairs(pattern_info.output_sides) do
+            if side == output_side then
+                recommendations.optimal = true
+                recommendations.reason = "Optimal position for output inserter"
+                -- Inserter should face away from the machine
+                recommendations.insertion_direction = direction
+                break
+            end
+        end
+    end
+    
+    if not recommendations.optimal then
+        recommendations.reason = "Non-optimal position - consider using " .. 
+                                table.concat(pattern_info.input_sides or {}, "/") .. 
+                                " for input or " .. 
+                                table.concat(pattern_info.output_sides or {}, "/") .. 
+                                " for output"
+    end
+    
+    return recommendations
+end
+
+local function find_alternative_position_smart(ref_position, ref_entity, entity_to_place, original_direction, gap)
+    local alternatives = {}
+    
+    -- If placing an inserter near a large entity, try the reserved middle positions first
+    if ref_entity and is_large_entity(ref_entity) and (entity_to_place == "inserter" or entity_to_place:find("inserter")) then
+        local reserved_positions = get_reserved_positions_around_entity(ref_entity)
+        
+        for _, reserved_pos in pairs(reserved_positions) do
+            -- Calculate what direction this would be from the reference entity
+            local dx = reserved_pos.x - ref_entity.position.x
+            local dy = reserved_pos.y - ref_entity.position.y
+            
+            local alt_direction
+            if math.abs(dx) > math.abs(dy) then
+                alt_direction = dx > 0 and 1 or 3  -- East or West
+            else
+                alt_direction = dy > 0 and 2 or 0  -- South or North
+            end
+            
+            local recommendations = get_optimal_inserter_placement(ref_entity, alt_direction, entity_to_place)
+            
+            table.insert(alternatives, {
+                position = reserved_pos,
+                direction = alt_direction,
+                score = recommendations and recommendations.optimal and 100 or 50,
+                reason = recommendations and recommendations.reason or "Adjacent to large entity",
+                insertion_direction = recommendations and recommendations.insertion_direction
+            })
+        end
+    end
+    
+    -- Try directions in order of preference based on entity type and factory patterns
+    local direction_priority = {original_direction}  -- Start with requested direction
+    
+    -- Add other directions
+    for dir = 0, 3 do
+        if dir ~= original_direction then
+            table.insert(direction_priority, dir)
+        end
+    end
+    
+    -- Add standard adjacent positions with different directions
+    for _, direction in pairs(direction_priority) do
+        for distance = 1, 3 do  -- Try increasing distances
+            local offset_x, offset_y = 0, 0
+            
+            if direction == 0 then     -- North
+                offset_y = -distance
+            elseif direction == 1 then -- East
+                offset_x = distance
+            elseif direction == 2 then -- South
+                offset_y = distance
+            else                       -- West
+                offset_x = -distance
+            end
+            
+            local alt_pos = {
+                x = ref_position.x + offset_x,
+                y = ref_position.y + offset_y
+            }
+            
+            local score = 30 - (distance * 5)  -- Prefer closer positions
+            if ref_entity then
+                local recommendations = get_optimal_inserter_placement(ref_entity, direction, entity_to_place)
+                if recommendations and recommendations.optimal then
+                    score = score + 20
+                end
+            end
+            
+            table.insert(alternatives, {
+                position = alt_pos,
+                direction = direction,
+                score = score,
+                reason = "Alternative position at distance " .. distance,
+                insertion_direction = nil
+            })
+        end
+    end
+    
+    -- Sort by score (highest first)
+    table.sort(alternatives, function(a, b) return a.score > b.score end)
+    
+    return alternatives
+end
+
 local function validate_mining_drill_placement(surface, position, entity_name)
     -- Check if the entity is a mining drill
     local prototype = game.entity_prototypes[entity_name]
@@ -181,14 +402,74 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         force = player.force
     })
 
+    -- Smart collision resolution with alternative positioning
     if #nearby_entities > 0 then
         local colliding_entity_names = {}
+        local has_pole_collision = false
+        
         for _, nearby_entity in pairs(nearby_entities) do
             if nearby_entity.name ~= 'laser-beam' and nearby_entity.name ~= "character" then
                 table.insert(colliding_entity_names, nearby_entity.name)
+                if nearby_entity.type == "electric-pole" then
+                    has_pole_collision = true
+                end
             end
         end
+        
         if #colliding_entity_names > 0 then
+            -- Try to find alternative positions, especially for inserters and common factory entities
+            local should_try_alternatives = (
+                entity == "inserter" or entity:find("inserter") or
+                entity == "wooden-chest" or entity == "iron-chest" or entity == "steel-chest" or
+                is_transport_belt(entity) or
+                has_pole_collision  -- Always try alternatives when blocked by poles
+            )
+            
+            if should_try_alternatives then
+                -- game.print("Trying alternative positions for " .. entity)
+                local alternatives = find_alternative_position_smart(ref_position, ref_entity, entity, direction, gap)
+                
+                for _, alternative in pairs(alternatives) do
+                    local alt_pos = alternative.position
+                    -- Round to grid
+                    alt_pos.x = math.ceil(alt_pos.x * 2) / 2
+                    alt_pos.y = math.ceil(alt_pos.y * 2) / 2
+                    
+                    -- Check if this position is clear
+                    local alt_nearby_entities = player.surface.find_entities_filtered({
+                        position = alt_pos,
+                        radius = 0.5,
+                        force = player.force
+                    })
+                    
+                    local alt_clear = true
+                    for _, alt_entity in pairs(alt_nearby_entities) do
+                        if alt_entity.name ~= 'laser-beam' and alt_entity.name ~= "character" then
+                            alt_clear = false
+                            break
+                        end
+                    end
+                    
+                    if alt_clear then
+                        -- Found a good alternative position!
+                        new_position = alt_pos
+                        direction = alternative.direction
+                        
+                        -- Update orientation for the new direction
+                        orientation = global.utils.get_entity_direction(entity, direction)
+                        
+                        -- If we have insertion direction recommendation, use it
+                        if alternative.insertion_direction then
+                            orientation = global.utils.get_entity_direction(entity, alternative.insertion_direction)
+                        end
+                        
+                        -- game.print("Using alternative position: " .. alternative.reason)
+                        goto alternative_found
+                    end
+                end
+            end
+            
+            -- If no alternatives worked, give the original error with suggestions
             local colliding_entity_name
             if #colliding_entity_names == 1 then
                 colliding_entity_name = colliding_entity_names[1]
@@ -197,11 +478,32 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             else
                 colliding_entity_name = table.concat(colliding_entity_names, ", ", 1, #colliding_entity_names - 1) .. ", and " .. colliding_entity_names[#colliding_entity_names]
             end
-            error("\"A " .. colliding_entity_name .. " already exists at the new position " .. serpent.line(new_position) .. ". Consider increasing the spacing (".. gap.."), changing the direction or changing the reference position (" .. serpent.line(ref_position) .. ")\"")
+            
+            local suggestions = ""
+            if ref_entity and is_large_entity(ref_entity) then
+                suggestions = " For large entities like " .. ref_entity.type .. ", consider using the middle sides (N/S/E/W) for inserters and chests, and corners for poles."
+            elseif has_pole_collision then
+                suggestions = " Consider using connect_entities to place poles in better positions, or manually place the pole elsewhere first."
+            end
+            
+            error("\"A " .. colliding_entity_name .. " already exists at the new position " .. serpent.line(new_position) .. ". Consider increasing the spacing (".. gap.."), changing the direction or changing the reference position (" .. serpent.line(ref_position) .. ")." .. suggestions .. "\"")
         end
     end
+    
+    ::alternative_found::
 
-    local orientation = global.utils.get_entity_direction(entity, direction)
+    -- Get smart orientation recommendations for inserters
+    local recommendations = nil
+    if ref_entity and (entity == "inserter" or entity:find("inserter")) then
+        recommendations = get_optimal_inserter_placement(ref_entity, direction, entity)
+        if recommendations and recommendations.insertion_direction then
+            orientation = global.utils.get_entity_direction(entity, recommendations.insertion_direction)
+        else
+            orientation = global.utils.get_entity_direction(entity, direction)
+        end
+    else
+        orientation = global.utils.get_entity_direction(entity, direction)
+    end
 
     if ref_entity then
         local prototype = game.entity_prototypes[ref_entity.name]
@@ -350,10 +652,29 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         error("Failed to create entity " .. entity .. " at position " .. serpent.line(new_position))
     end
 
+    -- Provide feedback about smart placement decisions
+    local placement_info = global.utils.serialize_entity(new_entity)
+    
+    -- Add placement recommendations to the response for logging
+    if recommendations then
+        placement_info.placement_feedback = {
+            optimal = recommendations.optimal,
+            reason = recommendations.reason,
+            auto_oriented = recommendations.insertion_direction ~= nil
+        }
+        
+        -- Log helpful information for the agent
+        if recommendations.optimal then
+            -- game.print("✓ Optimal " .. entity .. " placement: " .. recommendations.reason)
+        else
+            -- game.print("⚠ " .. entity .. " placement: " .. recommendations.reason)
+        end
+    end
+    
     local item_stack = {name = entity, count = 1}
     if player.get_main_inventory().can_insert(item_stack) then
         player.get_main_inventory().remove(item_stack)
-        return global.utils.serialize_entity(new_entity)
+        return placement_info
     else
         error("Not enough items in inventory.")
     end

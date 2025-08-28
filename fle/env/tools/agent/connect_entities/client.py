@@ -194,7 +194,7 @@ class ConnectEntities(Tool):
 
         # Resolve connection type if not provided
         if not connection_types:
-            self._infer_connection_type(source, target)
+            connection_types = {self._infer_connection_type(source, target)}
         else:
             valid = self._validate_connection_types(connection_types)
             if not valid:
@@ -237,7 +237,25 @@ class ConnectEntities(Tool):
                     if isinstance(target, (Entity, EntityGroup))
                     else None,
                 )
-                return connection[0] if not dry_run else connection
+                if not dry_run:
+                    if connection and len(connection) > 0:
+                        return connection[0]
+                    else:
+                        # No entities were created but pathing was successful - find existing connecting entity
+                        existing_entity = self._find_existing_connecting_entity(
+                            target_pos, list(connection_types)[0]
+                        )
+                        return (
+                            existing_entity
+                            if existing_entity
+                            else (
+                                target
+                                if isinstance(target, (Entity, EntityGroup))
+                                else target_pos
+                            )
+                        )
+                else:
+                    return connection
             except Exception as e:
                 last_exception = e
                 pass
@@ -268,7 +286,22 @@ class ConnectEntities(Tool):
                         if isinstance(target, (Entity, EntityGroup))
                         else None,
                     )
-                    return connection[0]
+                    if connection and len(connection) > 0:
+                        return connection[0]
+                    else:
+                        # No entities were created but pathing was successful - find existing connecting entity
+                        existing_entity = self._find_existing_connecting_entity(
+                            target_pos, list(connection_types)[0]
+                        )
+                        return (
+                            existing_entity
+                            if existing_entity
+                            else (
+                                target
+                                if isinstance(target, (Entity, EntityGroup))
+                                else target_pos
+                            )
+                        )
                 except Exception:
                     continue
 
@@ -734,8 +767,8 @@ class ConnectEntities(Tool):
     def _process_belt_groups(
         self,
         groupable_entities: List[Entity],
-        source_entity: Optional[Entity],
-        target_entity: Optional[Entity],
+        source_entity: Optional[Union[Entity, EntityGroup]],
+        target_entity: Optional[Union[Entity, EntityGroup]],
         source_pos: Position,
     ) -> List[BeltGroup]:
         """Process transport belt groups"""
@@ -764,23 +797,7 @@ class ConnectEntities(Tool):
             self.rotate_end_belt_to_face(entity_groups[0], target_entity)
             # self.rotate_final_belt_when_connecting_groups(entity_groups[0], source_entity)
 
-        # Get final groups and filter to relevant one
-        entity_groups = self.get_entities(
-            {
-                Prototype.TransportBelt,
-                Prototype.ExpressTransportBelt,
-                Prototype.FastTransportBelt,
-                Prototype.UndergroundBelt,
-                Prototype.FastUndergroundBelt,
-                Prototype.ExpressUndergroundBelt,
-            },
-            source_pos,
-        )
-
-        for group in entity_groups:
-            if source_pos in [entity.position for entity in group.belts]:
-                return cast(List[BeltGroup], [group])
-
+        # Return the properly grouped entities
         return cast(List[BeltGroup], entity_groups)
 
     def _update_belt_group(
@@ -901,16 +918,15 @@ class ConnectEntities(Tool):
         self, groupable_entities: List[Entity], source_pos: Position
     ) -> List[PipeGroup]:
         """Process pipe groups"""
-        entity_groups = self.get_entities(
-            {Prototype.Pipe, Prototype.UndergroundPipe}, source_pos
-        )
+        # Group the passed entities first
+        entity_groups = agglomerate_groupable_entities(groupable_entities)
 
+        # Deduplicate pipes in groups
         for group in entity_groups:
-            group.pipes = _deduplicate_entities(group.pipes)
-            if source_pos in [entity.position for entity in group.pipes]:
-                return [group]
+            if hasattr(group, "pipes"):
+                group.pipes = _deduplicate_entities(group.pipes)
 
-        return entity_groups
+        return cast(List[PipeGroup], entity_groups)
 
     def _process_groups(
         self,
@@ -924,21 +940,6 @@ class ConnectEntities(Tool):
         for group in entity_groups:
             group.entities = _deduplicate_entities(group.entities)
             if source_pos in [entity.position for entity in group.entities]:
-                return [group]
-
-        return entity_groups
-
-    def _process_pipe_groups(
-        self, groupable_entities: List[Entity], source_pos: Position
-    ) -> List[PipeGroup]:
-        """Process pipe groups"""
-        entity_groups = self.get_entities(
-            {Prototype.Pipe, Prototype.UndergroundPipe}, source_pos
-        )
-
-        for group in entity_groups:
-            group.pipes = _deduplicate_entities(group.pipes)
-            if source_pos in [entity.position for entity in group.pipes]:
                 return [group]
 
         return entity_groups
@@ -978,17 +979,9 @@ class ConnectEntities(Tool):
         self, groupable_entities: List[Entity], source_pos: Position
     ) -> List[ElectricityGroup]:
         """Process power pole groups"""
-        return cast(
-            List[ElectricityGroup],
-            self.get_entities(
-                {
-                    Prototype.SmallElectricPole,
-                    Prototype.BigElectricPole,
-                    Prototype.MediumElectricPole,
-                },
-                source_pos,
-            ),
-        )
+        # Group the passed entities first
+        entity_groups = agglomerate_groupable_entities(groupable_entities)
+        return cast(List[ElectricityGroup], entity_groups)
 
     def _adjust_belt_position(
         self, pos: Position, entity: Optional[Entity]
@@ -1248,6 +1241,43 @@ class ConnectEntities(Tool):
         Check if the position is blocked by entities"""
         entities = self.get_entities(position=pos, radius=radius)
         return bool(entities)
+
+    def _find_existing_connecting_entity(
+        self, target_pos: Position, connection_type: Prototype
+    ) -> Optional[Union[Entity, EntityGroup]]:
+        """
+        Find existing entity of the connection type closest to the target position.
+        This is used when no new entities were created but connection was successful.
+        """
+        # Determine search radius based on connection type
+        if connection_type in (
+            Prototype.SmallElectricPole,
+            Prototype.MediumElectricPole,
+            Prototype.BigElectricPole,
+        ):
+            search_radius = 10  # Power poles have larger reach
+        else:
+            search_radius = 5  # Belts, pipes have smaller reach
+
+        # Get entities of the connection type near target
+        entities = self.get_entities(connection_type, target_pos, search_radius)
+
+        if not entities:
+            return None
+
+        # Find closest entity to target position
+        closest_entity = None
+        closest_distance = float("inf")
+
+        for entity in entities:
+            entity_pos = entity.position if hasattr(entity, "position") else None
+            if entity_pos:
+                distance = target_pos.distance(entity_pos)
+                if distance < closest_distance:
+                    closest_distance = distance
+                    closest_entity = entity
+
+        return closest_entity
 
     def pickup_entities(
         self,

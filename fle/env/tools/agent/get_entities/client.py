@@ -32,10 +32,49 @@ class GetEntities(Tool):
             if not isinstance(entities, Set):
                 entities = set([entities])
 
-                # Serialize entity_names as a string
+            # Handle group prototypes by expanding them to their component types
+            expanded_entities = set()
+            group_requests = set()
+
+            for entity in entities:
+                if entity == Prototype.BeltGroup:
+                    # For belt groups, search for all belt types
+                    belt_types = {
+                        Prototype.TransportBelt,
+                        Prototype.FastTransportBelt,
+                        Prototype.ExpressTransportBelt,
+                        Prototype.UndergroundBelt,
+                        Prototype.FastUndergroundBelt,
+                        Prototype.ExpressUndergroundBelt,
+                    }
+                    expanded_entities.update(belt_types)
+                    group_requests.add(Prototype.BeltGroup)
+                elif entity == Prototype.PipeGroup:
+                    # For pipe groups, search for pipe types
+                    pipe_types = {Prototype.Pipe, Prototype.UndergroundPipe}
+                    expanded_entities.update(pipe_types)
+                    group_requests.add(Prototype.PipeGroup)
+                elif entity == Prototype.ElectricityGroup:
+                    # For electricity groups, search for pole types
+                    pole_types = {
+                        Prototype.SmallElectricPole,
+                        Prototype.MediumElectricPole,
+                        Prototype.BigElectricPole,
+                    }
+                    expanded_entities.update(pole_types)
+                    group_requests.add(Prototype.ElectricityGroup)
+                else:
+                    expanded_entities.add(entity)
+
+            # Use expanded entities for the Lua query
+            query_entities = expanded_entities
+
+            # Serialize entity_names as a string
             entity_names = (
-                "[" + ",".join([f'"{entity.value[0]}"' for entity in entities]) + "]"
-                if entities
+                "["
+                + ",".join([f'"{entity.value[0]}"' for entity in query_entities])
+                + "]"
+                if query_entities
                 else "[]"
             )
 
@@ -104,15 +143,24 @@ class GetEntities(Tool):
                 except Exception as e1:
                     print(f"Could not create {entity_data['name']} object: {e1}")
 
-            # Only group entities if user is looking for group types or no specific filter
-            should_group = not entities or any(
-                proto
-                in {
-                    Prototype.ElectricityGroup,
-                    Prototype.PipeGroup,
-                    Prototype.BeltGroup,
-                }
-                for proto in entities
+            # Group entities when:
+            # 1. User explicitly requests group types, OR
+            # 2. User provides a position filter (suggesting they want nearby entities grouped), OR
+            # 3. No specific entities requested (get all entities - should be grouped)
+            should_group = (
+                not entities  # No filter = group everything
+                or any(
+                    proto
+                    in {
+                        Prototype.ElectricityGroup,
+                        Prototype.PipeGroup,
+                        Prototype.BeltGroup,
+                    }
+                    for proto in entities
+                )  # Explicit group request
+                or (
+                    entities and position is not None
+                )  # Individual entities with position filter = group for convenience
             )
 
             if should_group:
@@ -177,22 +225,84 @@ class GetEntities(Tool):
                     if hasattr(entity, "prototype") and entity.prototype in entities:
                         filtered_entities.append(entity)
                     elif hasattr(entity, "__class__"):
-                        # Check for group types
-                        if (
-                            entity.__class__.__name__ == "ElectricityGroup"
-                            and Prototype.ElectricityGroup in entities
-                        ):
-                            filtered_entities.append(entity)
-                        elif (
-                            entity.__class__.__name__ == "PipeGroup"
-                            and Prototype.PipeGroup in entities
-                        ):
-                            filtered_entities.append(entity)
-                        elif (
-                            entity.__class__.__name__ == "BeltGroup"
-                            and Prototype.BeltGroup in entities
-                        ):
-                            filtered_entities.append(entity)
+                        # Handle group entities
+                        if entity.__class__.__name__ == "ElectricityGroup":
+                            pole_types = {
+                                Prototype.SmallElectricPole,
+                                Prototype.MediumElectricPole,
+                                Prototype.BigElectricPole,
+                            }
+                            if Prototype.ElectricityGroup in group_requests:
+                                # Explicit group request - return the group
+                                filtered_entities.append(entity)
+                            elif (
+                                any(pole_type in entities for pole_type in pole_types)
+                                and position is not None
+                            ):
+                                # Individual poles requested with position - return group for convenience
+                                filtered_entities.append(entity)
+                            elif (
+                                any(pole_type in entities for pole_type in pole_types)
+                                and position is None
+                            ):
+                                # Individual poles requested without position - extract individual poles from group
+                                for pole in entity.poles:
+                                    if (
+                                        hasattr(pole, "prototype")
+                                        and pole.prototype in entities
+                                    ):
+                                        filtered_entities.append(pole)
+                        elif entity.__class__.__name__ == "PipeGroup":
+                            pipe_types = {Prototype.Pipe, Prototype.UndergroundPipe}
+                            if Prototype.PipeGroup in group_requests:
+                                # Explicit group request - return the group
+                                filtered_entities.append(entity)
+                            elif (
+                                any(pipe_type in entities for pipe_type in pipe_types)
+                                and position is not None
+                            ):
+                                # Individual pipes requested with position - return group for convenience
+                                filtered_entities.append(entity)
+                            elif (
+                                any(pipe_type in entities for pipe_type in pipe_types)
+                                and position is None
+                            ):
+                                # Individual pipes requested without position - extract individual pipes from group
+                                for pipe in entity.pipes:
+                                    if (
+                                        hasattr(pipe, "prototype")
+                                        and pipe.prototype in entities
+                                    ):
+                                        filtered_entities.append(pipe)
+                        elif entity.__class__.__name__ == "BeltGroup":
+                            belt_types = {
+                                Prototype.TransportBelt,
+                                Prototype.FastTransportBelt,
+                                Prototype.ExpressTransportBelt,
+                                Prototype.UndergroundBelt,
+                                Prototype.FastUndergroundBelt,
+                                Prototype.ExpressUndergroundBelt,
+                            }
+                            if Prototype.BeltGroup in group_requests:
+                                # Explicit group request - return the group
+                                filtered_entities.append(entity)
+                            elif (
+                                any(belt_type in entities for belt_type in belt_types)
+                                and position is not None
+                            ):
+                                # Individual belts requested with position - return group for convenience
+                                filtered_entities.append(entity)
+                            elif (
+                                any(belt_type in entities for belt_type in belt_types)
+                                and position is None
+                            ):
+                                # Individual belts requested without position - extract individual belts from group
+                                for belt in entity.belts:
+                                    if (
+                                        hasattr(belt, "prototype")
+                                        and belt.prototype in entities
+                                    ):
+                                        filtered_entities.append(belt)
                         elif entity.__class__.__name__ == "WallGroup":
                             # WallGroup doesn't have a corresponding Prototype, but include if present
                             filtered_entities.append(entity)

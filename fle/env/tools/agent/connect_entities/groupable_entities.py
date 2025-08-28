@@ -39,8 +39,7 @@ def _construct_group(
     id: int, entities: List[Entity], prototype: Prototype, position: Position
 ) -> EntityGroup:
     if prototype == Prototype.TransportBelt or isinstance(entities[0], TransportBelt):
-        if len(entities) == 1:
-            return entities[0]
+        # Always return BeltGroup for consistent return types, even for single belts
         inputs = [c for c in entities if c.is_source]
         outputs = [c for c in entities if c.is_terminus]
         inventory = Inventory()

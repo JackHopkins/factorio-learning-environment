@@ -363,6 +363,12 @@ class FactorioNamespace:
                 if self.loop_context.state in ("BREAK", "CONTINUE"):
                     return False
 
+            # Handle return statement propagation
+            elif (
+                isinstance(result, tuple) and len(result) == 2 and result[0] == "RETURN"
+            ):
+                return result
+
         return True
 
     def execute_node(self, node, eval_dict, parent_node=None):
@@ -577,6 +583,47 @@ class FactorioNamespace:
 
             return True
 
+        elif isinstance(node, ast.AugAssign):
+            # Handle augmented assignments (+=, -=, *=, /=, //=, %=, **=, &=, |=, ^=, >>=, <<=)
+            compiled = compile(ast.Module([node], type_ignores=[]), "file", "exec")
+            exec(compiled, eval_dict)
+
+            # Update persistent vars for the target variable
+            if isinstance(node.target, ast.Name):
+                name = node.target.id
+                if name in eval_dict:
+                    value = eval_dict[name]
+                    self.persistent_vars[name] = wrap_for_serialization(value)
+                    setattr(self, name, value)
+                    # print(f"{self.tcp_port}: Updated augmented variable {name} = {value}")
+
+            # Handle more complex targets like attributes or subscripts
+            elif isinstance(node.target, (ast.Attribute, ast.Subscript)):
+                # For attribute/subscript assignments, we need to find the base variable
+                # and update it since the object may have been modified in place
+                target_vars = set()
+
+                # Extract variable names from the target expression
+                def extract_names(node):
+                    if isinstance(node, ast.Name):
+                        target_vars.add(node.id)
+                    elif isinstance(node, ast.Attribute):
+                        extract_names(node.value)
+                    elif isinstance(node, ast.Subscript):
+                        extract_names(node.value)
+                        extract_names(node.slice)
+
+                extract_names(node.target)
+
+                # Update persistent vars for any variables that might have been modified
+                for name in target_vars:
+                    if name in eval_dict and not name.startswith("_"):
+                        value = eval_dict[name]
+                        self.persistent_vars[name] = wrap_for_serialization(value)
+                        setattr(self, name, value)
+
+            return True
+
         elif isinstance(node, ast.Expr):
             # For expressions (including function calls)
             # compiled = compile(ast.Expression(node.value), 'file', 'eval')
@@ -642,6 +689,143 @@ class FactorioNamespace:
 
                         self.log(response)
 
+            return True
+
+        elif isinstance(node, ast.Return):
+            # Handle return statements
+            if node.value:
+                # Return with a value
+                return_value = eval(
+                    compile(ast.Expression(node.value), "file", "eval"), eval_dict
+                )
+                return ("RETURN", return_value)
+            else:
+                # Return without a value (return None)
+                return ("RETURN", None)
+
+        elif isinstance(node, ast.Raise):
+            # Handle raise statements
+            if node.exc:
+                # Raise with an exception
+                exception = eval(
+                    compile(ast.Expression(node.exc), "file", "eval"), eval_dict
+                )
+                if node.cause:
+                    # Raise with 'from' clause
+                    cause = eval(
+                        compile(ast.Expression(node.cause), "file", "eval"), eval_dict
+                    )
+                    raise exception from cause
+                else:
+                    # Simple raise
+                    raise exception
+            else:
+                # Re-raise current exception
+                raise
+
+        elif isinstance(node, ast.Assert):
+            # Handle assertion statements
+            test_result = eval(
+                compile(ast.Expression(node.test), "file", "eval"), eval_dict
+            )
+            if not test_result:
+                if node.msg:
+                    # Assert with custom message
+                    msg = eval(
+                        compile(ast.Expression(node.msg), "file", "eval"), eval_dict
+                    )
+                    raise AssertionError(msg)
+                else:
+                    # Assert without message
+                    raise AssertionError()
+            return True
+
+        elif isinstance(node, ast.Import):
+            # Handle import statements (import module)
+            for alias in node.names:
+                try:
+                    module = __import__(alias.name)
+                    # Handle dotted imports by following the path
+                    for part in alias.name.split(".")[1:]:
+                        module = getattr(module, part)
+
+                    # Use alias name if provided, otherwise module name
+                    name = alias.asname if alias.asname else alias.name
+                    eval_dict[name] = module
+                    self.persistent_vars[name] = module
+                    setattr(self, name, module)
+                except ImportError:
+                    # Let import errors propagate naturally
+                    raise
+            return True
+
+        elif isinstance(node, ast.ImportFrom):
+            # Handle from-import statements (from module import name)
+            try:
+                # Import the module
+                module_name = node.module if node.module else ""
+                level = node.level if node.level else 0
+
+                if level > 0:
+                    # Relative import - requires proper package context
+                    # For now, fall back to exec() as relative imports are complex
+                    compiled = compile(
+                        ast.Module([node], type_ignores=[]), "file", "exec"
+                    )
+                    exec(compiled, eval_dict)
+                else:
+                    # Absolute import
+                    if node.names[0].name == "*":
+                        # from module import * - fall back to exec()
+                        compiled = compile(
+                            ast.Module([node], type_ignores=[]), "file", "exec"
+                        )
+                        exec(compiled, eval_dict)
+                        # Update persistent vars with new imports
+                        for name, value in eval_dict.items():
+                            if (
+                                not name.startswith("_")
+                                and name not in self.persistent_vars
+                            ):
+                                self.persistent_vars[name] = value
+                                setattr(self, name, value)
+                    else:
+                        # Import specific names
+                        imported_names = [alias.name for alias in node.names]
+                        module = __import__(module_name, fromlist=imported_names)
+
+                        for alias in node.names:
+                            obj = getattr(module, alias.name)
+                            name = alias.asname if alias.asname else alias.name
+                            eval_dict[name] = obj
+                            self.persistent_vars[name] = obj
+                            setattr(self, name, obj)
+            except ImportError:
+                # Let import errors propagate naturally
+                raise
+            return True
+
+        elif isinstance(node, ast.Global):
+            # Handle global declarations
+            for name in node.names:
+                # Mark variables as global in current scope
+                # In Python, this affects assignment behavior in the function
+                # For our execution model, we'll track these but the fallback exec() handles it
+                pass
+            # For now, use fallback exec() to handle global semantics properly
+            compiled = compile(ast.Module([node], type_ignores=[]), "file", "exec")
+            exec(compiled, eval_dict)
+            return True
+
+        elif isinstance(node, ast.Nonlocal):
+            # Handle nonlocal declarations
+            for name in node.names:
+                # Mark variables as nonlocal in current scope
+                # Similar to global, this affects assignment behavior
+                pass
+            # For now, use fallback exec() to handle nonlocal semantics properly
+            compiled = compile(ast.Module([node], type_ignores=[]), "file", "exec")
+            exec(compiled, eval_dict)
             return True
 
         elif isinstance(node, ast.Try):
@@ -737,7 +921,20 @@ class FactorioNamespace:
         for index, node in enumerate(tree.body):
             try:
                 node = self._change_print_to_log(node)
-                self.execute_node(node, eval_dict)
+                result = self.execute_node(node, eval_dict)
+
+                # Handle return statement at top level
+                if (
+                    isinstance(result, tuple)
+                    and len(result) == 2
+                    and result[0] == "RETURN"
+                ):
+                    # If we hit a return statement at top level, log the return value and stop execution
+                    return_value = result[1]
+                    if return_value is not None:
+                        self.log(return_value)
+                    break
+
                 last_successful_state = dict(self.persistent_vars)
             except (Exception, NameError) as e:
                 self._sequential_exception_count += 1

@@ -109,7 +109,7 @@ class TrajectoryLogger:
 
         raw_text = agent.observation_formatter.format_raw_text(observation.raw_text)
         for line in raw_text.split("\n"):
-            if "Error" in line:
+            if "Error" in line or "Exception" in line:
                 print("raw_text Error:", line)
 
     def add_iteration_time(self, iteration_time: float):

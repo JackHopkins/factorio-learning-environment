@@ -76,6 +76,9 @@ class MoveTo(Tool):
             if isinstance(response, int) and response == 0:
                 raise Exception("Could not move.")
 
+            if isinstance(response, str):
+                raise Exception(f"Could not move. {response}")
+
             if response == "trailing" or response == "leading":
                 raise Exception("Could not lay entity, perhaps a typo?")
 

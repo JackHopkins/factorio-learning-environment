@@ -268,7 +268,6 @@ class FactorioGymEnv(gym.Env):
         self.last_observation = None
         # Track last message timestamp for each agent
         self.last_message_timestamps = {i: 0.0 for i in range(instance.num_agents)}
-        self._last_production_flows = {}
 
     def get_observation(
         self, agent_idx: int = 0, response: Optional[Response] = None
@@ -395,12 +394,10 @@ class FactorioGymEnv(gym.Env):
             self.reset_instance(GameState.parse_raw(action.game_state.to_raw()))
 
         namespace = self.instance.namespaces[agent_idx]
-        # Use last post_production_flows as pre_production_flows if available
-        if self._last_production_flows.get(agent_idx) is not None:
-            production_flows = self._last_production_flows[agent_idx]
-        else:
-            production_flows = namespace._get_production_stats()
-        start_production_flows = ProductionFlows.from_dict(production_flows)
+        # Calculate fresh production flows at the beginning of the step
+        start_production_flows = ProductionFlows.from_dict(
+            namespace._get_production_stats()
+        )
 
         # Execute the action
         initial_score, eval_time, result = self.instance.eval(
@@ -434,8 +431,6 @@ class FactorioGymEnv(gym.Env):
         # Get post-execution flows and calculate achievements
         current_flows = ProductionFlows.from_dict(namespace._get_production_stats())
         achievements = calculate_achievements(start_production_flows, current_flows)
-        # Store for next step
-        self._last_production_flows[agent_idx] = current_flows.__dict__
 
         # Create response object for observation
         response = Response(
@@ -481,7 +476,6 @@ class FactorioGymEnv(gym.Env):
             state: Optional[GameState] to reset to. If None, resets to initial state.
         """
         self.instance.reset(state)
-        self._last_production_flows = {i: None for i in range(self.instance.num_agents)}
 
     def reset(
         self, options: Optional[Dict[str, Any]] = None, seed: Optional[int] = None

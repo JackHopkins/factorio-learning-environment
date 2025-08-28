@@ -63,7 +63,7 @@ global.utils.get_closest_entity = function(player, position)
     local entities = player.surface.find_entities_filtered{
         position = position,
         force = "player",
-        radius = 3
+        radius = 5  -- Increased from 3 to 5 to better handle large entities like 3x3 drills
     }
 
     for _, entity in ipairs(entities) do

@@ -7,13 +7,13 @@ M.actions = {}
 -- move_to
 -- Register the tick handler when the module is loaded
 M.nth = {
-    {5, function(event)
+    [5] = function(event)
         if not global.fast then
             if global.walking_queues then
                 remote.call("actions", "update_walking_queues")
             end
         end
-    end}
+    end
 }
 
 --local function get_direction(from_pos, to_pos)
@@ -41,7 +41,7 @@ M.actions.move_to = function(player_index, path_handle, trailing_entity, is_trai
 
     -- If fast mode is disabled, set up walking queue
     if not global.fast then
-        -- Initialize walking queue if it doesn't exist
+        -- initialise walking queue if it doesn't exist
         if not global.walking_queues then
             global.walking_queues = {}
         end

@@ -4,9 +4,9 @@ M.events = {}
 
 M.actions = {}
 
--- Initialize global camera tracking variables in your script's initialization
--- Put this in your script's on_init or when you initialize your global table
-function initialize_camera_tracking(initial_position)
+-- initialise global camera tracking variables in your script's initialization
+-- Put this in your script's on_init or when you initialise your global table
+function initialise_camera_tracking(initial_position)
     initial_position = initial_position or {x = 0, y = 0}
 
     global.camera = global.camera or {}
@@ -133,9 +133,9 @@ M.actions.get_factory_centroid = function(player)
     -- Calculate bounds of the factory
     local bounds = calculate_factory_bounds(force)
 
-    -- Initialize camera tracking if it hasn't been initialized
+    -- initialise camera tracking if it hasn't been initialised
     if not global.camera then
-        initialize_camera_tracking(centroid)
+        initialise_camera_tracking(centroid)
         -- Set initial camera position to centroid
         --global.camera.position = {x = centroid.x, y = centroid.y}
         --global.camera.target = {x = centroid.x, y = centroid.y}

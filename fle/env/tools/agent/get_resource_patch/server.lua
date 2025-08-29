@@ -29,7 +29,7 @@ M.actions.get_resource_patch = function(player_index, resource, x, y, radius)
 
     end
 
-    -- Initialize bounding box
+    -- initialise bounding box
     local bounding_box = {left_top = {x = x, y = y}, right_bottom = {x = x, y = y}}
 
     if resource == "water" then

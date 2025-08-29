@@ -1,5 +1,9 @@
 local M = {}
 
+function M.initialise()
+
+local M = {}
+
 M.events = {}
 M.nth = {}
 
@@ -416,5 +420,9 @@ M.get_alerts = function(seconds)
 end
 
 remote.add_interface("alerts", {get_issues = utils.get_issues, get_alerts = M.get_alerts})
+
+return M
+
+end
 
 return M

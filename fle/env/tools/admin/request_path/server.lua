@@ -5,11 +5,9 @@ M.events = {}
 M.actions = {}
 
 -- Store created entities globally
-if not global.clearance_entities then
-    global.clearance_entities = {}
-end
 
 M.actions.request_path = function(player_index, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities, entity_size)
+
     local player = global.agent_characters[player_index]
     if not player then return nil end
     local size = entity_size/2 - 0.01
@@ -88,7 +86,7 @@ M.actions.request_path = function(player_index, start_x, start_y, goal_x, goal_y
 end
 
 -- Modify the pathfinding finished handler to clean up entities
---script.on_event(defines.events.on_script_path_request_finished, function(event)
+-- script.on_event(defines.events.on_script_path_request_finished, function(event)
 --    -- Clean up clearance entities
 --    if global.clearance_entities[event.id] then
 --        for _, entity in pairs(global.clearance_entities[event.id]) do
@@ -98,7 +96,7 @@ end
 --        end
 --        global.clearance_entities[event.id] = nil
 --    end
---end)
+-- end)
 
 M.events[defines.events.on_script_path_request_finished] = function(event)
     local request_data = global.path_requests[event.id]

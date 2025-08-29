@@ -197,37 +197,35 @@ class Controller:
     def execute(self, *args) -> Tuple[Dict, Any]:
         try:
             start = time.time()
-            if self.verbose:
-                print(f"{self.name} -- Python Args: {args}")
             parameters = [lua.encode(arg) for arg in args]
-            # parameters = [item for item in parameters if item != '"nil"']
-            if self.verbose:
-                print(f"Lua Parameters: {parameters}")
+            # if self.verbose:
+            #     print(f"## {self.name}")
+            #     print(f"Python Args: {args}\nLua Parameters: {parameters}")
             response = self.connection.rcon_client.send_command(
                 f"/sc rcon.print(remote.interfaces['actions']['{self.name}'])"
             )
             if response == "false":
                 print(f"No action found for {self.name}: {response}")
                 return {}, "Action not found"
-            if parameters:
-                parameters_str = ", ".join(parameters)
-                invocation = (
-                    f"pcall(remote.call, 'actions', '{self.name}', {parameters_str})"
-                )
-            else:
-                invocation = f"pcall(remote.call, 'actions', '{self.name}')"
+            parameters_str = (", " if parameters else "") + ", ".join(parameters)
+            invocation = f"pcall(remote.call, 'actions', '{self.name}'{parameters_str})"
             wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
             if self.verbose:
                 print(f"Wrapped command: {wrapped}")
             lua_response = self.connection.rcon_client.send_command(wrapped)
             if self.verbose:
                 print(f"Lua response: {lua_response}")
-                print("Lua response type: ", type(lua_response))
-                print("Lua custom decoded: ")
-                print(parse_lua_table(lua_response))
-                # print("Lua decoded: ", lua.decode(lua_response))
-            if "running interface function" in lua_response:
+            if "Error when running interface function" in lua_response:
                 parsed = parse_lua_table(lua_response)
+                print("🚨 LUA ERROR DETECTED 🚨")
+                print("=" * 50)
+                if isinstance(parsed, dict) and "error_string" in parsed:
+                    print(f"Error Message: {parsed['error_string']}")
+                if isinstance(parsed, dict) and "stack_traceback" in parsed:
+                    print(f"Stack Trace:\n{parsed['stack_traceback']}")
+                else:
+                    print(f"Raw Error Response: {lua_response}")
+                print("=" * 50)
             else:
                 parsed, elapsed = _lua2python(invocation, lua_response, start=start)
             if parsed is None:

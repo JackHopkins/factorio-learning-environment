@@ -1,3 +1,7 @@
+local M = {}
+
+function M.initialise()
+
 local function get_fluid_type(item)
     if item.type == "fluid" then
         return item.name
@@ -171,3 +175,7 @@ utils.get_chemical_plant_fluid_mappings = function(entity, recipe)
         outputs = output_points
     }
 end
+
+end
+
+return M

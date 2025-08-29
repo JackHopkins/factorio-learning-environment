@@ -69,7 +69,7 @@ class FactorioInstance:
         fast=True,
         tcp_port=27000,
         inventory=None,
-        cache_scripts=True,
+        cache_scripts=False,
         all_technologies_researched=True,
         clear_entities=True,
         peaceful=True,

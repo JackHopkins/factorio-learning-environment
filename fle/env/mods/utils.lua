@@ -1,3 +1,7 @@
+local M = {}
+
+function M.initialise()
+
 utils.remove_enemies = function ()
     game.forces["enemy"].kill_all_units()  -- Removes all biters
     game.map_settings.enemy_expansion.enabled = false  -- Stops biters from expanding
@@ -114,12 +118,7 @@ utils.avoid_entity = function(player_index, entity, position, direction)
     local player = global.agent_characters[player_index]
     local player_position = player.position
     for i=0, 10 do
-        local can_place = player.surface.can_place_entity{
-            name = entity,
-            force = "player",
-            position = position,
-            direction = utils.get_entity_direction(entity, direction)
-        }
+        local can_place = utils.can_place_entity(player, entity, position, direction)
         if can_place then
             return true
         end
@@ -258,3 +257,7 @@ utils.inspect = function(player, radius, position)
 
     return entity_data
 end
+
+end
+
+return M

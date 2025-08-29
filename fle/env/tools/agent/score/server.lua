@@ -350,10 +350,10 @@ end
 
 global.goal = nil
 
-local scores = production_score.get_production_scores()
-if scores then
-    global.initial_score = scores
-end
+-- local scores = production_score.get_production_scores()
+-- if scores then
+--     global.initial_score = scores
+-- end
 
 M.actions.score = function()
     local production_score = production_score.get_production_scores()

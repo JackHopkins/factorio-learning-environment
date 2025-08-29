@@ -108,7 +108,7 @@ end
 
 
 M.nth = {
-    15, function(event)
+    [15] = function(event)
     -- If no queues at all, just return
     if not global.harvest_queues then return end
 
@@ -301,7 +301,7 @@ local function begin_mining(queue, player)
     end
 end
 
-local function initialize_harvest_queue(player_index, position, target_yield)
+local function initialise_harvest_queue(player_index, position, target_yield)
    if not global.harvest_queues then
        global.harvest_queues = {}
    end
@@ -322,7 +322,7 @@ local function harvest_resource_slow(player, player_index, surface, position, co
    local exact_entities = find_entities_at_position(surface, position, {"tree", "resource"}, true)
 
    if #exact_entities > 0 then
-       local queue = initialize_harvest_queue(player_index, position, count)
+       local queue = initialise_harvest_queue(player_index, position, count)
        local expected_yield = add_entities_to_queue(queue, exact_entities, count)
        begin_mining(queue, player)
        return expected_yield
@@ -333,7 +333,7 @@ local function harvest_resource_slow(player, player_index, surface, position, co
        error("No harvestable entities found within range")
    end
 
-   local queue = initialize_harvest_queue(player_index, position, count)
+   local queue = initialise_harvest_queue(player_index, position, count)
    local expected_yield = add_entities_to_queue(queue, radius_entities, count)
    -- game.print("expected "..expected_yield)
    begin_mining(queue, player)

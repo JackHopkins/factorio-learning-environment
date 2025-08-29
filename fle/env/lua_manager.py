@@ -1,6 +1,8 @@
 import hashlib
 import json
 
+from enum import Enum
+
 import importlib
 import os
 import re
@@ -19,36 +21,51 @@ from fle.env.utils.rcon import (
 )
 
 
+class LuaMode(Enum):
+    RCON = "rcon"
+    CTRL = "ctrl"
+
+
 class LuaScriptManager:
     def __init__(
         self,
         rcon_client: RCONClient,
         cache_scripts: bool = False,
-        verbose: bool = False,
+        verbose: bool = True,
+        mode: LuaMode = LuaMode.CTRL,
     ):
         self.rcon_client = rcon_client
         self.cache_scripts = cache_scripts
+        self.verbose = verbose
+        self.mode = mode
+        self.lua = LuaRuntime(unpack_returned_tuples=True)
+        print(f"Initialising LuaScriptManager in {self.mode.value} mode")
+        if self.mode == LuaMode.CTRL:
+            # early exit methods if we're in control.lua mode
+            return
         if not cache_scripts:
             self._clear_game_checksums(rcon_client)
-        # self.action_directory = _get_action_dir()
-        self.verbose = verbose
-        self.lib_directory = _get_mods_dir()
-        if cache_scripts:
+        else:
             self.init_action_checksums()
             self.game_checksums = self._get_game_checksums(rcon_client)
+
+        self.lib_directory = _get_mods_dir()
 
         self.tool_scripts = self.get_tools_to_load()
 
         self.lib_scripts = self.get_libs_to_load()
-        self.lua = LuaRuntime(unpack_returned_tuples=True)
         self.initialise_actions_table()
 
     def initialise_actions_table(self):
+        print("Initialising actions table")
         self.rcon_client.send_command("/sc actions = actions or {};")
         self.rcon_client.send_command("/sc nth = nth or {};")
         self.rcon_client.send_command("/sc events = events or {};")
 
     def finalise_actions_table(self):
+        if self.mode == LuaMode.CTRL:
+            return
+        print("Finalising actions table")
         response = self.rcon_client.send_command(
             "/sc local n=0; for _ in pairs(actions) do n=n+1 end; rcon.print('actions count = '..n)"
         )
@@ -86,8 +103,9 @@ class LuaScriptManager:
         return re.sub(r"(?m)^\s*return\s+M\s*$", substitution_string, script)
 
     def init_action_checksums(self):
+        print("Initialising action checksums")
         checksum_init_script = _load_mods("checksum")
-        checksum_init_script = checksum_init_script
+        checksum_init_script = self.setup_lib(checksum_init_script)
         response = self.rcon_client.send_command("/sc " + checksum_init_script)
         return response
 
@@ -102,7 +120,8 @@ class LuaScriptManager:
             return False, e.args[0]
 
     def load_tool_into_game(self, name):
-        # return
+        if self.mode == LuaMode.CTRL:
+            return
         # Select scripts by exact tool directory, not prefix
         tool_dirs = {
             f"agent/{name}",
@@ -147,7 +166,8 @@ class LuaScriptManager:
                 print(response)
 
     def load_init_into_game(self, name):
-        # return
+        if self.mode == LuaMode.CTRL:
+            return
         if name not in self.lib_scripts:
             # attempt to load the script from the filesystem
             script = _load_mods(name)

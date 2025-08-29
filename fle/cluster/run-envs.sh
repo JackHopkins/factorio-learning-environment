@@ -56,17 +56,21 @@ generate_compose_file() {
         MODS_VOLUME=$(printf "    - source: %s\n      target: /opt/factorio/mods\n      type: bind\n" "$MODS_PATH")
     fi
 
-    # Build optional save file volume block based on SAVE_ADDED
-    SAVE_VOLUME=""
+    # Always create saves directory and mount it
+    mkdir -p ../../.fle/saves
+    
+    # Build save file volume block - always include saves volume
+    SAVE_VOLUME="    - source: ../../.fle/saves
+      target: /opt/factorio/saves
+      type: bind"
+    
+    # Build optional save file logic based on SAVE_ADDED
     if [ "$SAVE_ADDED" = true ]; then
         # Check if SAVE_FILE is a .zip file
         if [[ "$SAVE_FILE" != *.zip ]]; then
             echo "Error: Save file must be a .zip file."
             exit 1
         fi
-        
-        # Create saves directory if it doesn't exist
-        mkdir -p ../../.fle/saves
         
         # Get the save file name (basename)
         SAVE_FILE_NAME=$(basename "$SAVE_FILE")
@@ -77,10 +81,7 @@ generate_compose_file() {
         # Create variable for the container path
         CONTAINER_SAVE_PATH="/opt/factorio/saves/$SAVE_FILE_NAME"
         
-        SAVE_VOLUME="    - source: ../../.fle/saves
-      target: /opt/factorio/saves
-      type: bind"
-      COMMAND="--start-server ${SAVE_FILE_NAME}"
+        COMMAND="--start-server ${SAVE_FILE_NAME}"
     fi
     
     # Validate scenario
@@ -136,7 +137,7 @@ EOF
     restart: unless-stopped
     user: factorio
     volumes:
-    - source: ./scenarios
+    - source: ../../.fle/scenarios
       target: /opt/factorio/scenarios
       type: bind
     - source: ./config

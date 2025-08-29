@@ -1,3 +1,7 @@
+local M = {}
+
+function M.initialise()
+
 -- Library for serializing items in Factorio
 -- Based on code from playerManager and trainTeleports
 
@@ -704,7 +708,7 @@ utils.serialize_entity = function(entity)
     if entity.type == "transport-belt" or entity.type == "underground-belt" then
         local x, y = entity.position.x, entity.position.y
 
-        -- Initialize positions with default offsets based on belt direction
+        -- initialise positions with default offsets based on belt direction
         local input_offset = {
             [defines.direction.north] = {x = 0, y = 1},
             [defines.direction.south] = {x = 0, y = -1},
@@ -814,7 +818,7 @@ utils.serialize_entity = function(entity)
 
     -- Add input and output positions if the entity is a splitter
     if entity.type == "splitter" then
-        -- Initialize positions based on entity center
+        -- initialise positions based on entity center
         local x, y = entity.position.x, entity.position.y
 
         -- Calculate the offset for left/right positions (0.5 tiles)
@@ -1107,7 +1111,7 @@ utils.serialize_entity = function(entity)
 
         local position = entity.position
 
-        -- Initialize resources table
+        -- initialise resources table
         serialized.resources = {}
 
         -- Calculate the area to check based on mining drill radius
@@ -1387,3 +1391,7 @@ utils.serialize_entity = function(entity)
 
     return serialized
 end
+
+end
+
+return M

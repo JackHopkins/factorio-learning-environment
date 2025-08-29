@@ -36,7 +36,7 @@ end
 
 -- Create agent characters script
 M.actions.create_agent_characters = function(num_agents)
-    -- Initialize agent characters table
+    -- initialise agent characters table
     -- Destroy existing agent characters if they exist
     if global.agent_characters then
         for _, char in pairs(global.agent_characters) do
@@ -54,6 +54,7 @@ M.actions.create_agent_characters = function(num_agents)
     
     -- Create new characters for each agent
     for i = 1, num_agents do
+        log("Creating agent character " .. i .. " of " .. num_agents)
         local char = game.surfaces[1].create_entity{
             name = "character",
             position = {x = 0, y = (i - 1) * 2},
@@ -64,12 +65,13 @@ M.actions.create_agent_characters = function(num_agents)
         if num_agents > 1 then
             char.color = generate_agent_color(i, num_agents)
         end
-        
+
+        global.clearance_entities[i] = {}
         global.agent_characters[i] = char
     end
 
     -- Set the first character as the main player
-    player = global.agent_characters[1]
+    local player = global.agent_characters[1]
     player.surface.always_day=true
 end
 

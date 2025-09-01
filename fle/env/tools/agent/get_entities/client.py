@@ -146,7 +146,13 @@ class GetEntities(Tool):
             # Group entities when:
             # 1. User explicitly requests group types, OR
             # 2. User provides a position filter (suggesting they want nearby entities grouped), OR
-            # 3. No specific entities requested (get all entities - should be grouped)
+            # 3. No specific entities requested (get all entities - should be grouped), OR
+            # 4. User requests individual pole entities (restore original behavior - poles are always grouped)
+            pole_types = {
+                Prototype.SmallElectricPole,
+                Prototype.MediumElectricPole,
+                Prototype.BigElectricPole,
+            }
             should_group = (
                 not entities  # No filter = group everything
                 or any(
@@ -161,6 +167,9 @@ class GetEntities(Tool):
                 or (
                     entities and position is not None
                 )  # Individual entities with position filter = group for convenience
+                or any(
+                    proto in pole_types for proto in entities
+                )  # Individual pole entities - always group
             )
 
             if should_group:
@@ -223,7 +232,14 @@ class GetEntities(Tool):
                 for entity in entities_list:
                     # Check entity prototype or group type
                     if hasattr(entity, "prototype") and entity.prototype in entities:
-                        filtered_entities.append(entity)
+                        # Exclude power poles from individual handling - they should be handled as groups
+                        pole_types = {
+                            Prototype.SmallElectricPole,
+                            Prototype.MediumElectricPole,
+                            Prototype.BigElectricPole,
+                        }
+                        if entity.prototype not in pole_types:
+                            filtered_entities.append(entity)
                     elif hasattr(entity, "__class__"):
                         # Handle group entities
                         if entity.__class__.__name__ == "ElectricityGroup":
@@ -241,17 +257,10 @@ class GetEntities(Tool):
                             ):
                                 # Individual poles requested with position - return group for convenience
                                 filtered_entities.append(entity)
-                            elif (
-                                any(pole_type in entities for pole_type in pole_types)
-                                and position is None
-                            ):
-                                # Individual poles requested without position - extract individual poles from group
-                                for pole in entity.poles:
-                                    if (
-                                        hasattr(pole, "prototype")
-                                        and pole.prototype in entities
-                                    ):
-                                        filtered_entities.append(pole)
+                            elif any(pole_type in entities for pole_type in pole_types):
+                                # Individual poles requested - return group (restores original behavior)
+                                # Power poles are inherently networked, so groups are more useful than individuals
+                                filtered_entities.append(entity)
                         elif entity.__class__.__name__ == "PipeGroup":
                             pipe_types = {Prototype.Pipe, Prototype.UndergroundPipe}
                             if Prototype.PipeGroup in group_requests:

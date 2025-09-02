@@ -109,6 +109,33 @@ class ConnectEntities(Tool):
         )
 
     def __call__(self, *args, **kwargs):
+        """Wrapper method with retry logic for specific Lua errors."""
+        max_retries = 2
+        retry_count = 0
+
+        while retry_count <= max_retries:
+            try:
+                return self.__call_impl__(*args, **kwargs)
+            except Exception as e:
+                error_message = str(e)
+                # Check if the error contains the specific Lua error we want to retry on
+                if "attempt to index field ? (a nil value)" in error_message:
+                    retry_count += 1
+                    if retry_count <= max_retries:
+                        print(
+                            f"ConnectEntities retry {retry_count}/{max_retries} due to Lua indexing error: {error_message}"
+                        )
+                        continue
+                    else:
+                        print(
+                            f"ConnectEntities failed after {max_retries} retries: {error_message}"
+                        )
+                        raise
+                else:
+                    # For any other error, don't retry - just re-raise immediately
+                    raise
+
+    def __call_impl__(self, *args, **kwargs):
         connection_types = set()
         waypoints = []
         if "connection_type" in kwargs:

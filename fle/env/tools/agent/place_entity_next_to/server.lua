@@ -382,6 +382,21 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     local is_belt = is_transport_belt(entity)
 
     local new_position = calculate_position(direction, ref_position, ref_entity, gap, is_belt, entity)
+    
+    -- Helper function to clear item-on-ground entities at a position
+    local function clear_items_on_ground(position, radius)
+        local items = player.surface.find_entities_filtered{
+            position = position,
+            radius = radius or 0.5,
+            name = "item-on-ground"
+        }
+        for _, item in ipairs(items) do
+            item.destroy()
+        end
+    end
+    
+    -- Clear any item-on-ground entities at the target position before collision check
+    clear_items_on_ground(new_position)
 
     local function player_collision(player, target_area)
         local character_box = {
@@ -434,6 +449,9 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
                     -- Round to grid
                     alt_pos.x = math.ceil(alt_pos.x * 2) / 2
                     alt_pos.y = math.ceil(alt_pos.y * 2) / 2
+                    
+                    -- Clear items at alternative position before checking if it's clear
+                    clear_items_on_ground(alt_pos)
                     
                     -- Check if this position is clear
                     local alt_nearby_entities = player.surface.find_entities_filtered({
@@ -556,10 +574,9 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         player.teleport(new_player_position)
     end
 
-    -- First clean up any items-on-ground at the target position
     local area = {{new_position.x - entity_width / 2, new_position.y - entity_height / 2}, {new_position.x + entity_width / 2, new_position.y + entity_height / 2}}
 
-    -- Show bounding box
+    -- Show bounding box for debugging
     rendering.draw_rectangle({
         only_in_alt_mode=true,
         color = {r = 0, g = 1, b = 0},
@@ -587,15 +604,6 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         surface = player.surface,
         time_to_live = 60000
     })
-
-
-    local items = player.surface.find_entities_filtered{
-        area = area,
-        name = "item-on-ground"
-    }
-    for _, item in ipairs(items) do
-        item.destroy()
-    end
 
     global.utils.avoid_entity(player_index, entity, new_position, direction)
 

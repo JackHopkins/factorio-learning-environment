@@ -543,6 +543,13 @@ def agglomerate_groupable_entities(
     if not connected_entities:
         return []
 
+    # Check if entities are already grouped - if so, return them as-is
+    if hasattr(connected_entities[0], "__class__") and connected_entities[
+        0
+    ].__class__.__name__ in ["BeltGroup", "PipeGroup", "ElectricityGroup", "WallGroup"]:
+        # Entities are already grouped, return them directly
+        return connected_entities
+
     if hasattr(connected_entities[0], "prototype"):
         prototype = connected_entities[0].prototype
 

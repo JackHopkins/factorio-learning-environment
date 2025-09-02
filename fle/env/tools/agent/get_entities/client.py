@@ -38,7 +38,7 @@ class GetEntities(Tool):
 
             for entity in entities:
                 if entity == Prototype.BeltGroup:
-                    # For belt groups, search for all belt types
+                    # For belt groups, search for all belt types and group them
                     belt_types = {
                         Prototype.TransportBelt,
                         Prototype.FastTransportBelt,
@@ -50,12 +50,12 @@ class GetEntities(Tool):
                     expanded_entities.update(belt_types)
                     group_requests.add(Prototype.BeltGroup)
                 elif entity == Prototype.PipeGroup:
-                    # For pipe groups, search for pipe types
+                    # For pipe groups, search for pipe types and group them
                     pipe_types = {Prototype.Pipe, Prototype.UndergroundPipe}
                     expanded_entities.update(pipe_types)
                     group_requests.add(Prototype.PipeGroup)
                 elif entity == Prototype.ElectricityGroup:
-                    # For electricity groups, search for pole types
+                    # For electricity groups, search for pole types and group them
                     pole_types = {
                         Prototype.SmallElectricPole,
                         Prototype.MediumElectricPole,
@@ -117,8 +117,12 @@ class GetEntities(Tool):
                     )
                     continue
 
-                # Apply standard filtering
-                if entities and matching_prototype not in entities:
+                # Apply standard filtering - check against expanded entities too
+                if (
+                    entities
+                    and matching_prototype not in entities
+                    and matching_prototype not in expanded_entities
+                ):
                     continue
 
                 metaclass = matching_prototype.value[1]
@@ -167,9 +171,6 @@ class GetEntities(Tool):
                 or (
                     entities and position is not None
                 )  # Individual entities with position filter = group for convenience
-                or any(
-                    proto in pole_types for proto in entities
-                )  # Individual pole entities - always group
             )
 
             if should_group:
@@ -231,15 +232,11 @@ class GetEntities(Tool):
                 filtered_entities = []
                 for entity in entities_list:
                     # Check entity prototype or group type
-                    if hasattr(entity, "prototype") and entity.prototype in entities:
-                        # Exclude power poles from individual handling - they should be handled as groups
-                        pole_types = {
-                            Prototype.SmallElectricPole,
-                            Prototype.MediumElectricPole,
-                            Prototype.BigElectricPole,
-                        }
-                        if entity.prototype not in pole_types:
-                            filtered_entities.append(entity)
+                    if hasattr(entity, "prototype") and (
+                        entity.prototype in entities
+                        or entity.prototype in expanded_entities
+                    ):
+                        filtered_entities.append(entity)
                     elif hasattr(entity, "__class__"):
                         # Handle group entities
                         if entity.__class__.__name__ == "ElectricityGroup":
@@ -272,17 +269,10 @@ class GetEntities(Tool):
                             ):
                                 # Individual pipes requested with position - return group for convenience
                                 filtered_entities.append(entity)
-                            elif (
-                                any(pipe_type in entities for pipe_type in pipe_types)
-                                and position is None
-                            ):
-                                # Individual pipes requested without position - extract individual pipes from group
-                                for pipe in entity.pipes:
-                                    if (
-                                        hasattr(pipe, "prototype")
-                                        and pipe.prototype in entities
-                                    ):
-                                        filtered_entities.append(pipe)
+                            elif any(pipe_type in entities for pipe_type in pipe_types):
+                                # Individual pipes requested - return group (restores original behavior)
+                                # Pipes are inherently networked, so groups are more useful than individuals
+                                filtered_entities.append(entity)
                         elif entity.__class__.__name__ == "BeltGroup":
                             belt_types = {
                                 Prototype.TransportBelt,

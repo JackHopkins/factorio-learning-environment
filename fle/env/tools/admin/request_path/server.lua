@@ -94,7 +94,6 @@ end
 --end)
 
 script.on_event(defines.events.on_script_path_request_finished, function(event)
-    game.print("Path request finished for ID: " .. event.id)
     local request_data = global.path_requests[event.id]
     if not request_data then
         game.print("No request data found for ID: " .. event.id)
@@ -109,7 +108,6 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
 
     if event.path then
         global.paths[event.id] = event.path
-        game.print("Path found for request ID: " .. event.id)
     elseif event.try_again_later then
         global.paths[event.id] = "busy"
         game.print("Pathfinder busy for request ID: " .. event.id)

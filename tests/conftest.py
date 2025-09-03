@@ -94,6 +94,8 @@ def instance(pytestconfig, worker_id):
                 "pipe": 15,
                 "steam-engine": 1,
                 "small-electric-pole": 10,
+                "fast-transport-belt": 10,
+                "express-transport-belt": 10,
             },
         )
         instance.set_speed(10.0)

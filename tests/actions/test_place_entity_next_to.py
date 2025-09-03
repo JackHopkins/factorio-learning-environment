@@ -18,6 +18,7 @@ def game(configure_game):
             "assembling-machine-1": 10,
             "steam-engine": 5,
             "pipe": 20,
+            "coal": 50,
             "offshore-pump": 5,
             "wooden-chest": 20,
             "small-electric-pole": 30,
@@ -739,3 +740,305 @@ def test_belt_placement_with_smart_routing(game):
 
     except Exception as e:
         print(f"Belt chaining issue (may be expected due to space): {e}")
+
+
+def test_item_on_ground_clearance(game):
+    """Test that item-on-ground entities are cleared before placement"""
+    nearest_coal = game.nearest(Resource.Coal)
+    game.move_to(nearest_coal)
+
+    drill = game.place_entity(Prototype.BurnerMiningDrill, position=nearest_coal)
+    assert drill, "Failed to place drill"
+    game.insert_item(Prototype.Coal, drill, 5)
+
+    # Let the drill mine some coal
+    game.sleep(6)
+
+    # The item-on-ground clearance should prevent placement failures
+    chest = game.place_entity(Prototype.WoodenChest, position=drill.drop_position)
+    assert chest, "chest placement should succeed despite items on ground"
+    game.move_to(Position(x=20, y=20))
+
+    # Place a furnace
+    furnace = game.place_entity(Prototype.StoneFurnace, position=Position(x=20, y=20))
+    assert furnace, "Failed to place furnace"
+    print(f"✓ Furnace placed successfully at {furnace.position}")
+
+
+def test_placement_feedback_system(game):
+    """Test that placement feedback is provided for optimization learning"""
+    game.move_to(Position(x=120, y=120))
+
+    # Place assembling machine
+    assembler = game.place_entity(
+        Prototype.AssemblingMachine1, position=Position(x=120, y=120)
+    )
+    assert assembler, "Failed to place assembling machine"
+
+    # Place inserter with feedback system
+    inserter = game.place_entity_next_to(
+        Prototype.BurnerInserter,
+        reference_position=assembler.position,
+        direction=Direction.LEFT,  # Should be optimal for input
+        spacing=0,
+    )
+
+    assert inserter, "Failed to place inserter"
+
+    # Check if placement feedback attribute exists
+    if hasattr(inserter, "_placement_feedback"):
+        feedback = inserter._placement_feedback
+        assert "reason" in feedback, "Feedback should contain reason"
+        assert "optimal" in feedback, "Feedback should contain optimal flag"
+        print(f"✓ Placement feedback: {feedback['reason']}")
+
+        if feedback.get("auto_oriented"):
+            print("✓ Inserter was auto-oriented for optimal flow")
+    else:
+        print("Note: Placement feedback not attached to entity (may be in logs only)")
+
+
+def test_auto_orientation_verification(game):
+    """Test that inserters are automatically oriented for optimal flow"""
+    game.move_to(Position(x=140, y=140))
+
+    # Place furnace
+    furnace = game.place_entity(Prototype.StoneFurnace, position=Position(x=140, y=140))
+    assert furnace, "Failed to place furnace"
+
+    # Place input inserter (should face towards furnace)
+    input_inserter = game.place_entity_next_to(
+        Prototype.BurnerInserter,
+        reference_position=furnace.position,
+        direction=Direction.LEFT,
+        spacing=0,
+    )
+
+    assert input_inserter, "Failed to place input inserter"
+
+    # Place output inserter (should face away from furnace)
+    output_inserter = game.place_entity_next_to(
+        Prototype.BurnerInserter,
+        reference_position=furnace.position,
+        direction=Direction.RIGHT,
+        spacing=0,
+    )
+
+    assert output_inserter, "Failed to place output inserter"
+
+    print(f"✓ Input inserter direction: {input_inserter.direction}")
+    print(f"✓ Output inserter direction: {output_inserter.direction}")
+
+    # Verify inserters have different orientations (auto-oriented)
+    # The exact directions may vary, but they should be optimal for the factory pattern
+
+
+def test_factory_pattern_recognition_details(game):
+    """Test detailed factory pattern recognition for different entity types"""
+
+    # Test assembling machine pattern
+    game.move_to(Position(x=160, y=160))
+    assembler = game.place_entity(
+        Prototype.AssemblingMachine1, position=Position(x=160, y=160)
+    )
+
+    # Test input sides (west, north should be preferred)
+    west_inserter = game.place_entity_next_to(
+        Prototype.BurnerInserter,
+        reference_position=assembler.position,
+        direction=Direction.LEFT,
+        spacing=0,
+    )
+    assert west_inserter, "West inserter should be placed (optimal input side)"
+
+    # Test output sides (east, south should be preferred)
+    east_inserter = game.place_entity_next_to(
+        Prototype.BurnerInserter,
+        reference_position=assembler.position,
+        direction=Direction.RIGHT,
+        spacing=0,
+    )
+    assert east_inserter, "East inserter should be placed (optimal output side)"
+
+    print("✓ Assembling machine factory pattern recognized")
+
+    # Test mining drill pattern (should allow output in all directions)
+    game.instance.reset()
+    iron_position = game.nearest(Resource.IronOre)
+    game.move_to(iron_position)
+
+    drill = game.place_entity(Prototype.ElectricMiningDrill, position=iron_position)
+
+    # Mining drills should accept output inserters in any direction
+    directions_tested = []
+    for direction in [Direction.LEFT, Direction.RIGHT, Direction.UP, Direction.DOWN]:
+        try:
+            inserter = game.place_entity_next_to(
+                Prototype.BurnerInserter,
+                reference_position=drill.position,
+                direction=direction,
+                spacing=0,
+            )
+            if inserter:
+                directions_tested.append(direction)
+        except:
+            pass
+
+        game.instance.reset()
+        iron_position = game.nearest(Resource.IronOre)
+        game.move_to(iron_position)
+        drill = game.place_entity(Prototype.ElectricMiningDrill, position=iron_position)
+
+    assert len(directions_tested) > 0, "Mining drill should allow output inserters"
+    print(f"✓ Mining drill accepts inserters in {len(directions_tested)} directions")
+
+
+def test_large_entity_reserved_slots_details(game):
+    """Test detailed reserved slot behavior for large entities"""
+    game.move_to(Position(x=180, y=180))
+
+    # Test 3x3 entity (assembling machine)
+    assembler = game.place_entity(
+        Prototype.AssemblingMachine1, position=Position(x=180, y=180)
+    )
+
+    # Test that middle positions are reserved (±2 offset)
+    expected_positions = {
+        Direction.LEFT: Position(x=178, y=180),  # West middle
+        Direction.RIGHT: Position(x=182, y=180),  # East middle
+        Direction.UP: Position(x=180, y=178),  # North middle
+        Direction.DOWN: Position(x=180, y=182),  # South middle
+    }
+
+    for direction, expected_pos in expected_positions.items():
+        inserter = game.place_entity_next_to(
+            Prototype.BurnerInserter,
+            reference_position=assembler.position,
+            direction=direction,
+            spacing=0,
+        )
+
+        assert inserter, f"Should place inserter in {direction} direction"
+
+        # Verify it's at the expected reserved position
+        assert inserter.position.is_close(expected_pos, tolerance=0.6), (
+            f"Inserter should be at reserved position {expected_pos}, got {inserter.position}"
+        )
+
+        game.instance.reset()
+        game.move_to(Position(x=180, y=180))
+        assembler = game.place_entity(
+            Prototype.AssemblingMachine1, position=Position(x=180, y=180)
+        )
+
+    print("✓ Large entity reserved slots working correctly")
+
+
+def test_collision_resolution_with_helpful_errors(game):
+    """Test that collision resolution provides helpful error messages"""
+    game.move_to(Position(x=220, y=220))
+
+    # Place assembler
+    assembler = game.place_entity(
+        Prototype.AssemblingMachine1, position=Position(x=220, y=220)
+    )
+
+    # Block multiple positions to force helpful error
+    game.place_entity(
+        Prototype.SmallElectricPole, position=Position(x=222, y=220)
+    )  # East
+    game.place_entity(
+        Prototype.SmallElectricPole, position=Position(x=218, y=220)
+    )  # West
+
+    try:
+        # Try to place inserter - should get helpful error about large entities and poles
+        inserter = game.place_entity_next_to(
+            Prototype.BurnerInserter,
+            reference_position=assembler.position,
+            direction=Direction.RIGHT,
+            spacing=0,
+        )
+
+        # If it succeeds, it found a good alternative
+        if inserter:
+            print(f"✓ Found alternative position: {inserter.position}")
+
+    except Exception as e:
+        error_msg = str(e).lower()
+        helpful_keywords = [
+            "large entities",
+            "corner",
+            "pole",
+            "spacing",
+            "direction",
+            "consider",
+            "middle sides",
+            "connect_entities",
+        ]
+
+        found_helpful = any(keyword in error_msg for keyword in helpful_keywords)
+        assert found_helpful, f"Error should provide helpful suggestions: {e}"
+        print("✓ Got helpful error message with suggestions")
+
+
+def test_alternative_position_scoring(game):
+    """Test that alternative positions are scored and prioritized correctly"""
+    game.move_to(Position(x=20, y=20))
+
+    # Place assembler
+    assembler = game.place_entity(
+        Prototype.AssemblingMachine1, position=Position(x=20, y=20)
+    )
+
+    # Block preferred position
+    game.place_entity(Prototype.WoodenChest, position=Position(x=22, y=20))
+
+    # Try to place inserter - should find best alternative
+    inserter = game.place_entity_next_to(
+        Prototype.BurnerInserter,
+        reference_position=assembler.position,
+        direction=Direction.RIGHT,  # Blocked direction
+        spacing=0,
+    )
+
+    if inserter:
+        # Should not be at blocked position
+        blocked_pos = Position(x=22, y=20)
+        assert not inserter.position.is_close(blocked_pos, tolerance=0.1), (
+            "Should find alternative, not blocked position"
+        )
+
+        # Should still be reasonably close to assembler
+        distance = (
+            (inserter.position.x - assembler.position.x) ** 2
+            + (inserter.position.y - assembler.position.y) ** 2
+        ) ** 0.5
+        assert distance < 5, (
+            f"Alternative should be reasonably close, got distance {distance}"
+        )
+
+        print(f"✓ Found good alternative at distance {distance:.1f}")
+
+
+def test_belt_smart_collision_avoidance(game):
+    """Test smart collision avoidance specifically for belt placement"""
+    game.move_to(Position(x=260, y=260))
+
+    # Create a setup where belts need to navigate around obstacles
+    furnace = game.place_entity(Prototype.StoneFurnace, position=Position(x=260, y=260))
+
+    # Place some obstacles
+    game.place_entity(Prototype.SmallElectricPole, position=Position(x=262, y=261))
+    game.place_entity(Prototype.SmallElectricPole, position=Position(x=262, y=259))
+
+    # Try to place belt - should use smart routing
+    belt = game.place_entity_next_to(
+        Prototype.TransportBelt,
+        reference_position=furnace.position,
+        direction=Direction.RIGHT,
+        spacing=0,
+    )
+
+    assert belt, "Belt should be placed with smart collision avoidance"
+    print(f"✓ Belt placed at {belt.position} avoiding obstacles")

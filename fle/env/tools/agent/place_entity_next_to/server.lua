@@ -21,7 +21,8 @@ local function get_reserved_positions_around_entity(entity)
     local pos = entity.position
     local reserved = {}
     
-    -- Middle adjacent positions (reserved for inserters, chests, etc.)
+    -- For 3x3 entities, we need positions outside the collision box
+    -- The collision box extends ±1.5 from center, so we need at least ±2 to be clear
     local middle_adjacent = {
         {x = pos.x, y = pos.y - 2, side = "north"},      -- North (middle)
         {x = pos.x + 2, y = pos.y, side = "east"},       -- East (middle)
@@ -159,7 +160,7 @@ local function find_alternative_position_smart(ref_position, ref_entity, entity_
                 position = reserved_pos,
                 direction = alt_direction,
                 score = recommendations and recommendations.optimal and 100 or 50,
-                reason = recommendations and recommendations.reason or "Adjacent to large entity",
+                reason = recommendations and recommendations.reason or "Reserved position for large entity",
                 insertion_direction = recommendations and recommendations.insertion_direction
             })
         end
@@ -441,10 +442,9 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             )
             
             if should_try_alternatives then
-                -- game.print("Trying alternative positions for " .. entity)
                 local alternatives = find_alternative_position_smart(ref_position, ref_entity, entity, direction, gap)
                 
-                for _, alternative in pairs(alternatives) do
+                for i, alternative in pairs(alternatives) do
                     local alt_pos = alternative.position
                     -- Round to grid
                     alt_pos.x = math.ceil(alt_pos.x * 2) / 2
@@ -453,20 +453,13 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
                     -- Clear items at alternative position before checking if it's clear
                     clear_items_on_ground(alt_pos)
                     
-                    -- Check if this position is clear
-                    local alt_nearby_entities = player.surface.find_entities_filtered({
+                    -- Use proper collision detection instead of radius search
+                    local alt_clear = player.surface.can_place_entity({
+                        name = entity,
                         position = alt_pos,
-                        radius = 0.5,
+                        direction = global.utils.get_entity_direction(entity, alternative.direction),
                         force = player.force
                     })
-                    
-                    local alt_clear = true
-                    for _, alt_entity in pairs(alt_nearby_entities) do
-                        if alt_entity.name ~= 'laser-beam' and alt_entity.name ~= "character" then
-                            alt_clear = false
-                            break
-                        end
-                    end
                     
                     if alt_clear then
                         -- Found a good alternative position!
@@ -481,7 +474,6 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
                             orientation = global.utils.get_entity_direction(entity, alternative.insertion_direction)
                         end
                         
-                        -- game.print("Using alternative position: " .. alternative.reason)
                         goto alternative_found
                     end
                 end

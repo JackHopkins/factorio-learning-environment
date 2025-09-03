@@ -171,6 +171,9 @@ class GetEntities(Tool):
                 or (
                     entities and position is not None
                 )  # Individual entities with position filter = group for convenience
+                or any(
+                    pole_type in entities for pole_type in pole_types
+                )  # Always group poles
             )
 
             if should_group:

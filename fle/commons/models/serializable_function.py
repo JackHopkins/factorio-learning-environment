@@ -124,12 +124,10 @@ class SerializableFunction:
 
     def __call__(self, *args, **kwargs):
         """Make the serialized function directly callable"""
-        if self._cached_func is None:
-            if self._instance is None:
-                raise RuntimeError(
-                    "Function must be bound to an instance before calling"
-                )
-            self._cached_func = self.reconstruct(self._instance, self)
+        # Always reconstruct to get fresh globals - this ensures global statements work correctly
+        if self._instance is None:
+            raise RuntimeError("Function must be bound to an instance before calling")
+        self._cached_func = self.reconstruct(self._instance, self)
         return self._cached_func(*args, **kwargs)
 
     @staticmethod
@@ -146,6 +144,10 @@ class SerializableFunction:
         for name in dir(builtins):
             if not name.startswith("_"):
                 globals_dict[name] = getattr(builtins, name)
+
+        # Add persistent variables to ensure global statements work correctly
+        if hasattr(instance, "persistent_vars"):
+            globals_dict.update(instance.persistent_vars)
 
         code = marshal.loads(func_data.code_bytes)
 

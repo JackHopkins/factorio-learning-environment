@@ -396,7 +396,7 @@ def test_prevent_power_pole_cobwebbing(game):
     game.connect_entities(pole1, pole2, connection_type=Prototype.SmallElectricPole)
 
     # Verify no additional poles were placed
-    groups = game.get_entities({Prototype.SmallElectricPole})
+    groups = game.get_entities({Prototype.ElectricityGroup})
     assert len(groups[0].poles) == nr_of_poles, (
         f"Expected only {nr_of_poles} poles, found {len(groups[0].poles)}"
     )

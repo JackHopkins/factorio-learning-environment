@@ -88,20 +88,31 @@ class RunJob:
 
 
 class SweepManager:
-    """Manages large-scale evaluation sweeps"""
+    """Manages large-scale evaluation sweeps
 
-    def __init__(self, config: SweepConfig):
+    Supports both new sweeps and resuming existing ones. When resuming, the manager
+    will automatically skip completed runs and retry partial/failed runs.
+    """
+
+    def __init__(self, config: SweepConfig, existing_sweep_id: Optional[str] = None):
         """Initialize sweep manager
 
         Args:
             config: SweepConfig with sweep parameters
+            existing_sweep_id: Optional sweep ID to resume an existing sweep
         """
         self.config = config
+        self.is_resuming = existing_sweep_id is not None
 
-        # Generate unique sweep ID with timestamp and short UUID
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        short_uuid = str(uuid.uuid4())[:8]
-        self.sweep_id = f"{config.name}_{timestamp}_{short_uuid}"
+        if existing_sweep_id:
+            self.sweep_id = existing_sweep_id
+            print(f"🔄 Resuming sweep: {self.sweep_id}")
+        else:
+            # Generate unique sweep ID with timestamp and short UUID
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            short_uuid = str(uuid.uuid4())[:8]
+            self.sweep_id = f"{config.name}_{timestamp}_{short_uuid}"
+            print(f"🆕 Starting new sweep: {self.sweep_id}")
 
         self.jobs: List[RunJob] = []
         self.active_processes: Dict[str, multiprocessing.Process] = {}
@@ -139,18 +150,155 @@ class SweepManager:
             f"🖥️  Available servers: {total_servers}, Max concurrent: {self.config.max_concurrent_processes}"
         )
 
-    def generate_jobs(self) -> List[RunJob]:
-        """Generate all run jobs for the sweep
+        # If resuming, we'll load existing state in run_sweep()
+
+    @classmethod
+    def resume_sweep(cls, config: SweepConfig, sweep_id: str) -> "SweepManager":
+        """Create a SweepManager to resume an existing sweep
+
+        Args:
+            config: SweepConfig with sweep parameters (should match original config)
+            sweep_id: ID of the existing sweep to resume
 
         Returns:
-            List of RunJob objects
+            SweepManager instance configured to resume the sweep
+        """
+        return cls(config, existing_sweep_id=sweep_id)
+
+    async def load_existing_sweep_state(self) -> Dict[str, Any]:
+        """Load existing sweep state from database
+
+        Returns:
+            Dictionary with information about completed runs
+        """
+        if not self.is_resuming:
+            return {"completed_runs": {}, "partial_runs": {}}
+
+        print(f"🔍 Loading existing state for sweep: {self.sweep_id}")
+
+        # Initialize database analyzer if not already done
+        if not self.database_analyzer:
+            self.database_analyzer = DatabaseAnalyzer()
+
+        try:
+            # Get existing trajectories for this sweep
+            existing_df = (
+                await self.database_analyzer.get_trajectory_summaries_by_sweep(
+                    self.sweep_id
+                )
+            )
+
+            if existing_df.empty:
+                print(f"⚠️  No existing data found for sweep {self.sweep_id}")
+                return {"completed_runs": {}, "partial_runs": {}}
+
+            print(f"📊 Found {len(existing_df)} existing trajectories")
+
+            completed_runs = {}  # key: (model, task, trial), value: version
+            partial_runs = {}  # key: (model, task, trial), value: {version, status}
+
+            # Group by version to identify complete vs partial runs
+            for _, row in existing_df.iterrows():
+                model = row["model"]
+                version_desc = row["version_description"]
+                version = row["version"]
+                instance = row["instance"]  # This is the trial number
+
+                # Extract task from version_description
+                # Assuming version_description contains "type:task_name"
+                task = "unknown_task"
+                if version_desc and "type:" in version_desc:
+                    task = version_desc.split("type:")[1].split("\n")[0].strip()
+                elif version_desc:
+                    # Fallback: use first line or part of version_description
+                    task = version_desc.split("\n")[0].strip()
+
+                # Key for identifying unique run
+                run_key = (model, task, instance)
+
+                # Check if this is a complete trajectory
+                # A trajectory is considered complete if it has steps and ended properly
+                num_steps = row.get("num_steps", 0)
+                final_reward = row.get("final_reward", 0)
+
+                # Consider a run complete if it has reasonable number of steps
+                # This is a heuristic - might need adjustment based on typical run patterns
+                is_complete = num_steps > 5  # Adjust this threshold as needed
+
+                if is_complete:
+                    completed_runs[run_key] = version
+                else:
+                    partial_runs[run_key] = {
+                        "version": version,
+                        "num_steps": num_steps,
+                        "final_reward": final_reward,
+                    }
+
+            print(f"✅ Found {len(completed_runs)} completed runs")
+            print(f"⚠️  Found {len(partial_runs)} partial/incomplete runs")
+
+            # Log some examples
+            if completed_runs:
+                print("Examples of completed runs:")
+                for i, (model, task, trial) in enumerate(
+                    list(completed_runs.keys())[:3]
+                ):
+                    print(f"  - {model} on {task} trial {trial}")
+
+            if partial_runs:
+                print("Examples of partial runs (will be retried):")
+                for i, (model, task, trial) in enumerate(list(partial_runs.keys())[:3]):
+                    info = partial_runs[(model, task, trial)]
+                    print(
+                        f"  - {model} on {task} trial {trial} ({info['num_steps']} steps)"
+                    )
+
+            return {
+                "completed_runs": completed_runs,
+                "partial_runs": partial_runs,
+                "total_existing": len(existing_df),
+            }
+
+        except Exception as e:
+            print(f"❌ Error loading existing sweep state: {e}")
+            return {"completed_runs": {}, "partial_runs": {}}
+
+    def generate_jobs(
+        self, existing_state: Optional[Dict[str, Any]] = None
+    ) -> List[RunJob]:
+        """Generate all run jobs for the sweep, excluding completed ones if resuming
+
+        Args:
+            existing_state: Optional dictionary with completed and partial run information
+
+        Returns:
+            List of RunJob objects to execute
         """
         jobs = []
+        completed_runs = (
+            existing_state.get("completed_runs", {}) if existing_state else {}
+        )
+        partial_runs = existing_state.get("partial_runs", {}) if existing_state else {}
+
+        skipped_count = 0
+        retry_count = 0
 
         # Generate all combinations of models and tasks
         for model, task in itertools.product(self.config.models, self.config.tasks):
             for trial in range(self.config.num_trials_per_config):
+                run_key = (model, task, trial)
                 job_id = f"{model}_{task}_trial{trial:02d}"
+
+                # Skip if already completed
+                if run_key in completed_runs:
+                    skipped_count += 1
+                    # Still track these for completed_versions list
+                    existing_version = completed_runs[run_key]
+                    if existing_version not in self.completed_versions:
+                        self.completed_versions.append(existing_version)
+                    continue
+
+                # Create job (will run for new jobs and retry for partial jobs)
                 job = RunJob(
                     job_id=job_id,
                     model=model,
@@ -158,6 +306,14 @@ class SweepManager:
                     trial_number=trial,
                     sweep_id=self.sweep_id,
                 )
+
+                # If this is a partial run, mark it for retry
+                if run_key in partial_runs:
+                    retry_count += 1
+                    job.retry_count = 1  # Mark that this is a retry
+                    job.status = "pending"  # Will be retried
+                    print(f"🔄 Will retry partial run: {job_id}")
+
                 jobs.append(job)
 
         # Shuffle if requested to distribute load
@@ -165,6 +321,20 @@ class SweepManager:
             random.shuffle(jobs)
 
         self.jobs = jobs
+
+        # Log summary
+        total_expected = (
+            len(self.config.models)
+            * len(self.config.tasks)
+            * self.config.num_trials_per_config
+        )
+        print("📋 Job generation summary:")
+        print(f"   Total expected jobs: {total_expected}")
+        print(f"   Already completed: {skipped_count}")
+        print(f"   Will retry (partial): {retry_count}")
+        print(f"   New jobs to run: {len(jobs) - retry_count}")
+        print(f"   Total jobs to execute: {len(jobs)}")
+
         return jobs
 
     async def run_sweep(self) -> Dict[str, Any]:
@@ -180,11 +350,15 @@ class SweepManager:
 
         self.start_time = datetime.now()
 
-        # Generate all jobs
-        self.generate_jobs()
+        # Load existing state if resuming
+        existing_state = await self.load_existing_sweep_state()
 
-        # Initialize database analyzer for monitoring
-        self.database_analyzer = DatabaseAnalyzer()
+        # Generate all jobs (excluding completed ones if resuming)
+        self.generate_jobs(existing_state)
+
+        # Initialize database analyzer for monitoring (if not already initialized)
+        if not self.database_analyzer:
+            self.database_analyzer = DatabaseAnalyzer()
 
         # Get starting version numbers
         base_version = await get_next_version()
@@ -293,7 +467,17 @@ class SweepManager:
             # Log to WandB if enabled
             if self.wandb_logger:
                 logger = self.wandb_logger.create_run_logger(
-                    job.job_id, job.model, job.task, job.version
+                    job.job_id,
+                    job.model,
+                    job.task,
+                    job.version,
+                    config={
+                        "sweep_id": self.sweep_id,
+                        "is_resume": self.is_resuming,
+                        "retry_count": job.retry_count,
+                        "trial_number": job.trial_number,
+                    },
+                    tags=[f"sweep:{self.sweep_id}"],
                 )
                 logger.log_metrics(
                     {
@@ -301,6 +485,10 @@ class SweepManager:
                         "job/server_id": server_allocation.server_id,
                         "job/server_address": server_allocation.server_address,
                         "job/server_port": server_allocation.tcp_port,
+                        "job/sweep_id": self.sweep_id,
+                        "job/is_resume": self.is_resuming,
+                        "job/retry_count": job.retry_count,
+                        "job/completion_status": "running",
                     }
                 )
 
@@ -418,12 +606,51 @@ class SweepManager:
             if self.wandb_logger:
                 logger = self.wandb_logger.get_logger(job_id)
                 if logger:
-                    logger.log_metrics({"job/status": "completed"})
+                    logger.log_metrics(
+                        {
+                            "job/status": "completed",
+                            "job/completion_status": "successful",
+                            "job/exit_code": process.exitcode,
+                            "job/duration_minutes": (
+                                job.end_time - job.start_time
+                            ).total_seconds()
+                            / 60
+                            if job.start_time
+                            else 0,
+                            "job/final_retry_count": job.retry_count,
+                        }
+                    )
 
         else:
             job.status = "failed"
             job.error_message = f"Process exited with code {process.exitcode}"
             print(f"❌ Job {job_id} failed with exit code {process.exitcode}")
+
+            # Log failure to WandB
+            if self.wandb_logger:
+                logger = self.wandb_logger.get_logger(job_id)
+                if logger:
+                    will_retry = (
+                        self.config.retry_failed_runs
+                        and job.retry_count < self.config.max_retries
+                    )
+                    logger.log_metrics(
+                        {
+                            "job/status": "failed",
+                            "job/completion_status": "will_retry"
+                            if will_retry
+                            else "failed_final",
+                            "job/exit_code": process.exitcode,
+                            "job/error_message": job.error_message,
+                            "job/duration_minutes": (
+                                job.end_time - job.start_time
+                            ).total_seconds()
+                            / 60
+                            if job.start_time
+                            else 0,
+                            "job/retry_count_at_failure": job.retry_count,
+                        }
+                    )
 
             # Retry if configured and retries available
             if (
@@ -635,7 +862,13 @@ class SweepManager:
                     "all_models",
                     "final_summary",
                     0,
-                    config=report["sweep_config"],
+                    config={
+                        **report["sweep_config"],
+                        "sweep_id": self.sweep_id,
+                        "is_resume": self.is_resuming,
+                        "sweep_completion_status": "completed",
+                    },
+                    tags=[f"sweep:{self.sweep_id}", "sweep_summary"],
                 )
 
                 summary_logger.log_sweep_summary(
@@ -648,6 +881,25 @@ class SweepManager:
 
                 # Log model comparison table
                 summary_logger.log_model_comparison_table(results_by_model)
+
+                # Log sweep completion metrics
+                summary_logger.log_metrics(
+                    {
+                        "sweep/completion_status": "completed",
+                        "sweep/is_resume": self.is_resuming,
+                        "sweep/total_completed_jobs": report["execution_summary"][
+                            "completed_jobs"
+                        ],
+                        "sweep/total_failed_jobs": report["execution_summary"][
+                            "failed_jobs"
+                        ],
+                        "sweep/success_rate": report["execution_summary"][
+                            "completed_jobs"
+                        ]
+                        / max(report["execution_summary"]["total_jobs"], 1),
+                        "sweep/final_timestamp": datetime.now().timestamp(),
+                    }
+                )
 
             # Save report to file if output directory specified
             if self.config.output_dir:

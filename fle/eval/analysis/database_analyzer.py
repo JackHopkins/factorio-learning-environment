@@ -132,7 +132,8 @@ class DatabaseAnalyzer:
                          THEN achievements_json 
                          ELSE NULL END, 
                     '; '
-                ) as all_achievements
+                ) as all_achievements,
+                STRING_AGG(DISTINCT meta::text, '; ') as meta_aggregated
             FROM programs
             WHERE version IN ({version_list})
             GROUP BY version, version_description, model, instance
@@ -145,6 +146,53 @@ class DatabaseAnalyzer:
         """
 
         results = await self.db_client.execute_query(query)
+        return pd.DataFrame(results)
+
+    async def get_trajectory_summaries_by_sweep(self, sweep_id: str) -> pd.DataFrame:
+        """Get trajectory-level summaries for a specific sweep
+
+        Args:
+            sweep_id: Sweep identifier to filter by
+
+        Returns:
+            DataFrame with one row per trajectory (version + instance)
+        """
+        await self.ensure_connection()
+
+        query = """
+        WITH trajectory_stats AS (
+            SELECT 
+                version,
+                version_description,
+                model,
+                instance,
+                MAX(depth) as max_depth,
+                MAX(value) as final_reward,
+                MAX(raw_reward) as max_raw_reward,
+                COUNT(*) as num_steps,
+                SUM(token_usage) as total_tokens,
+                SUM(completion_token_usage) as total_completion_tokens,
+                MIN(created_at) as start_time,
+                MAX(created_at) as end_time,
+                STRING_AGG(
+                    CASE WHEN achievements_json != '{{}}' AND achievements_json IS NOT NULL 
+                         THEN achievements_json 
+                         ELSE NULL END, 
+                    '; '
+                ) as all_achievements,
+                STRING_AGG(DISTINCT meta::text, '; ') as meta_aggregated
+            FROM programs
+            WHERE meta->>'sweep_id' = %s
+            GROUP BY version, version_description, model, instance
+        )
+        SELECT 
+            *,
+            EXTRACT(EPOCH FROM (end_time - start_time)) as duration_seconds
+        FROM trajectory_stats
+        ORDER BY version, instance
+        """
+
+        results = await self.db_client.execute_query(query, (sweep_id,))
         return pd.DataFrame(results)
 
     async def get_model_comparison(

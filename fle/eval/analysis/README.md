@@ -165,6 +165,38 @@ manager = SweepManager(config)
 results = await manager.run_sweep()
 ```
 
+#### Resuming Failed Sweeps
+
+The SweepManager now supports resuming failed sweeps without duplicating completed runs:
+
+```python
+# Resume an existing sweep
+existing_sweep_id = "my_experiment_20241201_120000_abcd1234"
+manager = SweepManager(config, existing_sweep_id=existing_sweep_id)
+
+# Alternative: using class method
+manager = SweepManager.resume_sweep(config, existing_sweep_id)
+
+# The manager will automatically:
+# - Skip completed runs
+# - Retry partial/failed runs  
+# - Continue with remaining jobs
+results = await manager.run_sweep()
+```
+
+Enhanced WandB metadata for resumed sweeps includes:
+
+- `sweep_id`: Unique identifier for the sweep
+- `is_resume`: Boolean indicating if this is a resumed sweep  
+- `completion_status`: Track run completion ("running", "successful", "failed_final", "will_retry")
+- `retry_count`: Number of retry attempts for each job
+- Tags: Include `sweep:{sweep_id}` for easy filtering
+
+Filter in WandB using:
+- `config.sweep_id = "your_sweep_id"` 
+- `config.completion_status = "successful"`
+- `tags: sweep:your_sweep_id`
+
 ### ResultsVisualizer
 
 Generate analysis plots:
@@ -197,6 +229,7 @@ See the `examples/` directory for complete usage examples:
 
 - `example_sweep_config.py`: Example sweep configurations
 - `analyze_sweep_results.py`: Analysis script with various commands
+- `resume_sweep_example.py`: Example of resuming failed sweeps
 
 ### Running Examples
 

@@ -10,12 +10,19 @@ from fle.agents.llm.utils import (
     remove_whitespace_blocks,
 )
 
-try:
-    from fle.eval.analysis.api_key_manager import get_api_key_manager
 
-    API_KEY_MANAGER_AVAILABLE = True
-except ImportError:
-    API_KEY_MANAGER_AVAILABLE = False
+# Lazy import to avoid circular dependencies
+def _get_api_key_manager():
+    """Lazy import for API key manager to avoid circular imports."""
+    try:
+        from fle.eval.analysis.api_key_manager import get_api_key_manager
+
+        return get_api_key_manager
+    except ImportError:
+        return None
+
+
+API_KEY_MANAGER_AVAILABLE = True  # Assume available, handle at runtime
 
 
 class APIFactory:
@@ -64,28 +71,14 @@ class APIFactory:
         """
         self.model = model
         self.beam = beam
+        self.api_key_config_file = (
+            api_key_config_file  # Store for child process reinitialization
+        )
         self.api_key_manager = None
 
-        # Initialize API key manager if available
-        if API_KEY_MANAGER_AVAILABLE:
-            try:
-                # Check for config file from environment if not provided
-                config_file = (
-                    api_key_config_file
-                    or os.getenv("FLE_API_KEY_CONFIG_FILE")
-                    or os.getenv("API_KEY_CONFIG_FILE")
-                )
-
-                self.api_key_manager = get_api_key_manager(config_file)
-
-                if config_file and self.api_key_manager:
-                    logging.info(
-                        f"Initialized API key manager with config: {config_file}"
-                    )
-
-            except Exception as e:
-                logging.warning(f"Failed to initialize API key manager: {e}")
-                self.api_key_manager = None
+        # Don't initialize API key manager in parent process to avoid multiprocessing pickle issues
+        # It will be initialized lazily in the child process when first needed
+        self.api_key_manager = None
 
     def _get_provider_config(self, model: str) -> dict:
         """Get provider config based on model name"""
@@ -103,14 +96,35 @@ class APIFactory:
         Returns:
             API key string
         """
-        # Try key manager first if available
-        if self.api_key_manager and "key_manager_provider" in provider_config:
+        # Try key manager first if available (reinitialize if needed due to multiprocessing)
+        if "key_manager_provider" in provider_config:
             key_manager_provider = provider_config["key_manager_provider"]
-            rotated_key = self.api_key_manager.get_key(key_manager_provider)
 
-            if rotated_key:
-                logging.debug(f"Using rotated key for {key_manager_provider}")
-                return rotated_key
+            # Reinitialize API key manager in child process if needed
+            if not self.api_key_manager:
+                try:
+                    config_file = (
+                        self.api_key_config_file
+                        or os.getenv("FLE_API_KEY_CONFIG_FILE")
+                        or os.getenv("API_KEY_CONFIG_FILE")
+                    )
+                    if config_file:
+                        get_api_key_manager_func = _get_api_key_manager()
+                        if get_api_key_manager_func:
+                            self.api_key_manager = get_api_key_manager_func(config_file)
+                            logging.info(
+                                f"Reinitialized API key manager in child process: {config_file}"
+                            )
+                except Exception as e:
+                    logging.warning(
+                        f"Failed to reinitialize API key manager in child process: {e}"
+                    )
+
+            if self.api_key_manager:
+                rotated_key = self.api_key_manager.get_key(key_manager_provider)
+                if rotated_key:
+                    logging.debug(f"Using rotated key for {key_manager_provider}")
+                    return rotated_key
 
         # Fallback to environment variable
         env_var = provider_config["api_key_env"]

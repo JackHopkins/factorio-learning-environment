@@ -16,7 +16,11 @@ async def run_small_sweep():
         name="test_sweep_small",
         description="Small test sweep with 2 Claude models and 2 tasks",
         # Models to evaluate
-        models=["claude-sonnet-4-20250514", "claude-opus-4-20250514"],
+        # models=["claude-sonnet-4-20250514", "claude-opus-4-20250514"],
+        models=[
+            "open-router-anthropic/claude-sonnet-4",
+            "open-router-anthropic/claude-opus-4",
+        ],
         # Tasks to evaluate (these should be valid gym environment IDs)
         tasks=["iron_ore_throughput", "iron_plate_throughput"],
         # Pass@8 evaluation (3 trials per model-task combination)
@@ -34,6 +38,8 @@ async def run_small_sweep():
         # Retry configuration
         retry_failed_runs=True,
         max_retries=2,
+        # Use API key configuration file
+        api_key_config_file="api_keys.json",
     )
 
     # Create and run sweep
@@ -104,6 +110,106 @@ async def run_large_production_sweep():
     return results
 
 
+async def run_openrouter_grok_sweep():
+    """Example: Test Grok and other models via OpenRouter"""
+
+    config = SweepConfig(
+        name="openrouter_grok_evaluation",
+        description="Evaluate Grok Beta and other OpenRouter models on Factorio tasks",
+        # OpenRouter models (requires OPEN_ROUTER_API_KEY environment variable)
+        models=[
+            "open-router-x-ai/grok-beta",  # Grok Beta via OpenRouter
+            "open-router-anthropic/claude-3.5-sonnet",  # Claude via OpenRouter
+            "open-router-openai/gpt-4o",  # GPT-4o via OpenRouter
+            # Compare with direct API models
+            "claude-sonnet-4-20250514",  # Direct Anthropic API
+            "gpt-4o",  # Direct OpenAI API
+        ],
+        tasks=[
+            "iron_ore_throughput",
+            "iron_plate_throughput",
+        ],
+        num_trials_per_config=3,  # Start with fewer trials for testing
+        max_concurrent_processes=3,  # Adjust based on your server count
+        # Enable tracking
+        enable_wandb=True,
+        wandb_project="openrouter-grok-evaluation",
+        # Configuration
+        output_dir="sweep_results/openrouter_grok_evaluation",
+        log_interval_minutes=5,
+        retry_failed_runs=True,
+        max_retries=2,
+    )
+
+    # Create and run sweep
+    manager = SweepManager(config)
+    results = await manager.run_sweep()
+
+    print("OpenRouter Grok sweep completed!")
+    print(f"Models tested: {', '.join(config.models)}")
+    print(f"Results saved to: {config.output_dir}")
+
+    return results
+
+
+async def run_openrouter_model_tournament():
+    """Example: Large tournament of models via OpenRouter"""
+
+    config = SweepConfig(
+        name="openrouter_model_tournament",
+        description="Tournament of top models across multiple providers via OpenRouter",
+        # Comprehensive model comparison via OpenRouter
+        models=[
+            # xAI
+            "open-router-x-ai/grok-beta",
+            # Anthropic
+            "open-router-anthropic/claude-3.5-sonnet",
+            "open-router-anthropic/claude-3-opus",
+            "open-router-anthropic/claude-3-haiku",
+            # OpenAI
+            "open-router-openai/gpt-4o",
+            "open-router-openai/gpt-4o-mini",
+            "open-router-openai/gpt-4-turbo",
+            # Meta Llama
+            "open-router-meta-llama/llama-3.1-405b-instruct",
+            "open-router-meta-llama/llama-3.1-70b-instruct",
+            # Google
+            "open-router-google/gemini-pro-1.5",
+            # Other providers
+            "open-router-mistralai/mistral-large",
+        ],
+        tasks=[
+            "iron_ore_throughput",
+            "iron_plate_throughput",
+            "gear_production",
+        ],
+        num_trials_per_config=5,  # Reasonable for many models
+        max_concurrent_processes=4,
+        # Tracking and storage
+        enable_wandb=True,
+        wandb_project="openrouter-model-tournament",
+        output_dir="sweep_results/openrouter_model_tournament",
+        log_interval_minutes=15,  # Less frequent logging for long runs
+        retry_failed_runs=True,
+        max_retries=3,
+        # Use API key manager for multiple keys if available
+        api_key_config_file="api_keys_config.json",
+    )
+
+    # Create and run sweep
+    manager = SweepManager(config)
+    results = await manager.run_sweep()
+
+    print("OpenRouter model tournament completed!")
+    print(f"Models tested: {len(config.models)}")
+    print(
+        f"Total evaluations: {len(config.models) * len(config.tasks) * config.num_trials_per_config}"
+    )
+    print(f"Results saved to: {config.output_dir}")
+
+    return results
+
+
 def create_custom_sweep_config(
     models: list, tasks: list, trials: int = 8, name: str = "custom_sweep"
 ) -> SweepConfig:
@@ -144,9 +250,26 @@ def create_custom_sweep_config(
 if __name__ == "__main__":
     import sys
 
-    if len(sys.argv) > 1 and sys.argv[1] == "large":
-        print("Running large production sweep...")
-        asyncio.run(run_large_production_sweep())
+    if len(sys.argv) > 1:
+        sweep_type = sys.argv[1]
+
+        if sweep_type == "large":
+            print("Running large production sweep...")
+            asyncio.run(run_large_production_sweep())
+        elif sweep_type == "grok":
+            print("Running OpenRouter Grok evaluation...")
+            print("Make sure you have set OPEN_ROUTER_API_KEY environment variable!")
+            asyncio.run(run_openrouter_grok_sweep())
+        elif sweep_type == "tournament":
+            print("Running OpenRouter model tournament...")
+            print("Make sure you have set OPEN_ROUTER_API_KEY environment variable!")
+            asyncio.run(run_openrouter_model_tournament())
+        else:
+            print(f"Unknown sweep type: {sweep_type}")
+            print("Available options: small (default), large, grok, tournament")
+            sys.exit(1)
     else:
         print("Running small test sweep...")
         asyncio.run(run_small_sweep())
+
+    print("\n🎉 Sweep completed! Check WandB and the output directory for results.")

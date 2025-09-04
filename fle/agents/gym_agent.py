@@ -119,13 +119,14 @@ class GymAgent(AgentABC):
         agent_idx: Optional[int] = None,
         observation_formatter: Optional[BasicObservationFormatter] = None,
         system_prompt_formatter: Optional[SystemPromptFormatter] = None,
+        api_key_config_file: Optional[str] = None,
         *args,
         **kwargs,
     ):
         instructions = self._get_instructions(system_prompt, task, agent_idx)
         super().__init__(model, instructions, *args, **kwargs)
         self.task = task
-        self.api_factory = APIFactory(model)
+        self.api_factory = APIFactory(model, api_key_config_file=api_key_config_file)
         self.observation_formatter = (
             observation_formatter or BasicObservationFormatter()
         )

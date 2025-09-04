@@ -7,6 +7,7 @@ import json
 import multiprocessing
 import os
 import time
+import uuid
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from pathlib import Path
@@ -19,6 +20,7 @@ from fle.commons.db_client import get_next_version
 from .database_analyzer import DatabaseAnalyzer
 from .performance_metrics import PerformanceAnalyzer
 from .wandb_logger import WandBSweepLogger
+from .server_manager import get_server_manager, ServerManager
 
 
 @dataclass
@@ -76,6 +78,7 @@ class RunJob:
     model: str
     task: str
     trial_number: int
+    sweep_id: str
     version: Optional[int] = None
     status: str = "pending"  # pending, running, completed, failed
     start_time: Optional[datetime] = None
@@ -94,19 +97,47 @@ class SweepManager:
             config: SweepConfig with sweep parameters
         """
         self.config = config
+
+        # Generate unique sweep ID with timestamp and short UUID
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        short_uuid = str(uuid.uuid4())[:8]
+        self.sweep_id = f"{config.name}_{timestamp}_{short_uuid}"
+
         self.jobs: List[RunJob] = []
         self.active_processes: Dict[str, multiprocessing.Process] = {}
         self.completed_versions: List[int] = []
         self.start_time: Optional[datetime] = None
         self.wandb_logger: Optional[WandBSweepLogger] = None
         self.database_analyzer: Optional[DatabaseAnalyzer] = None
+        self.server_manager: Optional[ServerManager] = None
 
         if config.output_dir:
             Path(config.output_dir).mkdir(parents=True, exist_ok=True)
 
+        # Initialize server manager
+        self.server_manager = get_server_manager()
+        total_servers = self.server_manager.get_total_server_count()
+
+        # Warn if we don't have enough servers for max concurrent processes
+        if total_servers < self.config.max_concurrent_processes:
+            print(
+                f"⚠️  Warning: Only {total_servers} Factorio servers available, "
+                f"but max_concurrent_processes={self.config.max_concurrent_processes}"
+            )
+            print(f"   Concurrent processes will be limited to {total_servers}")
+            # Adjust max concurrent processes to available servers
+            self.config.max_concurrent_processes = min(
+                self.config.max_concurrent_processes, total_servers
+            )
+
         # Initialize WandB if enabled
         if config.enable_wandb:
             self.wandb_logger = WandBSweepLogger(config.wandb_project)
+
+        print(f"🆔 Sweep ID: {self.sweep_id}")
+        print(
+            f"🖥️  Available servers: {total_servers}, Max concurrent: {self.config.max_concurrent_processes}"
+        )
 
     def generate_jobs(self) -> List[RunJob]:
         """Generate all run jobs for the sweep
@@ -120,7 +151,13 @@ class SweepManager:
         for model, task in itertools.product(self.config.models, self.config.tasks):
             for trial in range(self.config.num_trials_per_config):
                 job_id = f"{model}_{task}_trial{trial:02d}"
-                job = RunJob(job_id=job_id, model=model, task=task, trial_number=trial)
+                job = RunJob(
+                    job_id=job_id,
+                    model=model,
+                    task=task,
+                    trial_number=trial,
+                    sweep_id=self.sweep_id,
+                )
                 jobs.append(job)
 
         # Shuffle if requested to distribute load
@@ -214,6 +251,21 @@ class SweepManager:
         """
         print(f"Starting job: {job.job_id} (version {job.version})")
 
+        # Allocate a server for this job
+        server_allocation = self.server_manager.allocate_server(job.job_id)
+        if not server_allocation:
+            job.status = "failed"
+            job.error_message = "No Factorio servers available"
+            job.end_time = datetime.now()
+            print(f"❌ Failed to start job {job.job_id}: No servers available")
+            return
+
+        print(
+            f"🖥️  Allocated server {server_allocation.server_id} "
+            f"({server_allocation.server_address}:{server_allocation.tcp_port}) "
+            f"to job {job.job_id}"
+        )
+
         # Create run configuration
         run_config = GymRunConfig(env_id=job.task, model=job.model, version=job.version)
 
@@ -229,10 +281,13 @@ class SweepManager:
                     job.job_id,
                     run_config,
                     job.version,
+                    job.sweep_id,
+                    server_allocation,
                     self.config.api_key_config_file,
                 ),
             )
             process.start()
+            server_allocation.process_id = process.pid
             self.active_processes[job.job_id] = process
 
             # Log to WandB if enabled
@@ -240,19 +295,30 @@ class SweepManager:
                 logger = self.wandb_logger.create_run_logger(
                     job.job_id, job.model, job.task, job.version
                 )
-                logger.log_metrics({"job/status": "started"})
+                logger.log_metrics(
+                    {
+                        "job/status": "started",
+                        "job/server_id": server_allocation.server_id,
+                        "job/server_address": server_allocation.server_address,
+                        "job/server_port": server_allocation.tcp_port,
+                    }
+                )
 
         except Exception as e:
+            # Release server if process failed to start
+            self.server_manager.release_server(job.job_id)
             job.status = "failed"
             job.error_message = str(e)
             job.end_time = datetime.now()
-            print(f"Failed to start job {job.job_id}: {e}")
+            print(f"❌ Failed to start job {job.job_id}: {e}")
 
     @staticmethod
     def run_job_wrapper(
         job_id: str,
         run_config: GymRunConfig,
         version: int,
+        sweep_id: str,
+        server_allocation,  # ServerAllocation object
         api_key_config_file: Optional[str] = None,
     ):
         """Wrapper for running a job in a subprocess
@@ -261,16 +327,32 @@ class SweepManager:
             job_id: Unique job identifier
             run_config: GymRunConfig for this job
             version: Version number for this job
+            sweep_id: Unique identifier for this sweep
+            server_allocation: ServerAllocation object with server details
             api_key_config_file: Optional path to API key config file
         """
         try:
-            # Set environment variable for API key config if provided
+            # Set environment variables
             if api_key_config_file:
                 os.environ["FLE_API_KEY_CONFIG_FILE"] = api_key_config_file
 
+            # Set sweep ID environment variable for database and WandB logging
+            os.environ["FLE_SWEEP_ID"] = sweep_id
+
+            # Set server allocation environment variables
+            os.environ["FACTORIO_SERVER_ADDRESS"] = server_allocation.server_address
+            os.environ["FACTORIO_SERVER_PORT"] = str(server_allocation.tcp_port)
+            os.environ["FLE_SERVER_ID"] = str(server_allocation.server_id)
+
+            # Override PORT_OFFSET to ensure we use the allocated server
+            os.environ["PORT_OFFSET"] = str(server_allocation.server_id)
+
             # This would be similar to the run_process function in run_eval.py
             # but adapted for single configurations
-            print(f"Executing job {job_id} with version {version}")
+            print(
+                f"Executing job {job_id} with version {version} (sweep: {sweep_id}) "
+                f"on server {server_allocation.server_id} ({server_allocation.server_address}:{server_allocation.tcp_port})"
+            )
 
             # Create a temporary config file for this job
             config_data = [run_config.__dict__]
@@ -320,10 +402,17 @@ class SweepManager:
 
         job.end_time = datetime.now()
 
+        # Release the server allocated to this job
+        server_released = self.server_manager.release_server(job_id)
+        if server_released:
+            print(f"🔓 Released server for completed job {job_id}")
+        else:
+            print(f"⚠️  No server allocation found for job {job_id}")
+
         if process.exitcode == 0:
             job.status = "completed"
             self.completed_versions.append(job.version)
-            print(f"Job {job_id} completed successfully")
+            print(f"✅ Job {job_id} completed successfully")
 
             # Log completion to WandB
             if self.wandb_logger:
@@ -334,7 +423,7 @@ class SweepManager:
         else:
             job.status = "failed"
             job.error_message = f"Process exited with code {process.exitcode}"
-            print(f"Job {job_id} failed with exit code {process.exitcode}")
+            print(f"❌ Job {job_id} failed with exit code {process.exitcode}")
 
             # Retry if configured and retries available
             if (
@@ -342,13 +431,14 @@ class SweepManager:
                 and job.retry_count < self.config.max_retries
             ):
                 print(
-                    f"Retrying job {job_id} (attempt {job.retry_count + 1}/{self.config.max_retries})"
+                    f"🔄 Retrying job {job_id} (attempt {job.retry_count + 1}/{self.config.max_retries})"
                 )
                 job.retry_count += 1
                 job.status = "pending"
                 job.start_time = None
                 job.end_time = None
                 job.error_message = None
+                # Note: Server will be reallocated when job is retried
 
     async def log_progress_if_needed(self):
         """Log progress summary if enough time has elapsed"""
@@ -372,6 +462,9 @@ class SweepManager:
 
         elapsed_time = datetime.now() - self.start_time
 
+        # Get server allocation status
+        server_status = self.server_manager.get_allocation_status()
+
         print("\n=== Sweep Progress ===")
         print(f"Total jobs: {total_jobs}")
         print(f"Completed: {completed} ({completed / total_jobs * 100:.1f}%)")
@@ -380,11 +473,16 @@ class SweepManager:
         print(f"Pending: {pending}")
         print(f"Elapsed time: {elapsed_time}")
 
+        print("\n🖥️  Server Status:")
+        print(f"Total servers: {server_status['total_servers']}")
+        print(f"Available: {server_status['available_servers']}")
+        print(f"Allocated: {server_status['allocated_servers']}")
+
         if completed > 0:
             avg_time_per_job = elapsed_time.total_seconds() / completed
             eta_seconds = avg_time_per_job * pending
             eta_hours = eta_seconds / 3600
-            print(f"ETA: {eta_hours:.1f} hours")
+            print(f"\n⏱️  ETA: {eta_hours:.1f} hours")
 
         # Analyze recent results if we have completed jobs
         if self.completed_versions and self.database_analyzer:
@@ -507,6 +605,7 @@ class SweepManager:
 
             # Generate comprehensive report
             report = {
+                "sweep_id": self.sweep_id,
                 "sweep_config": self.config.__dict__,
                 "execution_summary": {
                     "total_jobs": len(self.jobs),

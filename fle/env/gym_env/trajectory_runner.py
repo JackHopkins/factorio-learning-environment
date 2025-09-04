@@ -1,3 +1,4 @@
+import os
 import time
 from itertools import product
 from typing import Any, List, Dict, Optional, Tuple
@@ -157,6 +158,7 @@ class GymTrajectoryRunner:
                 "model": self.agents[agent_idx].model,
                 "process_id": self.process_id,
                 "error_occurred": error_occurred,
+                "sweep_id": os.getenv("FLE_SWEEP_ID", "unknown"),
             },
             depth=depth,
         )

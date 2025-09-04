@@ -38,6 +38,7 @@ from .api_key_manager import (
     get_api_key_manager,
     create_api_keys_config_template,
 )
+from .server_manager import ServerManager, get_server_manager
 
 # Utility functions
 from .analysis_utils import (
@@ -56,6 +57,7 @@ __all__ = [
     "SweepConfig",
     "ResultsVisualizer",
     "APIKeyManager",
+    "ServerManager",
     # Utility functions
     "group_results_by_model",
     "group_results_by_task",
@@ -63,4 +65,5 @@ __all__ = [
     "get_trajectory_summary",
     "get_api_key_manager",
     "create_api_keys_config_template",
+    "get_server_manager",
 ]

@@ -1,7 +1,8 @@
 import os
+import logging
 
 from openai import AsyncOpenAI
-from tenacity import retry, wait_exponential
+from tenacity import retry, wait_exponential, stop_after_attempt
 
 from fle.agents.llm.metrics import timing_tracker, track_timing_async
 from fle.agents.llm.utils import (
@@ -9,40 +10,82 @@ from fle.agents.llm.utils import (
     remove_whitespace_blocks,
 )
 
+try:
+    from fle.eval.analysis.api_key_manager import get_api_key_manager
+
+    API_KEY_MANAGER_AVAILABLE = True
+except ImportError:
+    API_KEY_MANAGER_AVAILABLE = False
+
 
 class APIFactory:
     # Provider configurations
     PROVIDERS = {
         "open-router": {
             "base_url": "https://openrouter.ai/api/v1",
-            "api_key": "OPEN_ROUTER_API_KEY",
+            "api_key_env": "OPEN_ROUTER_API_KEY",
+            "key_manager_provider": "open-router",
             "model_transform": lambda m: m.replace("open-router-", ""),
         },
         "claude": {
             "base_url": "https://api.anthropic.com/v1",
-            "api_key": "ANTHROPIC_API_KEY",
+            "api_key_env": "ANTHROPIC_API_KEY",
+            "key_manager_provider": "anthropic",
         },
         "deepseek": {
             "base_url": "https://api.deepseek.com",
-            "api_key": "DEEPSEEK_API_KEY",
+            "api_key_env": "DEEPSEEK_API_KEY",
+            "key_manager_provider": "deepseek",
         },
         "gemini": {
             "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
-            "api_key": "GEMINI_API_KEY",
+            "api_key_env": "GEMINI_API_KEY",
+            "key_manager_provider": "gemini",
         },
         "together": {
             "base_url": "https://api.together.xyz/v1",
-            "api_key": "TOGETHER_API_KEY",
+            "api_key_env": "TOGETHER_API_KEY",
+            "key_manager_provider": "together",
         },
         "openai": {
             "base_url": "https://api.openai.com/v1",
-            "api_key": "OPENAI_API_KEY",
+            "api_key_env": "OPENAI_API_KEY",
+            "key_manager_provider": "openai",
         },
     }
 
-    def __init__(self, model: str, beam: int = 1):
+    def __init__(self, model: str, beam: int = 1, api_key_config_file: str = None):
+        """Initialize APIFactory
+
+        Args:
+            model: Model name to use
+            beam: Beam size for sampling
+            api_key_config_file: Optional path to API key config file
+        """
         self.model = model
         self.beam = beam
+        self.api_key_manager = None
+
+        # Initialize API key manager if available
+        if API_KEY_MANAGER_AVAILABLE:
+            try:
+                # Check for config file from environment if not provided
+                config_file = (
+                    api_key_config_file
+                    or os.getenv("FLE_API_KEY_CONFIG_FILE")
+                    or os.getenv("API_KEY_CONFIG_FILE")
+                )
+
+                self.api_key_manager = get_api_key_manager(config_file)
+
+                if config_file and self.api_key_manager:
+                    logging.info(
+                        f"Initialized API key manager with config: {config_file}"
+                    )
+
+            except Exception as e:
+                logging.warning(f"Failed to initialize API key manager: {e}")
+                self.api_key_manager = None
 
     def _get_provider_config(self, model: str) -> dict:
         """Get provider config based on model name"""
@@ -51,45 +94,124 @@ class APIFactory:
                 return config
         raise ValueError(f"No provider found for model: {model}")
 
+    def _get_api_key(self, provider_config: dict) -> str:
+        """Get API key with rotation if available
+
+        Args:
+            provider_config: Provider configuration dictionary
+
+        Returns:
+            API key string
+        """
+        # Try key manager first if available
+        if self.api_key_manager and "key_manager_provider" in provider_config:
+            key_manager_provider = provider_config["key_manager_provider"]
+            rotated_key = self.api_key_manager.get_key(key_manager_provider)
+
+            if rotated_key:
+                logging.debug(f"Using rotated key for {key_manager_provider}")
+                return rotated_key
+
+        # Fallback to environment variable
+        env_var = provider_config["api_key_env"]
+        env_key = os.getenv(env_var)
+
+        if env_key:
+            logging.debug(f"Using environment key from {env_var}")
+            return env_key
+
+        raise ValueError(
+            f"No API key available for provider. "
+            f"Set {env_var} or configure key manager."
+        )
+
+    def _mark_key_result(
+        self,
+        provider_config: dict,
+        api_key: str,
+        success: bool,
+        error: Exception = None,
+    ):
+        """Mark the result of using an API key
+
+        Args:
+            provider_config: Provider configuration
+            api_key: The API key that was used
+            success: Whether the API call was successful
+            error: Error that occurred (if any)
+        """
+        if self.api_key_manager and "key_manager_provider" in provider_config:
+            key_manager_provider = provider_config["key_manager_provider"]
+
+            if success:
+                self.api_key_manager.mark_key_success(key_manager_provider, api_key)
+            elif error:
+                self.api_key_manager.mark_key_error(
+                    key_manager_provider, api_key, error
+                )
+
     @track_timing_async("llm_api_call")
-    @retry(wait=wait_exponential(multiplier=2, min=2, max=15))
+    @retry(
+        wait=wait_exponential(multiplier=2, min=2, max=15), stop=stop_after_attempt(3)
+    )
     async def acall(self, **kwargs):
         model_to_use = kwargs.get("model", self.model)
         messages = kwargs.get("messages", [])
+
         # Get provider config
         provider_config = self._get_provider_config(model_to_use)
+
         # Apply model transform if specified
         if "model_transform" in provider_config:
             model_to_use = provider_config["model_transform"](model_to_use)
+
         # Prepare messages for text-only LLMs
         messages = remove_whitespace_blocks(messages)
         messages = merge_contiguous_messages(messages)
+
+        # Get API key with rotation
+        api_key = self._get_api_key(provider_config)
+
         # Create client
         client = AsyncOpenAI(
             base_url=provider_config["base_url"],
-            api_key=os.getenv(provider_config["api_key"]),
-            max_retries=0,
+            api_key=api_key,
+            max_retries=0,  # We handle retries ourselves
         )
 
-        # Standard API call for all providers
-        response = await client.chat.completions.create(
-            model=model_to_use,
-            messages=messages,
-            max_tokens=kwargs.get("max_tokens", 256),
-            temperature=kwargs.get("temperature", 0.3),
-            logit_bias=kwargs.get("logit_bias"),
-            n=kwargs.get("n_samples"),
-            stop=kwargs.get("stop_sequences"),
-            presence_penalty=kwargs.get("presence_penalty"),
-            frequency_penalty=kwargs.get("frequency_penalty"),
-            stream=False,
-        )
+        try:
+            # Standard API call for all providers
+            response = await client.chat.completions.create(
+                model=model_to_use,
+                messages=messages,
+                max_tokens=kwargs.get("max_tokens", 256),
+                temperature=kwargs.get("temperature", 0.3),
+                logit_bias=kwargs.get("logit_bias"),
+                n=kwargs.get("n_samples"),
+                stop=kwargs.get("stop_sequences"),
+                presence_penalty=kwargs.get("presence_penalty"),
+                frequency_penalty=kwargs.get("frequency_penalty"),
+                stream=False,
+            )
 
-        # Track reasoning tokens if available
-        if hasattr(response, "usage") and hasattr(response.usage, "reasoning_tokens"):
-            async with timing_tracker.track_async(
-                "reasoning", model=model_to_use, tokens=response.usage.reasoning_tokens
+            # Mark key as successful
+            self._mark_key_result(provider_config, api_key, success=True)
+
+            # Track reasoning tokens if available
+            if hasattr(response, "usage") and hasattr(
+                response.usage, "reasoning_tokens"
             ):
-                pass
+                async with timing_tracker.track_async(
+                    "reasoning",
+                    model=model_to_use,
+                    tokens=response.usage.reasoning_tokens,
+                ):
+                    pass
 
-        return response
+            return response
+
+        except Exception as e:
+            # Mark key as having an error
+            self._mark_key_result(provider_config, api_key, success=False, error=e)
+            # Re-raise the exception to trigger retry mechanism
+            raise

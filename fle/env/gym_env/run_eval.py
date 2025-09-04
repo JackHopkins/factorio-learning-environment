@@ -19,6 +19,13 @@ from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )
 
+try:
+    from fle.eval.analysis import WandBLogger
+
+    WANDB_ANALYSIS_AVAILABLE = True
+except ImportError:
+    WANDB_ANALYSIS_AVAILABLE = False
+
 load_dotenv()
 
 
@@ -52,15 +59,61 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
     gym_env = gym.make(config.env_id, run_idx=run_idx)
 
     log_dir = os.path.join(".fle", "trajectory_logs", f"v{config.version}")
+
+    # Create WandB logger if enabled
+    wandb_logger = None
+    if WANDB_ANALYSIS_AVAILABLE and os.getenv("ENABLE_WANDB", "").lower() in [
+        "true",
+        "1",
+    ]:
+        try:
+            # Extract task name from config
+            task_name = "unknown_task"
+            if config.version_description and "type:" in config.version_description:
+                task_name = (
+                    config.version_description.split("type:")[1].split("\n")[0].strip()
+                )
+
+            # Extract model name
+            model_name = "unknown_model"
+            if config.agents and len(config.agents) > 0:
+                model_name = config.agents[0].model
+            elif config.version_description and "model:" in config.version_description:
+                model_name = (
+                    config.version_description.split("model:")[1].split("\n")[0].strip()
+                )
+
+            wandb_logger = WandBLogger(
+                project=os.getenv("WANDB_PROJECT", "factorio-learning-environment"),
+                run_name=f"{model_name}-{task_name}-v{config.version}-trial{run_idx}",
+                tags=["gym_eval", model_name, task_name, f"v{config.version}"],
+                config={
+                    "model": model_name,
+                    "task": task_name,
+                    "version": config.version,
+                    "trial": run_idx,
+                    "version_description": config.version_description,
+                },
+            )
+        except Exception as e:
+            print(f"Warning: Failed to initialize WandB logger: {e}")
+            wandb_logger = None
+
     runner = GymTrajectoryRunner(
         config=config,
         gym_env=gym_env,
         db_client=db_client,
         log_dir=log_dir,
         process_id=run_idx,
+        wandb_logger=wandb_logger,
     )
-    await runner.run()
-    await db_client.cleanup()
+
+    try:
+        await runner.run()
+    finally:
+        await db_client.cleanup()
+        if wandb_logger:
+            wandb_logger.finish()
 
 
 async def main(config_path):

@@ -1018,7 +1018,6 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
                         global.utils.get_entity_direction(default_connection_type, final_dir/2),
                         serialized_entities, dry_run, counter_state)
                         
-                game.print("DEBUG: Placed final entity at " .. end_position.x .. "," .. end_position.y .. " total placed: " .. counter_state.place_counter)
 
                 if final_entity then
                     last_placed_entity = final_entity

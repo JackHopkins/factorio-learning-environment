@@ -37,103 +37,6 @@ local function get_reserved_positions_around_entity(entity)
     return reserved
 end
 
-local function get_factory_pattern_info(ref_entity, entity_to_place)
-    if not ref_entity then return nil end
-    
-    local patterns = {
-        -- Assembling machine patterns
-        ["assembling-machine"] = {
-            input_sides = {"west", "north"},  -- Typical input sides
-            output_sides = {"east", "south"}, -- Typical output sides
-            preferred_belt_distance = 2,
-            preferred_chest_distance = 2
-        },
-        -- Mining drill patterns  
-        ["mining-drill"] = {
-            input_sides = {},  -- No inputs for mining drills
-            output_sides = {"east", "south", "west", "north"}, -- Can output in any direction
-            preferred_belt_distance = 2,
-            preferred_chest_distance = 2
-        },
-        -- Furnace patterns
-        ["furnace"] = {
-            input_sides = {"west", "north"},
-            output_sides = {"east", "south"},
-            preferred_belt_distance = 2,
-            preferred_chest_distance = 2
-        },
-        -- Chemical plant patterns
-        ["chemical-plant"] = {
-            input_sides = {"west", "north"},
-            output_sides = {"east", "south"},
-            preferred_belt_distance = 2,
-            preferred_chest_distance = 2
-        }
-    }
-    
-    return patterns[ref_entity.type]
-end
-
-local function get_optimal_inserter_placement(ref_entity, direction, entity_to_place)
-    if not ref_entity or entity_to_place ~= "inserter" and not entity_to_place:find("inserter") then
-        return nil
-    end
-    
-    local pattern_info = get_factory_pattern_info(ref_entity)
-    if not pattern_info then return nil end
-    
-    local direction_to_side = {
-        [0] = "north",   -- 0: North
-        [1] = "east",    -- 1: East
-        [2] = "south",   -- 2: South
-        [3] = "west"     -- 3: West
-    }
-    
-    local side = direction_to_side[direction]
-    if not side then return nil end
-    
-    local recommendations = {
-        optimal = false,
-        reason = "",
-        suggested_direction = direction,
-        insertion_direction = nil
-    }
-    
-    -- Check if this is an optimal side for input/output
-    if pattern_info.input_sides then
-        for _, input_side in pairs(pattern_info.input_sides) do
-            if side == input_side then
-                recommendations.optimal = true
-                recommendations.reason = "Optimal position for input inserter"
-                -- Inserter should face towards the machine
-                recommendations.insertion_direction = (direction + 2) % 4  -- Opposite direction
-                break
-            end
-        end
-    end
-    
-    if pattern_info.output_sides and not recommendations.optimal then
-        for _, output_side in pairs(pattern_info.output_sides) do
-            if side == output_side then
-                recommendations.optimal = true
-                recommendations.reason = "Optimal position for output inserter"
-                -- Inserter should face away from the machine
-                recommendations.insertion_direction = direction
-                break
-            end
-        end
-    end
-    
-    if not recommendations.optimal then
-        recommendations.reason = "Non-optimal position - consider using " .. 
-                                table.concat(pattern_info.input_sides or {}, "/") .. 
-                                " for input or " .. 
-                                table.concat(pattern_info.output_sides or {}, "/") .. 
-                                " for output"
-    end
-    
-    return recommendations
-end
 
 local function find_alternative_position_smart(ref_position, ref_entity, entity_to_place, original_direction, gap)
     local alternatives = {}
@@ -154,19 +57,16 @@ local function find_alternative_position_smart(ref_position, ref_entity, entity_
                 alt_direction = dy > 0 and 2 or 0  -- South or North
             end
             
-            local recommendations = get_optimal_inserter_placement(ref_entity, alt_direction, entity_to_place)
-            
             table.insert(alternatives, {
                 position = reserved_pos,
                 direction = alt_direction,
-                score = recommendations and recommendations.optimal and 100 or 50,
-                reason = recommendations and recommendations.reason or "Reserved position for large entity",
-                insertion_direction = recommendations and recommendations.insertion_direction
+                score = 75,  -- High priority for reserved positions
+                reason = "Reserved position for large entity"
             })
         end
     end
     
-    -- Try directions in order of preference based on entity type and factory patterns
+    -- Try directions in order of preference
     local direction_priority = {original_direction}  -- Start with requested direction
     
     -- Add other directions
@@ -197,19 +97,12 @@ local function find_alternative_position_smart(ref_position, ref_entity, entity_
             }
             
             local score = 30 - (distance * 5)  -- Prefer closer positions
-            if ref_entity then
-                local recommendations = get_optimal_inserter_placement(ref_entity, direction, entity_to_place)
-                if recommendations and recommendations.optimal then
-                    score = score + 20
-                end
-            end
             
             table.insert(alternatives, {
                 position = alt_pos,
                 direction = direction,
                 score = score,
-                reason = "Alternative position at distance " .. distance,
-                insertion_direction = nil
+                reason = "Alternative position at distance " .. distance
             })
         end
     end
@@ -469,10 +362,6 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
                         -- Update orientation for the new direction
                         orientation = global.utils.get_entity_direction(entity, direction)
                         
-                        -- If we have insertion direction recommendation, use it
-                        if alternative.insertion_direction then
-                            orientation = global.utils.get_entity_direction(entity, alternative.insertion_direction)
-                        end
                         
                         goto alternative_found
                     end
@@ -502,18 +391,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     
     ::alternative_found::
 
-    -- Get smart orientation recommendations for inserters
-    local recommendations = nil
-    if ref_entity and (entity == "inserter" or entity:find("inserter")) then
-        recommendations = get_optimal_inserter_placement(ref_entity, direction, entity)
-        if recommendations and recommendations.insertion_direction then
-            orientation = global.utils.get_entity_direction(entity, recommendations.insertion_direction)
-        else
-            orientation = global.utils.get_entity_direction(entity, direction)
-        end
-    else
-        orientation = global.utils.get_entity_direction(entity, direction)
-    end
+    orientation = global.utils.get_entity_direction(entity, direction)
 
     if ref_entity then
         local prototype = game.entity_prototypes[ref_entity.name]
@@ -652,24 +530,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         error("Failed to create entity " .. entity .. " at position " .. serpent.line(new_position))
     end
 
-    -- Provide feedback about smart placement decisions
     local placement_info = global.utils.serialize_entity(new_entity)
-    
-    -- Add placement recommendations to the response for logging
-    if recommendations then
-        placement_info.placement_feedback = {
-            optimal = recommendations.optimal,
-            reason = recommendations.reason,
-            auto_oriented = recommendations.insertion_direction ~= nil
-        }
-        
-        -- Log helpful information for the agent
-        if recommendations.optimal then
-            -- game.print("✓ Optimal " .. entity .. " placement: " .. recommendations.reason)
-        else
-            -- game.print("⚠ " .. entity .. " placement: " .. recommendations.reason)
-        end
-    end
     
     local item_stack = {name = entity, count = 1}
     if player.get_main_inventory().can_insert(item_stack) then

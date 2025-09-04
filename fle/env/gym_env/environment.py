@@ -10,6 +10,7 @@ from fle.env import FactorioInstance
 from fle.commons.models.game_state import GameState
 from fle.env.gym_env.action import Action
 from fle.commons.models.achievements import ProductionFlows
+from fle.commons.constants import REWARD_OVERRIDE_KEY
 from fle.env.utils.achievements import calculate_achievements
 from fle.agents import Response, TaskResponse
 from fle.env.gym_env.observation import (
@@ -211,7 +212,7 @@ class FactorioGymEnv(gym.Env):
         self,
         instance: FactorioInstance,
         task: Optional[TaskABC] = None,
-        error_penalty: float = 10.0,
+        error_penalty: float = 0.0,
         pause_after_action: bool = True,
     ):
         super().__init__()
@@ -420,12 +421,12 @@ class FactorioGymEnv(gym.Env):
             terminated = task_success.success
 
         # Calculate reward
-        if error_occurred:
-            reward = -self.error_penalty
+        if REWARD_OVERRIDE_KEY in task_success.meta:
+            reward = task_success.meta[REWARD_OVERRIDE_KEY]
         else:
             score, _ = namespace.score()
             reward = score - initial_score
-        reward = float(reward)
+        reward = float(reward) - self.error_penalty
 
         output_game_state = GameState.from_instance(self.instance)
         # Get post-execution flows and calculate achievements

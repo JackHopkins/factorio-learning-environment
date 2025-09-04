@@ -39,6 +39,7 @@ class SchemaGenerator:
                 .replace("entities.", "")
                 .replace("instance.", "")
                 .replace("game_types.", "")
+                .replace("fle.env.", "")
             )
 
             docstring_element = (

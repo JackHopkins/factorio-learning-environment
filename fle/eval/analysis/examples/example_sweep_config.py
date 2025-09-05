@@ -7,6 +7,29 @@ across multiple models and tasks using the analysis framework.
 
 import asyncio
 from fle.eval.analysis import SweepManager, SweepConfig
+from fle.commons.constants import (
+    # Direct API models
+    GPT_5,
+    GPT_5_MINI,
+    O4_MINI,
+    CLAUDE_OPUS_4_1,
+    CLAUDE_SONNET_4,
+    CLAUDE_3_7_SONNET,
+    GEMINI_2_5_PRO,
+    OR_GPT_5,
+    OR_O4_MINI,
+    OR_CLAUDE_OPUS_4_1,
+    OR_CLAUDE_SONNET_4,
+    OR_CLAUDE_3_7_SONNET,
+    OR_GEMINI_2_5_PRO,
+    OR_GEMINI_2_5_FLASH,
+    OR_XAI_GROK_4,
+    OR_XAI_GROK_3,
+    OR_DEEPSEEK_V3_1,
+    OR_DEEPSEEK_R1,
+    OR_LLAMA_4_MAVERICK,
+    OR_LLAMA_4_SCOUT,
+)
 
 
 async def run_small_sweep():
@@ -15,11 +38,10 @@ async def run_small_sweep():
     config = SweepConfig(
         name="test_sweep_small",
         description="Small test sweep with 2 Claude models and 2 tasks",
-        # Models to evaluate
-        # models=["claude-sonnet-4-20250514", "claude-opus-4-20250514"],
+        # Models to evaluate (using direct Anthropic API)
         models=[
-            "open-router-anthropic/claude-sonnet-4",
-            "open-router-anthropic/claude-opus-4",
+            CLAUDE_SONNET_4,
+            CLAUDE_OPUS_4_1,
         ],
         # Tasks to evaluate (these should be valid gym environment IDs)
         tasks=["iron_ore_throughput", "iron_plate_throughput"],
@@ -58,14 +80,14 @@ async def run_large_production_sweep():
     config = SweepConfig(
         name="production_sweep_v1",
         description="Comprehensive evaluation of multiple models across all throughput tasks",
-        # Large set of models
+        # Large set of models using updated constants
         models=[
-            "gpt-4o",
-            "gpt-4o-mini",
-            "claude-3-5-sonnet-20241022",
-            "claude-3-5-haiku-20241022",
-            "gemini-1.5-pro",
-            "o1-mini",
+            GPT_5,
+            GPT_5_MINI,
+            CLAUDE_SONNET_4,
+            CLAUDE_3_7_SONNET,
+            GEMINI_2_5_PRO,
+            O4_MINI,
         ],
         # All available throughput tasks
         tasks=[
@@ -115,15 +137,15 @@ async def run_openrouter_grok_sweep():
 
     config = SweepConfig(
         name="openrouter_grok_evaluation",
-        description="Evaluate Grok Beta and other OpenRouter models on Factorio tasks",
+        description="Evaluate Grok and other OpenRouter models on Factorio tasks",
         # OpenRouter models (requires OPEN_ROUTER_API_KEY environment variable)
         models=[
-            "open-router-x-ai/grok-beta",  # Grok Beta via OpenRouter
-            "open-router-anthropic/claude-3.5-sonnet",  # Claude via OpenRouter
-            "open-router-openai/gpt-4o",  # GPT-4o via OpenRouter
+            OR_XAI_GROK_4,  # Grok 4 via OpenRouter
+            OR_CLAUDE_3_7_SONNET,  # Claude via OpenRouter
+            OR_GPT_5,  # GPT-5 via OpenRouter
             # Compare with direct API models
-            "claude-sonnet-4-20250514",  # Direct Anthropic API
-            "gpt-4o",  # Direct OpenAI API
+            CLAUDE_SONNET_4,  # Direct Anthropic API
+            GPT_5,  # Direct OpenAI API
         ],
         tasks=[
             "iron_ore_throughput",
@@ -161,22 +183,24 @@ async def run_openrouter_model_tournament():
         # Comprehensive model comparison via OpenRouter
         models=[
             # xAI
-            "open-router-x-ai/grok-beta",
+            OR_XAI_GROK_4,
+            OR_XAI_GROK_3,
             # Anthropic
-            "open-router-anthropic/claude-3.5-sonnet",
-            "open-router-anthropic/claude-3-opus",
-            "open-router-anthropic/claude-3-haiku",
+            OR_CLAUDE_3_7_SONNET,
+            OR_CLAUDE_SONNET_4,
+            OR_CLAUDE_OPUS_4_1,
             # OpenAI
-            "open-router-openai/gpt-4o",
-            "open-router-openai/gpt-4o-mini",
-            "open-router-openai/gpt-4-turbo",
+            OR_GPT_5,
+            OR_O4_MINI,
             # Meta Llama
-            "open-router-meta-llama/llama-3.1-405b-instruct",
-            "open-router-meta-llama/llama-3.1-70b-instruct",
+            OR_LLAMA_4_MAVERICK,
+            OR_LLAMA_4_SCOUT,
             # Google
-            "open-router-google/gemini-pro-1.5",
-            # Other providers
-            "open-router-mistralai/mistral-large",
+            OR_GEMINI_2_5_PRO,
+            OR_GEMINI_2_5_FLASH,
+            # DeepSeek
+            OR_DEEPSEEK_V3_1,
+            OR_DEEPSEEK_R1,
         ],
         tasks=[
             "iron_ore_throughput",

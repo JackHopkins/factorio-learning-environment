@@ -5,6 +5,7 @@ This example shows how to restart a sweep without duplicating completed runs.
 """
 
 from fle.eval.analysis.sweep_manager import SweepManager, SweepConfig
+from fle.commons.constants import GPT_5, CLAUDE_3_7_SONNET
 
 
 async def resume_sweep_example():
@@ -13,7 +14,7 @@ async def resume_sweep_example():
     # Create the same config as the original sweep
     config = SweepConfig(
         name="my_experiment",
-        models=["gpt-4", "claude-3-sonnet"],
+        models=[GPT_5, CLAUDE_3_7_SONNET],
         tasks=["craft_iron_plate", "build_furnace", "mine_coal"],
         num_trials_per_config=8,
         max_concurrent_processes=4,
@@ -41,7 +42,7 @@ async def new_sweep_example():
 
     config = SweepConfig(
         name="my_new_experiment",
-        models=["gpt-4", "claude-3-sonnet"],
+        models=[GPT_5, CLAUDE_3_7_SONNET],
         tasks=["craft_iron_plate", "build_furnace"],
         num_trials_per_config=4,
     )

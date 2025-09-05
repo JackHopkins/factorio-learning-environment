@@ -129,7 +129,7 @@ class DatabaseAnalyzer:
                 MAX(created_at) as end_time,
                 STRING_AGG(
                     CASE WHEN achievements_json != '{{}}' AND achievements_json IS NOT NULL 
-                         THEN achievements_json 
+                         THEN achievements_json::text 
                          ELSE NULL END, 
                     '; '
                 ) as all_achievements,
@@ -175,8 +175,8 @@ class DatabaseAnalyzer:
                 MIN(created_at) as start_time,
                 MAX(created_at) as end_time,
                 STRING_AGG(
-                    CASE WHEN achievements_json != '{{}}' AND achievements_json IS NOT NULL 
-                         THEN achievements_json 
+                    CASE WHEN achievements_json != '{}' AND achievements_json IS NOT NULL 
+                         THEN achievements_json::text 
                          ELSE NULL END, 
                     '; '
                 ) as all_achievements,

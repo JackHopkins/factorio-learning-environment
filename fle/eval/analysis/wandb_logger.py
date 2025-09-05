@@ -374,7 +374,7 @@ class WandBSweepLogger:
             run_name=run_name,
             tags=tags,
             config=config,
-            **{k: v for k, v in kwargs.items() if k != "config"},
+            **{k: v for k, v in kwargs.items() if k not in ["config", "tags"]},
         )
 
         self.individual_loggers[run_id] = logger

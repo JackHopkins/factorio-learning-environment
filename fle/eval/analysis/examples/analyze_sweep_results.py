@@ -13,11 +13,304 @@ from typing import List, Optional
 
 from fle.eval.analysis import (
     DatabaseAnalyzer,
-    PerformanceAnalyzer,
     ResultsVisualizer,
     group_results_by_model,
-    create_leaderboard,
 )
+from fle.eval.analysis.performance_metrics import PerformanceAnalyzer
+from fle.eval.analysis.analysis_utils import create_leaderboard
+
+
+async def analyze_sweep_by_id(sweep_id: str):
+    """Analyze results for a specific sweep ID
+
+    Args:
+        sweep_id: The sweep ID to analyze (e.g. 'test_sweep_small_20250904_151635_2e06c621')
+    """
+    print(f"Analyzing sweep: {sweep_id}")
+    print("=" * 60)
+
+    analyzer = DatabaseAnalyzer()
+
+    try:
+        await analyzer.ensure_connection()
+
+        # First, try a simple query to get basic sweep data
+        print("📊 1. BASIC SWEEP DATA")
+        print("-" * 40)
+
+        # Simple query for sweep data
+        basic_query = """
+        SELECT 
+            version, version_description, model, instance, 
+            value, raw_reward, depth, token_usage,
+            created_at, meta
+        FROM programs 
+        WHERE meta->>'sweep_id' = %s
+        ORDER BY version, instance, created_at
+        """
+
+        basic_results = await analyzer.db_client.execute_query(basic_query, (sweep_id,))
+        basic_df = pd.DataFrame(basic_results)
+
+        if not basic_df.empty:
+            print(f"Found {len(basic_df)} program results for sweep")
+            print(f"Models: {basic_df['model'].unique().tolist()}")
+            print(f"Instances: {sorted(basic_df['instance'].unique().tolist())}")
+            print(
+                f"Version descriptions: {basic_df['version_description'].unique().tolist()}"
+            )
+
+            # Calculate trajectory summaries manually
+            trajectory_summaries = (
+                basic_df.groupby(["version", "model", "instance"])
+                .agg(
+                    {
+                        "value": ["max", "count"],
+                        "raw_reward": "max",
+                        "depth": "max",
+                        "token_usage": "sum",
+                        "version_description": "first",
+                        "created_at": ["min", "max"],
+                    }
+                )
+                .reset_index()
+            )
+
+            # Flatten column names
+            trajectory_summaries.columns = [
+                "version",
+                "model",
+                "instance",
+                "max_reward",
+                "num_steps",
+                "max_raw_reward",
+                "max_depth",
+                "total_tokens",
+                "version_description",
+                "start_time",
+                "end_time",
+            ]
+
+            # Add success column (assuming success is max_reward > 0)
+            trajectory_summaries["success"] = trajectory_summaries["max_reward"] > 0
+
+            print(f"\nTrajectory Overview ({len(trajectory_summaries)} trajectories):")
+            display_cols = [
+                "model",
+                "instance",
+                "max_reward",
+                "success",
+                "total_tokens",
+                "num_steps",
+            ]
+            print(trajectory_summaries[display_cols].head(10))
+
+        else:
+            # Try the original method as fallback
+            print("No results from basic query, trying original method...")
+            trajectory_summaries = await analyzer.get_trajectory_summaries_by_sweep(
+                sweep_id
+            )
+
+        if not trajectory_summaries.empty:
+            print(f"Found {len(trajectory_summaries)} trajectories")
+            print("\nTrajectory Overview:")
+            display_cols = [
+                "model",
+                "task",
+                "instance",
+                "max_reward",
+                "success",
+                "total_tokens",
+            ]
+            available_cols = [
+                col for col in display_cols if col in trajectory_summaries.columns
+            ]
+            print(trajectory_summaries[available_cols].head(10))
+
+            # Success rate by model
+            success_by_model = trajectory_summaries.groupby("model")["success"].agg(
+                ["mean", "count"]
+            )
+            print("\n📈 Success Rate by Model:")
+            for model, stats in success_by_model.iterrows():
+                print(f"  {model}: {stats['mean']:.2%} ({stats['count']} trials)")
+
+            # Success rate by task
+            if "task" in trajectory_summaries.columns:
+                success_by_task = trajectory_summaries.groupby("task")["success"].agg(
+                    ["mean", "count"]
+                )
+                print("\n🎯 Success Rate by Task:")
+                for task, stats in success_by_task.iterrows():
+                    print(f"  {task}: {stats['mean']:.2%} ({stats['count']} trials)")
+
+            # Create model comparison manually from our data
+            print("\n📋 2. DETAILED MODEL COMPARISON")
+            print("-" * 40)
+
+            (
+                trajectory_summaries.groupby("model")
+                .agg(
+                    {
+                        "max_reward": ["mean", "std", "count"],
+                        "success": ["mean", "sum"],
+                        "total_tokens": "mean",
+                        "num_steps": "mean",
+                    }
+                )
+                .reset_index()
+            )
+
+            print("Model Performance Comparison:")
+            for model in trajectory_summaries["model"].unique():
+                model_data = trajectory_summaries[
+                    trajectory_summaries["model"] == model
+                ]
+                print(f"\n  {model}:")
+                print(f"    Trajectories: {len(model_data)}")
+                print(f"    Success Rate: {model_data['success'].mean():.2%}")
+                print(
+                    f"    Mean Reward: {model_data['max_reward'].mean():.2f} ± {model_data['max_reward'].std():.2f}"
+                )
+                print(
+                    f"    Reward Range: [{model_data['max_reward'].min():.1f}, {model_data['max_reward'].max():.1f}]"
+                )
+                print(f"    Avg Tokens: {model_data['total_tokens'].mean():.0f}")
+                print(f"    Avg Steps: {model_data['num_steps'].mean():.1f}")
+
+            # Task breakdown by extracting task from version_description
+            print("\n🎯 3. TASK BREAKDOWN")
+            print("-" * 40)
+
+            # Extract task from version_description
+            trajectory_summaries["task"] = trajectory_summaries[
+                "version_description"
+            ].str.extract(r"type:([^\\n]+)")
+
+            if "task" in trajectory_summaries.columns:
+                print("Task Performance Breakdown:")
+                for task in trajectory_summaries["task"].unique():
+                    task_data = trajectory_summaries[
+                        trajectory_summaries["task"] == task
+                    ]
+                    if len(task_data) > 0:
+                        print(f"\n  {task}:")
+                        print(f"    Trajectories: {len(task_data)}")
+                        print(f"    Success Rate: {task_data['success'].mean():.2%}")
+                        print(
+                            f"    Mean Reward: {task_data['max_reward'].mean():.2f} ± {task_data['max_reward'].std():.2f}"
+                        )
+                        print(f"    Avg Tokens: {task_data['total_tokens'].mean():.0f}")
+                        print(f"    Models: {list(task_data['model'].unique())}")
+            else:
+                print("Could not extract task information from version descriptions")
+
+            # Performance metrics analysis with Pass@K
+            print("\n📊 4. PERFORMANCE METRICS ANALYSIS")
+            print("-" * 40)
+
+            print("Pass@K Analysis:")
+            for model in trajectory_summaries["model"].unique():
+                print(f"\n  Model: {model}")
+                model_data = trajectory_summaries[
+                    trajectory_summaries["model"] == model
+                ]
+
+                if "task" in model_data.columns:
+                    for task in model_data["task"].unique():
+                        task_data = model_data[model_data["task"] == task]
+                        _analyze_model_task_performance(task_data, model, task)
+                else:
+                    _analyze_model_task_performance(model_data, model, "overall")
+
+            # Export results
+            print("\n💾 5. EXPORTING RESULTS")
+            print("-" * 40)
+
+            output_dir = Path("./analysis_results")
+            output_dir.mkdir(exist_ok=True)
+
+            output_file = output_dir / f"{sweep_id}_trajectory_summaries.csv"
+            trajectory_summaries.to_csv(output_file, index=False)
+            print(f"Exported trajectory summaries to: {output_file}")
+
+            # Export model comparison statistics
+            model_comparison_data = []
+            for model in trajectory_summaries["model"].unique():
+                model_data = trajectory_summaries[
+                    trajectory_summaries["model"] == model
+                ]
+                model_comparison_data.append(
+                    {
+                        "model": model,
+                        "trajectories": len(model_data),
+                        "success_rate": model_data["success"].mean(),
+                        "mean_reward": model_data["max_reward"].mean(),
+                        "std_reward": model_data["max_reward"].std(),
+                        "min_reward": model_data["max_reward"].min(),
+                        "max_reward": model_data["max_reward"].max(),
+                        "mean_tokens": model_data["total_tokens"].mean(),
+                        "mean_steps": model_data["num_steps"].mean(),
+                    }
+                )
+
+            model_comparison_df = pd.DataFrame(model_comparison_data)
+            output_file = output_dir / f"{sweep_id}_model_comparison.csv"
+            model_comparison_df.to_csv(output_file, index=False)
+            print(f"Exported model comparison to: {output_file}")
+
+            print(f"\n✅ Analysis complete for sweep: {sweep_id}")
+        else:
+            print("⚠️  No trajectory summaries found for this sweep")
+
+    except Exception as e:
+        print(f"❌ Error during analysis: {e}")
+        import traceback
+
+        traceback.print_exc()
+    finally:
+        await analyzer.cleanup()
+
+
+def _analyze_model_task_performance(task_data, model, task):
+    """Helper function to analyze performance metrics for a model-task combination"""
+
+    if len(task_data) == 0:
+        return
+
+    # Use the PerformanceAnalyzer to calculate metrics properly
+    try:
+        metrics = PerformanceAnalyzer.calculate_metrics(
+            task_data,
+            reward_column="max_reward",
+            success_threshold=0.0,  # Since all rewards > 0 are successes
+            token_column="total_tokens",
+            step_column="num_steps",
+            k_values=[1, 3, 5, 8],
+        )
+
+        print(f"    {task}:")
+        print(f"      Success Rate: {metrics.success_rate:.2%}")
+        print(f"      Pass@1: {metrics.pass_at_1:.2%}")
+        if metrics.pass_at_k:
+            for k in [3, 5, 8]:
+                if k in metrics.pass_at_k and len(task_data) >= k:
+                    print(f"      Pass@{k}: {metrics.pass_at_k[k]:.2%}")
+        print(f"      Mean Reward: {metrics.mean_reward:.3f}")
+        print(f"      Std Reward: {metrics.std_reward:.3f}")
+        if metrics.mean_tokens:
+            print(f"      Mean Tokens: {metrics.mean_tokens:.0f}")
+        if metrics.tokens_per_success:
+            print(f"      Tokens per Success: {metrics.tokens_per_success:.0f}")
+    except Exception as e:
+        print(f"    {task}: Error calculating metrics - {e}")
+        # Fallback to basic analysis
+        print(f"      Trajectories: {len(task_data)}")
+        if "max_reward" in task_data.columns:
+            print(f"      Mean Reward: {task_data['max_reward'].mean():.3f}")
+        if "success" in task_data.columns:
+            print(f"      Success Rate: {task_data['success'].mean():.2%}")
 
 
 async def analyze_recent_results(hours: int = 24):
@@ -219,15 +512,15 @@ async def analyze_task_difficulty(model: Optional[str] = None):
 
 
 async def create_comprehensive_report(
-    versions: List[int], output_dir: str = "./analysis_results"
+    sweep_id: str, output_dir: str = "./analysis_results"
 ):
     """Create comprehensive analysis report with visualizations
 
     Args:
-        versions: List of version numbers to analyze
+        sweep_id: Sweep identifier to analyze
         output_dir: Directory to save analysis results
     """
-    print(f"Creating comprehensive report for versions: {versions}")
+    print(f"Creating comprehensive report for sweep: {sweep_id}")
     print(f"Output directory: {output_dir}")
 
     output_path = Path(output_dir)
@@ -237,12 +530,12 @@ async def create_comprehensive_report(
     visualizer = ResultsVisualizer()
 
     try:
-        # Get comprehensive data
+        # Get comprehensive data using sweep ID
         print("Fetching data...")
-        trajectory_df = await analyzer.get_trajectory_summaries(versions)
+        trajectory_df = await analyzer.get_trajectory_summaries_by_sweep(sweep_id)
 
         if trajectory_df.empty:
-            print("No data found for specified versions.")
+            print("No data found for specified sweep.")
             return
 
         print(f"Analyzing {len(trajectory_df)} trajectories")
@@ -267,7 +560,7 @@ async def create_comprehensive_report(
         print(leaderboard.to_string(index=False))
 
         # Save leaderboard to file
-        leaderboard.to_csv(output_path / "leaderboard.csv", index=False)
+        leaderboard.to_csv(output_path / f"{sweep_id}_leaderboard.csv", index=False)
 
         # Create visualizations
         print("Creating visualizations...")
@@ -276,15 +569,23 @@ async def create_comprehensive_report(
                 model_metrics=model_metrics,
                 results_df=trajectory_df,
                 output_dir=str(output_path),
-                report_name="sweep_analysis",
+                report_name=f"sweep_{sweep_id}",
             )
 
             print("Visualizations saved:")
             for viz_type, file_path in viz_files.items():
                 print(f"  {viz_type}: {file_path}")
+        else:
+            print(
+                "Visualization tools not available - install matplotlib and seaborn for plots"
+            )
+
+        # Get unique versions from the sweep data
+        versions = sorted(trajectory_df["version"].unique().tolist())
 
         # Save detailed results
         results_summary = {
+            "sweep_id": sweep_id,
             "versions_analyzed": versions,
             "total_trajectories": len(trajectory_df),
             "models_analyzed": list(model_metrics.keys()),
@@ -294,10 +595,17 @@ async def create_comprehensive_report(
             },
         }
 
-        with open(output_path / "analysis_summary.json", "w") as f:
+        with open(output_path / f"{sweep_id}_analysis_summary.json", "w") as f:
             json.dump(results_summary, f, indent=2, default=str)
 
         print(f"\nComprehensive report saved to: {output_path}")
+        print("Files generated:")
+        print(f"  - {sweep_id}_leaderboard.csv")
+        print(f"  - {sweep_id}_analysis_summary.json")
+        if visualizer.enabled:
+            print(f"  - Multiple visualization plots with prefix 'sweep_{sweep_id}_'")
+
+        return str(output_path)
 
     finally:
         await analyzer.cleanup()
@@ -366,18 +674,25 @@ if __name__ == "__main__":
 
     if len(sys.argv) < 2:
         print("Usage:")
+        print("  python analyze_sweep_results.py sweep [sweep_id]")
         print("  python analyze_sweep_results.py recent [hours]")
         print("  python analyze_sweep_results.py compare model1 model2 [model3 ...]")
         print("  python analyze_sweep_results.py tasks [model]")
-        print(
-            "  python analyze_sweep_results.py report version1 version2 [version3 ...]"
-        )
+        print("  python analyze_sweep_results.py report [sweep_id]")
         print("  python analyze_sweep_results.py monitor [project_name]")
         sys.exit(1)
 
     command = sys.argv[1]
 
-    if command == "recent":
+    if command == "sweep":
+        sweep_id = (
+            sys.argv[2]
+            if len(sys.argv) > 2
+            else "test_sweep_small_20250904_151635_2e06c621"
+        )
+        asyncio.run(analyze_sweep_by_id(sweep_id))
+
+    elif command == "recent":
         hours = int(sys.argv[2]) if len(sys.argv) > 2 else 24
         asyncio.run(analyze_recent_results(hours))
 
@@ -393,11 +708,12 @@ if __name__ == "__main__":
         asyncio.run(analyze_task_difficulty(model))
 
     elif command == "report":
-        versions = [int(v) for v in sys.argv[2:]]
-        if not versions:
-            print("Need at least one version number")
-            sys.exit(1)
-        asyncio.run(create_comprehensive_report(versions))
+        sweep_id = (
+            sys.argv[2]
+            if len(sys.argv) > 2
+            else "test_sweep_small_20250904_151635_2e06c621"
+        )
+        asyncio.run(create_comprehensive_report(sweep_id))
 
     elif command == "monitor":
         project = sys.argv[2] if len(sys.argv) > 2 else "factorio-learning-environment"

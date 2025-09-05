@@ -5,6 +5,7 @@ on:
       - 'fle/env/**'
       - 'fle/cluster/**'
       - 'tests/actions/**'
+      - 'tests/connect/**'
       - '.github/workflows/factorio-test.yml'
   workflow_dispatch:
 

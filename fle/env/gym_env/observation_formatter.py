@@ -3,6 +3,7 @@ import pickle
 import re
 
 from fle.env.gym_env.observation import Observation
+from fle.commons.constants import REWARD_OVERRIDE_KEY
 from typing import Any, Dict, List, Optional
 
 
@@ -344,14 +345,14 @@ class BasicObservationFormatter:
         if not flows or not any(flows.values()):
             return "### Production Flows\nNone"
 
-        flow_str = "### Production Flows\n"
+        flow_str = "### Production Flows (for *entire* previous step)\n"
 
         # Format input flows
         if flows.get("input"):
             flow_str += "#### Inputs\n"
             for item in flows["input"]:
                 if item["rate"] > 0:
-                    flow_str += f"- {item['type']}: {item['rate']:.2f}/s\n"
+                    flow_str += f"- {item['type']}: {item['rate']:.2f}\n"
 
         # Format output flows
         if flows.get("output"):
@@ -360,7 +361,7 @@ class BasicObservationFormatter:
             flow_str += "#### Outputs\n"
             for item in flows["output"]:
                 if item["rate"] > 0:
-                    flow_str += f"- {item['type']}: {item['rate']:.2f}/s\n"
+                    flow_str += f"- {item['type']}: {item['rate']:.2f}\n"
 
         # Format crafted items
         if flows.get("crafted"):
@@ -494,6 +495,8 @@ class BasicObservationFormatter:
         if task.get("meta"):
             task_str += "\n**Task Details:**\n"
             for meta_item in task["meta"]:
+                if meta_item["key"] == REWARD_OVERRIDE_KEY:
+                    continue
                 task_str += f"- {meta_item['key']}: {meta_item['value']}\n"
 
         return task_str

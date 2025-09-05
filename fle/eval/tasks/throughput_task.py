@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 from fle.env import Entity
 from fle.env import FactorioInstance
+from fle.commons.constants import REWARD_OVERRIDE_KEY
 from fle.eval.tasks import TaskABC
 from fle.env.utils.achievements import eval_program_with_achievements
 from fle.agents import TaskResponse
@@ -59,6 +60,9 @@ class ThroughputTask(TaskABC):
         self.holdout_wait_period = holdout_wait_period
         self.starting_game_state = None
         self.pre_holdout_wait_period = pre_holdout_wait_period
+        self.throughput_key = (
+            f"{throughput_entity} achieved throughput per {holdout_wait_period} seconds"
+        )
 
     def verify(
         self, score: float, instance: FactorioInstance, step_statistics: Dict
@@ -83,7 +87,8 @@ class ThroughputTask(TaskABC):
         return TaskResponse(
             success=max_achieved_throughput >= self.quota,
             meta={
-                f"{self.throughput_entity}_achieved_throughput": max_achieved_throughput,
+                self.throughput_key: max_achieved_throughput,
+                REWARD_OVERRIDE_KEY: max_achieved_throughput,
             },
         )
 
@@ -106,8 +111,8 @@ class ThroughputTask(TaskABC):
     def enhance_response_with_task_output(
         self, response: str, task_response: TaskResponse
     ) -> str:
-        task_throughputs = task_response.meta.get("achievements", None)
-        if task_throughputs:
-            response += f"\n\nHere is the current throughput of your factory: {task_throughputs['dynamic']} created per 60 seconds"
+        task_throughput = task_response.meta.get(self.throughput_key, None)
+        if task_throughput:
+            response += f"\n\nThe current throughput of your factory is {task_throughput} of {self.throughput_entity} created per 60 seconds"
 
         return response

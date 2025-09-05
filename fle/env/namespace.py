@@ -363,6 +363,12 @@ class FactorioNamespace:
                 if self.loop_context.state in ("BREAK", "CONTINUE"):
                     return False
 
+            # Handle return statement propagation
+            elif (
+                isinstance(result, tuple) and len(result) == 2 and result[0] == "RETURN"
+            ):
+                return result
+
         return True
 
     def execute_node(self, node, eval_dict, parent_node=None):
@@ -422,7 +428,15 @@ class FactorioNamespace:
                 )
                 for item in iter_obj:
                     self._assign_target(node.target, item, eval_dict)
-                    self.execute_body(node.body, eval_dict, node)
+                    result = self.execute_body(node.body, eval_dict, node)
+
+                    # Handle return statement propagation
+                    if (
+                        isinstance(result, tuple)
+                        and len(result) == 2
+                        and result[0] == "RETURN"
+                    ):
+                        return result
 
                     if self.loop_context.state == "BREAK":
                         break
@@ -430,8 +444,15 @@ class FactorioNamespace:
                         self.loop_context.state = "NORMAL"
                         continue
 
-                    if node.orelse and self.loop_context.state != "BREAK":
-                        self.execute_body(node.orelse, eval_dict, node)
+                if node.orelse and self.loop_context.state != "BREAK":
+                    result = self.execute_body(node.orelse, eval_dict, node)
+                    # Handle return statement propagation
+                    if (
+                        isinstance(result, tuple)
+                        and len(result) == 2
+                        and result[0] == "RETURN"
+                    ):
+                        return result
                 return True
             finally:
                 self.loop_context.exit_loop()
@@ -442,7 +463,15 @@ class FactorioNamespace:
                 while eval(
                     compile(ast.Expression(node.test), "file", "eval"), eval_dict
                 ):
-                    self.execute_body(node.body, eval_dict, node)
+                    result = self.execute_body(node.body, eval_dict, node)
+
+                    # Handle return statement propagation
+                    if (
+                        isinstance(result, tuple)
+                        and len(result) == 2
+                        and result[0] == "RETURN"
+                    ):
+                        return result
 
                     if self.loop_context.state == "BREAK":
                         break
@@ -451,7 +480,14 @@ class FactorioNamespace:
                         continue
 
                 if node.orelse and self.loop_context.state != "BREAK":
-                    self.execute_body(node.orelse, eval_dict, node)
+                    result = self.execute_body(node.orelse, eval_dict, node)
+                    # Handle return statement propagation
+                    if (
+                        isinstance(result, tuple)
+                        and len(result) == 2
+                        and result[0] == "RETURN"
+                    ):
+                        return result
                 return True
             finally:
                 self.loop_context.exit_loop()
@@ -462,77 +498,109 @@ class FactorioNamespace:
                 compile(ast.Expression(node.test), "file", "eval"), eval_dict
             )
             if test_result:
-                self.execute_body(node.body, eval_dict, node)
+                result = self.execute_body(node.body, eval_dict, node)
+                # Handle return statement propagation
+                if (
+                    isinstance(result, tuple)
+                    and len(result) == 2
+                    and result[0] == "RETURN"
+                ):
+                    return result
             elif node.orelse:
-                self.execute_body(node.orelse, eval_dict, node)
+                result = self.execute_body(node.orelse, eval_dict, node)
+                # Handle return statement propagation
+                if (
+                    isinstance(result, tuple)
+                    and len(result) == 2
+                    and result[0] == "RETURN"
+                ):
+                    return result
             return True
 
         elif isinstance(node, ast.FunctionDef):
-            # Process return type annotation if present
-            return_annotation = (
-                process_annotation(node.returns, eval_dict) if node.returns else None
-            )
-
-            # Process argument annotations
-            arg_annotations = {}
-
-            # Handle positional args
-            for arg in node.args.args:
-                if arg.annotation:
-                    arg_annotations[arg.arg] = process_annotation(
-                        arg.annotation, eval_dict
-                    )
-
-            # Handle keyword only args
-            for arg in node.args.kwonlyargs:
-                if arg.annotation:
-                    arg_annotations[arg.arg] = process_annotation(
-                        arg.annotation, eval_dict
-                    )
-
-            # Handle positional only args if they exist
-            for arg in getattr(node.args, "posonlyargs", []):
-                if arg.annotation:
-                    arg_annotations[arg.arg] = process_annotation(
-                        arg.annotation, eval_dict
-                    )
-
-            # Handle variadic args
-            if node.args.vararg and node.args.vararg.annotation:
-                arg_annotations["*" + node.args.vararg.arg] = process_annotation(
-                    node.args.vararg.annotation, eval_dict
+            try:
+                # Process return type annotation if present
+                return_annotation = (
+                    process_annotation(node.returns, eval_dict)
+                    if node.returns
+                    else None
                 )
 
-            # Handle variadic kwargs
-            if node.args.kwarg and node.args.kwarg.annotation:
-                arg_annotations["**" + node.args.kwarg.arg] = process_annotation(
-                    node.args.kwarg.annotation, eval_dict
+                # Process argument annotations
+                arg_annotations = {}
+
+                # Handle positional args
+                for arg in node.args.args:
+                    if arg.annotation:
+                        arg_annotations[arg.arg] = process_annotation(
+                            arg.annotation, eval_dict
+                        )
+
+                # Handle keyword only args
+                for arg in node.args.kwonlyargs:
+                    if arg.annotation:
+                        arg_annotations[arg.arg] = process_annotation(
+                            arg.annotation, eval_dict
+                        )
+
+                # Handle positional only args if they exist
+                for arg in getattr(node.args, "posonlyargs", []):
+                    if arg.annotation:
+                        arg_annotations[arg.arg] = process_annotation(
+                            arg.annotation, eval_dict
+                        )
+
+                # Handle variadic args
+                if node.args.vararg and node.args.vararg.annotation:
+                    arg_annotations["*" + node.args.vararg.arg] = process_annotation(
+                        node.args.vararg.annotation, eval_dict
+                    )
+
+                # Handle variadic kwargs
+                if node.args.kwarg and node.args.kwarg.annotation:
+                    arg_annotations["**" + node.args.kwarg.arg] = process_annotation(
+                        node.args.kwarg.annotation, eval_dict
+                    )
+
+                # Store annotations in function's metadata
+                setattr(
+                    node,
+                    "__annotations__",
+                    {"return": return_annotation, "args": arg_annotations},
                 )
 
-            # Store annotations in function's metadata
-            setattr(
-                node,
-                "__annotations__",
-                {"return": return_annotation, "args": arg_annotations},
-            )
+                # Create function namespace that shares globals properly
+                function_namespace = {**self.essential_builtins, **eval_dict}
 
-            function_namespace = {**self.essential_builtins, **eval_dict}
+                wrapped_node = ast.Module([node], type_ignores=[])
+                compiled = compile(wrapped_node, "file", "exec")
+                exec(
+                    compiled, function_namespace, eval_dict
+                )  # Pass eval_dict as globals
 
-            wrapped_node = ast.Module([node], type_ignores=[])
-            compiled = compile(wrapped_node, "file", "exec")
-            exec(compiled, function_namespace)
+                func = function_namespace[node.name]
 
-            func = function_namespace[node.name]
+                if hasattr(node, "__annotations__"):
+                    func.__annotations__ = getattr(node, "__annotations__")
 
-            if hasattr(node, "__annotations__"):
-                func.__annotations__ = getattr(node, "__annotations__")
+                serialized_func = SerializableFunction(func, self)
+                self.persistent_vars[node.name] = serialized_func
+                setattr(self, node.name, serialized_func)
+                eval_dict[node.name] = serialized_func
 
-            serialized_func = SerializableFunction(func, self)
-            self.persistent_vars[node.name] = serialized_func
-            setattr(self, node.name, serialized_func)
-            eval_dict[node.name] = serialized_func
+                return True
+            except Exception:
+                # If function definition fails, fall back to exec()
+                compiled = compile(ast.Module([node], type_ignores=[]), "file", "exec")
+                exec(compiled, eval_dict)
 
-            return True
+                # Store the function in persistent vars if it was created
+                if node.name in eval_dict:
+                    func = eval_dict[node.name]
+                    if callable(func):
+                        self.persistent_vars[node.name] = wrap_for_serialization(func)
+                        setattr(self, node.name, func)
+                return True
 
         elif isinstance(node, ast.Assign):
             # Get the original eval_dict keys before execution
@@ -574,6 +642,47 @@ class FactorioNamespace:
                         self.persistent_vars[name] = wrap_for_serialization(value)
                         setattr(self, name, value)
                         # print(f"{self.tcp_port}: Stored annotated variable {name} - {type(value)}")
+
+            return True
+
+        elif isinstance(node, ast.AugAssign):
+            # Handle augmented assignments (+=, -=, *=, /=, //=, %=, **=, &=, |=, ^=, >>=, <<=)
+            compiled = compile(ast.Module([node], type_ignores=[]), "file", "exec")
+            exec(compiled, eval_dict)
+
+            # Update persistent vars for the target variable
+            if isinstance(node.target, ast.Name):
+                name = node.target.id
+                if name in eval_dict:
+                    value = eval_dict[name]
+                    self.persistent_vars[name] = wrap_for_serialization(value)
+                    setattr(self, name, value)
+                    # print(f"{self.tcp_port}: Updated augmented variable {name} = {value}")
+
+            # Handle more complex targets like attributes or subscripts
+            elif isinstance(node.target, (ast.Attribute, ast.Subscript)):
+                # For attribute/subscript assignments, we need to find the base variable
+                # and update it since the object may have been modified in place
+                target_vars = set()
+
+                # Extract variable names from the target expression
+                def extract_names(node):
+                    if isinstance(node, ast.Name):
+                        target_vars.add(node.id)
+                    elif isinstance(node, ast.Attribute):
+                        extract_names(node.value)
+                    elif isinstance(node, ast.Subscript):
+                        extract_names(node.value)
+                        extract_names(node.slice)
+
+                extract_names(node.target)
+
+                # Update persistent vars for any variables that might have been modified
+                for name in target_vars:
+                    if name in eval_dict and not name.startswith("_"):
+                        value = eval_dict[name]
+                        self.persistent_vars[name] = wrap_for_serialization(value)
+                        setattr(self, name, value)
 
             return True
 
@@ -621,6 +730,23 @@ class FactorioNamespace:
 
                     # Call the function and let exceptions propagate
                     response = func(*args, **kwargs)
+
+                    # After function call, sync any changes from SerializableFunction globals back to eval_dict
+                    if (
+                        isinstance(func, SerializableFunction)
+                        and hasattr(func, "_cached_func")
+                        and func._cached_func
+                    ):
+                        # Get the function's globals and update our eval_dict with any changes
+                        func_globals = func._cached_func.__globals__
+                        for name, value in func_globals.items():
+                            if not name.startswith("_") and name in eval_dict:
+                                if eval_dict[name] != value:
+                                    eval_dict[name] = value
+                                    self.persistent_vars[name] = wrap_for_serialization(
+                                        value
+                                    )
+                                    setattr(self, name, value)
             else:
                 # For non-function call expressions
                 compiled = compile(ast.Expression(node.value), "file", "eval")
@@ -644,9 +770,176 @@ class FactorioNamespace:
 
             return True
 
+        elif isinstance(node, ast.Return):
+            # Handle return statements
+            if node.value:
+                # Return with a value
+                return_value = eval(
+                    compile(ast.Expression(node.value), "file", "eval"), eval_dict
+                )
+                return ("RETURN", return_value)
+            else:
+                # Return without a value (return None)
+                return ("RETURN", None)
+
+        elif isinstance(node, ast.Raise):
+            # Handle raise statements
+            if node.exc:
+                # Raise with an exception
+                exception = eval(
+                    compile(ast.Expression(node.exc), "file", "eval"), eval_dict
+                )
+                if node.cause:
+                    # Raise with 'from' clause
+                    cause = eval(
+                        compile(ast.Expression(node.cause), "file", "eval"), eval_dict
+                    )
+                    raise exception from cause
+                else:
+                    # Simple raise
+                    raise exception
+            else:
+                # Re-raise current exception
+                raise
+
+        elif isinstance(node, ast.Assert):
+            # Handle assertion statements
+            test_result = eval(
+                compile(ast.Expression(node.test), "file", "eval"), eval_dict
+            )
+            if not test_result:
+                if node.msg:
+                    # Assert with custom message
+                    msg = eval(
+                        compile(ast.Expression(node.msg), "file", "eval"), eval_dict
+                    )
+                    raise AssertionError(msg)
+                else:
+                    # Assert without message
+                    raise AssertionError()
+            return True
+
+        elif isinstance(node, ast.Import):
+            # Handle import statements (import module)
+            for alias in node.names:
+                try:
+                    # Import the top-level module
+                    parts = alias.name.split(".")
+                    top_module = __import__(alias.name)
+
+                    if alias.asname:
+                        # If there's an alias, assign the final module to the alias
+                        final_module = top_module
+                        for part in parts[1:]:
+                            final_module = getattr(final_module, part)
+                        eval_dict[alias.asname] = final_module
+                        self.persistent_vars[alias.asname] = final_module
+                        setattr(self, alias.asname, final_module)
+                    else:
+                        # For dotted imports like "import os.path", we need to make "os" available
+                        # so that "os.path" works
+                        top_name = parts[0]
+                        eval_dict[top_name] = top_module
+                        self.persistent_vars[top_name] = top_module
+                        setattr(self, top_name, top_module)
+
+                except ImportError:
+                    # Let import errors propagate naturally
+                    raise
+            return True
+
+        elif isinstance(node, ast.ImportFrom):
+            # Handle from-import statements (from module import name)
+            try:
+                # Import the module
+                module_name = node.module if node.module else ""
+                level = node.level if node.level else 0
+
+                if level > 0:
+                    # Relative import - requires proper package context
+                    # For now, fall back to exec() as relative imports are complex
+                    compiled = compile(
+                        ast.Module([node], type_ignores=[]), "file", "exec"
+                    )
+                    exec(compiled, eval_dict)
+                else:
+                    # Absolute import
+                    if node.names[0].name == "*":
+                        # from module import * - fall back to exec()
+                        compiled = compile(
+                            ast.Module([node], type_ignores=[]), "file", "exec"
+                        )
+                        exec(compiled, eval_dict)
+                        # Update persistent vars with new imports
+                        # Protect essential functions from being overwritten
+                        protected_names = {
+                            "log",
+                            "print",
+                        }  # Add other essential functions as needed
+                        for name, value in eval_dict.items():
+                            if (
+                                not name.startswith("_")
+                                and name not in self.persistent_vars
+                                and name not in protected_names
+                            ):
+                                self.persistent_vars[name] = value
+                                setattr(self, name, value)
+
+                        # Ensure our essential functions are restored after import *
+                        for name in protected_names:
+                            if hasattr(self, name):
+                                eval_dict[name] = getattr(self, name)
+                    else:
+                        # Import specific names
+                        imported_names = [alias.name for alias in node.names]
+                        module = __import__(module_name, fromlist=imported_names)
+
+                        # Protect essential functions from being overwritten
+                        protected_names = {
+                            "log",
+                            "print",
+                        }  # Add other essential functions as needed
+                        for alias in node.names:
+                            obj = getattr(module, alias.name)
+                            name = alias.asname if alias.asname else alias.name
+                            if name not in protected_names:
+                                eval_dict[name] = obj
+                                self.persistent_vars[name] = obj
+                                setattr(self, name, obj)
+            except ImportError:
+                # Let import errors propagate naturally
+                raise
+            return True
+
+        elif isinstance(node, ast.Global):
+            # Handle global declarations
+            # The global statement itself doesn't do anything at execution time,
+            # it just affects how names are resolved in the function
+            # We can handle this with a simple pass since the function compilation
+            # will handle the global semantics properly
+            return True
+
+        elif isinstance(node, ast.Nonlocal):
+            # Handle nonlocal declarations
+            for name in node.names:
+                # Mark variables as nonlocal in current scope
+                # Similar to global, this affects assignment behavior
+                pass
+            # For now, use fallback exec() to handle nonlocal semantics properly
+            compiled = compile(ast.Module([node], type_ignores=[]), "file", "exec")
+            exec(compiled, eval_dict)
+            return True
+
         elif isinstance(node, ast.Try):
             try:
-                self.execute_body(node.body, eval_dict, node)
+                result = self.execute_body(node.body, eval_dict, node)
+                # Handle return statement propagation
+                if (
+                    isinstance(result, tuple)
+                    and len(result) == 2
+                    and result[0] == "RETURN"
+                ):
+                    return result
             except Exception as e:
                 handled = False
                 for handler in node.handlers:
@@ -659,7 +952,14 @@ class FactorioNamespace:
                     ):
                         if handler.name:
                             eval_dict[handler.name] = e
-                        self.execute_body(handler.body, eval_dict, handler)
+                        result = self.execute_body(handler.body, eval_dict, handler)
+                        # Handle return statement propagation
+                        if (
+                            isinstance(result, tuple)
+                            and len(result) == 2
+                            and result[0] == "RETURN"
+                        ):
+                            return result
                         handled = True
                         break
 
@@ -667,10 +967,24 @@ class FactorioNamespace:
                     raise
             else:
                 if node.orelse:
-                    self.execute_body(node.orelse, eval_dict, node)
+                    result = self.execute_body(node.orelse, eval_dict, node)
+                    # Handle return statement propagation
+                    if (
+                        isinstance(result, tuple)
+                        and len(result) == 2
+                        and result[0] == "RETURN"
+                    ):
+                        return result
             finally:
                 if node.finalbody:
-                    self.execute_body(node.finalbody, eval_dict, node)
+                    result = self.execute_body(node.finalbody, eval_dict, node)
+                    # Handle return statement propagation
+                    if (
+                        isinstance(result, tuple)
+                        and len(result) == 2
+                        and result[0] == "RETURN"
+                    ):
+                        return result
             return True
 
         else:
@@ -737,7 +1051,20 @@ class FactorioNamespace:
         for index, node in enumerate(tree.body):
             try:
                 node = self._change_print_to_log(node)
-                self.execute_node(node, eval_dict)
+                result = self.execute_node(node, eval_dict)
+
+                # Handle return statement at top level
+                if (
+                    isinstance(result, tuple)
+                    and len(result) == 2
+                    and result[0] == "RETURN"
+                ):
+                    # If we hit a return statement at top level, log the return value and stop execution
+                    return_value = result[1]
+                    if return_value is not None:
+                        self.log(return_value)
+                    break
+
                 last_successful_state = dict(self.persistent_vars)
             except (Exception, NameError) as e:
                 self._sequential_exception_count += 1

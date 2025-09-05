@@ -15,6 +15,13 @@ from fle.env.gym_env.environment import FactorioGymEnv
 from fle.env.gym_env.observation import Observation
 from fle.env.gym_env.trajectory_logger import TrajectoryLogger
 
+try:
+    from fle.eval.analysis import WandBLogger
+
+    WANDB_ANALYSIS_AVAILABLE = True
+except ImportError:
+    WANDB_ANALYSIS_AVAILABLE = False
+
 
 class GymTrajectoryRunner:
     """Handles program generation and evaluation for a single trajectory in the gym environment"""
@@ -27,6 +34,7 @@ class GymTrajectoryRunner:
         db_client: Optional[DBClient],
         log_dir: Optional[str] = None,
         reset_states: bool = False,
+        wandb_logger: Optional["WandBLogger"] = None,
     ):
         self.config = config
         self.agents = config.agents
@@ -36,6 +44,7 @@ class GymTrajectoryRunner:
         self.process_id = process_id
         self.start_time = time.time()
         self.reset_states = reset_states  # Whether to reset the state after each step
+        self.wandb_logger = wandb_logger
 
         # Initialize trajectory logger
         self.logger = TrajectoryLogger(
@@ -72,6 +81,37 @@ class GymTrajectoryRunner:
         self.logger.log_observation_and_program(
             agent, agent_idx, agent_step, observation, program
         )
+
+        # Log to WandB if available
+        if self.wandb_logger and WANDB_ANALYSIS_AVAILABLE:
+            try:
+                # Extract task name from version description
+                task_name = "unknown_task"
+                if (
+                    self.config.version_description
+                    and "type:" in self.config.version_description
+                ):
+                    task_name = (
+                        self.config.version_description.split("type:")[1]
+                        .split("\n")[0]
+                        .strip()
+                    )
+
+                elapsed_time = time.time() - self.start_time
+
+                self.wandb_logger.log_trajectory_progress(
+                    version=self.config.version,
+                    instance=self.process_id,
+                    step=agent_step,
+                    reward=program.value,
+                    model=agent.model,
+                    task=task_name,
+                    elapsed_time=elapsed_time,
+                    tokens_used=program.token_usage,
+                )
+
+            except Exception as e:
+                print(f"Warning: Failed to log to WandB: {e}")
 
     async def create_program_from_policy(
         self,

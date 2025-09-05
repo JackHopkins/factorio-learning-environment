@@ -241,76 +241,58 @@ local function find_straight_sections(path, min_length)
     return sections
 end
 
--- Helper function to serialize a belt group
+-- Helper function to serialize a belt group using proper BFS
 local function serialize_belt_group(entity)
     if not entity or not entity.valid or entity.type ~= "transport-belt" then
         return nil
     end
 
     local serialized = {}
-    local seen = {}
-    local iteration_count = 0
+    local visited = {}
+    local queue = {entity}
+    local max_search = 500 -- Prevent infinite loops
+    local search_count = 0
 
-    local function get_connected_belt_entities(belt, is_output)
-        local connected_entities = {}
-        local seen_owners = {}
-
-        -- Get connected lines
-        local connected_lines = {}
-        if is_output then
-            if #belt.belt_neighbours['outputs'] then
-                for _, line in pairs(belt.belt_neighbours['outputs']) do
-                    table.insert(connected_lines, line)
+    while #queue > 0 and search_count < max_search do
+        search_count = search_count + 1
+        local current_belt = table.remove(queue, 1)
+        
+        if not current_belt or not current_belt.valid then
+            goto continue
+        end
+        
+        local belt_id = current_belt.unit_number
+        if visited[belt_id] then
+            goto continue
+        end
+        visited[belt_id] = true
+        
+        -- Serialize this belt
+        table.insert(serialized, global.utils.serialize_entity(current_belt))
+        
+        -- Add all neighboring belts to queue (both inputs and outputs)
+        if current_belt.belt_neighbours then
+            -- Add output belts
+            if current_belt.belt_neighbours.outputs then
+                for _, output_belt in pairs(current_belt.belt_neighbours.outputs) do
+                    if output_belt and output_belt.valid and not visited[output_belt.unit_number] then
+                        table.insert(queue, output_belt)
+                    end
                 end
             end
-        else
-            if #belt.belt_neighbours['inputs'] then
-                for _, line in pairs(belt.belt_neighbours['inputs']) do
-                    table.insert(connected_lines, line)
+            -- Add input belts  
+            if current_belt.belt_neighbours.inputs then
+                for _, input_belt in pairs(current_belt.belt_neighbours.inputs) do
+                    if input_belt and input_belt.valid and not visited[input_belt.unit_number] then
+                        table.insert(queue, input_belt)
+                    end
                 end
             end
         end
-
-        -- game.print("connected lines "..#connected_lines)
-        -- Convert lines to unique belt entities
-        for _, line in pairs(connected_lines) do
-            if line and line.valid and not seen_owners[line.unit_number] then
-                seen_owners[line.unit_number] = true
-                table.insert(connected_entities, line)
-            end
-        end
-        -- game.print("connected entities "..#connected_entities)
-        return connected_entities
+        
+        ::continue::
     end
-
-    local function serialize_connected_belts(belt, is_output)
-        iteration_count = iteration_count + 1
-        if iteration_count > MAX_SERIALIZATION_ITERATIONS then
-            -- game.print("Warning: Belt serialization reached iteration limit")
-            return
-        end
-
-        if not belt or not belt.valid or seen[belt.unit_number] then
-            return
-        end
-
-        seen[belt.unit_number] = true
-        local belt_data = global.utils.serialize_entity(belt)
-        table.insert(serialized, belt_data)
-
-        -- Get connected belt entities
-        local next_belts = get_connected_belt_entities(belt, is_output)
-        for _, connected_belt in pairs(next_belts) do
-            if connected_belt.valid and not seen[connected_belt.unit_number] then
-                serialize_connected_belts(connected_belt, is_output)
-            end
-        end
-    end
-
-    -- Start serialization from the given entity
-    serialize_connected_belts(entity, false) -- Follow input direction
-    serialize_connected_belts(entity, true)  -- Follow output direction
-
+    
     return serialized
 end
 
@@ -745,14 +727,11 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
 
     local raw_path = global.paths[path_handle]
-    -- game.print("Path length "..#raw_path)
-    -- game.print(serpent.line(start_position).." - "..serpent.line(end_position))
 
     if not raw_path or type(raw_path) ~= "table" or #raw_path == 0 then
         error("Invalid path: " .. serpent.line(path))
     end
 
-    -- game.print("Normalising", {print_skip=defines.print_skip.never})
     local path = global.utils.normalise_path(raw_path, start_position, end_position)
 
     -- Get default and underground connection types
@@ -1038,6 +1017,7 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
                 local final_entity = place_at_position(player, default_connection_type, end_position,
                         global.utils.get_entity_direction(default_connection_type, final_dir/2),
                         serialized_entities, dry_run, counter_state)
+                        
 
                 if final_entity then
                     last_placed_entity = final_entity
@@ -1046,13 +1026,27 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
                 -- After all belts are placed, serialize the entire belt group if we're not in dry run
                 if not dry_run and last_placed_entity and last_placed_entity.valid and default_connection_type:find("belt") then
                     -- Clear the existing serialized entities (which only contain individual placements)
-
+                    local individual_count = #serialized_entities
                     serialized_entities = {}
-                    -- Serialize the entire connected belt group
-                    local group_data = serialize_belt_group(last_placed_entity)
+                    
+                    -- Find the full belt network by checking from source position
+                    local source_belt = game.surfaces[1].find_entity(default_connection_type, start_position)
+                    local group_data = nil
+                    
+                    if source_belt and source_belt.valid then
+                        group_data = serialize_belt_group(source_belt)
+                    else
+                        group_data = serialize_belt_group(last_placed_entity)
+                    end
+                    
                     if group_data then
                         for _, serialized in ipairs(group_data) do
                             table.insert(serialized_entities, serialized)
+                        end
+                    else
+                        -- Restore individual entities if group serialization failed
+                        for i = 1, individual_count do
+                            serialized_entities[i] = serialized_entities[i]
                         end
                     end
                 end
@@ -1198,6 +1192,256 @@ local function are_belt_directions_compatible(dir1, dir2, pos1, pos2)
 end
 
 
+-- Helper function to check if two positions are connected by belts
+local function are_positions_belt_connected(start_pos, end_pos, connection_type)
+    -- Find belt at start position - try multiple belt types if connection_type is nil
+    local belt_types = {"transport-belt", "fast-transport-belt", "express-transport-belt"}
+    if connection_type then
+        belt_types = {connection_type}
+    end
+    
+    local start_belt = nil
+    for _, belt_type in ipairs(belt_types) do
+        start_belt = game.surfaces[1].find_entity(belt_type, start_pos)
+        if start_belt then
+            break
+        end
+    end
+    
+    if not start_belt then
+        return false
+    end
+    
+    -- Use BFS to find if there's a path to end position
+    local visited = {}
+    local queue = {start_belt}
+    local max_search = 200 -- Prevent infinite loops
+    local search_count = 0
+    
+    while #queue > 0 and search_count < max_search do
+        search_count = search_count + 1
+        local current_belt = table.remove(queue, 1)
+        
+        if not current_belt or not current_belt.valid then
+            goto continue
+        end
+        
+        local pos_key = current_belt.position.x .. "," .. current_belt.position.y
+        if visited[pos_key] then
+            goto continue
+        end
+        visited[pos_key] = true
+        
+        -- Check if we reached the target
+        local dx = math.abs(current_belt.position.x - end_pos.x)
+        local dy = math.abs(current_belt.position.y - end_pos.y)
+        if dx < 0.1 and dy < 0.1 then
+            return true
+        end
+        
+        -- Add neighboring belts to queue
+        if current_belt.belt_neighbours then
+            -- Add output belts
+            if current_belt.belt_neighbours.outputs then
+                for _, output_belt in pairs(current_belt.belt_neighbours.outputs) do
+                    if output_belt and output_belt.valid then
+                        table.insert(queue, output_belt)
+                    end
+                end
+            end
+            -- Add input belts  
+            if current_belt.belt_neighbours.inputs then
+                for _, input_belt in pairs(current_belt.belt_neighbours.inputs) do
+                    if input_belt and input_belt.valid then
+                        table.insert(queue, input_belt)
+                    end
+                end
+            end
+        end
+        
+        ::continue::
+    end
+    
+    return false
+end
+
+-- Helper function to check if two positions are connected by electric poles
+local function are_positions_pole_connected(start_pos, end_pos, connection_type)
+    -- Find pole at start position - try multiple pole types if connection_type is nil
+    local pole_types = {"small-electric-pole", "medium-electric-pole", "big-electric-pole", "substation"}
+    if connection_type then
+        pole_types = {connection_type}
+    end
+    
+    local start_pole = nil
+    for _, pole_type in ipairs(pole_types) do
+        start_pole = game.surfaces[1].find_entity(pole_type, start_pos)
+        if start_pole then
+            break
+        end
+    end
+    
+    if not start_pole then
+        return false
+    end
+    
+    -- Use electric network ID for faster checking
+    if start_pole.electric_network_id then
+        local end_pole = nil
+        for _, pole_type in ipairs(pole_types) do
+            end_pole = game.surfaces[1].find_entity(pole_type, end_pos)
+            if end_pole then
+                break
+            end
+        end
+        
+        if end_pole and end_pole.electric_network_id then
+            return start_pole.electric_network_id == end_pole.electric_network_id
+        end
+    end
+    
+    return false
+end
+
+-- Helper function to check if two positions are connected by pipes
+local function are_positions_pipe_connected(start_pos, end_pos, connection_type)
+    -- Find pipe at start position - try multiple pipe types if connection_type is nil
+    local pipe_types = {"pipe", "pipe-to-ground"}
+    if connection_type then
+        pipe_types = {connection_type}
+    end
+    
+    local start_pipe = nil
+    for _, pipe_type in ipairs(pipe_types) do
+        start_pipe = game.surfaces[1].find_entity(pipe_type, start_pos)
+        if start_pipe then
+            break
+        end
+    end
+    
+    if not start_pipe then
+        return false
+    end
+    
+    -- Use fluid system ID for checking pipe connections
+    if has_valid_fluidbox(start_pipe) then
+        local end_pipe = nil
+        for _, pipe_type in ipairs(pipe_types) do
+            end_pipe = game.surfaces[1].find_entity(pipe_type, end_pos)
+            if end_pipe then
+                break
+            end
+        end
+        
+        if end_pipe and has_valid_fluidbox(end_pipe) then
+            return start_pipe.fluidbox[1].get_fluid_system_id() == end_pipe.fluidbox[1].get_fluid_system_id()
+        end
+    end
+    
+    return false
+end
+
+-- Helper function to serialize pipe group from a starting pipe using improved BFS
+local function serialize_pipe_group(entity)
+    if not entity or not entity.valid or (entity.type ~= "pipe" and entity.type ~= "pipe-to-ground") then
+        return nil
+    end
+    
+    if not has_valid_fluidbox(entity) then
+        return nil
+    end
+    
+    local serialized = {}
+    local visited = {}
+    local queue = {entity}
+    local max_search = 200
+    local search_count = 0
+    local system_id = entity.fluidbox[1].get_fluid_system_id()
+    
+    while #queue > 0 and search_count < max_search do
+        search_count = search_count + 1
+        local current_pipe = table.remove(queue, 1)
+        
+        if not current_pipe or not current_pipe.valid then
+            goto continue
+        end
+        
+        local pipe_id = current_pipe.unit_number
+        if visited[pipe_id] then
+            goto continue
+        end
+        visited[pipe_id] = true
+        
+        -- Serialize current pipe
+        table.insert(serialized, global.utils.serialize_entity(current_pipe))
+        
+        -- Find all connected pipes in the same fluid system
+        local all_pipes = game.surfaces[1].find_entities_filtered{
+            position = current_pipe.position,
+            radius = 10,
+            type = {"pipe", "pipe-to-ground"}
+        }
+        
+        for _, pipe in pairs(all_pipes) do
+            if pipe.valid and has_valid_fluidbox(pipe) and not visited[pipe.unit_number] then
+                if pipe.fluidbox[1].get_fluid_system_id() == system_id then
+                    table.insert(queue, pipe)
+                end
+            end
+        end
+        
+        ::continue::
+    end
+    
+    return serialized
+end
+
+-- Helper function to serialize pole group from a starting pole using improved logic
+local function serialize_pole_group(entity)
+    if not entity or not entity.valid or entity.type ~= "electric-pole" then
+        return nil
+    end
+    
+    local serialized = {}
+    local visited = {}
+    
+    if entity.electric_network_id then
+        -- Find all poles in the same electric network within a reasonable search area
+        -- This prevents searching the entire map for very large networks
+        local search_areas = {
+            {position = entity.position, radius = 50},  -- Close area first
+            {position = entity.position, radius = 100}, -- Medium area if needed
+        }
+        
+        local network_id = entity.electric_network_id
+        
+        for _, area in ipairs(search_areas) do
+            local nearby_poles = game.surfaces[1].find_entities_filtered{
+                position = area.position,
+                radius = area.radius,
+                type = "electric-pole"
+            }
+            
+            for _, pole in pairs(nearby_poles) do
+                if pole.valid and pole.electric_network_id == network_id then
+                    local pole_id = pole.unit_number
+                    if not visited[pole_id] then
+                        visited[pole_id] = true
+                        table.insert(serialized, global.utils.serialize_entity(pole))
+                    end
+                end
+            end
+            
+            -- If we found poles in the first area, we likely have the full local network
+            if #serialized > 1 then
+                break
+            end
+        end
+    end
+    
+    return serialized
+end
+
 -- Function to validate belt connectivity
 local function validate_belt_connectivity(path)
     if not path or #path < 2 then
@@ -1227,16 +1471,42 @@ local function validate_belt_connectivity(path)
                    current_pos.x .. "," .. current_pos.y
         end
 
-        -- Check if position is placeable
-        if not is_placeable(current_pos) then
-            return false, "Cannot place belt at position " ..
-                   current_pos.x .. "," .. current_pos.y
+        -- Check if position is placeable - BUT allow existing belts of the same type
+        local entities_at_pos = game.surfaces[1].find_entities_filtered{
+            position = current_pos,
+            radius = 0.1
+        }
+        
+        for _, existing_entity in pairs(entities_at_pos) do
+            if existing_entity and existing_entity.valid then
+                -- If there's already a belt of the same type, that's okay
+                -- Also ignore character entities and resource entities (they don't block belt placement)
+                if not existing_entity.name:find("belt") and 
+                   existing_entity.name ~= "character" and
+                   existing_entity.type ~= "resource" then
+                    return false, "Cannot place belt at position " ..
+                           current_pos.x .. "," .. current_pos.y .. " (blocked by " .. existing_entity.name .. ")"
+                end
+            end
         end
     end
 
-    -- Check final position
-    if not is_placeable(path[#path].position) then
-        return false, "Cannot place belt at final position"
+    -- Check final position - same logic for existing belts
+    local final_pos = path[#path].position
+    local final_entities = game.surfaces[1].find_entities_filtered{
+        position = final_pos,
+        radius = 0.1
+    }
+    
+    for _, existing_final in pairs(final_entities) do
+        if existing_final and existing_final.valid then
+            -- Ignore character entities, existing belts, and resource entities
+            if not existing_final.name:find("belt") and 
+               existing_final.name ~= "character" and
+               existing_final.type ~= "resource" then
+                return false, "Cannot place belt at final position (blocked by " .. existing_final.name .. ")"
+            end
+        end
     end
 
     return true, nil
@@ -1248,19 +1518,107 @@ local function connect_entities_with_validation(player_index, source_x, source_y
     if path == nil then
         error("No path found")
     end
-    -- Only perform validation for belt-type entities
+    
+    -- Check for existing connections first
+    
     for _,connection_type in pairs(connection_types) do
         if wire_reach[connection_type] then
-            if are_positions_in_same_network(
+            -- Check if positions are already connected by electric poles
+            if are_positions_pole_connected(
                 {x = source_x, y = source_y},
-                {x = target_x, y = target_y}
+                {x = target_x, y = target_y},
+                connection_type
             ) then
-                --error("Source and target positions are already connected to the same power network")
-                --return {}
-                break
+                -- Positions are already connected - return existing pole group
+                local start_pole = nil
+                local pole_types = {"small-electric-pole", "medium-electric-pole", "big-electric-pole", "substation"}
+                for _, pole_type in ipairs(pole_types) do
+                    start_pole = game.surfaces[1].find_entity(pole_type, {x = source_x, y = source_y})
+                    if start_pole then
+                        break
+                    end
+                end
+                
+                if start_pole then
+                    local group_data = serialize_pole_group(start_pole)
+                    if group_data then
+                        return {
+                            entities = group_data,
+                            connected = true,
+                            number_of_entities = 0
+                        }
+                    end
+                end
+                -- Fallback: return empty connection result (existing connection)
+                return {
+                    entities = {},
+                    connected = true,
+                    number_of_entities = 0
+                }
             end
-            --break
+        elseif connection_type == "pipe" or connection_type == "pipe-to-ground" then
+            -- Check if positions are already connected by pipes
+            if are_positions_pipe_connected(
+                {x = source_x, y = source_y},
+                {x = target_x, y = target_y},
+                connection_type
+            ) then
+                -- Positions are already connected - return existing pipe group
+                local start_pipe = nil
+                local pipe_types = {"pipe", "pipe-to-ground"}
+                for _, pipe_type in ipairs(pipe_types) do
+                    start_pipe = game.surfaces[1].find_entity(pipe_type, {x = source_x, y = source_y})
+                    if start_pipe then
+                        break
+                    end
+                end
+                
+                if start_pipe then
+                    local group_data = serialize_pipe_group(start_pipe)
+                    if group_data then
+                        return {
+                            entities = group_data,
+                            connected = true,
+                            number_of_entities = 0
+                        }
+                    end
+                end
+                -- Fallback: return empty connection result (existing connection)
+                return {
+                    entities = {},
+                    connected = true,
+                    number_of_entities = 0
+                }
+            end
         elseif connection_type:find("belt") then
+            -- Check if positions are already FULLY connected by belts
+            if are_positions_belt_connected(
+                {x = source_x, y = source_y},
+                {x = target_x, y = target_y},
+                connection_type
+            ) then
+                -- Positions are already connected - return existing group
+                
+                -- Positions are already connected - return existing belt group
+                local start_belt = game.surfaces[1].find_entity(connection_type, {x = source_x, y = source_y})
+                if start_belt then
+                    local group_data = serialize_belt_group(start_belt)
+                    if group_data then
+                        return {
+                            entities = group_data,
+                            connected = true,
+                            number_of_entities = 0
+                        }
+                    end
+                end
+                -- Fallback: return empty connection result (existing connection)
+                return {
+                    entities = {},
+                    connected = true,
+                    number_of_entities = 0
+                }
+            end
+            
             -- Normalize path first
             local normalized_path = global.utils.normalise_path(path,
                     {x = source_x, y = source_y},

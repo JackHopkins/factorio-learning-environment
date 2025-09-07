@@ -523,7 +523,9 @@ async def create_comprehensive_report(
     print(f"Creating comprehensive report for sweep: {sweep_id}")
     print(f"Output directory: {output_dir}")
 
-    output_path = Path(output_dir)
+    # Create sweep-specific subfolder
+    base_output_path = Path(output_dir)
+    output_path = base_output_path / sweep_id
     output_path.mkdir(parents=True, exist_ok=True)
 
     analyzer = DatabaseAnalyzer()
@@ -539,6 +541,16 @@ async def create_comprehensive_report(
             return
 
         print(f"Analyzing {len(trajectory_df)} trajectories")
+
+        # Extract task information for better analysis
+        if (
+            "version_description" in trajectory_df.columns
+            and "task" not in trajectory_df.columns
+        ):
+            trajectory_df = trajectory_df.copy()
+            trajectory_df["task"] = trajectory_df["version_description"].str.extract(
+                r"type:([^\n]+)"
+            )
 
         # Calculate performance metrics by model
         print("Calculating performance metrics...")
@@ -560,7 +572,7 @@ async def create_comprehensive_report(
         print(leaderboard.to_string(index=False))
 
         # Save leaderboard to file
-        leaderboard.to_csv(output_path / f"{sweep_id}_leaderboard.csv", index=False)
+        leaderboard.to_csv(output_path / "leaderboard.csv", index=False)
 
         # Create visualizations
         print("Creating visualizations...")
@@ -569,7 +581,7 @@ async def create_comprehensive_report(
                 model_metrics=model_metrics,
                 results_df=trajectory_df,
                 output_dir=str(output_path),
-                report_name=f"sweep_{sweep_id}",
+                report_name="analysis",
             )
 
             print("Visualizations saved:")
@@ -595,15 +607,15 @@ async def create_comprehensive_report(
             },
         }
 
-        with open(output_path / f"{sweep_id}_analysis_summary.json", "w") as f:
+        with open(output_path / "analysis_summary.json", "w") as f:
             json.dump(results_summary, f, indent=2, default=str)
 
         print(f"\nComprehensive report saved to: {output_path}")
         print("Files generated:")
-        print(f"  - {sweep_id}_leaderboard.csv")
-        print(f"  - {sweep_id}_analysis_summary.json")
+        print("  - leaderboard.csv")
+        print("  - analysis_summary.json")
         if visualizer.enabled:
-            print(f"  - Multiple visualization plots with prefix 'sweep_{sweep_id}_'")
+            print("  - Multiple visualization plots with prefix 'analysis_'")
 
         return str(output_path)
 

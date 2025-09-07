@@ -434,6 +434,233 @@ class ResultsVisualizer:
 
         return fig
 
+    def plot_pass_histogram(
+        self,
+        results_df: pd.DataFrame,
+        model_col: str = "model",
+        task_col: str = "task",
+        reward_col: str = "max_reward",
+        success_threshold: float = 0.0,
+        max_k: int = 10,
+        title: Optional[str] = None,
+        save_path: Optional[str] = None,
+    ) -> Optional[plt.Figure]:
+        """Create histogram showing number of passes out of k attempts per task per model
+
+        Args:
+            results_df: DataFrame with trajectory results
+            model_col: Column with model names
+            task_col: Column with task names
+            reward_col: Column with performance metric
+            success_threshold: Threshold for success
+            max_k: Maximum number of attempts to consider
+            title: Optional plot title
+            save_path: Optional path to save figure
+
+        Returns:
+            matplotlib Figure object if plotting available
+        """
+        if not self.enabled:
+            return None
+
+        # Calculate pass counts per model-task combination
+        pass_data = []
+
+        for model in results_df[model_col].unique():
+            model_data = results_df[results_df[model_col] == model]
+
+            for task in model_data[task_col].unique():
+                task_data = model_data[model_data[task_col] == task]
+
+                # Count successes out of total attempts
+                successes = (task_data[reward_col] > success_threshold).sum()
+                total_attempts = len(task_data)
+
+                # Limit to max_k for visualization
+                k = min(total_attempts, max_k)
+                success_count = min(successes, k)
+
+                pass_data.append(
+                    {
+                        "model": model,
+                        "task": task,
+                        "passes": success_count,
+                        "attempts": k,
+                        "task_model": f"{task}\n({model})",
+                    }
+                )
+
+        pass_df = pd.DataFrame(pass_data)
+
+        if pass_df.empty:
+            print("No data available for pass histogram")
+            return None
+
+        # Create histogram
+        fig, ax = plt.subplots(figsize=self.figsize, dpi=self.dpi)
+
+        # Group data for plotting
+        x_positions = []
+        labels = []
+
+        models = sorted(pass_df["model"].unique())
+        tasks = sorted(pass_df["task"].unique())
+
+        x_pos = 0
+        for task in tasks:
+            task_data = pass_df[pass_df["task"] == task]
+            for i, model in enumerate(models):
+                model_task_data = task_data[task_data["model"] == model]
+                if not model_task_data.empty:
+                    passes = model_task_data["passes"].iloc[0]
+                    attempts = model_task_data["attempts"].iloc[0]
+
+                    # Create histogram bar
+                    height = passes
+                    ax.bar(
+                        x_pos,
+                        height,
+                        width=0.8,
+                        color=sns.color_palette("husl", len(models))[i],
+                        alpha=0.7,
+                        label=model if task == tasks[0] else "",
+                    )
+
+                    # Add text showing passes/attempts
+                    ax.text(
+                        x_pos,
+                        height + 0.1,
+                        f"{passes}/{attempts}",
+                        ha="center",
+                        va="bottom",
+                        fontsize=8,
+                    )
+
+                    x_positions.append(x_pos)
+                    labels.append(f"{task}\n({model})")
+                    x_pos += 1
+
+            # Add spacing between tasks
+            x_pos += 0.5
+
+        # Customize plot
+        ax.set_xlabel("Task (Model)")
+        ax.set_ylabel("Number of Successes")
+        ax.set_title(title or "Success Count per Task per Model")
+        ax.set_xticks(x_positions)
+        ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=8)
+        ax.legend()
+        ax.grid(True, alpha=0.3, axis="y")
+
+        # Set y-axis to show integer values
+        ax.set_ylim(0, max_k)
+
+        plt.tight_layout()
+
+        if save_path:
+            fig.savefig(save_path, bbox_inches="tight", dpi=self.dpi)
+
+        return fig
+
+    def plot_task_specific_pass_at_k(
+        self,
+        results_df: pd.DataFrame,
+        model_col: str = "model",
+        task_col: str = "task",
+        reward_col: str = "max_reward",
+        success_threshold: float = 0.0,
+        k_values: Optional[List[int]] = None,
+        title: Optional[str] = None,
+        save_path: Optional[str] = None,
+    ) -> Optional[plt.Figure]:
+        """Plot Pass@K curves broken down by task
+
+        Args:
+            results_df: DataFrame with trajectory results
+            model_col: Column with model names
+            task_col: Column with task names
+            reward_col: Column with performance metric
+            success_threshold: Threshold for success
+            k_values: List of k values to plot
+            title: Optional plot title
+            save_path: Optional path to save figure
+
+        Returns:
+            matplotlib Figure object if plotting available
+        """
+        if not self.enabled:
+            return None
+
+        from .performance_metrics import PerformanceAnalyzer
+
+        k_values = k_values or [1, 2, 3, 5, 8]
+        tasks = sorted(results_df[task_col].unique())
+        models = sorted(results_df[model_col].unique())
+
+        # Create subplots for each task
+        n_tasks = len(tasks)
+        n_cols = min(3, n_tasks)
+        n_rows = (n_tasks + n_cols - 1) // n_cols
+
+        fig, axes = plt.subplots(
+            n_rows, n_cols, figsize=(n_cols * 4, n_rows * 3), dpi=self.dpi
+        )
+        if n_tasks == 1:
+            axes = [axes]
+        elif n_rows == 1:
+            axes = axes.reshape(1, -1)
+        axes = axes.flatten()
+
+        for i, task in enumerate(tasks):
+            ax = axes[i]
+            task_data = results_df[results_df[task_col] == task]
+
+            for model in models:
+                model_task_data = task_data[task_data[model_col] == model]
+
+                if len(model_task_data) >= 2:
+                    # Calculate Pass@K for this model-task combination
+                    successes = (model_task_data[reward_col] > success_threshold).values
+
+                    pass_at_k_values = []
+                    valid_k_values = []
+
+                    for k in k_values:
+                        if k <= len(successes):
+                            pass_k = PerformanceAnalyzer.calculate_pass_at_k(
+                                successes, k
+                            )
+                            pass_at_k_values.append(pass_k)
+                            valid_k_values.append(k)
+
+                    if valid_k_values:
+                        ax.plot(
+                            valid_k_values,
+                            pass_at_k_values,
+                            marker="o",
+                            label=model,
+                            linewidth=2,
+                        )
+
+            ax.set_title(f"Task: {task}")
+            ax.set_xlabel("k (attempts)")
+            ax.set_ylabel("Pass@k")
+            ax.set_ylim(0, 1)
+            ax.grid(True, alpha=0.3)
+            ax.legend()
+
+        # Hide unused subplots
+        for i in range(n_tasks, len(axes)):
+            axes[i].set_visible(False)
+
+        fig.suptitle(title or "Pass@K by Task", fontsize=14)
+        plt.tight_layout()
+
+        if save_path:
+            fig.savefig(save_path, bbox_inches="tight", dpi=self.dpi)
+
+        return fig
+
     def create_comprehensive_report(
         self,
         model_metrics: Dict[str, PerformanceMetrics],
@@ -461,31 +688,78 @@ class ResultsVisualizer:
 
         saved_files = {}
 
-        # 1. Model comparison bar chart
-        try:
-            fig = self.plot_model_comparison(
-                model_metrics,
-                metric="success_rate",
-                title="Model Performance Comparison",
-            )
-            if fig:
-                file_path = output_path / f"{report_name}_model_comparison.png"
-                fig.savefig(file_path, bbox_inches="tight", dpi=self.dpi)
-                plt.close(fig)
-                saved_files["model_comparison"] = str(file_path)
-        except Exception as e:
-            print(f"Error creating model comparison plot: {e}")
+        # Extract task information if available
+        task_col = None
+        if "version_description" in results_df.columns:
+            # Extract task from version_description if not already present
+            if "task" not in results_df.columns:
+                results_df = results_df.copy()
+                results_df["task"] = results_df["version_description"].str.extract(
+                    r"type:([^\n]+)"
+                )
+            task_col = "task"
 
-        # 2. Pass@k curves
+        # 1. Pass histogram instead of model comparison
         try:
-            fig = self.plot_pass_at_k(model_metrics, title="Pass@k Performance Curves")
-            if fig:
-                file_path = output_path / f"{report_name}_pass_at_k.png"
-                fig.savefig(file_path, bbox_inches="tight", dpi=self.dpi)
-                plt.close(fig)
-                saved_files["pass_at_k"] = str(file_path)
+            if task_col and task_col in results_df.columns:
+                fig = self.plot_pass_histogram(
+                    results_df,
+                    reward_col="final_reward",
+                    title="Success Count per Task per Model",
+                )
+                if fig:
+                    file_path = output_path / f"{report_name}_pass_histogram.png"
+                    fig.savefig(file_path, bbox_inches="tight", dpi=self.dpi)
+                    plt.close(fig)
+                    saved_files["pass_histogram"] = str(file_path)
         except Exception as e:
-            print(f"Error creating pass@k plot: {e}")
+            print(f"Error creating pass histogram: {e}")
+
+        # 1b. Fallback model comparison if no task data
+        if "pass_histogram" not in saved_files:
+            try:
+                fig = self.plot_model_comparison(
+                    model_metrics,
+                    metric="success_rate",
+                    title="Model Performance Comparison",
+                )
+                if fig:
+                    file_path = output_path / f"{report_name}_model_comparison.png"
+                    fig.savefig(file_path, bbox_inches="tight", dpi=self.dpi)
+                    plt.close(fig)
+                    saved_files["model_comparison"] = str(file_path)
+            except Exception as e:
+                print(f"Error creating model comparison plot: {e}")
+
+        # 2. Task-specific Pass@k curves
+        try:
+            if task_col and task_col in results_df.columns:
+                fig = self.plot_task_specific_pass_at_k(
+                    results_df,
+                    reward_col="final_reward",
+                    title="Pass@K Analysis by Task",
+                )
+                if fig:
+                    file_path = output_path / f"{report_name}_task_pass_at_k.png"
+                    fig.savefig(file_path, bbox_inches="tight", dpi=self.dpi)
+                    plt.close(fig)
+                    saved_files["task_pass_at_k"] = str(file_path)
+        except Exception as e:
+            print(f"Error creating task-specific pass@k plot: {e}")
+
+        # 2b. Fallback overall Pass@k if no task data
+        if "task_pass_at_k" not in saved_files:
+            try:
+                fig = self.plot_pass_at_k(
+                    model_metrics, title="Pass@k Performance Curves"
+                )
+                if fig:
+                    file_path = output_path / f"{report_name}_pass_at_k.png"
+                    fig.savefig(file_path, bbox_inches="tight", dpi=self.dpi)
+                    plt.close(fig)
+                    saved_files["pass_at_k"] = str(file_path)
+            except Exception as e:
+                print(f"Error creating pass@k plot: {e}")
 
         # 3. Reward distributions
         try:

@@ -49,6 +49,14 @@ class SweepConfig:
     retry_failed_runs: bool = True
     max_retries: int = 2
 
+    # Pass@K optimization parameters
+    task_inner_loop_mode: bool = (
+        False  # Cycle through tasks before repeating model-task pairs
+    )
+    early_stop_on_success: bool = (
+        False  # Skip (model, task) pairs that already have one success
+    )
+
     # Logging and monitoring
     enable_wandb: bool = True
     wandb_project: str = "factorio-learning-environment"
@@ -145,12 +153,79 @@ class SweepManager:
         if config.enable_wandb:
             self.wandb_logger = WandBSweepLogger(config.wandb_project)
 
+        # Validate configuration for early stopping
+        self._validate_early_stopping_configuration()
+
         print(f"🆔 Sweep ID: {self.sweep_id}")
         print(
             f"🖥️  Available servers: {total_servers}, Max concurrent: {self.config.max_concurrent_processes}"
         )
 
         # If resuming, we'll load existing state in run_sweep()
+
+    def _validate_early_stopping_configuration(self):
+        """Validate configuration settings related to early stopping"""
+
+        if not self.config.early_stop_on_success:
+            return  # No validation needed if early stopping is disabled
+
+        print("🎯 Early stopping enabled - validating configuration...")
+
+        # Check if database analyzer can be initialized
+        try:
+            if not self.database_analyzer:
+                test_analyzer = DatabaseAnalyzer()  # noqa
+                # We don't keep this, just test if it can be created
+                print("✅ Database analyzer can be initialized for early stopping")
+        except Exception as db_init_error:
+            print(
+                "🚨 CRITICAL: Early stopping enabled but database analyzer cannot be initialized"
+            )
+            print(f"    Database initialization error: {db_init_error}")
+            print(
+                "    Early stopping will NOT work - consider disabling early_stop_on_success"
+            )
+            print("    Or fix database connection issues before running sweep")
+
+        # Validate task inner loop mode compatibility
+        if self.config.task_inner_loop_mode and self.config.shuffle_execution_order:
+            print(
+                "💡 Note: shuffle_execution_order is disabled when task_inner_loop_mode=True"
+            )
+            print(
+                "    This ensures tasks are executed in the intended order for WandB visibility"
+            )
+
+        # Check if configuration makes sense
+        if self.config.num_trials_per_config == 1 and self.config.early_stop_on_success:
+            print("⚠️  WARNING: early_stop_on_success=True with num_trials_per_config=1")
+            print(
+                "    Early stopping provides no benefit with only 1 trial per (model, task) pair"
+            )
+            print(
+                "    Consider increasing num_trials_per_config for meaningful Pass@K evaluation"
+            )
+
+        if self.config.early_stop_on_success and not self.is_resuming:
+            print(
+                "💡 Note: For new sweeps, early stopping will only activate after first successes"
+            )
+            print(
+                "    Initial trials will run normally until successful (model, task) pairs are found"
+            )
+
+        # Warn about potential compute savings
+        max_possible_jobs = (
+            len(self.config.models)
+            * len(self.config.tasks)
+            * self.config.num_trials_per_config
+        )
+        if self.config.early_stop_on_success and max_possible_jobs > 50:
+            print("💰 Early stopping could save significant compute budget:")
+            print(f"    Maximum possible jobs: {max_possible_jobs}")
+            print(
+                f"    If each (model, task) pair succeeds early, could save ~{max_possible_jobs * 0.5:.0f}+ jobs"
+            )
 
     @classmethod
     def resume_sweep(cls, config: SweepConfig, sweep_id: str) -> "SweepManager":
@@ -182,57 +257,114 @@ class SweepManager:
 
         try:
             # Get existing trajectories for this sweep
-            existing_df = (
-                await self.database_analyzer.get_trajectory_summaries_by_sweep(
-                    self.sweep_id
+            try:
+                existing_df = (
+                    await self.database_analyzer.get_trajectory_summaries_by_sweep(
+                        self.sweep_id
+                    )
                 )
-            )
-
-            if existing_df.empty:
-                print(f"⚠️  No existing data found for sweep {self.sweep_id}")
+            except Exception as db_error:
+                print("🚨 CRITICAL: Failed to query database for existing sweep state")
+                print(f"    Database error: {db_error}")
+                print("    Sweep resumption will proceed as if no previous runs exist")
+                print(
+                    "    This may cause duplicate work if sweep actually has previous results"
+                )
                 return {"completed_runs": {}, "partial_runs": {}}
 
-            print(f"📊 Found {len(existing_df)} existing trajectories")
+            if existing_df.empty:
+                print(f"💡 No existing trajectory data found for sweep {self.sweep_id}")
+                print(
+                    "    This is normal for new sweeps or if previous sweep had no successful completions"
+                )
+                return {"completed_runs": {}, "partial_runs": {}}
+
+            print(
+                f"📊 Found {len(existing_df)} existing trajectories for sweep {self.sweep_id}"
+            )
 
             completed_runs = {}  # key: (model, task, trial), value: version
             partial_runs = {}  # key: (model, task, trial), value: {version, status}
 
             # Group by version to identify complete vs partial runs
-            for _, row in existing_df.iterrows():
-                model = row["model"]
-                version_desc = row["version_description"]
-                version = row["version"]
-                instance = row["instance"]  # This is the trial number
+            parsing_errors = []
+            task_extraction_failures = 0
 
-                # Extract task from version_description
-                # Assuming version_description contains "type:task_name"
-                task = "unknown_task"
-                if version_desc and "type:" in version_desc:
-                    task = version_desc.split("type:")[1].split("\n")[0].strip()
-                elif version_desc:
-                    # Fallback: use first line or part of version_description
-                    task = version_desc.split("\n")[0].strip()
+            for idx, row in existing_df.iterrows():
+                try:
+                    model = row.get("model", "unknown_model")
+                    version_desc = row.get("version_description", "")
+                    version = row.get("version", -1)
+                    instance = row.get("instance", 0)  # This is the trial number
 
-                # Key for identifying unique run
-                run_key = (model, task, instance)
+                    # Validate essential fields
+                    if not model or model == "unknown_model":
+                        parsing_errors.append(f"Row {idx}: missing or invalid model")
+                        continue
+                    if version == -1:
+                        parsing_errors.append(f"Row {idx}: missing or invalid version")
+                        continue
 
-                # Check if this is a complete trajectory
-                # A trajectory is considered complete if it has steps and ended properly
-                num_steps = row.get("num_steps", 0)
-                final_reward = row.get("final_reward", 0)
+                    # Extract task from version_description
+                    task = "unknown_task"
+                    if version_desc and "type:" in version_desc:
+                        try:
+                            task = version_desc.split("type:")[1].split("\n")[0].strip()
+                        except (IndexError, AttributeError):
+                            task_extraction_failures += 1
+                            task = f"parse_failed_{version}"
+                    elif version_desc:
+                        # Fallback: use first line or part of version_description
+                        try:
+                            task = version_desc.split("\n")[0].strip()
+                            if not task:
+                                task = f"empty_desc_{version}"
+                        except AttributeError:
+                            task = f"malformed_desc_{version}"
+                    else:
+                        task = f"no_desc_{version}"
+                        task_extraction_failures += 1
 
-                # Consider a run complete if it has reasonable number of steps
-                # This is a heuristic - might need adjustment based on typical run patterns
-                is_complete = num_steps > 5  # Adjust this threshold as needed
+                    # Key for identifying unique run
+                    run_key = (model, task, instance)
 
-                if is_complete:
-                    completed_runs[run_key] = version
-                else:
-                    partial_runs[run_key] = {
-                        "version": version,
-                        "num_steps": num_steps,
-                        "final_reward": final_reward,
-                    }
+                    # Check if this is a complete trajectory
+                    num_steps = row.get("num_steps", 0)
+                    final_reward = row.get("final_reward", 0)
+
+                    # Consider a run complete if it has reasonable number of steps
+                    # This is a heuristic - might need adjustment based on typical run patterns
+                    is_complete = num_steps > 5  # Adjust this threshold as needed
+
+                    if is_complete:
+                        completed_runs[run_key] = version
+                    else:
+                        partial_runs[run_key] = {
+                            "version": version,
+                            "num_steps": num_steps,
+                            "final_reward": final_reward,
+                        }
+
+                except Exception as parse_error:
+                    parsing_errors.append(f"Row {idx}: {parse_error}")
+                    continue
+
+            # Report parsing issues
+            if parsing_errors:
+                print(
+                    f"⚠️  WARNING: Found {len(parsing_errors)} trajectory data parsing errors:"
+                )
+                for error in parsing_errors[:5]:  # Show first 5 errors
+                    print(f"    {error}")
+                if len(parsing_errors) > 5:
+                    print(f"    ... and {len(parsing_errors) - 5} more errors")
+                print("    These trajectories will be ignored for sweep resumption")
+
+            if task_extraction_failures > 0:
+                print(
+                    f"⚠️  WARNING: Failed to extract task names from {task_extraction_failures} trajectories"
+                )
+                print("    These may not be properly handled for early stopping")
 
             print(f"✅ Found {len(completed_runs)} completed runs")
             print(f"⚠️  Found {len(partial_runs)} partial/incomplete runs")
@@ -282,42 +414,137 @@ class SweepManager:
 
         skipped_count = 0
         retry_count = 0
+        early_stop_count = 0
 
-        # Generate all combinations of models and tasks
-        for model, task in itertools.product(self.config.models, self.config.tasks):
-            for trial in range(self.config.num_trials_per_config):
-                run_key = (model, task, trial)
-                job_id = f"{model}_{task}_trial{trial:02d}"
+        # Check for successful (model, task) pairs if early stopping is enabled
+        successful_model_task_pairs = set()
+        if self.config.early_stop_on_success:
+            if not completed_runs:
+                if self.is_resuming:
+                    print(
+                        "⚠️  WARNING: Early stopping enabled but no completed runs found in database"
+                    )
+                    print(
+                        "    This could mean: database connection failed, sweep doesn't exist, or no previous successes"
+                    )
+                else:
+                    print(
+                        "💡 Early stopping enabled for new sweep - no previous successes to check"
+                    )
+            else:
+                # Check if we can determine success status from completed runs
+                success_determinable_count = 0
+                for (model, task, trial), version in completed_runs.items():
+                    # We consider a run successful if it exists in completed_runs
+                    # (the load_existing_sweep_state method should filter for successful runs)
+                    successful_model_task_pairs.add((model, task))
+                    success_determinable_count += 1
 
-                # Skip if already completed
-                if run_key in completed_runs:
-                    skipped_count += 1
-                    # Still track these for completed_versions list
-                    existing_version = completed_runs[run_key]
-                    if existing_version not in self.completed_versions:
-                        self.completed_versions.append(existing_version)
-                    continue
+                if success_determinable_count > 0:
+                    print(
+                        f"🎯 Early stopping enabled: Found {len(successful_model_task_pairs)} successful (model, task) pairs"
+                    )
+                    if len(successful_model_task_pairs) < len(completed_runs):
+                        print(
+                            f"💡 Note: {len(completed_runs) - len(successful_model_task_pairs)} completed runs had indeterminate success status"
+                        )
+                else:
+                    print(
+                        "⚠️  WARNING: Early stopping enabled but could not determine success status from completed runs"
+                    )
+                    print(
+                        "    Early stopping will rely on dynamic detection during execution"
+                    )
 
-                # Create job (will run for new jobs and retry for partial jobs)
-                job = RunJob(
-                    job_id=job_id,
-                    model=model,
-                    task=task,
-                    trial_number=trial,
-                    sweep_id=self.sweep_id,
-                )
+        # Generate jobs based on execution mode
+        if self.config.task_inner_loop_mode:
+            # Task inner loop: cycle through all tasks for each model before repeating
+            for model in self.config.models:
+                for trial in range(self.config.num_trials_per_config):
+                    for task in self.config.tasks:
+                        run_key = (model, task, trial)
+                        job_id = f"{model}_{task}_trial{trial:02d}"
 
-                # If this is a partial run, mark it for retry
-                if run_key in partial_runs:
-                    retry_count += 1
-                    job.retry_count = 1  # Mark that this is a retry
-                    job.status = "pending"  # Will be retried
-                    print(f"🔄 Will retry partial run: {job_id}")
+                        # Skip if already completed
+                        if run_key in completed_runs:
+                            skipped_count += 1
+                            existing_version = completed_runs[run_key]
+                            if existing_version not in self.completed_versions:
+                                self.completed_versions.append(existing_version)
+                            continue
 
-                jobs.append(job)
+                        # Early stop if this (model, task) pair already succeeded
+                        if (
+                            self.config.early_stop_on_success
+                            and (model, task) in successful_model_task_pairs
+                        ):
+                            early_stop_count += 1
+                            print(
+                                f"⏩ Early stopping: {model} + {task} already successful"
+                            )
+                            continue
 
-        # Shuffle if requested to distribute load
-        if self.config.shuffle_execution_order:
+                        # Create job
+                        job = RunJob(
+                            job_id=job_id,
+                            model=model,
+                            task=task,
+                            trial_number=trial,
+                            sweep_id=self.sweep_id,
+                        )
+
+                        # Mark for retry if partial
+                        if run_key in partial_runs:
+                            retry_count += 1
+                            job.retry_count = 1
+                            job.status = "pending"
+                            print(f"🔄 Will retry partial run: {job_id}")
+
+                        jobs.append(job)
+        else:
+            # Standard mode: all combinations of models and tasks
+            for model, task in itertools.product(self.config.models, self.config.tasks):
+                for trial in range(self.config.num_trials_per_config):
+                    run_key = (model, task, trial)
+                    job_id = f"{model}_{task}_trial{trial:02d}"
+
+                    # Skip if already completed
+                    if run_key in completed_runs:
+                        skipped_count += 1
+                        existing_version = completed_runs[run_key]
+                        if existing_version not in self.completed_versions:
+                            self.completed_versions.append(existing_version)
+                        continue
+
+                    # Early stop if this (model, task) pair already succeeded
+                    if (
+                        self.config.early_stop_on_success
+                        and (model, task) in successful_model_task_pairs
+                    ):
+                        early_stop_count += 1
+                        print(f"⏩ Early stopping: {model} + {task} already successful")
+                        continue
+
+                    # Create job
+                    job = RunJob(
+                        job_id=job_id,
+                        model=model,
+                        task=task,
+                        trial_number=trial,
+                        sweep_id=self.sweep_id,
+                    )
+
+                    # Mark for retry if partial
+                    if run_key in partial_runs:
+                        retry_count += 1
+                        job.retry_count = 1
+                        job.status = "pending"
+                        print(f"🔄 Will retry partial run: {job_id}")
+
+                    jobs.append(job)
+
+        # Shuffle only if not using task inner loop mode and shuffle is enabled
+        if self.config.shuffle_execution_order and not self.config.task_inner_loop_mode:
             random.shuffle(jobs)
 
         self.jobs = jobs
@@ -332,8 +559,16 @@ class SweepManager:
         print(f"   Total expected jobs: {total_expected}")
         print(f"   Already completed: {skipped_count}")
         print(f"   Will retry (partial): {retry_count}")
+        if self.config.early_stop_on_success:
+            print(f"   Early stopped (successful): {early_stop_count}")
         print(f"   New jobs to run: {len(jobs) - retry_count}")
         print(f"   Total jobs to execute: {len(jobs)}")
+
+        # Log execution mode
+        if self.config.task_inner_loop_mode:
+            print("🔄 Task inner loop mode: Cycling through tasks for each model")
+        if self.config.early_stop_on_success:
+            print("⏩ Early stopping enabled: Skipping successful (model, task) pairs")
 
         return jobs
 
@@ -388,9 +623,16 @@ class SweepManager:
 
     async def execute_jobs(self):
         """Execute all jobs with concurrency management"""
-        pending_jobs = [job for job in self.jobs if job.status == "pending"]
+
+        def get_pending_jobs():
+            return [job for job in self.jobs if job.status == "pending"]
+
+        pending_jobs = get_pending_jobs()
 
         while pending_jobs or self.active_processes:
+            # Refresh pending jobs list to account for early stopping
+            pending_jobs = get_pending_jobs()
+
             # Start new processes if slots are available
             while (
                 len(self.active_processes) < self.config.max_concurrent_processes
@@ -602,6 +844,10 @@ class SweepManager:
             self.completed_versions.append(job.version)
             print(f"✅ Job {job_id} completed successfully")
 
+            # Check for dynamic early stopping if enabled
+            if self.config.early_stop_on_success:
+                await self.check_dynamic_early_stopping(job)
+
             # Log completion to WandB
             if self.wandb_logger:
                 logger = self.wandb_logger.get_logger(job_id)
@@ -667,6 +913,114 @@ class SweepManager:
                 job.error_message = None
                 # Note: Server will be reallocated when job is retried
 
+    async def check_dynamic_early_stopping(self, completed_job: RunJob):
+        """Check if we can early stop more jobs based on a newly completed successful job
+
+        Args:
+            completed_job: The job that just completed successfully
+        """
+        try:
+            # Check if this job was successful by querying the database
+            if not self.database_analyzer:
+                print(
+                    f"🚨 CRITICAL: Dynamic early stopping failed for job {completed_job.job_id} - database analyzer unavailable"
+                )
+                print(
+                    "    Early stopping will not work until database connection is restored"
+                )
+                return
+
+            # Get the result for this specific job
+            try:
+                job_results = await self.database_analyzer.get_trajectory_summaries(
+                    [completed_job.version]
+                )
+            except Exception as db_error:
+                print(
+                    f"🚨 CRITICAL: Database query failed for job {completed_job.job_id} early stopping check"
+                )
+                print(f"    Database error: {db_error}")
+                print("    This job's success cannot be determined for early stopping")
+                return
+
+            if job_results.empty:
+                print(
+                    f"⚠️  WARNING: No trajectory data found for completed job {completed_job.job_id} (version {completed_job.version})"
+                )
+                print(
+                    "    This could mean: database write lag, transaction not committed, or data corruption"
+                )
+                print(
+                    "    Early stopping cannot proceed for this job - other jobs may continue unnecessarily"
+                )
+                return
+
+            # Check if it was successful (positive reward)
+            try:
+                final_reward = job_results.iloc[0].get("final_reward", 0)
+                if final_reward is None:
+                    print(
+                        f"⚠️  WARNING: Job {completed_job.job_id} has null final_reward - cannot determine success"
+                    )
+                    print("    Assuming job failed for early stopping purposes")
+                    return
+
+                if final_reward <= 0:
+                    print(
+                        f"💡 Job {completed_job.job_id} completed but was not successful (reward: {final_reward}) - no early stopping needed"
+                    )
+                    return
+            except (KeyError, IndexError, TypeError) as parse_error:
+                print(
+                    f"⚠️  WARNING: Could not parse success status for job {completed_job.job_id}"
+                )
+                print(f"    Parse error: {parse_error}")
+                print(
+                    "    Raw job data structure may be malformed - early stopping skipped for this job"
+                )
+                return
+
+            print(f"🎯 Job {completed_job.job_id} succeeded with reward {final_reward}")
+
+            # Cancel pending jobs for the same (model, task) pair
+            model_task_pair = (completed_job.model, completed_job.task)
+            cancelled_count = 0
+
+            for job in self.jobs:
+                if (
+                    job.status == "pending"
+                    and job.model == completed_job.model
+                    and job.task == completed_job.task
+                    and job.job_id != completed_job.job_id
+                ):
+                    job.status = "early_stopped"
+                    job.end_time = datetime.now()
+                    cancelled_count += 1
+                    print(
+                        f"⏩ Early stopping job {job.job_id} - {model_task_pair} already successful"
+                    )
+
+            if cancelled_count > 0:
+                print(
+                    f"🎯 Early stopped {cancelled_count} jobs for successful {model_task_pair}"
+                )
+            else:
+                print(
+                    f"💡 No pending jobs found to early stop for successful {model_task_pair}"
+                )
+
+        except Exception as e:
+            print(
+                f"🚨 CRITICAL: Unexpected error in dynamic early stopping check for job {completed_job.job_id}"
+            )
+            print(f"    Error: {e}")
+            print(
+                "    Early stopping functionality may be compromised - consider disabling early_stop_on_success"
+            )
+            import traceback
+
+            print(f"    Stack trace: {traceback.format_exc()}")
+
     async def log_progress_if_needed(self):
         """Log progress summary if enough time has elapsed"""
         if not hasattr(self, "_last_progress_log"):
@@ -685,7 +1039,8 @@ class SweepManager:
         completed = len([j for j in self.jobs if j.status == "completed"])
         running = len([j for j in self.jobs if j.status == "running"])
         failed = len([j for j in self.jobs if j.status == "failed"])
-        pending = total_jobs - completed - running - failed
+        early_stopped = len([j for j in self.jobs if j.status == "early_stopped"])
+        pending = total_jobs - completed - running - failed - early_stopped
 
         elapsed_time = datetime.now() - self.start_time
 
@@ -697,6 +1052,8 @@ class SweepManager:
         print(f"Completed: {completed} ({completed / total_jobs * 100:.1f}%)")
         print(f"Running: {running}")
         print(f"Failed: {failed}")
+        if early_stopped > 0:
+            print(f"Early stopped: {early_stopped}")
         print(f"Pending: {pending}")
         print(f"Elapsed time: {elapsed_time}")
 
@@ -840,9 +1197,14 @@ class SweepManager:
                         [j for j in self.jobs if j.status == "completed"]
                     ),
                     "failed_jobs": len([j for j in self.jobs if j.status == "failed"]),
+                    "early_stopped_jobs": len(
+                        [j for j in self.jobs if j.status == "early_stopped"]
+                    ),
                     "total_trajectories": total_trajectories,
                     "total_time_hours": total_time / 3600,
                     "avg_time_per_trajectory": total_time / max(total_trajectories, 1),
+                    "task_inner_loop_mode": self.config.task_inner_loop_mode,
+                    "early_stop_on_success": self.config.early_stop_on_success,
                 },
                 "results_by_model": {
                     model: metrics.to_dict()
@@ -927,13 +1289,15 @@ class SweepManager:
         completed = len([j for j in self.jobs if j.status == "completed"])
         running = len([j for j in self.jobs if j.status == "running"])
         failed = len([j for j in self.jobs if j.status == "failed"])
-        pending = total - completed - running - failed
+        early_stopped = len([j for j in self.jobs if j.status == "early_stopped"])
+        pending = total - completed - running - failed - early_stopped
 
         return {
             "total_jobs": total,
             "completed": completed,
             "running": running,
             "failed": failed,
+            "early_stopped": early_stopped,
             "pending": pending,
             "completion_rate": completed / total if total > 0 else 0,
             "active_processes": len(self.active_processes),

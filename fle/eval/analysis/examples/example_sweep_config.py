@@ -32,11 +32,68 @@ from fle.commons.constants import (
 )
 
 
+async def run_pass_at_k_optimized_sweep():
+    """Example: Pass@K optimized sweep with task inner loop and early stopping"""
+
+    config = SweepConfig(
+        name="pass_at_k_optimized_sweep",
+        description="Pass@K optimized sweep with task cycling and early stopping",
+        # Models to evaluate
+        models=[
+            CLAUDE_SONNET_4,
+            CLAUDE_OPUS_4_1,
+            CLAUDE_3_7_SONNET,
+        ],
+        # Tasks to evaluate
+        tasks=[
+            "iron_ore_throughput",
+            "iron_plate_throughput",
+            "steel_plate_throughput",
+            "automation_science_pack_throughput",
+        ],
+        # Pass@5 evaluation
+        num_trials_per_config=5,
+        # Resource management
+        max_concurrent_processes=3,
+        # Pass@K optimization features
+        task_inner_loop_mode=True,  # Cycle through tasks before repeating model-task pairs
+        early_stop_on_success=True,  # Skip (model, task) pairs that already succeeded
+        # WandB configuration
+        enable_wandb=True,
+        wandb_project="factorio-pass-at-k-eval",
+        # Results management
+        output_dir="./sweep_results/pass_at_k_optimized",
+        save_intermediate_results=True,
+        # Monitoring
+        log_interval_minutes=3,  # More frequent logging to see early stopping in action
+        # Execution configuration
+        shuffle_execution_order=False,  # Disabled when using task inner loop
+        retry_failed_runs=True,
+        max_retries=2,
+        # API configuration
+        api_key_config_file="api_keys.json",
+    )
+
+    # Create and run sweep
+    manager = SweepManager(
+        config, existing_sweep_id="pass_at_k_optimized_sweep_20250906_192447_3f8b8a5b"
+    )
+    results = await manager.run_sweep()
+
+    print("Pass@K optimized sweep completed!")
+    print("Key benefits:")
+    print("  - Task inner loop: See all task performance quickly on WandB")
+    print("  - Early stopping: Save compute budget by skipping successful pairs")
+    print(f"Results saved to: {config.output_dir}")
+
+    return results
+
+
 async def run_small_sweep():
     """Example: Small sweep for testing"""
 
     config = SweepConfig(
-        name="test_sweep_small",
+        name="test_sweep_small_harder_1",
         description="Small test sweep with 2 Claude models and 2 tasks",
         # Models to evaluate (using direct Anthropic API)
         models=[
@@ -44,7 +101,8 @@ async def run_small_sweep():
             CLAUDE_OPUS_4_1,
         ],
         # Tasks to evaluate (these should be valid gym environment IDs)
-        tasks=["iron_ore_throughput", "iron_plate_throughput"],
+        # tasks=["iron_ore_throughput", "iron_plate_throughput"],
+        tasks=["steel_plate_throughput", "automation_science_pack_throughput"],
         # Pass@8 evaluation (3 trials per model-task combination)
         num_trials_per_config=3,
         # Resource management
@@ -277,7 +335,11 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         sweep_type = sys.argv[1]
 
-        if sweep_type == "large":
+        if sweep_type == "pass_at_k":
+            print("Running Pass@K optimized sweep...")
+            print("Features: Task inner loop mode + Early stopping on success")
+            asyncio.run(run_pass_at_k_optimized_sweep())
+        elif sweep_type == "large":
             print("Running large production sweep...")
             asyncio.run(run_large_production_sweep())
         elif sweep_type == "grok":
@@ -290,7 +352,9 @@ if __name__ == "__main__":
             asyncio.run(run_openrouter_model_tournament())
         else:
             print(f"Unknown sweep type: {sweep_type}")
-            print("Available options: small (default), large, grok, tournament")
+            print(
+                "Available options: small (default), pass_at_k, large, grok, tournament"
+            )
             sys.exit(1)
     else:
         print("Running small test sweep...")

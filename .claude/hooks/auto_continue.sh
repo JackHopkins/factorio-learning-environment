@@ -13,18 +13,32 @@ echo "[$(date)] Raw input: $INPUT" >> "$LOG_FILE"
 
 # Parse the notification using jq (more reliable)
 if command -v jq &> /dev/null; then
-    # Extract relevant fields
-    NOTIFICATION_TYPE=$(echo "$INPUT" | jq -r '.notificationType // .type // "unknown"')
+    # Extract relevant fields - include hook_event_name for Claude Code
+    NOTIFICATION_TYPE=$(echo "$INPUT" | jq -r '.notificationType // .type // .hook_event_name // "unknown"')
     MESSAGE=$(echo "$INPUT" | jq -r '.message // .content // ""')
     TOOL_NAME=$(echo "$INPUT" | jq -r '.toolName // ""')
+    HOOK_EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // ""')
 
     echo "[$(date)] Parsed - Type: $NOTIFICATION_TYPE, Message: $MESSAGE, Tool: $TOOL_NAME" >> "$LOG_FILE"
 
     # Check various conditions for auto-continue
-    # Claude Code might send different notification structures
+    # Check for factorio agent completion or Claude waiting
+    if echo "$MESSAGE" | grep -iE "(factorio.*complete|agent.*stopped|observation.*ready|Claude is waiting)" > /dev/null 2>&1; then
+        echo "[$(date)] Auto-continuing based on factorio agent or waiting message" >> "$LOG_FILE"
+        echo '{"action": "continue", "response": "Continue"}'
+        exit 0
+    fi
+    
+    # Check for standard continue patterns
     if echo "$MESSAGE" | grep -iE "(continue|proceed|waiting|ready)" > /dev/null 2>&1; then
         echo "[$(date)] Auto-continuing based on message content" >> "$LOG_FILE"
-        # Return proper JSON response for Claude Code
+        echo '{"action": "continue", "response": "Continue"}'
+        exit 0
+    fi
+    
+    # Check if it's a Notification event from Claude Code
+    if [ "$HOOK_EVENT" = "Notification" ] && echo "$MESSAGE" | grep -iE "waiting" > /dev/null 2>&1; then
+        echo "[$(date)] Auto-continuing for Claude Code notification with waiting" >> "$LOG_FILE"
         echo '{"action": "continue", "response": "Continue"}'
         exit 0
     fi

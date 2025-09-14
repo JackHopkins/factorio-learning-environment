@@ -1,7 +1,9 @@
-from typing import Dict
+from typing import Dict, List
 import importlib.resources
 
 from mcp.server.fastmcp import Image
+from mcp.types import ImageContent
+
 from fle.env.entities import Position
 from fle.commons.models.game_state import GameState
 from fle.env.utils.controller_loader.system_prompt_generator import (
@@ -12,7 +14,7 @@ from fle.env.protocols.mcp.init import state, initialize_session
 
 
 @mcp.tool()
-async def render(center_x: float = 0, center_y: float = 0):
+async def render(center_x: float = 0, center_y: float = 0) -> ImageContent:
     """
     Render the current factory state to an image
 
@@ -24,17 +26,17 @@ async def render(center_x: float = 0, center_y: float = 0):
         zoom: Zoom level (1.0 = normal)
     """
     if not state.active_server:
-        return "No active Factorio server connection. Use connect_to_factorio_server first."
+        raise Exception("No active Factorio server connection. Use status first.")
 
     instance = state.active_server
 
     try:
         img = instance.namespace._render(position=Position(center_x, center_y))
         if img is None:
-            return "Failed to render: Game state not properly initialized or player entity invalid"
-        return Image(data=img._repr_png_(), format="png")
+            raise Exception("Failed to render: Game state not properly initialized or player entity invalid")
+        return Image(data=img._repr_png_(), format="png").to_image_content()
     except Exception as e:
-        return f"Error rendering: {str(e)}"
+        raise Exception(f"Error rendering: {str(e)}")
 
 
 @mcp.tool()
@@ -156,7 +158,7 @@ async def status() -> str:
 
 
 @mcp.tool()
-async def get_entity_names():
+async def get_entity_names() -> List[str]:
     """Get the names of all entities available in the game. They correspond to Prototype objects."""
     # Initialize recipes if empty
     if not state.recipes:
@@ -253,46 +255,3 @@ async def manual(name: str) -> str:
     # Generate the documentation
     generator = SystemPromptGenerator(str(execution_path))
     return generator.manual(name)
-
-
-@mcp.tool()
-async def get_game_state() -> Dict:
-    """Get current game state for overlay display"""
-    if not state.active_server:
-        return {"error": "No active server"}
-
-    instance = state.active_server
-
-    # Gather all relevant state
-    try:
-        game_state = {
-            "inventory": instance.namespace.inspect_inventory(),
-            "entities": instance.namespace.get_entities(radius=100),
-            "score": instance.namespace.score(),
-            "game_tick": instance.namespace.game_info.tick,
-            "position": instance.namespace.player_location,
-            "production_stats": instance.namespace.get_production_stats(),
-        }
-    except Exception as e:
-        return {"error": f"Failed to get game state: {str(e)}"}
-
-    # Write to shared file for bridge server
-    try:
-        import json
-        from pathlib import Path
-        state_file = Path("/tmp/factorio_game_state.json")
-        state_file.parent.mkdir(exist_ok=True)
-        with open(state_file, 'w') as f:
-            json.dump(game_state, f, default=str)
-    except Exception as e:
-        print(f"Error writing state file: {e}")
-
-    return game_state
-
-
-@mcp.tool()
-async def subscribe_to_updates(callback_url: str = None) -> str:
-    """Subscribe to game state updates"""
-    # This could use SSE or WebSockets for real-time updates
-    # For now, return instructions for polling
-    return "Poll get_game_state every 500ms for updates"

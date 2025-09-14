@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from fle.env.protocols.mcp.init import initialize_session, shutdown_session
 from fle.env.protocols.mcp.state import FactorioMCPState

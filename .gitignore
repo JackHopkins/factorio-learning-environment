@@ -47,3 +47,4 @@ trajectory_logs/
 /data/vqa/tasks/contrastive_alignment/logs/
 /data/logs/
 /data/logs/
+/.factorio_mcp_repo/

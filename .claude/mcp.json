@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "factorio-fle": {
+      "command": "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/.venv/bin/python",
+      "args": [
+        "-m",
+        "fle.env.protocols.mcp"
+      ],
+      "env": {
+        "PYTHONPATH": "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser"
+      },
+      "transport": "stdio",
+      "cwd": "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser",
+      "description": "Factorio Learning Environment MCP Server"
+    }
+  }
+}

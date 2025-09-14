@@ -42,4 +42,6 @@ class LoadResearchState(Tool):
             "progress": state.progress,
         }
 
-        return self.execute(self.player_index, raw_state)
+        response = self.execute(self.player_index, raw_state)
+
+        return response

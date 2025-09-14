@@ -26,10 +26,13 @@ def flatten_entities(entities: List[Union[Dict, Entity, EntityGroup]]) -> List[U
 
 
     for entity in entities:
+
         if isinstance(entity, dict):
+            if entity['name'] == 'character':
+                continue
+
             try:
                 #Sigh. Some blueprints are 0-12.
-                #if 'belt' in entity['name']:
                 entity['direction'] = entity['direction'] / 2 if max_direction > 6 else entity['direction']
 
                 yield EntityCore(**entity)
@@ -49,6 +52,9 @@ def flatten_entities(entities: List[Union[Dict, Entity, EntityGroup]]) -> List[U
             for e in e_list:
                 yield e
         else:
+            if entity.name == 'character':
+                continue
+
             yield entity
 
 def entities_to_grid(entities: List[Union[Dict, Entity]]) -> Dict:

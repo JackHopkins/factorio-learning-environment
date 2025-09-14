@@ -22,12 +22,11 @@ class Render(Tool):
     def _get_map_entities(self, include_status, radius, compression_level):
         # Execute the Lua function with compression level
         try:
-            result, _, elapsed = self.execute(
+            result, _ = self.execute(
                 self.player_index,
                 include_status,
                 radius,
-                compression_level,
-                return_elapsed=True
+                compression_level
             )
 
 
@@ -36,12 +35,11 @@ class Render(Tool):
 
             return decoded_result
         except Exception as e:
-            result, _, elapsed = self.execute(
+            result, _ = self.execute(
                 self.player_index,
                 include_status,
                 radius,
-                compression_level,
-                return_elapsed=True
+                compression_level
             )
             pass
 
@@ -69,7 +67,7 @@ class Render(Tool):
                 - 'binary': Binary encoding with base64 transport
                 - 'maximum': Same as binary, reserved for future improvements
             blueprint: Either a Base64 encoded blueprint, or a decoded blueprint
-            return_renderer: Whether to return the renderer, which contains the entities that were renderered
+            return_renderer: Whether to return the renderer, which contains the entities that were rendered
 
         Returns:
             RenderedImage containing the visual representation of the area

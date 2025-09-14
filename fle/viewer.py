@@ -6,34 +6,278 @@ This module provides a web-based viewer for watching agents play Factorio in rea
 
 import argparse
 import asyncio
-import json
-import time
-from pathlib import Path
-from typing import Optional, Dict, Any, List
-from datetime import datetime
+import platform
+import subprocess
 import threading
+import time
+from datetime import datetime
+from pathlib import Path
 from queue import Queue
+from typing import Optional, Dict, Any, List
 
 import gym
-from nicegui import ui, app, run
-from PIL import Image
-import io
-import base64
-
-from fle.env.gym_env.config import GymEvalConfig, GymRunConfig
-from fle.env.gym_env.observation_formatter import BasicObservationFormatter
-from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
-from fle.env.gym_env.registry import get_environment_info, list_available_environments
-from fle.env.gym_env.trajectory_runner import GymTrajectoryRunner
-from fle.env.gym_env.observation import Observation
-from fle.env.gym_env.action import Action
+from nicegui import ui
 
 from fle.agents.gym_agent import GymAgent
-from fle.commons.cluster_ips import get_local_container_ips
 from fle.commons.db_client import create_db_client
-from fle.commons.models.program import Program
-from fle.commons.models.game_state import GameState
+from fle.env.gym_env.action import Action
+from fle.env.gym_env.config import GymEvalConfig, GymRunConfig
+from fle.env.gym_env.environment import FactorioGymEnv
+from fle.env.gym_env.observation import Observation
+from fle.env.gym_env.observation_formatter import BasicObservationFormatter
+from fle.env.gym_env.registry import get_environment_info, list_available_environments
+from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
+from fle.env.gym_env.trajectory_runner import GymTrajectoryRunner
 from fle.eval.algorithms.independent import get_next_version
+
+
+class FactorioWindowStreamer:
+    """Captures and streams the Factorio window to HLS format."""
+
+    def __init__(self, output_path="/tmp/factorio_stream.m3u8"):
+        self.output_path = output_path
+        self.process = None
+        self.capture_thread = None
+        self.is_streaming = False
+
+    def find_factorio_window(self):
+        """Find the Factorio window on macOS."""
+        if platform.system() != "Darwin":
+            return None
+
+        try:
+            from Quartz import CGWindowListCopyWindowInfo, kCGWindowListOptionOnScreenOnly, kCGNullWindowID
+
+            windows = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
+            for window in windows:
+                print(window.get('kCGWindowOwnerName', ''))
+                if 'factorio' in window.get('kCGWindowOwnerName', ''):
+                    return window
+        except ImportError:
+            print("pyobjc-framework-Quartz not installed. Install with: pip install pyobjc-framework-Quartz")
+        except Exception as e:
+            print(f"Error finding Factorio window: {e}")
+        return None
+
+    def start(self):
+        """Use macOS screencapture utility instead of FFmpeg screen capture."""
+        if self.is_streaming:
+            return False
+
+        # Clean up
+        import os
+        import glob
+        import threading
+        import time
+        import tempfile
+
+        for f in glob.glob('/tmp/factorio_stream*'):
+            try:
+                os.remove(f)
+            except:
+                pass
+
+        print("Starting screenshot-based capture (FFmpeg screen capture not working)...")
+
+        # Create temp directory for frames
+        self.temp_dir = tempfile.mkdtemp(prefix='factorio_frames_')
+        self.frame_count = 0
+        self.is_streaming = True
+
+        def capture_and_stream():
+            """Capture screenshots and convert to HLS stream."""
+
+            # Start FFmpeg to convert images to HLS
+            ffmpeg_cmd = [
+                'ffmpeg',
+                '-f', 'avfoundation', '-capture_cursor', '1', '-framerate', '30',
+                '-pixel_format', 'nv12',
+                # Optional but often stabilizes AVFoundation on some setups; set to your display's native res:
+                # '-video_size','2560x1440',
+                '-i', '2:none',
+                '-vf', 'scale=1280:720:flags=bicubic,format=nv12',
+                '-c:v', 'h264_videotoolbox', '-realtime', '1',
+                '-b:v', '6000k', '-maxrate', '6000k', '-bufsize', '12000k',
+                '-g', '30', '-tune', 'zerolatency',
+                '-f', 'hls', '-hls_time', '1', '-hls_list_size', '8', '-hls_flags', 'delete_segments',
+                '-hls_segment_filename', '/tmp/factorio_stream%03d.ts',
+                self.output_path
+            ]
+            # ffmpeg_cmd = [
+            #     'ffmpeg',
+            #     '-f', 'image2pipe',
+            #     '-i', '3',  # Device 3 = Screen 1 (secondary monitor)
+            #     '-c:v', 'h264_videotoolbox',
+            #     '-preset', 'ultrafast',
+            #     '-vf', 'scale=1280:720',
+            #     '-b:v', '2M',
+            #     '-f', 'hls',
+            #     '-hls_time', '2',
+            #     '-hls_list_size', '5',
+            #     '-hls_segment_filename', '/tmp/factorio_stream%03d.ts',
+            #     '/tmp/factorio_stream.m3u8'
+            # ]
+
+            self.process = subprocess.Popen(
+                ffmpeg_cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+
+            print("FFmpeg HLS encoder started")
+
+            # Capture loop
+            while self.is_streaming:
+                try:
+                    # Capture screenshot to temp file
+                    temp_file = os.path.join(self.temp_dir, f'frame_{self.frame_count:06d}.png')
+
+                    # Use screencapture (works when FFmpeg screen capture doesn't)
+                    result = subprocess.run(
+                        ['screencapture', '-x', '-C', '-t', 'png', temp_file],
+                        capture_output=True,
+                        timeout=1
+                    )
+
+                    if result.returncode == 0 and os.path.exists(temp_file):
+                        # Read the image and send to FFmpeg
+                        with open(temp_file, 'rb') as f:
+                            image_data = f.read()
+
+                        if self.process.stdin:
+                            self.process.stdin.write(image_data)
+                            self.process.stdin.flush()
+
+                        # Clean up the temp file
+                        os.remove(temp_file)
+                        self.frame_count += 1
+
+                        if self.frame_count % 50 == 0:
+                            segments = glob.glob('/tmp/factorio_stream*.ts')
+                            print(f"Captured {self.frame_count} frames, {len(segments)} HLS segments")
+
+                    # Control frame rate (10 FPS)
+                    time.sleep(0.1)
+
+                except BrokenPipeError:
+                    print("FFmpeg pipe broken, stopping capture")
+                    break
+                except Exception as e:
+                    print(f"Capture error: {e}")
+                    time.sleep(0.1)
+
+            # Cleanup
+            import shutil
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+        # Start capture thread
+        self.capture_thread = threading.Thread(target=capture_and_stream)
+        self.capture_thread.daemon = True
+        self.capture_thread.start()
+
+        # Verify it's working
+        def verify():
+            time.sleep(3)
+            segments = glob.glob('/tmp/factorio_stream*.ts')
+            if segments:
+                print(f"✓ Streaming working with {len(segments)} segments")
+            else:
+                print("⚠ No segments created, screencapture may need permission")
+
+        verify_thread = threading.Thread(target=verify)
+        verify_thread.daemon = True
+        verify_thread.start()
+
+        return True
+
+    def stop(self):
+        """Stop streaming."""
+        self.is_streaming = False
+
+        if self.process:
+            # Close stdin to signal FFmpeg to finish
+            if self.process.stdin:
+                self.process.stdin.close()
+
+            # Wait for process to finish
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=2)
+            except:
+                self.process.kill()
+            self.process = None
+
+        # Wait for capture thread
+        if hasattr(self, 'capture_thread'):
+            self.capture_thread.join(timeout=2)
+
+        # Cleanup temp directory
+        if hasattr(self, 'temp_dir'):
+            import shutil
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+
+    def start_desktop_capture(self):
+        """Simplified desktop capture."""
+        try:
+            cmd = [
+                'ffmpeg',
+                '-f', 'avfoundation',
+                '-framerate', '15',
+                '-capture_cursor', '1',
+                '-i', '4:none',  # Capture screen 0
+                '-vf', 'scale=1920:1080',
+                '-c:v', 'h264_videotoolbox',
+                '-preset', 'ultrafast',
+                '-b:v', '3M',
+                '-f', 'hls',
+                '-hls_time', '1',
+                '-hls_list_size', '3',
+                '-hls_flags', 'delete_segments',
+                '-hls_segment_filename', '/tmp/factorio_stream%d.ts',
+                self.output_path
+            ]
+
+            self.process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            self.is_streaming = True
+            print("Desktop capture started")
+            return True
+        except Exception as e:
+            print(f"Failed to start desktop capture: {e}")
+            return False
+
+
+    def start_screen_capture(self):
+        """Fallback to capture full screen if window capture fails."""
+        try:
+            cmd = [
+                'ffmpeg',
+                '-f', 'avfoundation',
+                '-framerate', '30',
+                '-i', '2:none',  # Main screen
+                '-vf', 'scale=1280:720',
+                '-c:v', 'libx264',
+                '-preset', 'ultrafast',
+                '-tune', 'zerolatency',
+                '-f', 'hls',
+                '-hls_time', '2',
+                '-hls_list_size', '5',
+                '-hls_flags', 'delete_segments',
+                self.output_path
+            ]
+            self.process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            self.is_streaming = True
+            return True
+        except Exception as e:
+            print(f"Failed to start screen capture: {e}")
+            return False
+
+
 
 
 class VisualTrajectoryRunner(GymTrajectoryRunner):
@@ -219,9 +463,243 @@ class FactorioViewer:
         self.current_step = 0
         self.max_steps = 100
         self.is_running = False
+        self.streamer = FactorioWindowStreamer()
+        self.http_server_process = None
+        self.http_server_started = False  # Track if server already started
+
+    def __del__(self):
+        """Cleanup on deletion."""
+        self.cleanup()
+
+    def cleanup(self):
+        """Clean up resources."""
+        self.streamer.stop()
+        if self.http_server_process:
+            self.http_server_process.terminate()
+
+    def start_http_server(self):
+        """Start HTTP server with CORS support for HLS files - ONLY ONCE."""
+        import os
+        import tempfile
+        import signal
+
+        # IMPORTANT: Only start once
+        if self.http_server_started:
+            print("HTTP server already started, skipping")
+            return
+
+        self.http_server_started = True
+
+        if not os.path.exists('/tmp'):
+            os.makedirs('/tmp')
+
+        # Kill any existing process on port 8081
+        try:
+            result = subprocess.run(['lsof', '-ti:8081'], capture_output=True, text=True)
+            if result.stdout:
+                pids = result.stdout.strip().split('\n')
+                for pid in pids:
+                    os.kill(int(pid), signal.SIGTERM)
+                    print(f"Killed existing process on port 8081 (PID: {pid})")
+                time.sleep(1)
+        except Exception as e:
+            print(f"Could not check/kill port 8081: {e}")
+
+        # Create server script
+        import textwrap
+        server_code = textwrap.dedent('''
+            import http.server
+            import socketserver
+            import os
+
+            class CORSHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+                def end_headers(self):
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+                    self.send_header('Access-Control-Allow-Headers', '*')
+                    self.send_header('Cache-Control', 'no-cache')
+                    super().end_headers()
+
+                def do_OPTIONS(self):
+                    self.send_response(200)
+                    self.end_headers()
+
+                def log_message(self, format, *args):
+                    # Suppress request logging
+                    pass
+
+            os.chdir('/tmp')
+            PORT = 8081
+
+            socketserver.TCPServer.allow_reuse_address = True
+
+            with socketserver.TCPServer(("", PORT), CORSHTTPRequestHandler) as httpd:
+                print(f"HLS server running on port {PORT}")
+                httpd.serve_forever()
+        ''').strip()
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            f.write(server_code)
+            server_script_path = f.name
+
+        self.http_server_process = subprocess.Popen(
+            ['python3', server_script_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
+        time.sleep(1)
+        if self.http_server_process.poll() is not None:
+            stdout, stderr = self.http_server_process.communicate()
+            print(f"Server failed: {stderr.decode()}")
+        else:
+            print("Started HLS HTTP server on port 8081")
+
+    def start_streaming_deferred(self):
+        """Start streaming after UI is loaded."""
+        try:
+            print("\n=== Starting Stream ===")
+            success = self.streamer.start()
+
+            if success:
+                # Wait for segments to be created
+                ui.timer(5.0, self.check_and_start_video, once=True)
+            else:
+                print("Failed to start streaming")
+        except Exception as e:
+            print(f"Failed to start streaming: {e}")
+
+    def check_and_start_video(self):
+        """Check if segments exist and start video playback."""
+        import glob
+        segments = glob.glob('/tmp/factorio_stream*.ts')
+
+        if segments:
+            print(f"Found {len(segments)} segments, starting video player")
+            ui.run_javascript('window.startStream && window.startStream()')
+        else:
+            print("No segments found yet, trying again...")
+            # Try again in 2 seconds
+            ui.timer(2.0, self.check_and_start_video, once=True)
+
+    def check_stream_status(self):
+        """Check if stream files are being created."""
+        import os
+        hls_file = "/tmp/factorio_stream.m3u8"
+        if os.path.exists(hls_file):
+            size = os.path.getsize(hls_file)
+            mtime = datetime.fromtimestamp(os.path.getmtime(hls_file))
+            print(f"HLS file exists: {size} bytes, last modified: {mtime}")
+
+            # Check for segment files
+            segments = [f for f in os.listdir("/tmp") if f.endswith('.ts')]
+            print(f"Found {len(segments)} video segments")
+        else:
+            print("HLS file not found - stream may not be running")
 
     def create_ui(self):
         """Create the NiceGUI interface."""
+
+        # Start HTTP server ONLY (not streaming yet)
+        self.start_http_server()
+        # DO NOT start streaming here - wait until UI is loaded
+
+        # Add HLS.js and video streaming script to body
+        ui.add_body_html('''
+            <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+            <script>
+                var hls = null;
+
+                function updateStreamStatus(status, color) {
+                    var streamStatus = document.getElementById('stream-status');
+                    if (streamStatus) {
+                        streamStatus.textContent = status;
+                        streamStatus.style.background = color || 'rgba(0,0,0,0.7)';
+                    }
+                }
+
+                function startStream(url) {
+                    console.log('Starting stream connection...');
+                    var video = document.getElementById('video-player');
+                    var fallbackImg = document.getElementById('fallback-image');
+
+                    if (!video || !fallbackImg) {
+                        console.log('Video elements not ready, retrying...');
+                        setTimeout(() => startStream(url), 1000);
+                        return;
+                    }
+
+                    if (!url) url = 'http://127.0.0.1:8081/factorio_stream.m3u8';
+
+                    // Destroy existing HLS instance
+                    if (hls) {
+                        hls.destroy();
+                        hls = null;
+                    }
+
+                    if (Hls.isSupported()) {
+                        hls = new Hls({
+                            debug: false,
+                            enableWorker: true,
+                            lowLatencyMode: true,
+                            backBufferLength: 2,
+                            maxBufferLength: 10,
+                            liveSyncDuration: 2,
+                            liveMaxLatencyDuration: 5,
+                            manifestLoadingTimeOut: 10000,
+                            fragLoadingTimeOut: 10000,
+                            startLevel: -1,
+                        });
+
+                        hls.loadSource(url);
+                        hls.attachMedia(video);
+
+                        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                            console.log('Manifest parsed, playing video');
+                            video.style.display = 'block';
+                            fallbackImg.style.display = 'none';
+                            video.play().catch(e => console.error('Play failed:', e));
+                            updateStreamStatus('Stream connected', 'rgba(0,128,0,0.7)');
+                        });
+
+                        hls.on(Hls.Events.ERROR, function(event, data) {
+                            console.error('HLS error:', data);
+                            if (data.fatal) {
+                                video.style.display = 'none';
+                                fallbackImg.style.display = 'block';
+                                updateStreamStatus('Stream error - retrying...', 'rgba(128,0,0,0.7)');
+
+                                if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                                    // Retry in 3 seconds
+                                    setTimeout(() => startStream(url), 3000);
+                                }
+                            }
+                        });
+
+                        updateStreamStatus('Connecting to stream...', 'rgba(128,128,0,0.7)');
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        // Native HLS support (Safari)
+                        video.src = url;
+                        video.addEventListener('loadedmetadata', function() {
+                            video.style.display = 'block';
+                            fallbackImg.style.display = 'none';
+                            video.play();
+                            updateStreamStatus('Stream connected (native)', 'rgba(0,128,0,0.7)');
+                        });
+                    }
+                }
+
+                // Expose functions globally
+                window.startStream = startStream;
+                window.updateGameImage = function(base64) {
+                    var fallbackImg = document.getElementById('fallback-image');
+                    if (fallbackImg) {
+                        fallbackImg.src = 'data:image/png;base64,' + base64;
+                    }
+                };
+            </script>
+        ''')
+
         with ui.header().classes('bg-blue-900 text-white'):
             ui.label('🏭 Factorio Learning Environment Viewer').classes('text-2xl font-bold')
             ui.space()
@@ -242,14 +720,14 @@ class FactorioViewer:
                     self.task_select = ui.select(
                         label='Task',
                         options=tasks,
-                        value='open_play'
+                        value=tasks[0] if tasks else 'open_play'
                     ).classes('w-full')
 
                     # Model selector
                     self.model_select = ui.select(
                         label='Model',
-                        options=['gpt-4o-mini', 'claude-3-5-sonnet-latest', 'gpt-4o'],
-                        value='gpt-4o-mini'
+                        options=['openai/gpt-4o-mini', 'anthropic/claude-3-5-sonnet-latest', 'openai/gpt-4o'],
+                        value='openai/gpt-4o-mini'
                     ).classes('w-full')
 
                     ui.separator()
@@ -267,6 +745,13 @@ class FactorioViewer:
                         self.entities_label = ui.label('Entities: 0')
                         self.research_label = ui.label('Research Progress: 0%')
 
+                    # Stream Controls
+                    ui.separator()
+                    ui.label('Stream Settings').classes('text-lg font-bold mt-4')
+                    with ui.row():
+                        ui.button('Restart Stream', on_click=self.restart_stream)
+                        ui.button('Check Status', on_click=lambda: self.streamer.check_stream_status())
+
             # Right panel - Game view and logs
             with splitter.after:
                 with ui.tabs().classes('w-full') as tabs:
@@ -278,9 +763,23 @@ class FactorioViewer:
                     # Game view tab
                     with ui.tab_panel(game_tab):
                         with ui.card().classes('w-full h-full'):
-                            self.game_image = ui.image().classes('w-full')
-                            self.game_image.set_source(
-                                'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==')
+                            # Video container HTML
+                            ui.html('''
+                                <div id="video-container" style="width: 100%; height: 600px; position: relative; background: #000;">
+                                    <video id="video-player" autoplay muted playsinline 
+                                           style="width: 100%; height: 100%; display: none; object-fit: contain;">
+                                    </video>
+                                    <img id="fallback-image" 
+                                         style="width: 100%; height: 100%; object-fit: contain; display: block;" 
+                                         src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" />
+                                    <div id="stream-status" 
+                                         style="position: absolute; top: 10px; right: 10px; 
+                                                padding: 5px 10px; background: rgba(0,0,0,0.7); 
+                                                color: white; border-radius: 5px; font-size: 12px;">
+                                        Waiting for stream...
+                                    </div>
+                                </div>
+                            ''').classes('w-full')
 
                     # Code tab
                     with ui.tab_panel(code_tab):
@@ -296,6 +795,33 @@ class FactorioViewer:
 
         # Set up periodic updates
         ui.timer(0.5, self.process_updates)
+
+        # IMPORTANT: Start streaming AFTER UI is loaded
+        ui.timer(3.0, self.start_streaming_deferred, once=True)
+
+    def restart_stream(self):
+        """Restart the video stream."""
+        self.streamer.stop()
+        time.sleep(1)
+        self.streamer.start()
+        time.sleep(3)  # Give more time for segments to generate
+
+        # Debug check
+        import os
+        segments = [f for f in os.listdir("/tmp") if f.startswith("factorio_stream") and f.endswith('.ts')]
+        if segments:
+            for seg in segments[:2]:
+                size = os.path.getsize(f"/tmp/{seg}")
+                print(f"Segment {seg}: {size} bytes")
+
+            # Check if first segment has actual video
+            if segments and os.path.getsize(f"/tmp/{segments[0]}") < 1000:
+                print("WARNING: Segments are too small - likely capturing black screen")
+                print("The window might be on a different screen or coordinates are off")
+        else:
+            print("No segments created yet")
+
+        ui.run_javascript('window.startStream && window.startStream()')
 
     def _get_available_tasks(self) -> List[str]:
         """Get list of available tasks from registry."""
@@ -333,7 +859,7 @@ class FactorioViewer:
         except Exception as e:
             self.update_queue.put({
                 'type': 'error',
-                'message': str(e)
+                'message': str(e),
             })
 
     async def _async_run_trajectory(self):
@@ -346,7 +872,6 @@ class FactorioViewer:
         run_config = GymRunConfig(
             env_id=env_id,
             model=model,
-            num_agents=1
         )
 
         # Get environment info
@@ -363,8 +888,9 @@ class FactorioViewer:
 
         # Create gym environment
         gym_env = gym.make(env_id)
-        task = gym_env.unwrapped.task
-        instance = gym_env.unwrapped.instance
+        gym_env_unwrapped: FactorioGymEnv = gym_env.unwrapped
+        task = gym_env_unwrapped.task
+        instance = gym_env_unwrapped.instance
 
         # Create agent
         system_prompt = instance.get_system_prompt(0)
@@ -385,7 +911,6 @@ class FactorioViewer:
             agents=[agent],
             version=base_version,
             version_description=f"model:{model}\ntype:{task.task_key}",
-            exit_on_task_success=True,
             task=task,
             agent_cards=[agent.get_agent_card()],
             env_id=env_id
@@ -462,8 +987,9 @@ class FactorioViewer:
                 self.stop_button.props('disabled')
 
     def update_game_image(self, base64_image: str):
-        """Update the game view image."""
-        self.game_image.set_source(f'data:image/png;base64,{base64_image}')
+        """Update the fallback game view image."""
+        if base64_image:
+            ui.run_javascript(f'window.updateGameImage && window.updateGameImage("{base64_image}")')
 
     def add_log_entry(self, title: str, content: str, is_error: bool = False):
         """Add an entry to the log display."""
@@ -490,6 +1016,10 @@ def main():
     def index():
         viewer.create_ui()
 
+    # Ensure cleanup on exit
+    import atexit
+    atexit.register(viewer.cleanup)
+
     ui.run(
         host=args.host,
         port=args.port,
@@ -498,5 +1028,5 @@ def main():
     )
 
 
-#if __name__ == '__main__', "__mp_main__"}:
-main()
+if __name__ in {"__main__", "__mp_main__"}:
+    main()

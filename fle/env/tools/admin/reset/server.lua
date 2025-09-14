@@ -19,7 +19,6 @@ local function get_inventory_for_index(inventories, index)
 end
 
 global.actions.reset = function(inventories_json, reset_position, all_technologies_researched, clear_entities)
-
 	-- Clear alerts, reset game state, and production stats
 	game.reset_game_state()
 	global.alerts = {}
@@ -31,32 +30,57 @@ global.actions.reset = function(inventories_json, reset_position, all_technologi
 	-- Re-generate resources per agent (mirrors instance _reset)
 	if global.agent_characters then
 		for i, character in pairs(global.agent_characters) do
-			global.actions.regenerate_resources(i)
-			global.actions.clear_walking_queue(i)
+			-- Only process valid characters
+			if character and character.valid then
+				global.actions.regenerate_resources(i)
+				global.actions.clear_walking_queue(i)
 
-			if reset_position and character and character.valid then
-				local y_offset = (tonumber(i) or 1) - 1
-				character.teleport{ x = 0, y = y_offset * 2 }
+				if reset_position then
+					local y_offset = (tonumber(i) or 1) - 1
+					character.teleport{ x = 0, y = y_offset * 2 }
+				end
+
+				-- Clear entities around each agent and reset inventories
+				if clear_entities then
+					global.actions.clear_entities(i)
+				end
+
+				local inv_table = get_inventory_for_index(inventories, i)
+				local inv_json = game.table_to_json(inv_table)
+				global.actions.set_inventory(i, inv_json)
 			end
-
-			-- Clear entities around each agent and reset inventories
-			if clear_entities then
-				global.actions.clear_entities(i)
-			end
-
-			local inv_table = get_inventory_for_index(inventories, i)
-			local inv_json = game.table_to_json(inv_table)
-			global.actions.set_inventory(i, inv_json)
 		end
 	end
 
-	-- Research handling
-	if all_technologies_researched == true then
-		global.agent_characters[1].force.research_all_technologies()
-	else
-		global.agent_characters[1].force.reset()
+	-- Research handling - need to check for valid character first
+	local valid_character = nil
+	if global.agent_characters then
+		for _, character in pairs(global.agent_characters) do
+			if character and character.valid then
+				valid_character = character
+				break
+			end
+		end
+	end
+
+	if valid_character then
+		if all_technologies_researched == true then
+			valid_character.force.research_all_technologies()
+		else
+			valid_character.force.reset()
+		end
+	elseif all_technologies_researched == true or all_technologies_researched == false then
+		-- If no valid characters but technology reset was requested,
+		-- try to use the default force
+		local force = game.forces["player"] or game.forces[1]
+		if force then
+			if all_technologies_researched == true then
+				force.research_all_technologies()
+			else
+				force.reset()
+			end
+		end
 	end
 
 	return 1
 end
-

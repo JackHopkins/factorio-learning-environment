@@ -9,7 +9,7 @@ class Reward(Tool):
         self.load()
 
     def __call__(self, *args, **kwargs):
-        response, execution_time = self.execute(*args, **kwargs)
+        response, execution_time = self.execute(*args)
         if self.game_state.instance.initial_score:
             response["player"] -= self.game_state.instance.initial_score
 

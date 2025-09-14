@@ -12,7 +12,7 @@ from fle.env import FactorioInstance
 from fle.env.gym_env.environment import FactorioGymEnv
 from fle.eval.tasks import TaskFactory, TASK_FOLDER
 
-PORT_OFFSET = int(os.environ["PORT_OFFSET"])
+PORT_OFFSET = int(os.getenv("PORT_OFFSET", 0))
 
 
 @dataclass
@@ -95,7 +95,7 @@ class FactorioGymRegistry:
 _registry = FactorioGymRegistry()
 
 
-def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
+def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int = 0) -> FactorioGymEnv:
     """Factory function to create a Factorio gym environment"""
     # Create task from the task definition
     task = TaskFactory.create_task(spec.task_config_path)
@@ -107,7 +107,11 @@ def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
         tcp_port = os.getenv("FACTORIO_SERVER_PORT")
 
         if not address and not tcp_port:
-            ips, udp_ports, tcp_ports = get_local_container_ips()
+            try:
+                ips, udp_ports, tcp_ports = get_local_container_ips()
+            except ValueError as e:
+                raise RuntimeError("No Factorio containers available")
+            
             if len(tcp_ports) == 0:
                 raise RuntimeError("No Factorio containers available")
 

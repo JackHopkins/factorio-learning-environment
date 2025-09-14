@@ -1,6 +1,20 @@
 global.actions.save_research_state = function(player_index)
-    local player = global.agent_characters[player_index]
+    -- Validate the character exists and is valid
+    local player = global.agent_characters and global.agent_characters[player_index]
+    if not player or not player.valid then
+        -- Try to use default force if no valid player
+        local force = game.forces["player"] or game.forces[1]
+        if not force then
+            return {error = "No valid player character or force found"}
+        end
+        -- Use the default force instead
+        player = {force = force}
+    end
+
     local force = player.force
+    if not force then
+        return {error = "No valid force found"}
+    end
 
     -- Helper to serialize technology state
     local function serialize_technology(tech)

@@ -2,8 +2,9 @@ import atexit
 import enum
 import os
 import signal
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 import threading
-from concurrent.futures import TimeoutError
+
 from pathlib import Path
 from timeit import default_timer as timer
 from typing_extensions import Optional
@@ -127,6 +128,8 @@ class FactorioInstance:
         if not FactorioInstance._cleanup_registered:
             atexit.register(self.cleanup)
             FactorioInstance._cleanup_registered = True
+
+        self._executor = ThreadPoolExecutor(max_workers=2)
 
     @property
     def namespace(self):
@@ -263,7 +266,7 @@ class FactorioInstance:
         print(f"Connected to {address} client at tcp/{tcp_port}.")
         return rcon_client, address
 
-    def eval_with_error(self, expr, agent_idx=0, timeout=60):
+    def __eval_with_error(self, expr, agent_idx=0, timeout=60):
         """Evaluate an expression with a timeout, and return the result without error handling"""
 
         def handler(signum, frame):
@@ -276,6 +279,26 @@ class FactorioInstance:
             return self.namespaces[agent_idx].eval_with_timeout(expr)
         finally:
             signal.alarm(0)
+
+    def eval_with_error(self, expr, agent_idx=0, timeout=60):
+        """Evaluate an expression with a timeout, and return the result without error handling"""
+
+        # Submit the evaluation to the thread pool
+        future = self._executor.submit(
+            self.namespaces[agent_idx].eval_with_timeout,
+            expr
+        )
+
+        try:
+            # Wait for the result with timeout
+            return future.result(timeout=timeout)
+        except FutureTimeoutError:
+            # Cancel the future if it's still running
+            future.cancel()
+            raise TimeoutError()
+        except Exception as e:
+            # Re-raise any other exceptions
+            raise
 
     def eval(self, expr, agent_idx=0, timeout=60):
         "Evaluate several lines of input, returning the result of the last line with a timeout"
@@ -294,6 +317,7 @@ class FactorioInstance:
         self.first_namespace._create_agent_characters(self.num_agents)
 
         init_scripts = [
+            "lualib_util",
             "utils",
             "alerts",
             "connection_points",
@@ -362,3 +386,7 @@ class FactorioInstance:
                     thread.join(timeout=5)  # Wait up to 5 seconds for each thread
                 except Exception as e:
                     print(f"Error joining thread {thread.name}: {e}")
+
+        # Shutdown the executor
+        if hasattr(self, '_executor'):
+            self._executor.shutdown(wait=True, cancel_futures=True)

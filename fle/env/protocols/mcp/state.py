@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Any
 from fle.env import FactorioInstance
 from fle.commons.cluster_ips import get_local_container_ips
 
-from fle.commons.models import FactorioServer, Recipe, ResourcePatch
+from fle.env.protocols.mcp.models import FactorioServer, Recipe, ResourcePatch
 from fle.env.protocols.mcp.repository import FactorioMCPRepository
 
 
@@ -152,7 +152,7 @@ class FactorioMCPState:
 
             return True
         except Exception:
-            # print(f"Error connecting to Factorio server: {e}")
+            print(f"Error connecting to Factorio server: {e}")
             return False
 
     def get_vcs(self):

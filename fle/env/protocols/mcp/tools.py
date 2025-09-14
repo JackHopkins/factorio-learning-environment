@@ -12,7 +12,7 @@ from fle.env.protocols.mcp.init import state, initialize_session
 
 
 @mcp.tool()
-async def render(center_x: float = 0, center_y: float = 0) -> Image:
+async def render(center_x: float = 0, center_y: float = 0):
     """
     Render the current factory state to an image
 
@@ -28,8 +28,13 @@ async def render(center_x: float = 0, center_y: float = 0) -> Image:
 
     instance = state.active_server
 
-    img = instance.namespace._render(position=Position(center_x, center_y))
-    return Image(data=img._repr_png_(), format="png")
+    try:
+        img = instance.namespace._render(position=Position(center_x, center_y))
+        if img is None:
+            return "Failed to render: Game state not properly initialized or player entity invalid"
+        return Image(data=img._repr_png_(), format="png")
+    except Exception as e:
+        return f"Error rendering: {str(e)}"
 
 
 @mcp.tool()
@@ -49,10 +54,13 @@ async def entities(
 
     instance = state.active_server
 
-    entities = instance.namespace.get_entities(
-        position=Position(center_x, center_y), radius=radius
-    )
-    return str(entities)
+    try:
+        entities = instance.namespace.get_entities(
+            position=Position(center_x, center_y), radius=radius
+        )
+        return str(entities)
+    except Exception as e:
+        return f"Error getting entities: {str(e)}"
 
 
 @mcp.tool()
@@ -65,8 +73,11 @@ async def inventory() -> str:
 
     instance = state.active_server
 
-    inventory = instance.namespace.inspect_inventory()
-    return str(inventory)
+    try:
+        inventory = instance.namespace.inspect_inventory()
+        return str(inventory)
+    except Exception as e:
+        return f"Error getting inventory: {str(e)}"
 
 
 @mcp.tool()
@@ -98,6 +109,27 @@ async def execute(code: str) -> str:
     # Automatically commit the successful state
     current_state = GameState.from_instance(instance)
     commit_id = vcs.commit(current_state, "Auto-commit after code execution", code)
+
+    # Update game state file after execution
+    try:
+        game_state_data = {
+            "inventory": instance.namespace.inspect_inventory(),
+            "entities": instance.namespace.get_entities(radius=100),
+            "score": instance.namespace.score(),
+            "game_tick": instance.namespace.game_info.tick,
+            "position": instance.namespace.player_location,
+            "production_stats": instance.namespace.get_production_stats(),
+        }
+        
+        import json
+        from pathlib import Path
+        state_file = Path("/tmp/factorio_game_state.json")
+        with open(state_file, 'w') as f:
+            json.dump(game_state_data, f, default=str)
+    except Exception as e:
+        # Don't fail the whole execution just because state file update failed
+        pass
+
     return f"[commit {commit_id[:8]}]:\n\n{response}"
 
 
@@ -147,7 +179,7 @@ async def get_entity_names():
 
 
 @mcp.tool()
-async def position() -> str:
+async def position() -> Position:
     """
     Get your position in the Factorio world.
     """
@@ -221,3 +253,46 @@ async def manual(name: str) -> str:
     # Generate the documentation
     generator = SystemPromptGenerator(str(execution_path))
     return generator.manual(name)
+
+
+@mcp.tool()
+async def get_game_state() -> Dict:
+    """Get current game state for overlay display"""
+    if not state.active_server:
+        return {"error": "No active server"}
+
+    instance = state.active_server
+
+    # Gather all relevant state
+    try:
+        game_state = {
+            "inventory": instance.namespace.inspect_inventory(),
+            "entities": instance.namespace.get_entities(radius=100),
+            "score": instance.namespace.score(),
+            "game_tick": instance.namespace.game_info.tick,
+            "position": instance.namespace.player_location,
+            "production_stats": instance.namespace.get_production_stats(),
+        }
+    except Exception as e:
+        return {"error": f"Failed to get game state: {str(e)}"}
+
+    # Write to shared file for bridge server
+    try:
+        import json
+        from pathlib import Path
+        state_file = Path("/tmp/factorio_game_state.json")
+        state_file.parent.mkdir(exist_ok=True)
+        with open(state_file, 'w') as f:
+            json.dump(game_state, f, default=str)
+    except Exception as e:
+        print(f"Error writing state file: {e}")
+
+    return game_state
+
+
+@mcp.tool()
+async def subscribe_to_updates(callback_url: str = None) -> str:
+    """Subscribe to game state updates"""
+    # This could use SSE or WebSockets for real-time updates
+    # For now, return instructions for polling
+    return "Poll get_game_state every 500ms for updates"

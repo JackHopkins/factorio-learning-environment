@@ -17,10 +17,10 @@ from datetime import datetime
 
 from fle.env.gym_env.config import GymRunConfig
 from fle.commons.db_client import get_next_version
-from .database_analyzer import DatabaseAnalyzer
-from .performance_metrics import PerformanceAnalyzer
-from .wandb_logger import WandBSweepLogger
-from .server_manager import get_server_manager, ServerManager
+from fle.eval.analysis.database_analyzer import DatabaseAnalyzer
+from fle.eval.analysis.performance_metrics import PerformanceAnalyzer
+from fle.eval.analysis.wandb_logger import WandBSweepLogger
+from fle.eval.infra.server_manager import get_server_manager, ServerManager
 
 
 @dataclass

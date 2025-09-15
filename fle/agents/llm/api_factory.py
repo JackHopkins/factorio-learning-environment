@@ -15,7 +15,7 @@ from fle.agents.llm.utils import (
 def _get_api_key_manager():
     """Lazy import for API key manager to avoid circular imports."""
     try:
-        from fle.eval.analysis.api_key_manager import get_api_key_manager
+        from fle.eval.infra.api_key_manager import get_api_key_manager
 
         return get_api_key_manager
     except ImportError:
@@ -32,7 +32,9 @@ class APIFactory:
             "base_url": "https://openrouter.ai/api/v1",
             "api_key_env": "OPEN_ROUTER_API_KEY",
             "key_manager_provider": "open-router",
-            "model_transform": lambda m: m.replace("open-router-", ""),
+            "model_transform": lambda m: m.replace("open-router-", "")
+            if m.startswith("open-router-")
+            else m,
         },
         "claude": {
             "base_url": "https://api.anthropic.com/v1",
@@ -81,7 +83,16 @@ class APIFactory:
         self.api_key_manager = None
 
     def _get_provider_config(self, model: str) -> dict:
-        """Get provider config based on model name"""
+        """Get provider config based on model name
+
+        Models with '/' in the name (e.g., 'anthropic/claude-sonnet-4')
+        are OpenRouter models and should use OpenRouter API.
+        """
+        # Check if this is an OpenRouter model (contains '/')
+        if "/" in model:
+            return self.PROVIDERS["open-router"]
+
+        # Otherwise, check for provider prefixes
         for provider, config in self.PROVIDERS.items():
             if provider in model:
                 return config

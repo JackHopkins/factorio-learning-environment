@@ -60,6 +60,7 @@ class GymTrajectoryRunner:
         agent: GymAgent,
         agent_idx: int,
         agent_step: int,
+        production_score: float,
         program: Program,
         observation: Observation,
     ):
@@ -70,6 +71,7 @@ class GymTrajectoryRunner:
             agent: The agent instance
             agent_idx: Index of the agent
             agent_step: Current step for this agent
+            production_score: Current production score
             program: The program to log
             observation: The observation to log
         """
@@ -78,7 +80,7 @@ class GymTrajectoryRunner:
         self.logger.add_iteration_time(iteration_time)
 
         # Log progress, observation and program
-        self.logger.log_progress(agent, agent_step, program.value)
+        self.logger.log_progress(agent, agent_step, program.value, production_score)
         self.logger.log_observation_and_program(
             agent, agent_idx, agent_step, observation, program
         )
@@ -105,6 +107,7 @@ class GymTrajectoryRunner:
                     instance=self.process_id,
                     step=agent_step,
                     reward=program.value,
+                    production_score=production_score,
                     model=agent.model,
                     task=task_name,
                     elapsed_time=elapsed_time,
@@ -246,6 +249,7 @@ class GymTrajectoryRunner:
                     )
                     observation = Observation.from_dict(obs_dict)
                     output_game_state = info["output_game_state"]
+                    production_score = info["production_score"]
                     done = terminated or truncated
 
                     # Create program from policy with environment results
@@ -270,6 +274,7 @@ class GymTrajectoryRunner:
                         agent,
                         agent_idx,
                         agent_steps[agent_idx],
+                        production_score,
                         program,
                         observation,
                     )

@@ -9,7 +9,7 @@ import json
 import asyncio
 from pathlib import Path
 
-from fle.eval.analysis.api_key_manager import (
+from fle.eval.infra.api_key_manager import (
     create_api_keys_config_template,
     get_api_key_manager,
 )

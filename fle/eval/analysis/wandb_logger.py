@@ -173,6 +173,7 @@ class WandBLogger:
         instance: int,
         step: int,
         reward: float,
+        production_score: float,
         model: str,
         task: str,
         elapsed_time: Optional[float] = None,
@@ -185,6 +186,7 @@ class WandBLogger:
             instance: Instance/trial number
             step: Current step in trajectory
             reward: Current reward value
+            production_score: Current production score
             model: Model name
             task: Task name
             elapsed_time: Elapsed time in seconds
@@ -198,6 +200,7 @@ class WandBLogger:
             "trajectory/instance": instance,
             "trajectory/step": step,
             "trajectory/reward": reward,
+            "trajectory/production_score": production_score,
             "trajectory/model": model,
             "trajectory/task": task,
         }

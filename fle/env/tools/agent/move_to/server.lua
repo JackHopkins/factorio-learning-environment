@@ -25,12 +25,22 @@ end
 global.actions.move_to = function(player_index, path_handle, trailing_entity, is_trailing)
     --local player = global.agent_characters[player_index]
     local player = global.agent_characters[player_index]
+
+    -- Initialize paths table if it doesn't exist
+    if not global.paths then
+        global.paths = {}
+    end
+
     local path = global.paths[path_handle]
     local surface = player.surface
 
     -- Check if path is valid
-    if not path or type(path) ~= "table" or #path == 0 then
-        error("Invalid path: " .. serpent.line(path))
+    if not path then
+        error("Path not found for handle: " .. tostring(path_handle) .. ". Available handles: " .. serpent.line(global.paths and table_size(global.paths) or 0))
+    elseif type(path) == "string" then
+        error("Path status is: " .. path .. " for handle: " .. tostring(path_handle))
+    elseif type(path) ~= "table" or #path == 0 then
+        error("Invalid path type or empty path: " .. serpent.line(path))
     end
 
     -- If fast mode is disabled, set up walking queue

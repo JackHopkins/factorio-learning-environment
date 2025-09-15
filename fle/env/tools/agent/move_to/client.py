@@ -42,7 +42,13 @@ class MoveTo(Tool):
             allow_paths_through_own_entities=True,
             resolution=-1,
         )
-        sleep(0.05)  # Let the pathing complete in the game.
+
+        # Wait for path to be ready using get_path's built-in polling
+        try:
+            self.get_path(path_handle, max_attempts=20)
+        except Exception:
+            # If get_path fails, still try to proceed (backward compatibility)
+            sleep(0.1)  # Give it a bit more time
 
         # Track elapsed ticks for fast forward
         ticks_before = self.game_state.instance.get_elapsed_ticks()

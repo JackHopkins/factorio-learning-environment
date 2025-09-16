@@ -7,5 +7,5 @@
   "trajectory_length": 128,
   "holdout_wait_period": 60,
   "pre_holdout_wait_period": 60,
-  "task_key": "processing-unit_throughput"
+  "task_key": "processing_unit_throughput"
 }

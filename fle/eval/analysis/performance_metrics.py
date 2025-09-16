@@ -33,6 +33,11 @@ class PerformanceMetrics:
     mean_steps: Optional[float] = None
     tokens_per_success: Optional[float] = None
 
+    # Production score metrics
+    production_score_mean: Optional[float] = None
+    production_score_max: Optional[float] = None
+    production_score_std: Optional[float] = None
+
     # Statistical significance
     confidence_interval_95: Optional[Tuple[float, float]] = None
 
@@ -60,6 +65,12 @@ class PerformanceMetrics:
             result["tokens_per_success"] = self.tokens_per_success
         if self.confidence_interval_95:
             result["ci_95_lower"], result["ci_95_upper"] = self.confidence_interval_95
+        if self.production_score_mean is not None:
+            result["production_score_mean"] = self.production_score_mean
+        if self.production_score_max is not None:
+            result["production_score_max"] = self.production_score_max
+        if self.production_score_std is not None:
+            result["production_score_std"] = self.production_score_std
 
         return result
 

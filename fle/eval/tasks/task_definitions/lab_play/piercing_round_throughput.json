@@ -7,5 +7,5 @@
   "trajectory_length": 128,
   "holdout_wait_period": 60,
   "pre_holdout_wait_period": 60,
-  "task_key": "piercing-rounds-magazine_throughput"
+  "task_key": "piercing_round_throughput"
 }

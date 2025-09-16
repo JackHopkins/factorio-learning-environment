@@ -133,7 +133,8 @@ class DatabaseAnalyzer:
                          ELSE NULL END, 
                     '; '
                 ) as all_achievements,
-                STRING_AGG(DISTINCT meta::text, '; ') as meta_aggregated
+                STRING_AGG(DISTINCT meta::text, '; ') as meta_aggregated,
+                MAX((meta->>'production_score')::float) as max_production_score
             FROM programs
             WHERE version IN ({version_list})
             GROUP BY version, version_description, model, instance
@@ -180,7 +181,8 @@ class DatabaseAnalyzer:
                          ELSE NULL END, 
                     '; '
                 ) as all_achievements,
-                STRING_AGG(DISTINCT meta::text, '; ') as meta_aggregated
+                STRING_AGG(DISTINCT meta::text, '; ') as meta_aggregated,
+                MAX((meta->>'production_score')::float) as max_production_score
             FROM programs
             WHERE meta->>'sweep_id' = %s
             GROUP BY version, version_description, model, instance

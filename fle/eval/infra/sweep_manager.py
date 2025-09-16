@@ -459,8 +459,8 @@ class SweepManager:
         # Generate jobs based on execution mode
         if self.config.task_inner_loop_mode:
             # Task inner loop: cycle through all tasks for each model before repeating
-            for model in self.config.models:
-                for trial in range(self.config.num_trials_per_config):
+            for trial in range(self.config.num_trials_per_config):
+                for model in self.config.models:
                     for task in self.config.tasks:
                         run_key = (model, task, trial)
                         job_id = f"{model}_{task}_trial{trial:02d}"
@@ -1165,6 +1165,19 @@ class SweepManager:
                     token_column="total_tokens",
                     step_column="num_steps",
                 )
+                # Add production score metrics if available
+                if "max_production_score" in model_data.columns:
+                    production_metrics = PerformanceAnalyzer.calculate_metrics(
+                        model_data,
+                        reward_column="max_production_score",
+                        token_column="total_tokens",
+                        step_column="num_steps",
+                    )
+                    # Store production score metrics in the metrics object
+                    metrics.production_score_mean = production_metrics.mean_reward
+                    metrics.production_score_max = production_metrics.max_reward
+                    metrics.production_score_std = production_metrics.std_reward
+
                 results_by_model[model] = metrics
 
             for task_desc in results_df["version_description"].unique():
@@ -1181,6 +1194,19 @@ class SweepManager:
                     token_column="total_tokens",
                     step_column="num_steps",
                 )
+                # Add production score metrics if available
+                if "max_production_score" in task_data.columns:
+                    production_metrics = PerformanceAnalyzer.calculate_metrics(
+                        task_data,
+                        reward_column="max_production_score",
+                        token_column="total_tokens",
+                        step_column="num_steps",
+                    )
+                    # Store production score metrics in the metrics object
+                    metrics.production_score_mean = production_metrics.mean_reward
+                    metrics.production_score_max = production_metrics.max_reward
+                    metrics.production_score_std = production_metrics.std_reward
+
                 results_by_task[task_name] = metrics
 
             # Calculate overall statistics

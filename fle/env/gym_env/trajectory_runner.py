@@ -126,6 +126,7 @@ class GymTrajectoryRunner:
         error_occurred: bool,
         achievements: Dict[str, Any],
         game_state: GameState,
+        production_score: float,
     ) -> Program:
         """Create a Program object from a Policy and environment results
 
@@ -135,6 +136,9 @@ class GymTrajectoryRunner:
             reward: The reward from the environment step
             response: The raw text response from the environment
             error_occurred: Whether an error occurred during execution
+            achievements: The achievements dictionary from the environment
+            game_state: The current game state
+            production_score: The production score from the environment
 
         Returns:
             Program object with all necessary metadata and results
@@ -162,6 +166,7 @@ class GymTrajectoryRunner:
                 "process_id": self.process_id,
                 "error_occurred": error_occurred,
                 "sweep_id": os.getenv("FLE_SWEEP_ID", "unknown"),
+                "production_score": production_score,
             },
             depth=depth,
         )
@@ -261,6 +266,7 @@ class GymTrajectoryRunner:
                         error_occurred=info["error_occurred"],
                         achievements=info["achievements"],
                         game_state=output_game_state,
+                        production_score=production_score,
                     )
 
                     # Update agent's conversation with the program and its results

@@ -15,6 +15,38 @@ class TaskFactory:
 
     @staticmethod
     def create_task(task_path) -> TaskABC:
+        """Create a task from either a JSON file or Python-based definition.
+
+        Args:
+            task_path: Either a path to a JSON file (e.g., "lab_play/task.json")
+                      or a Python task key (e.g., "iron_plate_throughput")
+
+        Returns:
+            TaskABC instance
+        """
+        # Check if it's a Python-based throughput task (no .json extension)
+        if not task_path.endswith(".json"):
+            try:
+                from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import (
+                    get_throughput_task,
+                )
+
+                task_config = get_throughput_task(task_path)
+                config_dict = task_config.to_dict()
+                task_type = config_dict.pop("task_type")
+                config_dict.pop("num_agents", None)  # Remove if present
+
+                if task_type == "throughput":
+                    return ThroughputTask(**config_dict)
+                else:
+                    raise ValueError(
+                        f"Unsupported task type from Python config: {task_type}"
+                    )
+            except (ImportError, KeyError):
+                # Fall through to try as JSON path
+                pass
+
+        # Try loading as JSON file (backward compatibility)
         task_path = Path(TASK_FOLDER, task_path)
         with open(task_path, "r") as f:
             input_json = json.load(f)

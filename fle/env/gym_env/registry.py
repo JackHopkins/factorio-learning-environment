@@ -38,23 +38,40 @@ class FactorioGymRegistry:
         if self._discovered:
             return
 
-        if not self._task_definitions_path.exists():
-            raise FileNotFoundError(
-                f"Task definitions path not found: {self._task_definitions_path}"
+        # Register Python-based throughput tasks
+        try:
+            from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import (
+                THROUGHPUT_TASKS,
+                list_throughput_tasks,
             )
-        # Discover all JSON task definition files
-        for task_file in self._task_definitions_path.rglob("*.json"):
-            try:
-                with open(task_file, "r") as f:
-                    task_data = json.load(f)
+
+            for task_key in list_throughput_tasks():
+                task_config = THROUGHPUT_TASKS[task_key]
                 self.register_environment(
-                    task_key=task_data["task_key"],
-                    task_config_path=str(task_file),
-                    description=task_data["goal_description"],
-                    num_agents=task_data.get("num_agents", 1),
+                    task_key=task_key,
+                    task_config_path=task_key,  # Use task key as path for Python tasks
+                    description=task_config.goal_description,
+                    num_agents=task_config.num_agents,
                 )
-            except Exception as e:
-                print(f"Warning: Failed to load task definition {task_file}: {e}")
+        except ImportError:
+            print("Warning: Could not import Python-based throughput tasks")
+
+        # Also discover JSON task definition files (for backward compatibility)
+        if self._task_definitions_path.exists():
+            for task_file in self._task_definitions_path.rglob("*.json"):
+                try:
+                    with open(task_file, "r") as f:
+                        task_data = json.load(f)
+                    # Skip if already registered from Python
+                    if task_data["task_key"] not in self._environments:
+                        self.register_environment(
+                            task_key=task_data["task_key"],
+                            task_config_path=str(task_file),
+                            description=task_data["goal_description"],
+                            num_agents=task_data.get("num_agents", 1),
+                        )
+                except Exception as e:
+                    print(f"Warning: Failed to load task definition {task_file}: {e}")
 
         self._discovered = True
 

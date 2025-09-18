@@ -219,7 +219,7 @@ class SweepProfiles:
                 UTILITY_SCIENCE_PACK_THROUGHPUT,
             ],
             num_trials_per_config=8,
-            max_concurrent_processes=8,
+            max_concurrent_processes=32,
             # Pass@K optimization features
             task_inner_loop_mode=True,  # Cycle through tasks before repeating model-task pairs
             early_stop_on_success=True,  # Skip (model, task) pairs that already succeeded

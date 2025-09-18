@@ -40,6 +40,37 @@ class ResultsVisualizer:
         if not self.enabled:
             print("Plotting not available - install matplotlib and seaborn")
 
+    def _is_task_successful(self, task_name: str, reward: float) -> bool:
+        """Determine if a task result is successful based on task-specific criteria
+
+        Args:
+            task_name: Name of the task (e.g., 'advanced_circuit_throughput')
+            reward: Final reward achieved
+
+        Returns:
+            True if the task was successful, False otherwise
+        """
+        try:
+            # For throughput tasks, success is meeting the quota of 16
+            if "throughput" in task_name.lower():
+                # Most throughput tasks have quota of 16
+                if task_name.lower() in [
+                    "crude_oil_throughput",
+                    "petroleum_gas_throughput",
+                    "sufuric_acid_throughput",
+                ]:
+                    return reward >= 400  # Fluid tasks have higher quotas
+                else:
+                    return reward >= 16  # Standard throughput tasks
+
+            # For other task types, use positive reward as success criteria
+            else:
+                return reward > 0
+
+        except Exception:
+            # Fallback to simple positive reward check if task config unavailable
+            return reward > 0
+
     def plot_model_comparison(
         self,
         model_metrics: Dict[str, PerformanceMetrics],
@@ -401,7 +432,15 @@ class ResultsVisualizer:
                     (results_df[model_col] == model) & (results_df["task_name"] == task)
                 ]
                 if len(subset) > 0:
-                    success_rate = (subset[metric_col] > success_threshold).mean()
+                    # Use task-specific success criteria instead of simple threshold
+                    successes = []
+                    for _, row in subset.iterrows():
+                        task_name = row["task_name"]
+                        reward = row[metric_col]
+                        is_successful = self._is_task_successful(task_name, reward)
+                        successes.append(is_successful)
+
+                    success_rate = np.mean(successes) if successes else 0.0
                     heatmap_data[i, j] = success_rate
 
         # Create heatmap
@@ -427,6 +466,174 @@ class ResultsVisualizer:
 
         plt.xticks(rotation=45, ha="right")
         plt.yticks(rotation=0)
+        plt.tight_layout()
+
+        if save_path:
+            fig.savefig(save_path, bbox_inches="tight", dpi=self.dpi)
+
+        return fig
+
+    def plot_task_success_classification_heatmap(
+        self,
+        results_df: pd.DataFrame,
+        model_col: str = "model",
+        task_col: str = "version_description",
+        metric_col: str = "final_reward",
+        title: Optional[str] = None,
+        save_path: Optional[str] = None,
+    ) -> Optional[plt.Figure]:
+        """Create heatmap showing success classification by model and task
+
+        Colors:
+        - Green (2): At least one full success (meets quota)
+        - Yellow (1): Partial success (reward > 0 but below quota)
+        - Red (0): No success (all rewards <= 0)
+
+        Args:
+            results_df: DataFrame with results
+            model_col: Column with model names
+            task_col: Column with task information
+            metric_col: Column with performance metric
+            title: Optional plot title
+            save_path: Optional path to save figure
+
+        Returns:
+            matplotlib Figure object if plotting available
+        """
+        if not self.enabled:
+            return None
+
+        # Extract task names from version descriptions
+        task_names = []
+        for desc in results_df[task_col]:
+            if "type:" in desc:
+                task_name = desc.split("type:")[1].split("\n")[0].strip()
+            else:
+                task_name = desc
+            task_names.append(task_name)
+
+        results_df = results_df.copy()
+        results_df["task_name"] = task_names
+
+        # First pass: calculate data for all model-task combinations to determine sorting
+        models = sorted(results_df[model_col].unique())
+        tasks = sorted(results_df["task_name"].unique())
+
+        # Dictionary to store classifications for sorting
+        model_task_data = {}
+
+        for model in models:
+            for task in tasks:
+                subset = results_df[
+                    (results_df[model_col] == model) & (results_df["task_name"] == task)
+                ]
+                classification = 0  # Default to no success
+
+                if len(subset) > 0:
+                    # Classify success levels
+                    has_full_success = False
+                    has_partial_success = False
+
+                    for _, row in subset.iterrows():
+                        task_name = row["task_name"]
+                        reward = row[metric_col]
+
+                        # Check for full success
+                        if self._is_task_successful(task_name, reward):
+                            has_full_success = True
+                            break  # No need to check further if we have full success
+
+                        # Check for partial success
+                        elif reward > 0:
+                            has_partial_success = True
+
+                    # Assign classification:
+                    # 2 = Green (at least one full success)
+                    # 1 = Yellow (partial success but no full success)
+                    # 0 = Red (no success at all)
+                    if has_full_success:
+                        classification = 2
+                    elif has_partial_success:
+                        classification = 1
+                    else:
+                        classification = 0
+
+                model_task_data[(model, task)] = classification
+
+        # Sort models by number of full successes (descending)
+        model_scores = {}
+        for model in models:
+            full_successes = sum(
+                1 for task in tasks if model_task_data.get((model, task), 0) == 2
+            )
+            model_scores[model] = full_successes
+
+        models = sorted(models, key=lambda m: model_scores[m], reverse=True)
+
+        # Sort tasks by weighted score (full success = 2 points, partial = 1 point), descending
+        task_scores = {}
+        for task in tasks:
+            score = sum(model_task_data.get((model, task), 0) for model in models)
+            task_scores[task] = score
+
+        tasks = sorted(tasks, key=lambda t: task_scores[t], reverse=True)
+
+        # Now create the heatmap data with sorted order
+        heatmap_data = np.zeros((len(models), len(tasks)))
+
+        for i, model in enumerate(models):
+            for j, task in enumerate(tasks):
+                heatmap_data[i, j] = model_task_data.get((model, task), 0)
+
+        # Create custom colormap: Red -> Yellow -> Green
+        from matplotlib.colors import ListedColormap
+
+        colors = ["#d62728", "#ffcc00", "#2ca02c"]  # Red, Yellow, Green
+        custom_cmap = ListedColormap(colors)
+
+        # Create heatmap
+        fig, ax = plt.subplots(
+            figsize=(max(10, len(tasks) * 0.8), max(6, len(models) * 0.5)), dpi=self.dpi
+        )
+
+        # Create annotations for the heatmap
+        annotations = np.empty((len(models), len(tasks)), dtype=object)
+        for i in range(len(models)):
+            for j in range(len(tasks)):
+                value = heatmap_data[i, j]
+                if value == 2:
+                    annotations[i, j] = "✓"  # Full success
+                elif value == 1:
+                    annotations[i, j] = "~"  # Partial success
+                else:
+                    annotations[i, j] = "✗"  # No success
+
+        sns.heatmap(
+            heatmap_data,
+            xticklabels=tasks,
+            yticklabels=models,
+            annot=annotations,
+            fmt="",
+            cmap=custom_cmap,
+            vmin=0,
+            vmax=2,
+            cbar_kws={"ticks": [0, 1, 2], "label": "Success Level"},
+            ax=ax,
+        )
+
+        # Customize colorbar labels
+        colorbar = ax.collections[0].colorbar
+        colorbar.set_ticklabels(["No Success", "Partial Success", "Full Success"])
+
+        ax.set_title(
+            title or "Task Success Classification by Model", fontsize=14, pad=20
+        )
+        ax.set_xlabel("Tasks", fontsize=12)
+        ax.set_ylabel("Models", fontsize=12)
+
+        # Rotate x-axis labels for better readability
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
+
         plt.tight_layout()
 
         if save_path:
@@ -805,6 +1012,22 @@ class ResultsVisualizer:
                     saved_files["task_heatmap"] = str(file_path)
         except Exception as e:
             print(f"Error creating task heatmap: {e}")
+
+        # 5a. Task success classification heatmap
+        try:
+            if "version_description" in results_df.columns:
+                fig = self.plot_task_success_classification_heatmap(
+                    results_df, title="Task Success Classification by Model"
+                )
+                if fig:
+                    file_path = (
+                        output_path / f"{report_name}_task_classification_heatmap.png"
+                    )
+                    fig.savefig(file_path, bbox_inches="tight", dpi=self.dpi)
+                    plt.close(fig)
+                    saved_files["task_classification_heatmap"] = str(file_path)
+        except Exception as e:
+            print(f"Error creating task classification heatmap: {e}")
 
         # 6. Learning curves over time
         try:

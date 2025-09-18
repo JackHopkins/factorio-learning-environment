@@ -228,12 +228,117 @@ async def analyze_sweep_by_id(sweep_id: str):
             print("\n💾 5. EXPORTING RESULTS")
             print("-" * 40)
 
-            output_dir = Path("./analysis_results")
-            output_dir.mkdir(exist_ok=True)
+            # Create sweep-specific directory structure like in create_comprehensive_report
+            base_output_path = Path("./analysis_results")
+            output_dir = base_output_path / sweep_id
+            output_dir.mkdir(parents=True, exist_ok=True)
 
-            output_file = output_dir / f"{sweep_id}_trajectory_summaries.csv"
+            output_file = output_dir / "trajectory_summaries.csv"
             trajectory_summaries.to_csv(output_file, index=False)
             print(f"Exported trajectory summaries to: {output_file}")
+
+            # Create version_infos.csv efficiently using SQL aggregation
+            # First get the task from version_description since meta->>'task' might not exist
+            version_query = """
+            WITH version_stats AS (
+                SELECT
+                    version,
+                    model,
+                    instance,
+                    COALESCE(
+                        meta->>'task',
+                        TRIM(SUBSTRING(version_description FROM 'type:([^\\n]+)')),
+                        'unknown'
+                    ) as task,
+                    MAX(value) as max_reward,
+                    MAX(CASE
+                        WHEN meta->>'production_score' ~ '^[0-9]+\.?[0-9]*$'
+                        THEN (meta->>'production_score')::float
+                        ELSE 0
+                    END) as max_production_score,
+                    MAX(CASE WHEN state_json IS NOT NULL THEN 1 ELSE 0 END) as has_final_state,
+                    COUNT(*) as program_count
+                FROM programs
+                WHERE meta->>'sweep_id' = %s
+                GROUP BY version, model, instance,
+                    COALESCE(
+                        meta->>'task',
+                        TRIM(SUBSTRING(version_description FROM 'type:([^\\n]+)')),
+                        'unknown'
+                    )
+            )
+            SELECT
+                version,
+                model,
+                task,
+                instance as trial_number,
+                max_reward,
+                max_production_score,
+                CASE WHEN has_final_state = 1 THEN 'completed' ELSE 'partial' END as completion_status,
+                CASE
+                    WHEN task IN ('advanced_circuit_throughput', 'automation_science_pack_throughput',
+                                 'battery_throughput', 'chemical_science_pack_throughput',
+                                 'electronic_circuit_throughput', 'engine_unit_throughput',
+                                 'inserter_throughput', 'iron_gear_wheel_throughput',
+                                 'iron_ore_throughput', 'iron_plate_throughput',
+                                 'logistics_science_pack_throughput', 'low_density_structure_throughput',
+                                 'military_science_pack_throughput', 'piercing_round_throughput',
+                                 'plastic_bar_throughput', 'processing_unit_throughput',
+                                 'production_science_pack_throughput', 'steel_plate_throughput',
+                                 'stone_wall_throughput', 'sulfur_throughput',
+                                 'utility_science_pack_throughput') THEN
+                        CASE WHEN max_reward >= 16 THEN 1 ELSE 0 END
+                    WHEN task IN ('crude_oil_throughput', 'petroleum_gas_throughput', 'sufuric_acid_throughput') THEN
+                        CASE WHEN max_reward >= 400 THEN 1 ELSE 0 END
+                    ELSE
+                        CASE WHEN max_reward > 0 THEN 1 ELSE 0 END
+                END as task_success
+            FROM version_stats
+            ORDER BY version
+            """
+
+            version_results = await analyzer.db_client.execute_query(
+                version_query, (sweep_id,)
+            )
+
+            if version_results:
+                version_infos_df = pd.DataFrame(version_results)
+            else:
+                # Fallback to trajectory_summaries if SQL query fails
+                version_infos_data = []
+                for _, row in trajectory_summaries.iterrows():
+                    # Extract task from version_description or use task column
+                    task = row.get("task", "unknown")
+                    if task == "unknown" and "version_description" in row:
+                        task_match = pd.Series(
+                            [row["version_description"]]
+                        ).str.extract(r"type:([^\n]+)")
+                        task = (
+                            task_match.iloc[0, 0]
+                            if not task_match.isna().iloc[0, 0]
+                            else "unknown"
+                        )
+
+                    version_infos_data.append(
+                        {
+                            "version": row["version"],
+                            "model": row["model"],
+                            "task": task,
+                            "trial_number": row.get("instance", 0),
+                            "max_reward": row.get("max_reward", 0),
+                            "max_production_score": 0,  # Not available in trajectory summaries
+                            "completion_status": "completed"
+                            if row.get("success", False)
+                            else "partial",
+                            "task_success": 1 if row.get("max_reward", 0) > 0 else 0,
+                        }
+                    )
+                version_infos_df = pd.DataFrame(version_infos_data)
+
+            if not version_infos_df.empty:
+                output_file = output_dir / "version_infos.csv"
+                version_infos_df.to_csv(output_file, index=False)
+                print(f"Exported version infos to: {output_file}")
 
             # Export model comparison statistics
             model_comparison_data = []
@@ -256,7 +361,7 @@ async def analyze_sweep_by_id(sweep_id: str):
                 )
 
             model_comparison_df = pd.DataFrame(model_comparison_data)
-            output_file = output_dir / f"{sweep_id}_model_comparison.csv"
+            output_file = output_dir / "model_comparison.csv"
             model_comparison_df.to_csv(output_file, index=False)
             print(f"Exported model comparison to: {output_file}")
 
@@ -595,6 +700,96 @@ async def create_comprehensive_report(
         # Get unique versions from the sweep data
         versions = sorted(trajectory_df["version"].unique().tolist())
 
+        # Create version_infos.csv efficiently using SQL aggregation
+        print("Creating version infos...")
+
+        # Use a single efficient SQL query with aggregation to get version summaries
+        version_query = """
+        WITH version_stats AS (
+            SELECT
+                version,
+                model,
+                instance,
+                COALESCE(
+                    meta->>'task',
+                    TRIM(SUBSTRING(version_description FROM 'type:([^\\n]+)')),
+                    'unknown'
+                ) as task,
+                MAX(value) as max_reward,
+                MAX(CASE
+                    WHEN meta->>'production_score' ~ '^[0-9]+\.?[0-9]*$'
+                    THEN (meta->>'production_score')::float
+                    ELSE 0
+                END) as max_production_score,
+                MAX(CASE WHEN state_json IS NOT NULL THEN 1 ELSE 0 END) as has_final_state,
+                COUNT(*) as program_count
+            FROM programs
+            WHERE meta->>'sweep_id' = %s
+            GROUP BY version, model, instance,
+                COALESCE(
+                    meta->>'task',
+                    TRIM(SUBSTRING(version_description FROM 'type:([^\\n]+)')),
+                    'unknown'
+                )
+        )
+        SELECT
+            version,
+            model,
+            task,
+            instance as trial_number,
+            max_reward,
+            max_production_score,
+            CASE WHEN has_final_state = 1 THEN 'completed' ELSE 'partial' END as completion_status,
+            CASE WHEN max_reward > 0 THEN 1 ELSE 0 END as task_success
+        FROM version_stats
+        ORDER BY version
+        """
+
+        version_results = await analyzer.db_client.execute_query(
+            version_query, (sweep_id,)
+        )
+
+        if version_results:
+            version_infos_df = pd.DataFrame(version_results)
+        else:
+            # Fallback to trajectory_summaries if SQL query fails
+            print("SQL query failed, using trajectory summaries fallback...")
+            version_infos_data = []
+            for _, row in trajectory_df.iterrows():
+                # Extract task from version_description or use task column
+                task = row.get("task", "unknown")
+                if task == "unknown" and "version_description" in row:
+                    task_match = pd.Series([row["version_description"]]).str.extract(
+                        r"type:([^\n]+)"
+                    )
+                    task = (
+                        task_match.iloc[0, 0]
+                        if not task_match.isna().iloc[0, 0]
+                        else "unknown"
+                    )
+
+                version_infos_data.append(
+                    {
+                        "version": row["version"],
+                        "model": row["model"],
+                        "task": task,
+                        "trial_number": row.get("instance", 0),
+                        "max_reward": row.get("final_reward", 0),
+                        "max_production_score": 0,  # Not available in trajectory summaries
+                        "completion_status": "completed"
+                        if row.get("final_reward", 0) > 0
+                        else "partial",
+                        "task_success": 1 if row.get("final_reward", 0) > 0 else 0,
+                    }
+                )
+            version_infos_df = pd.DataFrame(version_infos_data)
+
+        if not version_infos_df.empty:
+            version_infos_df.to_csv(output_path / "version_infos.csv", index=False)
+
+        # Save trajectory summaries
+        trajectory_df.to_csv(output_path / "trajectory_summaries.csv", index=False)
+
         # Save detailed results
         results_summary = {
             "sweep_id": sweep_id,
@@ -603,7 +798,8 @@ async def create_comprehensive_report(
             "models_analyzed": list(model_metrics.keys()),
             "leaderboard": leaderboard.to_dict("records"),
             "model_metrics": {
-                model: metrics.to_dict() for model, metrics in model_metrics.items()
+                model_name: metrics.to_dict()
+                for model_name, metrics in model_metrics.items()
             },
         }
 
@@ -613,6 +809,8 @@ async def create_comprehensive_report(
         print(f"\nComprehensive report saved to: {output_path}")
         print("Files generated:")
         print("  - leaderboard.csv")
+        print("  - trajectory_summaries.csv")
+        print("  - version_infos.csv")
         print("  - analysis_summary.json")
         if visualizer.enabled:
             print("  - Multiple visualization plots with prefix 'analysis_'")

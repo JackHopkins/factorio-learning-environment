@@ -42,7 +42,7 @@ class ThroughputTaskConfig(BaseModel):
 
     task_type: Literal["throughput"] = "throughput"
     num_agents: int = 1
-    trajectory_length: int = 128
+    trajectory_length: int = 64
     holdout_wait_period: int = 60
     pre_holdout_wait_period: int = 60
 

@@ -21,6 +21,7 @@ from fle.eval.analysis.database_analyzer import DatabaseAnalyzer
 from fle.eval.analysis.performance_metrics import PerformanceAnalyzer
 from fle.eval.analysis.wandb_logger import WandBSweepLogger
 from fle.eval.infra.server_manager import get_server_manager, ServerManager
+from fle.eval.tasks.task_definitions.task_registry import get_task_config
 
 
 @dataclass
@@ -163,6 +164,44 @@ class SweepManager:
 
         # If resuming, we'll load existing state in run_sweep()
 
+    def _is_task_successful(self, task_name: str, reward: float) -> bool:
+        """Determine if a task result is successful based on task-specific criteria
+
+        Args:
+            task_name: Name of the task (e.g., 'advanced_circuit_throughput')
+            reward: Final reward achieved
+
+        Returns:
+            True if the task was successful, False otherwise
+        """
+        try:
+            # Get task configuration to determine success criteria
+            task_config = get_task_config(task_name)
+            config_dict = task_config.to_dict()
+
+            # For throughput tasks, success is meeting the quota
+            if config_dict.get("task_type") == "throughput":
+                quota = config_dict.get("quota", 16)  # Default quota is 16
+                return reward >= quota
+
+            # For unbounded throughput tasks, success is also meeting quota
+            elif config_dict.get("task_type") == "unbounded_throughput":
+                # Unbounded tasks might not have explicit quota, use 16 as default
+                quota = config_dict.get("quota", 16)
+                return reward >= quota
+
+            # For other task types, use positive reward as success criteria
+            else:
+                return reward > 0
+
+        except Exception as e:
+            # Fallback to simple positive reward check if task config unavailable
+            print(
+                f"⚠️  Warning: Could not determine success criteria for task '{task_name}': {e}"
+            )
+            print("    Using fallback success criteria (reward > 0)")
+            return reward > 0
+
     def _validate_early_stopping_configuration(self):
         """Validate configuration settings related to early stopping"""
 
@@ -283,8 +322,9 @@ class SweepManager:
                 f"📊 Found {len(existing_df)} existing trajectories for sweep {self.sweep_id}"
             )
 
-            completed_runs = {}  # key: (model, task, trial), value: version
-            partial_runs = {}  # key: (model, task, trial), value: {version, status}
+            successful_runs = {}  # key: (model, task), value: True if any success exists
+            finished_runs = {}  # key: (model, task), value: count of finished runs
+            partial_runs = {}  # key: (model, task, trial), value: {version, status} - only for truly incomplete runs
 
             # Group by version to identify complete vs partial runs
             parsing_errors = []
@@ -325,24 +365,35 @@ class SweepManager:
                         task = f"no_desc_{version}"
                         task_extraction_failures += 1
 
-                    # Key for identifying unique run
+                    # Keys for tracking
+                    model_task_key = (model, task)
                     run_key = (model, task, instance)
 
-                    # Check if this is a complete trajectory
                     num_steps = row.get("num_steps", 0)
                     final_reward = row.get("final_reward", 0)
 
-                    # Consider a run complete if it has reasonable number of steps
-                    # This is a heuristic - might need adjustment based on typical run patterns
-                    is_complete = num_steps > 5  # Adjust this threshold as needed
+                    # Consider a run finished if it has reasonable number of steps (likely completed full trajectory)
+                    # For throughput tasks, typical trajectory length is 64 steps
+                    is_finished = (
+                        num_steps >= 40
+                    )  # Must have at least 64 steps to be considered finished
 
-                    if is_complete:
-                        completed_runs[run_key] = version
+                    # Track if this (model, task) pair has any successful run
+                    if self._is_task_successful(task, final_reward):
+                        successful_runs[model_task_key] = True
+
+                    if is_finished:
+                        # Count all finished runs for this (model, task) pair
+                        finished_runs[model_task_key] = (
+                            finished_runs.get(model_task_key, 0) + 1
+                        )
                     else:
+                        # Only treat truly incomplete runs (< 30 steps) as partial/retry candidates
                         partial_runs[run_key] = {
                             "version": version,
                             "num_steps": num_steps,
                             "final_reward": final_reward,
+                            "status": "incomplete",
                         }
 
                 except Exception as parse_error:
@@ -366,16 +417,16 @@ class SweepManager:
                 )
                 print("    These may not be properly handled for early stopping")
 
-            print(f"✅ Found {len(completed_runs)} completed runs")
+            print(f"✅ Found {len(successful_runs)} (model, task) pairs with successes")
+            print(f"📊 Found {sum(finished_runs.values())} total finished runs")
             print(f"⚠️  Found {len(partial_runs)} partial/incomplete runs")
 
             # Log some examples
-            if completed_runs:
-                print("Examples of completed runs:")
-                for i, (model, task, trial) in enumerate(
-                    list(completed_runs.keys())[:3]
-                ):
-                    print(f"  - {model} on {task} trial {trial}")
+            if successful_runs:
+                print("Examples of successful (model, task) pairs:")
+                for i, (model, task) in enumerate(list(successful_runs.keys())[:3]):
+                    finished_count = finished_runs.get((model, task), 0)
+                    print(f"  - {model} on {task} ({finished_count} finished runs)")
 
             if partial_runs:
                 print("Examples of partial runs (will be retried):")
@@ -386,29 +437,34 @@ class SweepManager:
                     )
 
             return {
-                "completed_runs": completed_runs,
+                "successful_runs": successful_runs,
+                "finished_runs": finished_runs,
                 "partial_runs": partial_runs,
                 "total_existing": len(existing_df),
             }
 
         except Exception as e:
             print(f"❌ Error loading existing sweep state: {e}")
-            return {"completed_runs": {}, "partial_runs": {}}
+            return {"successful_runs": {}, "finished_runs": {}, "partial_runs": {}}
 
     def generate_jobs(
         self, existing_state: Optional[Dict[str, Any]] = None
     ) -> List[RunJob]:
-        """Generate all run jobs for the sweep, excluding completed ones if resuming
+        """Generate all run jobs for the sweep using the corrected criteria:
+        - For each (model, task) pair: if successful -> launch 0 jobs, else launch (8 - num_finished) jobs
 
         Args:
-            existing_state: Optional dictionary with completed and partial run information
+            existing_state: Optional dictionary with successful runs, finished runs, and partial run information
 
         Returns:
             List of RunJob objects to execute
         """
         jobs = []
-        completed_runs = (
-            existing_state.get("completed_runs", {}) if existing_state else {}
+        successful_runs = (
+            existing_state.get("successful_runs", {}) if existing_state else {}
+        )
+        finished_runs = (
+            existing_state.get("finished_runs", {}) if existing_state else {}
         )
         partial_runs = existing_state.get("partial_runs", {}) if existing_state else {}
 
@@ -416,132 +472,90 @@ class SweepManager:
         retry_count = 0
         early_stop_count = 0
 
-        # Check for successful (model, task) pairs if early stopping is enabled
-        successful_model_task_pairs = set()
+        # For early stopping, we use the successful_runs directly
         if self.config.early_stop_on_success:
-            if not completed_runs:
+            if not successful_runs:
                 if self.is_resuming:
                     print(
-                        "⚠️  WARNING: Early stopping enabled but no completed runs found in database"
+                        "💡 Early stopping enabled but no successful (model, task) pairs found"
                     )
-                    print(
-                        "    This could mean: database connection failed, sweep doesn't exist, or no previous successes"
-                    )
+                    print("    Will launch jobs according to (8 - num_finished) rule")
                 else:
                     print(
                         "💡 Early stopping enabled for new sweep - no previous successes to check"
                     )
             else:
-                # Check if we can determine success status from completed runs
-                success_determinable_count = 0
-                for (model, task, trial), version in completed_runs.items():
-                    # We consider a run successful if it exists in completed_runs
-                    # (the load_existing_sweep_state method should filter for successful runs)
-                    successful_model_task_pairs.add((model, task))
-                    success_determinable_count += 1
+                print(
+                    f"🎯 Early stopping enabled: Found {len(successful_runs)} successful (model, task) pairs"
+                )
+                print("    These pairs will have 0 new jobs launched")
 
-                if success_determinable_count > 0:
-                    print(
-                        f"🎯 Early stopping enabled: Found {len(successful_model_task_pairs)} successful (model, task) pairs"
-                    )
-                    if len(successful_model_task_pairs) < len(completed_runs):
-                        print(
-                            f"💡 Note: {len(completed_runs) - len(successful_model_task_pairs)} completed runs had indeterminate success status"
-                        )
-                else:
-                    print(
-                        "⚠️  WARNING: Early stopping enabled but could not determine success status from completed runs"
-                    )
-                    print(
-                        "    Early stopping will rely on dynamic detection during execution"
-                    )
+        # Generate jobs based on the new rule: for each (model, task) pair:
+        # - If successful -> launch 0 jobs
+        # - Else -> launch (num_trials_per_config - num_finished) jobs
 
-        # Generate jobs based on execution mode
-        if self.config.task_inner_loop_mode:
-            # Task inner loop: cycle through all tasks for each model before repeating
-            for trial in range(self.config.num_trials_per_config):
-                for model in self.config.models:
-                    for task in self.config.tasks:
-                        run_key = (model, task, trial)
-                        job_id = f"{model}_{task}_trial{trial:02d}"
+        # First add partial runs that need retry
+        for (model, task, trial), info in partial_runs.items():
+            job_id = f"{model}_{task}_trial{trial:02d}"
+            job = RunJob(
+                job_id=job_id,
+                model=model,
+                task=task,
+                trial_number=trial,
+                sweep_id=self.sweep_id,
+            )
+            job.retry_count = 1
+            job.status = "pending"
+            jobs.append(job)
+            retry_count += 1
+            print(f"🔄 Will retry partial run: {job_id}")
 
-                        # Skip if already completed
-                        if run_key in completed_runs:
-                            skipped_count += 1
-                            existing_version = completed_runs[run_key]
-                            if existing_version not in self.completed_versions:
-                                self.completed_versions.append(existing_version)
-                            continue
+        # Now generate new jobs based on (model, task) pair logic
+        for model, task in itertools.product(self.config.models, self.config.tasks):
+            model_task_key = (model, task)
 
-                        # Early stop if this (model, task) pair already succeeded
-                        if (
-                            self.config.early_stop_on_success
-                            and (model, task) in successful_model_task_pairs
-                        ):
-                            early_stop_count += 1
-                            print(
-                                f"⏩ Early stopping: {model} + {task} already successful"
-                            )
-                            continue
+            # If this (model, task) pair already succeeded and early stopping is enabled, skip it
+            if self.config.early_stop_on_success and model_task_key in successful_runs:
+                early_stop_count += self.config.num_trials_per_config
+                print(
+                    f"⏩ Early stopping: {model} + {task} already successful - skipping all trials"
+                )
+                continue
 
-                        # Create job
-                        job = RunJob(
-                            job_id=job_id,
-                            model=model,
-                            task=task,
-                            trial_number=trial,
-                            sweep_id=self.sweep_id,
-                        )
+            # Calculate how many finished runs we have for this (model, task) pair
+            num_finished = finished_runs.get(model_task_key, 0)
 
-                        # Mark for retry if partial
-                        if run_key in partial_runs:
-                            retry_count += 1
-                            job.retry_count = 1
-                            job.status = "pending"
-                            print(f"🔄 Will retry partial run: {job_id}")
+            # Calculate how many new jobs we need: max(0, num_trials_per_config - num_finished)
+            # We don't count partial runs since they'll be retried separately
+            num_new_jobs = max(0, self.config.num_trials_per_config - num_finished)
 
-                        jobs.append(job)
-        else:
-            # Standard mode: all combinations of models and tasks
-            for model, task in itertools.product(self.config.models, self.config.tasks):
-                for trial in range(self.config.num_trials_per_config):
-                    run_key = (model, task, trial)
-                    job_id = f"{model}_{task}_trial{trial:02d}"
+            # Always log the calculation for debugging
+            print(
+                f"📊 {model} + {task}: {num_finished} finished out of {self.config.num_trials_per_config}, launching {num_new_jobs} new jobs"
+            )
 
-                    # Skip if already completed
-                    if run_key in completed_runs:
-                        skipped_count += 1
-                        existing_version = completed_runs[run_key]
-                        if existing_version not in self.completed_versions:
-                            self.completed_versions.append(existing_version)
-                        continue
+            # Skip if we don't need any new jobs
+            if num_new_jobs == 0:
+                skipped_count += self.config.num_trials_per_config
+                continue
 
-                    # Early stop if this (model, task) pair already succeeded
-                    if (
-                        self.config.early_stop_on_success
-                        and (model, task) in successful_model_task_pairs
-                    ):
-                        early_stop_count += 1
-                        print(f"⏩ Early stopping: {model} + {task} already successful")
-                        continue
+            # Generate the needed new jobs, using trial numbers starting from num_finished
+            for trial_offset in range(num_new_jobs):
+                trial = num_finished + trial_offset
 
-                    # Create job
-                    job = RunJob(
-                        job_id=job_id,
-                        model=model,
-                        task=task,
-                        trial_number=trial,
-                        sweep_id=self.sweep_id,
-                    )
+                # Make sure we don't exceed the configured number of trials
+                if trial >= self.config.num_trials_per_config:
+                    break
 
-                    # Mark for retry if partial
-                    if run_key in partial_runs:
-                        retry_count += 1
-                        job.retry_count = 1
-                        job.status = "pending"
-                        print(f"🔄 Will retry partial run: {job_id}")
-
-                    jobs.append(job)
+                job_id = f"{model}_{task}_trial{trial:02d}"
+                job = RunJob(
+                    job_id=job_id,
+                    model=model,
+                    task=task,
+                    trial_number=trial,
+                    sweep_id=self.sweep_id,
+                )
+                jobs.append(job)
 
         # Shuffle only if not using task inner loop mode and shuffle is enabled
         if self.config.shuffle_execution_order and not self.config.task_inner_loop_mode:
@@ -555,20 +569,22 @@ class SweepManager:
             * len(self.config.tasks)
             * self.config.num_trials_per_config
         )
+        total_finished = sum(finished_runs.values())
+
         print("📋 Job generation summary:")
-        print(f"   Total expected jobs: {total_expected}")
-        print(f"   Already completed: {skipped_count}")
+        print(f"   Total possible jobs: {total_expected}")
+        print(f"   Already finished: {total_finished}")
         print(f"   Will retry (partial): {retry_count}")
         if self.config.early_stop_on_success:
-            print(f"   Early stopped (successful): {early_stop_count}")
+            print(f"   Early stopped (successful pairs): {early_stop_count}")
         print(f"   New jobs to run: {len(jobs) - retry_count}")
         print(f"   Total jobs to execute: {len(jobs)}")
 
         # Log execution mode
-        if self.config.task_inner_loop_mode:
-            print("🔄 Task inner loop mode: Cycling through tasks for each model")
         if self.config.early_stop_on_success:
-            print("⏩ Early stopping enabled: Skipping successful (model, task) pairs")
+            print(
+                "⏩ Early stopping enabled: Rule = if successful -> 0 jobs, else -> (8 - num_finished) jobs"
+            )
 
         return jobs
 
@@ -955,7 +971,7 @@ class SweepManager:
                 )
                 return
 
-            # Check if it was successful (positive reward)
+            # Check if it was successful using task-specific criteria
             try:
                 final_reward = job_results.iloc[0].get("final_reward", 0)
                 if final_reward is None:
@@ -965,7 +981,8 @@ class SweepManager:
                     print("    Assuming job failed for early stopping purposes")
                     return
 
-                if final_reward <= 0:
+                # Use task-specific success criteria
+                if not self._is_task_successful(completed_job.task, final_reward):
                     print(
                         f"💡 Job {completed_job.job_id} completed but was not successful (reward: {final_reward}) - no early stopping needed"
                     )
@@ -1095,7 +1112,24 @@ class SweepManager:
             model_success_rates = {}
             for model in recent_results["model"].unique():
                 model_data = recent_results[recent_results["model"] == model]
-                success_count = len(model_data[model_data["final_reward"] > 0])
+
+                # Count successes using task-specific criteria
+                success_count = 0
+                for _, row in model_data.iterrows():
+                    task_name = "unknown_task"
+                    version_desc = row.get("version_description", "")
+                    if version_desc and "type:" in version_desc:
+                        try:
+                            task_name = (
+                                version_desc.split("type:")[1].split("\n")[0].strip()
+                            )
+                        except (IndexError, AttributeError):
+                            pass
+
+                    final_reward = row.get("final_reward", 0)
+                    if self._is_task_successful(task_name, final_reward):
+                        success_count += 1
+
                 total_count = len(model_data)
                 success_rate = success_count / total_count if total_count > 0 else 0
                 model_success_rates[model] = {

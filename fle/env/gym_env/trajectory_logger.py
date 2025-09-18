@@ -54,7 +54,13 @@ class TrajectoryLogger:
 
         return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
-    def log_progress(self, agent: GymAgent, iteration: int, program_value: float):
+    def log_progress(
+        self,
+        agent: GymAgent,
+        iteration: int,
+        program_value: float,
+        production_score: float,
+    ):
         """Log progress of the trajectory run
 
         Args:
@@ -70,6 +76,7 @@ class TrajectoryLogger:
             f"Model: {agent.model} - "
             f"Iteration {iteration}/{self.trajectory_length} - "
             f"Value: {program_value:.2f} - "
+            f"Production Score: {production_score:.2f} - "
             f"Elapsed: {elapsed_str} - "
             f"ETA: {eta}\033[0m"
         )

@@ -16,10 +16,10 @@ class ResourceName(enum.Enum):
 
 class PrototypeMetaclass(enum.EnumMeta):
     def __getattr__(cls, name):
+        # Try to get the attribute normally first
         try:
-            attr = super().__getattr__(name)
-            return attr
-        except AttributeError:
+            return cls._member_map_[name]
+        except KeyError:
             # Get all valid prototype names
             valid_names = [member.name for member in cls]
 

@@ -241,18 +241,17 @@ class PythonParser:
 
 
 def parse_response(response) -> Optional[Policy]:
+    has_usage = hasattr(response, "usage")
+    prompt_tokens = has_usage and hasattr(response.usage, "prompt_tokens")
+    completion_tokens = has_usage and hasattr(response.usage, "completion_tokens")
     if hasattr(response, "choices"):
         choice = response.choices[0]
-        input_tokens = response.usage.prompt_tokens if hasattr(response, "usage") else 0
-        output_tokens = (
-            response.usage.completion_tokens if hasattr(response, "usage") else 0
-        )
+        input_tokens = response.usage.prompt_tokens if prompt_tokens else 0
+        output_tokens = response.usage.completion_tokens if completion_tokens else 0
     else:
         choice = response.content[0]
-        input_tokens = response.usage.input_tokens if hasattr(response, "usage") else 0
-        output_tokens = (
-            response.usage.output_tokens if hasattr(response, "usage") else 0
-        )
+        input_tokens = response.usage.input_tokens if prompt_tokens else 0
+        output_tokens = response.usage.output_tokens if completion_tokens else 0
 
     total_tokens = input_tokens + output_tokens
     try:

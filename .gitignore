@@ -24,5 +24,8 @@ trajectory_logs/
 *.jsonl
 *.db
 
+# API
+api_keys.json
+
 #fle
 .fle/

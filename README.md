@@ -26,11 +26,6 @@ Our results demonstrate that models still lack strong spatial reasoning. In lab-
 exhibit promising short-horizon skills, they are unable to operate effectively in constrained environments, reflecting limitations in error analysis. In open-play, while LLMs discover automation strategies that improve growth (e.g electric-powered drilling), they fail to achieve complex
 automation (e.g electronic-circuit manufacturing).
 
-## Updates
-
-- [08/5/2025] [Blog](https://jackhopkins.github.io/factorio-learning-environment/release.0.2.0): Added support for multi-agent coordination and MCP allowing reasoning models to invoke tools within their reasoning chain
-- [15/4/2025] Added a visual agent, that takes a rendering of the map as an additional input.
-
 ## Quick Links
 
 - [Installation](#installation)
@@ -376,9 +371,6 @@ The run config json is a list of dictionaries specifying the gym environment ID,
 
 Each task is run until either `verify` returns True or the maximum number of steps (`trajectory_length`) is reached.
 
-### Gym Environment Registry
-
-The Factorio Learning Environment uses a gym environment registry to automatically discover and register all available tasks. This allows you to use `gym.make()` to create environments and reference them by their environment IDs.
 
 #### Overview
 
@@ -483,9 +475,8 @@ All environments follow the standard gym interface:
 
 ```python
 {
-    'agent_idx': Discrete(instance.num_agents),  # Index of the agent taking the action
-    'game_state': Text(max_length=1000000),  # The game state to reset to before running code (GameState.to_raw() str)
-    'code': Text(max_length=10000)  # The Python code to execute
+    'agent_idx': Discrete(num_agents),  # Which agent takes the action
+    'code': Text(max_length=10000)      # Python code to execute
 }
 ```
 
@@ -506,8 +497,8 @@ The observation space includes:
 
 **Methods**
 
-- `reset(options: Dict[str, Any], seed: Optional[int] = None) -> Dict[str, Any]`
-- `step(action: Dict[str, Any]) -> Tuple[Dict[str, Any], float, bool, bool, Dict[str, Any]]`
+- `reset(state: Optional[GameState] = None) -> Dict[str, Any]`
+- `step(action: Dict[str, Any]) -> Tuple[Dict[str, Any], float, bool, Dict[str, Any]]`
 - `close() -> None`
 
 #### API Reference
@@ -543,20 +534,16 @@ print(f"Description: {info['description']}")
 env = gym.make("Factorio-iron_ore_throughput_16-v0")
 
 # 4. Use the environment
-obs = env.reset(options={'game_state': None})
+obs = env.reset()
 print(f"Initial observation keys: {list(obs.keys())}")
 
 # 5. Take actions
-current_state = None
 for step in range(5):
-    action = Action(
-        agent_idx=0,
-        game_state=current_state,
-        code=f'print("Step {step}: Hello Factorio!")'
-    )
-    obs, reward, terminated, truncated, info = env.step(action)
-    done = terminated or truncated
-    current_state = info['output_game_state']
+    action = {
+        'agent_idx': 0,
+        'code': f'print("Step {step}: Hello Factorio!")'
+    }
+    obs, reward, done, info = env.step(action)
     print(f"Step {step}: Reward={reward}, Done={done}")
 
     if done:
@@ -616,8 +603,8 @@ The registry supports multi-agent environments. When creating a multi-agent envi
 env = gym.make("Factorio-MultiAgentTask-v0")
 
 # Actions for different agents
-action1 = Action(agent_idx=0, code='print("Agent 0 action")', game_state=None)
-action2 = Action(agent_idx=1, code='print("Agent 1 action")', game_state=None)
+action1 = {'agent_idx': 0, 'code': 'print("Agent 0 action")'}
+action2 = {'agent_idx': 1, 'code': 'print("Agent 1 action")'}
 ```
 
 #### Error Handling
@@ -921,6 +908,7 @@ Run the test suite to verify the registry is working correctly:
 python env/tests/gym_env/test_registry.py
 ```
 
+**Note**: The CLI (`fle eval`) is the recommended approach for new users.
 
 ## Multiagent Experiments
 
@@ -1122,59 +1110,6 @@ Next time you run an eval, the tool will automatically be available to the agent
 | `sleep`                 | Pauses execution                                 | - Waits for actions to complete<br>- Adapts to game speed<br>- Maximum 15 second duration                                                  |
 | `launch_rocket`         | Controls rocket silo launches                    | - Validates launch requirements<br>- Handles launch sequence<br>- Returns updated silo state                                               |
 | `print`                 | Outputs debug information to stdout              | - Supports various object types<br>- Useful for monitoring state<br>- Returns formatted string                                             |
-
-# Project Structure
-
-Below is an overview of how the project is structured. Some directories also contain more detailed readmes.
-
-```
-factorio-learning-environment/
-├── .github/                        # GitHub workflows and scripts
-├── docs/                           # Website and documentation
-├── fle/                            # Main Factorio Learning Environment codebase
-│   ├── agents/                     # Agent implementations
-│   │   ├── formatters/             # Conversation formatting utilities
-│   │   ├── llm/                    # LLM integration utilities
-│   │   ├── agent_abc.py            # Abstract base class for agents
-│   │   ├── basic_agent.py          # Default agent implementation
-│   │   ├── backtracking_agent.py   # Backtracking agent
-│   │   ├── visual_agent.py         # Visual agent implementation
-│   │   └── gym_agent.py            # Gym-compatible agent
-│   ├── cluster/                    # Docker and deployment utilities
-│   │   ├── remote/                 # Remote deployment utilities
-│   │   └── scenarios/              # Game scenario configurations
-│   ├── commons/                    # Shared utilities and constants
-│   ├── data/                       # Data files and resources
-│   ├── env/                        # Environment implementation
-│   │   ├── gym_env/                # Gym environment interface
-│   │   ├── tools/                  # Agent tools and API
-│   │   ├── protocols/              # Communication protocols (A2A, etc.)
-│   │   ├── utils/                  # Environment utilities
-│   │   ├── lib/                    # Core libraries
-│   │   ├── exceptions/             # Custom exceptions
-│   │   ├── instance.py             # Factorio instance management
-│   │   ├── namespace.py            # Python namespace management
-│   │   ├── entities.py             # Entity definitions
-│   │   └── game_types.py           # Game type definitions
-│   ├── eval/                       # Evaluation framework
-│   │   ├── algorithms/             # Evaluation algorithms
-│   │   ├── tasks/                  # Task definitions and implementations
-│   │   ├── open/                   # Open-play evaluation scripts
-│   │   └── evaluator.py            # Main evaluation logic
-│   ├── run.py                      # Main CLI entry point
-│   ├── server.py                   # Server implementation
-│   └── __init__.py                 # Package initialization
-├── tests/                          # Test suite
-├── .example.env                    # Example environment variables
-├── .gitignore                      # Git ignore file
-├── BUILD.md                        # Build instructions
-├── CONTRIBUTING.md                 # Contribution guidelines
-├── LICENSE                         # License file
-├── README.md                       # Project readme
-├── clean.sh                        # Clean script
-├── pyproject.toml                  # Python project config
-└── uv.lock                         # UV lock file
-```
 
 ## Database
 

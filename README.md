@@ -520,7 +520,6 @@ Here's a complete example that demonstrates the full workflow:
 ```python
 import gym
 from gym_env.registry import list_available_environments, get_environment_info
-from gym_env.action import Action
 
 # 1. List available environments
 env_ids = list_available_environments()

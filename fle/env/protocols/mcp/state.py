@@ -47,8 +47,10 @@ class FactorioMCPState:
                 cache_scripts=True,
                 inventory={},
                 all_technologies_researched=True,
+                reset_speed=10,  # Explicit default for MCP instances
             )
-            instance.set_speed(10)
+            # Set initial speed and unpause
+            instance.set_speed_and_unpause(10)
             return instance
         except Exception as e:
             print(f"Error creating Factorio instance: {e}")

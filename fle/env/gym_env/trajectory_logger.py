@@ -107,6 +107,11 @@ class TrajectoryLogger:
             with open(obs_file, "w") as f:
                 f.write(formatted_obs)
 
+        raw_text = agent.observation_formatter.format_raw_text(observation.raw_text)
+        for line in raw_text.split("\n"):
+            if "Error" in line or "Exception" in line:
+                print("raw_text Error:", line)
+
     def add_iteration_time(self, iteration_time: float):
         """Add an iteration time to the tracking list
 

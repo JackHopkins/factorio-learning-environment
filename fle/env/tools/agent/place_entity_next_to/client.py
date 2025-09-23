@@ -52,10 +52,26 @@ class PlaceEntityNextTo(Tool):
 
             cleaned_response = self.clean_response(response)
 
+            # Extract and log smart placement feedback
+            placement_feedback = cleaned_response.pop("placement_feedback", None)
+            if placement_feedback:
+                feedback_msg = (
+                    f"Placement feedback for {name}: {placement_feedback['reason']}"
+                )
+                if placement_feedback.get("auto_oriented"):
+                    feedback_msg += " (Auto-oriented for optimal flow)"
+                # Could log this or store it for agent learning
+                # print(feedback_msg)
+
             try:
                 object = metaclass(
                     prototype=name, game=self.connection, **cleaned_response
                 )
+
+                # Add placement feedback as an attribute for potential use
+                if placement_feedback:
+                    object._placement_feedback = placement_feedback
+
             except Exception as e:
                 raise Exception(
                     f"Could not create {name} object from response (place entity next to): {response}",

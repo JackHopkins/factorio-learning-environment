@@ -64,7 +64,6 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
             allow_paths_through_own_entities = allow_paths_through_own_entities
         }
     }
-
     local request_id = surface.request_path(path_request)
 
     global.clearance_entities[request_id] = clearance_entities
@@ -97,22 +96,23 @@ end
 script.on_event(defines.events.on_script_path_request_finished, function(event)
     local request_data = global.path_requests[event.id]
     if not request_data then
+        game.print("No request data found for ID: " .. event.id)
         return
     end
 
-    local player = global.agent_characters[request_data]
-    if not player then
-        return
-    end
+    -- local player = global.agent_characters[request_data]
+    -- if not player then
+        -- game.print("No player found for request ID: " .. event.id)
+        -- return
+    -- end
 
     if event.path then
         global.paths[event.id] = event.path
-        -- log("Path found for request ID: " .. event.id)
     elseif event.try_again_later then
         global.paths[event.id] = "busy"
-        -- log("Pathfinder busy for request ID: " .. event.id)
+        -- game.print("Pathfinder busy for request ID: " .. event.id)
     else
         global.paths[event.id] = "not_found"
-        -- log("Path not found for request ID: " .. event.id)
+        -- game.print("Path not found for request ID: " .. event.id)
     end
 end)

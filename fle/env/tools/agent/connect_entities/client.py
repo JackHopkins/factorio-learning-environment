@@ -13,8 +13,6 @@ from fle.env import (
     TransportBelt,
     Pipe,
     FluidHandler,
-    MiningDrill,
-    Inserter,
     ChemicalPlant,
     OilRefinery,
     MultiFluidHandler,
@@ -109,6 +107,33 @@ class ConnectEntities(Tool):
         )
 
     def __call__(self, *args, **kwargs):
+        """Wrapper method with retry logic for specific Lua errors."""
+        max_retries = 2
+        retry_count = 0
+
+        while retry_count <= max_retries:
+            try:
+                return self.__call_impl__(*args, **kwargs)
+            except Exception as e:
+                error_message = str(e)
+                # Check if the error contains the specific Lua error we want to retry on
+                if "attempt to index field ? (a nil value)" in error_message:
+                    retry_count += 1
+                    if retry_count <= max_retries:
+                        print(
+                            f"ConnectEntities retry {retry_count}/{max_retries} due to Lua indexing error: {error_message}"
+                        )
+                        continue
+                    else:
+                        print(
+                            f"ConnectEntities failed after {max_retries} retries: {error_message}"
+                        )
+                        raise
+                else:
+                    # For any other error, don't retry - just re-raise immediately
+                    raise
+
+    def __call_impl__(self, *args, **kwargs):
         connection_types = set()
         waypoints = []
         if "connection_type" in kwargs:
@@ -136,6 +161,12 @@ class ConnectEntities(Tool):
         assert len(waypoints) > 1, "Need more than one waypoint"
         connection = waypoints[0]
         dry_run = kwargs.get("dry_run", False)
+
+        # Track elapsed ticks for fast forward (only for non-dry runs)
+        ticks_before = (
+            self.game_state.instance.get_elapsed_ticks() if not dry_run else 0
+        )
+
         # this is a bit hacky and we should rethink how to do dry runs
         # right now the type of the connection output changes if its a dry run
         if dry_run:
@@ -148,6 +179,18 @@ class ConnectEntities(Tool):
                 total_required_entities += connection["number_of_entities_required"]
                 entities_available = connection["number_of_entities_available"]
             # sleep(0.01) # Sleep for 250ms to ensure that the game updates
+
+        # Sleep for the appropriate real-world time based on elapsed ticks (only for non-dry runs)
+        if not dry_run:
+            ticks_after = self.game_state.instance.get_elapsed_ticks()
+            ticks_added = ticks_after - ticks_before
+            if ticks_added > 0:
+                game_speed = self.game_state.instance.get_speed()
+                real_world_sleep = (  # noqa
+                    ticks_added / 60 / game_speed if game_speed > 0 else 0
+                )
+                # sleep(real_world_sleep)
+
         if dry_run:
             return {
                 "number_of_entities_required": total_required_entities,
@@ -174,16 +217,12 @@ class ConnectEntities(Tool):
     ) -> Union[Entity, EntityGroup]:
         """Connect two entities or positions."""
 
-        # Resolve connection type if not provided
-        if not connection_types:
-            self._infer_connection_type(source, target)
-        else:
-            valid = self._validate_connection_types(connection_types)
-            if not valid:
-                raise Exception(
-                    f"All connection types must handle the sort of contents: either fluid, power or items. "
-                    f"Your types are incompatible {set(['Prototype.' + type.name for type in connection_types])}"
-                )
+        valid = self._validate_connection_types(connection_types)
+        if not valid:
+            raise Exception(
+                f"All connection types must handle the sort of contents: either fluid, power or items. "
+                f"Your types are incompatible {set(['Prototype.' + type.name for type in connection_types])}"
+            )
 
         # Resolve positions into entities if they exist
         if isinstance(source, Position):
@@ -207,6 +246,9 @@ class ConnectEntities(Tool):
         for source_pos, target_pos in prioritised_list_of_position_pairs:
             # Handle the actual connection
             try:
+                # Store source position for fallback usage
+                self._last_source_pos = source_pos
+
                 connection = self._create_connection(
                     source_pos,
                     target_pos,
@@ -219,8 +261,61 @@ class ConnectEntities(Tool):
                     if isinstance(target, (Entity, EntityGroup))
                     else None,
                 )
-                return connection[0] if not dry_run else connection
+                if not dry_run:
+                    if connection and len(connection) > 0:
+                        return connection[0]
+                    else:
+                        # No entities were created but pathing was successful - get existing group at target
+                        return self._get_existing_connection_group(
+                            target_pos, list(connection_types)[0], target
+                        )
+                else:
+                    return connection
             except Exception as e:
+                # Check if this is the specific "Failed to find a path" error for existing connections
+                error_str = str(e)
+                if "Failed to find a path" in error_str:
+                    # Check for belt connections
+                    if any(
+                        ct
+                        in (
+                            Prototype.TransportBelt,
+                            Prototype.FastTransportBelt,
+                            Prototype.ExpressTransportBelt,
+                        )
+                        for ct in connection_types
+                    ):
+                        existing_group = self._get_existing_connection_group(
+                            target_pos, list(connection_types)[0], target
+                        )
+                        if existing_group:
+                            return existing_group
+                    # Check for pole connections
+                    elif any(
+                        ct
+                        in (
+                            Prototype.SmallElectricPole,
+                            Prototype.MediumElectricPole,
+                            Prototype.BigElectricPole,
+                        )
+                        for ct in connection_types
+                    ):
+                        existing_group = self._get_existing_connection_group(
+                            target_pos, list(connection_types)[0], target
+                        )
+                        if existing_group:
+                            return existing_group
+                    # Check for pipe connections
+                    elif any(
+                        ct in (Prototype.Pipe, Prototype.UndergroundPipe)
+                        for ct in connection_types
+                    ):
+                        existing_group = self._get_existing_connection_group(
+                            target_pos, list(connection_types)[0], target
+                        )
+                        if existing_group:
+                            return existing_group
+
                 last_exception = e
                 pass
 
@@ -250,7 +345,13 @@ class ConnectEntities(Tool):
                         if isinstance(target, (Entity, EntityGroup))
                         else None,
                     )
-                    return connection[0]
+                    if connection and len(connection) > 0:
+                        return connection[0]
+                    else:
+                        # No entities were created but pathing was successful - get existing group at target
+                        return self._get_existing_connection_group(
+                            target_pos, list(connection_types)[0], target
+                        )
                 except Exception:
                     continue
 
@@ -336,55 +437,6 @@ class ConnectEntities(Tool):
                         return entity
 
         return None
-
-    def _infer_connection_type(
-        self,
-        source: Union[Position, Entity, EntityGroup],
-        target: Union[Position, Entity, EntityGroup],
-    ) -> Prototype:
-        """
-        Infers the appropriate connection type based on source and target entities.
-
-        Args:
-            source: Source entity, position or group
-            target: Target entity, position or group
-
-        Returns:
-            The appropriate Prototype for the connection
-
-        Raises:
-            ValueError: If connection type cannot be determined or entities are incompatible
-        """
-        # If both are positions, we can't infer the type
-        if isinstance(source, Position) and isinstance(target, Position):
-            raise ValueError(
-                "Cannot infer connection type when both source and target are positions. "
-                "Please specify connection_type explicitly."
-            )
-
-        # Handle fluid connections
-        if isinstance(source, FluidHandler) and isinstance(target, FluidHandler):
-            return Prototype.Pipe
-
-        # Handle belt connections
-        is_source_belt = isinstance(source, (TransportBelt, BeltGroup))
-        is_target_belt = isinstance(target, (TransportBelt, BeltGroup))
-        if is_source_belt or is_target_belt:
-            return Prototype.TransportBelt
-
-        # Handle mining and insertion
-        is_source_miner = isinstance(source, MiningDrill)
-        is_target_inserter = isinstance(target, Inserter)
-        is_source_inserter = isinstance(source, Inserter)
-        if (is_source_miner and is_target_inserter) or (
-            is_source_inserter and is_target_belt
-        ):
-            return Prototype.TransportBelt
-
-        # If we can't determine the type, we need explicit specification
-        raise ValueError(
-            "Could not infer connection type. Please specify connection_type explicitly."
-        )
 
     def _attempt_path_finding(
         self,
@@ -716,8 +768,8 @@ class ConnectEntities(Tool):
     def _process_belt_groups(
         self,
         groupable_entities: List[Entity],
-        source_entity: Optional[Entity],
-        target_entity: Optional[Entity],
+        source_entity: Optional[Union[Entity, EntityGroup]],
+        target_entity: Optional[Union[Entity, EntityGroup]],
         source_pos: Position,
     ) -> List[BeltGroup]:
         """Process transport belt groups"""
@@ -906,21 +958,6 @@ class ConnectEntities(Tool):
         for group in entity_groups:
             group.entities = _deduplicate_entities(group.entities)
             if source_pos in [entity.position for entity in group.entities]:
-                return [group]
-
-        return entity_groups
-
-    def _process_pipe_groups(
-        self, groupable_entities: List[Entity], source_pos: Position
-    ) -> List[PipeGroup]:
-        """Process pipe groups"""
-        entity_groups = self.get_entities(
-            {Prototype.Pipe, Prototype.UndergroundPipe}, source_pos
-        )
-
-        for group in entity_groups:
-            group.pipes = _deduplicate_entities(group.pipes)
-            if source_pos in [entity.position for entity in group.pipes]:
                 return [group]
 
         return entity_groups
@@ -1230,6 +1267,87 @@ class ConnectEntities(Tool):
         Check if the position is blocked by entities"""
         entities = self.get_entities(position=pos, radius=radius)
         return bool(entities)
+
+    def _get_existing_connection_group(
+        self, target_pos: Position, connection_type: Prototype, target_entity
+    ) -> Union[Entity, EntityGroup, Position]:
+        """
+        Get existing connection group when no new entities were created.
+        This handles cases where entities are already connected.
+        """
+        try:
+            # Try to get existing groups of the connection type at target position
+            if connection_type in (
+                Prototype.SmallElectricPole,
+                Prototype.MediumElectricPole,
+                Prototype.BigElectricPole,
+            ):
+                # For power poles, get electricity groups
+                groups = self.get_entities(
+                    {
+                        Prototype.SmallElectricPole,
+                        Prototype.MediumElectricPole,
+                        Prototype.BigElectricPole,
+                    },
+                    target_pos,
+                    radius=10,
+                )
+            elif connection_type in (
+                Prototype.TransportBelt,
+                Prototype.FastTransportBelt,
+                Prototype.ExpressTransportBelt,
+            ):
+                # For belts, get belt groups with wider search radius
+                groups = self.get_entities(
+                    {
+                        Prototype.TransportBelt,
+                        Prototype.FastTransportBelt,
+                        Prototype.ExpressTransportBelt,
+                        Prototype.UndergroundBelt,
+                        Prototype.FastUndergroundBelt,
+                        Prototype.ExpressUndergroundBelt,
+                    },
+                    target_pos,
+                    radius=10,  # Increased radius to find belt groups
+                )
+                # If we didn't find any groups at target, try source position
+                if not groups and hasattr(self, "_last_source_pos"):
+                    groups = self.get_entities(
+                        {
+                            Prototype.TransportBelt,
+                            Prototype.FastTransportBelt,
+                            Prototype.ExpressTransportBelt,
+                            Prototype.UndergroundBelt,
+                            Prototype.FastUndergroundBelt,
+                            Prototype.ExpressUndergroundBelt,
+                        },
+                        self._last_source_pos,
+                        radius=10,
+                    )
+            elif connection_type in (Prototype.Pipe, Prototype.UndergroundPipe):
+                # For pipes, get pipe groups
+                groups = self.get_entities(
+                    {Prototype.Pipe, Prototype.UndergroundPipe}, target_pos, radius=5
+                )
+            else:
+                groups = []
+
+            if groups:
+                # Return the first group found
+                return groups[0]
+
+            # If no groups found, return the target entity if it's an entity/group
+            if isinstance(target_entity, (Entity, EntityGroup)):
+                return target_entity
+
+            # Fall back to returning the target position
+            return target_pos
+
+        except Exception:
+            # If anything goes wrong, fall back to target entity or position
+            if isinstance(target_entity, (Entity, EntityGroup)):
+                return target_entity
+            return target_pos
 
     def pickup_entities(
         self,

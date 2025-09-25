@@ -9,39 +9,25 @@ import socket
 from pathlib import Path
 import shutil
 import yaml
+import zipfile
 
 # Root directory - equivalent to ../ usage in shell script
 ROOT_DIR = Path(__file__).parent.parent.parent
 
 
 def setup_compose_cmd():
-    """Check for docker compose command"""
-    try:
-        subprocess.run(["docker", "--version"], check=True, capture_output=True)
-        return "docker compose"
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        print("Error: Docker not found. Please install Docker.")
-        sys.exit(1)
-
-
-def _is_tcp_listening(port):
-    try:
-        c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        c.settimeout(0.2)
-        c.connect(("127.0.0.1", port))
-        c.close()
-        return True
-    except OSError:
-        return False
-
-
-def _find_port_conflicts(num_instances):
-    listening = []
-    for i in range(num_instances):
-        tcp_port = 27000 + i
-        if _is_tcp_listening(tcp_port):
-            listening.append(f"tcp/{tcp_port}")
-    return listening
+    candidates = [
+        ["docker", "compose", "version"],
+        ["docker-compose", "--version"],
+    ]
+    for cmd in candidates:
+        try:
+            subprocess.run(cmd, check=True, capture_output=True)
+            return " ".join(cmd[:2]) if cmd[0] == "docker" else "docker-compose"
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            continue
+    print("Error: Docker Compose not found. Install Docker Desktop or docker-compose.")
+    sys.exit(1)
 
 
 class ComposeGenerator:
@@ -105,16 +91,15 @@ class ComposeGenerator:
 
     def _mod_path(self):
         if self.os_name == "Windows":
-            return Path(os.environ.get("APPDATA", "")) / "Factorio" / "mods"
-        else:
-            return (
-                Path.home()
-                / "Applications"
-                / "Factorio.app"
-                / "Contents"
-                / "Resources"
-                / "mods"
-            )
+            appdata = os.environ.get("APPDATA")
+            if not appdata:
+                # Fallback to the typical path if APPDATA is missing
+                appdata = Path.home() / "AppData" / "Roaming"
+            return Path(appdata) / "Factorio" / "mods"
+        elif self.os_name == "Darwin":
+            return Path.home() / "Library" / "Application Support" / "factorio" / "mods"
+        else:  # Linux
+            return Path.home() / ".factorio" / "mods"
 
     def _save_path(self):
         return self.root_dir / ".fle" / "saves"
@@ -128,8 +113,6 @@ class ComposeGenerator:
             raise ValueError(f"Save file '{save_file}' is not a zip file.")
 
         # Check that the zip contains a level.dat file
-        import zipfile
-
         with zipfile.ZipFile(save_file, "r") as zf:
             if "level.dat" not in zf.namelist():
                 raise ValueError(
@@ -212,7 +195,7 @@ class ComposeGenerator:
         return services
 
     def compose_dict(self, num_instances):
-        return {"version": "3", "services": self.services_dict(num_instances)}
+        return {"services": self.services_dict(num_instances)}
 
     def write(self, path: str, num_instances: int):
         # Handle save file copy if provided
@@ -231,6 +214,8 @@ class ClusterManager:
     def __init__(self):
         self.root_dir = ROOT_DIR
         self.compose_cmd = setup_compose_cmd()
+        self.internal_rcon_port = ComposeGenerator.internal_rcon_port
+        self.internal_game_port = ComposeGenerator.internal_game_port
 
     def _run_compose(self, args):
         cmd = self.compose_cmd.split() + args
@@ -248,8 +233,26 @@ class ClusterManager:
             f"Generated docker-compose.yml with {num_instances} Factorio instance(s) using scenario {scenario}"
         )
 
+    def _is_tcp_listening(self, port):
+        try:
+            c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            c.settimeout(0.2)
+            c.connect(("127.0.0.1", port))
+            c.close()
+            return True
+        except OSError:
+            return False
+
+    def _find_port_conflicts(self, num_instances):
+        listening = []
+        for i in range(num_instances):
+            tcp_port = self.internal_rcon_port + i
+            if self._is_tcp_listening(tcp_port):
+                listening.append(f"tcp/{tcp_port}")
+        return listening
+
     def start(self, num_instances, scenario, attach_mod=False, save_file=None):
-        listening = _find_port_conflicts(num_instances)
+        listening = self._find_port_conflicts(num_instances)
         if listening:
             print("Error: Required ports are in use:")
             print("  " + ", ".join(listening))
@@ -399,6 +402,9 @@ def main():
 
     # Execute the appropriate command
     if args.command == "start":
+        if not (1 <= args.number <= 33):
+            print("Error: number of instances must be between 1 and 33.")
+            sys.exit(1)
         # Validate save file if provided
         if args.use_save and not Path(args.use_save).exists():
             print(f"Error: Save file '{args.use_save}' does not exist.")

@@ -368,6 +368,23 @@ class ClusterManager:
             sys.exit(1)
         self._run_compose(["-f", str(self.compose_path), "logs", service])
 
+    def show(self):
+        # Minimal: pipe a filtered docker ps with a clean format
+        ps_cmd = [
+            "docker",
+            "ps",
+            "--filter",
+            "name=factorio_",
+            "--format",
+            "table {{.Names}}\t{{.Ports}}",
+        ]
+        ps = subprocess.run(ps_cmd, capture_output=True, text=True)
+        out = ps.stdout.strip()
+        if not out:
+            print("No Factorio containers found.")
+            return
+        print(out)
+
 
 def start_cluster(num_instances, scenario, attach_mod=False, save_file=None):
     manager = ClusterManager()
@@ -389,47 +406,20 @@ def restart_cluster():
     manager.restart()
 
 
-def show_help():
-    """Show usage information"""
-    script_name = os.path.basename(__file__)
-    print(f"Usage: {script_name} [COMMAND] [OPTIONS]")
-    print("")
-    print("Commands:")
-    print("  start         Start Factorio instances (default command)")
-    print("  stop          Stop all running instances")
-    print("  restart       Restart the current cluster with the same configuration")
-    print("  logs [NAME]   Show logs for a service (default: factorio_0)")
-    print("  help          Show this help message")
-    print("")
-    print("Options:")
-    print("  -n NUMBER     Number of Factorio instances to run (1-33, default: 1)")
-    print(
-        "  -s SCENARIO   Scenario to run (open_world or default_lab_scenario, default: default_lab_scenario)"
-    )
-    print("  -sv SAVE_FILE, --use_save SAVE_FILE Use a .zip save file from factorio")
-    print("  -m, --attach_mods Attach mods to the instances")
-    print("")
-    print("Examples:")
-    print(
-        f"  {script_name}                           Start 1 instance with default_lab_scenario"
-    )
-    print(
-        f"  {script_name} -n 5                      Start 5 instances with default_lab_scenario"
-    )
-    print(
-        f"  {script_name} -n 3 -s open_world        Start 3 instances with open_world"
-    )
-    print(
-        f"  {script_name} start -n 10 -s open_world Start 10 instances with open_world"
-    )
-    print(f"  {script_name} stop                      Stop all running instances")
-    print(f"  {script_name} restart                   Restart the current cluster")
-
-
 def main():
     """Main script execution"""
     parser = argparse.ArgumentParser(
-        description="Factorio Learning Environment Cluster Manager"
+        description="Factorio Learning Environment Cluster Manager",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Examples:\n"
+            "  run_envs.py start                # start 1 instance (default)\n"
+            "  run_envs.py start -n 4           # start 4 instances\n"
+            "  run_envs.py logs factorio_0      # show logs for service\n\n"
+            "Tips:\n"
+            "  Use 'run_envs.py <command> -h' for command-specific options.\n"
+            "  run_envs.py start -h             # show start command options\n"
+        ),
     )
 
     # Add subcommands
@@ -473,20 +463,17 @@ def main():
         help="Service name (default: factorio_0)",
     )
 
-    # Help command
+    # Show command
+    subparsers.add_parser("show", help="Show running services and exposed ports")
+
+    # Help command (explicit)
     subparsers.add_parser("help", help="Show help message")
 
     # Parse arguments
     args = parser.parse_args()
-
-    # If no command specified, default to start
+    # If no command specified, reparse with default subcommand 'start'
     if args.command is None:
-        args.command = "start"
-        # Create a namespace with default values for start command
-        args.number = 1
-        args.scenario = "default_lab_scenario"
-        args.use_save = None
-        args.attach_mods = False
+        args = parser.parse_args(["start"])  # ensures start defaults apply
 
     # Execute the appropriate command
     if args.command == "start":
@@ -506,11 +493,14 @@ def main():
     elif args.command == "logs":
         manager = ClusterManager()
         manager.logs(getattr(args, "service", "factorio_0"))
+    elif args.command == "show":
+        manager = ClusterManager()
+        manager.show()
     elif args.command == "help":
-        show_help()
+        parser.print_help()
     else:
         print(f"Error: Unknown command '{args.command}'")
-        show_help()
+        parser.print_help()
         sys.exit(1)
 
 

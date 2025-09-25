@@ -38,8 +38,7 @@ jobs:
 
       - name: Start 4 Factorio servers
         run: |
-          cd fle/cluster
-          uv run run_envs.py start -n 4
+          uv run fle/cluster/run_envs.py start -n 4
 
       - name: Run Python tests (4 workers)
         run: |
@@ -51,12 +50,10 @@ jobs:
       - name: Show test logs on failure
         if: failure()
         run: |
-          cd fle/cluster
           echo "=== Factorio container logs ==="
-          docker compose -f docker-compose.yml logs factorio_0
+          uv run fle/cluster/run_envs.py logs factorio_0
 
       - name: Stop server
         if: always()
         run: |
-          cd fle/cluster
-          bash run-envs.sh stop
+          uv run fle/cluster/run_envs.py stop

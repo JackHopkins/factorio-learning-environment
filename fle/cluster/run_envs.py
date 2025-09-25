@@ -10,11 +10,35 @@ from pathlib import Path
 import shutil
 import yaml
 import zipfile
+import importlib.resources as ir
+from platformdirs import user_state_dir
 
-# Root directory - equivalent to ../ usage in shell script
-ROOT_DIR = Path(__file__).parent.parent.parent
+# Root directory retained for backward-compat paths where needed
 START_RCON_PORT = 27000
 START_GAME_PORT = 34197
+
+
+def resolve_state_dir() -> Path:
+    """Resolve platform-specific state directory with env override.
+
+    Env override: FLE_STATE_DIR
+    Default: platformdirs.user_state_dir("fle")
+    """
+    override = os.environ.get("FLE_STATE_DIR")
+    if override:
+        return Path(override).expanduser().resolve()
+    return Path(user_state_dir("fle"))
+
+
+def resolve_work_dir() -> Path:
+    """Resolve user-visible working directory root with env override.
+
+    Env override: FLE_WORKDIR
+    Default: current working directory
+    """
+    override = os.environ.get("FLE_WORKDIR")
+    base = Path(override).expanduser().resolve() if override else Path.cwd()
+    return base
 
 
 def setup_compose_cmd():
@@ -43,17 +67,24 @@ class ComposeGenerator:
 
     def __init__(
         self,
-        root_dir: Path,
         attach_mod=False,
         save_file=None,
         scenario="default_lab_scenario",
+        state_dir: Path | None = None,
+        work_dir: Path | None = None,
+        pkg_scenarios_dir: Path | None = None,
+        pkg_config_dir: Path | None = None,
     ):
-        self.root_dir = root_dir
         self.arch = platform.machine()
         self.os_name = platform.system()
         self.attach_mod = attach_mod
         self.save_file = save_file
         self.scenario = scenario
+        self.state_dir = (state_dir or resolve_state_dir()).resolve()
+        self.work_dir = (work_dir or resolve_work_dir()).resolve()
+        # Package resource directories (read-only)
+        self.pkg_scenarios_dir = pkg_scenarios_dir
+        self.pkg_config_dir = pkg_config_dir
 
     def _docker_platform(self):
         if self.arch in ["arm64", "aarch64"]:
@@ -92,6 +123,9 @@ class ComposeGenerator:
         return " ".join([factorio_bin, launch_command] + args)
 
     def _mod_path(self):
+        env_override = os.environ.get("FLE_MODS_PATH")
+        if env_override:
+            return Path(env_override).expanduser()
         if self.os_name == "Windows":
             appdata = os.environ.get("APPDATA")
             if not appdata:
@@ -104,7 +138,7 @@ class ComposeGenerator:
             return Path.home() / ".factorio" / "mods"
 
     def _save_path(self):
-        return self.root_dir / ".fle" / "saves"
+        return self.state_dir / "saves"
 
     def _copy_save(self, save_file: str):
         save_dir = self._save_path().resolve()
@@ -139,14 +173,20 @@ class ComposeGenerator:
         }
 
     def _screenshots_volume(self):
+        screenshots_dir = self.work_dir / ".fle" / "data" / "_screenshots"
+        screenshots_dir.mkdir(parents=True, exist_ok=True)
         return {
-            "source": str((self.root_dir / ".fle" / "data" / "_screenshots").resolve()),
+            "source": str(screenshots_dir.resolve()),
             "target": "/opt/factorio/script-output",
             "type": "bind",
         }
 
     def _scenarios_volume(self):
-        scenarios_dir = self.root_dir / "fle" / "cluster" / "scenarios"
+        # Resolve from package resources if provided
+        scenarios_dir = self.pkg_scenarios_dir
+        if scenarios_dir is None:
+            pkg_root = ir.files("fle.cluster")
+            scenarios_dir = Path(pkg_root / "scenarios")
         if not scenarios_dir.exists():
             raise ValueError(f"Scenarios directory '{scenarios_dir}' does not exist.")
         return {
@@ -156,7 +196,11 @@ class ComposeGenerator:
         }
 
     def _config_volume(self):
-        config_dir = self.root_dir / "fle" / "cluster" / "config"
+        # Resolve from package resources if provided
+        config_dir = self.pkg_config_dir
+        if config_dir is None:
+            pkg_root = ir.files("fle.cluster")
+            config_dir = Path(pkg_root / "config")
         if not config_dir.exists():
             raise ValueError(f"Config directory '{config_dir}' does not exist.")
         return {
@@ -202,7 +246,7 @@ class ComposeGenerator:
     def write(self, path: str, num_instances: int):
         # Handle save file copy if provided
         if self.save_file:
-            save_dir = self.root_dir / ".fle" / "saves"
+            save_dir = self._save_path()
             save_dir.mkdir(parents=True, exist_ok=True)
             self._copy_save(self.save_file)
         data = self.compose_dict(num_instances)
@@ -214,10 +258,18 @@ class ClusterManager:
     """Simple class wrapper to manage platform detection, compose, and lifecycle."""
 
     def __init__(self):
-        self.root_dir = ROOT_DIR
         self.compose_cmd = setup_compose_cmd()
         self.internal_rcon_port = ComposeGenerator.internal_rcon_port
         self.internal_game_port = ComposeGenerator.internal_game_port
+        # Resolve key paths
+        self.state_dir = resolve_state_dir()
+        self.work_dir = resolve_work_dir()
+        self.state_dir.mkdir(parents=True, exist_ok=True)
+        self.compose_path = (self.state_dir / "docker-compose.yml").resolve()
+        # Package resources (read-only)
+        pkg_root = ir.files("fle.cluster")
+        self.pkg_scenarios_dir = Path(pkg_root / "scenarios")
+        self.pkg_config_dir = Path(pkg_root / "config")
 
     def _run_compose(self, args):
         cmd = self.compose_cmd.split() + args
@@ -225,14 +277,17 @@ class ClusterManager:
 
     def generate(self, num_instances, scenario, attach_mod=False, save_file=None):
         generator = ComposeGenerator(
-            root_dir=self.root_dir,
             attach_mod=attach_mod,
             save_file=save_file,
             scenario=scenario,
+            state_dir=self.state_dir,
+            work_dir=self.work_dir,
+            pkg_scenarios_dir=self.pkg_scenarios_dir,
+            pkg_config_dir=self.pkg_config_dir,
         )
-        generator.write("docker-compose.yml", num_instances)
+        generator.write(str(self.compose_path), num_instances)
         print(
-            f"Generated docker-compose.yml with {num_instances} Factorio instance(s) using scenario {scenario}"
+            f"Generated compose at {self.compose_path} for {num_instances} instance(s) using scenario {scenario}"
         )
 
     def _is_tcp_listening(self, port):
@@ -248,7 +303,7 @@ class ClusterManager:
     def _find_port_conflicts(self, num_instances):
         listening = []
         for i in range(num_instances):
-            tcp_port = self.internal_rcon_port + i
+            tcp_port = START_RCON_PORT + i
             if self._is_tcp_listening(tcp_port):
                 listening.append(f"tcp/{tcp_port}")
         return listening
@@ -266,31 +321,51 @@ class ClusterManager:
 
         self.generate(num_instances, scenario, attach_mod, save_file)
 
+        # Path summary
+        print("Paths:")
+        print(f"  state_dir:   {self.state_dir}")
+        print(f"  work_dir:    {self.work_dir}")
+        print(f"  compose:     {self.compose_path}")
+        print(f"  scenarios:   {self.pkg_scenarios_dir}")
+        print(f"  config:      {self.pkg_config_dir}")
+
         print(
             f"Starting {num_instances} Factorio instance(s) with scenario {scenario}..."
         )
-        self._run_compose(["-f", "docker-compose.yml", "up", "-d"])
+        self._run_compose(["-f", str(self.compose_path), "up", "-d"])
         print(
             f"Factorio cluster started with {num_instances} instance(s) using scenario {scenario}"
         )
 
     def stop(self):
-        if not Path("docker-compose.yml").exists():
-            print("Error: docker-compose.yml not found. No cluster to stop.")
+        if not self.compose_path.exists():
+            print(
+                "Error: docker-compose.yml not found in state dir. No cluster to stop."
+            )
             sys.exit(1)
         print("Stopping Factorio cluster...")
-        self._run_compose(["-f", "docker-compose.yml", "down"])
+        self._run_compose(["-f", str(self.compose_path), "down"])
         print("Cluster stopped.")
 
     def restart(self):
-        if not Path("docker-compose.yml").exists():
-            print("Error: docker-compose.yml not found. No cluster to restart.")
+        if not self.compose_path.exists():
+            print(
+                "Error: docker-compose.yml not found in state dir. No cluster to restart."
+            )
             sys.exit(1)
         print(
             "Restarting existing Factorio services without regenerating docker-compose..."
         )
-        self._run_compose(["-f", "docker-compose.yml", "restart"])
+        self._run_compose(["-f", str(self.compose_path), "restart"])
         print("Factorio services restarted.")
+
+    def logs(self, service: str = "factorio_0"):
+        if not self.compose_path.exists():
+            print(
+                "Error: docker-compose.yml not found in state dir. Nothing to show logs for."
+            )
+            sys.exit(1)
+        self._run_compose(["-f", str(self.compose_path), "logs", service])
 
 
 def start_cluster(num_instances, scenario, attach_mod=False, save_file=None):
@@ -322,6 +397,7 @@ def show_help():
     print("  start         Start Factorio instances (default command)")
     print("  stop          Stop all running instances")
     print("  restart       Restart the current cluster with the same configuration")
+    print("  logs [NAME]   Show logs for a service (default: factorio_0)")
     print("  help          Show this help message")
     print("")
     print("Options:")
@@ -387,6 +463,15 @@ def main():
     # Restart command
     subparsers.add_parser("restart", help="Restart the current cluster")
 
+    # Logs command
+    logs_parser = subparsers.add_parser("logs", help="Show service logs")
+    logs_parser.add_argument(
+        "service",
+        nargs="?",
+        default="factorio_0",
+        help="Service name (default: factorio_0)",
+    )
+
     # Help command
     subparsers.add_parser("help", help="Show help message")
 
@@ -417,6 +502,9 @@ def main():
         stop_cluster()
     elif args.command == "restart":
         restart_cluster()
+    elif args.command == "logs":
+        manager = ClusterManager()
+        manager.logs(getattr(args, "service", "factorio_0"))
     elif args.command == "help":
         show_help()
     else:

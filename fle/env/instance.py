@@ -21,6 +21,7 @@ from fle.commons.models.game_state import GameState
 from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )
+from fle.cluster.run_envs import START_RCON_PORT, RCON_PASSWORD
 
 CHUNK_SIZE = 32
 MAX_SAMPLES = 5000
@@ -158,7 +159,7 @@ class FactorioInstance:
         self,
         address=None,
         fast=True,
-        tcp_port=27000,
+        tcp_port=START_RCON_PORT,
         inventory=None,
         cache_scripts=True,
         all_technologies_researched=True,
@@ -351,11 +352,13 @@ class FactorioInstance:
 
     def connect_to_server(self, address, tcp_port):
         try:
-            rcon_client = RCONClient(address, tcp_port, "factorio")  #'quai2eeha3Lae7v')
+            rcon_client = RCONClient(
+                address, tcp_port, RCON_PASSWORD
+            )  #'quai2eeha3Lae7v')
             address = address
         except ConnectionError as e:
             print(e)
-            rcon_client = RCONClient("localhost", tcp_port, "factorio")
+            rcon_client = RCONClient("localhost", tcp_port, RCON_PASSWORD)
             address = "localhost"
 
         try:

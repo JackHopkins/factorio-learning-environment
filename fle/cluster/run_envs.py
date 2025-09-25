@@ -16,6 +16,7 @@ from platformdirs import user_state_dir
 # Root directory retained for backward-compat paths where needed
 START_RCON_PORT = 27000
 START_GAME_PORT = 34197
+RCON_PASSWORD = "factorio"
 
 
 def resolve_state_dir() -> Path:
@@ -59,7 +60,7 @@ def setup_compose_cmd():
 class ComposeGenerator:
     """Compose YAML generator with centralized path handling."""
 
-    rcon_password = "factorio"
+    rcon_password = RCON_PASSWORD
     image = "factoriotools/factorio:1.1.110"
     map_gen_seed = 44340
     internal_rcon_port = 27015

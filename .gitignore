@@ -32,3 +32,5 @@ api_keys.json
 
 # fle
 .fle/
+
+.ipynb_checkpoints/

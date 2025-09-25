@@ -13,6 +13,8 @@ import zipfile
 
 # Root directory - equivalent to ../ usage in shell script
 ROOT_DIR = Path(__file__).parent.parent.parent
+START_RCON_PORT = 27000
+START_GAME_PORT = 34197
 
 
 def setup_compose_cmd():
@@ -166,8 +168,8 @@ class ComposeGenerator:
     def services_dict(self, num_instances):
         services = {}
         for i in range(num_instances):
-            host_udp = self.internal_game_port + i
-            host_tcp = self.internal_rcon_port + i
+            host_rcon = START_RCON_PORT + i
+            host_game = START_GAME_PORT + i
             volumes = [
                 self._scenarios_volume(),
                 self._config_volume(),
@@ -184,8 +186,8 @@ class ComposeGenerator:
                 "deploy": {"resources": {"limits": {"cpus": "1", "memory": "1024m"}}},
                 "entrypoint": [],
                 "ports": [
-                    f"{host_udp}:{self.internal_game_port}/udp",
-                    f"{host_tcp}:{self.internal_rcon_port}/tcp",
+                    f"{host_game}:{self.internal_game_port}/udp",
+                    f"{host_rcon}:{self.internal_rcon_port}/tcp",
                 ],
                 "pull_policy": "missing",
                 "restart": "unless-stopped",

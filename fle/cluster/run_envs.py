@@ -8,6 +8,7 @@ import sys
 import socket
 from pathlib import Path
 import shutil
+import yaml
 
 # Root directory - equivalent to ../ usage in shell script
 ROOT_DIR = Path(__file__).parent.parent.parent
@@ -81,7 +82,8 @@ class ComposeGenerator:
     def _command(self):
         launch_command = f"--start-server-load-scenario {self.scenario}"
         if self.save_file:
-            launch_command = f"--start-server {self.save_file}"
+            # Use only the basename inside the command
+            launch_command = f"--start-server {Path(self.save_file).name}"
         args = [
             f"--port {self.internal_game_port}",
             f"--rcon-port {self.internal_rcon_port}",
@@ -95,13 +97,11 @@ class ComposeGenerator:
             "--use-server-whitelist",
         ]
         if self.scenario == "open_world":
-            args.append(f" --map-gen-seed {self.map_gen_seed}")
+            args.append(f"--map-gen-seed {self.map_gen_seed}")
         if self.attach_mod:
-            args.append(" --mod-directory /opt/factorio/mods")
-        launch_command = (
-            f"{self._emulator()} /opt/factorio/bin/x64/factorio" + launch_command
-        )
-        return {"command": ([launch_command] + args).join(" ")}
+            args.append("--mod-directory /opt/factorio/mods")
+        factorio_bin = f"{self._emulator()} /opt/factorio/bin/x64/factorio".strip()
+        return " ".join([factorio_bin, launch_command] + args)
 
     def _mod_path(self):
         if self.os_name == "Windows":
@@ -141,7 +141,7 @@ class ComposeGenerator:
 
     def _mods_volume(self):
         return {
-            "source": str(self._mod_path.resolve()),
+            "source": str(self._mod_path().resolve()),
             "target": "/opt/factorio/mods",
             "type": "bind",
         }
@@ -161,45 +161,68 @@ class ComposeGenerator:
         }
 
     def _scenarios_volume(self):
+        scenarios_dir = self.root_dir / "fle" / "cluster" / "scenarios"
+        if not scenarios_dir.exists():
+            raise ValueError(f"Scenarios directory '{scenarios_dir}' does not exist.")
         return {
-            "source": str((self.root_dir / "scenarios").resolve()),
+            "source": str(scenarios_dir.resolve()),
             "target": "/opt/factorio/scenarios",
             "type": "bind",
         }
 
     def _config_volume(self):
+        config_dir = self.root_dir / "fle" / "cluster" / "config"
+        if not config_dir.exists():
+            raise ValueError(f"Config directory '{config_dir}' does not exist.")
         return {
-            "source": str((self.root_dir / "config").resolve()),
+            "source": str(config_dir.resolve()),
             "target": "/opt/factorio/config",
             "type": "bind",
         }
 
     def services_dict(self, num_instances):
-        return {
-            f"factorio_{i}": {
+        services = {}
+        for i in range(num_instances):
+            host_udp = self.internal_game_port + i
+            host_tcp = self.internal_rcon_port + i
+            volumes = [
+                self._scenarios_volume(),
+                self._config_volume(),
+                self._screenshots_volume(),
+            ]
+            if self.save_file:
+                volumes.append(self._save_volume())
+            if self.attach_mod:
+                volumes.append(self._mods_volume())
+            services[f"factorio_{i}"] = {
                 "image": self.image,
                 "platform": self._docker_platform(),
                 "command": self._command(),
+                "deploy": {"resources": {"limits": {"cpus": "1", "memory": "1024m"}}},
+                "entrypoint": [],
                 "ports": [
-                    f"{self.internal_game_port + i}:{self.internal_game_port}/udp",
-                    f"{self.internal_rcon_port + i}:{self.internal_rcon_port}/tcp",
+                    f"{host_udp}:{self.internal_game_port}/udp",
+                    f"{host_tcp}:{self.internal_rcon_port}/tcp",
                 ],
-                "volumes": [
-                    self._scenarios_volume(),
-                    self._config_volume(),
-                    self._screenshots_volume(),
-                    self._save_volume() if self.save_file else None,
-                    self._mods_volume() if self.attach_mod else None,
-                ],
+                "pull_policy": "missing",
+                "restart": "unless-stopped",
+                "user": "factorio",
+                "volumes": volumes,
             }
-            for i in range(num_instances)
-        }
+        return services
 
     def compose_dict(self, num_instances):
-        return {
-            "version": "3",
-            "services": self.services_dict(num_instances),
-        }
+        return {"version": "3", "services": self.services_dict(num_instances)}
+
+    def write(self, path: str, num_instances: int):
+        # Handle save file copy if provided
+        if self.save_file:
+            save_dir = self.root_dir / ".fle" / "saves"
+            save_dir.mkdir(parents=True, exist_ok=True)
+            self._copy_save(self.save_file)
+        data = self.compose_dict(num_instances)
+        with open(path, "w") as f:
+            yaml.safe_dump(data, f, sort_keys=False)
 
 
 class ClusterManager:
@@ -207,8 +230,6 @@ class ClusterManager:
 
     def __init__(self):
         self.root_dir = ROOT_DIR
-        # self.emulator, self.docker_platform, self.mods_path = setup_platform()
-        self.generator = ComposeGenerator(self.root_dir)
         self.compose_cmd = setup_compose_cmd()
 
     def _run_compose(self, args):
@@ -216,14 +237,15 @@ class ClusterManager:
         subprocess.run(cmd, check=True)
 
     def generate(self, num_instances, scenario, attach_mod=False, save_file=None):
-        self.compose_dict(
-            num_instances=num_instances,
-            scenario=scenario,
-            emulator=self.emulator,
-            docker_platform=self.docker_platform,
-            mods_path=self.mods_path,
+        generator = ComposeGenerator(
+            root_dir=self.root_dir,
             attach_mod=attach_mod,
             save_file=save_file,
+            scenario=scenario,
+        )
+        generator.write("docker-compose.yml", num_instances)
+        print(
+            f"Generated docker-compose.yml with {num_instances} Factorio instance(s) using scenario {scenario}"
         )
 
     def start(self, num_instances, scenario, attach_mod=False, save_file=None):
@@ -244,7 +266,7 @@ class ClusterManager:
         )
         self._run_compose(["-f", "docker-compose.yml", "up", "-d"])
         print(
-            f"Factorio cluster started with {num_instances} instance(s) using platform {self.docker_platform} and scenario {scenario}"
+            f"Factorio cluster started with {num_instances} instance(s) using scenario {scenario}"
         )
 
     def stop(self):

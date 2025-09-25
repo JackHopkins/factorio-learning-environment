@@ -32,14 +32,14 @@ jobs:
           echo "✓ Found scenario directory"
           ls -la ./fle/cluster/scenarios/default_lab_scenario
 
-      - name: Start 4 Factorio servers
-        run: |
-          cd fle/cluster
-          bash run-envs.sh start -n 4
-
       - name: Install Python dependencies
         run: |
           uv sync --all-extras --dev
+
+      - name: Start 4 Factorio servers
+        run: |
+          cd fle/cluster
+          bash ./run_envs.py start -n 4
 
       - name: Run Python tests (4 workers)
         run: |

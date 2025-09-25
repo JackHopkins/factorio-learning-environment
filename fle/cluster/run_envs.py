@@ -5,6 +5,7 @@ import os
 import platform
 import subprocess
 import sys
+import socket
 from pathlib import Path
 
 # Root directory - equivalent to ../ usage in shell script
@@ -24,11 +25,13 @@ def setup_platform():
         docker_platform = "linux/amd64"
 
     # Detect OS for mods path
-    if any(win_os in os_name for win_os in ["MINGW", "MSYS", "CYGWIN"]):
-        # Windows detected
-        # Use %APPDATA% which is available in Windows bash environments
+    if os_name == "Windows":
+        # Windows detected (native Python)
+        # Prefer %APPDATA% and fall back to %USERPROFILE% path
         appdata = os.environ.get("APPDATA", "")
-        if not appdata or appdata == "/Factorio/mods":
+        if appdata:
+            mods_path = Path(appdata) / "Factorio" / "mods"
+        else:
             mods_path = (
                 Path(os.environ.get("USERPROFILE", ""))
                 / "AppData"
@@ -36,8 +39,6 @@ def setup_platform():
                 / "Factorio"
                 / "mods"
             )
-        else:
-            mods_path = Path(appdata) / "Factorio" / "mods"
     else:
         # Assume Unix-like OS (Linux, macOS)
         mods_path = (
@@ -65,6 +66,26 @@ def setup_compose_cmd():
         sys.exit(1)
 
 
+def _is_tcp_listening(port):
+    try:
+        c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        c.settimeout(0.2)
+        c.connect(("127.0.0.1", port))
+        c.close()
+        return True
+    except OSError:
+        return False
+
+
+def _find_port_conflicts(num_instances):
+    listening = []
+    for i in range(num_instances):
+        tcp_port = 27000 + i
+        if _is_tcp_listening(tcp_port):
+            listening.append(f"tcp/{tcp_port}")
+    return listening
+
+
 def generate_compose_file(
     num_instances,
     scenario,
@@ -80,7 +101,10 @@ def generate_compose_file(
     # Build optional mods volume block based on ATTACH_MOD
     mods_volume = ""
     if attach_mod:
-        mods_volume = f"    - source: {mods_path}\n      target: /opt/factorio/mods\n      type: bind\n"
+        mods_volume = (
+            f'    - source: "{Path(mods_path).expanduser().resolve()}"\n'
+            f"      target: /opt/factorio/mods\n      type: bind\n"
+        )
 
     # Build optional save file volume block based on SAVE_ADDED
     save_volume = ""
@@ -106,7 +130,10 @@ def generate_compose_file(
         # Create variable for the container path
         # container_save_path = f"/opt/factorio/saves/{save_file_name}"
 
-        save_volume = f"    - source: {ROOT_DIR / '.fle' / 'saves'}\n      target: /opt/factorio/saves\n      type: bind"
+        save_volume = (
+            f'    - source: "{(ROOT_DIR / ".fle" / "saves").resolve()}"\n'
+            f"      target: /opt/factorio/saves\n      type: bind"
+        )
         command = f"--start-server {save_file_name}"
 
     # Validate scenario
@@ -132,7 +159,7 @@ services:
 
         compose_content += f"""  factorio_{i}:
     image: factoriotools/factorio:1.1.110
-    platform: ${{DOCKER_PLATFORM:-linux/amd64}}
+    platform: {docker_platform}
     command: {emulator} /opt/factorio/bin/x64/factorio {command}
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
       /opt/factorio/config/map-gen-settings.json --map-settings /opt/factorio/config/map-settings.json
@@ -159,7 +186,7 @@ services:
     - source: ./config
       target: /opt/factorio/config
       type: bind
-    - source: {ROOT_DIR / ".fle" / "data" / "_screenshots"}
+    - source: \"{(ROOT_DIR / ".fle" / "data" / "_screenshots").resolve()}\"
       target: /opt/factorio/script-output
       type: bind
 {save_volume}
@@ -177,6 +204,17 @@ def start_cluster(num_instances, scenario, attach_mod=False, save_file=None):
     """Start Factorio cluster"""
     emulator, docker_platform, mods_path = setup_platform()
     compose_cmd = setup_compose_cmd()
+
+    # Preflight: check port availability
+    listening = _find_port_conflicts(num_instances)
+    if listening:
+        print("Error: Required ports are in use:")
+        print("  " + ", ".join(listening))
+        print(
+            "It looks like a Factorio cluster (or another service) is running. "
+            "Stop it with 'fle cluster stop' (or 'docker compose -f docker-compose.yml down' in fle/cluster) and retry."
+        )
+        sys.exit(1)
 
     # Generate the docker-compose file
     generate_compose_file(

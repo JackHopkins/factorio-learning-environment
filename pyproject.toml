@@ -55,6 +55,7 @@ dependencies = [
     "uvicorn>=0.15.0",
     "pytest>=8.4.1",
     "pyyaml>=6.0.2",
+    "platformdirs>=4.3.8",
 ]
 
 [project.optional-dependencies]
@@ -110,6 +111,7 @@ env = [
 
 [project.scripts]
 fle = "fle.run:main"
+fle-cluster = "fle.cluster.run_envs:main"
 
 [tool.hatch.version]
 path = "fle/__init__.py"

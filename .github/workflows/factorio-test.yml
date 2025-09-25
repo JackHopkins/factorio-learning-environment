@@ -39,7 +39,7 @@ jobs:
       - name: Start 4 Factorio servers
         run: |
           cd fle/cluster
-          bash ./run_envs.py start -n 4
+          uv run run_envs.py start -n 4
 
       - name: Run Python tests (4 workers)
         run: |

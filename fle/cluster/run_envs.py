@@ -7,53 +7,10 @@ import subprocess
 import sys
 import socket
 from pathlib import Path
+import shutil
 
 # Root directory - equivalent to ../ usage in shell script
 ROOT_DIR = Path(__file__).parent.parent.parent
-
-
-def setup_platform():
-    """Detect and set host architecture"""
-    arch = platform.machine()
-    os_name = platform.system()
-
-    if arch in ["arm64", "aarch64"]:
-        emulator = "/bin/box64"
-        docker_platform = "linux/arm64"
-    else:
-        emulator = ""
-        docker_platform = "linux/amd64"
-
-    # Detect OS for mods path
-    if os_name == "Windows":
-        # Windows detected (native Python)
-        # Prefer %APPDATA% and fall back to %USERPROFILE% path
-        appdata = os.environ.get("APPDATA", "")
-        if appdata:
-            mods_path = Path(appdata) / "Factorio" / "mods"
-        else:
-            mods_path = (
-                Path(os.environ.get("USERPROFILE", ""))
-                / "AppData"
-                / "Roaming"
-                / "Factorio"
-                / "mods"
-            )
-    else:
-        # Assume Unix-like OS (Linux, macOS)
-        mods_path = (
-            Path.home()
-            / "Applications"
-            / "Factorio.app"
-            / "Contents"
-            / "Resources"
-            / "mods"
-        )
-
-    print(f"Detected architecture: {arch}, using platform: {docker_platform}")
-    print(f"Using mods path: {mods_path}")
-
-    return emulator, docker_platform, mods_path
 
 
 def setup_compose_cmd():
@@ -86,187 +43,247 @@ def _find_port_conflicts(num_instances):
     return listening
 
 
-def generate_compose_file(
-    num_instances,
-    scenario,
-    emulator,
-    docker_platform,
-    mods_path,
-    attach_mod=False,
-    save_file=None,
-):
-    """Generate the dynamic docker-compose.yml file"""
-    command = f"--start-server-load-scenario {scenario}"
+class ComposeGenerator:
+    """Compose YAML generator with centralized path handling."""
 
-    # Build optional mods volume block based on ATTACH_MOD
-    mods_volume = ""
-    if attach_mod:
-        mods_volume = (
-            f'    - source: "{Path(mods_path).expanduser().resolve()}"\n'
-            f"      target: /opt/factorio/mods\n      type: bind\n"
+    rcon_password = "factorio"
+    image = "factoriotools/factorio:1.1.110"
+    map_gen_seed = 44340
+    internal_rcon_port = 27015
+    internal_game_port = 34197
+
+    def __init__(
+        self,
+        root_dir: Path,
+        attach_mod=False,
+        save_file=None,
+        scenario="default_lab_scenario",
+    ):
+        self.root_dir = root_dir
+        self.arch = platform.machine()
+        self.os_name = platform.system()
+        self.attach_mod = attach_mod
+        self.save_file = save_file
+        self.scenario = scenario
+
+    def _docker_platform(self):
+        if self.arch in ["arm64", "aarch64"]:
+            return "linux/arm64"
+        else:
+            return "linux/amd64"
+
+    def _emulator(self):
+        if self.arch in ["arm64", "aarch64"]:
+            return "/bin/box64"
+        else:
+            return ""
+
+    def _command(self):
+        launch_command = f"--start-server-load-scenario {self.scenario}"
+        if self.save_file:
+            launch_command = f"--start-server {self.save_file}"
+        args = [
+            f"--port {self.internal_game_port}",
+            f"--rcon-port {self.internal_rcon_port}",
+            f"--rcon-password {self.rcon_password}",
+            "--server-settings /opt/factorio/config/server-settings.json",
+            "--map-gen-settings /opt/factorio/config/map-gen-settings.json",
+            "--map-settings /opt/factorio/config/map-settings.json",
+            "--server-adminlist /opt/factorio/config/server-adminlist.json",
+            "--server-banlist /opt/factorio/config/server-banlist.json",
+            "--server-whitelist /opt/factorio/config/server-whitelist.json",
+            "--use-server-whitelist",
+        ]
+        if self.scenario == "open_world":
+            args.append(f" --map-gen-seed {self.map_gen_seed}")
+        if self.attach_mod:
+            args.append(" --mod-directory /opt/factorio/mods")
+        launch_command = (
+            f"{self._emulator()} /opt/factorio/bin/x64/factorio" + launch_command
         )
+        return {"command": ([launch_command] + args).join(" ")}
 
-    # Build optional save file volume block based on SAVE_ADDED
-    save_volume = ""
-    save_added = save_file is not None
-    if save_added:
-        # Check if SAVE_FILE is a .zip file
-        if not save_file.endswith(".zip"):
-            print("Error: Save file must be a .zip file.")
-            sys.exit(1)
+    def _mod_path(self):
+        if self.os_name == "Windows":
+            return Path(os.environ.get("APPDATA", "")) / "Factorio" / "mods"
+        else:
+            return (
+                Path.home()
+                / "Applications"
+                / "Factorio.app"
+                / "Contents"
+                / "Resources"
+                / "mods"
+            )
 
-        # Create saves directory if it doesn't exist
-        saves_dir = ROOT_DIR / ".fle" / "saves"
-        saves_dir.mkdir(parents=True, exist_ok=True)
+    def _save_path(self):
+        return self.root_dir / ".fle" / "saves"
 
-        # Get the save file name (basename)
+    def _copy_save(self, save_file: str):
+        save_dir = self._save_path().resolve()
         save_file_name = Path(save_file).name
 
-        # Copy the save file to the local saves directory
-        import shutil
+        # Ensure the file is a zip file
+        if not save_file_name.lower().endswith(".zip"):
+            raise ValueError(f"Save file '{save_file}' is not a zip file.")
 
-        shutil.copy2(save_file, saves_dir / save_file_name)
+        # Check that the zip contains a level.dat file
+        import zipfile
 
-        # Create variable for the container path
-        # container_save_path = f"/opt/factorio/saves/{save_file_name}"
+        with zipfile.ZipFile(save_file, "r") as zf:
+            if "level.dat" not in zf.namelist():
+                raise ValueError(
+                    f"Save file '{save_file}' does not contain a 'level.dat' file."
+                )
 
-        save_volume = (
-            f'    - source: "{(ROOT_DIR / ".fle" / "saves").resolve()}"\n'
-            f"      target: /opt/factorio/saves\n      type: bind"
+        shutil.copy2(save_file, save_dir / save_file_name)
+        print(f"Copied save file to {save_dir / save_file_name}")
+
+    def _mods_volume(self):
+        return {
+            "source": str(self._mod_path.resolve()),
+            "target": "/opt/factorio/mods",
+            "type": "bind",
+        }
+
+    def _save_volume(self):
+        return {
+            "source": str(self._save_path().resolve()),
+            "target": "/opt/factorio/saves",
+            "type": "bind",
+        }
+
+    def _screenshots_volume(self):
+        return {
+            "source": str((self.root_dir / ".fle" / "data" / "_screenshots").resolve()),
+            "target": "/opt/factorio/script-output",
+            "type": "bind",
+        }
+
+    def _scenarios_volume(self):
+        return {
+            "source": str((self.root_dir / "scenarios").resolve()),
+            "target": "/opt/factorio/scenarios",
+            "type": "bind",
+        }
+
+    def _config_volume(self):
+        return {
+            "source": str((self.root_dir / "config").resolve()),
+            "target": "/opt/factorio/config",
+            "type": "bind",
+        }
+
+    def services_dict(self, num_instances):
+        return {
+            f"factorio_{i}": {
+                "image": self.image,
+                "platform": self._docker_platform(),
+                "command": self._command(),
+                "ports": [
+                    f"{self.internal_game_port + i}:{self.internal_game_port}/udp",
+                    f"{self.internal_rcon_port + i}:{self.internal_rcon_port}/tcp",
+                ],
+                "volumes": [
+                    self._scenarios_volume(),
+                    self._config_volume(),
+                    self._screenshots_volume(),
+                    self._save_volume() if self.save_file else None,
+                    self._mods_volume() if self.attach_mod else None,
+                ],
+            }
+            for i in range(num_instances)
+        }
+
+    def compose_dict(self, num_instances):
+        return {
+            "version": "3",
+            "services": self.services_dict(num_instances),
+        }
+
+
+class ClusterManager:
+    """Simple class wrapper to manage platform detection, compose, and lifecycle."""
+
+    def __init__(self):
+        self.root_dir = ROOT_DIR
+        # self.emulator, self.docker_platform, self.mods_path = setup_platform()
+        self.generator = ComposeGenerator(self.root_dir)
+        self.compose_cmd = setup_compose_cmd()
+
+    def _run_compose(self, args):
+        cmd = self.compose_cmd.split() + args
+        subprocess.run(cmd, check=True)
+
+    def generate(self, num_instances, scenario, attach_mod=False, save_file=None):
+        self.compose_dict(
+            num_instances=num_instances,
+            scenario=scenario,
+            emulator=self.emulator,
+            docker_platform=self.docker_platform,
+            mods_path=self.mods_path,
+            attach_mod=attach_mod,
+            save_file=save_file,
         )
-        command = f"--start-server {save_file_name}"
 
-    # Validate scenario
-    if scenario not in ["open_world", "default_lab_scenario"]:
-        print("Error: Scenario must be either 'open_world' or 'default_lab_scenario'.")
-        sys.exit(1)
+    def start(self, num_instances, scenario, attach_mod=False, save_file=None):
+        listening = _find_port_conflicts(num_instances)
+        if listening:
+            print("Error: Required ports are in use:")
+            print("  " + ", ".join(listening))
+            print(
+                "It looks like a Factorio cluster (or another service) is running. "
+                "Stop it with 'fle cluster stop' (or 'docker compose -f docker-compose.yml down' in fle/cluster) and retry."
+            )
+            sys.exit(1)
 
-    # Validate input
-    if not isinstance(num_instances, int) or num_instances < 1 or num_instances > 33:
-        print("Error: Number of instances must be between 1 and 33.")
-        sys.exit(1)
+        self.generate(num_instances, scenario, attach_mod, save_file)
 
-    # Create the docker-compose file
-    compose_content = """version: '3'
+        print(
+            f"Starting {num_instances} Factorio instance(s) with scenario {scenario}..."
+        )
+        self._run_compose(["-f", "docker-compose.yml", "up", "-d"])
+        print(
+            f"Factorio cluster started with {num_instances} instance(s) using platform {self.docker_platform} and scenario {scenario}"
+        )
 
-services:
-"""
+    def stop(self):
+        if not Path("docker-compose.yml").exists():
+            print("Error: docker-compose.yml not found. No cluster to stop.")
+            sys.exit(1)
+        print("Stopping Factorio cluster...")
+        self._run_compose(["-f", "docker-compose.yml", "down"])
+        print("Cluster stopped.")
 
-    # Add the specified number of factorio services
-    for i in range(num_instances):
-        udp_port = 34197 + i
-        tcp_port = 27000 + i
-
-        compose_content += f"""  factorio_{i}:
-    image: factoriotools/factorio:1.1.110
-    platform: {docker_platform}
-    command: {emulator} /opt/factorio/bin/x64/factorio {command}
-      --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
-      /opt/factorio/config/map-gen-settings.json --map-settings /opt/factorio/config/map-settings.json
-      --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
-      --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
-      --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods --map-gen-seed 44340
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1024m
-    entrypoint: []
-    ports:
-    - {udp_port}:34197/udp
-    - {tcp_port}:27015/tcp
-    pull_policy: missing
-    restart: unless-stopped
-    user: factorio
-    volumes:
-    - source: ./scenarios
-      target: /opt/factorio/scenarios
-      type: bind
-    - source: ./config
-      target: /opt/factorio/config
-      type: bind
-    - source: \"{(ROOT_DIR / ".fle" / "data" / "_screenshots").resolve()}\"
-      target: /opt/factorio/script-output
-      type: bind
-{save_volume}
-{mods_volume}"""
-
-    # Write the docker-compose.yml file
-    Path("docker-compose.yml").write_text(compose_content)
-
-    print(
-        f"Generated docker-compose.yml with {num_instances} Factorio instance(s) using scenario {scenario}"
-    )
+    def restart(self):
+        if not Path("docker-compose.yml").exists():
+            print("Error: docker-compose.yml not found. No cluster to restart.")
+            sys.exit(1)
+        print(
+            "Restarting existing Factorio services without regenerating docker-compose..."
+        )
+        self._run_compose(["-f", "docker-compose.yml", "restart"])
+        print("Factorio services restarted.")
 
 
 def start_cluster(num_instances, scenario, attach_mod=False, save_file=None):
-    """Start Factorio cluster"""
-    emulator, docker_platform, mods_path = setup_platform()
-    compose_cmd = setup_compose_cmd()
-
-    # Preflight: check port availability
-    listening = _find_port_conflicts(num_instances)
-    if listening:
-        print("Error: Required ports are in use:")
-        print("  " + ", ".join(listening))
-        print(
-            "It looks like a Factorio cluster (or another service) is running. "
-            "Stop it with 'fle cluster stop' (or 'docker compose -f docker-compose.yml down' in fle/cluster) and retry."
-        )
-        sys.exit(1)
-
-    # Generate the docker-compose file
-    generate_compose_file(
-        num_instances,
-        scenario,
-        emulator,
-        docker_platform,
-        mods_path,
-        attach_mod,
-        save_file,
-    )
-
-    # Run the docker-compose file
-    print(f"Starting {num_instances} Factorio instance(s) with scenario {scenario}...")
-
-    # Execute docker compose command
-    cmd = compose_cmd.split() + ["-f", "docker-compose.yml", "up", "-d"]
-    subprocess.run(cmd, check=True)
-
-    print(
-        f"Factorio cluster started with {num_instances} instance(s) using platform {docker_platform} and scenario {scenario}"
+    manager = ClusterManager()
+    manager.start(
+        num_instances=num_instances,
+        scenario=scenario,
+        attach_mod=attach_mod,
+        save_file=save_file,
     )
 
 
 def stop_cluster():
-    """Stop Factorio cluster"""
-    compose_cmd = setup_compose_cmd()
-
-    if not Path("docker-compose.yml").exists():
-        print("Error: docker-compose.yml not found. No cluster to stop.")
-        sys.exit(1)
-
-    print("Stopping Factorio cluster...")
-    cmd = compose_cmd.split() + ["-f", "docker-compose.yml", "down"]
-    subprocess.run(cmd, check=True)
-    print("Cluster stopped.")
+    manager = ClusterManager()
+    manager.stop()
 
 
 def restart_cluster():
-    """Restart Factorio cluster"""
-    compose_cmd = setup_compose_cmd()
-
-    if not Path("docker-compose.yml").exists():
-        print("Error: docker-compose.yml not found. No cluster to restart.")
-        sys.exit(1)
-
-    print(
-        "Restarting existing Factorio services without regenerating docker-compose..."
-    )
-    cmd = compose_cmd.split() + ["-f", "docker-compose.yml", "restart"]
-    subprocess.run(cmd, check=True)
-    print("Factorio services restarted.")
+    manager = ClusterManager()
+    manager.restart()
 
 
 def show_help():

@@ -5,9 +5,16 @@ from pathlib import Path
 import importlib.resources
 import asyncio
 from fle.env.gym_env.run_eval import main as run_eval
+from fle.cluster.run_envs import (
+    start_cluster,
+    stop_cluster,
+    restart_cluster,
+    ClusterManager,
+)
 
 
 def fle_init():
+    """Initialize FLE environment by creating .env file if it doesn't exist."""
     if Path(".env").exists():
         return
     try:
@@ -21,6 +28,7 @@ def fle_init():
 
 
 def fle_eval(args):
+    """Run evaluation/experiments with the given config."""
     try:
         config_path = str(Path(args.config))
         asyncio.run(run_eval(config_path))
@@ -29,25 +37,164 @@ def fle_eval(args):
         sys.exit(1)
 
 
+def fle_cluster(args):
+    """Handle cluster management commands."""
+    if args.cluster_command == "start":
+        if not (1 <= args.number <= 33):
+            print("Error: number of instances must be between 1 and 33.")
+            sys.exit(1)
+        # Validate save file if provided
+        if args.use_save and not Path(args.use_save).exists():
+            print(f"Error: Save file '{args.use_save}' does not exist.")
+            sys.exit(1)
+
+        start_cluster(args.number, args.scenario, args.attach_mods, args.use_save)
+
+    elif args.cluster_command == "stop":
+        stop_cluster()
+
+    elif args.cluster_command == "restart":
+        restart_cluster()
+
+    elif args.cluster_command == "logs":
+        manager = ClusterManager()
+        manager.logs(getattr(args, "service", "factorio_0"))
+
+    elif args.cluster_command == "show":
+        manager = ClusterManager()
+        manager.show()
+
+    else:
+        print(f"Error: Unknown cluster command '{args.cluster_command}'")
+        sys.exit(1)
+
+
 def main():
+    """Main CLI entry point for FLE."""
     parser = argparse.ArgumentParser(
         prog="fle",
-        description="Factorio Learning Environment CLI",
+        description="Factorio Learning Environment CLI - Manage clusters and run experiments",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  fle eval --config configs/gym_run_config.json
+  fle init                                    # Initialize environment
+  fle cluster start                          # Start 1 Factorio instance
+  fle cluster start -n 4                     # Start 4 instances  
+  fle cluster start -s open_world            # Start with open world scenario
+  fle cluster stop                           # Stop all instances
+  fle cluster show                           # Show running services
+  fle cluster logs factorio_0                # View logs for specific service
+  fle eval --config configs/run_config.json  # Run experiment
+
+Tips:
+  Use 'fle <command> -h' for command-specific help
+  Use 'fle cluster <subcommand> -h' for cluster subcommand help
         """,
     )
-    subparsers = parser.add_subparsers(dest="command")
-    parser_eval = subparsers.add_parser("eval", help="Run experiment")
-    parser_eval.add_argument("--config", required=True, help="Path to run config JSON")
+
+    # Add subcommands
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # Init command
+    subparsers.add_parser("init", help="Initialize FLE environment (.env file)")
+
+    # Cluster management subcommand
+    cluster_parser = subparsers.add_parser(
+        "cluster",
+        help="Manage Factorio server clusters",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  fle cluster start                    # Start 1 instance (default scenario)
+  fle cluster start -n 4               # Start 4 instances
+  fle cluster start -s open_world      # Start with open world scenario
+  fle cluster start -sv save.zip       # Start from a save file
+  fle cluster start -m                 # Start with mods attached
+  fle cluster stop                     # Stop all running instances
+  fle cluster restart                  # Restart current cluster
+  fle cluster show                     # Show running services and ports
+  fle cluster logs factorio_0          # Show logs for specific service
+        """,
+    )
+
+    cluster_subparsers = cluster_parser.add_subparsers(
+        dest="cluster_command", help="Cluster management commands"
+    )
+
+    # Cluster start command
+    start_parser = cluster_subparsers.add_parser(
+        "start", help="Start Factorio instances"
+    )
+    start_parser.add_argument(
+        "-n",
+        "--number",
+        type=int,
+        default=1,
+        help="Number of Factorio instances to run (1-33, default: 1)",
+    )
+    start_parser.add_argument(
+        "-s",
+        "--scenario",
+        choices=["open_world", "default_lab_scenario"],
+        default="default_lab_scenario",
+        help="Scenario to run (default: default_lab_scenario)",
+    )
+    start_parser.add_argument(
+        "-sv", "--use_save", type=str, help="Use a .zip save file from Factorio"
+    )
+    start_parser.add_argument(
+        "-m", "--attach_mods", action="store_true", help="Attach mods to the instances"
+    )
+
+    # Cluster stop command
+    cluster_subparsers.add_parser("stop", help="Stop all running instances")
+
+    # Cluster restart command
+    cluster_subparsers.add_parser("restart", help="Restart the current cluster")
+
+    # Cluster logs command
+    logs_parser = cluster_subparsers.add_parser("logs", help="Show service logs")
+    logs_parser.add_argument(
+        "service",
+        nargs="?",
+        default="factorio_0",
+        help="Service name (default: factorio_0)",
+    )
+
+    # Cluster show command
+    cluster_subparsers.add_parser(
+        "show", help="Show running services and exposed ports"
+    )
+
+    # Eval command
+    eval_parser = subparsers.add_parser("eval", help="Run experiments/evaluation")
+    eval_parser.add_argument(
+        "--config", required=True, help="Path to run config JSON file"
+    )
+
+    # Parse arguments
     args = parser.parse_args()
-    if args.command:
+
+    # Handle commands
+    if args.command == "init":
         fle_init()
+
+    elif args.command == "cluster":
+        if not args.cluster_command:
+            cluster_parser.print_help()
+            sys.exit(1)
+        fle_cluster(args)
+
     elif args.command == "eval":
+        fle_init()  # Ensure .env exists before running eval
         fle_eval(args)
+
+    elif args.command is None:
+        parser.print_help()
+        sys.exit(1)
+
     else:
+        print(f"Error: Unknown command '{args.command}'")
         parser.print_help()
         sys.exit(1)
 

@@ -4,8 +4,24 @@ from fle.agents.models import TaskResponse, Response, CompletionReason, Completi
 # Import TimingMetrics from commons to maintain backward compatibility
 from fle.commons.models.timing_metrics import TimingMetrics
 
-# Agent base classes
-from fle.agents.agent_abc import AgentABC, create_default_agent_card
+# Agent base classes - conditional import for optional a2a dependency
+try:
+    from fle.agents.agent_abc import AgentABC, create_default_agent_card
+except ImportError:
+    # a2a-sdk not installed, create placeholder classes
+    class AgentABC:
+        """Placeholder AgentABC when a2a-sdk is not installed."""
+
+        def __init__(self):
+            raise ImportError(
+                "AgentABC requires a2a-sdk. Install with: pip install factorio-learning-environment[eval]"
+            )
+
+    def create_default_agent_card():
+        """Placeholder function when a2a-sdk is not installed."""
+        raise ImportError(
+            "create_default_agent_card requires a2a-sdk. Install with: pip install factorio-learning-environment[eval]"
+        )
 
 
 # Lazy imports to avoid circular dependencies

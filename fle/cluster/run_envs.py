@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import argparse
 import os
 import platform
 import subprocess
@@ -13,7 +12,6 @@ import zipfile
 import importlib.resources as ir
 from platformdirs import user_state_dir
 
-# Root directory retained for backward-compat paths where needed
 START_RCON_PORT = 27000
 START_GAME_PORT = 34197
 RCON_PASSWORD = "factorio"
@@ -404,105 +402,3 @@ def stop_cluster():
 def restart_cluster():
     manager = ClusterManager()
     manager.restart()
-
-
-def main():
-    """Main script execution"""
-    parser = argparse.ArgumentParser(
-        description="Factorio Learning Environment Cluster Manager",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=(
-            "Examples:\n"
-            "  run_envs.py start                # start 1 instance (default)\n"
-            "  run_envs.py start -n 4           # start 4 instances\n"
-            "  run_envs.py logs factorio_0      # show logs for service\n\n"
-            "Tips:\n"
-            "  Use 'run_envs.py <command> -h' for command-specific options.\n"
-            "  run_envs.py start -h             # show start command options\n"
-        ),
-    )
-
-    # Add subcommands
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
-
-    # Start command
-    start_parser = subparsers.add_parser("start", help="Start Factorio instances")
-    start_parser.add_argument(
-        "-n",
-        "--number",
-        type=int,
-        default=1,
-        help="Number of Factorio instances to run (1-33, default: 1)",
-    )
-    start_parser.add_argument(
-        "-s",
-        "--scenario",
-        choices=["open_world", "default_lab_scenario"],
-        default="default_lab_scenario",
-        help="Scenario to run (default: default_lab_scenario)",
-    )
-    start_parser.add_argument(
-        "-sv", "--use_save", type=str, help="Use a .zip save file from factorio"
-    )
-    start_parser.add_argument(
-        "-m", "--attach_mods", action="store_true", help="Attach mods to the instances"
-    )
-
-    # Stop command
-    subparsers.add_parser("stop", help="Stop all running instances")
-
-    # Restart command
-    subparsers.add_parser("restart", help="Restart the current cluster")
-
-    # Logs command
-    logs_parser = subparsers.add_parser("logs", help="Show service logs")
-    logs_parser.add_argument(
-        "service",
-        nargs="?",
-        default="factorio_0",
-        help="Service name (default: factorio_0)",
-    )
-
-    # Show command
-    subparsers.add_parser("show", help="Show running services and exposed ports")
-
-    # Help command (explicit)
-    subparsers.add_parser("help", help="Show help message")
-
-    # Parse arguments
-    args = parser.parse_args()
-    # If no command specified, reparse with default subcommand 'start'
-    if args.command is None:
-        args = parser.parse_args(["start"])  # ensures start defaults apply
-
-    # Execute the appropriate command
-    if args.command == "start":
-        if not (1 <= args.number <= 33):
-            print("Error: number of instances must be between 1 and 33.")
-            sys.exit(1)
-        # Validate save file if provided
-        if args.use_save and not Path(args.use_save).exists():
-            print(f"Error: Save file '{args.use_save}' does not exist.")
-            sys.exit(1)
-
-        start_cluster(args.number, args.scenario, args.attach_mods, args.use_save)
-    elif args.command == "stop":
-        stop_cluster()
-    elif args.command == "restart":
-        restart_cluster()
-    elif args.command == "logs":
-        manager = ClusterManager()
-        manager.logs(getattr(args, "service", "factorio_0"))
-    elif args.command == "show":
-        manager = ClusterManager()
-        manager.show()
-    elif args.command == "help":
-        parser.print_help()
-    else:
-        print(f"Error: Unknown command '{args.command}'")
-        parser.print_help()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

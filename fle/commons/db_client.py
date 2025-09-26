@@ -11,19 +11,46 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import psycopg2
 import tenacity
-from psycopg2.extras import DictCursor
-from psycopg2.pool import ThreadedConnectionPool
 from tenacity import retry_if_exception_type, wait_exponential, wait_random_exponential
 
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.game_state import GameState
 from fle.commons.models.program import Program
 
+
+# Optional PostgreSQL imports
+try:
+    import psycopg2
+    from psycopg2.extras import DictCursor
+    from psycopg2.pool import ThreadedConnectionPool
+
+    PSYCOPG2_AVAILABLE = True
+except ImportError:
+    psycopg2 = None
+    DictCursor = None
+    ThreadedConnectionPool = None
+    PSYCOPG2_AVAILABLE = False
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def get_postgres_exceptions():
+    """Get PostgreSQL exception classes if available, otherwise return empty tuple"""
+    if PSYCOPG2_AVAILABLE:
+        return (
+            psycopg2.OperationalError,
+            psycopg2.InterfaceError,
+            psycopg2.DatabaseError,
+        )
+    return ()
+
+
+def get_sqlite_exceptions():
+    """Get SQLite exception classes"""
+    return (sqlite3.OperationalError, sqlite3.InterfaceError, sqlite3.DatabaseError)
 
 
 class DBClient(ABC):
@@ -144,9 +171,7 @@ class DBClient(ABC):
             return {}
 
     @tenacity.retry(
-        retry=retry_if_exception_type(
-            (psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.DatabaseError)
-        ),
+        retry=retry_if_exception_type(get_postgres_exceptions()),
         wait=wait_random_exponential(multiplier=1, min=4, max=10),
     )
     async def create_program(self, program: Program) -> Program:
@@ -214,9 +239,7 @@ class DBClient(ABC):
                         self._pool = None
 
     @tenacity.retry(
-        retry=retry_if_exception_type(
-            (psycopg2.OperationalError, psycopg2.InterfaceError)
-        ),
+        retry=retry_if_exception_type(get_postgres_exceptions()),
         wait=wait_exponential(multiplier=1, min=4, max=10),
     )
     async def get_all_program_rewards(self, version: int = None) -> List[float]:
@@ -242,9 +265,7 @@ class DBClient(ABC):
             return []
 
     @tenacity.retry(
-        retry=retry_if_exception_type(
-            (psycopg2.OperationalError, psycopg2.InterfaceError)
-        ),
+        retry=retry_if_exception_type(get_postgres_exceptions()),
         wait=wait_exponential(multiplier=1, min=4, max=10),
     )
     async def get_largest_version(self) -> int:
@@ -298,9 +319,7 @@ class DBClient(ABC):
             return []
 
     @tenacity.retry(
-        retry=retry_if_exception_type(
-            (psycopg2.OperationalError, psycopg2.InterfaceError)
-        ),
+        retry=retry_if_exception_type(get_postgres_exceptions()),
         wait=wait_random_exponential(multiplier=1, min=4, max=10),
     )
     async def sample_parent(
@@ -491,6 +510,11 @@ class PostgresDBClient(DBClient):
         max_connections: int = 20,
         **db_config,
     ):
+        if not PSYCOPG2_AVAILABLE:
+            raise NotImplementedError(
+                "PostgreSQL support requires psycopg2. Install it with: pip install 'factorio-learning-environment[psql]' "
+                "or set FLE_DB_TYPE=sqlite in your .env file to use SQLite instead."
+            )
         super().__init__(
             max_conversation_length, min_connections, max_connections, **db_config
         )
@@ -567,9 +591,7 @@ class SQLliteDBClient(DBClient):
                 conn.close()
 
     @tenacity.retry(
-        retry=retry_if_exception_type(
-            (psycopg2.OperationalError, psycopg2.InterfaceError)
-        ),
+        retry=retry_if_exception_type(get_sqlite_exceptions()),
         wait=wait_exponential(multiplier=1, min=4, max=10),
     )
     async def get_largest_version(self) -> int:
@@ -638,9 +660,7 @@ class SQLliteDBClient(DBClient):
             return None, None, None, None
 
     @tenacity.retry(
-        retry=retry_if_exception_type(
-            (psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.DatabaseError)
-        ),
+        retry=retry_if_exception_type(get_sqlite_exceptions()),
         wait=wait_random_exponential(multiplier=1, min=4, max=10),
     )
     async def create_program(self, program: Program) -> Program:
@@ -850,6 +870,13 @@ async def create_db_client(
     db_type = os.getenv("FLE_DB_TYPE", "sqlite").lower()
 
     if db_type == "postgres":
+        # Check if psycopg2 is available
+        if not PSYCOPG2_AVAILABLE:
+            raise NotImplementedError(
+                "PostgreSQL support requires psycopg2. Install it with: pip install 'factorio-learning-environment[psql]' "
+                "or set FLE_DB_TYPE=sqlite in your .env file to use SQLite instead."
+            )
+
         # Use PostgreSQL if explicitly requested and configured
         required_vars = [
             "SKILLS_DB_HOST",

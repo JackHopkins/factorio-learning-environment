@@ -7,9 +7,10 @@ name = "factorio-learning-environment"
 version = "0.2.2"
 description = "Factorio Learning Environment"
 authors = [
-    {name = "Jack Hopkins", email = "noreply@github.com"},
-    {name = "Mart Bakler", email = "noreply@github.com"},
+    {name = "Jack Hopkins", email = "jack.hopkins@me.com"},
+    {name = "Mart Bakler", email = "martbakler50@gmail.com"},
     {name = "Neel Kant", email = "contact@neelkant.io"},
+    {name = "Harshit Sharma", email = "harshsha64@gmail.com"},
     {name = "Kian Kyars", email = "kiankyars@gmail.com"},
 ]
 readme = "README.md"
@@ -33,85 +34,33 @@ dependencies = [
     "lupa>=2.4",
     "slpp>=1.2.3",
     "factorio-rcon-py==1.2.1",
-    "construct>=2.10.70",
-    "pillow>=11.1.0",
-    "tomli",
     "numpy>=2.2.3",
-    "gym",
-    "a2a-sdk",
-    "anthropic>=0.49.0",
-    "openai>=1.66.3",
     "tenacity>=9.0.0",
-    "psycopg2>=2.9.10",
-    "aiohttp>=3.8.0",
-    "uvicorn>=0.15.0",
-    "gym",
-    "a2a-sdk",
-    "anthropic>=0.49.0",
-    "openai>=1.66.3",
-    "tenacity>=9.0.0",
-    "psycopg2>=2.9.10",
-    "aiohttp>=3.8.0",
-    "uvicorn>=0.15.0",
-    "pytest>=8.4.1",
+    "pillow>=11.1.0",
     "pyyaml>=6.0.2",
     "platformdirs>=4.3.8",
 ]
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "black>=23.0.0",
-    "isort>=5.12.0",
-    "rich>=14.0.0",
-    "questionary>=2.1.0",
-    "pytest-xdist>=3.8.0",
-]
-agents = [
-    "anthropic>=0.49.0",
-    "openai>=1.66.3",
-]
-cluster = [
-    "docker>=6.0.0",
-    "boto3>=1.26.0",
-    "opencv-python",
-    "pyautogui>=0.9.54",
-    "pillow>=10.0.0",
-    "psutil>=5.9.0",
-    "opencv-python",
-    "pyautogui>=0.9.54",
-    "pillow>=10.0.0",
-    "psutil>=5.9.0",
-]
 eval = [
-    "scikit-image>=0.25.2",
-    "psycopg2>=2.9.10",
-]
-all = [
-    "docker>=6.0.0",
-    "boto3>=1.26.0",
-    "scikit-image>=0.25.2",
+    "gym",
+    "openai>=1.66.3",
+    "anthropic>=0.49.0",
+    "a2a-sdk", # multiagent
+    "fastapi>=0.68.0", # multiagent
+    "aiohttp>=3.8.0", # multiagent
+    "uvicorn>=0.15.0", # multiagent
 ]
 mcp = [
     "mcp[cli]",
     "dulwich",
 ]
-env = [
-    "anyio",
-    "pygame",
-    "neptune",
-    "rich",
-    "openai",
-    "scipy",
-    "scikit-image",
-    "pyautogui",
-    "tenacity",
-    "fastapi>=0.68.0",
+psql = [
+    "psycopg2>=2.9.10",
 ]
 
 [project.scripts]
 fle = "fle.run:main"
-fle-cluster = "fle.cluster.run_envs:main"
 
 [tool.hatch.version]
 path = "fle/__init__.py"
@@ -145,3 +94,23 @@ publish-url = "https://upload.pypi.org/legacy/"
 name = "testpypi"
 url = "https://test.pypi.org/legacy/"
 publish-url = "https://test.pypi.org/legacy/"
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "pytest-xdist>=3.8.0",
+    "pre-commit",
+]
+eval-dev = [
+    "neptune",  # For experiment tracking
+    "questionary>=2.1.0",  # Interactive prompts
+    "rich>=14.0.0",  # Pretty printing
+]
+remote = [
+    "docker>=6.0.0",
+    "boto3>=1.26.0",
+    "pyautogui>=0.9.54",
+    "psutil>=5.9.0",
+]

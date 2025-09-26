@@ -39,12 +39,8 @@ from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import (
 from fle.commons.constants import (
     # Direct API models
     GPT_5,
-    GPT_5_MINI,
-    O4_MINI,
     CLAUDE_OPUS_4_1,
     CLAUDE_SONNET_4,
-    CLAUDE_3_7_SONNET,
-    GEMINI_2_5_PRO,
     OR_GEMINI_2_5_PRO,
     # OpenRouter models
     OR_GPT_5,
@@ -53,6 +49,7 @@ from fle.commons.constants import (
     OR_CLAUDE_3_7_SONNET,
     OR_XAI_GROK_4,
     OR_XAI_GROK_3,
+    OR_GPT_OSS_120B,
 )
 
 
@@ -152,29 +149,48 @@ class SweepProfiles:
             name="production_medium",
             description="Medium-scale production evaluation",
             models=[
-                GPT_5,
-                GPT_5_MINI,
-                CLAUDE_SONNET_4,
-                CLAUDE_3_7_SONNET,
-                GEMINI_2_5_PRO,
-                O4_MINI,
+                # OR_DEEPSEEK_V3_1,
+                # OR_QWEN3_235B_THINKING,
+                OR_GPT_OSS_120B,
             ],
             tasks=[
+                ADVANCED_CIRCUIT_THROUGHPUT,
+                AUTOMATION_SCIENCE_PACK_THROUGHPUT,
+                BATTERY_THROUGHPUT,
+                CHEMICAL_SCIENCE_PACK_THROUGHPUT,
+                CRUDE_OIL_THROUGHPUT,
+                ELECTRONIC_CIRCUIT_THROUGHPUT,
+                ENGINE_UNIT_THROUGHPUT,
+                INSERTER_THROUGHPUT,
+                IRON_GEAR_WHEEL_THROUGHPUT,
                 IRON_ORE_THROUGHPUT,
                 IRON_PLATE_THROUGHPUT,
-                IRON_GEAR_WHEEL_THROUGHPUT,
-                ELECTRONIC_CIRCUIT_THROUGHPUT,
+                LOGISTICS_SCIENCE_PACK_THROUGHPUT,
+                LOW_DENSITY_STRUCTURE_THROUGHPUT,
+                MILITARY_SCIENCE_PACK_THROUGHPUT,
+                PETROLEUM_GAS_THROUGHPUT,
+                PIERCING_ROUND_THROUGHPUT,
+                PLASTIC_BAR_THROUGHPUT,
+                PROCESSING_UNIT_THROUGHPUT,
+                PRODUCTION_SCIENCE_PACK_THROUGHPUT,
+                STEEL_PLATE_THROUGHPUT,
+                STONE_WALL_THROUGHPUT,
+                SUFURIC_ACID_THROUGHPUT,
+                SULFUR_THROUGHPUT,
+                UTILITY_SCIENCE_PACK_THROUGHPUT,
             ],
             num_trials_per_config=8,  # Pass@8 evaluation
-            max_concurrent_processes=8,
+            max_concurrent_processes=16,
+            task_inner_loop_mode=True,  # Cycle through tasks before repeating model-task pairs
+            early_stop_on_success=True,  # Skip (model, task) pairs that already succeeded
             enable_wandb=True,
             wandb_project="factorio-production-eval",
             output_dir="./sweep_results/production_medium",
             save_intermediate_results=True,
             log_interval_minutes=30,
-            shuffle_execution_order=True,  # Better load distribution
+            shuffle_execution_order=False,  # Better load distribution
             retry_failed_runs=True,
-            max_retries=3,
+            max_retries=2,
             api_key_config_file="api_keys.json",
         )
 
@@ -186,8 +202,8 @@ class SweepProfiles:
             description="Comprehensive evaluation across all throughput tasks",
             models=[
                 # Frontier models through openrouter
-                OR_GPT_5,
-                OR_CLAUDE_OPUS_4_1,
+                # OR_GPT_5,
+                # OR_CLAUDE_OPUS_4_1,
                 OR_GEMINI_2_5_PRO,
                 OR_XAI_GROK_4,
             ],
@@ -226,6 +242,48 @@ class SweepProfiles:
             enable_wandb=True,
             wandb_project="factorio-production-large",
             output_dir="./sweep_results/production_large",
+            save_intermediate_results=True,
+            log_interval_minutes=30,
+            shuffle_execution_order=False,  # Disabled when using task inner loop
+            retry_failed_runs=True,
+            max_retries=2,
+            api_key_config_file="api_keys.json",
+        )
+
+    @staticmethod
+    def large_hard_only() -> SweepConfig:
+        """Large production sweep with only the hard tasks"""
+        return SweepConfig(
+            name="large_hard_only",
+            description="Large sweep focusing on challenging production tasks",
+            models=[
+                # Same models as production_large
+                OR_CLAUDE_OPUS_4_1,
+                OR_GEMINI_2_5_PRO,
+                OR_GPT_5,
+            ],
+            tasks=[
+                # Only the hard tasks
+                BATTERY_THROUGHPUT,
+                INSERTER_THROUGHPUT,
+                ADVANCED_CIRCUIT_THROUGHPUT,
+                LOGISTICS_SCIENCE_PACK_THROUGHPUT,
+                LOW_DENSITY_STRUCTURE_THROUGHPUT,
+                ENGINE_UNIT_THROUGHPUT,
+                MILITARY_SCIENCE_PACK_THROUGHPUT,
+                CHEMICAL_SCIENCE_PACK_THROUGHPUT,
+                PROCESSING_UNIT_THROUGHPUT,
+                PRODUCTION_SCIENCE_PACK_THROUGHPUT,
+                UTILITY_SCIENCE_PACK_THROUGHPUT,
+            ],
+            num_trials_per_config=8,
+            max_concurrent_processes=16,
+            # Pass@K optimization features
+            task_inner_loop_mode=True,  # Cycle through tasks before repeating model-task pairs
+            early_stop_on_success=True,  # Skip (model, task) pairs that already succeeded
+            enable_wandb=True,
+            wandb_project="factorio-production-hard",
+            output_dir="./sweep_results/large_hard_only",
             save_intermediate_results=True,
             log_interval_minutes=30,
             shuffle_execution_order=False,  # Disabled when using task inner loop
@@ -396,6 +454,12 @@ class SweepRunner:
         return await cls.run_sweep(config, existing_sweep_id)
 
     @classmethod
+    async def run_large_hard_only(cls, existing_sweep_id: Optional[str] = None) -> dict:
+        """Run large_hard_only sweep with optional resume"""
+        config = SweepProfiles.large_hard_only()
+        return await cls.run_sweep(config, existing_sweep_id)
+
+    @classmethod
     async def run_openrouter_grok_test(
         cls, existing_sweep_id: Optional[str] = None
     ) -> dict:
@@ -452,6 +516,8 @@ async def run_sweep_profile(
         return await runner.run_production_medium(existing_sweep_id)
     elif profile == "production_large":
         return await runner.run_production_large(existing_sweep_id)
+    elif profile == "large_hard_only":
+        return await runner.run_large_hard_only(existing_sweep_id)
     elif profile == "openrouter_grok":
         return await runner.run_openrouter_grok_test(existing_sweep_id)
     elif profile == "openrouter_tournament":
@@ -483,6 +549,7 @@ async def main():
         print("  pass_at_k         - Pass@K optimized sweep")
         print("  production_medium - Medium production sweep")
         print("  production_large  - Large production sweep")
+        print("  large_hard_only   - Large sweep with only hard tasks")
         print("  openrouter_grok   - Test Grok models via OpenRouter")
         print("  openrouter_tournament - Full OpenRouter model tournament")
         print("  custom            - Custom configuration (requires additional args)")
@@ -519,6 +586,8 @@ async def main():
         config = SweepProfiles.production_medium()
     elif profile == "production_large":
         config = SweepProfiles.production_large()
+    elif profile == "large_hard_only":
+        config = SweepProfiles.large_hard_only()
     elif profile == "openrouter_grok":
         config = SweepProfiles.openrouter_grok_test()
     elif profile == "openrouter_tournament":

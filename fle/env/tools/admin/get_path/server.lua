@@ -1,23 +1,23 @@
--- Function to get the path as a JSON object
+-- Function to get the path as a Lua table
 global.actions.get_path = function(request_id)
     local request_data = global.path_requests[request_id]
     if not request_data then
-        return game.table_to_json({status = "\"invalid_request\""})
+        return {status = "invalid_request"}
     end
 
     if request_data == "pending" then
-        return game.table_to_json({status = "\"pending\""})
+        return {status = "pending"}
     end
 
     local path = global.paths[request_id]
     if not path then
-        return game.table_to_json({status = "\"not_found\""})
+        return {status = "not_found"}
     end
 
     if path == "busy" then
-        return game.table_to_json({status = "\"busy\""})
+        return {status = "busy"}
     elseif path == "not_found" then
-        return game.table_to_json({status = "\"not_found\""})
+        return {status = "not_found"}
     else
         local waypoints = {}
         for _, waypoint in ipairs(path) do
@@ -26,12 +26,9 @@ global.actions.get_path = function(request_id)
                 y = waypoint.position.y
             })
         end
-        -- create a beam bounding box at the start and end of the path
-        local start = path[1].position
-        local finish = path[#path].position
-        return game.table_to_json({
-            status = "\"success\"",
+        return {
+            status = "success",
             waypoints = waypoints
-        })
+        }
     end
 end

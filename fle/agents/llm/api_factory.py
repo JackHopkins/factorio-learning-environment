@@ -9,6 +9,15 @@ from fle.agents.llm.utils import (
     merge_contiguous_messages,
     remove_whitespace_blocks,
 )
+from fle.commons.constants import (
+    OR_QWEN3_235B_THINKING,
+    OR_GPT_OSS_120B,
+    OR_DEEPSEEK_V3_1,
+    OR_DEEPSEEK_R1,
+    OR_CLAUDE_OPUS_4_1,
+    OR_GEMINI_2_5_PRO,
+    OR_GPT_5,
+)
 
 
 # Lazy import to avoid circular dependencies
@@ -205,20 +214,39 @@ class APIFactory:
         )
 
         try:
-            # Standard API call for all providers
-            response = await client.chat.completions.create(
-                model=model_to_use,
-                messages=messages,
-                max_tokens=kwargs.get("max_tokens", 256),
-                temperature=kwargs.get("temperature", 0.3),
-                logit_bias=kwargs.get("logit_bias"),
-                n=kwargs.get("n_samples"),
-                stop=kwargs.get("stop_sequences"),
-                presence_penalty=kwargs.get("presence_penalty"),
-                frequency_penalty=kwargs.get("frequency_penalty"),
-                stream=False,
-            )
+            # Check if this is a reasoning model that needs reasoning_enabled
+            reasoning_models = [
+                OR_QWEN3_235B_THINKING,
+                OR_GPT_OSS_120B,
+                OR_DEEPSEEK_V3_1,
+                OR_DEEPSEEK_R1,
+                OR_CLAUDE_OPUS_4_1,
+                OR_GEMINI_2_5_PRO,
+                OR_GPT_5,
+            ]
 
+            # Build the API call parameters
+            api_params = {
+                "model": model_to_use,
+                "messages": messages,
+                "max_tokens": kwargs.get("max_tokens", 256),
+                "temperature": kwargs.get("temperature", 0.3),
+                "logit_bias": kwargs.get("logit_bias"),
+                "n": kwargs.get("n_samples"),
+                "stop": kwargs.get("stop_sequences"),
+                "presence_penalty": kwargs.get("presence_penalty"),
+                "frequency_penalty": kwargs.get("frequency_penalty"),
+                "stream": False,
+                "extra_body": {
+                    "reasoning": {"enabled": model_to_use in reasoning_models}
+                },
+            }
+
+            # Standard API call for all providers
+            response = await client.chat.completions.create(**api_params)
+            reasoning = getattr(response.choices[0].message, "reasoning", None)
+            if reasoning is None and model_to_use in reasoning_models:
+                print("WARNING: No reasoning was returned for model: {model_to_use}")
             # Mark key as successful
             self._mark_key_result(provider_config, api_key, success=True)
 

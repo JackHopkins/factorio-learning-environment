@@ -34,11 +34,11 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          uv sync --all-extras --dev
+          uv sync --dev
 
       - name: Start 4 Factorio servers
         run: |
-          uv run fle/cluster/run_envs.py start -n 4
+          uv run python fle/run.py cluster start -n 4
 
       - name: Run Python tests (4 workers)
         run: |
@@ -51,9 +51,12 @@ jobs:
         if: failure()
         run: |
           echo "=== Factorio container logs ==="
-          uv run fle/cluster/run_envs.py logs factorio_0
+          uv run python fle/run.py cluster logs factorio_0 | tail -n 100
+          uv run python fle/run.py cluster logs factorio_1 | tail -n 100
+          uv run python fle/run.py cluster logs factorio_2 | tail -n 100
+          uv run python fle/run.py cluster logs factorio_3 | tail -n 100
 
       - name: Stop server
         if: always()
         run: |
-          uv run fle/cluster/run_envs.py stop
+          uv run python fle/run.py cluster stop

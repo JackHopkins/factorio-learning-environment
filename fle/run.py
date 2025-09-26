@@ -4,7 +4,6 @@ import shutil
 from pathlib import Path
 import importlib.resources
 import asyncio
-from fle.env.gym_env.run_eval import main as run_eval
 from fle.cluster.run_envs import (
     start_cluster,
     stop_cluster,
@@ -30,8 +29,22 @@ def fle_init():
 def fle_eval(args):
     """Run evaluation/experiments with the given config."""
     try:
+        # Import run_eval only when needed (requires eval dependencies)
+        from fle.env.gym_env.run_eval import main as run_eval
+
         config_path = str(Path(args.config))
         asyncio.run(run_eval(config_path))
+    except ImportError as e:
+        print(
+            "Error: Evaluation functionality requires additional dependencies.",
+            file=sys.stderr,
+        )
+        print(
+            "Install with: pip install factorio-learning-environment[eval]",
+            file=sys.stderr,
+        )
+        print(f"Original error: {e}", file=sys.stderr)
+        sys.exit(1)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

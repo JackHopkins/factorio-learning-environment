@@ -90,7 +90,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  fle init                                    # Initialize environment
+  fle init                                   # Initialize environment
   fle cluster start                          # Start 1 Factorio instance
   fle cluster start -n 4                     # Start 4 instances  
   fle cluster start -s open_world            # Start with open world scenario

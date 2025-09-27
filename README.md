@@ -57,11 +57,15 @@ automation (e.g electronic-circuit manufacturing).
 You can install the factorio-learning-environment package using either uv or pip:
 
 ```bash
-# Install from PyPI using uv
-uv add factorio-learning-environment
-
-# Install from PyPI using pip
+# Core SDK (for building agents and managing game instances)
 pip install factorio-learning-environment
+
+# With evaluation capabilities (for running experiments)
+pip install factorio-learning-environment[eval]
+
+# Using uv (recommended)
+uv add factorio-learning-environment
+uv add 'factorio-learning-environment[eval]'
 ```
 
 ### Quickstart
@@ -69,20 +73,25 @@ pip install factorio-learning-environment
 After installation, you can use the CLI:
 
 ```bash
-# Start Docker image
-fle cluster
+# Start Factorio cluster
+fle cluster start
 
-# Run evaluation (auto-starts cluster if needed)
+# Run evaluation experiments (requires [eval] dependencies)
 fle eval --config configs/gym_run_config.json
 ```
-
-> When you run `fle` for the first time, an `.env` file and a `configs/` directory with example configurations are created automatically
 
 Or import the package in your Python code:
 
 ```python
-import fle
+# Core SDK usage
+from fle.env import FactorioInstance
+instance = FactorioInstance()
+
+# Evaluation features (requires [eval] dependencies)  
+from fle.agents import LLMAgent
 ```
+
+> When you run `fle` for the first time, an `.env` file and a `configs/` directory with example configurations are created automatically
 
 ### Gym Environment Usage
 

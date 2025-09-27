@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "factorio-learning-environment"
-version = "0.2.2"
+version = "0.3.0"
 description = "Factorio Learning Environment"
 authors = [
     {name = "Jack Hopkins", email = "jack.hopkins@me.com"},
@@ -28,6 +28,8 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
+
+# Core dependencies - everything needed for FactorioInstance and tools
 dependencies = [
     "python-dotenv>=1.0.1",
     "pydantic>=2.10.6",
@@ -39,10 +41,11 @@ dependencies = [
     "pillow>=11.1.0",
     "pyyaml>=6.0.2",
     "platformdirs>=4.3.8",
-    "a2a-sdk", # message tool + multiagent
+    "a2a-sdk", # send_message tool + multiagent
 ]
 
 [project.optional-dependencies]
+# For running experiments/evaluations (fle eval command)
 eval = [
     "gym",
     "openai>=1.66.3",
@@ -51,10 +54,14 @@ eval = [
     "aiohttp>=3.8.0", # multiagent
     "uvicorn>=0.15.0", # multiagent
 ]
+
+# For MCP protocol support
 mcp = [
     "mcp[cli]",
     "dulwich",
 ]
+
+# For PostgreSQL database support
 psql = [
     "psycopg2>=2.9.10",
 ]
@@ -96,6 +103,7 @@ url = "https://test.pypi.org/legacy/"
 publish-url = "https://test.pypi.org/legacy/"
 
 [dependency-groups]
+# Development tools
 dev = [
     "pytest>=7.0.0",
     "black>=23.0.0",
@@ -103,11 +111,15 @@ dev = [
     "pytest-xdist>=3.8.0",
     "pre-commit",
 ]
+
+# Research/internal evaluation development
 eval-dev = [
     "neptune",  # For experiment tracking
     "questionary>=2.1.0",  # Interactive prompts
     "rich>=14.0.0",  # Pretty printing
 ]
+
+# Remote AWS cluster management
 remote = [
     "docker>=6.0.0",
     "boto3>=1.26.0",

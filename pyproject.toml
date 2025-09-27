@@ -110,13 +110,18 @@ dev = [
     "isort>=5.12.0",
     "pytest-xdist>=3.8.0",
     "pre-commit",
+    "ipykernel>=6.30.1",
 ]
 
 # Research/internal evaluation development
 eval-dev = [
-    "neptune",  # For experiment tracking
-    "questionary>=2.1.0",  # Interactive prompts
-    "rich>=14.0.0",  # Pretty printing
+    "matplotlib>=3.10.6",
+    "neptune", # For experiment tracking
+    "questionary>=2.1.0", # Interactive prompts
+    "rich>=14.0.0", # Pretty printing
+    "scipy>=1.15.3",
+    "seaborn>=0.13.2",
+    "wandb>=0.22.0",
 ]
 
 # Remote AWS cluster management

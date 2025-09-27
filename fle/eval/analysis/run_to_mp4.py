@@ -16,6 +16,7 @@ import tempfile
 import subprocess
 import shutil
 import time
+import math
 
 # Add parent directories to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
@@ -26,6 +27,7 @@ from fle.env.gym_env.environment import FactorioGymEnv
 from fle.env.gym_env.registry import list_available_environments
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
 from fle.commons.models.program import Program
+from fle.env.lua_manager import LuaScriptManager
 
 load_dotenv()
 
@@ -148,6 +150,170 @@ def create_gym_environment(version: int) -> FactorioGymEnv:
         conn.close()
 
 
+def ease_in_out_cubic(t):
+    """Cubic ease-in-out function for smooth transitions.
+
+    Args:
+        t: Progress from 0.0 to 1.0
+
+    Returns:
+        Eased value between 0.0 and 1.0
+    """
+    if t < 0.5:
+        return 4 * t * t * t
+    else:
+        p = 2 * t - 2
+        return 1 + p * p * p / 2
+
+
+def ease_in_out_sine(t):
+    """Sine ease-in-out function for very smooth transitions.
+
+    Args:
+        t: Progress from 0.0 to 1.0
+
+    Returns:
+        Eased value between 0.0 and 1.0
+    """
+    return -(math.cos(math.pi * t) - 1) / 2
+
+
+def interpolate_camera(
+    start_pos, end_pos, start_zoom, end_zoom, progress, easing_func=ease_in_out_cubic
+):
+    """Interpolate camera position and zoom with easing.
+
+    Args:
+        start_pos: (x, y) starting camera position
+        end_pos: (x, y) ending camera position
+        start_zoom: Starting zoom level
+        end_zoom: Ending zoom level
+        progress: Progress from 0.0 to 1.0
+        easing_func: Easing function to use
+
+    Returns:
+        Tuple of (x, y, zoom) for interpolated camera state
+    """
+    # Apply easing to progress
+    eased_progress = easing_func(progress)
+
+    # Interpolate position
+    x = start_pos[0] + (end_pos[0] - start_pos[0]) * eased_progress
+    y = start_pos[1] + (end_pos[1] - start_pos[1]) * eased_progress
+
+    # Interpolate zoom (use logarithmic interpolation for smoother zoom)
+    if start_zoom > 0 and end_zoom > 0:
+        log_start = math.log(start_zoom)
+        log_end = math.log(end_zoom)
+        log_zoom = log_start + (log_end - log_start) * eased_progress
+        zoom = math.exp(log_zoom)
+    else:
+        zoom = start_zoom + (end_zoom - start_zoom) * eased_progress
+
+    return x, y, zoom
+
+
+def get_camera_state_for_factory(instance, resolution="1920x1080"):
+    """Calculate the optimal camera state for the current factory.
+
+    Returns:
+        Dict with 'position' and 'zoom' keys, or None if no factory
+    """
+    min_x, min_y, max_x, max_y = get_factory_bounds(instance)
+
+    if max_x == 0 and max_y == 0:
+        return None
+
+    center_x = (min_x + max_x) / 2
+    center_y = (min_y + max_y) / 2
+
+    # Calculate factory dimensions with padding
+    factory_width = max_x - min_x + 20
+    factory_height = max_y - min_y + 20
+
+    # Calculate optimal zoom
+    zoom = calculate_optimal_zoom(factory_width, factory_height, resolution)
+
+    return {"position": (center_x, center_y), "zoom": zoom}
+
+
+def capture_camera_transition(
+    instance,
+    script_output_path,
+    output_dir,
+    screenshot_counter,
+    start_camera,
+    end_camera,
+    transition_frames=15,
+    easing_func=ease_in_out_cubic,
+):
+    """Capture a smooth camera transition between two states.
+
+    Args:
+        instance: Game instance
+        script_output_path: Path to script output
+        output_dir: Directory to save screenshots
+        screenshot_counter: Current screenshot counter
+        start_camera: Starting camera state dict with 'position' and 'zoom'
+        end_camera: Ending camera state dict with 'position' and 'zoom'
+        transition_frames: Number of interpolation frames
+        easing_func: Easing function to use
+
+    Returns:
+        Updated screenshot_counter
+    """
+    if start_camera is None or end_camera is None:
+        # If we don't have valid camera states, just take a single shot
+        screenshot_filename = f"{screenshot_counter:06d}.png"
+        save_path = str(output_dir / screenshot_filename)
+        take_screenshot(instance, script_output_path, save_path=save_path)
+        return screenshot_counter + 1
+
+    # Check if camera actually needs to move
+    pos_diff = math.sqrt(
+        (end_camera["position"][0] - start_camera["position"][0]) ** 2
+        + (end_camera["position"][1] - start_camera["position"][1]) ** 2
+    )
+    zoom_diff = abs(end_camera["zoom"] - start_camera["zoom"])
+
+    # Skip transition if movement is minimal
+    if pos_diff < 5 and zoom_diff < 0.1:
+        transition_frames = 1
+
+    # Capture interpolated frames
+    for i in range(transition_frames):
+        progress = i / max(transition_frames - 1, 1)
+
+        # Interpolate camera state
+        cam_x, cam_y, cam_zoom = interpolate_camera(
+            start_camera["position"],
+            end_camera["position"],
+            start_camera["zoom"],
+            end_camera["zoom"],
+            progress,
+            easing_func,
+        )
+
+        # Take screenshot at interpolated position
+        screenshot_filename = f"{screenshot_counter:06d}.png"
+        save_path = str(output_dir / screenshot_filename)
+
+        take_screenshot(
+            instance,
+            script_output_path,
+            save_path=save_path,
+            camera_position=(cam_x, cam_y),
+            camera_zoom=cam_zoom,
+        )
+
+        screenshot_counter += 1
+
+        # Small delay to ensure Factorio processes the screenshot
+        time.sleep(0.05)
+
+    return screenshot_counter
+
+
 def get_factory_bounds(instance):
     """Get the bounding box of all entities in the factory."""
     bounds_cmd = """/sc local entities = game.surfaces[1].find_entities_filtered{force=game.forces.player}
@@ -238,27 +404,38 @@ def take_screenshot(
     save_path: str = None,
     resolution: str = "1920x1080",
     center_on_factory: bool = True,
+    camera_position=None,
+    camera_zoom=None,
 ):
     """Take a screenshot using Factorio's game.take_screenshot API."""
 
     # Clear rendering
     instance.rcon_client.send_command("/sc rendering.clear()")
 
-    # Get factory bounds and center position
-    min_x, min_y, max_x, max_y = get_factory_bounds(instance)
-
-    if center_on_factory and (max_x != 0 or max_y != 0):
-        center_x = (min_x + max_x) / 2
-        center_y = (min_y + max_y) / 2
-
-        # Calculate factory dimensions with padding
-        factory_width = max_x - min_x + 20
-        factory_height = max_y - min_y + 20
-
-        # Calculate optimal zoom
-        zoom = calculate_optimal_zoom(factory_width, factory_height, resolution)
-
+    # Use explicit camera parameters if provided
+    if camera_position is not None and camera_zoom is not None:
+        center_x, center_y = camera_position
+        zoom = camera_zoom
         position_str = f", position={{x={center_x}, y={center_y}}}"
+    elif center_on_factory:
+        # Get factory bounds and center position
+        min_x, min_y, max_x, max_y = get_factory_bounds(instance)
+
+        if max_x != 0 or max_y != 0:
+            center_x = (min_x + max_x) / 2
+            center_y = (min_y + max_y) / 2
+
+            # Calculate factory dimensions with padding
+            factory_width = max_x - min_x + 20
+            factory_height = max_y - min_y + 20
+
+            # Calculate optimal zoom
+            zoom = calculate_optimal_zoom(factory_width, factory_height, resolution)
+
+            position_str = f", position={{x={center_x}, y={center_y}}}"
+        else:
+            zoom = 1.0
+            position_str = ""
     else:
         zoom = 1.0
         position_str = ""
@@ -302,8 +479,10 @@ def capture_screenshots_gym(
     gym_env: FactorioGymEnv,
     conn,
     max_steps: int,
-    with_hooks: bool = True,
     capture_interval: float = 0,
+    transition_frames: int = 10,
+    easing: str = "cubic",
+    args=None,
 ):
     """
     Capture screenshots by replaying programs through a gym environment.
@@ -332,20 +511,70 @@ def capture_screenshots_gym(
     # Get the instance from the gym environment
     instance = gym_env.unwrapped.instance
 
+    # Set up screenshot hooks for key tools if requested
+    if hasattr(args, "hook_tools") and args.hook_tools:
+        screenshot_hook_counter = {"count": 0}
+
+        def capture_after_tool(tool_instance, result):
+            """Hook to capture screenshot after tool execution"""
+            nonlocal screenshot_counter
+            if screenshot_hook_counter["count"] % args.hook_frequency == 0:
+                screenshot_filename = f"{screenshot_counter:06d}.png"
+                save_path = str(output_dir / screenshot_filename)
+
+                # Get current camera state for smooth transitions
+                current_camera = get_camera_state_for_factory(instance)
+                if current_camera:
+                    take_screenshot(
+                        instance,
+                        script_output_path,
+                        save_path=save_path,
+                        camera_position=current_camera["position"],
+                        camera_zoom=current_camera["zoom"],
+                    )
+                else:
+                    take_screenshot(instance, script_output_path, save_path=save_path)
+
+                screenshot_counter += 1
+            screenshot_hook_counter["count"] += 1
+
+        # Register hooks for important placement and connection tools
+        hook_tools = [
+            "place_entity",
+            "place_entity_next_to",
+            "connect_entities",
+            "insert_item",
+            "pickup_entity",
+            "rotate_entity",
+            "move_to",
+        ]
+
+        for tool_name in hook_tools:
+            LuaScriptManager.register_post_tool_hook(
+                instance, tool_name, capture_after_tool
+            )
+
+        print(f"Registered screenshot hooks for: {', '.join(hook_tools)}")
+
     # Reset the environment to get initial observation
     # Don't pass game_state - let the environment use its already-configured initial state
     # This matches what trajectory_runner does (passes None for fresh runs)
     observation, info = gym_env.reset()
 
-    # Take initial screenshot
+    # Take initial screenshot and get initial camera state
+    initial_camera = get_camera_state_for_factory(instance)
+    if initial_camera is None:
+        initial_camera = {"position": (0, 0), "zoom": 1.0}
+
     screenshot_filename = f"{screenshot_counter:06d}.png"
     save_path = str(output_dir / screenshot_filename)
     if take_screenshot(instance, script_output_path, save_path=save_path):
         print(f"Captured initial screenshot: {screenshot_filename}")
     screenshot_counter += 1
 
-    # Track the current game state for proper sequencing
+    # Track the current game state and camera position for smooth transitions
     current_game_state = None
+    previous_camera = initial_camera
 
     # Process each program
     for idx, (program_id, created_at) in enumerate(program_ids):
@@ -432,16 +661,34 @@ def capture_screenshots_gym(
             # This will be used as the starting state for the next program
             current_game_state = program.state
 
-            # Take screenshot after this step
-            screenshot_filename = f"{screenshot_counter:06d}.png"
-            save_path = str(output_dir / screenshot_filename)
+            # Get new camera state after program execution
+            new_camera = get_camera_state_for_factory(instance)
+            if new_camera is None:
+                new_camera = previous_camera  # Keep previous if no factory visible
 
-            if take_screenshot(instance, script_output_path, save_path=save_path):
-                print(f"  Captured screenshot: {screenshot_filename}")
+            # Select easing function
+            if easing == "sine":
+                easing_func = ease_in_out_sine
+            elif easing == "linear":
+                easing_func = lambda t: t  # noqa Linear, no easing
             else:
-                print(f"  Warning: Failed to capture screenshot {screenshot_filename}")
+                easing_func = ease_in_out_cubic
 
-            screenshot_counter += 1
+            # Capture smooth transition to new camera state
+            print(f"  Capturing camera transition ({transition_frames} frames)...")
+            screenshot_counter = capture_camera_transition(
+                instance,
+                script_output_path,
+                output_dir,
+                screenshot_counter,
+                previous_camera,
+                new_camera,
+                transition_frames=transition_frames,
+                easing_func=easing_func,
+            )
+
+            # Update previous camera for next transition
+            previous_camera = new_camera
 
             # If environment is terminated, we can't continue
             if terminated:
@@ -454,12 +701,27 @@ def capture_screenshots_gym(
             if program.state:
                 current_game_state = program.state
 
-            # Still take a screenshot to show the current state
-            screenshot_filename = f"{screenshot_counter:06d}.png"
-            save_path = str(output_dir / screenshot_filename)
-            if take_screenshot(instance, script_output_path, save_path=save_path):
-                print(f"  Captured error-state screenshot: {screenshot_filename}")
-            screenshot_counter += 1
+            # Still capture camera state even on error
+            error_camera = get_camera_state_for_factory(instance)
+            if error_camera is None:
+                error_camera = previous_camera
+
+            # Take a few frames to show error state
+            for _ in range(3):
+                screenshot_filename = f"{screenshot_counter:06d}.png"
+                save_path = str(output_dir / screenshot_filename)
+                if take_screenshot(
+                    instance,
+                    script_output_path,
+                    save_path=save_path,
+                    camera_position=error_camera["position"],
+                    camera_zoom=error_camera["zoom"],
+                ):
+                    print(f"  Captured error-state screenshot: {screenshot_filename}")
+                screenshot_counter += 1
+
+            # Update camera for continuity
+            previous_camera = error_camera
             continue
 
     # Add some final frames showing the completed state
@@ -545,6 +807,9 @@ def process_version(
     skip_screenshots: bool,
     skip_video: bool,
     capture_interval: float,
+    transition_frames: int = 10,
+    easing: str = "cubic",
+    args=None,
 ):
     """Process a single version: generate screenshots and create video."""
 
@@ -580,8 +845,10 @@ def process_version(
                 gym_env,
                 conn,
                 max_steps,
-                with_hooks,
-                capture_interval,
+                capture_interval=capture_interval,
+                transition_frames=transition_frames,
+                easing=easing,
+                args=args,
             )
 
         if not skip_video:
@@ -690,6 +957,31 @@ Examples:
         default=0,
         help="Capture screenshots every N seconds during program execution (0 = disabled, only capture after each program)",
     )
+    parser.add_argument(
+        "--transition-frames",
+        "-t",
+        type=int,
+        default=10,
+        help="Number of frames for smooth camera transitions between programs (default: 10)",
+    )
+    parser.add_argument(
+        "--easing",
+        type=str,
+        default="cubic",
+        choices=["cubic", "sine", "linear"],
+        help="Easing function for camera transitions (default: cubic)",
+    )
+    parser.add_argument(
+        "--hook-tools",
+        action="store_true",
+        help="Capture screenshots after tool executions (place_entity, connect_entities, etc.)",
+    )
+    parser.add_argument(
+        "--hook-frequency",
+        type=int,
+        default=1,
+        help="Capture screenshot every N tool executions when using --hook-tools (default: 1)",
+    )
 
     args = parser.parse_args()
 
@@ -736,6 +1028,9 @@ Examples:
                 args.skip_screenshots,
                 args.skip_video,
                 args.capture_interval,
+                args.transition_frames,
+                args.easing,
+                args,
             )
             if success:
                 success_count += 1
